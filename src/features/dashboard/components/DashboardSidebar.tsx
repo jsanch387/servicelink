@@ -1,0 +1,122 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  HomeIcon,
+  UserIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
+import { ROUTES } from '@/constants/routes';
+import { IconButton } from '@/components/shared';
+import { useAuth } from '@/features/auth';
+import type { DashboardSidebarProps } from '../types/dashboard';
+
+const navigation = [
+  { name: 'Dashboard', href: ROUTES.DASHBOARD.MAIN, icon: HomeIcon },
+  {
+    name: 'Business Profile',
+    href: ROUTES.DASHBOARD.BUSINESS_PROFILE,
+    icon: UserIcon,
+  },
+];
+
+export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
+  open,
+  setOpen,
+}) => {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      const result = await signOut();
+
+      if (result.success) {
+        // Redirect to home page after successful logout
+        router.push('/');
+      } else if (result.error) {
+        console.error('Logout failed:', result.error);
+        // Could show a toast notification here
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  return (
+    <>
+      {/* Mobile sidebar overlay */}
+      {open && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="fixed inset-0 bg-neutral-900/80"
+            onClick={() => setOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`dashboard-sidebar w-64 bg-neutral-800 border-r border-neutral-700 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex h-full flex-col">
+          {/* Logo and close button */}
+          <div className="flex h-16 items-center justify-between px-6">
+            <h1 className="text-xl font-bold text-white">BusinessLink</h1>
+            <IconButton
+              icon={<XMarkIcon />}
+              onClick={() => setOpen(false)}
+              variant="ghost"
+              className="lg:hidden"
+              aria-label="Close sidebar"
+            />
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 space-y-1 px-4 py-6">
+            {navigation.map(item => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                      ? 'bg-orange-500 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-neutral-700'
+                  }`}
+                >
+                  <item.icon
+                    className={`mr-3 h-5 w-5 transition-colors ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-gray-400 group-hover:text-white'
+                    }`}
+                  />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Logout */}
+          <div className="border-t border-neutral-700 p-4">
+            <button
+              onClick={handleLogout}
+              className="group flex w-full items-center px-3 py-2 text-sm font-medium text-gray-300 rounded-md hover:text-white hover:bg-neutral-700 transition-colors cursor-pointer"
+            >
+              <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};

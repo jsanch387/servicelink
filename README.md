@@ -1,36 +1,180 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Business Profile
 
-## Getting Started
+A modern business landing page built with Next.js, React, and Tailwind CSS.
 
-First, run the development server:
+## 🚀 Features
+
+- **Next.js 15** - Latest version with App Router
+- **React 19** - Latest React with concurrent features
+- **TypeScript** - Full type safety
+- **Tailwind CSS 4** - Latest version for styling
+- **ESLint + Prettier** - Code quality and formatting
+- **Environment Variables** - Secure configuration management
+- **Responsive Design** - Works on all devices
+- **Modern UI** - Clean and professional design
+
+## 📦 Tech Stack
+
+- **Framework**: Next.js 15.5.2
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4
+- **Linting**: ESLint 9
+- **Formatting**: Prettier 3.6.2
+- **React**: 19.1.0
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- Node.js 18.17 or later
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone <your-repo-url>
+cd business-profile
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Set up environment variables:
+
+```bash
+cp env.example .env.local
+```
+
+4. Edit `.env.local` with your configuration values.
+
+### Development
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📜 Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint errors automatically
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
+- `npm run type-check` - Run TypeScript type checking
+- `npm run clean` - Clean build directories
 
-## Learn More
+## 🌍 Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+Create a `.env.local` file based on `env.example`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+# Database Configuration
+DATABASE_URL=your_database_url_here
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Authentication
+NEXTAUTH_SECRET=your_nextauth_secret_here
+NEXTAUTH_URL=http://localhost:3000
 
-## Deploy on Vercel
+# API Keys
+API_KEY=your_api_key_here
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# External Services
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Email Configuration
+SMTP_HOST=your_smtp_host_here
+SMTP_PORT=587
+SMTP_USER=your_smtp_user_here
+SMTP_PASSWORD=your_smtp_password_here
+
+# App Configuration
+NODE_ENV=development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+## 📁 Project Structure
+
+```
+business-profile/
+├── src/
+│   └── app/
+│       ├── page.tsx          # Landing page
+│       ├── layout.tsx        # Root layout
+│       └── globals.css       # Global styles
+├── public/                   # Static assets
+├── .env.example             # Environment variables template
+├── .prettierrc             # Prettier configuration
+├── .prettierignore         # Prettier ignore rules
+├── eslint.config.mjs       # ESLint configuration
+├── tailwind.config.ts      # Tailwind configuration
+├── tsconfig.json           # TypeScript configuration
+└── package.json            # Dependencies and scripts
+```
+
+## 🎨 Customization
+
+### Styling
+
+The application uses Tailwind CSS for styling. You can customize the design by:
+
+- Modifying `src/app/globals.css`
+- Updating `tailwind.config.ts`
+- Adding custom components in `src/components/`
+
+### Content
+
+Update the landing page content in `src/app/page.tsx` to match your business needs.
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Deploy automatically
+
+### Other Platforms
+
+Build the application:
+
+```bash
+npm run build
+npm run start
+```
+
+## 📝 Code Quality
+
+This project includes:
+
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **TypeScript** for type safety
+- **Pre-commit hooks** (can be added with husky)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support, please open an issue in the repository or contact the development team.
