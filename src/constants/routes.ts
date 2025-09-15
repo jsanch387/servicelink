@@ -5,6 +5,10 @@ export const ROUTES = {
   PRICING: '#pricing',
   ABOUT: '#about',
   CONTACT: '#contact',
+  WAITLIST: '#waitlist',
+
+  // Public pages
+  WAITLIST_PAGE: '/waitlist',
 
   // Authentication routes
   AUTH: {

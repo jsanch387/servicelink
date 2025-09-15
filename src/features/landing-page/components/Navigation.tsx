@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import { Button } from '../shared/Button';
+import { Button } from '../../../components/shared/Button';
 import { ROUTES } from '@/constants/routes';
 import { LanguageSelector } from './LanguageSelector';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -24,7 +26,7 @@ export const Navigation: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-white">BusinessLink</h1>
+              <h1 className="text-xl font-bold text-white">ServiceLink</h1>
             </div>
           </div>
 
@@ -43,28 +45,36 @@ export const Navigation: React.FC = () => {
               Features
             </a>
             <a
-              href={ROUTES.PRICING}
+              href="#waitlist"
               className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
-              Pricing
+              Waitlist
             </a>
-            <a
+            {/* <a
               href={ROUTES.ABOUT}
               className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
               About
-            </a>
+            </a> */}
           </div>
 
           {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-4">
-            <LanguageSelector />
-            <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="sm">
-              Login
-            </Button>
-            <Button href={ROUTES.AUTH.SIGNUP} variant="primary" size="sm">
-              Sign Up
-            </Button>
+            {/* <LanguageSelector /> */}
+            {isAuthenticated ? (
+              <Button href={ROUTES.DASHBOARD.MAIN} variant="primary" size="sm">
+                Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="sm">
+                  Login
+                </Button>
+                <Button href={ROUTES.WAITLIST_PAGE} variant="primary" size="sm">
+                  Join Waitlist
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -103,11 +113,11 @@ export const Navigation: React.FC = () => {
                 Features
               </a>
               <a
-                href={ROUTES.PRICING}
+                href="#waitlist"
                 className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
                 onClick={closeMobileMenu}
               >
-                Pricing
+                Waitlist
               </a>
               <a
                 href={ROUTES.ABOUT}
@@ -117,24 +127,38 @@ export const Navigation: React.FC = () => {
                 About
               </a>
               <div className="pt-4 space-y-2">
-                <Button
-                  href={ROUTES.AUTH.LOGIN}
-                  variant="secondary"
-                  size="sm"
-                  className="w-full justify-center"
-                  onClick={closeMobileMenu}
-                >
-                  Login
-                </Button>
-                <Button
-                  href={ROUTES.AUTH.SIGNUP}
-                  variant="primary"
-                  size="sm"
-                  className="w-full justify-center"
-                  onClick={closeMobileMenu}
-                >
-                  Sign Up
-                </Button>
+                {isAuthenticated ? (
+                  <Button
+                    href={ROUTES.DASHBOARD.MAIN}
+                    variant="primary"
+                    size="sm"
+                    className="w-full justify-center"
+                    onClick={closeMobileMenu}
+                  >
+                    Dashboard
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      href={ROUTES.AUTH.LOGIN}
+                      variant="secondary"
+                      size="sm"
+                      className="w-full justify-center"
+                      onClick={closeMobileMenu}
+                    >
+                      Login
+                    </Button>
+                    <Button
+                      href={ROUTES.WAITLIST_PAGE}
+                      variant="primary"
+                      size="sm"
+                      className="w-full justify-center"
+                      onClick={closeMobileMenu}
+                    >
+                      Join Waitlist
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

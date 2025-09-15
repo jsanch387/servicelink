@@ -2,8 +2,7 @@ import React from 'react';
 import { Navigation } from './Navigation';
 import { HeroSection } from './HeroSection';
 import { FeaturesSection } from './FeaturesSection';
-import { TestimonialsSection } from './TestimonialsSection';
-import { PricingSection } from './PricingSection';
+import { WaitlistSection } from './WaitlistSection';
 import { Footer } from './Footer';
 
 export const LandingPage: React.FC = () => {
@@ -12,8 +11,7 @@ export const LandingPage: React.FC = () => {
       <Navigation />
       <HeroSection />
       <FeaturesSection />
-      <TestimonialsSection />
-      <PricingSection />
+      <WaitlistSection />
       <Footer />
     </div>
   );
