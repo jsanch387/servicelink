@@ -36,7 +36,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       </div>
 
       {/* Profile Header */}
-      <div className="relative p-6 sm:p-8 flex flex-col items-center -mt-20">
+      <div className="relative p-8 sm:p-12 flex flex-col items-center -mt-20">
         <ImageWithFallback
           className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-neutral-800 shadow-lg object-cover bg-gray-700"
           src={businessProfile.logo_url || ''}

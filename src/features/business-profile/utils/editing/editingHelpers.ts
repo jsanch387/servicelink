@@ -101,7 +101,7 @@ export function transformFormDataForAPI(
     id: service.id?.toString().startsWith('temp-') ? undefined : service.id,
     name: service.name,
     description: service.description || null,
-    price_cents: service.price ? parseInt(service.price) * 100 : null,
+    price_cents: service.price ? parseInt(service.price) * 100 : 0,
     hours_to_complete: service.hours_to_complete || null,
     is_active: true,
   }));

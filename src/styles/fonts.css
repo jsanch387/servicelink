@@ -1,0 +1,63 @@
+/* 
+ * Font Configuration for ServiceLink App
+ * 
+ * This file defines the font stack used throughout the application.
+ * To change fonts, simply update the values below.
+ */
+
+:root {
+  /* Primary font stack - Modern, clean, and optimized for readability */
+  --font-primary: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  /* Monospace font stack - For code and technical content */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  /* Display font stack - For headings and large text (optional) */
+  --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* 
+ * Font Stack Explanation:
+ * 
+ * 1. ui-sans-serif: Uses the system's preferred sans-serif font
+ * 2. system-ui: Uses the system's UI font (most modern)
+ * 3. -apple-system: Apple's system font (San Francisco)
+ * 4. BlinkMacSystemFont: Fallback for older macOS
+ * 5. "Segoe UI": Windows system font
+ * 6. Roboto: Android system font
+ * 7. "Helvetica Neue": High-quality fallback
+ * 8. Arial: Universal fallback
+ * 9. "Noto Sans": Google's universal font
+ * 10. sans-serif: Generic fallback
+ * 11. Emoji fonts: Ensures emoji support across platforms
+ * 
+ * Benefits:
+ * - Fast loading (uses system fonts)
+ * - Native look and feel on each platform
+ * - Excellent readability and accessibility
+ * - No external font downloads required
+ * - Consistent across all devices and browsers
+ */
+
+/* Global font application */
+* {
+  font-family: var(--font-primary);
+}
+
+/* Font smoothing for better rendering */
+body {
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Monospace font for code elements */
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Display font for headings (optional - currently same as primary) */
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
+}

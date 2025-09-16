@@ -39,8 +39,19 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     setIsLoading(true);
 
     try {
-      // Update local state with the saved data
-      setBusinessProfile(prev => ({ ...prev, ...data }));
+      // Transform the form data to match the expected structure
+      const transformedData = {
+        ...data,
+        services: data.services?.map((service: any) => ({
+          ...service,
+          price_cents: service.price ? parseInt(service.price) * 100 : 0,
+          // Remove the price field since we're using price_cents
+          price: undefined,
+        })) || []
+      };
+
+      // Update local state with the transformed data
+      setBusinessProfile(prev => ({ ...prev, ...transformedData }));
       
       // Switch to preview mode to show the updated profile
       setEditMode('view');
@@ -96,8 +107,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="space-y-8">
+      <div className="bg-neutral-800 min-h-screen">
+        <div className="max-w-4xl mx-auto">
           {editMode === 'view' ? (
             // Preview Mode - Show customer view
             <>
@@ -125,21 +136,23 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onSave={handleSave}
                 onCancel={handleCancel}
               />
-              <ReviewsSection
+              {/* <ReviewsSection
                 businessProfile={businessProfile}
                 editMode={editMode}
                 onSave={handleSave}
                 onCancel={handleCancel}
-              />
+              /> */}
             </>
           ) : (
             // Edit Mode - Show unified edit form
-            <EditBusinessProfile
-              businessProfile={businessProfile}
-              onSave={handleSave}
-              onCancel={handleCancel}
-              isLoading={isLoading}
-            />
+            <div className="p-8">
+              <EditBusinessProfile
+                businessProfile={businessProfile}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                isLoading={isLoading}
+              />
+            </div>
           )}
         </div>
       </div>

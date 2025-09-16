@@ -25,10 +25,13 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   const hasServices = services && services.length > 0;
 
   return (
-    <section className="px-6 py-8 sm:px-8 bg-neutral-800">
-      <SectionTitle icon={<TagIcon className="h-7 w-7 text-gray-50" />}>
-        Services & Pricing
-      </SectionTitle>
+    <section className="px-8 py-12 border-b border-neutral-700">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+          <TagIcon className="h-6 w-6 text-orange-500" />
+          Services & Pricing
+        </h2>
+      </div>
 
       {hasServices ? (
         <>
@@ -43,16 +46,17 @@ export const ServicesList: React.FC<ServicesListProps> = ({
           `}</style>
           <div className="flex overflow-x-auto snap-x snap-mandatory space-x-4 pb-4 custom-scrollbar">
             {services.map(service => (
-              <ServiceCard
-                key={service.id}
-                service={{
-                  id: service.id,
-                  name: service.name,
-                  description: service.description || '',
-                  price: formatPrice(service.price_cents),
-                  hours_to_complete: service.hours_to_complete || undefined,
-                }}
-              />
+              <div key={service.id} className="flex-none w-[85%] sm:w-64">
+                <ServiceCard
+                  service={{
+                    id: service.id,
+                    name: service.name,
+                    description: service.description || '',
+                    price: service.price_cents || 0,
+                    hours_to_complete: service.hours_to_complete || undefined,
+                  }}
+                />
+              </div>
             ))}
           </div>
         </>
