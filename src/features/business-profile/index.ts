@@ -7,7 +7,6 @@
 
 // Components
 export { AboutUs } from './components/AboutUs';
-export { BusinessProfile } from './components/BusinessProfile';
 export { BusinessProfileView } from './components/BusinessProfileView';
 export { EmptyState } from './components/EmptyState';
 export { ProfileHeader } from './components/ProfileHeader';

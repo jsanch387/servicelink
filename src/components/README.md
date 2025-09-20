@@ -112,10 +112,10 @@ Main component that composes all business profile sections.
 **Usage:**
 
 ```tsx
-import { BusinessProfile } from '@/components';
+import { BusinessProfileView } from '@/features/business-profile';
 import { businessData } from '@/data/businessData';
 
-<BusinessProfile business={businessData} onRequestQuote={handleQuoteRequest} />;
+<BusinessProfileView businessProfile={businessData} />;
 ```
 
 ### ProfileHeader
@@ -202,18 +202,18 @@ interface Business {
 ### Basic Implementation
 
 ```tsx
-import { BusinessProfile } from '@/components';
+import { BusinessProfileView } from '@/features/business-profile';
 import { businessData } from '@/data/businessData';
 
 export default function Home() {
-  return <BusinessProfile business={businessData} />;
+  return <BusinessProfileView businessProfile={businessData} />;
 }
 ```
 
 ### Custom Quote Handler
 
 ```tsx
-import { BusinessProfile } from '@/components';
+import { BusinessProfileView } from '@/features/business-profile';
 
 export default function Home() {
   const handleQuoteRequest = () => {
@@ -222,9 +222,8 @@ export default function Home() {
   };
 
   return (
-    <BusinessProfile
-      business={businessData}
-      onRequestQuote={handleQuoteRequest}
+    <BusinessProfileView
+      businessProfile={businessData}
     />
   );
 }

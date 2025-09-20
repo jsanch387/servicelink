@@ -11,6 +11,68 @@ export class MediaDatabase {
   private static supabase = createClient() as any;
 
   /**
+   * Gets the current logo path for a business
+   */
+  static async getCurrentLogoPath(
+    businessId: string
+  ): Promise<{ success: boolean; logoPath?: string; error?: string }> {
+    try {
+      console.log('🔍 Getting current logo path:', { businessId });
+
+      const { data, error } = await this.supabase
+        .from('business_profiles')
+        .select('logo_path')
+        .eq('id', businessId)
+        .single();
+
+      if (error) {
+        console.error('❌ Failed to get current logo path:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Current logo path retrieved:', data?.logo_path);
+      return { success: true, logoPath: data?.logo_path };
+    } catch (error) {
+      console.error('❌ Error getting current logo path:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get logo path',
+      };
+    }
+  }
+
+  /**
+   * Gets the current banner path for a business
+   */
+  static async getCurrentBannerPath(
+    businessId: string
+  ): Promise<{ success: boolean; bannerPath?: string; error?: string }> {
+    try {
+      console.log('🔍 Getting current banner path:', { businessId });
+
+      const { data, error } = await this.supabase
+        .from('business_profiles')
+        .select('banner_path')
+        .eq('id', businessId)
+        .single();
+
+      if (error) {
+        console.error('❌ Failed to get current banner path:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Current banner path retrieved:', data?.banner_path);
+      return { success: true, bannerPath: data?.banner_path };
+    } catch (error) {
+      console.error('❌ Error getting current banner path:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get banner path',
+      };
+    }
+  }
+
+  /**
    * Updates business profile with new logo path
    */
   static async updateBusinessLogo(

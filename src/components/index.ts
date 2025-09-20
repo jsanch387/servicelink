@@ -18,7 +18,7 @@ export {
 } from './shared';
 
 // Business Profile Components (moved to features/business-profile)
-// Use: import { BusinessProfile, ProfileHeader, AboutUs, etc. } from '@/features/business-profile';
+// Use: import { BusinessProfileView, ProfileHeader, AboutUs, etc. } from '@/features/business-profile';
 
 // Landing Page Components (moved to features/landing-page)
 // Use: import { LandingPage, Navigation, HeroSection, etc. } from '@/features/landing-page';

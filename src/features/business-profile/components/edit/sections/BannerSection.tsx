@@ -14,7 +14,7 @@ import {
 interface BannerSectionProps {
   businessProfile: any;
   isLoading: boolean;
-  onCoverImageChange: (file: File) => void;
+  onCoverImageChange: (file: File, publicUrl?: string, storagePath?: string) => void;
 }
 
 // Modal component for editing
@@ -83,7 +83,14 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
 
       if (result.success) {
         console.log('✅ Banner uploaded successfully:', result);
-        onCoverImageChange(selectedFile);
+        
+        // Update the temp banner preview with the new uploaded image URL
+        if (result.publicUrl) {
+          setTempCoverPhoto(result.publicUrl);
+        }
+        
+        // Notify parent component of the change with the new public URL and storage path
+        onCoverImageChange(selectedFile, result.publicUrl, result.storagePath);
         closeModal();
       } else {
         console.error('❌ Banner upload failed:', result.error);

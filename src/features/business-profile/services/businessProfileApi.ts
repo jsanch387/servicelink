@@ -213,7 +213,6 @@ export class BusinessProfileApi {
     images: Array<{
       id?: string;
       storage_path: string;
-      alt_text?: string;
       position?: number;
     }>
   ): Promise<ImageResponse> {
@@ -263,29 +262,31 @@ export class BusinessProfileApi {
         .delete()
         .eq('business_id', businessId);
 
-      // Insert new images
+      // Insert new images (without ID field to let database auto-generate)
       if (images.length > 0) {
-        const imagesWithBusinessId = images.map((image, index) => {
-          const imageData: any = {
-            storage_path: image.storage_path,
-            business_id: businessId,
-            position: image.position ?? index,
-          };
-          
-          // Only include id if it exists (for existing images)
-          if (image.id) {
-            imageData.id = image.id;
-          }
-          
-          return imageData;
-        });
+        const imagesToInsert = images.map((image, index) => ({
+          storage_path: image.storage_path,
+          business_id: businessId,
+          position: image.position ?? index,
+        }));
 
         const { error: insertError } = await supabase
           .from('business_images')
-          .insert(imagesWithBusinessId);
+          .insert(imagesToInsert);
 
         if (insertError) {
           console.error('Error inserting images:', insertError);
+          
+          // If database insert fails, clean up the uploaded files from storage
+          const newImagePaths = images.map(img => img.storage_path);
+          try {
+            console.log('🧹 Cleaning up uploaded files due to database insert failure...');
+            await MediaService.deleteImages(newImagePaths);
+            console.log('✅ Successfully cleaned up uploaded files');
+          } catch (cleanupError) {
+            console.error('❌ Failed to clean up uploaded files:', cleanupError);
+          }
+          
           return { success: false, error: insertError.message };
         }
       }

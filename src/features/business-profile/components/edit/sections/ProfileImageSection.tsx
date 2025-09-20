@@ -13,7 +13,7 @@ import {
 interface ProfileImageSectionProps {
   businessProfile: any;
   isLoading: boolean;
-  onLogoImageChange: (file: File) => void;
+  onLogoImageChange: (file: File, publicUrl?: string, storagePath?: string) => void;
 }
 
 // Modal component for editing
@@ -82,7 +82,14 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
 
       if (result.success) {
         console.log('✅ Logo uploaded successfully:', result);
-        onLogoImageChange(selectedFile);
+        
+        // Update the temp logo preview with the new uploaded image URL
+        if (result.publicUrl) {
+          setTempLogo(result.publicUrl);
+        }
+        
+        // Notify parent component of the change with the new public URL and storage path
+        onLogoImageChange(selectedFile, result.publicUrl, result.storagePath);
         closeModal();
       } else {
         console.error('❌ Logo upload failed:', result.error);

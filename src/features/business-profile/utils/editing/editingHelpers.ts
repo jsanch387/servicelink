@@ -124,7 +124,6 @@ export function transformFormDataForAPI(
       return hasRealStoragePath;
     })
     .map(image => ({
-      id: image.id,
       storage_path: image.storage_path,
       position: image.position,
     }));

@@ -19,38 +19,57 @@ import {
 export class MediaService {
   /**
    * Uploads and saves a business logo
+   * Replaces the existing logo (deletes old one from storage)
    */
   static async uploadLogo(data: LogoUploadData): Promise<UploadResult> {
     try {
       console.log('🖼️ Starting logo upload:', {
         businessId: data.businessId,
         fileName: data.file.name,
+        previousPath: data.previousPath,
       });
 
-      // Generate storage path
-      const storagePath = generateStoragePath(
+      // Get current logo path from database to delete old logo
+      const currentLogoResult = await MediaDatabase.getCurrentLogoPath(data.businessId);
+      const currentLogoPath = currentLogoResult.success ? currentLogoResult.logoPath : data.previousPath;
+
+      // Generate new storage path
+      const newStoragePath = generateStoragePath(
         data.businessId,
         'logo',
         data.file
       );
 
-      // Upload to storage
+      // Delete old logo from storage if it exists
+      if (currentLogoPath && currentLogoPath.trim()) {
+        console.log('🗑️ Deleting old logo from storage:', currentLogoPath);
+        try {
+          await MediaStorage.deleteFile(currentLogoPath);
+          console.log('✅ Old logo deleted successfully');
+        } catch (deleteError) {
+          console.warn('⚠️ Failed to delete old logo (continuing with upload):', deleteError);
+          // Don't fail the entire operation if old logo deletion fails
+        }
+      }
+
+      // Upload new logo to storage
       const uploadResult = await MediaStorage.uploadFile(
         data.file,
-        storagePath
+        newStoragePath
       );
       if (!uploadResult.success) {
         return uploadResult;
       }
 
-      // Update database
+      // Update database with new logo path
       const dbResult = await MediaDatabase.updateBusinessLogo(
         data.businessId,
-        storagePath
+        newStoragePath
       );
       if (!dbResult.success) {
-        // If DB update fails, clean up the uploaded file
-        await MediaStorage.deleteFile(storagePath);
+        // If DB update fails, clean up the newly uploaded file
+        console.log('🧹 Cleaning up newly uploaded logo due to DB failure');
+        await MediaStorage.deleteFile(newStoragePath);
         return {
           success: false,
           error: dbResult.error,
@@ -60,7 +79,7 @@ export class MediaService {
       console.log('✅ Logo upload completed successfully');
       return {
         success: true,
-        storagePath,
+        storagePath: newStoragePath,
         publicUrl: uploadResult.publicUrl,
       };
     } catch (error) {
@@ -74,38 +93,57 @@ export class MediaService {
 
   /**
    * Uploads and saves a business banner
+   * Replaces the existing banner (deletes old one from storage)
    */
   static async uploadBanner(data: BannerUploadData): Promise<UploadResult> {
     try {
       console.log('🖼️ Starting banner upload:', {
         businessId: data.businessId,
         fileName: data.file.name,
+        previousPath: data.previousPath,
       });
 
-      // Generate storage path
-      const storagePath = generateStoragePath(
+      // Get current banner path from database to delete old banner
+      const currentBannerResult = await MediaDatabase.getCurrentBannerPath(data.businessId);
+      const currentBannerPath = currentBannerResult.success ? currentBannerResult.bannerPath : data.previousPath;
+
+      // Generate new storage path
+      const newStoragePath = generateStoragePath(
         data.businessId,
         'banner',
         data.file
       );
 
-      // Upload to storage
+      // Delete old banner from storage if it exists
+      if (currentBannerPath && currentBannerPath.trim()) {
+        console.log('🗑️ Deleting old banner from storage:', currentBannerPath);
+        try {
+          await MediaStorage.deleteFile(currentBannerPath);
+          console.log('✅ Old banner deleted successfully');
+        } catch (deleteError) {
+          console.warn('⚠️ Failed to delete old banner (continuing with upload):', deleteError);
+          // Don't fail the entire operation if old banner deletion fails
+        }
+      }
+
+      // Upload new banner to storage
       const uploadResult = await MediaStorage.uploadFile(
         data.file,
-        storagePath
+        newStoragePath
       );
       if (!uploadResult.success) {
         return uploadResult;
       }
 
-      // Update database
+      // Update database with new banner path
       const dbResult = await MediaDatabase.updateBusinessBanner(
         data.businessId,
-        storagePath
+        newStoragePath
       );
       if (!dbResult.success) {
-        // If DB update fails, clean up the uploaded file
-        await MediaStorage.deleteFile(storagePath);
+        // If DB update fails, clean up the newly uploaded file
+        console.log('🧹 Cleaning up newly uploaded banner due to DB failure');
+        await MediaStorage.deleteFile(newStoragePath);
         return {
           success: false,
           error: dbResult.error,
@@ -115,7 +153,7 @@ export class MediaService {
       console.log('✅ Banner upload completed successfully');
       return {
         success: true,
-        storagePath,
+        storagePath: newStoragePath,
         publicUrl: uploadResult.publicUrl,
       };
     } catch (error) {

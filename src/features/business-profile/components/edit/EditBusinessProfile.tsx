@@ -134,27 +134,33 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     setSelectedFiles(files);
   };
 
-  const handleCoverImageChange = (file: File) => {
+  const handleCoverImageChange = (file: File, publicUrl?: string, storagePath?: string) => {
     console.log('📸 Cover image selected:', file.name);
-    // TODO: Implement cover image upload to Supabase storage
-    // For now, create a preview URL
-    const previewUrl = URL.createObjectURL(file);
-    // Update form data with new cover image URL
+    
+    // If we have a public URL from successful upload, use that
+    // Otherwise, create a preview URL for immediate display
+    const bannerUrl = publicUrl || URL.createObjectURL(file);
+    
+    // Update form data with new cover image URL and storage path
     setFormData(prev => ({
       ...prev,
-      cover_image_url: previewUrl,
+      cover_image_url: bannerUrl,
+      banner_path: storagePath || prev.banner_path,
     }));
   };
 
-  const handleLogoImageChange = (file: File) => {
+  const handleLogoImageChange = (file: File, publicUrl?: string, storagePath?: string) => {
     console.log('📸 Logo image selected:', file.name);
-    // TODO: Implement logo image upload to Supabase storage
-    // For now, create a preview URL
-    const previewUrl = URL.createObjectURL(file);
-    // Update form data with new logo URL
+    
+    // If we have a public URL from successful upload, use that
+    // Otherwise, create a preview URL for immediate display
+    const logoUrl = publicUrl || URL.createObjectURL(file);
+    
+    // Update form data with new logo URL and storage path
     setFormData(prev => ({
       ...prev,
-      logo_url: previewUrl,
+      logo_url: logoUrl,
+      logo_path: storagePath || prev.logo_path,
     }));
   };
 
@@ -304,14 +310,22 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
 
       {/* Cover Banner */}
       <BannerSection
-        businessProfile={businessProfile}
+        businessProfile={{
+          ...businessProfile,
+          cover_image_url: formData.cover_image_url || businessProfile.cover_image_url,
+          banner_path: formData.banner_path || businessProfile.banner_path,
+        }}
         isLoading={isLoading}
         onCoverImageChange={handleCoverImageChange}
       />
 
       {/* Profile Image */}
       <ProfileImageSection
-        businessProfile={businessProfile}
+        businessProfile={{
+          ...businessProfile,
+          logo_url: formData.logo_url || businessProfile.logo_url,
+          logo_path: formData.logo_path || businessProfile.logo_path,
+        }}
         isLoading={isLoading}
         onLogoImageChange={handleLogoImageChange}
       />
