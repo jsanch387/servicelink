@@ -39,15 +39,15 @@ export const FeaturesSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Content */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight tracking-tighter">
             Everything You Need for
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
               Your Service Business
             </span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Stop paying for expensive websites you don't need. Get a professional online presence 
-            that's better than Linktree and designed specifically for service businesses.
+            that's designed specifically for service businesses.
           </p>
         </div>
 
@@ -63,10 +63,10 @@ export const FeaturesSection: React.FC = () => {
                   {feature.icon}
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-4">
+              <h3 className="text-xl font-bold text-white mb-4">
                 {feature.title}
               </h3>
-              <p className="text-gray-300 leading-relaxed text-sm">
+              <p className="text-gray-400 leading-relaxed text-sm">
                 {feature.description}
               </p>
             </div>

@@ -21,10 +21,13 @@ export const WaitlistSection: React.FC = () => {
     <section id="waitlist" className="py-24 bg-neutral-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Header */}
-        <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 leading-tight">
-          Join the Waitlist to Get Started
+        <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight tracking-tighter">
+          Join the Waitlist to
+          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
+            Get Started
+          </span>
         </h2>
-        <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-12">
+        <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
           Secure your spot and get a professional business profile. No credit card, no hidden fees.
         </p>
 
@@ -46,7 +49,7 @@ export const WaitlistSection: React.FC = () => {
               <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                 <CheckIcon className="h-5 w-5 text-white" />
               </div>
-              <p className="text-gray-300 font-medium text-sm text-left">{benefit}</p>
+              <p className="text-gray-400 font-semibold text-sm text-left">{benefit}</p>
             </div>
           ))}
         </div>
@@ -56,10 +59,10 @@ export const WaitlistSection: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 mb-2">
+                <div className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600 mb-2">
                   {stat.number}
                 </div>
-                <div className="text-sm text-gray-400 font-medium">{stat.label}</div>
+                <div className="text-sm text-gray-400 font-semibold">{stat.label}</div>
               </div>
             ))}
           </div>
