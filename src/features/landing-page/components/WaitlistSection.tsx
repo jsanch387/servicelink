@@ -7,7 +7,7 @@ const benefits = [
   'No credit card required',
   'Get early access to new features',
   'Exclusive launch discounts',
-  'Priority customer support'
+  'Priority customer support',
 ];
 
 const stats = [
@@ -28,12 +28,13 @@ export const WaitlistSection: React.FC = () => {
           </span>
         </h2>
         <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-          Secure your spot and get a professional business profile. No credit card, no hidden fees.
+          Secure your spot and get a professional business profile. No credit
+          card, no hidden fees.
         </p>
 
         {/* Call to Action */}
-        <Button 
-          href={ROUTES.WAITLIST_PAGE} 
+        <Button
+          href={ROUTES.WAITLIST_PAGE}
           variant="primary"
           size="lg"
           className="mb-12"
@@ -45,11 +46,16 @@ export const WaitlistSection: React.FC = () => {
         {/* Benefits and Social Proof */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {benefits.map((benefit, index) => (
-            <div key={index} className="bg-neutral-800 rounded-xl p-4 flex items-center space-x-3 border border-neutral-700">
+            <div
+              key={index}
+              className="bg-neutral-800 rounded-xl p-4 flex items-center space-x-3 border border-neutral-700"
+            >
               <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                 <CheckIcon className="h-5 w-5 text-white" />
               </div>
-              <p className="text-gray-400 font-semibold text-sm text-left">{benefit}</p>
+              <p className="text-gray-400 font-semibold text-sm text-left">
+                {benefit}
+              </p>
             </div>
           ))}
         </div>
@@ -62,7 +68,9 @@ export const WaitlistSection: React.FC = () => {
                 <div className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600 mb-2">
                   {stat.number}
                 </div>
-                <div className="text-sm text-gray-400 font-semibold">{stat.label}</div>
+                <div className="text-sm text-gray-400 font-semibold">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>

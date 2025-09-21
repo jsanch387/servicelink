@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  LinkIcon,
-  ClipboardDocumentIcon,
-  ShareIcon,
-  EyeIcon,
-} from '@heroicons/react/24/outline';
+import { Card, IconButton } from '@/components/shared';
 import { useAuth } from '@/features/auth';
-import { Card, Button, IconButton } from '@/components/shared';
+import {
+  ClipboardDocumentIcon,
+  LinkIcon,
+  ShareIcon,
+} from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
+// import { Button } from '@/components/shared'; // Will be used later
 import { Input } from '@/components/shared';
 import type { ShareableLinkData } from '../types/dashboard';
 

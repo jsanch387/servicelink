@@ -1,19 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
 import { ImageUpload } from '@/components/shared';
 import { useUploadLogo } from '@/features/media/hooks';
 import {
+  PencilIcon,
   PhotoIcon,
   TrashIcon,
   XMarkIcon,
-  PencilIcon,
 } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import React, { useState } from 'react';
 
 interface ProfileImageSectionProps {
-  businessProfile: any;
+  businessProfile: Record<string, unknown>;
   isLoading: boolean;
-  onLogoImageChange: (file: File, publicUrl?: string, storagePath?: string) => void;
+  onLogoImageChange: (
+    file: File,
+    publicUrl?: string,
+    storagePath?: string
+  ) => void;
 }
 
 // Modal component for editing
@@ -60,7 +65,7 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
   const { uploadLogo, isUploading, error, reset } = useUploadLogo();
 
   const openModal = () => {
-    setTempLogo(businessProfile.logo_url);
+    setTempLogo(businessProfile.logo_url as string | null);
     setIsModalOpen(true);
     reset();
   };
@@ -75,19 +80,19 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
   const handleSaveLogo = async () => {
     if (selectedFile) {
       const result = await uploadLogo({
-        businessId: businessProfile.id,
+        businessId: businessProfile.id as string,
         file: selectedFile,
-        previousPath: businessProfile.logo_path,
+        previousPath: businessProfile.logo_path as string | undefined,
       });
 
       if (result.success) {
         console.log('✅ Logo uploaded successfully:', result);
-        
+
         // Update the temp logo preview with the new uploaded image URL
         if (result.publicUrl) {
           setTempLogo(result.publicUrl);
         }
-        
+
         // Notify parent component of the change with the new public URL and storage path
         onLogoImageChange(selectedFile, result.publicUrl, result.storagePath);
         closeModal();
@@ -122,10 +127,13 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
           className="relative w-24 h-24 flex-shrink-0 group cursor-pointer"
         >
           <div className="w-full h-full bg-neutral-700 rounded-full overflow-hidden flex items-center justify-center transition-colors hover:bg-neutral-600">
-            {businessProfile.logo_url && businessProfile.logo_url.trim() ? (
-              <img
-                src={businessProfile.logo_url}
+            {businessProfile.logo_url &&
+            (businessProfile.logo_url as string).trim() ? (
+              <Image
+                src={businessProfile.logo_url as string}
                 alt="Logo"
+                width={120}
+                height={120}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
@@ -153,9 +161,11 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
           </p>
           <div className="w-24 h-24 rounded-full bg-neutral-700 overflow-hidden mx-auto relative border border-neutral-600">
             {tempLogo && tempLogo.trim() ? (
-              <img
+              <Image
                 src={tempLogo}
                 alt="Preview"
+                width={120}
+                height={120}
                 className="w-full h-full object-cover"
               />
             ) : (

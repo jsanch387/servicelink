@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import { Button } from '../../../components/shared/Button';
+import Image from 'next/image';
+import React, { useState } from 'react';
+// import { Button } from '../../../components/shared/Button'; // Will be used later
 import { ROUTES } from '@/constants/routes';
-import { LanguageSelector } from './LanguageSelector';
-import { useAuth } from '@/features/auth/hooks/useAuth';
+// import { LanguageSelector } from './LanguageSelector'; // Will be used later
+// import { useAuth } from '@/features/auth/hooks/useAuth'; // Will be used later
 
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  // const { isAuthenticated, user } = useAuth(); // Will be used later
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -26,9 +27,11 @@ export const Navigation: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <img
+              <Image
                 src="/service-link-logo.png"
                 alt="ServiceLink Logo"
+                width={80}
+                height={80}
                 className="h-20 w-20 object-contain"
               />
               <h1 className="text-xl font-bold text-white">ServiceLink</h1>
@@ -66,7 +69,7 @@ export const Navigation: React.FC = () => {
           {/* Desktop Auth Buttons - COMMENTED OUT FOR PRE-LAUNCH */}
           <div className="hidden md:flex items-center space-x-4">
             {/* <LanguageSelector /> */}
-            {/* 
+            {/*
             {isAuthenticated ? (
               <Button href={ROUTES.DASHBOARD.MAIN} variant="primary" size="sm">
                 Dashboard
@@ -133,9 +136,9 @@ export const Navigation: React.FC = () => {
               >
                 About
               </a>
-              
+
               {/* Mobile Auth Buttons - COMMENTED OUT FOR PRE-LAUNCH */}
-              {/* 
+              {/*
               <div className="pt-4 space-y-2">
                 {isAuthenticated ? (
                   <Button

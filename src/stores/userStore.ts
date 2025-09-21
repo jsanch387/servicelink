@@ -17,15 +17,15 @@ interface UserState {
 
 interface UserActions {
   // Auth actions
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  login: (_email: string, _password: string) => Promise<void>;
+  signup: (_email: string, _password: string, _name: string) => Promise<void>;
   logout: () => void;
 
   // Onboarding actions
-  completeOnboarding: (profileId: string) => void;
+  completeOnboarding: (_profileId: string) => void;
 
   // Utility
-  setUser: (user: User) => void;
+  setUser: (_user: User) => void;
 }
 
 const mockUsers = [

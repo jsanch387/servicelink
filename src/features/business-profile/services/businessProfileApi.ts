@@ -5,14 +5,14 @@
  * Clean, modular API operations for business profile feature.
  */
 
-import { createClient } from '@/libs/supabase';
 import { MediaService } from '@/features/media';
+import { createClient } from '@/libs/supabase';
 import {
   BusinessProfileResponse,
-  CompleteBusinessProfile,
   BusinessProfileUpdate,
-  ServiceResponse,
+  CompleteBusinessProfile,
   ImageResponse,
+  ServiceResponse,
 } from '../types/businessProfile';
 
 export class BusinessProfileApi {
@@ -25,7 +25,7 @@ export class BusinessProfileApi {
     error?: string;
   }> {
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       // Get business profile
       const { data: profile, error: profileError } = await supabase
@@ -36,9 +36,9 @@ export class BusinessProfileApi {
 
       if (profileError || !profile) {
         console.error('Error fetching business profile:', profileError);
-        return { 
-          success: false, 
-          error: profileError?.message || 'Business profile not found' 
+        return {
+          success: false,
+          error: profileError?.message || 'Business profile not found',
         };
       }
 
@@ -65,17 +65,23 @@ export class BusinessProfileApi {
       }
 
       // Add preview URLs to images
-      const imagesWithUrls = (images || []).map((img: any) => ({
-        ...img,
-        preview_url: MediaService.getPublicUrl(img.storage_path),
-      }));
+      const imagesWithUrls = (images || []).map(
+        (img: Record<string, unknown>) => ({
+          ...img,
+          preview_url: MediaService.getPublicUrl(img.storage_path as string),
+        })
+      );
 
       // Add logo and banner URLs if they exist
-      const logoUrl = profile.logo_path ? MediaService.getPublicUrl(profile.logo_path) : null;
-      const bannerUrl = profile.banner_path ? MediaService.getPublicUrl(profile.banner_path) : null;
+      const logoUrl = (profile as any).logo_path
+        ? MediaService.getPublicUrl((profile as any).logo_path)
+        : null;
+      const bannerUrl = (profile as any).banner_path
+        ? MediaService.getPublicUrl((profile as any).banner_path)
+        : null;
 
       const completeProfile: CompleteBusinessProfile = {
-        ...profile,
+        ...(profile as any),
         services: services || [],
         images: imagesWithUrls || [],
         logo_url: logoUrl,
@@ -85,9 +91,9 @@ export class BusinessProfileApi {
       return { success: true, data: completeProfile };
     } catch (error) {
       console.error('Error in getCompleteBusinessProfile:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -100,10 +106,9 @@ export class BusinessProfileApi {
     updates: BusinessProfileUpdate
   ): Promise<BusinessProfileResponse> {
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
-      const { data, error } = await supabase
-        .from('business_profiles')
+      const { data, error } = await (supabase.from('business_profiles') as any)
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
@@ -120,9 +125,9 @@ export class BusinessProfileApi {
       return { success: true, data };
     } catch (error) {
       console.error('Error in updateBusinessProfile:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -142,27 +147,27 @@ export class BusinessProfileApi {
     }>
   ): Promise<ServiceResponse> {
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       // Validate all services before making any changes
       for (const service of services) {
         if (!service.name || service.name.trim() === '') {
-          return { 
-            success: false, 
-            error: 'Service name is required' 
+          return {
+            success: false,
+            error: 'Service name is required',
           };
         }
         if (service.price_cents === null || service.price_cents === undefined) {
-          return { 
-            success: false, 
-            error: 'Service price is required' 
+          return {
+            success: false,
+            error: 'Service price is required',
           };
         }
       }
 
       // Simple approach: Delete all existing services and insert all current services
       // This ensures consistency and avoids complex update logic
-      
+
       // First, delete all existing services for this business
       const { error: deleteError } = await supabase
         .from('business_services')
@@ -185,9 +190,9 @@ export class BusinessProfileApi {
           is_active: service.is_active,
         }));
 
-        const { error: insertError } = await supabase
-          .from('business_services')
-          .insert(servicesToInsert);
+        const { error: insertError } = await (
+          supabase.from('business_services') as any
+        ).insert(servicesToInsert);
 
         if (insertError) {
           console.error('Error inserting services:', insertError);
@@ -198,9 +203,9 @@ export class BusinessProfileApi {
       return { success: true };
     } catch (error) {
       console.error('Error in updateServices:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -217,7 +222,7 @@ export class BusinessProfileApi {
     }>
   ): Promise<ImageResponse> {
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       // Get current images from database
       const { data: currentImages, error: currentError } = await supabase
@@ -230,28 +235,33 @@ export class BusinessProfileApi {
         return { success: false, error: currentError.message };
       }
 
-      const currentPaths = (currentImages || []).map((img: any) => img.storage_path);
+      const currentPaths = (currentImages || []).map(
+        (img: Record<string, unknown>) => img.storage_path
+      );
       const newPaths = images.map(img => img.storage_path);
       const pathsToDelete = currentPaths.filter(
-        (path: any) => !newPaths.includes(path)
-      );
+        (path: unknown) => typeof path === 'string' && !newPaths.includes(path)
+      ) as string[];
 
       // Delete unused images from storage
       if (pathsToDelete.length > 0) {
         try {
           const deleteResult = await MediaService.deleteImages(pathsToDelete);
-          
+
           if (!deleteResult.success) {
             console.error('Failed to delete images:', deleteResult.error);
             return { success: false, error: deleteResult.error };
           }
-          
+
           console.log('Successfully deleted unused images from storage');
         } catch (storageError) {
           console.error('Exception during storage deletion:', storageError);
-          return { 
-            success: false, 
-            error: storageError instanceof Error ? storageError.message : 'Storage deletion failed' 
+          return {
+            success: false,
+            error:
+              storageError instanceof Error
+                ? storageError.message
+                : 'Storage deletion failed',
           };
         }
       }
@@ -272,21 +282,26 @@ export class BusinessProfileApi {
 
         const { error: insertError } = await supabase
           .from('business_images')
-          .insert(imagesToInsert);
+          .insert(imagesToInsert as any);
 
         if (insertError) {
           console.error('Error inserting images:', insertError);
-          
+
           // If database insert fails, clean up the uploaded files from storage
           const newImagePaths = images.map(img => img.storage_path);
           try {
-            console.log('🧹 Cleaning up uploaded files due to database insert failure...');
+            console.log(
+              '🧹 Cleaning up uploaded files due to database insert failure...'
+            );
             await MediaService.deleteImages(newImagePaths);
             console.log('✅ Successfully cleaned up uploaded files');
           } catch (cleanupError) {
-            console.error('❌ Failed to clean up uploaded files:', cleanupError);
+            console.error(
+              '❌ Failed to clean up uploaded files:',
+              cleanupError
+            );
           }
-          
+
           return { success: false, error: insertError.message };
         }
       }
@@ -294,9 +309,9 @@ export class BusinessProfileApi {
       return { success: true };
     } catch (error) {
       console.error('Error in updateImages:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -321,7 +336,7 @@ export class BusinessProfileApi {
     }
   ): Promise<BusinessProfileResponse> {
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       // Generate unique public_id
       const publicId = `business_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -332,7 +347,7 @@ export class BusinessProfileApi {
           ...profileData,
           profile_id: profileId,
           public_id: publicId,
-        })
+        } as any)
         .select()
         .single();
 
@@ -344,9 +359,9 @@ export class BusinessProfileApi {
       return { success: true, data };
     } catch (error) {
       console.error('Error in createBusinessProfile:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }

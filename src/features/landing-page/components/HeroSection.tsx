@@ -1,6 +1,7 @@
+import { ROUTES } from '@/constants/routes';
+import Image from 'next/image';
 import React from 'react';
 import { Button } from '../../../components/shared/Button';
-import { ROUTES } from '@/constants/routes';
 
 // Custom CSS for animations
 const styleSheet = `
@@ -89,7 +90,9 @@ export const HeroSection: React.FC = () => {
               </h1>
 
               <p className="text-lg sm:text-xl text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed animate-fadeInUp animation-delay-200">
-                Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link.
+                Stop wasting money on expensive websites. Get a stunning
+                business profile that lets customers call you directly from one
+                beautiful link.
               </p>
 
               {/* Call-to-Action Buttons */}
@@ -118,19 +121,21 @@ export const HeroSection: React.FC = () => {
             {/* Image with Subtle Orange Glow */}
             <div className="relative flex justify-center items-center w-full max-w-lg lg:max-w-none lg:w-1/2 animate-fadeInUp animation-delay-600">
               <div className="relative group transform-gpu">
-  <img
-   src="/service link mock 3.png"
-   alt="ServiceLink Business Profile Preview"
-   className="
-     w-80 h-auto lg:w-[480px] 
-     block transform-gpu transition-all duration-500 
-     group-hover:scale-105 
+                <Image
+                  src="/service link mock 3.png"
+                  alt="ServiceLink Business Profile Preview"
+                  width={480}
+                  height={853}
+                  priority
+                  className="
+     w-80 h-auto lg:w-[480px]
+     block transform-gpu transition-all duration-500
+     group-hover:scale-105
      relative z-10
      drop-shadow-xl
      animate-glow-pulse
    "
- />
-
+                />
               </div>
             </div>
           </div>

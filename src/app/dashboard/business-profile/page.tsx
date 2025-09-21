@@ -64,11 +64,12 @@ export default async function BusinessProfilePage() {
   console.log('✅ Onboarding completed, fetching business profile');
 
   // Get business profile by profile_id
-  const { data: businessProfileData, error: businessProfileError } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('profile_id', userProfile.user_id)
-    .single();
+  const { data: businessProfileData, error: businessProfileError } =
+    await supabase
+      .from('business_profiles')
+      .select('id')
+      .eq('profile_id', userProfile.user_id)
+      .single();
 
   if (businessProfileError || !businessProfileData) {
     console.error('❌ No business profile found:', businessProfileError);

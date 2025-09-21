@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import React from 'react';
 
 // Inline SVG fallback (always renders, no network needed)
@@ -18,32 +19,41 @@ const DATA_SVG = (w = 600, h = 400, label = 'Image') =>
 interface ImageWithFallbackProps {
   src: string;
   alt: string;
+  width: number;
+  height: number;
   className?: string;
   fallbackLabel?: string;
   fallbackSize?: { w: number; h: number };
+  priority?: boolean;
 }
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
   alt,
+  width,
+  height,
   className,
   fallbackLabel,
   fallbackSize = { w: 600, h: 400 },
+  priority = false,
 }) => {
+  const [imageSrc, setImageSrc] = React.useState(src);
+
+  const handleError = () => {
+    setImageSrc(
+      DATA_SVG(fallbackSize.w, fallbackSize.h, fallbackLabel || alt || 'Image')
+    );
+  };
+
   return (
-    <img
-      src={src}
+    <Image
+      src={imageSrc}
       alt={alt}
+      width={width}
+      height={height}
       className={className}
-      onError={e => {
-        const target = e.target as HTMLImageElement;
-        target.onerror = null;
-        target.src = DATA_SVG(
-          fallbackSize.w,
-          fallbackSize.h,
-          fallbackLabel || alt || 'Image'
-        );
-      }}
+      priority={priority}
+      onError={handleError}
     />
   );
 };

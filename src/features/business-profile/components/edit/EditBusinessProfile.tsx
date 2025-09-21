@@ -1,26 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/shared';
+import { useUploadPortfolio } from '@/features/media/hooks';
+import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
-import { BusinessInfoSection } from './sections/BusinessInfoSection';
-import { ContactSection } from './sections/ContactSection';
-import { ServicesSection } from './sections/ServicesSection';
-import { BannerSection } from './sections/BannerSection';
-import { ProfileImageSection } from './sections/ProfileImageSection';
-import { PortfolioSection } from './sections/PortfolioSection';
 import {
+  cleanupPreviewUrls,
   EditingFormData,
-  ServiceFormData,
   ImageFormData,
   saveBusinessProfile,
-  cleanupPreviewUrls,
+  ServiceFormData,
 } from '../../utils/editing/editingHelpers';
-import { useUploadPortfolio } from '@/features/media/hooks';
+import { BannerSection } from './sections/BannerSection';
+import { BusinessInfoSection } from './sections/BusinessInfoSection';
+import { ContactSection } from './sections/ContactSection';
+import { PortfolioSection } from './sections/PortfolioSection';
+import { ProfileImageSection } from './sections/ProfileImageSection';
+import { ServicesSection } from './sections/ServicesSection';
 
 interface EditBusinessProfileProps {
   businessProfile: CompleteBusinessProfile;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
 }
@@ -68,7 +68,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const { uploadPortfolio, isUploading: isUploadingPortfolio } =
     useUploadPortfolio();
-  
+
   // Combined loading state
   const isAnyLoading = isLoading || isSaving || isUploadingPortfolio;
 
@@ -134,13 +134,17 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     setSelectedFiles(files);
   };
 
-  const handleCoverImageChange = (file: File, publicUrl?: string, storagePath?: string) => {
+  const handleCoverImageChange = (
+    file: File,
+    publicUrl?: string,
+    storagePath?: string
+  ) => {
     console.log('📸 Cover image selected:', file.name);
-    
+
     // If we have a public URL from successful upload, use that
     // Otherwise, create a preview URL for immediate display
     const bannerUrl = publicUrl || URL.createObjectURL(file);
-    
+
     // Update form data with new cover image URL and storage path
     setFormData(prev => ({
       ...prev,
@@ -149,13 +153,17 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     }));
   };
 
-  const handleLogoImageChange = (file: File, publicUrl?: string, storagePath?: string) => {
+  const handleLogoImageChange = (
+    file: File,
+    publicUrl?: string,
+    storagePath?: string
+  ) => {
     console.log('📸 Logo image selected:', file.name);
-    
+
     // If we have a public URL from successful upload, use that
     // Otherwise, create a preview URL for immediate display
     const logoUrl = publicUrl || URL.createObjectURL(file);
-    
+
     // Update form data with new logo URL and storage path
     setFormData(prev => ({
       ...prev,
@@ -265,12 +273,12 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       if (result.success) {
         console.log('✅ STEP 3 COMPLETE: Business profile saved successfully');
         console.log('🎉 SAVE PROCESS COMPLETE');
-        
+
         // Show success state briefly, then switch to preview mode
         setErrors([]);
         // The parent component will handle switching to preview mode
         // by calling onSave with the updated data
-        await onSave(finalFormData);
+        await onSave(finalFormData as unknown as Record<string, unknown>);
       } else {
         console.error('❌ Failed to save business profile:', result.error);
         setErrors([result.error || 'Failed to save business profile']);
@@ -303,7 +311,11 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
             disabled={isAnyLoading}
             loading={isSaving}
           >
-            {isSaving ? 'Saving...' : isUploadingPortfolio ? 'Uploading Images...' : 'Save All Changes'}
+            {isSaving
+              ? 'Saving...'
+              : isUploadingPortfolio
+                ? 'Uploading Images...'
+                : 'Save All Changes'}
           </Button>
         </div>
       </div>
@@ -312,7 +324,8 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       <BannerSection
         businessProfile={{
           ...businessProfile,
-          cover_image_url: formData.cover_image_url || businessProfile.cover_image_url,
+          cover_image_url:
+            formData.cover_image_url || businessProfile.cover_image_url,
           banner_path: formData.banner_path || businessProfile.banner_path,
         }}
         isLoading={isLoading}

@@ -6,12 +6,11 @@
  */
 
 import { createClient } from '@/libs/supabase';
-import { MEDIA_CONFIG } from './media.types';
 import { generateStoragePath } from './media.paths';
-import { MediaType, UploadResult } from './media.types';
+import { MEDIA_CONFIG, MediaType, UploadResult } from './media.types';
 
 export class MediaStorage {
-  private static supabase = createClient() as any;
+  private static supabase = createClient();
 
   /**
    * Uploads a file to Supabase Storage
@@ -19,7 +18,7 @@ export class MediaStorage {
   static async uploadFile(
     file: File,
     storagePath: string,
-    onProgress?: (progress: number) => void
+    onProgress?: (_progress: number) => void
   ): Promise<UploadResult> {
     try {
       console.log('📤 Uploading file to storage:', {
@@ -73,7 +72,10 @@ export class MediaStorage {
   /**
    * Gets public URL for a storage path with cache-busting
    */
-  static getPublicUrl(storagePath: string, useCacheBuster: boolean = true): string {
+  static getPublicUrl(
+    storagePath: string,
+    useCacheBuster: boolean = true
+  ): string {
     const { data } = this.supabase.storage
       .from(MEDIA_CONFIG.bucketName)
       .getPublicUrl(storagePath);
@@ -82,7 +84,7 @@ export class MediaStorage {
     if (useCacheBuster) {
       return `${data.publicUrl}?v=${Date.now()}`;
     }
-    
+
     return data.publicUrl;
   }
 
@@ -182,7 +184,7 @@ export class MediaStorage {
     files: File[],
     businessId: string,
     mediaType: MediaType,
-    onProgress?: (fileIndex: number, progress: number) => void
+    onProgress?: (_fileIndex: number, _progress: number) => void
   ): Promise<UploadResult[]> {
     const results: UploadResult[] = [];
 

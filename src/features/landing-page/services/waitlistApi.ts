@@ -23,24 +23,27 @@ export class WaitlistApi {
         return {
           success: false,
           message: 'Please enter a valid email address',
-          error: 'Invalid email format'
+          error: 'Invalid email format',
         };
       }
 
       // Try to insert directly - let the database handle duplicates
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/waitlist`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-          'Prefer': 'return=representation',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ 
-          email: email.toLowerCase() 
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/waitlist`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+            Prefer: 'return=representation',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.toLowerCase(),
+          }),
+        }
+      );
 
       const result = await response.json();
 
@@ -50,31 +53,30 @@ export class WaitlistApi {
           return {
             success: false,
             message: 'This email is already on our waitlist!',
-            error: 'Email already exists'
+            error: 'Email already exists',
           };
         }
-        
+
         return {
           success: false,
-          message: result.message || 'Failed to join waitlist. Please try again.',
-          error: result.error || 'Request failed'
+          message:
+            result.message || 'Failed to join waitlist. Please try again.',
+          error: result.error || 'Request failed',
         };
       }
 
       return {
         success: true,
         message: 'Successfully joined the waitlist!',
-        data: result[0] // Supabase returns an array
+        data: result[0], // Supabase returns an array
       };
-
     } catch (error) {
       console.error('Unexpected error in addToWaitlist:', error);
       return {
         success: false,
         message: 'Something went wrong. Please try again.',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
-
 }

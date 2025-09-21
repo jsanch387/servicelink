@@ -9,8 +9,9 @@ export const Footer: React.FC = () => {
           <div className="mb-8">
             <h3 className="text-2xl font-bold text-white mb-4">ServiceLink</h3>
             <p className="text-gray-400 max-w-md mx-auto">
-              Better than Linktree, built for service businesses. Create a professional profile, 
-              showcase your work, and let customers call you directly - all from one beautiful link.
+              Better than Linktree, built for service businesses. Create a
+              professional profile, showcase your work, and let customers call
+              you directly - all from one beautiful link.
             </p>
           </div>
 

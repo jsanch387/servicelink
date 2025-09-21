@@ -1,17 +1,17 @@
 'use client';
 
-import React from 'react';
 import { TagIcon } from '@heroicons/react/24/solid';
-import { SectionTitle } from '@/components/shared/SectionTitle';
-import { ServiceCard } from './ServiceCard';
-import { EmptyState } from './EmptyState';
+import React from 'react';
+// import { SectionTitle } from '@/components/shared/SectionTitle'; // Will be used later
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
-import { formatPrice } from '../utils/businessProfileHelpers';
+import { EmptyState } from './EmptyState';
+import { ServiceCard } from './ServiceCard';
+// import { formatPrice } from '../utils/businessProfileHelpers'; // Will be used later
 
 interface ServicesListProps {
   businessProfile: CompleteBusinessProfile;
   editMode: EditMode;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
 }
 

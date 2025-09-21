@@ -32,9 +32,9 @@ Edit `src/styles/fonts.css` and update the CSS variables:
 
 ```css
 :root {
-  --font-primary: "Your Font Name", fallback, sans-serif;
-  --font-mono: "Your Mono Font", monospace;
-  --font-display: "Your Display Font", sans-serif;
+  --font-primary: 'Your Font Name', fallback, sans-serif;
+  --font-mono: 'Your Mono Font', monospace;
+  --font-display: 'Your Display Font', sans-serif;
 }
 ```
 
@@ -42,14 +42,16 @@ Edit `src/styles/fonts.css` and update the CSS variables:
 
 1. Add font files to `public/fonts/`
 2. Import in `src/app/layout.tsx`:
+
    ```tsx
-   import localFont from 'next/font/local'
-   
+   import localFont from 'next/font/local';
+
    const customFont = localFont({
      src: './fonts/YourFont.woff2',
      variable: '--font-custom',
-   })
+   });
    ```
+
 3. Update CSS variables in `fonts.css`
 
 ### Option 3: Use Google Fonts
@@ -59,11 +61,13 @@ Edit `src/styles/fonts.css` and update the CSS variables:
    npm install @next/font
    ```
 2. Import in `src/app/layout.tsx`:
+
    ```tsx
-   import { Inter } from '@next/font/google'
-   
-   const inter = Inter({ subsets: ['latin'] })
+   import { Inter } from '@next/font/google';
+
+   const inter = Inter({ subsets: ['latin'] });
    ```
+
 3. Update CSS variables
 
 ## Usage in Components
@@ -92,9 +96,7 @@ const primaryFont = getFontFamily('primary')
 ### Inline Styles
 
 ```tsx
-<div style={{ fontFamily: fonts.primary }}>
-  Content with custom font
-</div>
+<div style={{ fontFamily: fonts.primary }}>Content with custom font</div>
 ```
 
 ## Font Stack Explanation
@@ -129,6 +131,7 @@ const primaryFont = getFontFamily('primary')
 ## Accessibility
 
 The chosen font stack is optimized for:
+
 - High contrast ratios
 - Clear character distinction
 - Readability at small sizes

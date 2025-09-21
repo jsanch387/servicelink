@@ -1,9 +1,9 @@
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-import { redirect } from 'next/navigation';
 import { DashboardContent } from '@/features/dashboard/components/DashboardContent';
 import { OnboardingFlow } from '@/features/onboarding/components/OnboardingFlow';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 /**
  * Dashboard Page with Server-Side Rendering
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   const {
     status,
     currentStep,
-    userProfile,
+    // userProfile, // Will be used later
     businessProfile,
     services,
     images,

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ImageUpload } from '@/components/shared';
-import { ImageWithFallback } from '@/components/shared';
-import { ImageFormData } from '@/features/business-profile/utils/editing/editingHelpers';
+import { ImageUpload, ImageWithFallback } from '@/components/shared';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
+import { ImageFormData } from '@/features/business-profile/utils/editing/editingHelpers';
+import React, { useState } from 'react';
 
 interface PortfolioSectionProps {
   images: ImageFormData[];
@@ -100,6 +99,8 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                       : '')
                   }
                   alt={`Portfolio image ${index + 1}`}
+                  width={200}
+                  height={200}
                   className="w-full h-full object-cover"
                 />
               </div>

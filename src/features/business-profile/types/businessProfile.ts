@@ -94,7 +94,7 @@ export interface BusinessProfileViewProps {
 
 export interface BusinessProfileEditProps {
   businessProfile: CompleteBusinessProfile;
-  onSave: (data: BusinessProfileFormData) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
 }

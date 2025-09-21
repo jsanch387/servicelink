@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { OnboardingFlow } from '@/features/onboarding/components/OnboardingFlow';
+// import { OnboardingFlow } from '@/features/onboarding/components/OnboardingFlow'; // Will be used later
+import { EditProfileCard } from './EditProfileCard';
 import { OnboardingCompleteCard } from './OnboardingCompleteCard';
 import { ShareProfileCard } from './ShareProfileCard';
-import { EditProfileCard } from './EditProfileCard';
-import { Card } from '@/components/shared';
+// import { Card } from '@/components/shared'; // Will be used later
 interface DashboardContentProps {
   businessProfile: {
     id: string;

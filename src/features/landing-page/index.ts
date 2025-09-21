@@ -10,7 +10,11 @@ export { LanguageSelector } from './components/LanguageSelector';
 // Waitlist Functionality
 export { WaitlistApi } from './services/waitlistApi';
 export { useWaitlist } from './hooks/useWaitlist';
-export { waitlistRateLimiter, generalRateLimiter, useRateLimit } from './utils/rateLimiter';
+export {
+  waitlistRateLimiter,
+  generalRateLimiter,
+  useRateLimit,
+} from './utils/rateLimiter';
 
 // Types
 export type { WaitlistEntry, WaitlistResponse } from './services/waitlistApi';

@@ -46,8 +46,9 @@ export const FeaturesSection: React.FC = () => {
             </span>
           </h2>
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Stop paying for expensive websites you don't need. Get a professional online presence 
-            that's designed specifically for service businesses.
+            Stop paying for expensive websites you don't need. Get a
+            professional online presence that's designed specifically for
+            service businesses.
           </p>
         </div>
 

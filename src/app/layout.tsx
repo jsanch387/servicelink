@@ -13,12 +13,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  ),
   title: {
     default: 'ServiceLink - Your Business. One Beautiful Link.',
-    template: '%s | ServiceLink'
+    template: '%s | ServiceLink',
   },
-  description: 'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link. Better than Linktree, built for service businesses.',
-  keywords: ['business profile', 'service business', 'professional profile', 'business link', 'service directory', 'small business website'],
+  description:
+    'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link. Better than Linktree, built for service businesses.',
+  keywords: [
+    'business profile',
+    'service business',
+    'professional profile',
+    'business link',
+    'service directory',
+    'small business website',
+  ],
   authors: [{ name: 'ServiceLink' }],
   creator: 'ServiceLink',
   publisher: 'ServiceLink',
@@ -39,7 +50,8 @@ export const metadata: Metadata = {
     url: 'https://servicelink.app',
     siteName: 'ServiceLink',
     title: 'ServiceLink - Your Business. One Beautiful Link.',
-    description: 'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link.',
+    description:
+      'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link.',
     images: [
       {
         url: '/og-image.jpg', // You can add this later
@@ -52,7 +64,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'ServiceLink - Your Business. One Beautiful Link.',
-    description: 'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link.',
+    description:
+      'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link.',
     images: ['/og-image.jpg'], // You can add this later
     creator: '@servicelink', // Update with your actual Twitter handle
   },
@@ -64,7 +77,6 @@ export const metadata: Metadata = {
     shortcut: '/favicon.png',
     apple: '/favicon.png',
   },
-  manifest: '/site.webmanifest', // You can add this later
 };
 
 export default function RootLayout({
@@ -75,12 +87,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="icon" href="/favicon.png" sizes="16x16" type="image/png" />
         <link rel="icon" href="/favicon.png" sizes="32x32" type="image/png" />
-        <link rel="icon" href="/favicon.png" sizes="48x48" type="image/png" />
         <link rel="shortcut icon" href="/favicon.png" />
-        <link rel="apple-touch-icon" href="/favicon.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

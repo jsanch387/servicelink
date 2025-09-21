@@ -1,18 +1,18 @@
-import React from 'react';
-import {
-  StarIcon,
-  PhoneIcon,
-  ChatBubbleLeftRightIcon,
-} from '@heroicons/react/24/solid';
-import { ImageWithFallback } from '@/components/shared/ImageWithFallback';
 import { Button } from '@/components/shared/Button';
+import { ImageWithFallback } from '@/components/shared/ImageWithFallback';
+import {
+  ChatBubbleLeftRightIcon,
+  PhoneIcon,
+  StarIcon,
+} from '@heroicons/react/24/solid';
+import React from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
-import { formatPhoneNumber } from '../utils/businessProfileHelpers';
+// import { formatPhoneNumber } from '../utils/businessProfileHelpers'; // Will be used later
 
 interface ProfileHeaderProps {
   businessProfile: CompleteBusinessProfile;
   editMode: EditMode;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -29,6 +29,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <ImageWithFallback
           src={businessProfile.cover_image_url || ''}
           alt="Business Cover Photo"
+          width={1200}
+          height={400}
           className="w-full h-full object-cover"
           fallbackLabel="COVER PHOTO"
           fallbackSize={{ w: 1200, h: 400 }}
@@ -41,6 +43,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-neutral-800 shadow-lg object-cover bg-gray-700"
           src={businessProfile.logo_url || ''}
           alt={`${businessProfile.business_name} logo`}
+          width={256}
+          height={256}
           fallbackLabel="LOGO"
           fallbackSize={{ w: 256, h: 256 }}
         />

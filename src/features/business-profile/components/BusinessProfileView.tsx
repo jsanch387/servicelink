@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
-import { ProfileHeader } from './ProfileHeader';
 import { AboutUs } from './AboutUs';
+import { ProfileHeader } from './ProfileHeader';
 import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
-import { ReviewsSection } from './ReviewsSection';
-import { EditBusinessProfile } from './edit/EditBusinessProfile';
+// import { ReviewsSection } from './ReviewsSection'; // Will be used later
 import { Button } from '@/components/shared';
-import { PencilIcon, EyeIcon } from '@heroicons/react/24/outline';
-import { BusinessProfileApi } from '../services/businessProfileApi';
+import { EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { EditBusinessProfile } from './edit/EditBusinessProfile';
+// import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
 interface BusinessProfileViewProps {
   businessProfile: CompleteBusinessProfile;
@@ -34,7 +34,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     setEditMode('view');
   };
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: Record<string, unknown>) => {
     console.log('💾 Handling save from EditBusinessProfile:', data);
     setIsLoading(true);
 
@@ -42,17 +42,24 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       // Transform the form data to match the expected structure
       const transformedData = {
         ...data,
-        services: data.services?.map((service: any) => ({
-          ...service,
-          price_cents: service.price ? parseInt(service.price) * 100 : 0,
-          // Remove the price field since we're using price_cents
-          price: undefined,
-        })) || []
+        services: Array.isArray(data.services)
+          ? data.services.map((service: Record<string, unknown>) => ({
+              ...service,
+              price_cents: service.price
+                ? parseInt(service.price as string) * 100
+                : 0,
+            }))
+          : [],
       };
 
       // Update local state with the transformed data
-      setBusinessProfile(prev => ({ ...prev, ...transformedData }));
-      
+      setBusinessProfile(prev => ({
+        ...prev,
+        ...transformedData,
+        services:
+          transformedData.services as CompleteBusinessProfile['services'],
+      }));
+
       // Switch to preview mode to show the updated profile
       setEditMode('view');
       console.log('✅ Business profile updated and switched to preview mode');

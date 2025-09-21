@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Media Database Operations
  *
@@ -8,7 +9,7 @@
 import { createClient } from '@/libs/supabase';
 
 export class MediaDatabase {
-  private static supabase = createClient() as any;
+  private static supabase = createClient();
 
   /**
    * Gets the current logo path for a business
@@ -30,13 +31,14 @@ export class MediaDatabase {
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Current logo path retrieved:', data?.logo_path);
-      return { success: true, logoPath: data?.logo_path };
+      console.log('✅ Current logo path retrieved:', (data as any)?.logo_path);
+      return { success: true, logoPath: (data as any)?.logo_path };
     } catch (error) {
       console.error('❌ Error getting current logo path:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to get logo path',
+        error:
+          error instanceof Error ? error.message : 'Failed to get logo path',
       };
     }
   }
@@ -61,13 +63,17 @@ export class MediaDatabase {
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Current banner path retrieved:', data?.banner_path);
-      return { success: true, bannerPath: data?.banner_path };
+      console.log(
+        '✅ Current banner path retrieved:',
+        (data as any)?.banner_path
+      );
+      return { success: true, bannerPath: (data as any)?.banner_path };
     } catch (error) {
       console.error('❌ Error getting current banner path:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to get banner path',
+        error:
+          error instanceof Error ? error.message : 'Failed to get banner path',
       };
     }
   }
@@ -82,7 +88,7 @@ export class MediaDatabase {
     try {
       console.log('🖼️ Updating business logo:', { businessId, logoPath });
 
-      const { error } = await this.supabase
+      const { error } = await (this.supabase as any)
         .from('business_profiles')
         .update({
           logo_path: logoPath,
@@ -116,7 +122,7 @@ export class MediaDatabase {
     try {
       console.log('🖼️ Updating business banner:', { businessId, bannerPath });
 
-      const { error } = await this.supabase
+      const { error } = await (this.supabase as any)
         .from('business_profiles')
         .update({
           banner_path: bannerPath,
@@ -179,7 +185,7 @@ export class MediaDatabase {
           position: image.position,
         }));
 
-        const { error: insertError } = await this.supabase
+        const { error: insertError } = await (this.supabase as any)
           .from('business_images')
           .insert(imagesToInsert);
 
@@ -206,9 +212,11 @@ export class MediaDatabase {
   /**
    * Gets portfolio images for a business
    */
-  static async getPortfolioImages(
-    businessId: string
-  ): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  static async getPortfolioImages(businessId: string): Promise<{
+    success: boolean;
+    data?: Record<string, unknown>[];
+    error?: string;
+  }> {
     try {
       console.log('📸 Getting portfolio images for business:', businessId);
 
@@ -223,7 +231,7 @@ export class MediaDatabase {
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Portfolio images retrieved:', data?.length || 0);
+      console.log('✅ Portfolio images retrieved:', (data as any)?.length || 0);
       return { success: true, data: data || [] };
     } catch (error) {
       console.error('❌ Error getting portfolio images:', error);

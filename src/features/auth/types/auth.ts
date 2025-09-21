@@ -16,22 +16,22 @@ export interface AuthState {
 
 export interface AuthActions {
   // Authentication
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signIn: (_email: string, _password: string) => Promise<{ error?: string }>;
   signUp: (
-    email: string,
-    password: string,
-    name?: string
+    _email: string,
+    _password: string,
+    _name?: string
   ) => Promise<{ error?: string }>;
   signOut: () => Promise<{ success?: boolean; error?: string }>;
 
   // User management
-  setUser: (user: AuthUser | null) => void;
-  setSupabaseUser: (user: User | null) => void;
-  updateUser: (updates: Partial<AuthUser>) => Promise<void>;
+  setUser: (_user: AuthUser | null) => void;
+  setSupabaseUser: (_user: User | null) => void;
+  updateUser: (_updates: Partial<AuthUser>) => Promise<void>;
 
   // State management
-  setLoading: (loading: boolean) => void;
-  setInitialized: (initialized: boolean) => void;
+  setLoading: (_loading: boolean) => void;
+  setInitialized: (_initialized: boolean) => void;
   initialize: () => Promise<void>;
 
   // Utilities

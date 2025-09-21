@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
 import { PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import React, { useRef, useState } from 'react';
 
 interface ImageUploadProps {
   onImageSelect: (file: File) => void;
@@ -134,9 +135,11 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
 }) => {
   return (
     <div className={`relative group ${className}`}>
-      <img
+      <Image
         src={src}
         alt={alt}
+        width={256}
+        height={128}
         className="w-full h-32 object-cover rounded-lg border border-neutral-700"
       />
 

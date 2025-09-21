@@ -1,16 +1,16 @@
 'use client';
 
-import React from 'react';
-import { CameraIcon } from '@heroicons/react/24/solid';
 import { ImageWithFallback } from '@/components/shared/ImageWithFallback';
-import { SectionTitle } from '@/components/shared/SectionTitle';
-import { EmptyState } from './EmptyState';
+import { CameraIcon } from '@heroicons/react/24/solid';
+import React from 'react';
+// import { SectionTitle } from '@/components/shared/SectionTitle'; // Will be used later
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import { EmptyState } from './EmptyState';
 
 interface WorkShowcaseProps {
   businessProfile: CompleteBusinessProfile;
   editMode: EditMode;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -56,6 +56,8 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
                     `https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/${image.storage_path}`
                   }
                   alt="Portfolio image"
+                  width={900}
+                  height={1400}
                   fallbackLabel="WORK"
                   fallbackSize={{ w: 900, h: 1400 }}
                 />

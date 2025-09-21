@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { WaitlistApi, WaitlistResponse } from '../services/waitlistApi';
 import { useRateLimit } from '../utils/rateLimiter';
 
@@ -16,49 +16,57 @@ export function useWaitlist(): UseWaitlistReturn {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  
+
   const { checkRateLimit } = useRateLimit();
 
-  const submitEmail = useCallback(async (email: string): Promise<void> => {
-    // Reset previous states
-    setError(null);
-    setSuccessMessage(null);
-    
-    // Basic validation
-    if (!email || !email.trim()) {
-      setError('Please enter your email address');
-      return;
-    }
-
-    // Check rate limit
-    const { allowed, remaining, timeUntilReset } = checkRateLimit();
-    if (!allowed) {
-      const minutes = Math.ceil(timeUntilReset / 60000);
-      setError(`Too many requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response: WaitlistResponse = await WaitlistApi.addToWaitlist(email.trim());
-      
-      if (response.success) {
-        setIsSubmitted(true);
-        setSuccessMessage(response.message);
-        setError(null);
-      } else {
-        setError(response.message);
-        setSuccessMessage(null);
-      }
-    } catch (err) {
-      console.error('Error submitting to waitlist:', err);
-      setError('Something went wrong. Please try again.');
+  const submitEmail = useCallback(
+    async (email: string): Promise<void> => {
+      // Reset previous states
+      setError(null);
       setSuccessMessage(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [checkRateLimit]);
+
+      // Basic validation
+      if (!email || !email.trim()) {
+        setError('Please enter your email address');
+        return;
+      }
+
+      // Check rate limit
+      const { allowed, timeUntilReset } = checkRateLimit();
+      // const { remaining } = checkRateLimit(); // Will be used later
+      if (!allowed) {
+        const minutes = Math.ceil(timeUntilReset / 60000);
+        setError(
+          `Too many requests. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`
+        );
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const response: WaitlistResponse = await WaitlistApi.addToWaitlist(
+          email.trim()
+        );
+
+        if (response.success) {
+          setIsSubmitted(true);
+          setSuccessMessage(response.message);
+          setError(null);
+        } else {
+          setError(response.message);
+          setSuccessMessage(null);
+        }
+      } catch (err) {
+        console.error('Error submitting to waitlist:', err);
+        setError('Something went wrong. Please try again.');
+        setSuccessMessage(null);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [checkRateLimit]
+  );
 
   const reset = useCallback(() => {
     setIsSubmitted(false);
@@ -73,6 +81,6 @@ export function useWaitlist(): UseWaitlistReturn {
     error,
     successMessage,
     submitEmail,
-    reset
+    reset,
   };
 }

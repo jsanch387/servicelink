@@ -1,15 +1,10 @@
 'use client';
 
+import { ProfileService } from '@/features/profiles';
+import { createClient } from '@/libs/supabase';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { createClient } from '@/libs/supabase';
-import { ProfileService } from '@/features/profiles';
-import type {
-  AuthStore,
-  AuthUser,
-  SignInCredentials,
-  SignUpCredentials,
-} from '../types/auth';
+import type { AuthStore, AuthUser } from '../types/auth';
 
 const initialState = {
   user: null,

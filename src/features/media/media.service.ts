@@ -5,15 +5,14 @@
  * Combines storage and database operations for complete media management.
  */
 
-import { MediaStorage } from './media.storage';
 import { MediaDatabase } from './media.db';
 import { generateStoragePath } from './media.paths';
+import { MediaStorage } from './media.storage';
 import {
-  LogoUploadData,
   BannerUploadData,
+  LogoUploadData,
   PortfolioUploadData,
   UploadResult,
-  MediaType,
 } from './media.types';
 
 export class MediaService {
@@ -30,8 +29,12 @@ export class MediaService {
       });
 
       // Get current logo path from database to delete old logo
-      const currentLogoResult = await MediaDatabase.getCurrentLogoPath(data.businessId);
-      const currentLogoPath = currentLogoResult.success ? currentLogoResult.logoPath : data.previousPath;
+      const currentLogoResult = await MediaDatabase.getCurrentLogoPath(
+        data.businessId
+      );
+      const currentLogoPath = currentLogoResult.success
+        ? currentLogoResult.logoPath
+        : data.previousPath;
 
       // Generate new storage path
       const newStoragePath = generateStoragePath(
@@ -47,7 +50,10 @@ export class MediaService {
           await MediaStorage.deleteFile(currentLogoPath);
           console.log('✅ Old logo deleted successfully');
         } catch (deleteError) {
-          console.warn('⚠️ Failed to delete old logo (continuing with upload):', deleteError);
+          console.warn(
+            '⚠️ Failed to delete old logo (continuing with upload):',
+            deleteError
+          );
           // Don't fail the entire operation if old logo deletion fails
         }
       }
@@ -104,8 +110,12 @@ export class MediaService {
       });
 
       // Get current banner path from database to delete old banner
-      const currentBannerResult = await MediaDatabase.getCurrentBannerPath(data.businessId);
-      const currentBannerPath = currentBannerResult.success ? currentBannerResult.bannerPath : data.previousPath;
+      const currentBannerResult = await MediaDatabase.getCurrentBannerPath(
+        data.businessId
+      );
+      const currentBannerPath = currentBannerResult.success
+        ? currentBannerResult.bannerPath
+        : data.previousPath;
 
       // Generate new storage path
       const newStoragePath = generateStoragePath(
@@ -121,7 +131,10 @@ export class MediaService {
           await MediaStorage.deleteFile(currentBannerPath);
           console.log('✅ Old banner deleted successfully');
         } catch (deleteError) {
-          console.warn('⚠️ Failed to delete old banner (continuing with upload):', deleteError);
+          console.warn(
+            '⚠️ Failed to delete old banner (continuing with upload):',
+            deleteError
+          );
           // Don't fail the entire operation if old banner deletion fails
         }
       }

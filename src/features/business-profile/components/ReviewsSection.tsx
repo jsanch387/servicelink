@@ -1,12 +1,12 @@
-import React from 'react';
 import { StarIcon } from '@heroicons/react/24/solid';
-import { SectionTitle } from '@/components/shared/SectionTitle';
+import React from 'react';
+// import { SectionTitle } from '@/components/shared/SectionTitle'; // Will be used later
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 
 interface ReviewsSectionProps {
   businessProfile: CompleteBusinessProfile;
   editMode: EditMode;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
 }
 

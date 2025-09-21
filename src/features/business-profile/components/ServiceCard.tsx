@@ -26,20 +26,20 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     if (typeof price === 'string' && price.startsWith('$')) {
       return price;
     }
-    
+
     // If it's a number (price in cents), convert to dollars
     if (typeof price === 'number') {
       if (price === 0) return 'Contact for quote';
       return `$${(price / 100).toFixed(0)}`;
     }
-    
+
     // If it's a string without $, try to parse it
     if (typeof price === 'string') {
       if (!price || price === '0' || price === '$0') return 'Contact for quote';
       const numericPrice = price.replace(/[^0-9]/g, '');
       return numericPrice ? `$${numericPrice}` : 'Contact for quote';
     }
-    
+
     return 'Contact for quote';
   };
 
@@ -47,13 +47,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     <div className="bg-neutral-800 p-6 sm:p-8 rounded-2xl border border-neutral-700 w-full sm:w-64 h-auto sm:h-[24rem] flex flex-col justify-between">
       <div>
         <h3 className="text-xl font-bold text-white mb-2">{service.name}</h3>
-        <p 
-          className="text-gray-400 text-sm mb-6 overflow-hidden max-h-16 sm:max-h-24"
-        >
+        <p className="text-gray-400 text-sm mb-6 overflow-hidden max-h-16 sm:max-h-24">
           {service.description}
         </p>
       </div>
-      
+
       {/* Price and Hours are aligned at the bottom */}
       <div className="flex flex-col items-start space-y-2 mt-auto">
         <div className="flex items-center">
@@ -64,7 +62,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
         {service.hours_to_complete && (
           <div className="flex items-center">
-            <span className="text-xl text-gray-400 font-semibold">{service.hours_to_complete}</span>
+            <span className="text-xl text-gray-400 font-semibold">
+              {service.hours_to_complete}
+            </span>
             <span className="text-gray-500 text-xs ml-1">hrs</span>
           </div>
         )}

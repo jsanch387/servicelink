@@ -27,7 +27,7 @@ class RateLimiter {
       // First request
       this.requests.set(key, {
         count: 1,
-        resetTime: now + this.windowMs
+        resetTime: now + this.windowMs,
       });
       return true;
     }
@@ -36,7 +36,7 @@ class RateLimiter {
       // Window has expired, reset
       this.requests.set(key, {
         count: 1,
-        resetTime: now + this.windowMs
+        resetTime: now + this.windowMs,
       });
       return true;
     }
@@ -92,10 +92,13 @@ export const waitlistRateLimiter = new RateLimiter(60000, 3); // 3 requests per 
 export const generalRateLimiter = new RateLimiter(60000, 10); // 10 requests per minute for general use
 
 // Cleanup expired entries every 5 minutes
-setInterval(() => {
-  waitlistRateLimiter.cleanup();
-  generalRateLimiter.cleanup();
-}, 5 * 60 * 1000);
+setInterval(
+  () => {
+    waitlistRateLimiter.cleanup();
+    generalRateLimiter.cleanup();
+  },
+  5 * 60 * 1000
+);
 
 /**
  * Get a rate limit key based on user's IP and user agent
@@ -104,7 +107,8 @@ setInterval(() => {
 export function getRateLimitKey(): string {
   // For client-side, we'll use a combination of factors
   // In production, this should be handled server-side with actual IP
-  const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : '';
+  const userAgent =
+    typeof window !== 'undefined' ? window.navigator.userAgent : '';
   const timestamp = Math.floor(Date.now() / (1000 * 60)); // Round to nearest minute
   return `waitlist_${userAgent.slice(0, 20)}_${timestamp}`;
 }
@@ -113,7 +117,11 @@ export function getRateLimitKey(): string {
  * Rate limiting hook for React components
  */
 export function useRateLimit(rateLimiter: RateLimiter = waitlistRateLimiter) {
-  const checkRateLimit = (): { allowed: boolean; remaining: number; timeUntilReset: number } => {
+  const checkRateLimit = (): {
+    allowed: boolean;
+    remaining: number;
+    timeUntilReset: number;
+  } => {
     const key = getRateLimitKey();
     const allowed = rateLimiter.isAllowed(key);
     const remaining = rateLimiter.getRemainingRequests(key);

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 export interface User {
   id: string;
   email: string;
@@ -80,10 +81,12 @@ export interface OnboardingState {
 
 export interface OnboardingContextType {
   state: OnboardingState;
-  updateProfileData: (data: Partial<BusinessProfile>) => void;
+
+  updateProfileData: (_data: Partial<BusinessProfile>) => void;
   nextStep: () => void;
   previousStep: () => void;
-  goToStep: (step: number) => void;
+
+  goToStep: (_step: number) => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
 }

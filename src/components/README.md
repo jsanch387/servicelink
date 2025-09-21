@@ -221,11 +221,7 @@ export default function Home() {
     console.log('Quote requested!');
   };
 
-  return (
-    <BusinessProfileView
-      businessProfile={businessData}
-    />
-  );
+  return <BusinessProfileView businessProfile={businessData} />;
 }
 ```
 
