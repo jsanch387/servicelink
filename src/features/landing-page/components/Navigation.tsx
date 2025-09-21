@@ -25,12 +25,17 @@ export const Navigation: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 flex items-center">
+              <img
+                src="/service-link-logo.png"
+                alt="ServiceLink Logo"
+                className="h-20 w-20 object-contain"
+              />
               <h1 className="text-xl font-bold text-white">ServiceLink</h1>
             </div>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Centered */}
           <div className="hidden md:flex items-center space-x-8">
             <a
               href={ROUTES.HOME}
@@ -58,9 +63,10 @@ export const Navigation: React.FC = () => {
             </a> */}
           </div>
 
-          {/* Desktop Right Side */}
+          {/* Desktop Auth Buttons - COMMENTED OUT FOR PRE-LAUNCH */}
           <div className="hidden md:flex items-center space-x-4">
             {/* <LanguageSelector /> */}
+            {/* 
             {isAuthenticated ? (
               <Button href={ROUTES.DASHBOARD.MAIN} variant="primary" size="sm">
                 Dashboard
@@ -75,11 +81,12 @@ export const Navigation: React.FC = () => {
                 </Button>
               </>
             )}
+            */}
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
-            <LanguageSelector />
+            {/* <LanguageSelector /> */}
             <button
               onClick={toggleMobileMenu}
               className="text-gray-300 hover:text-white p-2 rounded-md"
@@ -126,6 +133,9 @@ export const Navigation: React.FC = () => {
               >
                 About
               </a>
+              
+              {/* Mobile Auth Buttons - COMMENTED OUT FOR PRE-LAUNCH */}
+              {/* 
               <div className="pt-4 space-y-2">
                 {isAuthenticated ? (
                   <Button
@@ -160,6 +170,7 @@ export const Navigation: React.FC = () => {
                   </>
                 )}
               </div>
+              */}
             </div>
           </div>
         )}

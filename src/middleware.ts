@@ -8,6 +8,52 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // PRE-LAUNCH MODE: Block dashboard and auth routes
+  // Comment out the section below when ready to launch MVP
+  
+  // Define routes that should be accessible during pre-launch
+  const allowedRoutes = [
+    '/',           // Landing page
+    '/waitlist',   // Waitlist page
+  ];
+
+  // Define routes that should be blocked during pre-launch
+  const blockedRoutes = [
+    '/auth',       // All auth routes
+    '/dashboard',  // All dashboard routes
+    '/profile'     // Profile routes
+  ];
+
+  const currentPath = request.nextUrl.pathname;
+
+  // Check if the current path should be blocked
+  const isBlockedRoute = blockedRoutes.some(route => 
+    currentPath.startsWith(route)
+  );
+
+  // Check if the current path is allowed
+  const isAllowedRoute = allowedRoutes.some(route => 
+    currentPath.startsWith(route)
+  );
+
+  // Block access to restricted routes during pre-launch
+  if (isBlockedRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // Allow all other routes (like API routes, static files, etc.)
+  if (isAllowedRoute || currentPath.startsWith('/_next') || currentPath.startsWith('/api')) {
+    return response;
+  }
+
+  // For any other routes, redirect to home
+  return NextResponse.redirect(new URL('/', request.url));
+
+  // =============================================================================
+  // MVP LAUNCH MODE: Uncomment the section below when ready to launch MVP
+  // =============================================================================
+  
+  /*
   const supabase = createSupabaseServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -80,6 +126,7 @@ export async function middleware(request: NextRequest) {
   }
 
   return response;
+  */
 }
 
 export const config = {

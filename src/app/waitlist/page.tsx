@@ -4,29 +4,20 @@ import React, { useState } from 'react';
 import { Button } from '@/components/shared/Button';
 import { Input } from '@/components/shared/Input';
 import { CheckIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useWaitlist } from '@/features/landing-page/hooks/useWaitlist';
 
 export default function WaitlistPage() {
   const [email, setEmail] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoading, isSubmitted, error, successMessage, submitEmail, reset } = useWaitlist();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    await submitEmail(email);
+  };
 
-    // Log the captured information
-    console.log('Waitlist signup:', {
-      email,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      referrer: document.referrer,
-    });
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSubmitted(true);
-    }, 1000);
+  const handleBackToHome = () => {
+    reset();
+    setEmail('');
   };
 
   if (isSubmitted) {
@@ -37,16 +28,20 @@ export default function WaitlistPage() {
             <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckIcon className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-4">
+            <h1 className="text-2xl font-extrabold text-white mb-4">
               You're on the waitlist!
             </h1>
             <p className="text-gray-300 mb-6">
-              Thanks for joining our waitlist. We'll email you at <strong>{email}</strong> when we launch.
+              Thanks for joining our waitlist. We'll email you at <strong className="text-orange-400">{email}</strong> when we launch.
+            </p>
+            <p className="text-sm text-gray-400 mb-6">
+              {successMessage}
             </p>
             <Button
               href="/"
               variant="secondary"
               className="w-full"
+              onClick={handleBackToHome}
             >
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Back to Home
@@ -61,18 +56,24 @@ export default function WaitlistPage() {
     <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
             Join Our Waitlist
           </h1>
-          <p className="text-lg text-gray-300">
+          <p className="text-lg text-gray-400 leading-relaxed">
             Get early access to your FREE business profile when we launch.
           </p>
         </div>
 
         <div className="bg-neutral-800 rounded-2xl p-8 border border-neutral-700">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
+              <p className="text-red-400 text-sm font-medium">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-white mb-2">
                 Email Address
               </label>
               <Input
@@ -82,6 +83,7 @@ export default function WaitlistPage() {
                 placeholder="Enter your email address"
                 required
                 className="w-full"
+                disabled={isLoading}
               />
             </div>
 
@@ -90,9 +92,19 @@ export default function WaitlistPage() {
               variant="primary"
               size="lg"
               className="w-full"
-              disabled={isLoading}
+              disabled={isLoading || !email.trim()}
             >
-              {isLoading ? 'Joining...' : 'Join Waitlist - It\'s FREE'}
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Joining Waitlist...
+                </div>
+              ) : (
+                'Join Waitlist - It\'s FREE'
+              )}
             </Button>
 
             <p className="text-center text-sm text-gray-400">

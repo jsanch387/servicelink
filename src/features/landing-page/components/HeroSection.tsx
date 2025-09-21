@@ -33,6 +33,15 @@ const styleSheet = `
   }
 }
 
+@keyframes glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 60px rgba(251, 146, 60, 0.4)) drop-shadow(0 0 100px rgba(251, 146, 60, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 65px rgba(251, 146, 60, 0.45)) drop-shadow(0 0 105px rgba(251, 146, 60, 0.25));
+  }
+}
+
 .animate-fadeInUp {
   animation: fadeInUp 0.8s ease-out forwards;
 }
@@ -43,6 +52,10 @@ const styleSheet = `
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
 }
 
 .animation-delay-200 { animation-delay: 0.2s; }
@@ -114,7 +127,7 @@ export const HeroSection: React.FC = () => {
      group-hover:scale-105 
      relative z-10
      drop-shadow-xl
-     [filter:drop-shadow(0_0_60px_rgba(251,146,60,0.4))_drop-shadow(0_0_100px_rgba(251,146,60,0.2))]
+     animate-glow-pulse
    "
  />
 
