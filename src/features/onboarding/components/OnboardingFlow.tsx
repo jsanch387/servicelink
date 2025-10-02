@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import {
+  completeOnboarding,
+  getOnboardingState,
+  startOnboarding,
+} from '../utils/onboardingHelpers';
 import { Step1Welcome } from './Step1Welcome';
 import { Step2BusinessInfo } from './Step2BusinessInfo';
 import { Step3Services } from './Step3Services';
 import { Step4Portfolio } from './Step4Portfolio';
 import { Step5Contact } from './Step5Contact';
-import {
-  startOnboarding,
-  completeOnboarding,
-} from '../utils/onboardingHelpers';
 
 interface OnboardingFlowProps {
   profileId: string;
@@ -34,6 +35,40 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [currentBusinessProfileId, setCurrentBusinessProfileId] =
     useState(businessProfileId);
+  const [currentData, setCurrentData] = useState(existingData);
+
+  // Function to refresh data from the database
+  const refreshData = async () => {
+    if (!currentBusinessProfileId) return;
+
+    console.log('🔄 Refreshing onboarding data...');
+    try {
+      const stateResult = await getOnboardingState(profileId);
+      if (stateResult.success && stateResult.data) {
+        const { businessProfile, services, images, contactInfo } =
+          stateResult.data;
+        setCurrentData({
+          ...businessProfile,
+          services: services,
+          images: images,
+          ...contactInfo,
+        });
+        console.log('✅ Data refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh data:', error);
+    }
+  };
+
+  // Refresh data when component mounts or when business profile ID changes
+  useEffect(() => {
+    if (
+      currentBusinessProfileId &&
+      currentBusinessProfileId !== businessProfileId
+    ) {
+      refreshData();
+    }
+  }, [currentBusinessProfileId, profileId]);
 
   const handleStartOnboarding = async (): Promise<string | null> => {
     console.log('🚀 Starting onboarding process...');
@@ -52,15 +87,21 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     return result.businessProfileId!;
   };
 
-  const handleStepComplete = () => {
+  const handleStepComplete = async () => {
     const nextStep = currentStep + 1;
     console.log(`➡️ Moving to Step ${nextStep}`);
+
+    // Refresh data after completing a step to ensure we have the latest data
+    await refreshData();
     setCurrentStep(nextStep);
   };
 
-  const handleStepBack = () => {
+  const handleStepBack = async () => {
     const prevStep = Math.max(currentStep - 1, 1);
     console.log(`⬅️ Going back to Step ${prevStep}`);
+
+    // Refresh data when going back to ensure we have the latest data
+    await refreshData();
     setCurrentStep(prevStep);
   };
 
@@ -109,7 +150,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           <Step2BusinessInfo
             profileId={profileId}
             businessProfileId={currentBusinessProfileId}
-            existingData={existingData}
+            existingData={currentData}
             onNext={handleStepComplete}
             onBack={handleStepBack}
           />
@@ -136,7 +177,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           <Step3Services
             profileId={profileId}
             businessProfileId={currentBusinessProfileId}
-            existingData={existingData}
+            existingData={currentData}
             onNext={handleStepComplete}
             onBack={handleStepBack}
           />
@@ -163,7 +204,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           <Step4Portfolio
             profileId={profileId}
             businessProfileId={currentBusinessProfileId}
-            existingData={existingData}
+            existingData={currentData}
             onNext={handleStepComplete}
             onBack={handleStepBack}
           />
@@ -190,7 +231,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           <Step5Contact
             profileId={profileId}
             businessProfileId={currentBusinessProfileId}
-            existingData={existingData}
+            existingData={currentData}
             onNext={handleOnboardingComplete}
             onBack={handleStepBack}
           />

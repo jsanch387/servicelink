@@ -1,20 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import {
-  Input,
-  TextArea,
   Button,
+  Input,
   PriceInput,
   Select,
+  TextArea,
 } from '@/components/shared';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useState } from 'react';
 import {
   BusinessServicesService,
   Service,
 } from '../services/businessServicesService';
 import { saveStepAndProgress } from '../utils/onboardingHelpers';
-import { ServiceCard } from '@/features/business-profile';
 
 interface Step3ServicesProps {
   profileId: string;
@@ -37,6 +36,57 @@ const HOURS_OPTIONS = [
   { value: '9', label: '9 hours' },
   { value: '10', label: '10+ hours' },
 ];
+
+// Simple Service Card Component for the onboarding flow
+const ServiceCard = ({
+  service,
+  onDelete,
+}: {
+  service: Service;
+  onDelete: () => void;
+}) => (
+  <div className="flex items-start space-x-3 sm:space-x-4 p-4 sm:p-5 bg-neutral-900 rounded-xl transition duration-300 hover:bg-neutral-700/50 group border border-neutral-800 hover:border-orange-400/50">
+    {/* Service icon */}
+    <div className="p-1.5 sm:p-2 rounded-full bg-orange-900/40 border border-orange-500/20 flex-shrink-0">
+      <PlusIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" />
+    </div>
+    <div className="min-w-0 flex-1">
+      <div className="flex items-start justify-between">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-white font-semibold block text-sm sm:text-base leading-tight">
+            {service.name}
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-400 block leading-relaxed mt-1">
+            {service.description || 'No description provided'}
+          </p>
+          <div className="flex flex-wrap gap-3 mt-2 text-xs font-medium">
+            {service.price && (
+              <span className="text-orange-400">
+                Price: <span className="text-white">${service.price}</span>
+              </span>
+            )}
+            {service.hours_to_complete && (
+              <span className="text-gray-500">
+                Time:{' '}
+                <span className="text-white">
+                  {service.hours_to_complete}{' '}
+                  {service.hours_to_complete === 1 ? 'hour' : 'hours'}
+                </span>
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={onDelete}
+          className="text-gray-500 hover:text-red-400 transition duration-150 p-1 rounded-full hover:bg-red-900/20 flex-shrink-0 ml-2"
+          title="Remove service"
+        >
+          <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export const Step3Services: React.FC<Step3ServicesProps> = ({
   profileId,
@@ -61,6 +111,7 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [servicesLoaded, setServicesLoaded] = useState(false);
 
   // Load existing services from database
   useEffect(() => {
@@ -78,6 +129,7 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       } else {
         console.log('ℹ️ No existing services found');
       }
+      setServicesLoaded(true);
     };
 
     loadExistingServices();
@@ -85,7 +137,7 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
   const handleServiceChange = (
     field: keyof Service,
-    value: string | number
+    value: string | number | undefined
   ) => {
     console.log(`📝 Service ${field} changed:`, value);
     setCurrentService(prev => ({
@@ -96,14 +148,14 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
   const addService = () => {
     if (!currentService.name.trim()) {
-      setError('Please enter a service name');
+      setError('Please enter a service name.');
       return;
     }
 
     console.log('➕ Adding service:', currentService);
     const newService: Service = {
       ...currentService,
-      id: `temp-${Date.now()}`, // Temporary ID for UI
+      id: `temp-${Date.now()}`,
     };
 
     setServices(prev => [...prev, newService]);
@@ -121,15 +173,13 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     setServices(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     console.log('💾 Saving Step 3 services data:', services);
 
     setIsLoading(true);
     setError('');
 
     try {
-      // Save services to business_services table
       const servicesResult =
         await BusinessServicesService.createServicesForOnboarding(
           businessProfileId,
@@ -143,13 +193,12 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
         return;
       }
 
-      // Update onboarding progress
       const progressResult = await saveStepAndProgress(
         profileId,
-        3, // current step
+        3,
         businessProfileId,
-        {}, // No business profile data to update
-        false // not skipping
+        {},
+        false
       );
 
       if (!progressResult.success) {
@@ -175,10 +224,10 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     try {
       const result = await saveStepAndProgress(
         profileId,
-        3, // current step
+        3,
         businessProfileId,
         {},
-        true // skipping
+        true
       );
 
       if (!result.success) {
@@ -197,103 +246,111 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     }
   };
 
+  const canContinue = services.length > 0;
+
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-white mb-4">
-          What services do you offer?
+    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+      {/* Header Section */}
+      <div className="mb-10 sm:mb-12 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight leading-tight">
+          List Your <span className="text-orange-400">Services</span>
         </h1>
-        <p className="text-xl text-gray-300">
-          Add your services to help customers understand what you do.
+        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
+          Tell customers what you do and how much it costs. Keep it simple and
+          clear.
         </p>
       </div>
 
+      {/* Error Message */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3 mb-6">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 sm:mb-8 mx-2 sm:mx-0">
+          <p className="text-red-400 text-sm font-medium text-center">
+            {error}
+          </p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Add Service Form */}
-        <div className="space-y-6">
-          <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-6">
-              Add a Service
-            </h2>
+        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+            Add a Service
+          </h2>
 
-            <div className="space-y-4">
-              <Input
-                label="Service Name"
-                placeholder="e.g., Website Design, House Cleaning"
-                value={currentService.name}
-                onChange={value => handleServiceChange('name', value)}
+          <form className="space-y-4 sm:space-y-6">
+            <Input
+              label="What do you call this service?"
+              placeholder="e.g., House Cleaning, Logo Design, Car Repair"
+              value={currentService.name}
+              onChange={value => handleServiceChange('name', value)}
+              required
+            />
+
+            <TextArea
+              label="What's included? (Optional)"
+              placeholder="Tell customers what they get. Keep it simple."
+              value={currentService.description}
+              onChange={value => handleServiceChange('description', value)}
+              rows={3}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <PriceInput
+                label="How much does it cost? (Optional)"
+                placeholder="0.00"
+                value={currentService.price}
+                onChange={value => handleServiceChange('price', value)}
               />
 
-              <TextArea
-                label="Description"
-                placeholder="Briefly describe this service..."
-                value={currentService.description}
-                onChange={value => handleServiceChange('description', value)}
-                rows={3}
+              <Select
+                label="How long does it take? (Optional)"
+                placeholder="Select hours"
+                value={currentService.hours_to_complete?.toString() || ''}
+                onChange={value => {
+                  const numValue = value ? parseInt(value) : undefined;
+                  handleServiceChange('hours_to_complete', numValue);
+                }}
+                options={HOURS_OPTIONS}
               />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <PriceInput
-                  label="Price"
-                  placeholder="Enter price"
-                  value={currentService.price}
-                  onChange={value => handleServiceChange('price', value)}
-                />
-
-                <Select
-                  label="Hours to Complete"
-                  placeholder="Select hours"
-                  value={currentService.hours_to_complete?.toString() || ''}
-                  onChange={value => {
-                    const numValue = value ? parseInt(value) : undefined;
-                    handleServiceChange('hours_to_complete', numValue || 0);
-                  }}
-                  options={HOURS_OPTIONS}
-                />
-              </div>
-
-              <Button
-                onClick={addService}
-                variant="primary"
-                className="w-full"
-                disabled={!currentService.name.trim()}
-                icon={<PlusIcon className="h-5 w-5" />}
-              >
-                Add Service
-              </Button>
             </div>
-          </div>
+
+            <Button
+              type="button"
+              onClick={addService}
+              variant="primary"
+              className="w-full mt-4 sm:mt-6 text-base sm:text-lg"
+              disabled={!currentService.name.trim()}
+            >
+              Add This Service
+            </Button>
+          </form>
         </div>
 
         {/* Services List */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-white">
+        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
             Your Services ({services.length})
           </h2>
 
-          {services.length === 0 ? (
-            <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-8 text-center">
-              <p className="text-gray-400 mb-4">No services added yet</p>
-              <p className="text-sm text-gray-500">
-                Add your first service using the form on the left
+          {servicesLoaded && services.length === 0 ? (
+            <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 sm:p-8 text-center border-dashed">
+              <PlusIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-400 mx-auto mb-3 sm:mb-4 opacity-60" />
+              <p className="text-gray-400 mb-2 font-semibold text-sm sm:text-base">
+                No services yet
+              </p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                Add your first service using the form on the left.
               </p>
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-3 sm:space-y-4 max-h-[400px] sm:max-h-[500px] lg:max-h-[600px] overflow-y-auto pr-2">
               {services.map((service, index) => (
-                <div key={index} className="relative">
-                  <ServiceCard
-                    service={service}
-                    isEditable={true}
-                    onDelete={() => removeService(index)}
-                  />
-                </div>
+                <ServiceCard
+                  key={service.id || index}
+                  service={service}
+                  onDelete={() => removeService(index)}
+                />
               ))}
             </div>
           )}
@@ -301,31 +358,37 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 pt-8 mt-8 border-t border-neutral-700">
+      <div className="flex flex-col gap-4 pt-6 sm:pt-8 mt-8 sm:mt-10 px-4 sm:px-0">
+        {/* Back Button */}
         <Button
+          type="button"
           onClick={onBack}
           variant="secondary"
-          className="sm:w-auto"
+          className="w-full sm:w-auto px-6 sm:px-8 order-2 sm:order-1"
           disabled={isLoading}
         >
-          Back
+          ← Back
         </Button>
 
-        <div className="flex gap-4 flex-1">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 order-1 sm:order-2">
+          {/* Skip Button */}
           <Button
+            type="button"
             onClick={handleSkip}
             variant="outline"
-            className="flex-1"
+            className="w-full sm:flex-1 px-6 sm:px-8"
             disabled={isLoading}
           >
             Skip for now
           </Button>
 
+          {/* Continue Button */}
           <Button
-            onClick={() => handleSubmit({} as React.FormEvent)}
+            type="button"
+            onClick={handleSubmit}
             variant="primary"
-            className="flex-1"
-            disabled={isLoading}
+            className="w-full sm:flex-1 px-6 sm:px-8"
+            disabled={!canContinue || isLoading}
             loading={isLoading}
           >
             {isLoading ? 'Saving...' : 'Continue'}
@@ -333,8 +396,8 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
         </div>
       </div>
 
-      <p className="text-sm text-gray-400 text-center mt-6">
-        You can always add more services later from your dashboard
+      <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
+        Don't worry - you can always add, change, or remove services later.
       </p>
     </div>
   );

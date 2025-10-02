@@ -126,7 +126,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Sign up
-      signUp: async (email: string, password: string, name?: string) => {
+      signUp: async (email: string, password: string) => {
         const supabase = createClient();
         set({ isLoading: true });
 
@@ -135,9 +135,6 @@ export const useAuthStore = create<AuthStore>()(
             email,
             password,
             options: {
-              data: {
-                name: name || '',
-              },
               emailRedirectTo: undefined, // Disable email confirmation redirect
             },
           });
@@ -151,7 +148,7 @@ export const useAuthStore = create<AuthStore>()(
             // CRITICAL: Create profile - signup fails if this fails
             const profileResult = await ProfileService.createProfile(
               data.user.id,
-              name || null
+              null // No name provided during signup
             );
 
             if (!profileResult.success) {
@@ -173,7 +170,7 @@ export const useAuthStore = create<AuthStore>()(
             const user: AuthUser = {
               id: data.user.id,
               email: data.user.email!,
-              name: name || null,
+              name: null, // No name provided during signup
             };
 
             set({

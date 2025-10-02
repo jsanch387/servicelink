@@ -17,11 +17,7 @@ export interface AuthState {
 export interface AuthActions {
   // Authentication
   signIn: (_email: string, _password: string) => Promise<{ error?: string }>;
-  signUp: (
-    _email: string,
-    _password: string,
-    _name?: string
-  ) => Promise<{ error?: string }>;
+  signUp: (_email: string, _password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<{ success?: boolean; error?: string }>;
 
   // User management
@@ -48,7 +44,6 @@ export interface SignInCredentials {
 export interface SignUpCredentials {
   email: string;
   password: string;
-  name?: string;
 }
 
 export interface AuthError {

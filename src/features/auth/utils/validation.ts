@@ -43,7 +43,6 @@ export const validateSignUpForm = (data: {
   email: string;
   password: string;
   confirmPassword: string;
-  name?: string;
 }): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
 
@@ -69,11 +68,6 @@ export const validateSignUpForm = (data: {
     errors.confirmPassword = 'Please confirm your password';
   } else if (data.password !== data.confirmPassword) {
     errors.confirmPassword = 'Passwords do not match';
-  }
-
-  // Name validation (optional but if provided, should be valid)
-  if (data.name && data.name.trim().length < 2) {
-    errors.name = 'Name must be at least 2 characters long';
   }
 
   return {

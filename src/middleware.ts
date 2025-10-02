@@ -1,104 +1,54 @@
+import { createSupabaseMiddlewareClient } from '@/libs/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({
+  let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  // PRE-LAUNCH MODE: Block dashboard and auth routes
-  // Comment out the section below when ready to launch MVP
-
-  // Define routes that should be accessible during pre-launch
-  const allowedRoutes = [
-    '/', // Landing page
-    '/waitlist', // Waitlist page
-  ];
-
-  // Define routes that should be blocked during pre-launch
-  const blockedRoutes = [
-    '/auth', // All auth routes
-    '/dashboard', // All dashboard routes
-    '/profile', // Profile routes
-  ];
-
-  const currentPath = request.nextUrl.pathname;
-
-  // Check if the current path should be blocked
-  const isBlockedRoute = blockedRoutes.some(route =>
-    currentPath.startsWith(route)
-  );
-
-  // Check if the current path is allowed
-  const isAllowedRoute = allowedRoutes.some(route =>
-    currentPath.startsWith(route)
-  );
-
-  // Block access to restricted routes during pre-launch
-  if (isBlockedRoute) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // Allow all other routes (like API routes, static files, etc.)
-  if (
-    isAllowedRoute ||
-    currentPath.startsWith('/_next') ||
-    currentPath.startsWith('/api')
-  ) {
-    return response;
-  }
-
-  // For any other routes, redirect to home
-  return NextResponse.redirect(new URL('/', request.url));
-
-  // =============================================================================
-  // MVP LAUNCH MODE: Uncomment the section below when ready to launch MVP
-  // =============================================================================
-
-  /*
-  const supabase = createSupabaseServerClient(
+  // MVP LAUNCH MODE: All routes enabled
+  const supabase = createSupabaseMiddlewareClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-        },
-        remove(name: string, options: any) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-        },
+      get: (name: string) => {
+        return request.cookies.get(name)?.value;
+      },
+      set: (name: string, value: string, options: any) => {
+        request.cookies.set({
+          name,
+          value,
+          ...options,
+        });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({
+          name,
+          value,
+          ...options,
+        });
+      },
+      remove: (name: string, options: any) => {
+        request.cookies.set({
+          name,
+          value: '',
+          ...options,
+        });
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        response.cookies.set({
+          name,
+          value: '',
+          ...options,
+        });
       },
     }
   );
@@ -112,6 +62,8 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
   const isPublicProfileRoute = request.nextUrl.pathname.startsWith('/profile');
+  const isWaitlistRoute = request.nextUrl.pathname.startsWith('/waitlist');
+  const isHomeRoute = request.nextUrl.pathname === '/';
 
   // Redirect authenticated users away from auth pages
   if (isAuthRoute && user) {
@@ -123,13 +75,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
-  // Allow public profile routes and other public routes
-  if (isPublicProfileRoute || request.nextUrl.pathname === '/') {
+  // Allow all public routes (home, auth, waitlist, profile, API routes, static files)
+  if (
+    isHomeRoute ||
+    isAuthRoute ||
+    isWaitlistRoute ||
+    isPublicProfileRoute ||
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname.startsWith('/favicon') ||
+    request.nextUrl.pathname.includes('.')
+  ) {
     return response;
   }
 
   return response;
-  */
 }
 
 export const config = {

@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import { Button, Input } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/shared';
-import { Input } from '@/components/shared';
+import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignInForm } from '../utils/validation';
-import { ROUTES } from '@/constants/routes';
 
 export const LoginForm: React.FC = () => {
   const router = useRouter();
@@ -113,21 +112,6 @@ export const LoginForm: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-neutral-600 rounded bg-neutral-800"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-sm text-gray-400"
-              >
-                Remember me
-              </label>
-            </div>
-
             <div className="text-sm">
               <a
                 href="#"

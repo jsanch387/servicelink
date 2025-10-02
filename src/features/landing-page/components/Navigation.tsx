@@ -1,16 +1,15 @@
 'use client';
 
+import { Button } from '@/components/shared/Button';
+import { ROUTES } from '@/constants/routes';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import React, { useState } from 'react';
-// import { Button } from '../../../components/shared/Button'; // Will be used later
-import { ROUTES } from '@/constants/routes';
-// import { LanguageSelector } from './LanguageSelector'; // Will be used later
-// import { useAuth } from '@/features/auth/hooks/useAuth'; // Will be used later
 
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // const { isAuthenticated, user } = useAuth(); // Will be used later
+  const { isAuthenticated, user } = useAuth();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -66,10 +65,8 @@ export const Navigation: React.FC = () => {
             </a> */}
           </div>
 
-          {/* Desktop Auth Buttons - COMMENTED OUT FOR PRE-LAUNCH */}
+          {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* <LanguageSelector /> */}
-            {/*
             {isAuthenticated ? (
               <Button href={ROUTES.DASHBOARD.MAIN} variant="primary" size="sm">
                 Dashboard
@@ -84,7 +81,6 @@ export const Navigation: React.FC = () => {
                 </Button>
               </>
             )}
-            */}
           </div>
 
           {/* Mobile menu button */}
@@ -137,8 +133,7 @@ export const Navigation: React.FC = () => {
                 About
               </a>
 
-              {/* Mobile Auth Buttons - COMMENTED OUT FOR PRE-LAUNCH */}
-              {/*
+              {/* Mobile Auth Buttons */}
               <div className="pt-4 space-y-2">
                 {isAuthenticated ? (
                   <Button
@@ -173,7 +168,6 @@ export const Navigation: React.FC = () => {
                   </>
                 )}
               </div>
-              */}
             </div>
           </div>
         )}

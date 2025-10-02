@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import { Button, PhoneInput } from '@/components/shared';
+import {
+  ChatBubbleLeftRightIcon,
+  PhoneIcon,
+} from '@heroicons/react/24/outline';
+import React, { useEffect, useState } from 'react';
 import { BusinessProfileService } from '../services/businessProfileService';
-import { ContactFormData, ContactExistingData } from '../types/contact';
+import { ContactExistingData, ContactFormData } from '../types/contact';
 import {
   completeOnboarding,
   saveStepAndProgress,
 } from '../utils/onboardingHelpers';
-import {
-  PhoneIcon,
-  ChatBubbleLeftRightIcon,
-} from '@heroicons/react/24/outline';
 
 interface Step5ContactProps {
   profileId: string;
@@ -251,111 +251,171 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-white mb-4">
-          Contact Information
+    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+      {/* Header Section */}
+      <div className="mb-10 sm:mb-12 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3 sm:mb-4 tracking-tight">
+          Final Step: <span className="text-orange-400">Contact Details</span>
         </h1>
-        <p className="text-xl text-gray-300">How can customers reach you?</p>
-        <p className="text-sm text-gray-400 mt-2">
-          Customers will be able to call or text you directly
+        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
+          Specify how customers should reach you for bookings and inquiries.
+        </p>
+        <p className="text-sm sm:text-base text-gray-500 mt-2 sm:mt-3">
+          This information will be displayed on your public business page.
         </p>
       </div>
 
+      {/* Error Message */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3 mb-6">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 sm:mb-8 mx-2 sm:mx-0">
+          <p className="text-red-400 text-sm font-medium text-center">
+            {error}
+          </p>
         </div>
       )}
 
-      <div className="space-y-6">
-        {/* Call Phone Number */}
-        <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <PhoneIcon className="h-6 w-6 text-orange-500 mr-3" />
-            <h2 className="text-xl font-semibold text-white">
-              Phone Number for Calls
+      {/* Main Content Container */}
+      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0 space-y-6 sm:space-y-8">
+        {/* Phone Number for Calls */}
+        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 sm:p-6">
+          <div className="flex items-center mb-4 sm:mb-6 border-b border-neutral-800 pb-3 sm:pb-4">
+            <PhoneIcon className="h-6 w-6 sm:h-7 sm:w-7 text-orange-400 mr-3 sm:mr-4" />
+            <h2 className="text-lg sm:text-xl font-bold text-white">
+              Primary Phone for Voice Calls
             </h2>
           </div>
           <PhoneInput
-            label="Call Phone Number"
+            label="Call Phone Number (10 Digits)"
             value={formData.phoneCall}
             onChange={handlePhoneCallChange}
             placeholder="(555) 123-4567"
             required
             disabled={isLoading}
           />
-          <p className="text-sm text-gray-400 mt-2">
-            Customers can tap this number to call you directly
+          <p className="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-3">
+            Customers tap this to initiate a voice call with your business.
           </p>
         </div>
 
-        {/* Text Phone Number */}
-        <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <ChatBubbleLeftRightIcon className="h-6 w-6 text-orange-500 mr-3" />
-            <h2 className="text-xl font-semibold text-white">
-              Phone Number for Texts
-            </h2>
+        {/* Same Phone Checkbox - Only show when not checked */}
+        {!formData.samePhoneForBoth && (
+          <div className="p-3 sm:p-4 bg-neutral-900 border border-neutral-700 rounded-xl">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.samePhoneForBoth}
+                onChange={e => handleSamePhoneChange(e.target.checked)}
+                disabled={isLoading}
+                className="w-5 h-5 sm:w-6 sm:h-6 appearance-none rounded-md border-2 border-neutral-600 bg-neutral-800 hover:border-orange-400 transition duration-200"
+              />
+              <span className="ml-4 sm:ml-5 text-white font-medium text-sm sm:text-base">
+                Use the same number for both calls and texts
+              </span>
+            </label>
+            <p className="text-xs sm:text-sm text-gray-500 mt-2 ml-9 sm:ml-10">
+              Check this box if you want to use one phone number for everything.
+            </p>
           </div>
-          <PhoneInput
-            label="Text Phone Number"
-            value={formData.phoneText}
-            onChange={handlePhoneTextChange}
-            placeholder="(555) 123-4567"
-            required
-            disabled={isLoading || formData.samePhoneForBoth}
-          />
-          <p className="text-sm text-gray-400 mt-2">
-            Customers can tap this number to send you a text message
-          </p>
-        </div>
+        )}
 
-        {/* Same Phone Checkbox */}
-        <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-6">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.samePhoneForBoth}
-              onChange={e => handleSamePhoneChange(e.target.checked)}
-              disabled={isLoading}
-              className="w-4 h-4 text-orange-500 bg-neutral-700 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
-            />
-            <span className="ml-3 text-white">
-              Use the same phone number for both calls and texts
-            </span>
-          </label>
-          <p className="text-sm text-gray-400 mt-2 ml-7">
-            Check this if you want customers to use the same number for calling
-            and texting
-          </p>
-        </div>
-
-        {/* Preview */}
-        {(formData.phoneCall || formData.phoneText) && (
-          <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Preview</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-neutral-700 rounded-lg">
-                <div className="flex items-center">
-                  <PhoneIcon className="h-5 w-5 text-orange-500 mr-2" />
-                  <span className="text-white">Call:</span>
+        {/* Same Phone Confirmation - Show when checked */}
+        {formData.samePhoneForBoth && (
+          <div className="p-3 sm:p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 border border-orange-500 rounded-md flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
                 </div>
-                <span className="text-gray-300 font-mono">
-                  {formData.phoneCall
-                    ? formatPhoneForDisplay(formData.phoneCall)
-                    : 'Not set'}
+                <span className="ml-4 sm:ml-5 text-orange-400 font-medium text-sm sm:text-base">
+                  Using the same number for both calls and texts
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-neutral-700 rounded-lg">
+              <button
+                onClick={() => handleSamePhoneChange(false)}
+                disabled={isLoading}
+                className="text-orange-400 hover:text-orange-300 text-sm font-medium underline transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Change
+              </button>
+            </div>
+            <p className="text-xs sm:text-sm text-orange-300/70 mt-2 ml-9 sm:ml-10">
+              Both call and text buttons will use your primary phone number.
+            </p>
+          </div>
+        )}
+
+        {/* Phone Number for Texts (Conditional) */}
+        {!formData.samePhoneForBoth && (
+          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 sm:p-6">
+            <div className="flex items-center mb-4 sm:mb-6 border-b border-neutral-800 pb-3 sm:pb-4">
+              <ChatBubbleLeftRightIcon className="h-6 w-6 sm:h-7 sm:w-7 text-orange-400 mr-3 sm:mr-4" />
+              <h2 className="text-lg sm:text-xl font-bold text-white">
+                Dedicated Number for Text Messages
+              </h2>
+            </div>
+            <PhoneInput
+              label="Text Phone Number (10 Digits)"
+              value={formData.phoneText}
+              onChange={handlePhoneTextChange}
+              placeholder="(555) 987-6543"
+              required
+              disabled={isLoading}
+            />
+            <p className="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-3">
+              Customers tap this to send you a text message for quick
+              communication.
+            </p>
+          </div>
+        )}
+
+        {/* Preview Section */}
+        {(formData.phoneCall || formData.phoneText) && (
+          <div className="pt-6 sm:pt-8 border-t border-neutral-700">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+              Customer Preview
+            </h3>
+            <div className="space-y-3 sm:space-y-4 p-4 sm:p-6 bg-neutral-900 rounded-xl border border-neutral-700">
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-neutral-700/50 rounded-lg shadow-inner">
                 <div className="flex items-center">
-                  <ChatBubbleLeftRightIcon className="h-5 w-5 text-orange-500 mr-2" />
-                  <span className="text-white">Text:</span>
+                  <PhoneIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400 mr-3" />
+                  <span className="text-gray-300 font-medium text-sm sm:text-base">
+                    Call Me:
+                  </span>
                 </div>
-                <span className="text-gray-300 font-mono">
-                  {formData.phoneText
+                <span
+                  className={`font-mono text-sm sm:text-base ${formData.phoneCall.length === 10 ? 'text-white' : 'text-red-400'}`}
+                >
+                  {formData.phoneCall.length === 10
+                    ? formatPhoneForDisplay(formData.phoneCall)
+                    : 'A valid number is required'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 sm:p-4 bg-neutral-700/50 rounded-lg shadow-inner">
+                <div className="flex items-center">
+                  <ChatBubbleLeftRightIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400 mr-3" />
+                  <span className="text-gray-300 font-medium text-sm sm:text-base">
+                    Text Me:
+                  </span>
+                </div>
+                <span
+                  className={`font-mono text-sm sm:text-base ${formData.phoneText.length === 10 ? 'text-white' : 'text-red-400'}`}
+                >
+                  {formData.phoneText.length === 10
                     ? formatPhoneForDisplay(formData.phoneText)
-                    : 'Not set'}
+                    : 'A valid number is required'}
                 </span>
               </div>
             </div>
@@ -364,40 +424,50 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 pt-8 mt-8 border-t border-neutral-700">
+      <div className="flex flex-col gap-4 pt-6 sm:pt-8 mt-8 sm:mt-10 px-4 sm:px-0">
+        {/* Back Button */}
         <Button
+          type="button"
           onClick={onBack}
           variant="secondary"
-          className="sm:w-auto"
+          className="w-full sm:w-auto px-8 order-2 sm:order-1"
           disabled={isLoading}
         >
-          Back
+          ← Back to Portfolio
         </Button>
 
-        <div className="flex gap-4 flex-1">
+        <div className="flex gap-4 w-full sm:w-auto order-1 sm:order-2">
+          {/* Skip Button */}
           <Button
+            type="button"
             onClick={handleSkip}
             variant="outline"
-            className="flex-1"
+            className="flex-1 px-6 sm:px-8"
             disabled={isLoading}
           >
-            Skip for now
+            Skip & Complete
           </Button>
 
+          {/* Complete Setup Button */}
           <Button
+            type="button"
             onClick={handleComplete}
             variant="primary"
-            className="flex-1"
-            disabled={isLoading}
+            className="w-full sm:flex-1 px-6 sm:px-8"
+            disabled={
+              isLoading ||
+              formData.phoneCall.length !== 10 ||
+              formData.phoneText.length !== 10
+            }
             loading={isLoading}
           >
-            {isLoading ? 'Completing...' : 'Complete Setup'}
+            {isLoading ? 'Completing Setup...' : 'Complete Setup'}
           </Button>
         </div>
       </div>
 
-      <p className="text-sm text-gray-400 text-center mt-6">
-        You can always update your contact information later from your dashboard
+      <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
+        You're almost there! This is the last step of the initial setup.
       </p>
     </div>
   );
