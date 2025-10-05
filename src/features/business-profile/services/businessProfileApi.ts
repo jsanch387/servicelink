@@ -6,6 +6,7 @@
  */
 
 import { MediaService } from '@/features/media';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/libs/supabase';
 import {
   BusinessProfileResponse,

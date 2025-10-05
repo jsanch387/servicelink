@@ -1,9 +1,12 @@
-/* 
+/*
  * Font Configuration for ServiceLink App
- * 
+ *
  * This file defines the font stack used throughout the application.
  * To change fonts, simply update the values below.
  */
+
+/* Import modern fonts from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
   /* Primary font stack - Modern, clean, and optimized for readability */
@@ -22,11 +25,16 @@
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Logo font stack - Modern, bold font for branding */
+  --font-logo:
+    'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* 
+/*
  * Font Stack Explanation:
- * 
+ *
  * 1. ui-sans-serif: Uses the system's preferred sans-serif font
  * 2. system-ui: Uses the system's UI font (most modern)
  * 3. -apple-system: Apple's system font (San Francisco)
@@ -38,7 +46,7 @@
  * 9. "Noto Sans": Google's universal font
  * 10. sans-serif: Generic fallback
  * 11. Emoji fonts: Ensures emoji support across platforms
- * 
+ *
  * Benefits:
  * - Fast loading (uses system fonts)
  * - Native look and feel on each platform
@@ -78,4 +86,9 @@ h5,
 h6,
 .font-display {
   font-family: var(--font-display);
+}
+
+/* Logo font for branding */
+.font-logo {
+  font-family: var(--font-logo);
 }

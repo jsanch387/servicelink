@@ -6,7 +6,7 @@ import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 interface AboutUsProps {
   businessProfile: CompleteBusinessProfile;
   editMode?: EditMode; // Will be used later
-  onSave?: (data: Record<string, unknown>) => Promise<void>; // Will be used later
+  onSave?: (_data: Record<string, unknown>) => Promise<void>; // Will be used later
   onCancel?: () => void; // Will be used later
 }
 

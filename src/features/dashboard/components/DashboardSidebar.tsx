@@ -1,35 +1,54 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { IconButton, Logo } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
+import { useAuth } from '@/features/auth';
 import {
+  ArrowRightOnRectangleIcon,
+  CogIcon,
   HomeIcon,
   UserIcon,
-  ArrowRightOnRectangleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { ROUTES } from '@/constants/routes';
-import { IconButton } from '@/components/shared';
-import { useAuth } from '@/features/auth';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import React from 'react';
 import type { DashboardSidebarProps } from '../types/dashboard';
 
-const navigation = [
-  { name: 'Dashboard', href: ROUTES.DASHBOARD.MAIN, icon: HomeIcon },
+const allNavigationItems = [
+  {
+    name: 'Dashboard',
+    href: ROUTES.DASHBOARD.MAIN,
+    icon: HomeIcon,
+    requiresOnboarding: false,
+  },
   {
     name: 'Business Profile',
     href: ROUTES.DASHBOARD.BUSINESS_PROFILE,
     icon: UserIcon,
+    requiresOnboarding: true,
+  },
+  {
+    name: 'Settings',
+    href: ROUTES.DASHBOARD.SETTINGS,
+    icon: CogIcon,
+    requiresOnboarding: true,
   },
 ];
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   open,
   setOpen,
+  isOnboardingCompleted = false,
 }) => {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useAuth();
+
+  // Filter navigation items based on onboarding completion
+  const navigation = allNavigationItems.filter(
+    item => !item.requiresOnboarding || isOnboardingCompleted
+  );
 
   const handleLogout = async () => {
     try {
@@ -68,7 +87,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         <div className="flex h-full flex-col">
           {/* Logo and close button */}
           <div className="flex h-16 items-center justify-between px-6">
-            <h1 className="text-xl font-bold text-white">BusinessLink</h1>
+            <Logo size="md" href="/" />
             <IconButton
               icon={<XMarkIcon />}
               onClick={() => setOpen(false)}

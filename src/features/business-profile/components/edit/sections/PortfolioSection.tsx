@@ -96,7 +96,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
                     image.preview_url ||
                     (image.storage_path
                       ? `https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/${image.storage_path}`
-                      : '')
+                      : undefined)
                   }
                   alt={`Portfolio image ${index + 1}`}
                   width={200}

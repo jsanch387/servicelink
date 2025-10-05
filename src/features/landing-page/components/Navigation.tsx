@@ -1,15 +1,14 @@
 'use client';
 
-import { Button } from '@/components/shared/Button';
+import { Button, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
 import React, { useState } from 'react';
 
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -25,16 +24,7 @@ export const Navigation: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center">
-              <Image
-                src="/service-link-logo.png"
-                alt="ServiceLink Logo"
-                width={80}
-                height={80}
-                className="h-20 w-20 object-contain"
-              />
-              <h1 className="text-xl font-bold text-white">ServiceLink</h1>
-            </div>
+            <Logo size="lg" href="/" />
           </div>
 
           {/* Desktop Navigation - Centered */}
@@ -76,8 +66,8 @@ export const Navigation: React.FC = () => {
                 <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="sm">
                   Login
                 </Button>
-                <Button href={ROUTES.WAITLIST_PAGE} variant="primary" size="sm">
-                  Join Waitlist
+                <Button href={ROUTES.AUTH.SIGNUP} variant="primary" size="sm">
+                  Sign Up
                 </Button>
               </>
             )}
@@ -157,13 +147,13 @@ export const Navigation: React.FC = () => {
                       Login
                     </Button>
                     <Button
-                      href={ROUTES.WAITLIST_PAGE}
+                      href={ROUTES.AUTH.SIGNUP}
                       variant="primary"
                       size="sm"
                       className="w-full justify-center"
                       onClick={closeMobileMenu}
                     >
-                      Join Waitlist
+                      Sign Up
                     </Button>
                   </>
                 )}

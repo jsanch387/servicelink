@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { AboutUs } from './AboutUs';
 import { ProfileHeader } from './ProfileHeader';
@@ -14,24 +14,40 @@ import { EditBusinessProfile } from './edit/EditBusinessProfile';
 
 interface BusinessProfileViewProps {
   businessProfile: CompleteBusinessProfile;
+  initialMode?: EditMode;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   businessProfile: initialBusinessProfile,
+  initialMode = 'view',
 }) => {
-  const [editMode, setEditMode] = useState<EditMode>('view');
+  const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
     useState<CompleteBusinessProfile>(initialBusinessProfile);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Update edit mode when initialMode prop changes
+  useEffect(() => {
+    console.log('🔄 Initial mode changed:', initialMode);
+    setEditMode(initialMode);
+  }, [initialMode]);
+
   const handleEdit = () => {
     console.log('✏️ Switching to edit mode');
     setEditMode('edit');
+    // Update URL to reflect edit mode
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', 'edit');
+    window.history.pushState({}, '', url.toString());
   };
 
   const handlePreview = () => {
     console.log('👁️ Switching to preview mode');
     setEditMode('view');
+    // Update URL to reflect view mode
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', 'view');
+    window.history.pushState({}, '', url.toString());
   };
 
   const handleSave = async (data: Record<string, unknown>) => {
@@ -62,6 +78,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
       // Switch to preview mode to show the updated profile
       setEditMode('view');
+      // Update URL to reflect view mode
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', 'view');
+      window.history.pushState({}, '', url.toString());
       console.log('✅ Business profile updated and switched to preview mode');
     } catch (error) {
       console.error('❌ Error updating business profile state:', error);
@@ -73,6 +93,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   const handleCancel = () => {
     console.log('❌ Canceling edit mode');
     setEditMode('view');
+    // Update URL to reflect view mode
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', 'view');
+    window.history.pushState({}, '', url.toString());
   };
 
   return (

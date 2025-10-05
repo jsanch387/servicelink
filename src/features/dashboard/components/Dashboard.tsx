@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { Bars3Icon } from '@heroicons/react/24/outline';
+import { usePathname } from 'next/navigation';
+import React, { useState } from 'react';
 
-import type { DashboardProps } from '../types/dashboard';
-import { DashboardSidebar } from './DashboardSidebar';
-import { DashboardHeader } from './DashboardHeader';
 import { IconButton } from '@/components/shared';
+import type { DashboardProps } from '../types/dashboard';
+import { DashboardHeader } from './DashboardHeader';
+import { DashboardSidebar } from './DashboardSidebar';
 
-export const Dashboard: React.FC<DashboardProps> = ({ children }) => {
+export const Dashboard: React.FC<DashboardProps> = ({
+  children,
+  isOnboardingCompleted = false,
+}) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
@@ -27,7 +30,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ children }) => {
         />
       )}
 
-      <DashboardSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      <DashboardSidebar
+        open={sidebarOpen}
+        setOpen={setSidebarOpen}
+        isOnboardingCompleted={isOnboardingCompleted}
+      />
       <div className="dashboard-content flex-1 flex flex-col lg:ml-64">
         {showHeader ? (
           <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />

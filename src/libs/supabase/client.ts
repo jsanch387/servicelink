@@ -56,6 +56,11 @@ export type Database = {
           email: string | null;
           website: string | null;
           social_media: any; // JSON object for social media links
+          // NEW FIELDS FOR SLUG SYSTEM:
+          business_slug: string | null; // Custom URL slug
+          business_link: string | null; // Full public URL
+          profile_views: number; // Analytics counter
+          last_viewed_at: string | null; // Last view timestamp
           last_edited: string;
           created_at: string;
           updated_at: string;
@@ -77,6 +82,11 @@ export type Database = {
           email?: string | null;
           website?: string | null;
           social_media?: any;
+          // NEW FIELDS FOR SLUG SYSTEM:
+          business_slug?: string | null;
+          business_link?: string | null;
+          profile_views?: number;
+          last_viewed_at?: string | null;
           last_edited?: string;
           created_at?: string;
           updated_at?: string;
@@ -98,6 +108,11 @@ export type Database = {
           email?: string | null;
           website?: string | null;
           social_media?: any;
+          // NEW FIELDS FOR SLUG SYSTEM:
+          business_slug?: string | null;
+          business_link?: string | null;
+          profile_views?: number;
+          last_viewed_at?: string | null;
           last_edited?: string;
           created_at?: string;
           updated_at?: string;

@@ -1,8 +1,10 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { MediaService } from '@/features/media';
 import { useUploadPortfolio } from '@/features/media/useUploadPortfolio';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import { BusinessImagesService } from '../services/businessImagesService';
 import { PortfolioImage } from '../types/portfolio';
@@ -11,24 +13,38 @@ import { saveStepAndProgress } from '../utils/onboardingHelpers';
 interface Step4PortfolioProps {
   profileId: string;
   businessProfileId: string;
-  existingData?: any;
+  existingData?: Record<string, unknown>;
   onNext: () => void;
   onBack: () => void;
 }
 
-// Smart Image Preview Component with Intelligent Sizing
+// Smart Image Preview Component with Mobile-First Design
 const SmartImagePreview: React.FC<{
   src: string;
   alt: string;
   onRemove: () => void;
 }> = ({ src, alt, onRemove }) => {
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const handleRemoveClick = () => {
+    // Always show confirmation dialog for consistency
+    setShowConfirmation(true);
+  };
+
+  const confirmRemove = () => {
+    onRemove();
+    setShowConfirmation(false);
+  };
+
   return (
     <div className="relative group">
       {/* Fixed Square Container - Always maintains consistent size */}
       <div className="aspect-square w-full rounded-xl overflow-hidden shadow-lg bg-neutral-900 border border-neutral-700">
-        <img
+        <Image
           src={src}
           alt={alt}
+          width={400}
+          height={400}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={e => {
             e.currentTarget.src =
@@ -37,23 +53,48 @@ const SmartImagePreview: React.FC<{
         />
       </div>
 
-      {/* Remove Button Overlay */}
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+      {/* Mobile-First Remove Button */}
+      <div className="absolute top-2 right-2">
         <button
-          onClick={onRemove}
-          className="p-2 bg-red-600/90 text-white rounded-full shadow-xl hover:bg-red-500 transition duration-200"
+          onClick={handleRemoveClick}
+          className="p-2 bg-red-600/90 text-white rounded-full shadow-xl hover:bg-red-500 active:bg-red-700 transition duration-200 touch-manipulation"
           aria-label="Remove image"
         >
-          <XMarkIcon className="h-5 w-5" />
+          <XMarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmation && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl z-10">
+          <div className="bg-neutral-800 border border-neutral-600 rounded-xl p-4 mx-4 max-w-sm">
+            <p className="text-white text-center mb-4 text-sm">
+              Remove this image?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="flex-1 px-4 py-2 bg-neutral-600 text-white rounded-lg text-sm font-medium hover:bg-neutral-500 transition duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemove}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-500 transition duration-200"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // Enhanced Upload Component with Better UX
 const EnhancedImageUpload: React.FC<{
-  onImageSelect: (file: File) => void;
+  onImageSelect: (_file: File) => void;
   disabled: boolean;
 }> = ({ onImageSelect, disabled }) => {
   const [dragActive, setDragActive] = useState(false);
@@ -110,7 +151,7 @@ const EnhancedImageUpload: React.FC<{
         {dragActive ? 'Drop your photo here' : 'Click to upload or drag & drop'}
       </p>
       <p className="text-sm text-gray-500 text-center max-w-xs">
-        Any size works! We'll automatically make it look perfect.
+        Any size works! We&apos;ll automatically make it look perfect.
         <br />
         JPG, PNG up to 10MB
       </p>
@@ -143,6 +184,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [removedImages, setRemovedImages] = useState<PortfolioImage[]>([]);
 
   // Use the portfolio upload hook
   const { uploadPortfolio, isUploading: isUploadingPortfolio } =
@@ -214,8 +256,15 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
   const removeImage = (index: number) => {
     console.log('🗑️ Removing image at index:', index);
 
-    // Clean up preview URL to prevent memory leaks
     const imageToRemove = images[index];
+
+    // If it's an existing image (not a temp/preview), track it for deletion
+    if (!imageToRemove.id?.toString().startsWith('temp-') && imageToRemove.id) {
+      console.log('📝 Tracking existing image for deletion:', imageToRemove);
+      setRemovedImages(prev => [...prev, imageToRemove]);
+    }
+
+    // Clean up preview URL for temporary images
     if (
       imageToRemove.preview_url &&
       imageToRemove.id?.toString().startsWith('temp-')
@@ -240,6 +289,54 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
     try {
       let newlyUploadedImages: PortfolioImage[] = [];
+
+      // Step 0: Delete removed images from storage and database
+      if (removedImages.length > 0) {
+        console.log(
+          '🗑️ STEP 0: Deleting removed images:',
+          removedImages.length
+        );
+
+        // Delete from storage
+        const storagePaths = removedImages.map(img => img.storage_path);
+        const deleteStorageResult =
+          await MediaService.deleteImages(storagePaths);
+
+        if (!deleteStorageResult.success) {
+          console.error(
+            '❌ Failed to delete images from storage:',
+            deleteStorageResult.error
+          );
+          setError('Failed to delete removed images. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        // Delete from database (using individual calls for now)
+        const imageIds = removedImages
+          .map(img => img.id)
+          .filter(Boolean) as string[];
+        const deletePromises = imageIds.map(imageId =>
+          BusinessImagesService.deleteImage(imageId)
+        );
+        const deleteResults = await Promise.all(deletePromises);
+
+        const failedDeletes = deleteResults.filter(result => !result.success);
+        if (failedDeletes.length > 0) {
+          console.error(
+            '❌ Failed to delete some images from database:',
+            failedDeletes
+          );
+          setError('Failed to delete some removed images. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('✅ STEP 0 COMPLETE: Removed images deleted successfully');
+
+        // Clear the removed images array since they've been successfully deleted
+        setRemovedImages([]);
+      }
 
       // Step 1: Upload images to Supabase storage (if any new images)
       if (selectedFiles.length > 0) {
@@ -403,10 +500,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           Upload photos to build instant credibility and trust with potential
           customers.
         </p>
-        <p className="text-sm sm:text-base text-gray-500 mt-2 sm:mt-3">
-          Any size works! We automatically make all photos look perfect and
-          consistent.
-        </p>
       </div>
 
       {/* Error Message */}
@@ -419,7 +512,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
       )}
 
       {/* Main Content Container */}
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0">
+      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl  sm:mx-0">
         {/* Upload Section */}
         <div className="mb-8 sm:mb-10">
           <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
@@ -476,19 +569,19 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           type="button"
           onClick={onBack}
           variant="secondary"
-          className="w-full sm:w-auto px-8 order-2 sm:order-1"
+          className="w-full sm:w-auto px-6 sm:px-8 order-2 sm:order-1"
           disabled={isLoading || isUploadingPortfolio}
         >
           ← Back
         </Button>
 
-        <div className="flex gap-4 w-full sm:w-auto order-1 sm:order-2">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 order-1 sm:order-2">
           {/* Skip Button */}
           <Button
             type="button"
             onClick={handleSkip}
             variant="outline"
-            className="flex-1 px-6 sm:px-8"
+            className="w-full sm:flex-1 px-6 sm:px-8"
             disabled={isLoading || isUploadingPortfolio}
           >
             Skip for now
@@ -509,7 +602,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
       </div>
 
       <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
-        Don't worry - you can always add, manage, and rearrange your photos
+        Don&apos;t worry - you can always add, manage, and rearrange your photos
         later.
       </p>
     </div>

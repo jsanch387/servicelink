@@ -1,20 +1,30 @@
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-import { redirect } from 'next/navigation';
 import {
   BusinessProfileApi,
   isOnboardingCompleted,
 } from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 /**
  * Business Profile Page with Server-Side Rendering
  *
  * Shows business profile if onboarding is completed.
  * Redirects to dashboard if onboarding is not completed.
+ *
+ * URL Parameters:
+ * - mode: 'view' | 'edit' - determines initial edit mode
  */
-export default async function BusinessProfilePage() {
+export default async function BusinessProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
   console.log('🏢 Business Profile page loading...');
+
+  // Await searchParams since it's now a Promise in Next.js 15
+  const params = await searchParams;
 
   // Create server client for SSR
   const cookieStore = await cookies();
@@ -95,9 +105,16 @@ export default async function BusinessProfilePage() {
     imagesCount: businessProfile.images.length,
   });
 
+  // Determine initial edit mode from URL parameters
+  const initialMode = params.mode === 'edit' ? 'edit' : 'view';
+  console.log('🎯 Initial mode from URL:', initialMode);
+
   return (
     <div className="min-h-screen bg-neutral-900">
-      <BusinessProfileView businessProfile={businessProfile} />
+      <BusinessProfileView
+        businessProfile={businessProfile}
+        initialMode={initialMode}
+      />
     </div>
   );
 }

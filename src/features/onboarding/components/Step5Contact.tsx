@@ -8,10 +8,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { BusinessProfileService } from '../services/businessProfileService';
 import { ContactExistingData, ContactFormData } from '../types/contact';
-import {
-  completeOnboarding,
-  saveStepAndProgress,
-} from '../utils/onboardingHelpers';
+import { saveStepAndProgress } from '../utils/onboardingHelpers';
 
 interface Step5ContactProps {
   profileId: string;
@@ -186,19 +183,7 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
 
       console.log('✅ Contact data saved to business profile');
 
-      // Complete onboarding
-      const completeResult = await completeOnboarding(profileId);
-      if (!completeResult.success) {
-        console.error(
-          '❌ Failed to complete onboarding:',
-          completeResult.error
-        );
-        setError(completeResult.error || 'Failed to complete onboarding');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('🎉 Onboarding completed successfully!');
+      console.log('🎉 Ready to complete onboarding!');
       onNext();
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);
@@ -227,21 +212,7 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
         return;
       }
 
-      console.log('✅ Skipped Step 5, completing onboarding');
-
-      // Complete onboarding even if skipping contact
-      const completeResult = await completeOnboarding(profileId);
-      if (!completeResult.success) {
-        console.error(
-          '❌ Failed to complete onboarding:',
-          completeResult.error
-        );
-        setError(completeResult.error || 'Failed to complete onboarding');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('🎉 Onboarding completed (skipped contact)');
+      console.log('✅ Skipped Step 5, ready to complete onboarding');
       onNext();
     } catch (error) {
       console.error('❌ Error skipping Step 5:', error);
@@ -260,9 +231,6 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
         <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
           Specify how customers should reach you for bookings and inquiries.
         </p>
-        <p className="text-sm sm:text-base text-gray-500 mt-2 sm:mt-3">
-          This information will be displayed on your public business page.
-        </p>
       </div>
 
       {/* Error Message */}
@@ -275,7 +243,7 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
       )}
 
       {/* Main Content Container */}
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0 space-y-6 sm:space-y-8">
+      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl sm:mx-0 space-y-6 sm:space-y-8">
         {/* Phone Number for Calls */}
         <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-5 sm:p-6">
           <div className="flex items-center mb-4 sm:mb-6 border-b border-neutral-800 pb-3 sm:pb-4">
@@ -342,13 +310,15 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
                   Using the same number for both calls and texts
                 </span>
               </div>
-              <button
+              <Button
                 onClick={() => handleSamePhoneChange(false)}
                 disabled={isLoading}
-                className="text-orange-400 hover:text-orange-300 text-sm font-medium underline transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="ghost"
+                size="sm"
+                className="text-orange-400 hover:text-orange-300 underline"
               >
                 Change
-              </button>
+              </Button>
             </div>
             <p className="text-xs sm:text-sm text-orange-300/70 mt-2 ml-9 sm:ml-10">
               Both call and text buttons will use your primary phone number.
@@ -430,19 +400,19 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
           type="button"
           onClick={onBack}
           variant="secondary"
-          className="w-full sm:w-auto px-8 order-2 sm:order-1"
+          className="w-full sm:w-auto px-6 sm:px-8 order-2 sm:order-1"
           disabled={isLoading}
         >
           ← Back to Portfolio
         </Button>
 
-        <div className="flex gap-4 w-full sm:w-auto order-1 sm:order-2">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 order-1 sm:order-2">
           {/* Skip Button */}
           <Button
             type="button"
             onClick={handleSkip}
             variant="outline"
-            className="flex-1 px-6 sm:px-8"
+            className="w-full sm:flex-1 px-6 sm:px-8"
             disabled={isLoading}
           >
             Skip & Complete
@@ -467,7 +437,7 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
       </div>
 
       <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
-        You're almost there! This is the last step of the initial setup.
+        You&apos;re almost there! This is the last step of the initial setup.
       </p>
     </div>
   );

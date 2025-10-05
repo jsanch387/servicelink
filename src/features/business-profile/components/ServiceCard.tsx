@@ -1,3 +1,4 @@
+import { Button } from '@/components/shared';
 import React from 'react';
 
 interface Service {
@@ -10,8 +11,8 @@ interface Service {
 
 interface ServiceCardProps {
   service: Service;
-  onEdit?: (service: Service) => void;
-  onDelete?: (serviceId: string) => void;
+  onEdit?: (_service: Service) => void;
+  onDelete?: (_serviceId: string) => void;
   isEditable?: boolean;
 }
 
@@ -74,20 +75,24 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       {isEditable && (
         <div className="flex gap-2 pt-4 mt-4 border-t border-neutral-700">
           {onEdit && (
-            <button
+            <Button
               onClick={() => onEdit(service)}
-              className="flex-1 px-3 py-2 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 hover:scale-105 font-medium"
+              variant="primary"
+              size="sm"
+              className="flex-1 hover:scale-105"
             >
               Edit Service
-            </button>
+            </Button>
           )}
           {onDelete && service.id && (
-            <button
+            <Button
               onClick={() => onDelete(service.id!)}
-              className="flex-1 px-3 py-2 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 hover:scale-105 font-medium"
+              variant="danger"
+              size="sm"
+              className="flex-1 hover:scale-105"
             >
               Delete
-            </button>
+            </Button>
           )}
         </div>
       )}

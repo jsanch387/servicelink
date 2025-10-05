@@ -12,22 +12,22 @@ import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 interface ProfileHeaderProps {
   businessProfile: CompleteBusinessProfile;
   editMode: EditMode;
-  onSave: (data: Record<string, unknown>) => Promise<void>;
+  onSave: (_data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   businessProfile,
-  editMode,
-  onSave,
-  onCancel,
+  editMode: _editMode,
+  onSave: _onSave,
+  onCancel: _onCancel,
 }) => {
   return (
     <>
       {/* Cover Photo */}
       <div className="relative h-48 sm:h-64 md:h-72 bg-neutral-900 overflow-hidden">
         <ImageWithFallback
-          src={businessProfile.cover_image_url || ''}
+          src={businessProfile.cover_image_url || undefined}
           alt="Business Cover Photo"
           width={1200}
           height={400}
@@ -41,7 +41,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <div className="relative p-8 sm:p-12 flex flex-col items-center -mt-20">
         <ImageWithFallback
           className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-neutral-800 shadow-lg object-cover bg-gray-700"
-          src={businessProfile.logo_url || ''}
+          src={businessProfile.logo_url || undefined}
           alt={`${businessProfile.business_name} logo`}
           width={256}
           height={256}

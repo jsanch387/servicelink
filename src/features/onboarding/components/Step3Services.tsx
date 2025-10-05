@@ -102,12 +102,17 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
   });
 
   const [services, setServices] = useState<Service[]>([]);
+  const [existingServices, setExistingServices] = useState<Service[]>([]); // Track existing services from DB
   const [currentService, setCurrentService] = useState<Service>({
     name: '',
     description: '',
     price: '',
     hours_to_complete: undefined,
   });
+
+  // Character limits
+  const MAX_DESCRIPTION_LENGTH = 280;
+  const MAX_PRICE_LENGTH = 8; // Max 8 digits for price (e.g., 999999.99)
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -125,9 +130,11 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
       if (result.success && result.data) {
         console.log('✅ Loaded existing services:', result.data);
-        setServices(result.data);
+        setExistingServices(result.data); // Track existing services separately
+        setServices(result.data); // Set services for display
       } else {
         console.log('ℹ️ No existing services found');
+        setExistingServices([]); // Initialize as empty array
       }
       setServicesLoaded(true);
     };
@@ -140,6 +147,24 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     value: string | number | undefined
   ) => {
     console.log(`📝 Service ${field} changed:`, value);
+
+    // Apply character limits
+    if (field === 'description' && typeof value === 'string') {
+      if (value.length > MAX_DESCRIPTION_LENGTH) {
+        return; // Don't update if exceeding limit
+      }
+    }
+
+    if (field === 'price' && typeof value === 'string') {
+      // Remove non-numeric characters except decimal point
+      const numericValue = value.replace(/[^0-9.]/g, '');
+      // Limit to MAX_PRICE_LENGTH characters
+      if (numericValue.length > MAX_PRICE_LENGTH) {
+        return; // Don't update if exceeding limit
+      }
+      value = numericValue;
+    }
+
     setCurrentService(prev => ({
       ...prev,
       [field]: value,
@@ -149,6 +174,16 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
   const addService = () => {
     if (!currentService.name.trim()) {
       setError('Please enter a service name.');
+      return;
+    }
+
+    if (!currentService.price.trim()) {
+      setError('Please enter a price for this service.');
+      return;
+    }
+
+    if (!currentService.description.trim()) {
+      setError("Please describe what's included in this service.");
       return;
     }
 
@@ -173,6 +208,19 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     setServices(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Helper function to identify new services (not already in database)
+  const getNewServices = () => {
+    return services.filter(service => {
+      // Services with temporary IDs (starting with 'temp-') are always new
+      if (service.id && service.id.toString().startsWith('temp-')) {
+        return true;
+      }
+
+      // Check if service exists in existingServices by ID
+      return !existingServices.some(existing => existing.id === service.id);
+    });
+  };
+
   const handleSubmit = async () => {
     console.log('💾 Saving Step 3 services data:', services);
 
@@ -180,17 +228,29 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     setError('');
 
     try {
-      const servicesResult =
-        await BusinessServicesService.createServicesForOnboarding(
-          businessProfileId,
-          services
-        );
+      // Only save new services (not already in database)
+      const newServices = getNewServices();
 
-      if (!servicesResult.success) {
-        console.error('❌ Failed to save services:', servicesResult.error);
-        setError(servicesResult.error || 'Failed to save services');
-        setIsLoading(false);
-        return;
+      console.log('📝 Existing services:', existingServices.length);
+      console.log('🆕 New services to save:', newServices.length);
+
+      // If no new services to save, just update progress
+      if (newServices.length === 0) {
+        console.log('ℹ️ No new services to save, updating progress only');
+      } else {
+        console.log('💾 Saving new services:', newServices);
+        const servicesResult =
+          await BusinessServicesService.createServicesForOnboarding(
+            businessProfileId,
+            newServices
+          );
+
+        if (!servicesResult.success) {
+          console.error('❌ Failed to save services:', servicesResult.error);
+          setError(servicesResult.error || 'Failed to save services');
+          setIsLoading(false);
+          return;
+        }
       }
 
       const progressResult = await saveStepAndProgress(
@@ -287,21 +347,56 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
               required
             />
 
-            <TextArea
-              label="What's included? (Optional)"
-              placeholder="Tell customers what they get. Keep it simple."
-              value={currentService.description}
-              onChange={value => handleServiceChange('description', value)}
-              rows={3}
-            />
+            <div className="space-y-2">
+              <TextArea
+                label="What's included? (Required)"
+                placeholder="Tell customers what they get. Keep it simple."
+                value={currentService.description}
+                onChange={value => handleServiceChange('description', value)}
+                rows={3}
+                required
+              />
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">
+                  Describe what customers get with this service
+                </span>
+                <span
+                  className={`${
+                    currentService.description.length >
+                    MAX_DESCRIPTION_LENGTH * 0.9
+                      ? 'text-orange-400'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {currentService.description.length}/{MAX_DESCRIPTION_LENGTH}
+                </span>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <PriceInput
-                label="How much does it cost? (Optional)"
-                placeholder="0.00"
-                value={currentService.price}
-                onChange={value => handleServiceChange('price', value)}
-              />
+              <div className="space-y-2">
+                <PriceInput
+                  label="How much does it cost? (Required)"
+                  placeholder="0.00"
+                  value={currentService.price}
+                  onChange={value => handleServiceChange('price', value)}
+                  required
+                />
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">
+                    Enter price in dollars (e.g., 150.00)
+                  </span>
+                  <span
+                    className={`${
+                      currentService.price.length > MAX_PRICE_LENGTH * 0.8
+                        ? 'text-orange-400'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {currentService.price.length}/{MAX_PRICE_LENGTH}
+                  </span>
+                </div>
+              </div>
 
               <Select
                 label="How long does it take? (Optional)"
@@ -397,7 +492,7 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       </div>
 
       <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
-        Don't worry - you can always add, change, or remove services later.
+        Don&apos;t worry - you can always add, change, or remove services later.
       </p>
     </div>
   );
