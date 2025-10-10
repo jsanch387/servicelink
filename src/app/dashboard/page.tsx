@@ -102,34 +102,89 @@ export default async function DashboardPage() {
     case 'completed':
       console.log('✅ Onboarding completed - fetching dashboard data');
 
-      // Fetch comprehensive dashboard data
-      const dashboardResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/dashboard/data`,
-        {
-          headers: {
-            Cookie: cookies().toString(),
-          },
-        }
+      // Fetch business profile with counts directly from database
+      const { data: profile, error: profileError } = await supabase
+        .from('business_profiles')
+        .select(
+          `
+          id, business_name, business_type, service_area, bio, created_at, updated_at,
+          business_slug, business_link,
+          services:business_services(count),
+          images:business_images(count)
+        `
+        )
+        .eq('profile_id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('❌ Failed to fetch business profile:', profileError);
+        redirect('/auth/login');
+      }
+
+      // Calculate analytics
+      const servicesCount = (profile.services as any)?.[0]?.count || 0;
+      const imagesCount = (profile.images as any)?.[0]?.count || 0;
+      const hasSlug = !!(profile.business_slug && profile.business_link);
+
+      // Calculate profile completeness
+      const checks = [
+        profile.business_name,
+        profile.business_type,
+        profile.service_area,
+        profile.bio && profile.bio.trim().length >= 50,
+        hasSlug,
+        servicesCount > 0,
+        imagesCount > 0,
+      ];
+      const profileCompleteness = Math.round(
+        (checks.filter(Boolean).length / checks.length) * 100
       );
 
-      if (!dashboardResponse.ok) {
-        console.error('❌ Failed to fetch dashboard data');
-        redirect('/auth/login');
-      }
-
-      const dashboardResult = await dashboardResponse.json();
-      if (!dashboardResult.success) {
-        console.error('❌ Dashboard data fetch failed:', dashboardResult.error);
-        redirect('/auth/login');
-      }
+      // Prepare dashboard data
+      const dashboardData = {
+        businessProfile: {
+          id: profile.id,
+          business_name: profile.business_name,
+          business_type: profile.business_type,
+          service_area: profile.service_area,
+          bio: profile.bio,
+          created_at: profile.created_at,
+          updated_at: profile.updated_at,
+        },
+        slugData: hasSlug
+          ? {
+              hasSlug: true,
+              slug: profile.business_slug,
+              fullLink: profile.business_link,
+              createdAt: profile.updated_at,
+            }
+          : { hasSlug: false },
+        analytics: {
+          servicesCount,
+          imagesCount,
+          profileCompleteness,
+        },
+        nextSteps: {
+          needsSlug: !hasSlug,
+          needsServices: servicesCount === 0,
+          needsImages: imagesCount === 0,
+          needsBio: !profile.bio || profile.bio.trim().length < 50,
+          readyToShare:
+            hasSlug &&
+            servicesCount > 0 &&
+            imagesCount > 0 &&
+            profile.bio &&
+            profile.bio.trim().length >= 50,
+        },
+      };
 
       console.log('✅ Dashboard data loaded:', {
-        hasSlug: dashboardResult.data.slugData?.hasSlug,
-        completeness: dashboardResult.data.analytics.profileCompleteness,
-        readyToShare: dashboardResult.data.nextSteps.readyToShare,
+        hasSlug: dashboardData.slugData?.hasSlug,
+        completeness: dashboardData.analytics.profileCompleteness,
+        readyToShare: dashboardData.nextSteps.readyToShare,
       });
 
-      return <DashboardContent dashboardData={dashboardResult.data} />;
+      return <DashboardContent dashboardData={dashboardData} />;
 
     default:
       console.error('❌ Unknown onboarding status:', status);

@@ -72,6 +72,7 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
         value={formData.bio}
         onChange={value => onInputChange('bio', value)}
         rows={5}
+        maxLength={280}
       />
     </div>
   );

@@ -152,7 +152,7 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
       </div>
 
       {/* Main Content Container (Modular Block Style) */}
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0">
+      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl sm:mx-0">
         {/* Error Message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
@@ -195,6 +195,7 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
             value={formData.bio}
             onChange={value => handleInputChange('bio', value)}
             rows={5}
+            maxLength={280}
           />
 
           {/* Action Buttons - Mobile optimized */}
