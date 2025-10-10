@@ -5,6 +5,9 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+// Force dynamic rendering (requires authentication)
+export const dynamic = 'force-dynamic';
+
 /**
  * Dashboard Page with Server-Side Rendering
  *

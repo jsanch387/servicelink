@@ -5,33 +5,28 @@
  * Helps search engines discover and index all business profiles.
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // Revalidate every hour
 
 export async function GET() {
   try {
     console.log('🗺️ Generating sitemap.xml...');
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
+    // Use direct client (no cookies needed for public data)
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
     // Get all business profiles with slugs
     const { data: profiles, error } = await supabase
       .from('business_profiles')
       .select('business_slug, updated_at')
-      .not('business_slug', 'is', null)
-      .eq('business_slug', 'is not', null);
+      .not('business_slug', 'is', null);
 
     if (error) {
       console.error('Error fetching profiles for sitemap:', error);

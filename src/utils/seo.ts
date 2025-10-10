@@ -99,7 +99,7 @@ export function generateSEOKeywords(data: {
     'contact directly',
     'ServiceLink',
     ...additionalKeywords,
-  ].filter(Boolean);
+  ].filter((k): k is string => Boolean(k));
 
   // Remove duplicates and return
   return [...new Set(keywords)];

@@ -33,9 +33,9 @@ export class AnalyticsApi {
       }
 
       const analytics: ProfileViewAnalytics = {
-        profileViews: profile.profile_views || 0,
-        lastViewedAt: profile.last_viewed_at,
-        businessProfileId: profile.id,
+        profileViews: (profile as any).profile_views || 0,
+        lastViewedAt: (profile as any).last_viewed_at,
+        businessProfileId: (profile as any).id,
       };
 
       return { success: true, data: analytics };
@@ -72,9 +72,9 @@ export class AnalyticsApi {
       }
 
       const analytics: ProfileViewAnalytics = {
-        profileViews: profile.profile_views || 0,
-        lastViewedAt: profile.last_viewed_at,
-        businessProfileId: profile.id,
+        profileViews: (profile as any).profile_views || 0,
+        lastViewedAt: (profile as any).last_viewed_at,
+        businessProfileId: (profile as any).id,
       };
 
       return { success: true, data: analytics };
