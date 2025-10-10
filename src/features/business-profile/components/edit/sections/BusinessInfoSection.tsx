@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
 import { Input, TextArea } from '@/components/shared';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
+import React from 'react';
 
 interface BusinessInfoSectionProps {
   formData: EditingFormData;
@@ -16,25 +16,34 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
   errors,
 }) => {
   return (
-    <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
-      <h3 className="text-lg font-semibold text-white mb-4">
-        Business Information
-      </h3>
+    <div className="space-y-6 sm:space-y-8">
+      {/* Section Header */}
+      <div>
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+          Business Information
+        </h2>
+        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
+          Tell customers about your business and what makes you unique in your
+          industry.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Business Name"
-          placeholder="Enter your business name"
-          value={formData.business_name}
-          onChange={value => onInputChange('business_name', value)}
-          required
-          error={
-            errors.some(e => e.includes('Business name'))
-              ? 'Business name is required'
-              : undefined
-          }
-        />
+      {/* Business Name (Required) */}
+      <Input
+        label="Business Name"
+        placeholder="e.g., Stellar Digital Marketing"
+        value={formData.business_name}
+        onChange={value => onInputChange('business_name', value)}
+        required
+        error={
+          errors.some(e => e.includes('Business name'))
+            ? 'Business name is required'
+            : undefined
+        }
+      />
 
+      {/* Business Type & Service Area (Grid Layout) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <Input
           label="Business Type"
           placeholder="e.g., Auto Detailing, Car Wash"
@@ -49,31 +58,21 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
         />
 
         <Input
-          label="Service Area"
-          placeholder="e.g., Local Area, City Wide"
+          label="Service Area (Optional)"
+          placeholder="e.g., Austin, TX, or Remote"
           value={formData.service_area}
           onChange={value => onInputChange('service_area', value)}
-          required
-          error={
-            errors.some(e => e.includes('Service area'))
-              ? 'Service area is required'
-              : undefined
-          }
         />
-
-        <div className="md:col-span-2">
-          <TextArea
-            label="Business Description"
-            placeholder="Tell customers about your business, your experience, and what makes you unique..."
-            value={formData.bio}
-            onChange={value => onInputChange('bio', value)}
-            rows={4}
-          />
-          <p className="text-sm text-gray-400 mt-2">
-            {formData.bio.length}/500 characters
-          </p>
-        </div>
       </div>
+
+      {/* Bio */}
+      <TextArea
+        label="Business Description (Optional)"
+        placeholder="Briefly describe your business, services, and what makes you unique. This will be the first thing customers read!"
+        value={formData.bio}
+        onChange={value => onInputChange('bio', value)}
+        rows={5}
+      />
     </div>
   );
 };

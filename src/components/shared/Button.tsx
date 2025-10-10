@@ -1,5 +1,5 @@
-import React from 'react';
 import Link from 'next/link';
+import React from 'react';
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -44,9 +44,9 @@ export const Button: React.FC<ButtonProps> = ({
     primary:
       'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white focus:ring-orange-500',
     secondary:
-      'border border-gray-700 text-gray-300 bg-neutral-700 hover:bg-neutral-600 focus:ring-blue-500',
+      'border border-orange-500/30 text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 hover:border-orange-400/50 focus:ring-orange-500',
     outline:
-      'border border-gray-600 text-gray-300 bg-transparent hover:bg-gray-600/10 hover:border-gray-500 focus:ring-gray-500',
+      'border border-orange-500/50 text-orange-400 bg-transparent hover:bg-orange-500/10 hover:border-orange-400 focus:ring-orange-500',
     ghost:
       'text-gray-300 hover:text-white hover:bg-neutral-700/50 focus:ring-neutral-500',
     danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
@@ -77,18 +77,18 @@ export const Button: React.FC<ButtonProps> = ({
     <>
       {loading && (
         <div
-          className={`animate-spin rounded-full border-b-2 border-current ${iconSizeClasses[size]} ${icon || iconPosition === 'right' ? 'mr-2' : ''}`}
+          className={`animate-spin rounded-full border-b-2 border-current ${iconSizeClasses[size]} ${children ? 'mr-2' : ''}`}
         />
       )}
       {!loading && icon && iconPosition === 'left' && (
-        <span>
-          <span className={iconSizeClasses[size]}>{icon}</span>
+        <span className={`${iconSizeClasses[size]} ${children ? 'mr-2' : ''}`}>
+          {icon}
         </span>
       )}
       {children}
       {!loading && icon && iconPosition === 'right' && (
-        <span className={`${children ? 'ml-2' : ''}`}>
-          <span className={iconSizeClasses[size]}>{icon}</span>
+        <span className={`${iconSizeClasses[size]} ${children ? 'ml-2' : ''}`}>
+          {icon}
         </span>
       )}
     </>

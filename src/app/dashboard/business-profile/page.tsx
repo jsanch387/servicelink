@@ -1,20 +1,33 @@
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
-import { redirect } from 'next/navigation';
 import {
   BusinessProfileApi,
   isOnboardingCompleted,
 } from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
+// Force dynamic rendering (requires authentication)
+export const dynamic = 'force-dynamic';
 
 /**
  * Business Profile Page with Server-Side Rendering
  *
  * Shows business profile if onboarding is completed.
  * Redirects to dashboard if onboarding is not completed.
+ *
+ * URL Parameters:
+ * - mode: 'view' | 'edit' - determines initial edit mode
  */
-export default async function BusinessProfilePage() {
+export default async function BusinessProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
   console.log('🏢 Business Profile page loading...');
+
+  // Await searchParams since it's now a Promise in Next.js 15
+  const params = await searchParams;
 
   // Create server client for SSR
   const cookieStore = await cookies();
@@ -63,11 +76,11 @@ export default async function BusinessProfilePage() {
 
   console.log('✅ Onboarding completed, fetching business profile');
 
-  // Get business profile by profile_id
+  // Get business profile by profile_id (including slug data)
   const { data: businessProfileData, error: businessProfileError } =
     await supabase
       .from('business_profiles')
-      .select('id')
+      .select('id, business_slug, business_link')
       .eq('profile_id', userProfile.user_id)
       .single();
 
@@ -75,6 +88,22 @@ export default async function BusinessProfilePage() {
     console.error('❌ No business profile found:', businessProfileError);
     redirect('/dashboard');
   }
+
+  // Check if user has a slug configured
+  const hasSlug = !!(
+    businessProfileData.business_slug && businessProfileData.business_link
+  );
+
+  // Prepare slug data
+  const slugData = hasSlug
+    ? {
+        hasSlug: true,
+        slug: businessProfileData.business_slug,
+        fullLink: businessProfileData.business_link,
+      }
+    : {
+        hasSlug: false,
+      };
 
   // Get complete business profile
   const profileResult = await BusinessProfileApi.getCompleteBusinessProfile(
@@ -95,9 +124,17 @@ export default async function BusinessProfilePage() {
     imagesCount: businessProfile.images.length,
   });
 
+  // Determine initial edit mode from URL parameters
+  const initialMode = params.mode === 'edit' ? 'edit' : 'view';
+  console.log('🎯 Initial mode from URL:', initialMode);
+
   return (
     <div className="min-h-screen bg-neutral-900">
-      <BusinessProfileView businessProfile={businessProfile} />
+      <BusinessProfileView
+        businessProfile={businessProfile}
+        initialMode={initialMode}
+        slugData={slugData}
+      />
     </div>
   );
 }

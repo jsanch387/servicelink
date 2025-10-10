@@ -1,5 +1,5 @@
+import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
 import { Metadata } from 'next';
-import { Dashboard } from '@/features/dashboard/components/Dashboard';
 
 export const metadata: Metadata = {
   title: 'Dashboard - ServiceLink',
@@ -17,5 +17,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <Dashboard>{children}</Dashboard>;
+  return <DashboardWrapper>{children}</DashboardWrapper>;
 }

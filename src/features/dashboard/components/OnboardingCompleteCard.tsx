@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
-import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import { Card } from '@/components/shared';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
+import React from 'react';
 
 export const OnboardingCompleteCard: React.FC = () => {
   return (
@@ -16,8 +16,8 @@ export const OnboardingCompleteCard: React.FC = () => {
             🎉 Congratulations! Your Business Profile is Complete
           </h2>
           <p className="text-green-200">
-            You've successfully created your business profile. Your customers
-            can now discover your services and contact you easily.
+            You&apos;ve successfully created your business profile. Your
+            customers can now discover your services and contact you easily.
           </p>
         </div>
       </div>

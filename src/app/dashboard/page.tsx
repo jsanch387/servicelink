@@ -5,6 +5,9 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+// Force dynamic rendering (requires authentication)
+export const dynamic = 'force-dynamic';
+
 /**
  * Dashboard Page with Server-Side Rendering
  *
@@ -97,8 +100,36 @@ export default async function DashboardPage() {
       );
 
     case 'completed':
-      console.log('✅ Onboarding completed - showing dashboard');
-      return <DashboardContent businessProfile={businessProfile} />;
+      console.log('✅ Onboarding completed - fetching dashboard data');
+
+      // Fetch comprehensive dashboard data
+      const dashboardResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/dashboard/data`,
+        {
+          headers: {
+            Cookie: cookies().toString(),
+          },
+        }
+      );
+
+      if (!dashboardResponse.ok) {
+        console.error('❌ Failed to fetch dashboard data');
+        redirect('/auth/login');
+      }
+
+      const dashboardResult = await dashboardResponse.json();
+      if (!dashboardResult.success) {
+        console.error('❌ Dashboard data fetch failed:', dashboardResult.error);
+        redirect('/auth/login');
+      }
+
+      console.log('✅ Dashboard data loaded:', {
+        hasSlug: dashboardResult.data.slugData?.hasSlug,
+        completeness: dashboardResult.data.analytics.profileCompleteness,
+        readyToShare: dashboardResult.data.nextSteps.readyToShare,
+      });
+
+      return <DashboardContent dashboardData={dashboardResult.data} />;
 
     default:
       console.error('❌ Unknown onboarding status:', status);

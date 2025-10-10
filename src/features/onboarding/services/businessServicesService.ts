@@ -193,13 +193,13 @@ export class BusinessServicesService {
   }
 
   /**
-   * Deletes a service (sets is_active to false)
+   * Deletes a service (sets is_active to false) - Soft Delete
    */
   static async deleteService(serviceId: string): Promise<{
     success: boolean;
     error?: string;
   }> {
-    console.log('🗑️ Deleting service:', serviceId);
+    console.log('🗑️ Soft deleting service:', serviceId);
 
     try {
       const supabase = createClient() as any;
@@ -217,10 +217,44 @@ export class BusinessServicesService {
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Service deleted:', serviceId);
+      console.log('✅ Service soft deleted:', serviceId);
       return { success: true };
     } catch (error) {
       console.error('❌ Error deleting service:', error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to delete service',
+      };
+    }
+  }
+
+  /**
+   * Permanently deletes a service from the database - Hard Delete
+   */
+  static async hardDeleteService(serviceId: string): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    console.log('🗑️ HARD deleting service:', serviceId);
+
+    try {
+      const supabase = createClient() as any;
+
+      const { error } = await supabase
+        .from('business_services')
+        .delete()
+        .eq('id', serviceId);
+
+      if (error) {
+        console.error('❌ Failed to hard delete service:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Service permanently deleted:', serviceId);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error hard deleting service:', error);
       return {
         success: false,
         error:

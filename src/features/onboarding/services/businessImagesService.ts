@@ -5,11 +5,12 @@
  * Clean, modular image management for portfolio/gallery.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/libs/supabase';
 import {
   PortfolioImage,
-  PortfolioImageRow,
   PortfolioImageInsert,
+  PortfolioImageRow,
 } from '../types/portfolio';
 
 export class BusinessImagesService {

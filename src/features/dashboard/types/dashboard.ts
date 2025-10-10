@@ -25,6 +25,7 @@ export interface DashboardStats {
 
 export interface DashboardProps {
   children?: React.ReactNode;
+  isOnboardingCompleted?: boolean;
 }
 
 export interface DashboardContentProps {
@@ -38,4 +39,5 @@ export interface DashboardHeaderProps {
 export interface DashboardSidebarProps {
   open: boolean;
   setOpen: (open: boolean) => void;
+  isOnboardingCompleted?: boolean;
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Input, TextArea, Select, Button } from '@/components/shared';
+import { Button, Input, Select, TextArea } from '@/components/shared';
+import React, { useEffect, useState } from 'react';
 import { saveStepAndProgress } from '../utils/onboardingHelpers';
 
 interface Step2BusinessInfoProps {
@@ -140,96 +140,106 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-white mb-4">
-          Tell us about your business
+    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+      {/* Header Section */}
+      <div className="mb-10 sm:mb-12 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight leading-tight">
+          Tell us about your <span className="text-orange-400">business</span>
         </h1>
-        <p className="text-xl text-gray-300">
+        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
           Help customers understand what you do and where you serve.
         </p>
       </div>
 
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3 mb-6">
-          <p className="text-red-400 text-sm">{error}</p>
-        </div>
-      )}
+      {/* Main Content Container (Modular Block Style) */}
+      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+            <p className="text-red-400 text-sm font-medium">{error}</p>
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Business Name */}
-        <Input
-          label="Business Name"
-          placeholder="Enter your business name"
-          value={formData.business_name}
-          onChange={value => handleInputChange('business_name', value)}
-          required
-        />
+        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+          {/* Business Name (Required) */}
+          <Input
+            label="Business Name"
+            placeholder="e.g., Stellar Digital Marketing"
+            value={formData.business_name}
+            onChange={value => handleInputChange('business_name', value)}
+            required
+          />
 
-        {/* Business Type */}
-        <Select
-          label="Business Type"
-          placeholder="Select your business type"
-          value={formData.business_type}
-          onChange={value => handleInputChange('business_type', value)}
-          options={businessTypeOptions}
-        />
+          {/* Business Type & Service Area (Grid Layout) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <Select
+              label="Business Type"
+              placeholder="Select your business type"
+              value={formData.business_type}
+              onChange={value => handleInputChange('business_type', value)}
+              options={businessTypeOptions}
+            />
 
-        {/* Service Area */}
-        <Input
-          label="Service Area"
-          placeholder="e.g., Downtown Miami, Miami-Dade County"
-          value={formData.service_area}
-          onChange={value => handleInputChange('service_area', value)}
-        />
+            <Input
+              label="Service Area (Optional)"
+              placeholder="e.g., Austin, TX, or Remote"
+              value={formData.service_area}
+              onChange={value => handleInputChange('service_area', value)}
+            />
+          </div>
 
-        {/* Bio */}
-        <TextArea
-          label="Business Description"
-          placeholder="Briefly describe your business, services, and what makes you unique..."
-          value={formData.bio}
-          onChange={value => handleInputChange('bio', value)}
-          rows={4}
-        />
+          {/* Bio */}
+          <TextArea
+            label="Bio (Optional)"
+            placeholder="Briefly describe your business, services, and what makes you unique. This will be the first thing customers read!"
+            value={formData.bio}
+            onChange={value => handleInputChange('bio', value)}
+            rows={5}
+          />
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-6">
-          <Button
-            type="button"
-            onClick={onBack}
-            variant="secondary"
-            className="sm:w-auto"
-            disabled={isLoading}
-          >
-            Back
-          </Button>
-
-          <div className="flex gap-4 flex-1">
+          {/* Action Buttons - Mobile optimized */}
+          <div className="flex flex-col gap-4 pt-6 sm:pt-8">
+            {/* Back Button */}
             <Button
               type="button"
-              onClick={handleSkip}
-              variant="outline"
-              className="flex-1"
+              onClick={onBack}
+              variant="secondary"
+              className="w-full sm:w-auto px-8 order-2 sm:order-1"
               disabled={isLoading}
             >
-              Skip for now
+              ← Back
             </Button>
 
-            <Button
-              type="submit"
-              variant="primary"
-              className="flex-1"
-              disabled={!isFormValid() || isLoading}
-              loading={isLoading}
-            >
-              {isLoading ? 'Saving...' : 'Continue'}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 order-1 sm:order-2">
+              {/* Skip Button (Outline Style) */}
+              <Button
+                type="button"
+                onClick={handleSkip}
+                variant="outline"
+                className="w-full sm:flex-1 px-6 sm:px-8"
+                disabled={isLoading}
+              >
+                Skip for now
+              </Button>
+
+              {/* Continue Button (Primary Orange Style) */}
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full sm:flex-1 px-6 sm:px-8"
+                disabled={!isFormValid() || isLoading}
+                loading={isLoading}
+              >
+                {isLoading ? 'Saving...' : 'Continue'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
 
-      <p className="text-sm text-gray-400 text-center mt-6">
-        You can always edit this information later
+      <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
+        This information forms the core of your profile. You can always edit it
+        later.
       </p>
     </div>
   );

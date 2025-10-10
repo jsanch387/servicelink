@@ -17,7 +17,7 @@ const DATA_SVG = (w = 600, h = 400, label = 'Image') =>
   `);
 
 interface ImageWithFallbackProps {
-  src: string;
+  src: string | undefined;
   alt: string;
   width: number;
   height: number;
@@ -37,13 +37,33 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   fallbackSize = { w: 600, h: 400 },
   priority = false,
 }) => {
-  const [imageSrc, setImageSrc] = React.useState(src);
+  // Handle empty string or null/undefined src by using fallback immediately
+  const fallbackSrc = DATA_SVG(
+    fallbackSize.w,
+    fallbackSize.h,
+    fallbackLabel || alt || 'Image'
+  );
+  const [imageSrc, setImageSrc] = React.useState(
+    src && src.trim() !== '' ? src : fallbackSrc
+  );
 
   const handleError = () => {
-    setImageSrc(
-      DATA_SVG(fallbackSize.w, fallbackSize.h, fallbackLabel || alt || 'Image')
-    );
+    setImageSrc(fallbackSrc);
   };
+
+  // If src is empty or null, use fallback immediately
+  if (!src || src.trim() === '') {
+    return (
+      <Image
+        src={fallbackSrc}
+        alt={alt}
+        width={width}
+        height={height}
+        className={className}
+        priority={priority}
+      />
+    );
+  }
 
   return (
     <Image

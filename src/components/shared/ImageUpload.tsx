@@ -5,7 +5,7 @@ import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 
 interface ImageUploadProps {
-  onImageSelect: (file: File) => void;
+  onImageSelect: (_file: File) => void;
   disabled?: boolean;
   className?: string;
 }

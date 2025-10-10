@@ -1,10 +1,10 @@
-import React from 'react';
 import {
-  GlobeAltIcon,
   DevicePhoneMobileIcon,
+  GlobeAltIcon,
   LinkIcon,
   PhoneIcon,
 } from '@heroicons/react/24/outline';
+import React from 'react';
 
 const features = [
   {
@@ -46,8 +46,8 @@ export const FeaturesSection: React.FC = () => {
             </span>
           </h2>
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Stop paying for expensive websites you don't need. Get a
-            professional online presence that's designed specifically for
+            Stop paying for expensive websites you don&apos;t need. Get a
+            professional online presence that&apos;s designed specifically for
             service businesses.
           </p>
         </div>

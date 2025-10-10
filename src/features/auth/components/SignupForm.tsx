@@ -1,18 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import { Button, Input } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/shared';
-import { Input } from '@/components/shared';
+import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignUpForm } from '../utils/validation';
-import { ROUTES } from '@/constants/routes';
 
 export const SignupForm: React.FC = () => {
   const router = useRouter();
   const { signUp, isLoading } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -35,11 +33,7 @@ export const SignupForm: React.FC = () => {
     }
 
     try {
-      const result = await signUp(
-        formData.email,
-        formData.password,
-        formData.name
-      );
+      const result = await signUp(formData.email, formData.password);
 
       if (result.error) {
         setAuthError(result.error);
@@ -48,6 +42,12 @@ export const SignupForm: React.FC = () => {
 
       // Redirect to dashboard after successful signup
       // The user will go through onboarding flow
+      // Use router.refresh() to ensure middleware sees the updated session
+      router.refresh();
+
+      // Small delay to ensure cookies are set before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       router.push(ROUTES.DASHBOARD.MAIN);
     } catch (error) {
       console.error('Signup failed:', error);
@@ -96,16 +96,6 @@ export const SignupForm: React.FC = () => {
           )}
 
           <div className="space-y-4">
-            <Input
-              label="Full Name"
-              type="text"
-              value={formData.name}
-              onChange={value => handleChange('name', value)}
-              error={errors.name}
-              placeholder="Enter your full name"
-              autoComplete="name"
-            />
-
             <Input
               label="Email address"
               type="email"

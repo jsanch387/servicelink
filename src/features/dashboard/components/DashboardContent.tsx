@@ -1,48 +1,128 @@
+/**
+ * DashboardContent - Main dashboard component with clean, organized layout
+ * Uses modular components for different sections of the dashboard
+ */
+
 'use client';
 
+import { Button } from '@/components/shared';
+import { useAnalytics } from '@/features/analytics';
+import {
+  LinkSharingCard,
+  PerformanceCard,
+  QuickActionsCard,
+} from '@/features/dashboard';
 import React from 'react';
-// import { OnboardingFlow } from '@/features/onboarding/components/OnboardingFlow'; // Will be used later
-import { EditProfileCard } from './EditProfileCard';
-import { OnboardingCompleteCard } from './OnboardingCompleteCard';
-import { ShareProfileCard } from './ShareProfileCard';
-// import { Card } from '@/components/shared'; // Will be used later
-interface DashboardContentProps {
+
+interface DashboardData {
   businessProfile: {
     id: string;
     business_name: string;
-    profile_id: string;
+    business_type: string | null;
+    service_area: string | null;
+    bio: string | null;
+    created_at: string;
+    updated_at: string;
+  };
+  slugData: {
+    hasSlug: boolean;
+    slug?: string;
+    fullLink?: string;
+    createdAt?: string;
+  } | null;
+  analytics: {
+    servicesCount: number;
+    imagesCount: number;
+    profileCompleteness: number;
+  };
+  nextSteps: {
+    needsSlug: boolean;
+    needsServices: boolean;
+    needsImages: boolean;
+    needsBio: boolean;
+    readyToShare: boolean;
   };
 }
 
+interface DashboardContentProps {
+  dashboardData: DashboardData;
+}
+
 export const DashboardContent: React.FC<DashboardContentProps> = ({
-  businessProfile,
+  dashboardData,
 }) => {
-  // Show completed dashboard with sharing and editing options
+  const { businessProfile, slugData } = dashboardData;
+
+  // Use analytics hook to fetch real-time data
+  const { dashboardAnalytics, loading: analyticsLoading } = useAnalytics(
+    businessProfile.id
+  );
+
+  // Constants
+  const APP_DOMAIN = 'myservicelink.app';
+
   return (
-    <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-neutral-900">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Welcome Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back! 👋
+    <main className="flex-1 py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-neutral-900 min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-8 sm:mb-10 lg:mb-12">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold text-white mb-2 tracking-tight">
+            Welcome to your <span className="text-orange-400">Dashboard</span>
           </h1>
-          <p className="text-gray-400">
-            Your business profile is live and ready to share with customers.
+          <p className="text-sm sm:text-base lg:text-lg text-gray-400 font-light">
+            {slugData?.hasSlug
+              ? `Everything looks great, ${businessProfile.business_name}. Start sharing your ServiceLink!`
+              : `Let's get your profile ready to go live, ${businessProfile.business_name}.`}
           </p>
         </div>
 
-        {/* Completion Congratulations */}
-        <OnboardingCompleteCard />
+        {/* Dashboard Grid Layout */}
+        <div className="space-y-6 sm:space-y-8">
+          {/* Primary Focus: Link Sharing */}
+          {slugData?.hasSlug ? (
+            <LinkSharingCard
+              fullLink={slugData.fullLink || ''}
+              slug={slugData.slug || ''}
+              appDomain={APP_DOMAIN}
+            />
+          ) : (
+            <div className="bg-neutral-800 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-orange-500/30">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4">
+                Create Your Public Link
+              </h2>
+              <p className="text-gray-400 text-sm sm:text-base lg:text-lg mb-4 sm:mb-6">
+                Your profile is ready, but you need to create a public link
+                first.
+              </p>
+              <Button
+                onClick={() => (window.location.href = '/dashboard/settings')}
+                variant="primary"
+                size="lg"
+                fullWidth
+              >
+                Create Your Link Now
+              </Button>
+            </div>
+          )}
 
-        {/* Main Action Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Share Profile Card */}
-          <ShareProfileCard />
+          {/* Secondary Section: Analytics and Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+            {/* Analytics Card - Only show if user has a slug */}
+            {slugData?.hasSlug && (
+              <PerformanceCard
+                profileViews={dashboardAnalytics?.profileViews || 0}
+                lastViewed={dashboardAnalytics?.lastViewedFormatted}
+                loading={analyticsLoading}
+              />
+            )}
 
-          {/* Edit Profile Card */}
-          <EditProfileCard />
+            {/* Quick Actions Card */}
+            <QuickActionsCard />
+          </div>
         </div>
       </div>
     </main>
   );
 };
+
+export default DashboardContent;

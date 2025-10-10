@@ -30,6 +30,7 @@ export const ROUTES = {
   DASHBOARD: {
     MAIN: '/dashboard',
     BUSINESS_PROFILE: '/dashboard/business-profile',
+    SETTINGS: '/dashboard/settings',
   },
 } as const;
 
