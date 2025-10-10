@@ -94,9 +94,11 @@ const SmartImagePreview: React.FC<{
 
 // Enhanced Upload Component with Better UX
 const EnhancedImageUpload: React.FC<{
-  onImageSelect: (_file: File) => void;
+  onImageSelect: (file: File) => void;
   disabled: boolean;
-}> = ({ onImageSelect, disabled }) => {
+  imageCount: number;
+  maxImages: number;
+}> = ({ onImageSelect, disabled, imageCount, maxImages }) => {
   const [dragActive, setDragActive] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,13 +129,16 @@ const EnhancedImageUpload: React.FC<{
     }
   };
 
+  const isAtLimit = imageCount >= maxImages;
+  const effectiveDisabled = disabled || isAtLimit;
+
   return (
     <label
       className={`
         flex flex-col items-center justify-center w-full p-8 transition duration-300
         border-4 border-dashed rounded-xl cursor-pointer
         ${
-          disabled
+          effectiveDisabled
             ? 'opacity-50 cursor-not-allowed border-neutral-700 bg-neutral-900'
             : dragActive
               ? 'border-orange-400 bg-orange-500/10'
@@ -146,14 +151,30 @@ const EnhancedImageUpload: React.FC<{
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <CameraIcon className="h-12 w-12 text-orange-400 mb-4" />
+      <CameraIcon
+        className={`h-12 w-12 mb-4 ${isAtLimit ? 'text-gray-500' : 'text-orange-400'}`}
+      />
       <p className="mb-2 text-lg text-white font-semibold">
-        {dragActive ? 'Drop your photo here' : 'Click to upload or drag & drop'}
+        {isAtLimit
+          ? `Maximum ${maxImages} images reached`
+          : dragActive
+            ? 'Drop your photo here'
+            : 'Click to upload or drag & drop'}
       </p>
       <p className="text-sm text-gray-500 text-center max-w-xs">
-        Any size works! We&apos;ll automatically make it look perfect.
-        <br />
-        JPG, PNG up to 10MB
+        {isAtLimit ? (
+          <>
+            You&apos;ve reached the onboarding limit of {maxImages} images.
+            <br />
+            You can add more photos later in your profile settings.
+          </>
+        ) : (
+          <>
+            Any size works! We&apos;ll automatically make it look perfect.
+            <br />
+            JPG, PNG up to 10MB • {imageCount}/{maxImages} images
+          </>
+        )}
       </p>
       <input
         id="file-upload"
@@ -161,7 +182,7 @@ const EnhancedImageUpload: React.FC<{
         accept="image/*"
         className="hidden"
         onChange={handleFileChange}
-        disabled={disabled}
+        disabled={effectiveDisabled}
       />
     </label>
   );
@@ -221,6 +242,14 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
   const handleImageSelect = (file: File) => {
     console.log('📸 Processing selected image:', file.name);
+
+    // Check image limit for onboarding (4 images max)
+    if (images.length >= 4) {
+      setError(
+        'You can upload up to 4 images during onboarding. You can add more later in your profile settings.'
+      );
+      return;
+    }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
@@ -521,6 +550,8 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           <EnhancedImageUpload
             onImageSelect={handleImageSelect}
             disabled={isLoading || isUploadingPortfolio}
+            imageCount={images.length}
+            maxImages={4}
           />
         </div>
 

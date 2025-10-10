@@ -73,11 +73,11 @@ export default async function BusinessProfilePage({
 
   console.log('✅ Onboarding completed, fetching business profile');
 
-  // Get business profile by profile_id
+  // Get business profile by profile_id (including slug data)
   const { data: businessProfileData, error: businessProfileError } =
     await supabase
       .from('business_profiles')
-      .select('id')
+      .select('id, business_slug, business_link')
       .eq('profile_id', userProfile.user_id)
       .single();
 
@@ -85,6 +85,22 @@ export default async function BusinessProfilePage({
     console.error('❌ No business profile found:', businessProfileError);
     redirect('/dashboard');
   }
+
+  // Check if user has a slug configured
+  const hasSlug = !!(
+    businessProfileData.business_slug && businessProfileData.business_link
+  );
+
+  // Prepare slug data
+  const slugData = hasSlug
+    ? {
+        hasSlug: true,
+        slug: businessProfileData.business_slug,
+        fullLink: businessProfileData.business_link,
+      }
+    : {
+        hasSlug: false,
+      };
 
   // Get complete business profile
   const profileResult = await BusinessProfileApi.getCompleteBusinessProfile(
@@ -114,6 +130,7 @@ export default async function BusinessProfilePage({
       <BusinessProfileView
         businessProfile={businessProfile}
         initialMode={initialMode}
+        slugData={slugData}
       />
     </div>
   );

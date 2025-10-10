@@ -103,6 +103,7 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
   const [services, setServices] = useState<Service[]>([]);
   const [existingServices, setExistingServices] = useState<Service[]>([]); // Track existing services from DB
+  const [removedServices, setRemovedServices] = useState<Service[]>([]); // Track services to delete from DB
   const [currentService, setCurrentService] = useState<Service>({
     name: '',
     description: '',
@@ -205,6 +206,21 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
   const removeService = (index: number) => {
     console.log('🗑️ Removing service at index:', index);
+
+    const serviceToRemove = services[index];
+
+    // If it's an existing service (not a temp/new service), track it for deletion
+    if (
+      serviceToRemove.id &&
+      !serviceToRemove.id.toString().startsWith('temp-')
+    ) {
+      console.log(
+        '📝 Tracking existing service for deletion:',
+        serviceToRemove
+      );
+      setRemovedServices(prev => [...prev, serviceToRemove]);
+    }
+
     setServices(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -228,7 +244,73 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     setError('');
 
     try {
-      // Only save new services (not already in database)
+      // Step 0: Handle service deletions
+      // If user has 0 services but had existing services, delete ALL existing services
+      if (services.length === 0 && existingServices.length > 0) {
+        console.log(
+          '🗑️ STEP 0: User has no services - deleting all existing services:',
+          existingServices.length
+        );
+        console.log('📋 Existing services to delete:', existingServices);
+
+        const serviceIds = existingServices
+          .map(service => service.id)
+          .filter(Boolean) as string[];
+
+        console.log('🔑 Service IDs to delete:', serviceIds);
+
+        const deletePromises = serviceIds.map(serviceId => {
+          console.log('🗑️ Hard deleting service ID:', serviceId);
+          return BusinessServicesService.hardDeleteService(serviceId);
+        });
+        const deleteResults = await Promise.all(deletePromises);
+
+        console.log('📊 Delete results:', deleteResults);
+
+        const failedDeletes = deleteResults.filter(result => !result.success);
+        if (failedDeletes.length > 0) {
+          console.error('❌ Failed to delete all services:', failedDeletes);
+          setError('Failed to delete services. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('✅ STEP 0 COMPLETE: All services deleted successfully');
+        setExistingServices([]);
+        setRemovedServices([]);
+      } else if (removedServices.length > 0) {
+        // Otherwise, just delete the services that were explicitly removed
+        console.log(
+          '🗑️ STEP 0: Deleting removed services:',
+          removedServices.length
+        );
+
+        const serviceIds = removedServices
+          .map(service => service.id)
+          .filter(Boolean) as string[];
+
+        const deletePromises = serviceIds.map(serviceId =>
+          BusinessServicesService.hardDeleteService(serviceId)
+        );
+        const deleteResults = await Promise.all(deletePromises);
+
+        const failedDeletes = deleteResults.filter(result => !result.success);
+        if (failedDeletes.length > 0) {
+          console.error('❌ Failed to delete some services:', failedDeletes);
+          setError('Failed to delete some services. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        console.log(
+          '✅ STEP 0 COMPLETE: Removed services deleted successfully'
+        );
+
+        // Clear the removed services array since they've been successfully deleted
+        setRemovedServices([]);
+      }
+
+      // Step 1: Save new services (not already in database)
       const newServices = getNewServices();
 
       console.log('📝 Existing services:', existingServices.length);
@@ -306,7 +388,8 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     }
   };
 
-  const canContinue = services.length > 0;
+  // Allow continuing even with 0 services (user can add services later)
+  const canContinue = true;
 
   return (
     <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
@@ -333,15 +416,15 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Add Service Form */}
-        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0">
+        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl sm:mx-0">
           <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
             Add a Service
           </h2>
 
           <form className="space-y-4 sm:space-y-6">
             <Input
-              label="What do you call this service?"
-              placeholder="e.g., House Cleaning, Logo Design, Car Repair"
+              label="Service Name"
+              placeholder="House Cleaning, Logo Design, Car Repair"
               value={currentService.name}
               onChange={value => handleServiceChange('name', value)}
               required

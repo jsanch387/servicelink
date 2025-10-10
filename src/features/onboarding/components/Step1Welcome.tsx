@@ -89,7 +89,7 @@ export const Step1Welcome: React.FC<Step1WelcomeProps> = ({
       </div>
 
       {/* Redesigned "What you'll get" Section - Better mobile spacing */}
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 mb-12 sm:mb-16 shadow-2xl mx-2 sm:mx-0">
+      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 mb-12 sm:mb-16 shadow-2xl sm:mx-0">
         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-8 sm:mb-10 text-center sm:text-left border-l-0 sm:border-l-4 border-orange-400 pl-0 sm:pl-3 uppercase tracking-wider">
           Core Benefits
         </h2>
@@ -115,8 +115,8 @@ export const Step1Welcome: React.FC<Step1WelcomeProps> = ({
           />
 
           <FeatureBlock
-            title="Connect With Customers"
-            description="Access seamless tools for lead generation."
+            title="Contact Information"
+            description="Make it easy for customers to reach you and get in touch."
             icon={CheckCircleIcon}
           />
         </div>

@@ -1,79 +1,83 @@
 /**
- * PerformanceCard - Shows analytics and performance metrics
- * Displays profile views, completeness, and other key metrics
+ * PerformanceCard - Shows profile analytics with views and last viewed time
+ * Displays profile views count and last viewed timestamp
  */
 
-import { EyeIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, EyeIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 interface PerformanceCardProps {
   profileViews?: number;
-  profileCompleteness: number;
-  servicesCount: number;
-  imagesCount: number;
+  lastViewed?: string;
+  loading?: boolean;
 }
 
 export const PerformanceCard: React.FC<PerformanceCardProps> = ({
   profileViews = 0,
-  profileCompleteness,
-  servicesCount,
-  imagesCount,
+  lastViewed,
+  loading = false,
 }) => {
+  if (loading) {
+    return (
+      <div className="bg-neutral-800 p-4 sm:p-5 lg:p-6 rounded-2xl border border-neutral-700  h-full">
+        <div className="animate-pulse">
+          <div className="flex items-center mb-4">
+            <div className="w-6 h-6 bg-neutral-700 rounded mr-2"></div>
+            <div className="h-6 bg-neutral-700 rounded w-32"></div>
+          </div>
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="h-16 bg-neutral-700 rounded w-24 mx-auto mb-2"></div>
+              <div className="h-4 bg-neutral-700 rounded w-20 mx-auto"></div>
+            </div>
+            <div className="flex items-center justify-center space-x-2 pt-2 border-t border-neutral-700">
+              <div className="h-4 w-4 bg-neutral-700 rounded"></div>
+              <div className="h-4 bg-neutral-700 rounded w-24"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-neutral-800 p-4 sm:p-5 lg:p-6 rounded-2xl border border-neutral-700 shadow-xl h-full">
-      <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center space-x-2">
-        <EyeIcon className="h-5 w-5 sm:h-6 w-6 text-green-400 flex-shrink-0" />
-        <span>Profile Analytics</span>
-      </h3>
+    <div className="bg-neutral-800 p-4 sm:p-5 lg:p-6 rounded-2xl border border-neutral-700  h-full">
+      {/* Header */}
+      <div className="flex items-center mb-4 border-b border-neutral-700 pb-4">
+        <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
+          <EyeIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400 flex-shrink-0" />
+        </div>
+        <h3 className="text-lg sm:text-xl font-bold text-white ml-3">
+          Profile Analytics
+        </h3>
+      </div>
 
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-4">
         {/* Profile Views */}
-        <div className="flex items-end justify-between border-b border-neutral-700 pb-3 sm:pb-4">
-          <div className="flex flex-col">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-green-400">
-              {profileViews.toLocaleString()}
-            </p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Profile Views
-            </p>
-          </div>
-          <span className="text-xs sm:text-sm text-gray-500 bg-neutral-700 rounded-full px-2 sm:px-3 py-1">
-            Total
-          </span>
+        <div className="text-center">
+          <p className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-orange-400 mb-2">
+            {profileViews.toLocaleString()}
+          </p>
+          <p className="text-sm sm:text-base text-gray-400">Total Views</p>
         </div>
 
-        {/* Profile Completeness */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm font-medium text-gray-300">
-              Profile Completeness
-            </span>
-            <span className="text-orange-400 font-bold text-base sm:text-lg">
-              {profileCompleteness}%
+        {/* Last Viewed */}
+        {lastViewed && (
+          <div className="flex items-center justify-center space-x-2 pt-2 border-t border-neutral-700">
+            <ClockIcon className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-400">
+              Last viewed: {lastViewed}
             </span>
           </div>
-          <div className="w-full bg-neutral-600 rounded-full h-2">
-            <div
-              className="bg-orange-400 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${profileCompleteness}%` }}
-            />
-          </div>
-        </div>
+        )}
 
-        {/* Content Stats */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-2">
-          <div className="text-center">
-            <p className="text-xl sm:text-2xl font-bold text-blue-400">
-              {servicesCount}
-            </p>
-            <p className="text-xs text-gray-500">Services</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl sm:text-2xl font-bold text-purple-400">
-              {imagesCount}
-            </p>
-            <p className="text-xs text-gray-500">Images</p>
-          </div>
+        {/* Motivational Message */}
+        <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+          <p className="text-orange-300 text-sm text-center">
+            {profileViews > 0
+              ? `Great! Your profile is getting attention. Keep sharing!`
+              : `Share your profile link to start getting views!`}
+          </p>
         </div>
       </div>
     </div>

@@ -190,7 +190,7 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
 
           {/* Bio */}
           <TextArea
-            label="Business Description (Optional)"
+            label="Bio (Optional)"
             placeholder="Briefly describe your business, services, and what makes you unique. This will be the first thing customers read!"
             value={formData.bio}
             onChange={value => handleInputChange('bio', value)}

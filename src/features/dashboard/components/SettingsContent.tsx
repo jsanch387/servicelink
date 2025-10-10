@@ -5,6 +5,7 @@ import { CompleteBusinessProfile } from '@/features/business-profile/types/busin
 import {
   CheckCircleIcon,
   ClipboardIcon,
+  EnvelopeIcon,
   ExclamationTriangleIcon,
   LinkIcon,
 } from '@heroicons/react/24/outline';
@@ -97,6 +98,20 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
     }
   }, [FULL_LINK]);
 
+  const handleViewProfile = useCallback(() => {
+    if (!currentSlug) return;
+
+    // For development, use localhost, for production use the full domain
+    const isDevelopment = window.location.hostname === 'localhost';
+    const profileUrl = isDevelopment
+      ? `http://localhost:3000/${currentSlug}`
+      : `https://myservicelink.app/${currentSlug}`;
+
+    // Open the public profile in a new tab
+    window.open(profileUrl, '_blank', 'noopener,noreferrer');
+    console.log(`[ACTION] Opening profile: ${profileUrl}`);
+  }, [currentSlug]);
+
   const handleSaveSlug = async () => {
     console.log('🚀 [SettingsContent] Starting slug creation process');
 
@@ -164,7 +179,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         {/* Main Settings Cards */}
         <div className="space-y-12">
           {/* Public Link Management (Primary Focus) */}
-          <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700 shadow-2xl">
+          <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
             {/* Card Header */}
             <div className="mb-8 border-b border-neutral-700 pb-4">
               <h2 className="text-2xl font-bold text-white flex items-center space-x-3 uppercase tracking-wider">
@@ -259,6 +274,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     {copied ? 'Copied!' : 'Copy Link'}
                   </Button>
                   <Button
+                    onClick={handleViewProfile}
                     variant="primary"
                     size="lg"
                     className="flex-1"
@@ -271,11 +287,49 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             </div>
           </div>
 
+          {/* Contact Support Section */}
+          <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
+            {/* Card Header */}
+            <div className="mb-6 border-b border-neutral-700 pb-4">
+              <h2 className="text-2xl font-bold text-white flex items-center space-x-3 uppercase tracking-wider">
+                <EnvelopeIcon className="h-6 w-6 text-orange-400" />
+                <span>Contact Support</span>
+              </h2>
+            </div>
+
+            {/* Contact Info */}
+            <div className="space-y-4">
+              <p className="text-gray-300 text-base leading-relaxed">
+                Need help or have questions? We're here to support you!
+              </p>
+
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+                <div className="flex items-center space-x-3">
+                  <EnvelopeIcon className="h-5 w-5 text-orange-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-white font-medium">Support Email</p>
+                    <a
+                      href="mailto:app.servicelink@gmail.com"
+                      className="text-orange-400 hover:text-orange-300 transition-colors duration-200 text-lg font-mono"
+                    >
+                      app.servicelink@gmail.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-gray-400 text-sm">
+                We typically respond within 24 hours. Include your business name
+                in the subject line for faster support.
+              </p>
+            </div>
+          </div>
+
           {/* Placeholder for future settings */}
           <div className="p-6 text-center text-gray-500 border-t border-neutral-800">
             <p>
-              Need more? Notifications, Integrations, and Billing settings
-              coming soon.
+              More features coming soon: Notifications, Integrations, and
+              Billing settings.
             </p>
           </div>
         </div>

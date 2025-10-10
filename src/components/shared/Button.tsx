@@ -77,18 +77,18 @@ export const Button: React.FC<ButtonProps> = ({
     <>
       {loading && (
         <div
-          className={`animate-spin rounded-full border-b-2 border-current ${iconSizeClasses[size]} ${icon || iconPosition === 'right' ? 'mr-2' : ''}`}
+          className={`animate-spin rounded-full border-b-2 border-current ${iconSizeClasses[size]} ${children ? 'mr-2' : ''}`}
         />
       )}
       {!loading && icon && iconPosition === 'left' && (
-        <span>
-          <span className={iconSizeClasses[size]}>{icon}</span>
+        <span className={`${iconSizeClasses[size]} ${children ? 'mr-2' : ''}`}>
+          {icon}
         </span>
       )}
       {children}
       {!loading && icon && iconPosition === 'right' && (
-        <span className={`${children ? 'ml-2' : ''}`}>
-          <span className={iconSizeClasses[size]}>{icon}</span>
+        <span className={`${iconSizeClasses[size]} ${children ? 'ml-2' : ''}`}>
+          {icon}
         </span>
       )}
     </>

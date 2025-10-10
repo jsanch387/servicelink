@@ -45,7 +45,7 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
   }, [fullLink]);
 
   return (
-    <div className="bg-neutral-800 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-orange-500/30 shadow-xl">
+    <div className="bg-neutral-800 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-orange-500/30">
       <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4 flex items-center space-x-2 sm:space-x-3">
         <LinkIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-orange-400 flex-shrink-0" />
         <span>Your Public ServiceLink</span>
@@ -74,7 +74,7 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
         size="lg"
         fullWidth
         icon={<ClipboardIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
-        className="py-2 sm:py-3 lg:py-4 text-sm sm:text-base lg:text-lg tracking-wide sm:tracking-wider font-bold sm:font-extrabold shadow-orange-500/50"
+        className="py-2 sm:py-3 lg:py-4 text-sm sm:text-base lg:text-lg tracking-wide sm:tracking-wider font-bold sm:font-extrabold"
       >
         {copied ? 'LINK COPIED!' : 'COPY LINK & SHARE'}
       </Button>

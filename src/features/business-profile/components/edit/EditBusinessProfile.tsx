@@ -5,11 +5,11 @@ import { useUploadPortfolio } from '@/features/media/hooks';
 import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
 import {
-  cleanupPreviewUrls,
   EditingFormData,
   ImageFormData,
-  saveBusinessProfile,
   ServiceFormData,
+  cleanupPreviewUrls,
+  saveBusinessProfile,
 } from '../../utils/editing/editingHelpers';
 import { BannerSection } from './sections/BannerSection';
 import { BusinessInfoSection } from './sections/BusinessInfoSection';
@@ -151,6 +151,19 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       cover_image_url: bannerUrl,
       banner_path: storagePath || prev.banner_path,
     }));
+
+    // If we have a successful upload with public URL, immediately update the parent businessProfile
+    // This ensures the cover photo shows immediately when switching to preview mode
+    if (publicUrl && storagePath) {
+      console.log(
+        '🔄 Immediately updating business profile with new cover photo'
+      );
+      // Call the parent's onSave callback with just the cover photo updates
+      onSave({
+        cover_image_url: bannerUrl,
+        banner_path: storagePath,
+      });
+    }
   };
 
   const handleLogoImageChange = (
@@ -170,6 +183,17 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       logo_url: logoUrl,
       logo_path: storagePath || prev.logo_path,
     }));
+
+    // If we have a successful upload with public URL, immediately update the parent businessProfile
+    // This ensures the logo shows immediately when switching to preview mode
+    if (publicUrl && storagePath) {
+      console.log('🔄 Immediately updating business profile with new logo');
+      // Call the parent's onSave callback with just the logo updates
+      onSave({
+        logo_url: logoUrl,
+        logo_path: storagePath,
+      });
+    }
   };
 
   // Save all changes
@@ -292,101 +316,127 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Persistent Save Button */}
-      <div className="sticky top-4 z-10 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700 rounded-lg p-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            onClick={onCancel}
-            variant="secondary"
-            className="flex-1"
-            disabled={isAnyLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            variant="primary"
-            className="flex-1"
-            disabled={isAnyLoading}
-            loading={isSaving}
-          >
-            {isSaving
-              ? 'Saving...'
-              : isUploadingPortfolio
-                ? 'Uploading Images...'
-                : 'Save All Changes'}
-          </Button>
-        </div>
+    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+      {/* Header Section */}
+      <div className="mb-10 sm:mb-12 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight leading-tight mt-5">
+          Edit Your <span className="text-orange-400">Business Profile</span>
+        </h1>
+        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
+          Update your business information, showcase your services, and perfect
+          your professional presence.
+        </p>
       </div>
 
-      {/* Cover Banner */}
-      <BannerSection
-        businessProfile={{
-          ...businessProfile,
-          cover_image_url:
-            formData.cover_image_url || businessProfile.cover_image_url,
-          banner_path: formData.banner_path || businessProfile.banner_path,
-        }}
-        isLoading={isLoading}
-        onCoverImageChange={handleCoverImageChange}
-      />
-
-      {/* Profile Image */}
-      <ProfileImageSection
-        businessProfile={{
-          ...businessProfile,
-          logo_url: formData.logo_url || businessProfile.logo_url,
-          logo_path: formData.logo_path || businessProfile.logo_path,
-        }}
-        isLoading={isLoading}
-        onLogoImageChange={handleLogoImageChange}
-      />
-
-      {/* Business Information */}
-      <BusinessInfoSection
-        formData={formData}
-        onInputChange={handleInputChange}
-        errors={errors}
-      />
-
-      {/* Services */}
-      <ServicesSection
-        services={formData.services}
-        onServicesChange={handleServicesChange}
-        errors={errors}
-      />
-
-      {/* Contact Information */}
-      <ContactSection
-        formData={formData}
-        onInputChange={handleInputChange}
-        onSamePhoneChange={handleSamePhoneChange}
-        errors={errors}
-      />
-
-      {/* Portfolio */}
-      <PortfolioSection
-        images={formData.images}
-        onImagesChange={handleImagesChange}
-        onFilesChange={handleFilesChange}
-        businessProfile={businessProfile}
-        isLoading={isLoading}
-      />
-
-      {/* Error Messages */}
-      {errors.length > 0 && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-md p-4">
-          <h4 className="text-red-400 font-medium mb-2">
-            Please fix the following errors:
-          </h4>
-          <ul className="text-red-400 text-sm space-y-1">
-            {errors.map((error, index) => (
-              <li key={index}>• {error}</li>
-            ))}
-          </ul>
+      {/* Main Content Container */}
+      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-3 sm:p-4 lg:p-6 mx-2 sm:mx-0 mb-8">
+        {/* Persistent Save Button */}
+        <div className="sticky top-4 z-10 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700 rounded-xl p-4 mb-8">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={onCancel}
+              variant="secondary"
+              className="flex-1"
+              disabled={isAnyLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              variant="primary"
+              className="flex-1"
+              disabled={isAnyLoading}
+              loading={isSaving}
+            >
+              {isSaving
+                ? 'Saving...'
+                : isUploadingPortfolio
+                  ? 'Uploading Images...'
+                  : 'Save All Changes'}
+            </Button>
+          </div>
         </div>
-      )}
+
+        {/* Cover Banner */}
+        <div className="mb-12 sm:mb-16">
+          <BannerSection
+            businessProfile={{
+              ...businessProfile,
+              cover_image_url:
+                formData.cover_image_url || businessProfile.cover_image_url,
+              banner_path: formData.banner_path || businessProfile.banner_path,
+            }}
+            isLoading={isLoading}
+            onCoverImageChange={handleCoverImageChange}
+          />
+        </div>
+
+        {/* Profile Image */}
+        <div className="mb-12 sm:mb-16">
+          <ProfileImageSection
+            businessProfile={{
+              ...businessProfile,
+              logo_url: formData.logo_url || businessProfile.logo_url,
+              logo_path: formData.logo_path || businessProfile.logo_path,
+            }}
+            isLoading={isLoading}
+            onLogoImageChange={handleLogoImageChange}
+          />
+        </div>
+
+        {/* Business Information */}
+        <div className="mb-12 sm:mb-16">
+          <BusinessInfoSection
+            formData={formData}
+            onInputChange={handleInputChange}
+            errors={errors}
+          />
+        </div>
+
+        {/* Services */}
+        <div className="mb-12 sm:mb-16">
+          <ServicesSection
+            services={formData.services}
+            onServicesChange={handleServicesChange}
+            errors={errors}
+          />
+        </div>
+
+        {/* Contact Information */}
+        <div className="mb-12 sm:mb-16">
+          <ContactSection
+            formData={formData}
+            onInputChange={handleInputChange}
+            onSamePhoneChange={handleSamePhoneChange}
+            errors={errors}
+          />
+        </div>
+
+        {/* Portfolio */}
+        <div className="mb-12 sm:mb-16">
+          <PortfolioSection
+            images={formData.images}
+            onImagesChange={handleImagesChange}
+            onFilesChange={handleFilesChange}
+            businessProfile={businessProfile}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Error Messages */}
+        {errors.length > 0 && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-md p-4">
+            <h4 className="text-red-400 font-medium mb-2">
+              Please fix the following errors:
+            </h4>
+            <ul className="text-red-400 text-sm space-y-1">
+              {errors.map((error, index) => (
+                <li key={index}>• {error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

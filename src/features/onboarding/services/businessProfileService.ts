@@ -5,8 +5,8 @@
  * Clean, simple CRUD operations for business_profiles table.
  */
 
-import { createClient } from '@/libs/supabase';
 import { ProfileService } from '@/features/profiles';
+import { createClient } from '@/libs/supabase';
 
 export class BusinessProfileService {
   /**
@@ -173,18 +173,18 @@ export class BusinessProfileService {
         .from('business_profiles')
         .select('*')
         .eq('profile_id', profileId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        // If no business profile exists, that's OK - user hasn't started onboarding
-        if (error.code === 'PGRST116') {
-          console.log(
-            "ℹ️ No business profile found - user hasn't started onboarding"
-          );
-          return { success: true, data: null };
-        }
         console.error('❌ Error fetching business profile:', error);
         return { success: false, error: error.message };
+      }
+
+      if (!data) {
+        console.log(
+          "ℹ️ No business profile found - user hasn't started onboarding"
+        );
+        return { success: true, data: null };
       }
 
       console.log('✅ Business profile found:', data.id);

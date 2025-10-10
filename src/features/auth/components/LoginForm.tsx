@@ -40,6 +40,12 @@ export const LoginForm: React.FC = () => {
       }
 
       // Redirect to dashboard after successful login
+      // Use router.refresh() to ensure middleware sees the updated session
+      router.refresh();
+
+      // Small delay to ensure cookies are set before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       router.push(ROUTES.DASHBOARD.MAIN);
     } catch (error) {
       console.error('Login failed:', error);

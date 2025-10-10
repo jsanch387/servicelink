@@ -12,9 +12,9 @@ import React from 'react';
 
 export const QuickActionsCard: React.FC = () => {
   return (
-    <div className="bg-neutral-800 p-4 sm:p-5 lg:p-6 rounded-2xl border border-neutral-700 shadow-xl h-full flex flex-col">
+    <div className="bg-neutral-800 p-4 sm:p-5 lg:p-6 rounded-2xl border border-neutral-700 h-full flex flex-col">
       <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center space-x-2">
-        <PencilIcon className="h-5 w-5 sm:h-6 w-6 text-blue-400 flex-shrink-0" />
+        <PencilIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400 flex-shrink-0" />
         <span>Quick Profile Actions</span>
       </h3>
 
@@ -22,7 +22,7 @@ export const QuickActionsCard: React.FC = () => {
         <Button
           variant="outline"
           fullWidth
-          icon={<EyeIcon className="h-4 w-4 sm:h-5 w-5" />}
+          icon={<EyeIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
           onClick={() =>
             (window.location.href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=view`)
           }
@@ -32,7 +32,7 @@ export const QuickActionsCard: React.FC = () => {
         <Button
           variant="secondary"
           fullWidth
-          icon={<PencilIcon className="h-4 w-4 sm:h-5 w-5" />}
+          icon={<PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
           onClick={() =>
             (window.location.href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=edit`)
           }

@@ -6,6 +6,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { useAnalytics } from '@/features/analytics';
 import {
   LinkSharingCard,
   PerformanceCard,
@@ -50,11 +51,15 @@ interface DashboardContentProps {
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   dashboardData,
 }) => {
-  const { businessProfile, slugData, analytics } = dashboardData;
+  const { businessProfile, slugData } = dashboardData;
+
+  // Use analytics hook to fetch real-time data
+  const { dashboardAnalytics, loading: analyticsLoading } = useAnalytics(
+    businessProfile.id
+  );
 
   // Constants
   const APP_DOMAIN = 'myservicelink.app';
-  const profileViews = 0; // TODO: Add profile views when analytics are implemented
 
   return (
     <main className="flex-1 py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-neutral-900 min-h-screen">
@@ -81,7 +86,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               appDomain={APP_DOMAIN}
             />
           ) : (
-            <div className="bg-neutral-800 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-orange-500/30 shadow-xl">
+            <div className="bg-neutral-800 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-orange-500/30">
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4">
                 Create Your Public Link
               </h2>
@@ -105,10 +110,9 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             {/* Analytics Card - Only show if user has a slug */}
             {slugData?.hasSlug && (
               <PerformanceCard
-                profileViews={profileViews}
-                profileCompleteness={analytics.profileCompleteness}
-                servicesCount={analytics.servicesCount}
-                imagesCount={analytics.imagesCount}
+                profileViews={dashboardAnalytics?.profileViews || 0}
+                lastViewed={dashboardAnalytics?.lastViewedFormatted}
+                loading={analyticsLoading}
               />
             )}
 

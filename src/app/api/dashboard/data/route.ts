@@ -119,14 +119,6 @@ export async function GET(_request: NextRequest) {
     const servicesCount = (businessProfile.services as any)?.length || 0;
     const imagesCount = (businessProfile.images as any)?.length || 0;
 
-    // Calculate profile completeness (0-100%)
-    let completeness = 0;
-    if (businessProfile.business_name) completeness += 20;
-    if (businessProfile.business_type) completeness += 15;
-    if (businessProfile.bio) completeness += 20;
-    if (servicesCount > 0) completeness += 25;
-    if (imagesCount > 0) completeness += 20;
-
     // Determine next steps
     const nextSteps = {
       needsSlug: !hasSlug,
@@ -155,7 +147,6 @@ export async function GET(_request: NextRequest) {
       analytics: {
         servicesCount,
         imagesCount,
-        profileCompleteness: Math.round(completeness),
       },
       nextSteps,
     };
@@ -164,7 +155,6 @@ export async function GET(_request: NextRequest) {
       businessProfileId: dashboardData.businessProfile.id,
       hasSlug: dashboardData.slugData?.hasSlug,
       slug: dashboardData.slugData?.slug,
-      completeness: dashboardData.analytics.profileCompleteness,
       readyToShare: dashboardData.nextSteps.readyToShare,
     });
 
