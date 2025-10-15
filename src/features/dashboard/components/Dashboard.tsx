@@ -21,7 +21,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const showHeader = !noHeaderRoutes.includes(pathname);
 
   return (
-    <div className="dashboard-container bg-neutral-900 flex">
+    <div className="dashboard-container bg-neutral-900 min-h-screen flex">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -36,22 +36,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isOnboardingCompleted={isOnboardingCompleted}
       />
       <div className="dashboard-content flex-1 flex flex-col lg:ml-64">
-        {showHeader ? (
-          <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
-        ) : (
-          // Minimal mobile menu for routes without header
-          <div className="lg:hidden bg-neutral-800 border-b border-neutral-700">
-            <div className="flex h-16 items-center px-4">
-              <IconButton
-                icon={<Bars3Icon />}
-                onClick={() => setSidebarOpen(true)}
-                variant="ghost"
-                aria-label="Open sidebar"
-              />
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-30 bg-neutral-900">
+          {showHeader ? (
+            <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
+          ) : (
+            // Minimal mobile menu for routes without header
+            <div className="lg:hidden bg-neutral-800 border-b border-neutral-700">
+              <div className="flex h-16 items-center px-4">
+                <IconButton
+                  icon={<Bars3Icon />}
+                  onClick={() => setSidebarOpen(true)}
+                  variant="ghost"
+                  aria-label="Open sidebar"
+                />
+              </div>
             </div>
-          </div>
-        )}
-        <div className="flex-1 overflow-y-auto">{children}</div>
+          )}
+        </div>
+        {/* Main Content - scrolls naturally with the page */}
+        <div className="flex-1">{children}</div>
       </div>
     </div>
   );

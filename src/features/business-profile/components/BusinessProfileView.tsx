@@ -8,7 +8,7 @@ import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
 // import { ReviewsSection } from './ReviewsSection'; // Will be used later
 import { Button } from '@/components/shared';
-import { EyeIcon, LinkIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { LinkIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
@@ -154,41 +154,17 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
   return (
     <div className="min-h-screen bg-neutral-900">
-      {/* Header with Edit Button - Only show for authenticated users */}
-      {!isPublic && (
-        <div className="bg-neutral-800 border-b border-neutral-700">
-          <div className="max-w-4xl mx-auto px-4 py-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-white">
-                  {businessProfile.business_name}
-                </h1>
-                <p className="text-gray-400 mt-1">Your business profile</p>
-              </div>
-
-              <div className="flex gap-2">
-                {editMode === 'view' ? (
-                  <Button
-                    onClick={handleEdit}
-                    variant="primary"
-                    className="flex items-center gap-2"
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                    Edit Profile
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handlePreview}
-                    variant="secondary"
-                    className="flex items-center gap-2"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                    Preview
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Floating Edit Button (FAB) - Only show in view mode for authenticated users */}
+      {!isPublic && editMode === 'view' && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Button
+            onClick={handleEdit}
+            variant="primary"
+            className="flex items-center gap-2 shadow-2xl px-6 py-3 text-base font-semibold rounded-full"
+          >
+            <PencilIcon className="h-5 w-5" />
+            Edit Profile
+          </Button>
         </div>
       )}
 

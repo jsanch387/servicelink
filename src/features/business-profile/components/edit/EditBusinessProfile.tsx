@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/shared';
 import { useUploadPortfolio } from '@/features/media/hooks';
+import { EyeIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
 import {
@@ -316,116 +317,115 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-      {/* Header Section */}
-      <div className="mb-10 sm:mb-12 text-center">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight leading-tight mt-5">
-          Edit Your <span className="text-orange-400">Business Profile</span>
-        </h1>
-        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
-          Update your business information, showcase your services, and perfect
-          your professional presence.
-        </p>
-      </div>
-
-      {/* Main Content Container */}
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-3 sm:p-4 lg:p-6 mx-2 sm:mx-0 mb-8">
-        {/* Persistent Save Button */}
-        <div className="sticky top-4 z-10 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700 rounded-xl p-4 mb-8">
-          <div className="flex flex-col sm:flex-row gap-3">
+    <div className="min-h-screen bg-neutral-900 pb-8">
+      {/* Action Bar - Above all content */}
+      <div className="sticky top-20 z-30 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <div className="bg-neutral-800/95 backdrop-blur-lg border border-neutral-700 rounded-xl px-4 py-3 shadow-2xl">
+          <div className="flex gap-3">
+            {/* Preview Button */}
             <Button
               onClick={onCancel}
               variant="secondary"
-              className="flex-1"
+              className="flex-1 flex items-center justify-center gap-2 rounded-lg"
               disabled={isAnyLoading}
             >
-              Cancel
+              <EyeIcon className="h-4 w-4" />
+              <span className="sm:hidden">Preview</span>
+              <span className="hidden sm:inline">Preview</span>
             </Button>
+
+            {/* Save Button */}
             <Button
               onClick={handleSave}
               variant="primary"
-              className="flex-1"
+              className="flex-1 rounded-lg font-semibold"
               disabled={isAnyLoading}
               loading={isSaving}
             >
               {isSaving
                 ? 'Saving...'
                 : isUploadingPortfolio
-                  ? 'Uploading Images...'
-                  : 'Save All Changes'}
+                  ? 'Uploading...'
+                  : 'Save Changes'}
             </Button>
           </div>
         </div>
+      </div>
 
+      {/* Content Sections */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
         {/* Cover Banner */}
-        <div className="mb-12 sm:mb-16">
-          <BannerSection
-            businessProfile={{
-              ...businessProfile,
-              cover_image_url:
-                formData.cover_image_url || businessProfile.cover_image_url,
-              banner_path: formData.banner_path || businessProfile.banner_path,
-            }}
-            isLoading={isLoading}
-            onCoverImageChange={handleCoverImageChange}
-          />
-        </div>
+        <BannerSection
+          businessProfile={{
+            ...businessProfile,
+            cover_image_url:
+              formData.cover_image_url || businessProfile.cover_image_url,
+            banner_path: formData.banner_path || businessProfile.banner_path,
+          }}
+          isLoading={isLoading}
+          onCoverImageChange={handleCoverImageChange}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
 
         {/* Profile Image */}
-        <div className="mb-12 sm:mb-16">
-          <ProfileImageSection
-            businessProfile={{
-              ...businessProfile,
-              logo_url: formData.logo_url || businessProfile.logo_url,
-              logo_path: formData.logo_path || businessProfile.logo_path,
-            }}
-            isLoading={isLoading}
-            onLogoImageChange={handleLogoImageChange}
-          />
-        </div>
+        <ProfileImageSection
+          businessProfile={{
+            ...businessProfile,
+            logo_url: formData.logo_url || businessProfile.logo_url,
+            logo_path: formData.logo_path || businessProfile.logo_path,
+          }}
+          isLoading={isLoading}
+          onLogoImageChange={handleLogoImageChange}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
 
         {/* Business Information */}
-        <div className="mb-12 sm:mb-16">
-          <BusinessInfoSection
-            formData={formData}
-            onInputChange={handleInputChange}
-            errors={errors}
-          />
-        </div>
+        <BusinessInfoSection
+          formData={formData}
+          onInputChange={handleInputChange}
+          errors={errors}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
 
         {/* Services */}
-        <div className="mb-12 sm:mb-16">
-          <ServicesSection
-            services={formData.services}
-            onServicesChange={handleServicesChange}
-            errors={errors}
-          />
-        </div>
+        <ServicesSection
+          services={formData.services}
+          onServicesChange={handleServicesChange}
+          errors={errors}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
 
         {/* Contact Information */}
-        <div className="mb-12 sm:mb-16">
-          <ContactSection
-            formData={formData}
-            onInputChange={handleInputChange}
-            onSamePhoneChange={handleSamePhoneChange}
-            errors={errors}
-          />
-        </div>
+        <ContactSection
+          formData={formData}
+          onInputChange={handleInputChange}
+          onSamePhoneChange={handleSamePhoneChange}
+          errors={errors}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
 
         {/* Portfolio */}
-        <div className="mb-12 sm:mb-16">
-          <PortfolioSection
-            images={formData.images}
-            onImagesChange={handleImagesChange}
-            onFilesChange={handleFilesChange}
-            businessProfile={businessProfile}
-            isLoading={isLoading}
-          />
-        </div>
+        <PortfolioSection
+          images={formData.images}
+          onImagesChange={handleImagesChange}
+          onFilesChange={handleFilesChange}
+          businessProfile={businessProfile}
+          isLoading={isLoading}
+        />
 
         {/* Error Messages */}
         {errors.length > 0 && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-md p-4">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
             <h4 className="text-red-400 font-medium mb-2">
               Please fix the following errors:
             </h4>

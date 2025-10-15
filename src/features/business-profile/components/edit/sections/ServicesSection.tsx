@@ -134,138 +134,132 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Section Header */}
-      <div>
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+    <div className="space-y-6">
+      {/* Section Header - More Prominent */}
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
           Services & Pricing
         </h2>
-        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-          Tell customers what you do and how much it costs. Keep it simple and
-          clear.
+        <p className="text-sm sm:text-base text-gray-400">
+          Add your services and pricing information
         </p>
       </div>
 
-      {/* Main Content Grid - stacked layout */}
-      <div className="space-y-8 sm:space-y-10">
-        {/* Add Service Form */}
-        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-2 sm:p-4 lg:p-6 ">
-          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-            Add a Service
-          </h3>
+      {/* Add Service Form */}
+      <div className="space-y-4">
+        <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+          <PlusIcon className="h-4 w-4 text-orange-400" />
+          Add New Service
+        </h3>
 
-          <form className="space-y-4 sm:space-y-6">
-            <Input
-              label="What do you call this service?"
-              placeholder="e.g., House Cleaning, Logo Design, Car Repair"
-              value={currentService.name}
-              onChange={value => handleServiceChange('name', value)}
+        <form className="space-y-4">
+          <Input
+            label="Service Name"
+            placeholder="e.g., House Cleaning, Logo Design, Car Repair"
+            value={currentService.name}
+            onChange={value => handleServiceChange('name', value)}
+            required
+          />
+
+          <div className="space-y-2">
+            <TextArea
+              label="Description (Required)"
+              placeholder="Tell customers what they get. Keep it simple."
+              value={currentService.description}
+              onChange={value => handleServiceChange('description', value)}
+              rows={3}
               required
             />
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>Describe what customers get with this service</span>
+              <span
+                className={`${
+                  currentService.description.length >
+                  MAX_DESCRIPTION_LENGTH * 0.9
+                    ? 'text-orange-400'
+                    : 'text-gray-500'
+                }`}
+              >
+                {currentService.description.length}/{MAX_DESCRIPTION_LENGTH}
+              </span>
+            </div>
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <TextArea
-                label="What's included? (Required)"
-                placeholder="Tell customers what they get. Keep it simple."
-                value={currentService.description}
-                onChange={value => handleServiceChange('description', value)}
-                rows={3}
+              <PriceInput
+                label="Price (Required)"
+                placeholder="0.00"
+                value={currentService.price}
+                onChange={value => handleServiceChange('price', value)}
                 required
               />
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">
-                  Describe what customers get with this service
-                </span>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Enter price in dollars (e.g., 150.00)</span>
                 <span
                   className={`${
-                    currentService.description.length >
-                    MAX_DESCRIPTION_LENGTH * 0.9
+                    currentService.price.length > MAX_PRICE_LENGTH * 0.8
                       ? 'text-orange-400'
                       : 'text-gray-500'
                   }`}
                 >
-                  {currentService.description.length}/{MAX_DESCRIPTION_LENGTH}
+                  {currentService.price.length}/{MAX_PRICE_LENGTH}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-2">
-                <PriceInput
-                  label="How much does it cost? (Required)"
-                  placeholder="0.00"
-                  value={currentService.price}
-                  onChange={value => handleServiceChange('price', value)}
-                  required
-                />
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">
-                    Enter price in dollars (e.g., 150.00)
-                  </span>
-                  <span
-                    className={`${
-                      currentService.price.length > MAX_PRICE_LENGTH * 0.8
-                        ? 'text-orange-400'
-                        : 'text-gray-500'
-                    }`}
-                  >
-                    {currentService.price.length}/{MAX_PRICE_LENGTH}
-                  </span>
-                </div>
-              </div>
+            <Select
+              label="Duration (Optional)"
+              placeholder="Select hours"
+              value={currentService.hours_to_complete?.toString() || ''}
+              onChange={value => {
+                const numValue = value ? parseInt(value) : null;
+                handleServiceChange('hours_to_complete', numValue);
+              }}
+              options={HOURS_OPTIONS}
+            />
+          </div>
 
-              <Select
-                label="How long does it take? (Optional)"
-                placeholder="Select hours"
-                value={currentService.hours_to_complete?.toString() || ''}
-                onChange={value => {
-                  const numValue = value ? parseInt(value) : null;
-                  handleServiceChange('hours_to_complete', numValue);
-                }}
-                options={HOURS_OPTIONS}
+          <Button
+            type="button"
+            onClick={addService}
+            variant="primary"
+            className="w-full mt-4"
+            disabled={!currentService.name.trim()}
+          >
+            Add This Service
+          </Button>
+        </form>
+      </div>
+
+      {/* Services List */}
+      <div className="space-y-4 mt-6">
+        <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+          <span className="text-orange-400">●</span> Your Services (
+          {services.length})
+        </h3>
+
+        {services.length === 0 ? (
+          <div className="bg-neutral-800/50 border border-neutral-700 rounded-lg p-6 text-center border-dashed">
+            <PlusIcon className="h-8 w-8 text-orange-400 mx-auto mb-3 opacity-60" />
+            <p className="text-gray-400 mb-2 font-medium text-sm">
+              No services yet
+            </p>
+            <p className="text-xs text-gray-500">
+              Add your first service using the form above.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {services.map((service, index) => (
+              <ServiceCard
+                key={service.id || index}
+                service={service}
+                onDelete={() => removeService(index)}
               />
-            </div>
-
-            <Button
-              type="button"
-              onClick={addService}
-              variant="primary"
-              className="w-full mt-4 sm:mt-6 text-base sm:text-lg"
-              disabled={!currentService.name.trim()}
-            >
-              Add This Service
-            </Button>
-          </form>
-        </div>
-
-        {/* Services List */}
-        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-2 sm:p-4 lg:p-6 ">
-          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-            Your Services ({services.length})
-          </h3>
-
-          {services.length === 0 ? (
-            <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 sm:p-8 text-center border-dashed">
-              <PlusIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-400 mx-auto mb-3 sm:mb-4 opacity-60" />
-              <p className="text-gray-400 mb-2 font-semibold text-sm sm:text-base">
-                No services yet
-              </p>
-              <p className="text-xs sm:text-sm text-gray-500">
-                Add your first service using the form on the left.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3 sm:space-y-4">
-              {services.map((service, index) => (
-                <ServiceCard
-                  key={service.id || index}
-                  service={service}
-                  onDelete={() => removeService(index)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

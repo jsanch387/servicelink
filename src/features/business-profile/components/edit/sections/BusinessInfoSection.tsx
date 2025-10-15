@@ -17,12 +17,12 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
 }) => {
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Section Header */}
-      <div>
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+      {/* Section Header - More Prominent */}
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
           Business Information
         </h2>
-        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
+        <p className="text-sm sm:text-base text-gray-400">
           Tell customers about your business and what makes you unique in your
           industry.
         </p>

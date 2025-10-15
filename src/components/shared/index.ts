@@ -16,6 +16,7 @@ export { ImageWithFallback } from './ImageWithFallback';
 export { LoadingSpinner } from './LoadingSpinner';
 export { Logo } from './Logo';
 export { LogoPlaceholder } from './LogoPlaceholder';
+export { Modal } from './Modal';
 export { SectionTitle } from './SectionTitle';
 export { SettingsLoadingState } from './SettingsLoadingState';
 export { StructuredData } from './StructuredData';

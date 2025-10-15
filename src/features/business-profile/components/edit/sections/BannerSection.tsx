@@ -1,14 +1,9 @@
+/* eslint-disable no-unused-vars */
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, Modal } from '@/components/shared';
 import { useUploadBanner } from '@/features/media/hooks';
-import {
-  CameraIcon,
-  PencilIcon,
-  PhotoIcon,
-  TrashIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { CameraIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import React, { useState } from 'react';
 
@@ -16,49 +11,15 @@ interface BannerSectionProps {
   businessProfile: Record<string, unknown>;
   isLoading: boolean;
   onCoverImageChange: (
-    file: File,
-    publicUrl?: string,
-    storagePath?: string
+    _file: File,
+    _publicUrl?: string,
+    _storagePath?: string
   ) => void;
 }
 
-// Modal component for editing - Updated to match Step 4 Portfolio theme
-const Modal = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-70 backdrop-blur-sm">
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 w-full max-w-2xl mx-auto">
-        <div className="flex justify-between items-center pb-6 border-b border-neutral-700 mb-6">
-          <h3 className="text-xl sm:text-2xl font-bold text-white border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-neutral-700 rounded-lg"
-            aria-label="Close modal"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-};
-
 // Enhanced Upload Component with Better UX - Matching Step 4 Portfolio theme
 const EnhancedImageUpload: React.FC<{
-  onImageSelect: (file: File) => void;
+  onImageSelect: (_file: File) => void;
   disabled: boolean;
 }> = ({ onImageSelect, disabled }) => {
   const [dragActive, setDragActive] = useState(false);
@@ -94,8 +55,8 @@ const EnhancedImageUpload: React.FC<{
   return (
     <label
       className={`
-        flex flex-col items-center justify-center w-full p-6 sm:p-8 transition duration-300
-        border-4 border-dashed rounded-xl cursor-pointer
+        flex flex-col items-center justify-center w-full p-4 sm:p-6 transition duration-300
+        border-2 sm:border-4 border-dashed rounded-lg sm:rounded-xl cursor-pointer
         ${
           disabled
             ? 'opacity-50 cursor-not-allowed border-neutral-700 bg-neutral-900'
@@ -110,14 +71,12 @@ const EnhancedImageUpload: React.FC<{
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <CameraIcon className="h-10 w-10 sm:h-12 sm:w-12 text-orange-400 mb-4" />
-      <p className="mb-2 text-base sm:text-lg text-white font-semibold">
+      <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-400 mb-3" />
+      <p className="mb-1 text-sm sm:text-base text-white font-semibold">
         {dragActive ? 'Drop your photo here' : 'Click to upload or drag & drop'}
       </p>
-      <p className="text-sm text-gray-500 text-center max-w-xs">
-        Any size works! We&apos;ll automatically make it look perfect.
-        <br />
-        JPG, PNG up to 10MB
+      <p className="text-xs sm:text-sm text-gray-500 text-center max-w-xs">
+        Any size works! JPG, PNG up to 10MB
       </p>
       <input
         id="cover-photo-upload"
@@ -133,7 +92,6 @@ const EnhancedImageUpload: React.FC<{
 
 export const BannerSection: React.FC<BannerSectionProps> = ({
   businessProfile,
-  isLoading,
   onCoverImageChange,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -187,59 +145,67 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
     setSelectedFile(null);
   };
 
-  const coverEmptyState = (
-    <div className="w-full h-full flex items-center justify-center text-gray-400 p-4 text-center">
-      <div className="flex flex-col items-center">
-        <PhotoIcon className="h-12 w-12 text-gray-500 mb-2" />
-        <p className="text-sm font-semibold">Add a cover photo</p>
-        <p className="text-xs text-gray-500 mt-1">Recommended: 1200x400px</p>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Section Header */}
-      <div>
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+    <div className="space-y-4">
+      {/* Section Header - More Prominent */}
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
           Cover Photo
         </h2>
-        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-          Add a professional cover photo to showcase your business and create a
-          strong first impression.
+        <p className="text-sm sm:text-base text-gray-400">
+          Click to add or change your cover photo
         </p>
       </div>
 
-      {/* Cover Photo Display */}
+      {/* Cover Photo Display with Clear Edit Indicator */}
       <div
         onClick={openModal}
-        className="relative group w-full h-48 sm:h-56 md:h-64 bg-neutral-700 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:bg-neutral-600 border-2 border-neutral-600 hover:border-orange-400"
+        className="relative group w-full h-48 sm:h-56 md:h-64 bg-neutral-800 rounded-xl overflow-hidden cursor-pointer border-2 border-neutral-700 hover:border-orange-400 transition-all duration-300"
       >
         {businessProfile.cover_image_url &&
         (businessProfile.cover_image_url as string).trim() ? (
-          <Image
-            src={businessProfile.cover_image_url as string}
-            alt="Cover"
-            width={800}
-            height={320}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+          <>
+            <Image
+              src={businessProfile.cover_image_url as string}
+              alt="Cover"
+              width={800}
+              height={320}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            {/* Always visible edit indicator */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+              <span className="text-white text-sm font-medium bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                Click to change
+              </span>
+              <div className="bg-orange-500 text-white p-2 rounded-full">
+                <CameraIcon className="h-5 w-5" />
+              </div>
+            </div>
+          </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-neutral-600 rounded-xl hover:border-orange-400 transition-colors">
             <div className="text-center text-gray-400">
-              <PhotoIcon className="h-12 w-12 sm:h-16 sm:w-16 text-gray-500 mb-4 mx-auto" />
-              <p className="text-lg font-semibold mb-2">Add a cover photo</p>
-              <p className="text-sm text-gray-500">Recommended: 1200x400px</p>
+              <div className="bg-neutral-700 rounded-full p-4 mx-auto mb-3 w-fit">
+                <CameraIcon className="h-8 w-8 text-orange-400" />
+              </div>
+              <p className="text-base font-semibold mb-1 text-white">
+                Click to add cover photo
+              </p>
+              <p className="text-xs text-gray-500">1200x400px recommended</p>
             </div>
           </div>
         )}
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Hover overlay - only shows on hover */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div className="text-white text-center">
-            <PencilIcon className="h-8 w-8 mx-auto mb-2" />
-            <span className="font-semibold text-sm">
+            <div className="bg-orange-500 rounded-full p-3 mx-auto mb-2 w-fit">
+              <PencilIcon className="h-6 w-6" />
+            </div>
+            <span className="font-semibold text-base">
               {businessProfile.cover_image_url
                 ? 'Change Cover Photo'
-                : 'Add Cover Photo'}
+                : 'Upload Cover Photo'}
             </span>
           </div>
         </div>
@@ -251,24 +217,23 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
         onClose={() => setIsModalOpen(false)}
         title="Edit Cover Photo"
       >
-        <div className="space-y-6 sm:space-y-8">
-          {/* Description */}
-          <div className="text-center">
-            <p className="text-lg sm:text-xl text-gray-400 leading-relaxed">
-              Upload a professional cover photo to showcase your business
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Recommended: 1200x400px • JPG, PNG up to 10MB
-            </p>
-          </div>
+        <div className="space-y-4 sm:space-y-6">
+          {/* Simplified Description - Only show if no current photo */}
+          {(!tempCoverPhoto || !tempCoverPhoto.trim()) && (
+            <div className="text-center">
+              <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
+                Upload a professional cover photo to showcase your business
+              </p>
+            </div>
+          )}
 
-          {/* Preview Section */}
+          {/* Compact Preview Section */}
           {tempCoverPhoto && tempCoverPhoto.trim() && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-bold text-white border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-                Current Preview
+            <div className="space-y-3">
+              <h4 className="text-sm sm:text-base font-semibold text-white">
+                Current Photo
               </h4>
-              <div className="w-full h-40 sm:h-48 rounded-xl bg-neutral-700 overflow-hidden relative border border-neutral-600">
+              <div className="w-full h-32 sm:h-40 rounded-lg bg-neutral-700 overflow-hidden relative border border-neutral-600">
                 <Image
                   src={tempCoverPhoto}
                   alt="Cover Photo Preview"
@@ -281,9 +246,11 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
           )}
 
           {/* Upload Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-white border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-              Upload New Photo
+          <div className="space-y-3">
+            <h4 className="text-sm sm:text-base font-semibold text-white">
+              {tempCoverPhoto && tempCoverPhoto.trim()
+                ? 'Replace Photo'
+                : 'Upload Photo'}
             </h4>
             <EnhancedImageUpload
               onImageSelect={file => {
@@ -299,7 +266,7 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
               <p className="text-red-400 text-sm font-medium text-center">
                 {error}
               </p>
@@ -307,7 +274,7 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
             <Button
               onClick={handleSaveCover}
               disabled={isUploading || !selectedFile}
@@ -322,7 +289,7 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
                 onClick={handleRemoveCover}
                 disabled={isUploading}
                 variant="danger"
-                className="flex-1 sm:flex-none sm:px-8"
+                className="flex-1 sm:flex-none sm:px-6"
               >
                 <TrashIcon className="w-4 h-4 mr-2" />
                 Remove

@@ -27,8 +27,7 @@ body {
 
 /* Dashboard layout fixes */
 .dashboard-container {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 .dashboard-sidebar {
@@ -39,10 +38,9 @@ body {
   z-index: 50;
 }
 
+/* No need for fixed height on content - let it flow naturally */
 .dashboard-content {
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  min-height: 100vh;
 }
 
 /* Ensure sidebar stays fixed on all screen sizes */

@@ -7,7 +7,7 @@ import { saveStepAndProgress } from '../utils/onboardingHelpers';
 interface Step2BusinessInfoProps {
   profileId: string;
   businessProfileId: string;
-  existingData?: any;
+  existingData?: Record<string, unknown>;
   onNext: () => void;
   onBack: () => void;
 }
@@ -53,10 +53,10 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
     if (existingData) {
       console.log('📝 Populating form with existing data:', existingData);
       setFormData({
-        business_name: existingData.business_name || '',
-        business_type: existingData.business_type || '',
-        service_area: existingData.service_area || '',
-        bio: existingData.bio || '',
+        business_name: (existingData.business_name as string) || '',
+        business_type: (existingData.business_type as string) || '',
+        service_area: (existingData.service_area as string) || '',
+        bio: (existingData.bio as string) || '',
       });
     }
   }, [existingData]);

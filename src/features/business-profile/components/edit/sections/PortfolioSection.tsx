@@ -246,17 +246,16 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   const hasReachedLimit = images.length >= MAX_IMAGES;
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Section Header */}
-      <div>
-        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+    <div className="space-y-6">
+      {/* Section Header - More Prominent */}
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
           Portfolio Gallery
         </h2>
-        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-          Showcase your best work with high-quality photos to build trust and
-          credibility with customers.{' '}
+        <p className="text-sm sm:text-base text-gray-400">
+          Showcase your best work with high-quality photos
           {hasReachedLimit && (
-            <span className="text-orange-400 font-semibold">
+            <span className="text-orange-400 font-semibold ml-2">
               (Maximum {MAX_IMAGES} images reached)
             </span>
           )}
@@ -265,7 +264,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
 
       {/* Upload Section */}
       {!hasReachedLimit && (
-        <div className="mb-8 sm:mb-10">
+        <div className="mb-6">
           <EnhancedImageUpload
             onImageSelect={handleImageSelect}
             disabled={isLoading}
@@ -275,12 +274,12 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
 
       {/* Maximum Limit Reached Message */}
       {hasReachedLimit && (
-        <div className="mb-8 sm:mb-10 bg-neutral-900 border border-neutral-700 rounded-xl p-4 sm:p-5">
+        <div className="mb-6 bg-neutral-800/50 border border-neutral-700 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
-            <p className="text-gray-400 text-sm sm:text-base">
-              You&apos;ve reached the maximum of {MAX_IMAGES} images. Remove an
-              image to add a new one.
+            <p className="text-gray-400 text-sm">
+              You've reached the maximum of {MAX_IMAGES} images. Remove an image
+              to add a new one.
             </p>
           </div>
         </div>
@@ -288,9 +287,10 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
 
       {/* Portfolio Grid */}
       {images.length > 0 && (
-        <div className="pt-8 border-t border-neutral-700">
-          <h3 className="text-lg sm:text-xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-            Your Current Portfolio ({images.length}/{MAX_IMAGES})
+        <div className="space-y-4">
+          <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+            <span className="text-orange-400">●</span> Your Portfolio (
+            {images.length}/{MAX_IMAGES})
           </h3>
 
           {/* Smart Grid Layout - Always square containers */}
@@ -314,17 +314,15 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
 
       {/* Empty State */}
       {images.length === 0 && (
-        <div className="pt-8 border-t border-neutral-700">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-8 sm:p-12 text-center border-dashed">
-            <CameraIcon className="h-12 w-12 sm:h-16 sm:w-16 text-orange-400 mx-auto mb-4 sm:mb-6 opacity-60" />
-            <p className="text-gray-400 mb-2 font-semibold text-lg sm:text-xl">
-              Your portfolio is currently empty
-            </p>
-            <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto">
-              Upload at least one high-quality photo to showcase your work and
-              build trust with customers!
-            </p>
-          </div>
+        <div className="bg-neutral-800/50 border border-neutral-700 rounded-lg p-8 text-center border-dashed">
+          <CameraIcon className="h-12 w-12 text-orange-400 mx-auto mb-4 opacity-60" />
+          <p className="text-gray-400 mb-2 font-semibold">
+            Your portfolio is currently empty
+          </p>
+          <p className="text-sm text-gray-500 max-w-md mx-auto">
+            Upload at least one high-quality photo to showcase your work and
+            build trust with customers!
+          </p>
         </div>
       )}
     </div>
