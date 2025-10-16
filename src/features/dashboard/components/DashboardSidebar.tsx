@@ -105,6 +105,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={() => setOpen(false)} // Auto-hide sidebar on mobile when link is clicked
                   className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive
                       ? 'bg-orange-500 text-white'

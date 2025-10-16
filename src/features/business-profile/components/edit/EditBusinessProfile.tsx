@@ -19,6 +19,75 @@ import { PortfolioSection } from './sections/PortfolioSection';
 import { ProfileImageSection } from './sections/ProfileImageSection';
 import { ServicesSection } from './sections/ServicesSection';
 
+/**
+ * HEIC Conversion for MVP
+ *
+ * Converts HEIC files (iPhone photos) to JPEG before upload.
+ * This ensures compatibility across all browsers and platforms.
+ *
+ * Process:
+ * 1. User selects HEIC file → Shows professional placeholder preview
+ * 2. User clicks Save → HEIC files converted to JPEG on server
+ * 3. JPEG files uploaded to Supabase → Works everywhere
+ */
+const convertHeicFiles = async (files: File[]): Promise<File[]> => {
+  const convertedFiles: File[] = [];
+
+  for (const file of files) {
+    // Check if it's a HEIC file
+    const isHeic =
+      file.type === 'image/heic' ||
+      file.type === 'image/heif' ||
+      file.name.toLowerCase().endsWith('.heic') ||
+      file.name.toLowerCase().endsWith('.heif');
+
+    if (isHeic) {
+      console.log('🔄 Converting HEIC file:', file.name);
+
+      try {
+        // Send HEIC file to server for conversion
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/convert-heic', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'HEIC conversion failed');
+        }
+
+        // Get converted JPEG blob
+        const jpegBlob = await response.blob();
+
+        // Create new File object with JPEG extension
+        const convertedFile = new File(
+          [jpegBlob],
+          file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+          { type: 'image/jpeg' }
+        );
+
+        convertedFiles.push(convertedFile);
+        console.log('✅ HEIC conversion successful:', {
+          original: file.name,
+          converted: convertedFile.name,
+        });
+      } catch (error) {
+        console.error('❌ HEIC conversion failed:', error);
+        // If conversion fails, keep the original file
+        convertedFiles.push(file);
+      }
+    } else {
+      // Not a HEIC file, keep as is
+      convertedFiles.push(file);
+    }
+  }
+
+  return convertedFiles;
+};
+
 interface EditBusinessProfileProps {
   businessProfile: CompleteBusinessProfile;
   onSave: (data: Record<string, unknown>) => Promise<void>;
@@ -216,9 +285,16 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           selectedFiles.length
         );
 
+        // Convert HEIC files to JPEG before uploading
+        const convertedFiles = await convertHeicFiles(selectedFiles);
+        console.log(
+          '🔄 Converted files:',
+          convertedFiles.map(f => f.name)
+        );
+
         const result = await uploadPortfolio({
           businessId: businessProfile.id,
-          files: selectedFiles,
+          files: convertedFiles,
           previousImages: [], // No previous images for now
         });
 

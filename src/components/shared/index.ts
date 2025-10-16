@@ -17,6 +17,7 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { Logo } from './Logo';
 export { LogoPlaceholder } from './LogoPlaceholder';
 export { Modal } from './Modal';
+export { ModernLoadingSpinner } from './ModernLoadingSpinner';
 export { SectionTitle } from './SectionTitle';
 export { SettingsLoadingState } from './SettingsLoadingState';
 export { StructuredData } from './StructuredData';

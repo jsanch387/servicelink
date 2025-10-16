@@ -173,7 +173,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
         <div className="max-w-4xl mx-auto">
           {/* Create Link CTA - Only show for authenticated users without a slug */}
           {!isPublic && slugData && !slugData.hasSlug && (
-            <div className="px-4 pt-6 pb-4">
+            <div className="px-4 pt-4 pb-3 sm:pt-6 sm:pb-4">
               <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 sm:p-5">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-0.5">

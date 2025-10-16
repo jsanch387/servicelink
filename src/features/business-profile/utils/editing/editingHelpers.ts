@@ -37,6 +37,8 @@ export interface ImageFormData {
   storage_path: string;
   position: number;
   preview_url?: string;
+  file_type?: string;
+  original_type?: string;
 }
 
 export interface ValidationResult {

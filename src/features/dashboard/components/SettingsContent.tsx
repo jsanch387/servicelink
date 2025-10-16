@@ -164,33 +164,43 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
   };
 
   return (
-    <main className="flex-1 py-10 px-4 sm:px-8 lg:px-12 overflow-y-auto bg-neutral-900 min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        {/* Header Section */}
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-2 tracking-tight">
-            Account <span className="text-orange-400">Settings</span>
-          </h1>
-          <p className="text-lg text-gray-400 font-light max-w-2xl mx-auto">
-            Create your custom link and manage your account settings.
-          </p>
+    <div className="min-h-screen bg-neutral-900">
+      {/* Action Bar - Sticky at top */}
+      <div className="sticky top-20 z-30 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <div className="bg-neutral-800/95 backdrop-blur-lg border border-neutral-700 rounded-xl px-4 py-3 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-white">
+                Account Settings
+              </h1>
+              <p className="text-sm text-gray-400">
+                Manage your custom link and account preferences
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Main Settings Cards */}
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
+        {/* Settings Sections */}
         <div className="space-y-12">
-          {/* Public Link Management (Primary Focus) */}
-          <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
-            {/* Card Header */}
-            <div className="mb-8 border-b border-neutral-700 pb-4">
-              <h2 className="text-2xl font-bold text-white flex items-center space-x-3 uppercase tracking-wider">
-                <LinkIcon className="h-6 w-6 text-orange-400" />
-                <span>Your Custom Link</span>
+          {/* Public Link Management Section */}
+          <div className="bg-neutral-800/50 rounded-xl border border-neutral-700 p-6 sm:p-8">
+            {/* Section Header */}
+            <div className="mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
+                Your Custom Link
               </h2>
+              <p className="text-sm sm:text-base text-gray-400">
+                Create a custom link to share your business profile with
+                customers.
+              </p>
             </div>
 
             {/* Link Status Banner */}
             <div
-              className={`p-4 rounded-xl mb-6 flex items-center space-x-3 transition-colors duration-300 ${
+              className={`p-4 rounded-xl mb-8 flex items-center space-x-3 transition-colors duration-300 ${
                 linkGenerated
                   ? 'bg-green-500/10 border border-green-500/20'
                   : 'bg-orange-500/10 border border-orange-500/20'
@@ -209,14 +219,14 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             </div>
 
             {/* Link Input/Display Block */}
-            <div className="space-y-4">
+            <div className="space-y-4 mb-8">
               <label className="text-sm font-medium text-gray-400 block">
                 {linkGenerated ? 'Your Link' : 'Choose Your Custom Link Name'}
               </label>
 
-              <div className="flex flex-col sm:flex-row rounded-xl overflow-hidden border border-neutral-600">
+              <div className="flex flex-col rounded-xl overflow-hidden border border-neutral-600">
                 {/* Domain Prefix */}
-                <span className="py-3 px-4 bg-neutral-900 text-gray-400 font-mono text-base flex items-center flex-shrink-0">
+                <span className="py-2 px-3 sm:py-3 sm:px-4 bg-neutral-900 text-gray-400 font-mono text-sm sm:text-base flex items-center flex-shrink-0">
                   {APP_DOMAIN}/
                 </span>
 
@@ -226,12 +236,12 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     type="text"
                     value={customSlugInput}
                     onChange={e => setCustomSlugInput(e.target.value)}
-                    className="flex-1 px-4 py-3 bg-neutral-700 text-white font-mono text-base outline-none focus:ring-0"
-                    placeholder="Enter your custom link name (e.g., my-business-name)"
+                    className="flex-1 px-3 py-2 sm:px-4 sm:py-3 bg-neutral-700 text-white font-mono text-sm sm:text-base outline-none focus:ring-0"
+                    placeholder="my-business-name"
                     disabled={isUpdating}
                   />
                 ) : (
-                  <span className="flex-1 px-4 py-3 bg-neutral-700 text-orange-400 font-mono text-base break-all">
+                  <span className="flex-1 px-3 py-2 sm:px-4 sm:py-3 bg-neutral-700 text-orange-400 font-mono text-sm sm:text-base break-all">
                     {currentSlug}
                   </span>
                 )}
@@ -249,7 +259,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             </div>
 
             {/* Action Buttons (Create or Copy/View) */}
-            <div className="flex gap-4 pt-6 mt-4 border-t border-neutral-700">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-neutral-700">
               {!linkGenerated ? (
                 <Button
                   onClick={handleSaveSlug}
@@ -268,7 +278,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     onClick={handleCopyLink}
                     variant="secondary"
                     size="lg"
-                    className="flex-1"
+                    className="w-full sm:flex-1"
                     icon={<ClipboardIcon className="h-5 w-5" />}
                   >
                     {copied ? 'Copied!' : 'Copy Link'}
@@ -277,7 +287,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     onClick={handleViewProfile}
                     variant="primary"
                     size="lg"
-                    className="flex-1"
+                    className="w-full sm:flex-1"
                     icon={<LinkIcon className="h-5 w-5" />}
                   >
                     View My Profile
@@ -288,29 +298,36 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
           </div>
 
           {/* Contact Support Section */}
-          <div className="bg-neutral-800 p-6 rounded-2xl border border-neutral-700">
-            {/* Card Header */}
-            <div className="mb-6 border-b border-neutral-700 pb-4">
-              <h2 className="text-2xl font-bold text-white flex items-center space-x-3 uppercase tracking-wider">
-                <EnvelopeIcon className="h-6 w-6 text-orange-400" />
-                <span>Contact Support</span>
+          <div className="bg-neutral-800/50 rounded-xl border border-neutral-700 p-6 sm:p-8">
+            {/* Section Header */}
+            <div className="mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
+                Contact Support
               </h2>
+              <p className="text-sm sm:text-base text-gray-400">
+                Need help? We're here to support you with any questions or
+                issues.
+              </p>
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               <p className="text-gray-300 text-base leading-relaxed">
                 Need help or have questions? We're here to support you!
               </p>
 
-              <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
-                <div className="flex items-center space-x-3">
-                  <EnvelopeIcon className="h-5 w-5 text-orange-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-white font-medium">Support Email</p>
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                  <div className="bg-orange-500/20 rounded-full p-2 sm:p-3 flex-shrink-0">
+                    <EnvelopeIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white font-semibold text-base sm:text-lg">
+                      Support Email
+                    </p>
                     <a
                       href="mailto:app.servicelink@gmail.com"
-                      className="text-orange-400 hover:text-orange-300 transition-colors duration-200 text-lg font-mono"
+                      className="text-orange-400 hover:text-orange-300 transition-colors duration-200 text-sm sm:text-lg font-mono block mt-1 break-all"
                     >
                       app.servicelink@gmail.com
                     </a>
@@ -318,22 +335,16 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                 </div>
               </div>
 
-              <p className="text-gray-400 text-sm">
-                We typically respond within 24 hours. Include your business name
-                in the subject line for faster support.
-              </p>
+              <div className="bg-neutral-700/50 rounded-lg p-3 sm:p-4">
+                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+                  We typically respond within 24 hours. Include your business
+                  name in the subject line for faster support.
+                </p>
+              </div>
             </div>
-          </div>
-
-          {/* Placeholder for future settings */}
-          <div className="p-6 text-center text-gray-500 border-t border-neutral-800">
-            <p>
-              More features coming soon: Notifications, Integrations, and
-              Billing settings.
-            </p>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 };

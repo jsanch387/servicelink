@@ -2,6 +2,7 @@
 
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ImageFormData } from '@/features/business-profile/utils/editing/editingHelpers';
+// Server-side HEIC conversion - no client-side imports needed
 import {
   CameraIcon,
   ExclamationTriangleIcon,
@@ -179,42 +180,87 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   const handleImageSelect = (file: File) => {
     console.log('📸 Portfolio image selected:', file.name);
 
-    // Check if we've reached the maximum number of images
+    // Validate limits and file type
     if (images.length >= MAX_IMAGES) {
-      console.error(`❌ Maximum of ${MAX_IMAGES} images allowed`);
+      alert(`Maximum of ${MAX_IMAGES} images allowed`);
       return;
     }
 
-    // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      console.error('❌ File size too large:', file.size);
+      alert('File size too large (max 10MB)');
       return;
     }
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      console.error('❌ Invalid file type:', file.type);
+      alert('Please select an image file');
       return;
     }
 
-    // Create preview URL for immediate display
-    const previewUrl = URL.createObjectURL(file);
+    try {
+      // Create appropriate preview based on file type
+      let previewUrl: string;
 
-    // Add file to selected files for later upload
-    const newFiles = [...selectedFiles, file];
-    setSelectedFiles(newFiles);
-    onFilesChange(newFiles);
+      // Check if it's a HEIC file (iPhone photos)
+      const isHeic =
+        file.type === 'image/heic' ||
+        file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif');
 
-    // Create preview image for immediate UI display
-    const previewImage: ImageFormData = {
-      id: `preview-${Date.now()}`,
-      storage_path: '', // Will be set after upload
-      position: images.length + 1,
-      preview_url: previewUrl,
-    };
+      if (isHeic) {
+        // HEIC files: Show professional placeholder (browsers can't display HEIC)
+        previewUrl = createHeicPlaceholder(file.name);
+      } else {
+        // Regular images: Show actual preview
+        previewUrl = URL.createObjectURL(file);
+      }
 
-    console.log('➕ Adding image preview:', previewImage);
-    onImagesChange([...images, previewImage]);
+      // Add to selected files for upload
+      const newFiles = [...selectedFiles, file];
+      setSelectedFiles(newFiles);
+      onFilesChange(newFiles);
+
+      // Create preview for immediate display
+      const previewImage: ImageFormData = {
+        id: `preview-${Date.now()}`,
+        storage_path: '', // Will be set after upload
+        position: images.length + 1,
+        preview_url: previewUrl,
+        file_type: file.type,
+        original_type: file.type,
+      };
+
+      onImagesChange([...images, previewImage]);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Error processing image. Please try again.');
+    }
+  };
+
+  const createHeicPlaceholder = (fileName: string): string => {
+    const svg = `
+      <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background matching app's neutral-900 -->
+        <rect width="100%" height="100%" fill="#171717"/>
+
+        <!-- Main container matching app's neutral-900 with neutral-700 border -->
+        <rect x="40" y="40" width="320" height="320" fill="#171717" rx="16" stroke="#404040" stroke-width="1"/>
+
+        <!-- Image icon in neutral colors -->
+        <rect x="160" y="140" width="80" height="60" fill="#404040" rx="8"/>
+        <rect x="170" y="150" width="60" height="40" fill="#525252" rx="4"/>
+        <circle cx="200" cy="170" r="6" fill="#737373"/>
+
+        <!-- File name in app's foreground color -->
+        <text x="200" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ededed" text-anchor="middle">${fileName}</text>
+
+        <!-- Status message using app's neutral colors -->
+        <rect x="50" y="270" width="300" height="60" fill="#262626" rx="12" stroke="#404040" stroke-width="1"/>
+        <text x="200" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="#f97316" text-anchor="middle">Preview will show after saving</text>
+        <text x="200" y="315" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#a3a3a3" text-anchor="middle">Image will be converted to JPEG format</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   };
 
   const removeImage = (index: number) => {

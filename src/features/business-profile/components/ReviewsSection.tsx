@@ -17,7 +17,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   onCancel,
 }) => {
   return (
-    <section className="px-8 py-12">
+    <section className="px-4 py-8 sm:px-8 sm:py-12">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-white flex items-center gap-3">
           <StarIcon className="h-6 w-6 text-orange-500" />
