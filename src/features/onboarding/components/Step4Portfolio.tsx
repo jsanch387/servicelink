@@ -5,7 +5,7 @@ import { MediaService } from '@/features/media';
 import { useUploadPortfolio } from '@/features/media/useUploadPortfolio';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import { BusinessImagesService } from '../services/businessImagesService';
 import { PortfolioImage } from '../types/portfolio';
 import { saveStepAndProgress } from '../utils/onboardingHelpers';
@@ -23,7 +23,7 @@ const SmartImagePreview: React.FC<{
   src: string;
   alt: string;
   onRemove: () => void;
-}> = ({ src, alt, onRemove }) => {
+}> = memo(({ src, alt, onRemove }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleRemoveClick = () => {
@@ -38,29 +38,36 @@ const SmartImagePreview: React.FC<{
 
   return (
     <div className="relative group">
-      {/* Fixed Square Container - Always maintains consistent size */}
-      <div className="aspect-square w-full rounded-xl overflow-hidden shadow-lg bg-neutral-900 border border-neutral-700">
+      {/* Responsive Container - Larger on bigger screens, optimized for mobile */}
+      <div className="aspect-square w-full rounded-xl overflow-hidden shadow-lg bg-neutral-900 border border-neutral-700 hover:border-orange-400/50 transition-all duration-300 group-hover:shadow-2xl">
+        {/* Subtle overlay for better visual feedback */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
         <Image
           src={src}
           alt={alt}
-          width={400}
-          height={400}
+          width={600}
+          height={600}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 50vw"
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          priority={false}
+          loading="lazy"
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
           onError={e => {
             e.currentTarget.src =
-              'https://placehold.co/400x400/374151/E5E7EB?text=No+Preview';
+              'https://placehold.co/600x600/374151/E5E7EB?text=No+Preview';
           }}
         />
       </div>
 
-      {/* Mobile-First Remove Button */}
-      <div className="absolute top-2 right-2">
+      {/* Enhanced Remove Button - Better touch targets */}
+      <div className="absolute top-3 right-3">
         <button
           onClick={handleRemoveClick}
-          className="p-2 bg-red-600/90 text-white rounded-full shadow-xl hover:bg-red-500 active:bg-red-700 transition duration-200 touch-manipulation"
+          className="p-2.5 bg-red-600/90 text-white rounded-full shadow-xl hover:bg-red-500 active:bg-red-700 transition duration-200 touch-manipulation backdrop-blur-sm border border-red-500/20"
           aria-label="Remove image"
         >
-          <XMarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+          <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
       </div>
 
@@ -90,7 +97,9 @@ const SmartImagePreview: React.FC<{
       )}
     </div>
   );
-};
+});
+
+SmartImagePreview.displayName = 'SmartImagePreview';
 
 // Enhanced Upload Component with Better UX
 const EnhancedImageUpload: React.FC<{
@@ -172,7 +181,11 @@ const EnhancedImageUpload: React.FC<{
           <>
             Any size works! We&apos;ll automatically make it look perfect.
             <br />
-            JPG, PNG up to 10MB • {imageCount}/{maxImages} images
+            JPG, PNG, HEIC up to 10MB • {imageCount}/{maxImages} images
+            <br />
+            <span className="text-orange-400 text-xs">
+              📱 iPhone photos (HEIC) will show preview after saving
+            </span>
           </>
         )}
       </p>
@@ -263,52 +276,159 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
       return;
     }
 
-    // Create preview URL for immediate display
-    const previewUrl = URL.createObjectURL(file);
+    try {
+      // Create appropriate preview based on file type
+      let previewUrl: string;
 
-    // Create temporary storage path for preview
-    const tempStoragePath = `portfolio/${businessProfileId}/${Date.now()}-${file.name}`;
+      // Check if it's a HEIC file (iPhone photos)
+      const isHeic =
+        file.type === 'image/heic' ||
+        file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif');
 
-    const newImage: PortfolioImage = {
-      id: `temp-${Date.now()}`,
-      storage_path: tempStoragePath,
-      position: images.length + 1,
-      preview_url: previewUrl,
-    };
+      if (isHeic) {
+        // HEIC files: Show professional placeholder (browsers can't display HEIC)
+        previewUrl = createHeicPlaceholder(file.name);
+      } else {
+        // Regular images: Show actual preview
+        previewUrl = URL.createObjectURL(file);
+      }
 
-    console.log('➕ Adding image to portfolio:', newImage);
-    setImages(prev => [...prev, newImage]);
-    setSelectedFiles(prev => [...prev, file]);
-    setError('');
-  };
+      // Create temporary storage path for preview
+      const tempStoragePath = `portfolio/${businessProfileId}/${Date.now()}-${file.name}`;
 
-  const removeImage = (index: number) => {
-    console.log('🗑️ Removing image at index:', index);
+      const newImage: PortfolioImage = {
+        id: `temp-${Date.now()}`,
+        storage_path: tempStoragePath,
+        position: images.length + 1,
+        preview_url: previewUrl,
+      };
 
-    const imageToRemove = images[index];
-
-    // If it's an existing image (not a temp/preview), track it for deletion
-    if (!imageToRemove.id?.toString().startsWith('temp-') && imageToRemove.id) {
-      console.log('📝 Tracking existing image for deletion:', imageToRemove);
-      setRemovedImages(prev => [...prev, imageToRemove]);
-    }
-
-    // Clean up preview URL for temporary images
-    if (
-      imageToRemove.preview_url &&
-      imageToRemove.id?.toString().startsWith('temp-')
-    ) {
-      URL.revokeObjectURL(imageToRemove.preview_url);
-    }
-
-    // Remove from images array
-    setImages(prev => prev.filter((_, i) => i !== index));
-
-    // Only remove from selectedFiles if it's a temp image (newly added)
-    if (imageToRemove.id?.toString().startsWith('temp-')) {
-      setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+      console.log('➕ Adding image to portfolio:', newImage);
+      setImages(prev => [...prev, newImage]);
+      setSelectedFiles(prev => [...prev, file]);
+      setError('');
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setError('Error processing image. Please try again.');
     }
   };
+
+  const createHeicPlaceholder = (fileName: string): string => {
+    const svg = `
+      <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background matching app's neutral-900 -->
+        <rect width="100%" height="100%" fill="#171717"/>
+
+        <!-- Main container matching app's neutral-900 with neutral-700 border -->
+        <rect x="40" y="40" width="320" height="320" fill="#171717" rx="16" stroke="#404040" stroke-width="1"/>
+
+        <!-- Image icon in neutral colors -->
+        <rect x="160" y="140" width="80" height="60" fill="#404040" rx="8"/>
+        <rect x="170" y="150" width="60" height="40" fill="#525252" rx="4"/>
+        <circle cx="200" cy="170" r="6" fill="#737373"/>
+
+        <!-- File name in app's foreground color -->
+        <text x="200" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#ededed" text-anchor="middle">${fileName}</text>
+
+        <!-- Status message using app's neutral colors -->
+        <rect x="50" y="270" width="300" height="60" fill="#262626" rx="12" stroke="#404040" stroke-width="1"/>
+        <text x="200" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="#f97316" text-anchor="middle">Preview will show after saving</text>
+        <text x="200" y="315" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#a3a3a3" text-anchor="middle">Image will be converted to JPEG format</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  };
+
+  const convertHeicFiles = async (files: File[]): Promise<File[]> => {
+    const convertedFiles: File[] = [];
+
+    for (const file of files) {
+      // Check if it's a HEIC file
+      const isHeic =
+        file.type === 'image/heic' ||
+        file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif');
+
+      if (isHeic) {
+        console.log('🔄 Converting HEIC file:', file.name);
+
+        try {
+          // Send HEIC file to server for conversion
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const response = await fetch('/api/convert-heic', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HEIC conversion failed: ${response.statusText}`);
+          }
+
+          // Convert response to File object
+          const blob = await response.blob();
+          const convertedFile = new File(
+            [blob],
+            file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+            {
+              type: 'image/jpeg',
+              lastModified: file.lastModified,
+            }
+          );
+
+          convertedFiles.push(convertedFile);
+          console.log('✅ HEIC converted to JPEG:', convertedFile.name);
+        } catch (error) {
+          console.error('❌ HEIC conversion failed:', error);
+          // Fallback: use original file (will fail on upload, but user gets error)
+          convertedFiles.push(file);
+        }
+      } else {
+        // Regular file, no conversion needed
+        convertedFiles.push(file);
+      }
+    }
+
+    return convertedFiles;
+  };
+
+  const removeImage = useCallback(
+    (index: number) => {
+      console.log('🗑️ Removing image at index:', index);
+
+      const imageToRemove = images[index];
+
+      // If it's an existing image (not a temp/preview), track it for deletion
+      if (
+        !imageToRemove.id?.toString().startsWith('temp-') &&
+        imageToRemove.id
+      ) {
+        console.log('📝 Tracking existing image for deletion:', imageToRemove);
+        setRemovedImages(prev => [...prev, imageToRemove]);
+      }
+
+      // Clean up preview URL for temporary images
+      if (
+        imageToRemove.preview_url &&
+        imageToRemove.id?.toString().startsWith('temp-')
+      ) {
+        URL.revokeObjectURL(imageToRemove.preview_url);
+      }
+
+      // Remove from images array
+      setImages(prev => prev.filter((_, i) => i !== index));
+
+      // Only remove from selectedFiles if it's a temp image (newly added)
+      if (imageToRemove.id?.toString().startsWith('temp-')) {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+      }
+    },
+    [images]
+  );
 
   const handleSubmit = async () => {
     console.log('💾 Saving Step 4 portfolio data:', images);
@@ -374,9 +494,16 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           selectedFiles.length
         );
 
+        // Convert HEIC files to JPEG before uploading
+        const convertedFiles = await convertHeicFiles(selectedFiles);
+        console.log(
+          '🔄 Converted files:',
+          convertedFiles.map(f => f.name)
+        );
+
         const uploadResult = await uploadPortfolio({
           businessId: businessProfileId,
-          files: selectedFiles,
+          files: convertedFiles,
           previousImages: [], // No previous images for onboarding
         });
 
@@ -558,15 +685,24 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
         {/* Portfolio Grid */}
         {images.length > 0 && (
           <div className="pt-8 border-t border-neutral-700">
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-              Your Current Portfolio ({images.length})
-            </h2>
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+                Your Current Portfolio ({images.length}/4)
+              </h2>
+              <p className="text-sm text-gray-400 pl-7">
+                {images.length === 0
+                  ? 'Upload your best work to build credibility with customers'
+                  : images.length === 4
+                    ? "Perfect! You've reached the maximum for onboarding"
+                    : `${4 - images.length} more image${4 - images.length === 1 ? '' : 's'} can be added`}
+              </p>
+            </div>
 
-            {/* Smart Grid Layout - Always square containers */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            {/* Responsive Grid Layout - Optimized for better preview visibility */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 sm:gap-8">
               {images.map((image, index) => (
                 <SmartImagePreview
-                  key={image.id || index}
+                  key={`${image.id || 'temp'}-${index}`}
                   src={image.preview_url || image.storage_path}
                   alt={`Portfolio image ${index + 1}`}
                   onRemove={() => removeImage(index)}
@@ -576,18 +712,29 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Enhanced Empty State */}
         {images.length === 0 && (
           <div className="pt-8 border-t border-neutral-700">
-            <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-8 sm:p-12 text-center border-dashed">
+            <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-neutral-700 rounded-xl p-8 sm:p-12 text-center border-dashed hover:border-orange-400/30 transition-colors duration-300">
               <CameraIcon className="h-12 w-12 sm:h-16 sm:w-16 text-orange-400 mx-auto mb-4 sm:mb-6 opacity-60" />
               <p className="text-gray-400 mb-2 font-semibold text-lg sm:text-xl">
                 Your portfolio is currently empty
               </p>
-              <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto">
+              <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto mb-4">
                 Upload at least one high-quality photo to showcase your work and
                 build trust with customers!
               </p>
+              <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-600">
+                <span className="bg-neutral-800 px-3 py-1 rounded-full">
+                  📱 iPhone photos supported
+                </span>
+                <span className="bg-neutral-800 px-3 py-1 rounded-full">
+                  🖼️ Large previews
+                </span>
+                <span className="bg-neutral-800 px-3 py-1 rounded-full">
+                  ✨ Auto-optimized
+                </span>
+              </div>
             </div>
           </div>
         )}
