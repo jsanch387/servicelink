@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, SuccessMessage } from '@/components/shared';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   completeOnboarding,
   getOnboardingState,
@@ -17,7 +17,7 @@ interface OnboardingFlowProps {
   profileId: string;
   businessProfileId?: string;
   initialStep?: number;
-  existingData?: any; // Business profile data to populate forms
+  existingData?: Record<string, unknown>; // Business profile data to populate forms
 }
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
@@ -39,7 +39,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [currentData, setCurrentData] = useState(existingData);
 
   // Function to refresh data from the database
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     if (!currentBusinessProfileId) return;
 
     console.log('🔄 Refreshing onboarding data...');
@@ -59,7 +59,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     } catch (error) {
       console.error('❌ Failed to refresh data:', error);
     }
-  };
+  }, [currentBusinessProfileId, profileId]);
 
   // Refresh data when component mounts or when business profile ID changes
   useEffect(() => {
@@ -69,7 +69,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     ) {
       refreshData();
     }
-  }, [currentBusinessProfileId, profileId]);
+  }, [currentBusinessProfileId, businessProfileId, profileId, refreshData]);
 
   const handleStartOnboarding = async (): Promise<string | null> => {
     console.log('🚀 Starting onboarding process...');
@@ -254,7 +254,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       case 6:
         return (
           <SuccessMessage
-            businessName={currentData?.business_name || 'Your Business'}
+            businessName={
+              (currentData?.business_name as string) || 'Your Business'
+            }
             onGoToDashboard={handleCelebrationComplete}
           />
         );

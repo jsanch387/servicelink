@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   console.log('📊 [Analytics] Tracking profile view...');
 
   try {
-    const { businessSlug, viewerIP } = await request.json();
+    const { businessSlug } = await request.json();
 
     if (!businessSlug) {
       return NextResponse.json(
@@ -22,12 +22,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get client IP from request headers
-    const clientIP =
-      viewerIP ||
-      request.headers.get('x-forwarded-for')?.split(',')[0] ||
-      request.headers.get('x-real-ip') ||
-      'unknown';
+    // Get client IP from request headers (for future use)
+    // const _clientIP =
+    //   viewerIP ||
+    //   request.headers.get('x-forwarded-for')?.split(',')[0] ||
+    //   request.headers.get('x-real-ip') ||
+    //   'unknown';
 
     const cookieStore = await cookies();
     const supabase = createServerClient(

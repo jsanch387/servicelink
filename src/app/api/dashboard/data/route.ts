@@ -7,7 +7,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 interface DashboardData {
   businessProfile: {
@@ -39,9 +39,7 @@ interface DashboardData {
   };
 }
 
-export async function GET(_request: NextRequest) {
-  console.log('📊 [API] GET /api/dashboard/data - Fetching dashboard data');
-
+export async function GET() {
   try {
     // Get authenticated user
     const cookieStore = await cookies();
@@ -62,14 +60,11 @@ export async function GET(_request: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.log('❌ [API] User not authenticated');
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
-
-    console.log('✅ [API] Authenticated user:', user.id);
 
     // Fetch business profile with all related data
     const { data: businessProfile, error: profileError } = await supabase
@@ -86,17 +81,11 @@ export async function GET(_request: NextRequest) {
       .single();
 
     if (profileError || !businessProfile) {
-      console.log('❌ [API] Business profile not found');
       return NextResponse.json(
         { success: false, error: 'Business profile not found' },
         { status: 404 }
       );
     }
-
-    console.log('✅ [API] Business profile found:', {
-      id: businessProfile.id,
-      businessName: businessProfile.business_name,
-    });
 
     // Check if user has a slug configured
     const hasSlug = !!(
@@ -116,8 +105,10 @@ export async function GET(_request: NextRequest) {
         };
 
     // Calculate analytics
-    const servicesCount = (businessProfile.services as any)?.length || 0;
-    const imagesCount = (businessProfile.images as any)?.length || 0;
+    const servicesCount =
+      (businessProfile.services as { length: number })?.length || 0;
+    const imagesCount =
+      (businessProfile.images as { length: number })?.length || 0;
 
     // Calculate profile completeness (0-100%)
     let completenessScore = 0;
@@ -167,19 +158,11 @@ export async function GET(_request: NextRequest) {
       nextSteps,
     };
 
-    console.log('✅ [API] Dashboard data prepared:', {
-      businessProfileId: dashboardData.businessProfile.id,
-      hasSlug: dashboardData.slugData?.hasSlug,
-      slug: dashboardData.slugData?.slug,
-      readyToShare: dashboardData.nextSteps.readyToShare,
-    });
-
     return NextResponse.json({
       success: true,
       data: dashboardData,
     });
-  } catch (error) {
-    console.error('❌ [API] Unexpected error fetching dashboard data:', error);
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

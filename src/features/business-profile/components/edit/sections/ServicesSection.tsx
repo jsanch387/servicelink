@@ -13,8 +13,8 @@ import React, { useState } from 'react';
 
 interface ServicesSectionProps {
   services: ServiceFormData[];
+  // eslint-disable-next-line no-unused-vars
   onServicesChange: (services: ServiceFormData[]) => void;
-  errors: string[];
 }
 
 const HOURS_OPTIONS = [
@@ -89,7 +89,6 @@ const ServiceCard = ({
 export const ServicesSection: React.FC<ServicesSectionProps> = ({
   services,
   onServicesChange,
-  errors,
 }) => {
   const [currentService, setCurrentService] = useState<ServiceFormData>({
     name: '',

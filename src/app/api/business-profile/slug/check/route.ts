@@ -9,28 +9,20 @@ import { slugService } from '@/features/business-profile/services/slugService';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  console.log(
-    '🔍 [API] GET /api/business-profile/slug/check - Checking slug availability'
-  );
-
   try {
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
     if (!slug) {
-      console.log('❌ [API] Missing slug parameter');
       return NextResponse.json(
         { success: false, error: 'Slug parameter is required' },
         { status: 400 }
       );
     }
 
-    console.log('📝 [API] Checking availability for slug:', slug);
-
     // Validate the slug format first
     const validation = slugService.validateSlug(slug);
     if (!validation.isValid) {
-      console.log('❌ [API] Slug validation failed:', validation.error);
       return NextResponse.json(
         { success: false, error: validation.error },
         { status: 400 }
@@ -43,14 +35,11 @@ export async function GET(request: NextRequest) {
     );
 
     if (!availability.isAvailable) {
-      console.log('❌ [API] Slug not available:', availability.error);
       return NextResponse.json(
         { success: false, error: availability.error },
         { status: 409 } // Conflict
       );
     }
-
-    console.log('✅ [API] Slug is available:', validation.cleanSlug);
 
     return NextResponse.json({
       success: true,
@@ -59,11 +48,7 @@ export async function GET(request: NextRequest) {
         isAvailable: true,
       },
     });
-  } catch (error) {
-    console.error(
-      '❌ [API] Unexpected error checking slug availability:',
-      error
-    );
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

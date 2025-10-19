@@ -17,8 +17,6 @@ export const dynamic = 'force-dynamic';
  * - completed: Show dashboard content
  */
 export default async function DashboardPage() {
-  console.log('🏠 Dashboard page loading...');
-
   // Create server client for SSR
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -40,17 +38,13 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    console.log('❌ No authenticated user, redirecting to login');
     redirect('/auth/login');
   }
-
-  console.log('✅ Authenticated user found:', user.id);
 
   // Get complete onboarding state
   const stateResult = await getOnboardingState(user.id);
 
   if (!stateResult.success) {
-    console.error('❌ Failed to get onboarding state:', stateResult.error);
     // If we can't determine state, redirect to login for safety
     redirect('/auth/login');
   }
@@ -65,26 +59,12 @@ export default async function DashboardPage() {
     contactInfo,
   } = stateResult.data!;
 
-  console.log('📊 Dashboard decision:', {
-    status,
-    currentStep,
-    hasBusinessProfile: !!businessProfile,
-    servicesCount: status === 'completed' ? 'N/A (skipped)' : services.length,
-    imagesCount: status === 'completed' ? 'N/A (skipped)' : images.length,
-    hasContactInfo:
-      status === 'completed'
-        ? 'N/A (skipped)'
-        : !!(contactInfo.phone_number_call || contactInfo.phone_number_text),
-  });
-
   // Render based on onboarding status
   switch (status) {
     case 'not_started':
-      console.log('📝 Onboarding not started - showing Step 1');
       return <OnboardingFlow profileId={user.id} initialStep={1} />;
 
     case 'in_progress':
-      console.log(`📝 Onboarding in progress - showing Step ${currentStep}`);
       return (
         <OnboardingFlow
           profileId={user.id}
@@ -100,8 +80,6 @@ export default async function DashboardPage() {
       );
 
     case 'completed':
-      console.log('✅ Onboarding completed - fetching dashboard data');
-
       // Fetch business profile with counts directly from database
       const { data: profile, error: profileError } = await supabase
         .from('business_profiles')
@@ -117,13 +95,14 @@ export default async function DashboardPage() {
         .single();
 
       if (profileError || !profile) {
-        console.error('❌ Failed to fetch business profile:', profileError);
         redirect('/auth/login');
       }
 
       // Calculate analytics
-      const servicesCount = (profile.services as any)?.[0]?.count || 0;
-      const imagesCount = (profile.images as any)?.[0]?.count || 0;
+      const servicesCount =
+        (profile.services as { count: number }[])?.[0]?.count || 0;
+      const imagesCount =
+        (profile.images as { count: number }[])?.[0]?.count || 0;
       const hasSlug = !!(profile.business_slug && profile.business_link);
 
       // Calculate profile completeness
@@ -178,16 +157,9 @@ export default async function DashboardPage() {
         },
       };
 
-      console.log('✅ Dashboard data loaded:', {
-        hasSlug: dashboardData.slugData?.hasSlug,
-        completeness: dashboardData.analytics.profileCompleteness,
-        readyToShare: dashboardData.nextSteps.readyToShare,
-      });
-
       return <DashboardContent dashboardData={dashboardData} />;
 
     default:
-      console.error('❌ Unknown onboarding status:', status);
       redirect('/auth/login');
   }
 }

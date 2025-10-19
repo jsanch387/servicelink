@@ -39,26 +39,27 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
 }) => {
   const APP_DOMAIN = 'myservicelink.app';
 
-  // Generate initial slug from business name
-  const generateInitialSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-      .replace(/--+/g, '-')
-      .replace(/^-|-$/g, '');
-  };
+  // Generate initial slug from business name (for future use)
+  // const generateInitialSlug = (name: string) => {
+  //   return name
+  //     .toLowerCase()
+  //     .replace(/\s+/g, '-')
+  //     .replace(/[^a-z0-9-]/g, '')
+  //     .replace(/--+/g, '-')
+  //     .replace(/^-|-$/g, '');
+  // };
 
   // Use server-side data
   const hasSlug = settingsData.slugData?.hasSlug || false;
   const existingSlug = settingsData.slugData?.slug;
   const existingFullLink = settingsData.slugData?.fullLink;
 
-  const initialSlug =
-    existingSlug ||
-    (businessProfile.business_name
-      ? generateInitialSlug(businessProfile.business_name)
-      : 'your-business-name');
+  // Generate initial slug from business name if no existing slug (for future use)
+  // const _initialSlug =
+  //   existingSlug ||
+  //   (businessProfile.business_name
+  //     ? generateInitialSlug(businessProfile.business_name)
+  //     : 'your-business-name');
 
   const [customSlugInput, setCustomSlugInput] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -305,7 +306,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                 Contact Support
               </h2>
               <p className="text-sm sm:text-base text-gray-400">
-                Need help? We're here to support you with any questions or
+                Need help? We&apos;re here to support you with any questions or
                 issues.
               </p>
             </div>
@@ -313,7 +314,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             {/* Contact Info */}
             <div className="space-y-6">
               <p className="text-gray-300 text-base leading-relaxed">
-                Need help or have questions? We're here to support you!
+                Need help or have questions? We&apos;re here to support you!
               </p>
 
               <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 sm:p-6">

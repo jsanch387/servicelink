@@ -17,8 +17,6 @@ export async function GET(
 ) {
   const { slug } = await params;
 
-  console.log('🔍 [PublicAPI] Fetching profile for slug:', slug);
-
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -41,22 +39,11 @@ export async function GET(
       .single();
 
     if (profileError || !profile) {
-      console.log(
-        '❌ [PublicAPI] Profile not found for slug:',
-        slug,
-        profileError
-      );
       return NextResponse.json(
         { error: 'Business profile not found' },
         { status: 404 }
       );
     }
-
-    console.log('✅ [PublicAPI] Found profile:', {
-      id: profile.id,
-      businessName: profile.business_name,
-      slug: profile.business_slug,
-    });
 
     // Get services
     const { data: services, error: servicesError } = await supabase
@@ -67,7 +54,7 @@ export async function GET(
       .order('created_at', { ascending: true });
 
     if (servicesError) {
-      console.error('❌ [PublicAPI] Error fetching services:', servicesError);
+      // Services fetch failed, continue with empty array
     }
 
     // Get portfolio images
@@ -78,7 +65,7 @@ export async function GET(
       .order('position', { ascending: true });
 
     if (imagesError) {
-      console.error('❌ [PublicAPI] Error fetching images:', imagesError);
+      // Images fetch failed, continue with empty array
     }
 
     // Construct complete business profile response
@@ -88,17 +75,11 @@ export async function GET(
       images: images || [],
     };
 
-    console.log('✅ [PublicAPI] Returning complete profile:', {
-      servicesCount: completeProfile.services.length,
-      imagesCount: completeProfile.images.length,
-    });
-
     return NextResponse.json({
       success: true,
       data: completeProfile,
     });
-  } catch (error) {
-    console.error('❌ [PublicAPI] Unexpected error:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

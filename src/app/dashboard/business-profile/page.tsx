@@ -24,8 +24,6 @@ export default async function BusinessProfilePage({
 }: {
   searchParams: Promise<{ mode?: string }>;
 }) {
-  console.log('🏢 Business Profile page loading...');
-
   // Await searchParams since it's now a Promise in Next.js 15
   const params = await searchParams;
 
@@ -50,11 +48,8 @@ export default async function BusinessProfilePage({
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    console.log('❌ No authenticated user, redirecting to login');
     redirect('/auth/login');
   }
-
-  console.log('✅ Authenticated user found:', user.id);
 
   // Get user profile to check onboarding status and get profile_id
   const { data: userProfile, error: profileError } = await supabase
@@ -64,17 +59,13 @@ export default async function BusinessProfilePage({
     .single();
 
   if (profileError) {
-    console.error('❌ Failed to get user profile:', profileError);
     redirect('/auth/login');
   }
 
   // Check if onboarding is completed
   if (!isOnboardingCompleted(userProfile.onboarding_status)) {
-    console.log('📝 Onboarding not completed, redirecting to dashboard');
     redirect('/dashboard');
   }
-
-  console.log('✅ Onboarding completed, fetching business profile');
 
   // Get business profile by profile_id (including slug data)
   const { data: businessProfileData, error: businessProfileError } =
@@ -85,7 +76,6 @@ export default async function BusinessProfilePage({
       .single();
 
   if (businessProfileError || !businessProfileData) {
-    console.error('❌ No business profile found:', businessProfileError);
     redirect('/dashboard');
   }
 
@@ -111,22 +101,13 @@ export default async function BusinessProfilePage({
   );
 
   if (!profileResult.success || !profileResult.data) {
-    console.error('❌ Failed to get business profile:', profileResult.error);
     redirect('/dashboard');
   }
 
   const businessProfile = profileResult.data;
 
-  console.log('✅ Business profile loaded:', {
-    id: businessProfile.id,
-    businessName: businessProfile.business_name,
-    servicesCount: businessProfile.services.length,
-    imagesCount: businessProfile.images.length,
-  });
-
   // Determine initial edit mode from URL parameters
   const initialMode = params.mode === 'edit' ? 'edit' : 'view';
-  console.log('🎯 Initial mode from URL:', initialMode);
 
   return (
     <div className="min-h-screen bg-neutral-900">

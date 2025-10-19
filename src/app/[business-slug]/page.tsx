@@ -92,10 +92,12 @@ async function fetchBusinessProfileBySlug(
     }
 
     // Add preview URLs to images (same as BusinessProfileApi does)
-    const imagesWithUrls = (images || []).map((img: any) => ({
-      ...img,
-      preview_url: MediaService.getPublicUrl(img.storage_path),
-    }));
+    const imagesWithUrls = (images || []).map(
+      (img: { storage_path: string; [key: string]: unknown }) => ({
+        ...img,
+        preview_url: MediaService.getPublicUrl(img.storage_path),
+      })
+    );
 
     // Add logo and banner URLs if they exist
     const logoUrl = profile.logo_path
@@ -189,8 +191,9 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
     const bio =
       businessProfile.bio ||
       `Professional ${businessType.toLowerCase()} services`;
-    const servicesCount = businessProfile.services?.length || 0;
-    const imagesCount = businessProfile.images?.length || 0;
+    // Services and images count for metadata generation (for future use)
+    // const _servicesCount = businessProfile.services?.length || 0;
+    // const _imagesCount = businessProfile.images?.length || 0;
 
     // Create dynamic title and description
     const title = serviceArea

@@ -7,7 +7,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 interface SettingsPageData {
   businessProfile: {
@@ -26,11 +26,7 @@ interface SettingsPageData {
   } | null;
 }
 
-export async function GET(_request: NextRequest) {
-  console.log(
-    '📊 [API] GET /api/settings/page-data - Fetching settings page data'
-  );
-
+export async function GET() {
   try {
     // Get authenticated user
     const cookieStore = await cookies();
@@ -51,14 +47,11 @@ export async function GET(_request: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.log('❌ [API] User not authenticated');
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
-
-    console.log('✅ [API] Authenticated user:', user.id);
 
     // Fetch business profile data
     const { data: businessProfile, error: profileError } = await supabase
@@ -70,17 +63,11 @@ export async function GET(_request: NextRequest) {
       .single();
 
     if (profileError || !businessProfile) {
-      console.log('❌ [API] Business profile not found');
       return NextResponse.json(
         { success: false, error: 'Business profile not found' },
         { status: 404 }
       );
     }
-
-    console.log('✅ [API] Business profile found:', {
-      id: businessProfile.id,
-      businessName: businessProfile.business_name,
-    });
 
     // Check if user has a slug configured
     const hasSlug = !!(
@@ -108,18 +95,11 @@ export async function GET(_request: NextRequest) {
           },
     };
 
-    console.log('✅ [API] Settings data prepared:', {
-      businessProfileId: settingsData.businessProfile.id,
-      hasSlug: settingsData.slugData?.hasSlug,
-      slug: settingsData.slugData?.slug,
-    });
-
     return NextResponse.json({
       success: true,
       data: settingsData,
     });
-  } catch (error) {
-    console.error('❌ [API] Unexpected error fetching settings data:', error);
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

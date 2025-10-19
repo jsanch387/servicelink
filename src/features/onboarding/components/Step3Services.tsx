@@ -18,7 +18,7 @@ import { saveStepAndProgress } from '../utils/onboardingHelpers';
 interface Step3ServicesProps {
   profileId: string;
   businessProfileId: string;
-  existingData?: any;
+  existingData?: Record<string, unknown>;
   onNext: () => void;
   onBack: () => void;
 }
