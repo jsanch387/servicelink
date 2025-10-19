@@ -14,8 +14,6 @@ export const dynamic = 'force-dynamic';
  * Redirects to dashboard if onboarding is not completed.
  */
 export default async function SettingsPage() {
-  console.log('⚙️ Settings page loading...');
-
   try {
     // Create Supabase client
     const cookieStore = await cookies();
@@ -38,16 +36,12 @@ export default async function SettingsPage() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.log('❌ User not authenticated, redirecting to login');
       redirect('/auth/login');
     }
-
-    console.log('✅ Authenticated user found:', user.id);
 
     // Get complete onboarding state
     const stateResult = await getOnboardingState(user.id);
     if (!stateResult.success) {
-      console.error('❌ Failed to get onboarding state:', stateResult.error);
       redirect('/dashboard');
     }
 
@@ -55,18 +49,12 @@ export default async function SettingsPage() {
 
     // Only allow access if onboarding is completed
     if (status !== 'completed') {
-      console.log('❌ Onboarding not completed, redirecting to dashboard');
       redirect('/dashboard');
     }
 
     if (!businessProfile) {
-      console.log('❌ Business profile not found, redirecting to dashboard');
       redirect('/dashboard');
     }
-    console.log('✅ Business profile loaded:', {
-      id: businessProfile.id,
-      businessName: businessProfile.business_name,
-    });
 
     // Fetch slug data directly from database
     const { data: slugData, error: slugError } = await supabase
@@ -76,7 +64,6 @@ export default async function SettingsPage() {
       .single();
 
     if (slugError) {
-      console.error('❌ Failed to fetch slug data:', slugError);
       redirect('/dashboard');
     }
 
@@ -103,12 +90,6 @@ export default async function SettingsPage() {
           },
     };
 
-    console.log('✅ Settings data prepared:', {
-      businessProfileId: settingsData.businessProfile.id,
-      hasSlug: settingsData.slugData?.hasSlug,
-      slug: settingsData.slugData?.slug,
-    });
-
     return (
       <div className="min-h-screen bg-neutral-900">
         <SettingsContent
@@ -118,7 +99,6 @@ export default async function SettingsPage() {
       </div>
     );
   } catch (error) {
-    console.error('❌ Error loading settings page:', error);
     redirect('/dashboard');
   }
 }

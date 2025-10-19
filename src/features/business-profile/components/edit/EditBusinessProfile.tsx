@@ -473,7 +473,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         <ServicesSection
           services={formData.services}
           onServicesChange={handleServicesChange}
-          errors={errors}
         />
 
         {/* Divider */}
