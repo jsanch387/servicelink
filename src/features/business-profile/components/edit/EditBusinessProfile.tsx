@@ -42,8 +42,6 @@ const convertHeicFiles = async (files: File[]): Promise<File[]> => {
       file.name.toLowerCase().endsWith('.heif');
 
     if (isHeic) {
-      console.log('🔄 Converting HEIC file:', file.name);
-
       try {
         // Send HEIC file to server for conversion
         const formData = new FormData();
@@ -70,12 +68,7 @@ const convertHeicFiles = async (files: File[]): Promise<File[]> => {
         );
 
         convertedFiles.push(convertedFile);
-        console.log('✅ HEIC conversion successful:', {
-          original: file.name,
-          converted: convertedFile.name,
-        });
       } catch (error) {
-        console.error('❌ HEIC conversion failed:', error);
         // If conversion fails, keep the original file
         convertedFiles.push(file);
       }
@@ -151,7 +144,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
 
   // Debug form data changes
   useEffect(() => {
-    console.log('🔄 Form data images changed:', formData.images);
+    // Form data images changed
   }, [formData.images]);
 
   // Handle form input changes
@@ -209,8 +202,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     publicUrl?: string,
     storagePath?: string
   ) => {
-    console.log('📸 Cover image selected:', file.name);
-
     // If we have a public URL from successful upload, use that
     // Otherwise, create a preview URL for immediate display
     const bannerUrl = publicUrl || URL.createObjectURL(file);
@@ -225,9 +216,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     // If we have a successful upload with public URL, immediately update the parent businessProfile
     // This ensures the cover photo shows immediately when switching to preview mode
     if (publicUrl && storagePath) {
-      console.log(
-        '🔄 Immediately updating business profile with new cover photo'
-      );
       // Call the parent's onSave callback with just the cover photo updates
       onSave({
         cover_image_url: bannerUrl,
@@ -241,8 +229,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     publicUrl?: string,
     storagePath?: string
   ) => {
-    console.log('📸 Logo image selected:', file.name);
-
     // If we have a public URL from successful upload, use that
     // Otherwise, create a preview URL for immediate display
     const logoUrl = publicUrl || URL.createObjectURL(file);
@@ -257,7 +243,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     // If we have a successful upload with public URL, immediately update the parent businessProfile
     // This ensures the logo shows immediately when switching to preview mode
     if (publicUrl && storagePath) {
-      console.log('🔄 Immediately updating business profile with new logo');
       // Call the parent's onSave callback with just the logo updates
       onSave({
         logo_url: logoUrl,
@@ -268,10 +253,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
 
   // Save all changes
   const handleSave = async () => {
-    console.log('🚀 STARTING SAVE PROCESS');
-    console.log('📊 Current form data images:', formData.images);
-    console.log('📁 Selected files:', selectedFiles);
-
     setIsSaving(true);
     setErrors([]);
 
@@ -280,17 +261,8 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
 
       // First, upload any pending portfolio images to storage
       if (selectedFiles.length > 0) {
-        console.log(
-          '📤 STEP 1: Uploading portfolio images to storage:',
-          selectedFiles.length
-        );
-
         // Convert HEIC files to JPEG before uploading
         const convertedFiles = await convertHeicFiles(selectedFiles);
-        console.log(
-          '🔄 Converted files:',
-          convertedFiles.map(f => f.name)
-        );
 
         const result = await uploadPortfolio({
           businessId: businessProfile.id,
@@ -298,13 +270,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           previousImages: [], // No previous images for now
         });
 
-        console.log('📤 Upload result:', result);
-
         if (result.every(r => r.success)) {
-          console.log(
-            '✅ STEP 1 COMPLETE: Portfolio images uploaded successfully'
-          );
-
           // Update form data with real storage paths
           const previewImages = formData.images.filter(img =>
             img.id?.toString().startsWith('preview-')
@@ -313,22 +279,13 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
             img => !img.id?.toString().startsWith('preview-')
           );
 
-          console.log('🖼️ Preview images to update:', previewImages);
-          console.log('🖼️ Existing images to keep:', existingImages);
-
           // Map uploaded results to preview images
           const uploadedImages: ImageFormData[] = previewImages
             .map((img, index) => {
               const uploadResult = result[index];
               if (!uploadResult || !uploadResult.success) {
-                console.error('❌ Upload failed for image:', img);
                 return null;
               }
-
-              console.log(`🔄 Converting preview image ${index}:`, {
-                from: img.storage_path,
-                to: uploadResult.storagePath,
-              });
 
               return {
                 storage_path: uploadResult.storagePath!,
@@ -338,54 +295,35 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
             })
             .filter((img): img is ImageFormData => img !== null);
 
-          console.log('🖼️ Uploaded images after conversion:', uploadedImages);
-
           // Update form data with uploaded images
           const updatedImages = [...existingImages, ...uploadedImages];
-          console.log('🖼️ Final updated images array:', updatedImages);
 
           // Create updated form data
           finalFormData = { ...formData, images: updatedImages };
           setFormData(finalFormData);
           setSelectedFiles([]);
-
-          console.log(
-            '✅ STEP 2 COMPLETE: Form data updated with uploaded images'
-          );
         } else {
-          console.error('❌ Portfolio upload failed:', result);
           setErrors(['Failed to upload portfolio images. Please try again.']);
           return;
         }
       }
 
       // Save everything to database
-      console.log('💾 STEP 3: Saving business profile to database...');
-      console.log(
-        '📊 Final form data before database save:',
-        finalFormData.images
-      );
-
       const result = await saveBusinessProfile(
         businessProfile.id,
         finalFormData
       );
 
       if (result.success) {
-        console.log('✅ STEP 3 COMPLETE: Business profile saved successfully');
-        console.log('🎉 SAVE PROCESS COMPLETE');
-
         // Show success state briefly, then switch to preview mode
         setErrors([]);
         // The parent component will handle switching to preview mode
         // by calling onSave with the updated data
         await onSave(finalFormData as unknown as Record<string, unknown>);
       } else {
-        console.error('❌ Failed to save business profile:', result.error);
         setErrors([result.error || 'Failed to save business profile']);
       }
     } catch (error) {
-      console.error('❌ Error saving business profile:', error);
       setErrors(['An unexpected error occurred while saving']);
     } finally {
       setIsSaving(false);

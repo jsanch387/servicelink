@@ -22,12 +22,6 @@ export class MediaService {
    */
   static async uploadLogo(data: LogoUploadData): Promise<UploadResult> {
     try {
-      console.log('🖼️ Starting logo upload:', {
-        businessId: data.businessId,
-        fileName: data.file.name,
-        previousPath: data.previousPath,
-      });
-
       // Get current logo path from database to delete old logo
       const currentLogoResult = await MediaDatabase.getCurrentLogoPath(
         data.businessId
@@ -45,15 +39,9 @@ export class MediaService {
 
       // Delete old logo from storage if it exists
       if (currentLogoPath && currentLogoPath.trim()) {
-        console.log('🗑️ Deleting old logo from storage:', currentLogoPath);
         try {
           await MediaStorage.deleteFile(currentLogoPath);
-          console.log('✅ Old logo deleted successfully');
         } catch (deleteError) {
-          console.warn(
-            '⚠️ Failed to delete old logo (continuing with upload):',
-            deleteError
-          );
           // Don't fail the entire operation if old logo deletion fails
         }
       }
@@ -74,7 +62,6 @@ export class MediaService {
       );
       if (!dbResult.success) {
         // If DB update fails, clean up the newly uploaded file
-        console.log('🧹 Cleaning up newly uploaded logo due to DB failure');
         await MediaStorage.deleteFile(newStoragePath);
         return {
           success: false,
@@ -82,14 +69,12 @@ export class MediaService {
         };
       }
 
-      console.log('✅ Logo upload completed successfully');
       return {
         success: true,
         storagePath: newStoragePath,
         publicUrl: uploadResult.publicUrl,
       };
     } catch (error) {
-      console.error('❌ Logo upload error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Logo upload failed',
@@ -103,12 +88,6 @@ export class MediaService {
    */
   static async uploadBanner(data: BannerUploadData): Promise<UploadResult> {
     try {
-      console.log('🖼️ Starting banner upload:', {
-        businessId: data.businessId,
-        fileName: data.file.name,
-        previousPath: data.previousPath,
-      });
-
       // Get current banner path from database to delete old banner
       const currentBannerResult = await MediaDatabase.getCurrentBannerPath(
         data.businessId
@@ -126,15 +105,9 @@ export class MediaService {
 
       // Delete old banner from storage if it exists
       if (currentBannerPath && currentBannerPath.trim()) {
-        console.log('🗑️ Deleting old banner from storage:', currentBannerPath);
         try {
           await MediaStorage.deleteFile(currentBannerPath);
-          console.log('✅ Old banner deleted successfully');
         } catch (deleteError) {
-          console.warn(
-            '⚠️ Failed to delete old banner (continuing with upload):',
-            deleteError
-          );
           // Don't fail the entire operation if old banner deletion fails
         }
       }
@@ -155,7 +128,6 @@ export class MediaService {
       );
       if (!dbResult.success) {
         // If DB update fails, clean up the newly uploaded file
-        console.log('🧹 Cleaning up newly uploaded banner due to DB failure');
         await MediaStorage.deleteFile(newStoragePath);
         return {
           success: false,
@@ -163,14 +135,12 @@ export class MediaService {
         };
       }
 
-      console.log('✅ Banner upload completed successfully');
       return {
         success: true,
         storagePath: newStoragePath,
         publicUrl: uploadResult.publicUrl,
       };
     } catch (error) {
-      console.error('❌ Banner upload error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Banner upload failed',
@@ -185,11 +155,6 @@ export class MediaService {
     data: PortfolioUploadData
   ): Promise<UploadResult[]> {
     try {
-      console.log('🖼️ Starting portfolio upload:', {
-        businessId: data.businessId,
-        filesCount: data.files.length,
-      });
-
       const results: UploadResult[] = [];
       const successfulUploads: Array<{
         storagePath: string;
@@ -219,7 +184,6 @@ export class MediaService {
       // If any uploads failed, clean up successful ones
       const failedUploads = results.filter(r => !r.success);
       if (failedUploads.length > 0) {
-        console.log('🧹 Cleaning up successful uploads due to failures');
         for (const upload of successfulUploads) {
           await MediaStorage.deleteFile(upload.storagePath);
         }
@@ -228,7 +192,6 @@ export class MediaService {
 
       // Note: Database update is handled by the calling component
       // We only handle storage upload here
-      console.log('✅ Portfolio images uploaded to storage successfully');
 
       // Update results with public URLs
       for (let i = 0; i < results.length; i++) {
@@ -239,10 +202,8 @@ export class MediaService {
         }
       }
 
-      console.log('✅ Portfolio upload completed successfully');
       return results;
     } catch (error) {
-      console.error('❌ Portfolio upload error:', error);
       return data.files.map(() => ({
         success: false,
         error:
@@ -260,12 +221,6 @@ export class MediaService {
     storagePath: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🗑️ Deleting portfolio image:', {
-        businessId,
-        imageId,
-        storagePath,
-      });
-
       // Delete from database first
       const dbResult = await MediaDatabase.deletePortfolioImage(imageId);
       if (!dbResult.success) {
@@ -275,15 +230,11 @@ export class MediaService {
       // Delete from storage
       const storageResult = await MediaStorage.deleteFile(storagePath);
       if (!storageResult.success) {
-        console.warn(
-          '⚠️ Failed to delete from storage, but DB deletion succeeded'
-        );
+        // Failed to delete from storage, but DB deletion succeeded
       }
 
-      console.log('✅ Portfolio image deleted successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ Portfolio image deletion error:', error);
       return {
         success: false,
         error:
@@ -307,23 +258,15 @@ export class MediaService {
   static async deleteImage(
     storagePath: string
   ): Promise<{ success: boolean; error?: string }> {
-    console.log('🗑️ MEDIA: Deleting image from storage:', storagePath);
-
     try {
       const result = await MediaStorage.deleteFile(storagePath);
 
       if (result.success) {
-        console.log('✅ MEDIA: Image deleted successfully from storage');
         return { success: true };
       } else {
-        console.error(
-          '❌ MEDIA: Failed to delete image from storage:',
-          result.error
-        );
         return { success: false, error: result.error };
       }
     } catch (error) {
-      console.error('❌ MEDIA: Error deleting image from storage:', error);
       return {
         success: false,
         error:
@@ -338,11 +281,6 @@ export class MediaService {
   static async deleteImages(
     storagePaths: string[]
   ): Promise<{ success: boolean; error?: string }> {
-    console.log(
-      '🗑️ MEDIA: Deleting multiple images from storage:',
-      storagePaths
-    );
-
     if (storagePaths.length === 0) {
       return { success: true };
     }
@@ -351,17 +289,11 @@ export class MediaService {
       const result = await MediaStorage.deleteFiles(storagePaths);
 
       if (result.success) {
-        console.log('✅ MEDIA: Images deleted successfully from storage');
         return { success: true };
       } else {
-        console.error(
-          '❌ MEDIA: Failed to delete images from storage:',
-          result.error
-        );
         return { success: false, error: result.error };
       }
     } catch (error) {
-      console.error('❌ MEDIA: Error deleting images from storage:', error);
       return {
         success: false,
         error:

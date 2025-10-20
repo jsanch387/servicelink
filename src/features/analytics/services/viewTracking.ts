@@ -59,10 +59,6 @@ class ViewTrackingService {
       // Cache the view to prevent duplicates
       this.cacheView(cacheKey);
 
-      console.log(
-        `[Analytics] View tracked successfully: ${businessSlug} - ${result.data.profileViews} total views`
-      );
-
       return {
         success: true,
         newView: true,

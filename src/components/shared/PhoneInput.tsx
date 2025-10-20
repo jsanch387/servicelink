@@ -74,7 +74,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
     // Validate on blur
     const validation = validatePhoneNumber(value);
     if (!validation.isValid && value.length > 0) {
-      console.log('📞 Phone validation error:', validation.error);
+      // Phone validation error
     }
   };
 

@@ -21,17 +21,16 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const handleFileSelect = (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      console.error('❌ Invalid file type. Please select an image.');
+      console.error('Invalid file type. Please select an image.');
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      console.error('❌ File too large. Please select an image under 10MB.');
+      console.error('File too large. Please select an image under 10MB.');
       return;
     }
 
-    console.log('📸 Image selected:', file.name, file.size);
     onImageSelect(file);
   };
 

@@ -178,8 +178,6 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   const MAX_IMAGES = 4;
 
   const handleImageSelect = (file: File) => {
-    console.log('📸 Portfolio image selected:', file.name);
-
     // Validate limits and file type
     if (images.length >= MAX_IMAGES) {
       alert(`Maximum of ${MAX_IMAGES} images allowed`);
@@ -264,8 +262,6 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   };
 
   const removeImage = (index: number) => {
-    console.log('🗑️ Removing portfolio image at index:', index);
-
     const imageToRemove = images[index];
 
     // If it's a preview image, remove from selected files

@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import {
-  SUPPORTED_LANGUAGES,
-  LANGUAGE_NAMES,
   LANGUAGE_FLAGS,
+  LANGUAGE_NAMES,
+  SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from '@/constants/i18n';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
 
 export const LanguageSelector: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,8 +19,6 @@ export const LanguageSelector: React.FC = () => {
     setSelectedLanguage(language);
     setIsOpen(false);
     // Here you would typically update the app's language context
-    // For now, we'll just log the change
-    console.log('Language changed to:', language);
   };
 
   return (

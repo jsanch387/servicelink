@@ -36,7 +36,6 @@ export class BusinessProfileApi {
         .single();
 
       if (profileError || !profile) {
-        console.error('Error fetching business profile:', profileError);
         return {
           success: false,
           error: profileError?.message || 'Business profile not found',
@@ -51,7 +50,7 @@ export class BusinessProfileApi {
         .order('created_at', { ascending: true });
 
       if (servicesError) {
-        console.error('Error fetching services:', servicesError);
+        // Error fetching services
       }
 
       // Get images
@@ -62,7 +61,7 @@ export class BusinessProfileApi {
         .order('created_at', { ascending: true });
 
       if (imagesError) {
-        console.error('Error fetching images:', imagesError);
+        // Error fetching images
       }
 
       // Add preview URLs to images
@@ -91,7 +90,6 @@ export class BusinessProfileApi {
 
       return { success: true, data: completeProfile };
     } catch (error) {
-      console.error('Error in getCompleteBusinessProfile:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -119,13 +117,11 @@ export class BusinessProfileApi {
         .single();
 
       if (error) {
-        console.error('Error updating business profile:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, data };
     } catch (error) {
-      console.error('Error in updateBusinessProfile:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -176,7 +172,6 @@ export class BusinessProfileApi {
         .eq('business_id', businessId);
 
       if (deleteError) {
-        console.error('Error deleting existing services:', deleteError);
         return { success: false, error: deleteError.message };
       }
 
@@ -196,14 +191,12 @@ export class BusinessProfileApi {
         ).insert(servicesToInsert);
 
         if (insertError) {
-          console.error('Error inserting services:', insertError);
           return { success: false, error: insertError.message };
         }
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Error in updateServices:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -232,7 +225,6 @@ export class BusinessProfileApi {
         .eq('business_id', businessId);
 
       if (currentError) {
-        console.error('Error fetching current images:', currentError);
         return { success: false, error: currentError.message };
       }
 
@@ -250,13 +242,9 @@ export class BusinessProfileApi {
           const deleteResult = await MediaService.deleteImages(pathsToDelete);
 
           if (!deleteResult.success) {
-            console.error('Failed to delete images:', deleteResult.error);
             return { success: false, error: deleteResult.error };
           }
-
-          console.log('Successfully deleted unused images from storage');
         } catch (storageError) {
-          console.error('Exception during storage deletion:', storageError);
           return {
             success: false,
             error:
@@ -286,21 +274,12 @@ export class BusinessProfileApi {
           .insert(imagesToInsert as any);
 
         if (insertError) {
-          console.error('Error inserting images:', insertError);
-
           // If database insert fails, clean up the uploaded files from storage
           const newImagePaths = images.map(img => img.storage_path);
           try {
-            console.log(
-              '🧹 Cleaning up uploaded files due to database insert failure...'
-            );
             await MediaService.deleteImages(newImagePaths);
-            console.log('✅ Successfully cleaned up uploaded files');
           } catch (cleanupError) {
-            console.error(
-              '❌ Failed to clean up uploaded files:',
-              cleanupError
-            );
+            // Failed to clean up uploaded files
           }
 
           return { success: false, error: insertError.message };
@@ -309,7 +288,6 @@ export class BusinessProfileApi {
 
       return { success: true };
     } catch (error) {
-      console.error('Error in updateImages:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -353,13 +331,11 @@ export class BusinessProfileApi {
         .single();
 
       if (error) {
-        console.error('Error creating business profile:', error);
         return { success: false, error: error.message };
       }
 
       return { success: true, data };
     } catch (error) {
-      console.error('Error in createBusinessProfile:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

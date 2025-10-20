@@ -21,11 +21,6 @@ export class MediaStorage {
     onProgress?: (_progress: number) => void
   ): Promise<UploadResult> {
     try {
-      console.log('📤 Uploading file to storage:', {
-        fileName: file.name,
-        storagePath,
-      });
-
       // Validate file
       const validation = this.validateFile(file);
       if (!validation.isValid) {
@@ -44,7 +39,6 @@ export class MediaStorage {
         });
 
       if (error) {
-        console.error('❌ Storage upload failed:', error);
         return {
           success: false,
           error: error.message,
@@ -54,14 +48,12 @@ export class MediaStorage {
       // Generate public URL
       const publicUrl = this.getPublicUrl(storagePath);
 
-      console.log('✅ File uploaded successfully:', { storagePath, publicUrl });
       return {
         success: true,
         storagePath: data.path,
         publicUrl,
       };
     } catch (error) {
-      console.error('❌ Upload error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Upload failed',
@@ -94,22 +86,17 @@ export class MediaStorage {
   static async deleteFile(
     storagePath: string
   ): Promise<{ success: boolean; error?: string }> {
-    console.log('🗑️ STORAGE: Deleting file:', storagePath);
-
     try {
       const { error } = await this.supabase.storage
         .from(MEDIA_CONFIG.bucketName)
         .remove([storagePath]);
 
       if (error) {
-        console.error('❌ STORAGE: Failed to delete file:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ STORAGE: File deleted successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ STORAGE: Error deleting file:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to delete file',
@@ -123,8 +110,6 @@ export class MediaStorage {
   static async deleteFiles(
     storagePaths: string[]
   ): Promise<{ success: boolean; error?: string }> {
-    console.log('🗑️ STORAGE: Deleting files:', storagePaths);
-
     if (storagePaths.length === 0) {
       return { success: true };
     }
@@ -135,14 +120,11 @@ export class MediaStorage {
         .remove(storagePaths);
 
       if (error) {
-        console.error('❌ STORAGE: Failed to delete files:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ STORAGE: Files deleted successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ STORAGE: Error deleting files:', error);
       return {
         success: false,
         error:

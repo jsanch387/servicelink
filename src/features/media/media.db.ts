@@ -18,8 +18,6 @@ export class MediaDatabase {
     businessId: string
   ): Promise<{ success: boolean; logoPath?: string; error?: string }> {
     try {
-      console.log('🔍 Getting current logo path:', { businessId });
-
       const { data, error } = await this.supabase
         .from('business_profiles')
         .select('logo_path')
@@ -27,14 +25,11 @@ export class MediaDatabase {
         .single();
 
       if (error) {
-        console.error('❌ Failed to get current logo path:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Current logo path retrieved:', (data as any)?.logo_path);
       return { success: true, logoPath: (data as any)?.logo_path };
     } catch (error) {
-      console.error('❌ Error getting current logo path:', error);
       return {
         success: false,
         error:
@@ -50,8 +45,6 @@ export class MediaDatabase {
     businessId: string
   ): Promise<{ success: boolean; bannerPath?: string; error?: string }> {
     try {
-      console.log('🔍 Getting current banner path:', { businessId });
-
       const { data, error } = await this.supabase
         .from('business_profiles')
         .select('banner_path')
@@ -59,17 +52,11 @@ export class MediaDatabase {
         .single();
 
       if (error) {
-        console.error('❌ Failed to get current banner path:', error);
         return { success: false, error: error.message };
       }
 
-      console.log(
-        '✅ Current banner path retrieved:',
-        (data as any)?.banner_path
-      );
       return { success: true, bannerPath: (data as any)?.banner_path };
     } catch (error) {
-      console.error('❌ Error getting current banner path:', error);
       return {
         success: false,
         error:
@@ -86,8 +73,6 @@ export class MediaDatabase {
     logoPath: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🖼️ Updating business logo:', { businessId, logoPath });
-
       const { error } = await (this.supabase as any)
         .from('business_profiles')
         .update({
@@ -97,14 +82,11 @@ export class MediaDatabase {
         .eq('id', businessId);
 
       if (error) {
-        console.error('❌ Failed to update business logo:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Business logo updated successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ Error updating business logo:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update logo',
@@ -120,8 +102,6 @@ export class MediaDatabase {
     bannerPath: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🖼️ Updating business banner:', { businessId, bannerPath });
-
       const { error } = await (this.supabase as any)
         .from('business_profiles')
         .update({
@@ -131,14 +111,11 @@ export class MediaDatabase {
         .eq('id', businessId);
 
       if (error) {
-        console.error('❌ Failed to update business banner:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Business banner updated successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ Error updating business banner:', error);
       return {
         success: false,
         error:
@@ -158,11 +135,6 @@ export class MediaDatabase {
     }>
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🖼️ Updating portfolio images:', {
-        businessId,
-        imagesCount: images.length,
-      });
-
       // First, delete all existing portfolio images
       const { error: deleteError } = await this.supabase
         .from('business_images')
@@ -170,10 +142,6 @@ export class MediaDatabase {
         .eq('business_id', businessId);
 
       if (deleteError) {
-        console.error(
-          '❌ Failed to delete existing portfolio images:',
-          deleteError
-        );
         return { success: false, error: deleteError.message };
       }
 
@@ -190,15 +158,12 @@ export class MediaDatabase {
           .insert(imagesToInsert);
 
         if (insertError) {
-          console.error('❌ Failed to insert portfolio images:', insertError);
           return { success: false, error: insertError.message };
         }
       }
 
-      console.log('✅ Portfolio images updated successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ Error updating portfolio images:', error);
       return {
         success: false,
         error:
@@ -218,8 +183,6 @@ export class MediaDatabase {
     error?: string;
   }> {
     try {
-      console.log('📸 Getting portfolio images for business:', businessId);
-
       const { data, error } = await this.supabase
         .from('business_images')
         .select('*')
@@ -227,14 +190,11 @@ export class MediaDatabase {
         .order('position', { ascending: true });
 
       if (error) {
-        console.error('❌ Failed to get portfolio images:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Portfolio images retrieved:', (data as any)?.length || 0);
       return { success: true, data: data || [] };
     } catch (error) {
-      console.error('❌ Error getting portfolio images:', error);
       return {
         success: false,
         error:
@@ -252,22 +212,17 @@ export class MediaDatabase {
     imageId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🗑️ Deleting portfolio image:', imageId);
-
       const { error } = await this.supabase
         .from('business_images')
         .delete()
         .eq('id', imageId);
 
       if (error) {
-        console.error('❌ Failed to delete portfolio image:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Portfolio image deleted successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ Error deleting portfolio image:', error);
       return {
         success: false,
         error:

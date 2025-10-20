@@ -26,13 +26,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   initialStep = 1,
   existingData,
 }) => {
-  console.log('🎬 OnboardingFlow loaded:', {
-    profileId,
-    businessProfileId,
-    initialStep,
-    hasExistingData: !!existingData,
-  });
-
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [currentBusinessProfileId, setCurrentBusinessProfileId] =
     useState(businessProfileId);
@@ -42,7 +35,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const refreshData = useCallback(async () => {
     if (!currentBusinessProfileId) return;
 
-    console.log('🔄 Refreshing onboarding data...');
     try {
       const stateResult = await getOnboardingState(profileId);
       if (stateResult.success && stateResult.data) {
@@ -54,10 +46,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           images: images,
           ...contactInfo,
         });
-        console.log('✅ Data refreshed successfully');
       }
     } catch (error) {
-      console.error('❌ Failed to refresh data:', error);
+      // Failed to refresh data
     }
   }, [currentBusinessProfileId, profileId]);
 
@@ -72,25 +63,17 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   }, [currentBusinessProfileId, businessProfileId, profileId, refreshData]);
 
   const handleStartOnboarding = async (): Promise<string | null> => {
-    console.log('🚀 Starting onboarding process...');
-
     const result = await startOnboarding(profileId);
     if (!result.success) {
-      console.error('❌ Failed to start onboarding:', result.error);
       return null;
     }
 
-    console.log(
-      '✅ Onboarding started, business profile ID:',
-      result.businessProfileId
-    );
     setCurrentBusinessProfileId(result.businessProfileId);
     return result.businessProfileId!;
   };
 
   const handleStepComplete = async () => {
     const nextStep = currentStep + 1;
-    console.log(`➡️ Moving to Step ${nextStep}`);
 
     // Refresh data after completing a step to ensure we have the latest data
     await refreshData();
@@ -99,7 +82,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
   const handleStepBack = async () => {
     const prevStep = Math.max(currentStep - 1, 1);
-    console.log(`⬅️ Going back to Step ${prevStep}`);
 
     // Refresh data when going back to ensure we have the latest data
     await refreshData();
@@ -107,19 +89,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   };
 
   const handleOnboardingComplete = async () => {
-    console.log('🎉 Completing onboarding...');
-
     const result = await completeOnboarding(profileId);
     if (result.success) {
-      console.log('✅ Onboarding completed, moving to celebration step');
       setCurrentStep(6); // Move to celebration step
-    } else {
-      console.error('❌ Failed to complete onboarding:', result.error);
     }
   };
 
   const handleCelebrationComplete = () => {
-    console.log('🎊 Celebration completed, redirecting to dashboard');
     window.location.reload(); // Refresh to show dashboard
   };
 
@@ -136,7 +112,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
       case 2:
         if (!currentBusinessProfileId) {
-          console.error('❌ Step 2 requires business profile ID');
           return (
             <div className="text-center text-white">
               <h2 className="text-xl font-semibold mb-4 text-red-400">Error</h2>
@@ -262,7 +237,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         );
 
       default:
-        console.error('❌ Invalid step:', currentStep);
         return (
           <div className="text-center text-white">
             <h2 className="text-xl font-semibold mb-4 text-red-400">Error</h2>

@@ -14,8 +14,6 @@ export const revalidate = 3600; // Revalidate every hour
 
 export async function GET() {
   try {
-    console.log('🗺️ Generating sitemap.xml...');
-
     // Use direct client (no cookies needed for public data)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,10 +66,6 @@ ${(profiles || [])
   )
   .join('\n')}
 </urlset>`;
-
-    console.log(
-      `✅ Generated sitemap with ${(profiles || []).length} business profiles`
-    );
 
     return new NextResponse(sitemap, {
       headers: {

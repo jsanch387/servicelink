@@ -116,23 +116,12 @@ export function transformFormDataForAPI(
         image.storage_path.includes('businesses/') &&
         (!image.id || !image.id.toString().startsWith('preview-'));
 
-      console.log(`🖼️ Image filter:`, {
-        id: image.id,
-        storage_path: image.storage_path,
-        hasRealStoragePath,
-        willInclude: hasRealStoragePath,
-      });
-
       return hasRealStoragePath;
     })
     .map(image => ({
       storage_path: image.storage_path,
       position: image.position,
     }));
-
-  console.log('🖼️ All form data images:', formData.images);
-  console.log('🖼️ Images to save (from form data):', imagesToSave);
-  console.log('🖼️ Images count:', imagesToSave.length);
 
   return {
     businessProfile: {
@@ -158,8 +147,6 @@ export async function saveBusinessProfile(
   formData: EditingFormData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('💾 Saving business profile:', { businessProfileId, formData });
-
     // Validate form data
     const validation = validateEditingForm(formData);
     if (!validation.isValid) {
@@ -178,7 +165,6 @@ export async function saveBusinessProfile(
       apiData.businessProfile
     );
     if (!profileResult.success) {
-      console.error('❌ Failed to save business profile:', profileResult.error);
       return {
         success: false,
         error: profileResult.error || 'Failed to save business profile',
@@ -191,7 +177,6 @@ export async function saveBusinessProfile(
       apiData.services
     );
     if (!servicesResult.success) {
-      console.error('❌ Failed to save services:', servicesResult.error);
       return {
         success: false,
         error: servicesResult.error || 'Failed to save services',
@@ -204,17 +189,14 @@ export async function saveBusinessProfile(
       apiData.images
     );
     if (!imagesResult.success) {
-      console.error('❌ Failed to save images:', imagesResult.error);
       return {
         success: false,
         error: imagesResult.error || 'Failed to save images',
       };
     }
 
-    console.log('✅ Complete business profile saved successfully');
     return { success: true };
   } catch (error) {
-    console.error('❌ Error saving business profile:', error);
     return {
       success: false,
       error: 'An unexpected error occurred while saving',

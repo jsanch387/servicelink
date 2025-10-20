@@ -39,20 +39,13 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   // Debug logging for public profiles
   useEffect(() => {
     if (isPublic) {
-      console.log('🌐 [BusinessProfileView] Public profile data:', {
-        businessName: businessProfile.business_name,
-        servicesCount: businessProfile.services?.length || 0,
-        imagesCount: businessProfile.images?.length || 0,
-        services: businessProfile.services,
-        images: businessProfile.images,
-      });
+      // Public profile data loaded
     }
   }, [businessProfile, isPublic]);
 
   // Update edit mode when initialMode prop changes
   // For public profiles, always stay in view mode
   useEffect(() => {
-    console.log('🔄 Initial mode changed:', initialMode);
     if (isPublic) {
       setEditMode('view');
     } else {
@@ -63,10 +56,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   const handleEdit = () => {
     // Prevent editing in public mode
     if (isPublic) {
-      console.warn('🚫 Edit mode disabled for public profiles');
       return;
     }
-    console.log('✏️ Switching to edit mode');
     setEditMode('edit');
     // Update URL to reflect edit mode
     const url = new URL(window.location.href);
@@ -75,7 +66,6 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   };
 
   const handlePreview = () => {
-    console.log('👁️ Switching to preview mode');
     setEditMode('view');
     // Update URL to reflect view mode
     const url = new URL(window.location.href);
@@ -86,10 +76,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   const handleSave = async (data: Record<string, unknown>) => {
     // Prevent saving in public mode
     if (isPublic) {
-      console.warn('🚫 Save disabled for public profiles');
       return;
     }
-    console.log('💾 Handling save from EditBusinessProfile:', data);
     setIsLoading(true);
 
     try {
@@ -130,21 +118,15 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
         const url = new URL(window.location.href);
         url.searchParams.set('mode', 'view');
         window.history.pushState({}, '', url.toString());
-        console.log('✅ Business profile updated and switched to preview mode');
-      } else {
-        console.log(
-          '✅ Partial update applied (cover photo/logo), staying in edit mode'
-        );
       }
     } catch (error) {
-      console.error('❌ Error updating business profile state:', error);
+      // Error updating business profile state
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCancel = () => {
-    console.log('❌ Canceling edit mode');
     setEditMode('view');
     // Update URL to reflect view mode
     const url = new URL(window.location.href);
