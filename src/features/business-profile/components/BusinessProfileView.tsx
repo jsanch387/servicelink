@@ -65,13 +65,13 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     window.history.pushState({}, '', url.toString());
   };
 
-  const handlePreview = () => {
-    setEditMode('view');
-    // Update URL to reflect view mode
-    const url = new URL(window.location.href);
-    url.searchParams.set('mode', 'view');
-    window.history.pushState({}, '', url.toString());
-  };
+  // const handlePreview = () => {
+  //   setEditMode('view');
+  //   // Update URL to reflect view mode
+  //   const url = new URL(window.location.href);
+  //   url.searchParams.set('mode', 'view');
+  //   window.history.pushState({}, '', url.toString());
+  // };
 
   const handleSave = async (data: Record<string, unknown>) => {
     // Prevent saving in public mode
@@ -119,7 +119,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
         url.searchParams.set('mode', 'view');
         window.history.pushState({}, '', url.toString());
       }
-    } catch (error) {
+    } catch {
       // Error updating business profile state
     } finally {
       setIsLoading(false);

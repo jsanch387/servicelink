@@ -22,10 +22,8 @@ export class BusinessImagesService {
     data?: PortfolioImage[];
     error?: string;
   }> {
-    console.log('🖼️ Getting images for business:', businessId);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const { data, error } = await supabase
         .from('business_images')
@@ -34,7 +32,6 @@ export class BusinessImagesService {
         .order('position', { ascending: true });
 
       if (error) {
-        console.error('❌ Failed to get images:', error);
         return { success: false, error: error.message };
       }
 
@@ -46,10 +43,8 @@ export class BusinessImagesService {
         preview_url: row.storage_path, // For now, use storage_path as preview
       }));
 
-      console.log('✅ Images retrieved:', images.length);
       return { success: true, data: images };
     } catch (error) {
-      console.error('❌ Error getting images:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get images',
@@ -68,10 +63,8 @@ export class BusinessImagesService {
     data?: PortfolioImageRow;
     error?: string;
   }> {
-    console.log('➕ Creating image for business:', businessId, image);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const imageData: PortfolioImageInsert = {
         business_id: businessId,
@@ -81,19 +74,16 @@ export class BusinessImagesService {
 
       const { data, error } = await supabase
         .from('business_images')
-        .insert(imageData)
+        .insert(imageData as any)
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Failed to create image:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Image created:', data.id);
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Error creating image:', error);
       return {
         success: false,
         error:
@@ -113,10 +103,8 @@ export class BusinessImagesService {
     data?: PortfolioImageRow;
     error?: string;
   }> {
-    console.log('📝 Updating image:', imageId, image);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const updateData: any = {};
       if (image.storage_path !== undefined)
@@ -125,20 +113,17 @@ export class BusinessImagesService {
 
       const { data, error } = await supabase
         .from('business_images')
-        .update(updateData)
+        .update(updateData as never)
         .eq('id', imageId)
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Failed to update image:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Image updated:', data.id);
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Error updating image:', error);
       return {
         success: false,
         error:
@@ -154,10 +139,8 @@ export class BusinessImagesService {
     success: boolean;
     error?: string;
   }> {
-    console.log('🗑️ Deleting image:', imageId);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const { error } = await supabase
         .from('business_images')
@@ -165,14 +148,11 @@ export class BusinessImagesService {
         .eq('id', imageId);
 
       if (error) {
-        console.error('❌ Failed to delete image:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Image deleted:', imageId);
       return { success: true };
     } catch (error) {
-      console.error('❌ Error deleting image:', error);
       return {
         success: false,
         error:
@@ -192,17 +172,10 @@ export class BusinessImagesService {
     data?: PortfolioImageRow[];
     error?: string;
   }> {
-    console.log(
-      '📦 Creating images for onboarding:',
-      businessId,
-      images.length
-    );
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       if (images.length === 0) {
-        console.log('ℹ️ No images to create');
         return { success: true, data: [] };
       }
 
@@ -214,18 +187,15 @@ export class BusinessImagesService {
 
       const { data, error } = await supabase
         .from('business_images')
-        .insert(imagesData)
+        .insert(imagesData as any)
         .select();
 
       if (error) {
-        console.error('❌ Failed to create images:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Images created for onboarding:', data.length);
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Error creating images for onboarding:', error);
       return {
         success: false,
         error:
@@ -244,29 +214,24 @@ export class BusinessImagesService {
     success: boolean;
     error?: string;
   }> {
-    console.log('🔄 Updating image positions:', imagePositions);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       // Update each image position
       for (const { id, position } of imagePositions) {
         const { error } = await supabase
           .from('business_images')
-          .update({ position })
+          .update({ position } as never)
           .eq('id', id)
           .eq('business_id', businessId);
 
         if (error) {
-          console.error('❌ Failed to update image position:', error);
           return { success: false, error: error.message };
         }
       }
 
-      console.log('✅ Image positions updated');
       return { success: true };
     } catch (error) {
-      console.error('❌ Error updating image positions:', error);
       return {
         success: false,
         error:

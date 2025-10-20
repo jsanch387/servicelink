@@ -97,7 +97,7 @@ export function validateEditingForm(
  */
 export function transformFormDataForAPI(
   formData: EditingFormData,
-  businessProfileId: string
+  _businessProfileId: string
 ) {
   const servicesToSave = formData.services.map(service => ({
     id: service.id?.toString().startsWith('temp-') ? undefined : service.id,
@@ -196,7 +196,7 @@ export async function saveBusinessProfile(
     }
 
     return { success: true };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'An unexpected error occurred while saving',

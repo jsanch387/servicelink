@@ -68,7 +68,7 @@ const convertHeicFiles = async (files: File[]): Promise<File[]> => {
         );
 
         convertedFiles.push(convertedFile);
-      } catch (error) {
+      } catch {
         // If conversion fails, keep the original file
         convertedFiles.push(file);
       }
@@ -153,27 +153,27 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     if (errors.length > 0) setErrors([]);
   };
 
-  const handlePhoneCallChange = (value: string) => {
-    setFormData(prev => {
-      const newData = { ...prev, phone_number_call: value };
-      if (prev.same_phone_for_both) {
-        newData.phone_number_text = value;
-      }
-      return newData;
-    });
-    if (errors.length > 0) setErrors([]);
-  };
+  // const handlePhoneCallChange = (value: string) => {
+  //   setFormData(prev => {
+  //     const newData = { ...prev, phone_number_call: value };
+  //     if (prev.same_phone_for_both) {
+  //       newData.phone_number_text = value;
+  //     }
+  //     return newData;
+  //   });
+  //   if (errors.length > 0) setErrors([]);
+  // };
 
-  const handlePhoneTextChange = (value: string) => {
-    setFormData(prev => {
-      const newData = { ...prev, phone_number_text: value };
-      if (prev.same_phone_for_both && value !== prev.phone_number_call) {
-        newData.same_phone_for_both = false;
-      }
-      return newData;
-    });
-    if (errors.length > 0) setErrors([]);
-  };
+  // const handlePhoneTextChange = (value: string) => {
+  //   setFormData(prev => {
+  //     const newData = { ...prev, phone_number_text: value };
+  //     if (prev.same_phone_for_both && value !== prev.phone_number_call) {
+  //       newData.same_phone_for_both = false;
+  //     }
+  //     return newData;
+  //   });
+  //   if (errors.length > 0) setErrors([]);
+  // };
 
   const handleSamePhoneChange = (checked: boolean) => {
     setFormData(prev => {
@@ -323,7 +323,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       } else {
         setErrors([result.error || 'Failed to save business profile']);
       }
-    } catch (error) {
+    } catch {
       setErrors(['An unexpected error occurred while saving']);
     } finally {
       setIsSaving(false);

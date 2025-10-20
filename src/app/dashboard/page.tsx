@@ -68,7 +68,7 @@ export default async function DashboardPage() {
       return (
         <OnboardingFlow
           profileId={user.id}
-          businessProfileId={businessProfile?.id}
+          businessProfileId={businessProfile?.id as string}
           initialStep={currentStep}
           existingData={{
             ...businessProfile,

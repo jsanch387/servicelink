@@ -91,16 +91,9 @@ const ServiceCard = ({
 export const Step3Services: React.FC<Step3ServicesProps> = ({
   profileId,
   businessProfileId,
-  existingData,
   onNext,
   onBack,
 }) => {
-  console.log('🛠️ Step3Services loaded:', {
-    profileId,
-    businessProfileId,
-    existingData,
-  });
-
   const [services, setServices] = useState<Service[]>([]);
   const [existingServices, setExistingServices] = useState<Service[]>([]); // Track existing services from DB
   const [removedServices, setRemovedServices] = useState<Service[]>([]); // Track services to delete from DB
@@ -122,19 +115,15 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
   // Load existing services from database
   useEffect(() => {
     const loadExistingServices = async () => {
-      console.log('📝 Loading existing services from database...');
-
       const result =
         await BusinessServicesService.getServicesByBusinessId(
           businessProfileId
         );
 
       if (result.success && result.data) {
-        console.log('✅ Loaded existing services:', result.data);
         setExistingServices(result.data); // Track existing services separately
         setServices(result.data); // Set services for display
       } else {
-        console.log('ℹ️ No existing services found');
         setExistingServices([]); // Initialize as empty array
       }
       setServicesLoaded(true);
@@ -147,8 +136,6 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
     field: keyof Service,
     value: string | number | undefined
   ) => {
-    console.log(`📝 Service ${field} changed:`, value);
-
     // Apply character limits
     if (field === 'description' && typeof value === 'string') {
       if (value.length > MAX_DESCRIPTION_LENGTH) {
@@ -188,7 +175,6 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       return;
     }
 
-    console.log('➕ Adding service:', currentService);
     const newService: Service = {
       ...currentService,
       id: `temp-${Date.now()}`,
@@ -205,8 +191,6 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
   };
 
   const removeService = (index: number) => {
-    console.log('🗑️ Removing service at index:', index);
-
     const serviceToRemove = services[index];
 
     // If it's an existing service (not a temp/new service), track it for deletion
@@ -214,10 +198,6 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       serviceToRemove.id &&
       !serviceToRemove.id.toString().startsWith('temp-')
     ) {
-      console.log(
-        '📝 Tracking existing service for deletion:',
-        serviceToRemove
-      );
       setRemovedServices(prev => [...prev, serviceToRemove]);
     }
 
@@ -238,8 +218,6 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
   };
 
   const handleSubmit = async () => {
-    console.log('💾 Saving Step 3 services data:', services);
-
     setIsLoading(true);
     setError('');
 
@@ -247,44 +225,26 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       // Step 0: Handle service deletions
       // If user has 0 services but had existing services, delete ALL existing services
       if (services.length === 0 && existingServices.length > 0) {
-        console.log(
-          '🗑️ STEP 0: User has no services - deleting all existing services:',
-          existingServices.length
-        );
-        console.log('📋 Existing services to delete:', existingServices);
-
         const serviceIds = existingServices
           .map(service => service.id)
           .filter(Boolean) as string[];
 
-        console.log('🔑 Service IDs to delete:', serviceIds);
-
         const deletePromises = serviceIds.map(serviceId => {
-          console.log('🗑️ Hard deleting service ID:', serviceId);
           return BusinessServicesService.hardDeleteService(serviceId);
         });
         const deleteResults = await Promise.all(deletePromises);
 
-        console.log('📊 Delete results:', deleteResults);
-
         const failedDeletes = deleteResults.filter(result => !result.success);
         if (failedDeletes.length > 0) {
-          console.error('❌ Failed to delete all services:', failedDeletes);
           setError('Failed to delete services. Please try again.');
           setIsLoading(false);
           return;
         }
 
-        console.log('✅ STEP 0 COMPLETE: All services deleted successfully');
         setExistingServices([]);
         setRemovedServices([]);
       } else if (removedServices.length > 0) {
         // Otherwise, just delete the services that were explicitly removed
-        console.log(
-          '🗑️ STEP 0: Deleting removed services:',
-          removedServices.length
-        );
-
         const serviceIds = removedServices
           .map(service => service.id)
           .filter(Boolean) as string[];
@@ -296,15 +256,10 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
         const failedDeletes = deleteResults.filter(result => !result.success);
         if (failedDeletes.length > 0) {
-          console.error('❌ Failed to delete some services:', failedDeletes);
           setError('Failed to delete some services. Please try again.');
           setIsLoading(false);
           return;
         }
-
-        console.log(
-          '✅ STEP 0 COMPLETE: Removed services deleted successfully'
-        );
 
         // Clear the removed services array since they've been successfully deleted
         setRemovedServices([]);
@@ -313,14 +268,10 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       // Step 1: Save new services (not already in database)
       const newServices = getNewServices();
 
-      console.log('📝 Existing services:', existingServices.length);
-      console.log('🆕 New services to save:', newServices.length);
-
       // If no new services to save, just update progress
       if (newServices.length === 0) {
-        console.log('ℹ️ No new services to save, updating progress only');
+        // No new services to save, updating progress only
       } else {
-        console.log('💾 Saving new services:', newServices);
         const servicesResult =
           await BusinessServicesService.createServicesForOnboarding(
             businessProfileId,
@@ -328,7 +279,6 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
           );
 
         if (!servicesResult.success) {
-          console.error('❌ Failed to save services:', servicesResult.error);
           setError(servicesResult.error || 'Failed to save services');
           setIsLoading(false);
           return;
@@ -344,23 +294,19 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       );
 
       if (!progressResult.success) {
-        console.error('❌ Failed to update progress:', progressResult.error);
         setError(progressResult.error || 'Failed to update progress');
         setIsLoading(false);
         return;
       }
 
-      console.log('✅ Step 3 saved successfully, moving to step 4');
       onNext();
-    } catch (error) {
-      console.error('❌ Error saving Step 3:', error);
+    } catch {
       setError('Something went wrong. Please try again.');
       setIsLoading(false);
     }
   };
 
   const handleSkip = async () => {
-    console.log('⏭️ User skipping Step 3');
     setIsLoading(true);
 
     try {
@@ -373,16 +319,13 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       );
 
       if (!result.success) {
-        console.error('❌ Failed to skip Step 3:', result.error);
         setError(result.error || 'Failed to skip step');
         setIsLoading(false);
         return;
       }
 
-      console.log('✅ Skipped Step 3, moving to step 4');
       onNext();
-    } catch (error) {
-      console.error('❌ Error skipping Step 3:', error);
+    } catch {
       setError('Something went wrong. Please try again.');
       setIsLoading(false);
     }

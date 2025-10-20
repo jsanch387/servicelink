@@ -21,12 +21,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   onSamePhoneChange,
   errors,
 }) => {
-  const formatPhoneForDisplay = (phone: string): string => {
-    if (phone.length === 10) {
-      return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
-    }
-    return phone;
-  };
+  // const formatPhoneForDisplay = (phone: string): string => {
+  //   if (phone.length === 10) {
+  //     return `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
+  //   }
+  //   return phone;
+  // };
 
   return (
     <div className="space-y-6">

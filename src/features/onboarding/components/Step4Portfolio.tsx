@@ -205,16 +205,9 @@ const EnhancedImageUpload: React.FC<{
 export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
   profileId,
   businessProfileId,
-  existingData,
   onNext,
   onBack,
 }) => {
-  console.log('🎨 Step4Portfolio loaded:', {
-    profileId,
-    businessProfileId,
-    existingData,
-  });
-
   const [images, setImages] = useState<PortfolioImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -228,14 +221,10 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
   // Load existing images from database
   useEffect(() => {
     const loadExistingImages = async () => {
-      console.log('📝 Loading existing images from database...');
-
       const result =
         await BusinessImagesService.getImagesByBusinessId(businessProfileId);
 
       if (result.success && result.data) {
-        console.log('✅ Loaded existing images:', result.data);
-
         // Convert database images to our format with proper preview URLs
         const dbImages: PortfolioImage[] = result.data.map(img => ({
           id: img.id,
@@ -246,7 +235,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
         setImages(dbImages);
       } else {
-        console.log('ℹ️ No existing images found');
         // Don't reset images array here - preserve any local state from navigation
       }
     };
@@ -255,8 +243,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
   }, [businessProfileId]);
 
   const handleImageSelect = (file: File) => {
-    console.log('📸 Processing selected image:', file.name);
-
     // Check image limit for onboarding (4 images max)
     if (images.length >= 4) {
       setError(
@@ -306,12 +292,10 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
         preview_url: previewUrl,
       };
 
-      console.log('➕ Adding image to portfolio:', newImage);
       setImages(prev => [...prev, newImage]);
       setSelectedFiles(prev => [...prev, file]);
       setError('');
-    } catch (error) {
-      console.error('Error processing image:', error);
+    } catch {
       setError('Error processing image. Please try again.');
     }
   };
@@ -354,8 +338,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
         file.name.toLowerCase().endsWith('.heif');
 
       if (isHeic) {
-        console.log('🔄 Converting HEIC file:', file.name);
-
         try {
           // Send HEIC file to server for conversion
           const formData = new FormData();
@@ -382,9 +364,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           );
 
           convertedFiles.push(convertedFile);
-          console.log('✅ HEIC converted to JPEG:', convertedFile.name);
-        } catch (error) {
-          console.error('❌ HEIC conversion failed:', error);
+        } catch {
           // Fallback: use original file (will fail on upload, but user gets error)
           convertedFiles.push(file);
         }
@@ -399,8 +379,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
   const removeImage = useCallback(
     (index: number) => {
-      console.log('🗑️ Removing image at index:', index);
-
       const imageToRemove = images[index];
 
       // If it's an existing image (not a temp/preview), track it for deletion
@@ -408,7 +386,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
         !imageToRemove.id?.toString().startsWith('temp-') &&
         imageToRemove.id
       ) {
-        console.log('📝 Tracking existing image for deletion:', imageToRemove);
         setRemovedImages(prev => [...prev, imageToRemove]);
       }
 
@@ -432,8 +409,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
   );
 
   const handleSubmit = async () => {
-    console.log('💾 Saving Step 4 portfolio data:', images);
-
     setIsLoading(true);
     setError('');
 
@@ -442,21 +417,12 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
       // Step 0: Delete removed images from storage and database
       if (removedImages.length > 0) {
-        console.log(
-          '🗑️ STEP 0: Deleting removed images:',
-          removedImages.length
-        );
-
         // Delete from storage
         const storagePaths = removedImages.map(img => img.storage_path);
         const deleteStorageResult =
           await MediaService.deleteImages(storagePaths);
 
         if (!deleteStorageResult.success) {
-          console.error(
-            '❌ Failed to delete images from storage:',
-            deleteStorageResult.error
-          );
           setError('Failed to delete removed images. Please try again.');
           setIsLoading(false);
           return;
@@ -473,16 +439,10 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
         const failedDeletes = deleteResults.filter(result => !result.success);
         if (failedDeletes.length > 0) {
-          console.error(
-            '❌ Failed to delete some images from database:',
-            failedDeletes
-          );
           setError('Failed to delete some removed images. Please try again.');
           setIsLoading(false);
           return;
         }
-
-        console.log('✅ STEP 0 COMPLETE: Removed images deleted successfully');
 
         // Clear the removed images array since they've been successfully deleted
         setRemovedImages([]);
@@ -490,25 +450,14 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
       // Step 1: Upload images to Supabase storage (if any new images)
       if (selectedFiles.length > 0) {
-        console.log(
-          '📤 STEP 1: Uploading portfolio images to storage:',
-          selectedFiles.length
-        );
-
         // Convert HEIC files to JPEG before uploading
         const convertedFiles = await convertHeicFiles(selectedFiles);
-        console.log(
-          '🔄 Converted files:',
-          convertedFiles.map(f => f.name)
-        );
 
         const uploadResult = await uploadPortfolio({
           businessId: businessProfileId,
           files: convertedFiles,
           previousImages: [], // No previous images for onboarding
         });
-
-        console.log('📤 Upload result:', uploadResult);
 
         if (!uploadResult.every(r => r.success)) {
           const failedCount = uploadResult.filter(r => !r.success).length;
@@ -518,10 +467,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           setIsLoading(false);
           return;
         }
-
-        console.log(
-          '✅ STEP 1 COMPLETE: Portfolio images uploaded successfully'
-        );
 
         // Step 2: Update images array with real storage paths
         const tempImages = images.filter(img =>
@@ -536,14 +481,8 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           .map((img, index) => {
             const uploadResultItem = uploadResult[index];
             if (!uploadResultItem || !uploadResultItem.success) {
-              console.error('❌ Upload failed for image:', img);
               return null;
             }
-
-            console.log(`🔄 Converting preview image ${index}:`, {
-              from: img.storage_path,
-              to: uploadResultItem.storagePath,
-            });
 
             return {
               id: `uploaded-${Date.now()}-${index}`,
@@ -554,24 +493,13 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           })
           .filter((img): img is PortfolioImage => img !== null);
 
-        console.log(
-          '🖼️ Uploaded images after conversion:',
-          newlyUploadedImages
-        );
-
         // Update images array with uploaded images
         const updatedImages = [...existingImages, ...newlyUploadedImages];
         setImages(updatedImages);
         setSelectedFiles([]);
-
-        console.log(
-          '✅ STEP 2 COMPLETE: Images updated with real storage paths'
-        );
       }
 
       // Step 3: Save to business_images table
-      console.log('💾 STEP 3: Saving images to business_images table...');
-
       if (newlyUploadedImages.length > 0) {
         const dbResult = await BusinessImagesService.createImagesForOnboarding(
           businessProfileId,
@@ -579,20 +507,13 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
         );
 
         if (!dbResult.success) {
-          console.error(
-            '❌ Failed to save images to database:',
-            dbResult.error
-          );
           setError(dbResult.error || 'Failed to save images to database');
           setIsLoading(false);
           return;
         }
-
-        console.log('✅ STEP 3 COMPLETE: Images saved to database');
       }
 
       // Step 4: Update onboarding progress
-      console.log('📝 STEP 4: Updating onboarding progress...');
       const progressResult = await saveStepAndProgress(
         profileId,
         4, // current step
@@ -602,23 +523,19 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
       );
 
       if (!progressResult.success) {
-        console.error('❌ Failed to update progress:', progressResult.error);
         setError(progressResult.error || 'Failed to update progress');
         setIsLoading(false);
         return;
       }
 
-      console.log('✅ Step 4 saved successfully, moving to step 5');
       onNext();
-    } catch (error) {
-      console.error('❌ Error saving Step 4:', error);
+    } catch {
       setError('Something went wrong. Please try again.');
       setIsLoading(false);
     }
   };
 
   const handleSkip = async () => {
-    console.log('⏭️ User skipping Step 4');
     setIsLoading(true);
 
     try {
@@ -631,16 +548,13 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
       );
 
       if (!result.success) {
-        console.error('❌ Failed to skip Step 4:', result.error);
         setError(result.error || 'Failed to skip step');
         setIsLoading(false);
         return;
       }
 
-      console.log('✅ Skipped Step 4, moving to step 5');
       onNext();
-    } catch (error) {
-      console.error('❌ Error skipping Step 4:', error);
+    } catch {
       setError('Something went wrong. Please try again.');
       setIsLoading(false);
     }

@@ -38,6 +38,6 @@ export interface DashboardHeaderProps {
 
 export interface DashboardSidebarProps {
   open: boolean;
-  setOpen: (open: boolean) => void;
+  setOpen: (_open: boolean) => void;
   isOnboardingCompleted?: boolean;
 }

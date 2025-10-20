@@ -47,7 +47,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           ...contactInfo,
         });
       }
-    } catch (error) {
+    } catch {
       // Failed to refresh data
     }
   }, [currentBusinessProfileId, profileId]);

@@ -41,7 +41,7 @@ export class MediaService {
       if (currentLogoPath && currentLogoPath.trim()) {
         try {
           await MediaStorage.deleteFile(currentLogoPath);
-        } catch (deleteError) {
+        } catch {
           // Don't fail the entire operation if old logo deletion fails
         }
       }
@@ -107,7 +107,7 @@ export class MediaService {
       if (currentBannerPath && currentBannerPath.trim()) {
         try {
           await MediaStorage.deleteFile(currentBannerPath);
-        } catch (deleteError) {
+        } catch {
           // Don't fail the entire operation if old banner deletion fails
         }
       }

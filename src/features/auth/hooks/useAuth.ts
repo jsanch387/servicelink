@@ -15,7 +15,7 @@ export const useAuth = () => {
     if (!store.isInitialized) {
       store.initialize();
     }
-  }, [store.isInitialized, store.initialize]);
+  }, [store]);
 
   return {
     // State

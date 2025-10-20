@@ -2,6 +2,7 @@
 
 import { Button, Input } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -144,19 +145,19 @@ export const SignupForm: React.FC = () => {
           <div className="text-center">
             <p className="text-xs text-gray-400">
               By creating an account, you agree to our{' '}
-              <a
+              <Link
                 href="/terms"
                 className="text-orange-400 hover:text-orange-300"
               >
                 Terms of Service
-              </a>{' '}
+              </Link>{' '}
               and{' '}
-              <a
+              <Link
                 href="/privacy"
                 className="text-orange-400 hover:text-orange-300"
               >
                 Privacy Policy
-              </a>
+              </Link>
             </p>
           </div>
         </form>

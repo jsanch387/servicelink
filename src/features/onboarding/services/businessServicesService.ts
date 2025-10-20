@@ -58,10 +58,8 @@ export class BusinessServicesService {
     data?: Service[];
     error?: string;
   }> {
-    console.log('🔍 Getting services for business:', businessId);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const { data, error } = await supabase
         .from('business_services')
@@ -71,7 +69,6 @@ export class BusinessServicesService {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('❌ Failed to get services:', error);
         return { success: false, error: error.message };
       }
 
@@ -84,10 +81,8 @@ export class BusinessServicesService {
         hours_to_complete: row.hours_to_complete || undefined,
       }));
 
-      console.log('✅ Services retrieved:', services.length);
       return { success: true, data: services };
     } catch (error) {
-      console.error('❌ Error getting services:', error);
       return {
         success: false,
         error:
@@ -107,10 +102,8 @@ export class BusinessServicesService {
     data?: ServiceRow;
     error?: string;
   }> {
-    console.log('➕ Creating service for business:', businessId, service);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const serviceData = {
         business_id: businessId,
@@ -123,19 +116,16 @@ export class BusinessServicesService {
 
       const { data, error } = await supabase
         .from('business_services')
-        .insert(serviceData)
+        .insert(serviceData as any)
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Failed to create service:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Service created:', data.id);
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Error creating service:', error);
       return {
         success: false,
         error:
@@ -155,10 +145,8 @@ export class BusinessServicesService {
     data?: ServiceRow;
     error?: string;
   }> {
-    console.log('📝 Updating service:', serviceId, service);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const updateData = {
         name: service.name,
@@ -170,20 +158,17 @@ export class BusinessServicesService {
 
       const { data, error } = await supabase
         .from('business_services')
-        .update(updateData)
+        .update(updateData as never)
         .eq('id', serviceId)
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Failed to update service:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Service updated:', data.id);
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Error updating service:', error);
       return {
         success: false,
         error:
@@ -199,28 +184,23 @@ export class BusinessServicesService {
     success: boolean;
     error?: string;
   }> {
-    console.log('🗑️ Soft deleting service:', serviceId);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const { error } = await supabase
         .from('business_services')
         .update({
           is_active: false,
           updated_at: new Date().toISOString(),
-        })
+        } as never)
         .eq('id', serviceId);
 
       if (error) {
-        console.error('❌ Failed to delete service:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Service soft deleted:', serviceId);
       return { success: true };
     } catch (error) {
-      console.error('❌ Error deleting service:', error);
       return {
         success: false,
         error:
@@ -236,10 +216,8 @@ export class BusinessServicesService {
     success: boolean;
     error?: string;
   }> {
-    console.log('🗑️ HARD deleting service:', serviceId);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const { error } = await supabase
         .from('business_services')
@@ -247,14 +225,11 @@ export class BusinessServicesService {
         .eq('id', serviceId);
 
       if (error) {
-        console.error('❌ Failed to hard delete service:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Service permanently deleted:', serviceId);
       return { success: true };
     } catch (error) {
-      console.error('❌ Error hard deleting service:', error);
       return {
         success: false,
         error:
@@ -274,14 +249,8 @@ export class BusinessServicesService {
     data?: ServiceRow[];
     error?: string;
   }> {
-    console.log(
-      '📦 Creating services for onboarding:',
-      businessId,
-      services.length
-    );
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       // Filter out empty services
       const validServices = services.filter(
@@ -289,7 +258,6 @@ export class BusinessServicesService {
       );
 
       if (validServices.length === 0) {
-        console.log('ℹ️ No valid services to create');
         return { success: true, data: [] };
       }
 
@@ -304,18 +272,15 @@ export class BusinessServicesService {
 
       const { data, error } = await supabase
         .from('business_services')
-        .insert(servicesData)
+        .insert(servicesData as any)
         .select();
 
       if (error) {
-        console.error('❌ Failed to create services:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Services created for onboarding:', data.length);
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Error creating services for onboarding:', error);
       return {
         success: false,
         error:

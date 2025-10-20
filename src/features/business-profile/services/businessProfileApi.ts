@@ -278,7 +278,7 @@ export class BusinessProfileApi {
           const newImagePaths = images.map(img => img.storage_path);
           try {
             await MediaService.deleteImages(newImagePaths);
-          } catch (cleanupError) {
+          } catch {
             // Failed to clean up uploaded files
           }
 

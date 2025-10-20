@@ -32,12 +32,6 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
   onNext,
   onBack,
 }) => {
-  console.log('📋 Step2BusinessInfo loaded:', {
-    profileId,
-    businessProfileId,
-    existingData,
-  });
-
   const [formData, setFormData] = useState({
     business_name: '',
     business_type: '',
@@ -51,7 +45,6 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
   // Populate form with existing data
   useEffect(() => {
     if (existingData) {
-      console.log('📝 Populating form with existing data:', existingData);
       setFormData({
         business_name: (existingData.business_name as string) || '',
         business_type: (existingData.business_type as string) || '',
@@ -67,7 +60,6 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
   }));
 
   const handleInputChange = (field: string, value: string) => {
-    console.log(`📝 Form field changed: ${field} = "${value}"`);
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -76,7 +68,6 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('💾 Saving Step 2 data:', formData);
 
     setIsLoading(true);
     setError('');
@@ -91,23 +82,19 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
       );
 
       if (!result.success) {
-        console.error('❌ Failed to save Step 2:', result.error);
         setError(result.error || 'Failed to save business information');
         setIsLoading(false);
         return;
       }
 
-      console.log('✅ Step 2 saved successfully, moving to step 3');
       onNext();
-    } catch (error) {
-      console.error('❌ Error saving Step 2:', error);
+    } catch {
       setError('Something went wrong. Please try again.');
       setIsLoading(false);
     }
   };
 
   const handleSkip = async () => {
-    console.log('⏭️ User skipping Step 2');
     setIsLoading(true);
 
     try {
@@ -120,16 +107,13 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
       );
 
       if (!result.success) {
-        console.error('❌ Failed to skip Step 2:', result.error);
         setError(result.error || 'Failed to skip step');
         setIsLoading(false);
         return;
       }
 
-      console.log('✅ Skipped Step 2, moving to step 3');
       onNext();
-    } catch (error) {
-      console.error('❌ Error skipping Step 2:', error);
+    } catch {
       setError('Something went wrong. Please try again.');
       setIsLoading(false);
     }

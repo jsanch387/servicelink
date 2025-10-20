@@ -73,11 +73,11 @@ export default async function SettingsPage() {
       businessProfile: {
         id: businessProfile.id,
         business_name: businessProfile.business_name,
-        business_type: businessProfile.business_type,
-        service_area: businessProfile.service_area,
-        bio: businessProfile.bio,
-        created_at: businessProfile.created_at,
-        updated_at: businessProfile.updated_at,
+        business_type: businessProfile.business_type || null,
+        service_area: businessProfile.service_area || null,
+        bio: businessProfile.bio || null,
+        created_at: businessProfile.created_at || '',
+        updated_at: businessProfile.updated_at || '',
       },
       slugData: hasSlug
         ? {
@@ -93,12 +93,12 @@ export default async function SettingsPage() {
     return (
       <div className="min-h-screen bg-neutral-900">
         <SettingsContent
-          businessProfile={businessProfile}
+          businessProfile={businessProfile as any}
           settingsData={settingsData}
         />
       </div>
     );
-  } catch (error) {
+  } catch {
     redirect('/dashboard');
   }
 }

@@ -320,8 +320,8 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
           <div className="flex items-start gap-3">
             <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
             <p className="text-gray-400 text-sm">
-              You've reached the maximum of {MAX_IMAGES} images. Remove an image
-              to add a new one.
+              You&apos;ve reached the maximum of {MAX_IMAGES} images. Remove an
+              image to add a new one.
             </p>
           </div>
         </div>

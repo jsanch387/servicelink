@@ -170,7 +170,7 @@ class SlugService {
       return {
         isAvailable: true,
       };
-    } catch (error) {
+    } catch {
       return {
         isAvailable: false,
         error: 'Unable to check link name availability. Please try again.',
@@ -236,7 +236,7 @@ class SlugService {
           businessProfileId: data.id,
         },
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'An unexpected error occurred. Please try again.',
@@ -273,7 +273,7 @@ class SlugService {
         business_link: (data as any).business_link,
         updated_at: (data as any).updated_at,
       };
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -294,7 +294,7 @@ class SlugService {
       if (error) {
         // Failed to increment view count
       }
-    } catch (error) {
+    } catch {
       // Unexpected error incrementing views
     }
   }
@@ -318,7 +318,7 @@ class SlugService {
       }
 
       return data;
-    } catch (error) {
+    } catch {
       return null;
     }
   }

@@ -48,11 +48,8 @@ export const useUserStore = create<UserState & UserActions>()(
     (set, get) => ({
       ...initialState,
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, _password: string) => {
         set({ isLoading: true });
-
-        // Mock API call
-        console.log('🔐 Mock API: Login attempt', { email, password });
 
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -65,8 +62,6 @@ export const useUserStore = create<UserState & UserActions>()(
           hasCompletedOnboarding: false,
         };
 
-        console.log('✅ Mock API: Login successful', mockUser);
-
         set({
           user: mockUser,
           isAuthenticated: true,
@@ -76,9 +71,6 @@ export const useUserStore = create<UserState & UserActions>()(
 
       signup: async (email: string, password: string, name: string) => {
         set({ isLoading: true });
-
-        // Mock API call
-        console.log('📝 Mock API: Signup attempt', { email, password, name });
 
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1200));
@@ -90,8 +82,6 @@ export const useUserStore = create<UserState & UserActions>()(
           hasCompletedOnboarding: false,
         };
 
-        console.log('✅ Mock API: Signup successful', newUser);
-
         set({
           user: newUser,
           isAuthenticated: true,
@@ -100,7 +90,6 @@ export const useUserStore = create<UserState & UserActions>()(
       },
 
       logout: () => {
-        console.log('👋 Mock API: User logged out');
         set({
           user: null,
           isAuthenticated: false,
@@ -116,11 +105,6 @@ export const useUserStore = create<UserState & UserActions>()(
             hasCompletedOnboarding: true,
             profileId,
           };
-
-          console.log('🎉 Mock API: Onboarding completed', {
-            userId: user.id,
-            profileId,
-          });
 
           set({ user: updatedUser });
         }

@@ -14,23 +14,15 @@ export class BusinessProfileService {
    * Prevents duplicate creation if business profile already exists
    */
   static async startOnboarding(profileId: string) {
-    console.log('🚀 Starting onboarding for profile:', profileId);
-
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       // First, check if business profile already exists
       const existingProfile =
         await this.getBusinessProfileByProfileId(profileId);
       if (existingProfile.success && existingProfile.data) {
-        console.log(
-          '✅ Business profile already exists, returning existing:',
-          existingProfile.data.id
-        );
         return { success: true, data: existingProfile.data };
       }
-
-      console.log('📝 Creating new business profile...');
 
       // Generate unique public_id
       const publicId = `business_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -42,19 +34,15 @@ export class BusinessProfileService {
           profile_id: profileId,
           public_id: publicId,
           business_name: '', // Empty initially - user fills during onboarding
-        })
+        } as any)
         .select()
         .single();
 
       if (businessError) {
-        console.error('❌ Failed to create business profile:', businessError);
         return { success: false, error: businessError.message };
       }
 
-      console.log('✅ Business profile created:', businessProfile.id);
-
       // Update user profile to reflect onboarding start
-      console.log('📝 Updating user profile onboarding status...');
       const profileUpdateResult = await ProfileService.updateProfile(
         profileId,
         {
@@ -64,18 +52,11 @@ export class BusinessProfileService {
       );
 
       if (!profileUpdateResult.success) {
-        console.warn(
-          '⚠️ Business profile created but failed to update user profile:',
-          profileUpdateResult.error
-        );
         // Don't fail the whole operation - business profile was created successfully
-      } else {
-        console.log('✅ User profile updated with onboarding status');
       }
 
       return { success: true, data: businessProfile };
     } catch (error) {
-      console.error('❌ Onboarding start error:', error);
       return {
         success: false,
         error:
@@ -88,11 +69,12 @@ export class BusinessProfileService {
    * Updates business profile during onboarding steps
    * Called when user progresses through onboarding or skips steps
    */
-  static async updateBusinessProfile(businessProfileId: string, updates: any) {
-    console.log('📝 Updating business profile:', businessProfileId, updates);
-
+  static async updateBusinessProfile(
+    businessProfileId: string,
+    updates: Record<string, unknown>
+  ) {
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const { data, error } = await supabase
         .from('business_profiles')
@@ -100,20 +82,17 @@ export class BusinessProfileService {
           ...updates,
           updated_at: new Date().toISOString(),
           last_edited: new Date().toISOString(),
-        })
+        } as never)
         .eq('id', businessProfileId)
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Failed to update business profile:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ Business profile updated successfully');
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Business profile update error:', error);
       return {
         success: false,
         error:
@@ -132,25 +111,14 @@ export class BusinessProfileService {
     step: number,
     status: 'in_progress' | 'completed'
   ) {
-    console.log(
-      `📈 Updating onboarding progress: Step ${step}, Status: ${status}`
-    );
-
     try {
       const result = await ProfileService.updateProfile(profileId, {
         onboarding_step: step,
         onboarding_status: status,
       });
 
-      if (result.success) {
-        console.log('✅ Onboarding progress updated');
-      } else {
-        console.error('❌ Failed to update onboarding progress:', result.error);
-      }
-
       return result;
     } catch (error) {
-      console.error('❌ Onboarding progress update error:', error);
       return {
         success: false,
         error:
@@ -163,11 +131,13 @@ export class BusinessProfileService {
    * Gets business profile by profile_id (user's profile)
    * Used to check onboarding state and load existing data
    */
-  static async getBusinessProfileByProfileId(profileId: string) {
-    console.log('🔍 Looking for business profile with profile_id:', profileId);
-
+  static async getBusinessProfileByProfileId(profileId: string): Promise<{
+    success: boolean;
+    data?: Record<string, unknown>;
+    error?: string;
+  }> {
     try {
-      const supabase = createClient() as any;
+      const supabase = createClient();
 
       const { data, error } = await supabase
         .from('business_profiles')
@@ -176,21 +146,15 @@ export class BusinessProfileService {
         .maybeSingle();
 
       if (error) {
-        console.error('❌ Error fetching business profile:', error);
         return { success: false, error: error.message };
       }
 
       if (!data) {
-        console.log(
-          "ℹ️ No business profile found - user hasn't started onboarding"
-        );
-        return { success: true, data: null };
+        return { success: true, data: null as any };
       }
 
-      console.log('✅ Business profile found:', data.id);
       return { success: true, data };
     } catch (error) {
-      console.error('❌ Business profile fetch error:', error);
       return {
         success: false,
         error:

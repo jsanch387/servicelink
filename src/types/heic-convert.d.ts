@@ -5,6 +5,6 @@ declare module 'heic-convert' {
     quality: number;
   }
 
-  function convert(options: ConvertOptions): Promise<Buffer>;
+  function convert(_options: ConvertOptions): Promise<Buffer>;
   export = convert;
 }
