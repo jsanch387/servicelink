@@ -4,7 +4,7 @@
  * Provides an intuitive and visually appealing placeholder when no cover photo is set
  */
 
-import { CameraIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 interface CoverPhotoPlaceholderProps {
@@ -35,28 +35,16 @@ export const CoverPhotoPlaceholder: React.FC<CoverPhotoPlaceholderProps> = ({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-8">
-        {/* Icon */}
-        <div className="mb-4 flex justify-center">
-          <div className="relative">
-            <div className="w-16 h-16 bg-neutral-700 rounded-full flex items-center justify-center">
-              <PhotoIcon className="h-8 w-8 text-neutral-400" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <CameraIcon className="h-3 w-3 text-white" />
-            </div>
+      {/* Content - Compact and positioned to avoid logo overlap */}
+      <div className="relative z-10 flex flex-col justify-start pt-6 sm:pt-8 px-4">
+        {/* Small icon in top-left corner */}
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center">
+            <PhotoIcon className="h-4 w-4 text-neutral-400" />
           </div>
-        </div>
-
-        {/* Text */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-white">
-            {businessName ? `${businessName}'s Cover Photo` : 'Cover Photo'}
-          </h3>
-          <p className="text-sm text-neutral-400 max-w-xs">
-            No cover photo set yet
-          </p>
+          <span className="text-sm text-neutral-400 font-medium">
+            No cover photo set
+          </span>
         </div>
       </div>
 
