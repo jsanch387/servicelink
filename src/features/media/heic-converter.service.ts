@@ -41,9 +41,23 @@ export class HeicConverterService {
         };
       }
 
+      // Mobile-specific checks
+      const isMobile =
+        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+      console.log('📱 Mobile device detected:', isMobile);
+
       // Create FormData to send to conversion API
       const formData = new FormData();
       formData.append('file', file);
+
+      console.log('🔄 Sending HEIC file to conversion API...', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        isMobile,
+      });
 
       // Call the conversion API
       const response = await fetch('/api/convert-heic', {
@@ -51,16 +65,30 @@ export class HeicConverterService {
         body: formData,
       });
 
+      console.log('📡 API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        isMobile,
+      });
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('❌ HEIC conversion API error:', errorData);
         return {
           success: false,
-          error: errorData.error || 'HEIC conversion failed',
+          error:
+            errorData.error || `HEIC conversion failed (${response.status})`,
         };
       }
 
       // Get the converted JPEG data
       const jpegBlob = await response.blob();
+      console.log('✅ JPEG blob received:', {
+        size: jpegBlob.size,
+        type: jpegBlob.type,
+        isMobile,
+      });
 
       // Create a new File object with JPEG type
       const jpegFile = new File(
@@ -77,6 +105,7 @@ export class HeicConverterService {
         jpegFile,
       };
     } catch (error) {
+      console.error('❌ HEIC conversion error:', error);
       return {
         success: false,
         error:
@@ -90,11 +119,20 @@ export class HeicConverterService {
    * Returns the original file if it's already JPEG/PNG/WebP
    */
   static async processFile(file: File): Promise<HeicConversionResult> {
+    // Enhanced mobile debugging
+    const userAgent = navigator.userAgent;
+    const isMobile =
+      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        userAgent
+      );
+
     console.log('🔍 Processing file:', {
       name: file.name,
       type: file.type,
       size: file.size,
       isHeic: this.isHeicFile(file),
+      isMobile,
+      userAgent: userAgent.substring(0, 100) + '...',
     });
 
     // If it's not a HEIC file, return as-is
@@ -112,7 +150,8 @@ export class HeicConverterService {
     console.log(
       '📸 Conversion result:',
       result.success ? 'SUCCESS' : 'FAILED',
-      result.error
+      result.error,
+      isMobile ? '(MOBILE)' : '(DESKTOP)'
     );
     return result;
   }

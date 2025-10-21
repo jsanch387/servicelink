@@ -15,10 +15,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    // Enhanced mobile debugging
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    const isMobile =
+      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        userAgent
+      );
+
     console.log('📁 File received for conversion:', {
       name: file.name,
       type: file.type,
       size: file.size,
+      isMobile,
+      userAgent: userAgent.substring(0, 100) + '...',
     });
 
     const arrayBuffer = await file.arrayBuffer();
