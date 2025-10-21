@@ -25,8 +25,13 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
   const handleCopyLink = useCallback(() => {
     if (!fullLink) return;
 
+    // Ensure the link has HTTPS protocol for proper sharing
+    const shareableLink = fullLink.startsWith('http')
+      ? fullLink
+      : `https://${fullLink}`;
+
     const textarea = document.createElement('textarea');
-    textarea.value = fullLink;
+    textarea.value = shareableLink;
     document.body.appendChild(textarea);
     textarea.select();
 
@@ -35,7 +40,7 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
       if (successful) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-        console.log(`[ACTION] Copied link: ${fullLink}`);
+        console.log(`[ACTION] Copied link: ${shareableLink}`);
       }
     } catch (err) {
       console.error('[ACTION] Could not copy text:', err);
@@ -70,13 +75,12 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
       {/* Action Button */}
       <Button
         onClick={handleCopyLink}
-        variant="primary"
+        variant="secondary"
         size="lg"
-        fullWidth
-        icon={<ClipboardIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />}
-        className="py-2 sm:py-3 lg:py-4 text-sm sm:text-base lg:text-lg tracking-wide sm:tracking-wider font-bold sm:font-extrabold"
+        className="w-full"
+        icon={<ClipboardIcon className="h-5 w-5" />}
       >
-        {copied ? 'LINK COPIED!' : 'COPY LINK & SHARE'}
+        {copied ? 'Copied!' : 'Copy Link'}
       </Button>
     </div>
   );

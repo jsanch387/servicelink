@@ -78,8 +78,13 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
   const handleCopyLink = useCallback(() => {
     if (!FULL_LINK) return;
 
+    // Ensure the link has HTTPS protocol for proper sharing
+    const shareableLink = FULL_LINK.startsWith('http')
+      ? FULL_LINK
+      : `https://${FULL_LINK}`;
+
     const textarea = document.createElement('textarea');
-    textarea.value = FULL_LINK;
+    textarea.value = shareableLink;
     document.body.appendChild(textarea);
     textarea.select();
 
@@ -88,7 +93,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
       if (successful) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-        console.log(`[ACTION] Copied link: ${FULL_LINK}`);
+        console.log(`[ACTION] Copied link: ${shareableLink}`);
       } else {
         console.error('[ACTION] Copy command failed.');
       }
