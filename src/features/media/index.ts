@@ -9,9 +9,10 @@
 export * from './media.types';
 
 // Services (Server-safe)
+export { HeicConverterService } from './heic-converter.service';
+export { MediaDatabase } from './media.db';
 export { MediaService } from './media.service';
 export { MediaStorage } from './media.storage';
-export { MediaDatabase } from './media.db';
 
 // Utilities
 export * from './media.paths';

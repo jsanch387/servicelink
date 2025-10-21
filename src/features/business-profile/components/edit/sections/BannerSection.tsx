@@ -76,7 +76,11 @@ const EnhancedImageUpload: React.FC<{
         {dragActive ? 'Drop your photo here' : 'Click to upload or drag & drop'}
       </p>
       <p className="text-xs sm:text-sm text-gray-500 text-center max-w-xs">
-        Any size works! JPG, PNG up to 10MB
+        Any size works! JPG, PNG, HEIC up to 10MB
+        <br />
+        <span className="text-orange-400 text-xs">
+          📱 iPhone photos (HEIC) will show preview after saving
+        </span>
       </p>
       <input
         id="cover-photo-upload"

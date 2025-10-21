@@ -153,7 +153,11 @@ const EnhancedImageUpload: React.FC<{
       <p className="text-sm text-gray-500 text-center max-w-xs">
         Any size works! We&apos;ll automatically make it look perfect.
         <br />
-        JPG, PNG up to 10MB • Maximum 4 images
+        JPG, PNG, HEIC up to 10MB • Maximum 4 images
+        <br />
+        <span className="text-orange-400 text-xs">
+          📱 iPhone photos (HEIC) will show preview after saving
+        </span>
       </p>
       <input
         id="portfolio-file-upload"

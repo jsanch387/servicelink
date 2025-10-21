@@ -23,7 +23,8 @@ const SmartImagePreview: React.FC<{
   src: string;
   alt: string;
   onRemove: () => void;
-}> = memo(({ src, alt, onRemove }) => {
+  isDeleting?: boolean;
+}> = memo(({ src, alt, onRemove, isDeleting = false }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleRemoveClick = () => {
@@ -37,18 +38,18 @@ const SmartImagePreview: React.FC<{
   };
 
   return (
-    <div className="relative group">
-      {/* Responsive Container - Larger on bigger screens, optimized for mobile */}
-      <div className="aspect-square w-full rounded-xl overflow-hidden shadow-lg bg-neutral-900 border border-neutral-700 hover:border-orange-400/50 transition-all duration-300 group-hover:shadow-2xl">
-        {/* Subtle overlay for better visual feedback */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
+    <div className="relative">
+      {/* Mobile-First Container - Clean design without hover effects */}
+      <div
+        className={`aspect-square w-full rounded-xl overflow-hidden shadow-lg bg-neutral-900 border border-neutral-700 transition-all duration-300 ${isDeleting ? 'opacity-50' : ''}`}
+      >
         <Image
           src={src}
           alt={alt}
           width={600}
           height={600}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 50vw"
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover"
           priority={false}
           loading="lazy"
           placeholder="blur"
@@ -58,38 +59,56 @@ const SmartImagePreview: React.FC<{
               'https://placehold.co/600x600/374151/E5E7EB?text=No+Preview';
           }}
         />
+
+        {/* Loading overlay when deleting */}
+        {isDeleting && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <p className="text-white text-sm font-medium">Removing...</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Enhanced Remove Button - Better touch targets */}
-      <div className="absolute top-3 right-3">
+      {/* Mobile-First Remove Button - Always visible, larger touch target */}
+      <div className="absolute top-2 right-2">
         <button
           onClick={handleRemoveClick}
-          className="p-2.5 bg-red-600/90 text-white rounded-full shadow-xl hover:bg-red-500 active:bg-red-700 transition duration-200 touch-manipulation backdrop-blur-sm border border-red-500/20"
+          className="p-3 bg-red-600/95 text-white rounded-full shadow-2xl active:bg-red-700 transition duration-200 touch-manipulation backdrop-blur-sm border-2 border-white/20 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Remove image"
         >
-          <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+          <XMarkIcon className="h-6 w-6" />
         </button>
       </div>
 
-      {/* Confirmation Dialog */}
+      {/* Mobile-First Confirmation Dialog */}
       {showConfirmation && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl z-10">
-          <div className="bg-neutral-800 border border-neutral-600 rounded-xl p-4 mx-4 max-w-sm">
-            <p className="text-white text-center mb-4 text-sm">
-              Remove this image?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirmation(false)}
-                className="flex-1 px-4 py-2 bg-neutral-600 text-white rounded-lg text-sm font-medium hover:bg-neutral-500 transition duration-200"
-              >
-                Cancel
-              </button>
+        <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-xl z-20">
+          <div className="bg-neutral-800 border border-neutral-600 rounded-xl p-6 mx-4 max-w-sm w-full">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <XMarkIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <p className="text-white text-lg font-semibold mb-2">
+                Remove this image?
+              </p>
+              <p className="text-gray-400 text-sm">
+                This action cannot be undone
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
               <button
                 onClick={confirmRemove}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-500 transition duration-200"
+                className="w-full px-6 py-3 bg-red-600 text-white rounded-lg font-medium active:bg-red-700 transition duration-200 touch-manipulation"
               >
-                Remove
+                Yes, Remove Image
+              </button>
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="w-full px-6 py-3 bg-neutral-600 text-white rounded-lg font-medium active:bg-neutral-500 transition duration-200 touch-manipulation"
+              >
+                Cancel
               </button>
             </div>
           </div>
@@ -213,6 +232,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
   const [error, setError] = useState<string>('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [removedImages, setRemovedImages] = useState<PortfolioImage[]>([]);
+  const [deletingImages, setDeletingImages] = useState<Set<string>>(new Set());
 
   // Use the portfolio upload hook
   const { uploadPortfolio, isUploading: isUploadingPortfolio } =
@@ -326,66 +346,16 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   };
 
-  const convertHeicFiles = async (files: File[]): Promise<File[]> => {
-    const convertedFiles: File[] = [];
-
-    for (const file of files) {
-      // Check if it's a HEIC file
-      const isHeic =
-        file.type === 'image/heic' ||
-        file.type === 'image/heif' ||
-        file.name.toLowerCase().endsWith('.heic') ||
-        file.name.toLowerCase().endsWith('.heif');
-
-      if (isHeic) {
-        try {
-          // Send HEIC file to server for conversion
-          const formData = new FormData();
-          formData.append('file', file);
-
-          const response = await fetch('/api/convert-heic', {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (!response.ok) {
-            throw new Error(`HEIC conversion failed: ${response.statusText}`);
-          }
-
-          // Convert response to File object
-          const blob = await response.blob();
-          const convertedFile = new File(
-            [blob],
-            file.name.replace(/\.(heic|heif)$/i, '.jpg'),
-            {
-              type: 'image/jpeg',
-              lastModified: file.lastModified,
-            }
-          );
-
-          convertedFiles.push(convertedFile);
-        } catch {
-          // Fallback: use original file (will fail on upload, but user gets error)
-          convertedFiles.push(file);
-        }
-      } else {
-        // Regular file, no conversion needed
-        convertedFiles.push(file);
-      }
-    }
-
-    return convertedFiles;
-  };
-
   const removeImage = useCallback(
     (index: number) => {
       const imageToRemove = images[index];
 
-      // If it's an existing image (not a temp/preview), track it for deletion
+      // Show loading state for existing images
       if (
         !imageToRemove.id?.toString().startsWith('temp-') &&
         imageToRemove.id
       ) {
+        setDeletingImages(prev => new Set(prev).add(imageToRemove.id!));
         setRemovedImages(prev => [...prev, imageToRemove]);
       }
 
@@ -400,9 +370,16 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
       // Remove from images array
       setImages(prev => prev.filter((_, i) => i !== index));
 
-      // Only remove from selectedFiles if it's a temp image (newly added)
+      // Fix: Remove from selectedFiles by finding the matching file
       if (imageToRemove.id?.toString().startsWith('temp-')) {
-        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setSelectedFiles(prev => {
+          // Find the index of the file that corresponds to this image
+          const tempImageIndex = images
+            .slice(0, index)
+            .filter(img => img.id?.toString().startsWith('temp-')).length;
+
+          return prev.filter((_, i) => i !== tempImageIndex);
+        });
       }
     },
     [images]
@@ -444,18 +421,17 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           return;
         }
 
-        // Clear the removed images array since they've been successfully deleted
+        // Clear the removed images array and deleting state since they've been successfully deleted
         setRemovedImages([]);
+        setDeletingImages(new Set());
       }
 
       // Step 1: Upload images to Supabase storage (if any new images)
       if (selectedFiles.length > 0) {
-        // Convert HEIC files to JPEG before uploading
-        const convertedFiles = await convertHeicFiles(selectedFiles);
-
+        // HEIC conversion is now handled automatically by MediaStorage
         const uploadResult = await uploadPortfolio({
           businessId: businessProfileId,
-          files: convertedFiles,
+          files: selectedFiles,
           previousImages: [], // No previous images for onboarding
         });
 
@@ -621,6 +597,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
                   src={image.preview_url || image.storage_path}
                   alt={`Portfolio image ${index + 1}`}
                   onRemove={() => removeImage(index)}
+                  isDeleting={image.id ? deletingImages.has(image.id) : false}
                 />
               ))}
             </div>

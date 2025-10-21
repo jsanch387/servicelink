@@ -150,6 +150,7 @@ export class MediaService {
 
   /**
    * Uploads and saves portfolio images
+   * Automatically converts HEIC/HEIF files to JPEG before upload
    */
   static async uploadPortfolio(
     data: PortfolioUploadData
@@ -161,7 +162,7 @@ export class MediaService {
         position: number;
       }> = [];
 
-      // Upload each file
+      // Upload each file (HEIC conversion is handled automatically by MediaStorage)
       for (let i = 0; i < data.files.length; i++) {
         const file = data.files[i];
         const storagePath = generateStoragePath(

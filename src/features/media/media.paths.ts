@@ -17,7 +17,8 @@ export function generateStoragePath(
   file: File
 ): string {
   const uuid = uuidv4();
-  const extension = getFileExtension(file.name);
+  // Use the file's actual type to determine extension, not the filename
+  const extension = getExtensionFromMimeType(file.type);
 
   switch (mediaType) {
     case 'logo':
@@ -40,6 +41,22 @@ function getFileExtension(filename: string): string {
     throw new Error(`File ${filename} has no extension`);
   }
   return filename.substring(lastDot + 1).toLowerCase();
+}
+
+/**
+ * Gets file extension from MIME type
+ */
+function getExtensionFromMimeType(mimeType: string): string {
+  const mimeToExt: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/heic': 'jpg', // HEIC files are converted to JPEG
+    'image/heif': 'jpg', // HEIF files are converted to JPEG
+  };
+
+  return mimeToExt[mimeType.toLowerCase()] || 'jpg';
 }
 
 /**

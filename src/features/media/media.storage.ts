@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@/libs/supabase';
+import { HeicConverterService } from './heic-converter.service';
 import { generateStoragePath } from './media.paths';
 import { MEDIA_CONFIG, MediaType, UploadResult } from './media.types';
 
@@ -14,6 +15,7 @@ export class MediaStorage {
 
   /**
    * Uploads a file to Supabase Storage
+   * Automatically converts HEIC/HEIF files to JPEG before upload
    */
   static async uploadFile(
     file: File,
@@ -21,24 +23,56 @@ export class MediaStorage {
     onProgress?: (_progress: number) => void
   ): Promise<UploadResult> {
     try {
-      // Validate file
-      const validation = this.validateFile(file);
+      console.log('📤 Uploading file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        storagePath,
+      });
+
+      // Process file (convert HEIC to JPEG if needed)
+      const conversionResult = await HeicConverterService.processFile(file);
+      if (!conversionResult.success) {
+        console.error('❌ File processing failed:', conversionResult.error);
+        return {
+          success: false,
+          error: conversionResult.error || 'File processing failed',
+        };
+      }
+
+      const processedFile = conversionResult.jpegFile!;
+      console.log('✅ File processed successfully:', {
+        name: processedFile.name,
+        type: processedFile.type,
+        size: processedFile.size,
+      });
+
+      // Validate processed file (should be JPEG after conversion)
+      const validation = this.validateFile(processedFile);
       if (!validation.isValid) {
+        console.error('❌ Processed file validation failed:', validation.error);
         return {
           success: false,
           error: validation.error,
         };
       }
 
-      // Upload file
+      // Upload processed file
+      console.log('📤 Uploading to Supabase:', {
+        storagePath,
+        fileType: processedFile.type,
+        fileSize: processedFile.size,
+      });
+
       const { data, error } = await this.supabase.storage
         .from(MEDIA_CONFIG.bucketName)
-        .upload(storagePath, file, {
+        .upload(storagePath, processedFile, {
           cacheControl: '3600',
           upsert: false,
         });
 
       if (error) {
+        console.error('❌ Supabase upload failed:', error);
         return {
           success: false,
           error: error.message,
@@ -47,6 +81,10 @@ export class MediaStorage {
 
       // Generate public URL
       const publicUrl = this.getPublicUrl(storagePath);
+      console.log('✅ Upload successful:', {
+        storagePath: data.path,
+        publicUrl,
+      });
 
       return {
         success: true,
@@ -161,6 +199,7 @@ export class MediaStorage {
 
   /**
    * Uploads multiple files with progress tracking
+   * Automatically converts HEIC/HEIF files to JPEG before upload
    */
   static async uploadMultipleFiles(
     files: File[],
@@ -170,17 +209,82 @@ export class MediaStorage {
   ): Promise<UploadResult[]> {
     const results: UploadResult[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    // Process all files first (convert HEIC to JPEG if needed)
+    const processResult = await HeicConverterService.processFiles(files);
+    if (!processResult.success) {
+      // Return failed results for all files if processing fails
+      return files.map((_, index) => ({
+        success: false,
+        error: processResult.errors[index] || 'File processing failed',
+      }));
+    }
+
+    // Upload processed files directly (skip conversion since it's already done)
+    for (let i = 0; i < processResult.processedFiles.length; i++) {
+      const file = processResult.processedFiles[i];
       const storagePath = generateStoragePath(businessId, mediaType, file);
 
-      const result = await this.uploadFile(file, storagePath, progress => {
-        onProgress?.(i, progress);
-      });
+      const result = await this.uploadFileDirect(
+        file,
+        storagePath,
+        progress => {
+          onProgress?.(i, progress);
+        }
+      );
 
       results.push(result);
     }
 
     return results;
+  }
+
+  /**
+   * Uploads a file directly to Supabase Storage without conversion
+   * Used internally for already-processed files
+   */
+  private static async uploadFileDirect(
+    file: File,
+    storagePath: string,
+    onProgress?: (_progress: number) => void
+  ): Promise<UploadResult> {
+    try {
+      // Validate file
+      const validation = this.validateFile(file);
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.error,
+        };
+      }
+
+      // Upload file
+      const { data, error } = await this.supabase.storage
+        .from(MEDIA_CONFIG.bucketName)
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      // Generate public URL
+      const publicUrl = this.getPublicUrl(storagePath);
+
+      return {
+        success: true,
+        storagePath: data.path,
+        publicUrl,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Upload failed',
+      };
+    }
   }
 }
