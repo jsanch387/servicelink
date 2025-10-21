@@ -72,7 +72,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           <p className="text-sm sm:text-base lg:text-lg text-gray-400 font-light">
             {slugData?.hasSlug
               ? `Everything looks great, ${businessProfile.business_name}. Start sharing your ServiceLink!`
-              : `Let's get your profile ready to go live, ${businessProfile.business_name}.`}
+              : `Your profile is ready, ${businessProfile.business_name}! Now create your public link to start getting customers.`}
           </p>
         </div>
 
@@ -86,22 +86,78 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               appDomain={APP_DOMAIN}
             />
           ) : (
-            <div className="bg-neutral-800 p-4 sm:p-6 lg:p-8 rounded-2xl border-2 border-orange-500/30">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4">
-                Create Your Public Link
-              </h2>
-              <p className="text-gray-400 text-sm sm:text-base lg:text-lg mb-4 sm:mb-6">
-                Your profile is ready, but you need to create a public link
-                first.
-              </p>
-              <Button
-                onClick={() => (window.location.href = '/dashboard/settings')}
-                variant="primary"
-                size="lg"
-                fullWidth
-              >
-                Create Your Link Now
-              </Button>
+            <div className="bg-gradient-to-r from-orange-500/10 to-orange-400/5 p-6 sm:p-8 lg:p-10 rounded-2xl border-2 border-orange-400/40 shadow-lg">
+              {/* Header with icon and emphasis */}
+              <div className="flex items-start gap-4 mb-6">
+                <div className="p-3 bg-orange-500/20 rounded-xl border border-orange-400/30 flex-shrink-0">
+                  <svg
+                    className="w-6 h-6 text-orange-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+                      Create Your Public Link
+                    </h2>
+                    <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs font-semibold rounded border border-orange-400/30">
+                      Required
+                    </span>
+                  </div>
+                  <p className="text-gray-300 text-sm sm:text-base">
+                    Your profile is ready, but you need a public link to start
+                    sharing with customers.
+                  </p>
+                </div>
+              </div>
+
+              {/* Benefits section */}
+              <div className="bg-neutral-800/30 border border-neutral-700/50 rounded-xl p-4 mb-6">
+                <h3 className="text-white font-semibold mb-3 text-sm">
+                  Why you need this link:
+                </h3>
+                <ul className="space-y-2 text-gray-300 text-sm">
+                  <li className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full"></div>
+                    Share your profile with customers via text, email, or social
+                    media
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full"></div>
+                    Get professional business inquiries and leads
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 bg-orange-400 rounded-full"></div>
+                    Showcase your services and portfolio to potential clients
+                  </li>
+                </ul>
+              </div>
+
+              {/* Call to action */}
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <Button
+                  onClick={() => (window.location.href = '/dashboard/settings')}
+                  variant="primary"
+                  size="lg"
+                  className="flex-1 sm:flex-none sm:min-w-[200px]"
+                >
+                  Create Your Link Now
+                </Button>
+                <div className="text-center sm:text-left">
+                  <p className="text-gray-400 text-sm">
+                    Takes less than 30 seconds
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
