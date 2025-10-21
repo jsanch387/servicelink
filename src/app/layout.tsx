@@ -36,6 +36,14 @@ export const metadata: Metadata = {
   },
   description:
     'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link. Better than Linktree, built for service businesses.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [{ url: '/favicon.png', sizes: '180x180', type: 'image/png' }],
+  },
   keywords: [
     'business profile',
     'service business',

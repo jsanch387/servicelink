@@ -83,6 +83,7 @@ export async function middleware(request: NextRequest) {
     isPublicProfileRoute ||
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname === '/favicon.ico' ||
     request.nextUrl.pathname.startsWith('/favicon') ||
     request.nextUrl.pathname.includes('.')
   ) {
