@@ -195,6 +195,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 editMode={editMode}
                 onSave={handleSave}
                 onCancel={handleCancel}
+                isPublic={isPublic}
               />
               <AboutUs
                 businessProfile={businessProfile}

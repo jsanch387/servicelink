@@ -3,7 +3,7 @@
 
 import { Button, Modal } from '@/components/shared';
 import { useUploadLogo } from '@/features/media/hooks';
-import { CameraIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { CameraIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import React, { useState } from 'react';
 
@@ -151,64 +151,64 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Section Header - More Prominent */}
+      {/* Section Header */}
       <div className="mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
           Business Logo
         </h2>
         <p className="text-sm sm:text-base text-gray-400">
-          Click to add or change your business logo
+          Add a professional logo to represent your business
         </p>
       </div>
 
-      {/* Logo Display - Mobile-Friendly with Always-Visible Indicators */}
-      <div
-        onClick={openModal}
-        className="relative group cursor-pointer inline-block"
-      >
-        <div className="w-32 h-32 sm:w-36 sm:h-36 bg-neutral-800 rounded-full overflow-hidden flex items-center justify-center border-4 border-neutral-700 hover:border-orange-400 transition-all duration-300">
-          {businessProfile.logo_url &&
-          (businessProfile.logo_url as string).trim() ? (
-            <>
+      {/* Logo Display - Using Full Space */}
+      <div onClick={openModal} className="relative group cursor-pointer">
+        <div className="flex items-center gap-4 p-4 bg-neutral-800/50 rounded-xl border border-neutral-700 hover:border-orange-400/50 transition-all duration-300">
+          {/* Logo Circle */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-neutral-800 rounded-full overflow-hidden flex items-center justify-center border-2 border-neutral-600 flex-shrink-0">
+            {businessProfile.logo_url &&
+            (businessProfile.logo_url as string).trim() ? (
               <Image
                 src={businessProfile.logo_url as string}
                 alt="Logo"
-                width={144}
-                height={144}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
               />
-              {/* Always visible camera badge - larger and more prominent */}
-              <div className="absolute bottom-1 right-1 bg-orange-500 text-white p-2 rounded-full shadow-lg border-2 border-neutral-900">
-                <CameraIcon className="h-4 w-4" />
+            ) : (
+              <CameraIcon className="h-8 w-8 text-neutral-500" />
+            )}
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 min-w-0">
+            {businessProfile.logo_url &&
+            (businessProfile.logo_url as string).trim() ? (
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-1">
+                  Business Logo
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  Click to change your logo
+                </p>
               </div>
-              {/* Always visible "Change" text on mobile */}
-              <div className="absolute top-1 left-1 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium sm:hidden">
-                Change
+            ) : (
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-1">
+                  Add Your Logo
+                </h3>
+                <p className="text-xs text-neutral-400">
+                  Upload a professional logo for your business
+                </p>
               </div>
-            </>
-          ) : (
-            <div className="text-center">
-              <div className="bg-neutral-700 rounded-full p-3 mx-auto mb-2">
-                <CameraIcon className="h-6 w-6 text-orange-400" />
-              </div>
-              <span className="text-xs font-semibold text-white">Add Logo</span>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-orange-500/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
-                  Click to upload
-                </div>
-              </div>
+            )}
+          </div>
+
+          {/* Action Indicator */}
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+              <CameraIcon className="h-4 w-4 text-orange-400" />
             </div>
-          )}
-        </div>
-        {/* Desktop hover overlay - only shows on hover for desktop */}
-        <div className="absolute inset-0 items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hidden sm:flex">
-          <div className="text-center">
-            <div className="bg-orange-500 rounded-full p-2 mx-auto mb-1">
-              <PencilIcon className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xs text-white font-semibold">
-              {businessProfile.logo_url ? 'Change' : 'Upload'}
-            </span>
           </div>
         </div>
       </div>

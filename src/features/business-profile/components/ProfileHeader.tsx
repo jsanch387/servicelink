@@ -14,6 +14,7 @@ interface ProfileHeaderProps {
   editMode: EditMode;
   onSave: (_data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
+  isPublic?: boolean;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -21,6 +22,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   editMode: _editMode,
   onSave: _onSave,
   onCancel: _onCancel,
+  isPublic = false,
 }) => {
   return (
     <>
@@ -40,6 +42,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <CoverPhotoPlaceholder
             businessName={businessProfile.business_name}
             className="w-full h-full"
+            isPublic={isPublic}
           />
         )}
       </div>
