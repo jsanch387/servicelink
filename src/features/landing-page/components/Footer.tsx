@@ -1,48 +1,42 @@
+import { Logo } from '@/components/shared';
+import { EnvelopeIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-neutral-900 border-t border-neutral-800">
+    <footer className="bg-neutral-900 border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center">
-          {/* Company Info */}
-          <div className="mb-8">
-            <h3 className="text-2xl font-bold text-white mb-4">ServiceLink</h3>
-            <p className="text-gray-400 max-w-md mx-auto">
-              Better than Linktree, built for service businesses. Create a
-              professional profile, showcase your work, and let customers call
-              you directly - all from one beautiful link.
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          {/* Left Side - Logo and Description */}
+          <div>
+            <div className="mb-4">
+              <Logo size="lg" href="/" />
+            </div>
+            <p className="text-gray-300 text-base leading-relaxed">
+              The professional business profile that gets you more customers.
+              Stop paying for expensive websites and start growing your service
+              business today.
             </p>
           </div>
 
-          {/* Essential Links */}
-          <div className="flex flex-wrap justify-center gap-8 mb-8">
-            <a
-              href="#features"
-              className="text-gray-400 hover:text-white transition-colors text-sm"
-            >
-              Features
-            </a>
-            <a
-              href="#waitlist"
-              className="text-gray-400 hover:text-white transition-colors text-sm"
-            >
-              Waitlist
-            </a>
+          {/* Right Side - Contact */}
+          <div className="text-left md:text-right">
+            <h4 className="text-white font-semibold mb-3">Contact</h4>
             <a
               href="mailto:hello@servicelink.com"
-              className="text-gray-400 hover:text-white transition-colors text-sm"
+              className="inline-flex items-center text-orange-400 hover:text-orange-300 transition-colors text-base font-medium"
             >
-              Contact
+              <EnvelopeIcon className="w-4 h-4 mr-2" />
+              app.servicelink@gmail.com
             </a>
           </div>
+        </div>
 
-          {/* Bottom Section */}
-          <div className="pt-8 border-t border-neutral-800">
-            <p className="text-gray-400 text-sm">
-              © 2024 ServiceLink. All rights reserved.
-            </p>
-          </div>
+        {/* Copyright - Full Width */}
+        <div className="mt-8 pt-6 border-t border-white/10">
+          <p className="text-gray-400 text-sm text-center">
+            © 2024 ServiceLink. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

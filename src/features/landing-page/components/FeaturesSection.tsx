@@ -1,6 +1,5 @@
 import {
   DevicePhoneMobileIcon,
-  GlobeAltIcon,
   LinkIcon,
   PhoneIcon,
 } from '@heroicons/react/24/outline';
@@ -8,28 +7,22 @@ import React from 'react';
 
 const features = [
   {
-    icon: <GlobeAltIcon className="h-8 w-8" />,
-    title: 'Professional Profile',
-    description:
-      'Create a stunning business profile with a banner image, profile picture, and service area in minutes.',
-  },
-  {
     icon: <PhoneIcon className="h-8 w-8" />,
-    title: 'Direct Customer Contact',
+    title: 'Customers Call You Directly',
     description:
-      'Customers can call you directly from your profile. No more missed opportunities or complicated forms.',
+      'No more missed calls. Customers click one button and call you right away. No complicated contact forms.',
   },
   {
     icon: <LinkIcon className="h-8 w-8" />,
-    title: 'One Link Solution',
+    title: 'One Link, Share Everywhere',
     description:
-      'Get your custom ServiceLink URL to share everywhere. Better than Linktree, built for service businesses.',
+      'Get your custom ServiceLink URL and share it on social media, business cards, and anywhere you want customers to find you.',
   },
   {
     icon: <DevicePhoneMobileIcon className="h-8 w-8" />,
-    title: 'Mobile Perfect',
+    title: 'Works Perfect on Mobile',
     description:
-      'Your profile looks amazing on all devices. We make sure it works perfectly on mobile where most customers are.',
+      'Most customers use their phones. Your profile looks amazing on all devices, especially mobile.',
   },
 ];
 
@@ -37,39 +30,48 @@ export const FeaturesSection: React.FC = () => {
   return (
     <section id="features" className="py-24 bg-neutral-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Main Content */}
+        {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight tracking-tighter">
-            Everything You Need for
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-6 leading-tight tracking-tighter">
+            How ServiceLink
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
-              Your Service Business
+              Works
             </span>
           </h2>
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Stop paying for expensive websites you don&apos;t need. Get a
-            professional online presence that&apos;s designed specifically for
-            service businesses.
+            Three simple things that make your business more successful
           </p>
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {features.map((feature, index) => (
-            <div
-              key={index}
-              className="bg-neutral-800 p-8 rounded-xl border border-neutral-700 transition-all duration-300 hover:scale-105"
-            >
-              <div className="w-16 h-16 bg-neutral-700 rounded-full flex items-center justify-center text-white mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                  {feature.icon}
+            <div key={index} className="relative group">
+              {/* Frosted Glass Card */}
+              <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 transition-all duration-300 hover:bg-white/10 hover:border-white/20 text-center flex flex-col h-full">
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  {/* Icon */}
+                  <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center text-white mb-6 mx-auto shadow-lg">
+                    {feature.icon}
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-xl font-bold text-white mb-4 min-h-[3rem] flex items-center justify-center">
+                    {feature.title}
+                  </h3>
+
+                  {/* Description */}
+                  <div className="flex-1 flex items-start">
+                    <p className="text-gray-300 leading-relaxed text-sm w-full">
+                      {feature.description}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-4">
-                {feature.title}
-              </h3>
-              <p className="text-gray-400 leading-relaxed text-sm">
-                {feature.description}
-              </p>
             </div>
           ))}
         </div>

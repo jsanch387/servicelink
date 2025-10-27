@@ -74,9 +74,9 @@ export const HeroSection: React.FC = () => {
   return (
     <>
       <style>{styleSheet}</style>
-      <section className="relative w-full pt-12 pb-20 md:pt-16 md:pb-32 lg:pt-20 lg:pb-40 overflow-hidden">
+      <section className="relative w-full pt-12 pb-20 md:pt-16 md:pb-32 lg:pt-20 lg:pb-40 overflow-hidden bg-neutral-900">
         {/* Background Grid */}
-        <div className="absolute inset-0 z-0 grid-bg opacity-20 bg-neutral-900"></div>
+        <div className="absolute inset-0 z-0 grid-bg opacity-20"></div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-16 lg:gap-24">
@@ -98,12 +98,12 @@ export const HeroSection: React.FC = () => {
               {/* Call-to-Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-fadeInUp animation-delay-400">
                 <Button
-                  href={ROUTES.WAITLIST_PAGE}
+                  href={ROUTES.AUTH.SIGNUP}
                   variant="primary"
-                  size="lg"
+                  size="md"
                   className="px-8 py-4 text-lg font-bold shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95"
                 >
-                  Join Waitlist - FREE Profile
+                  Get Your Free Business Profile
                 </Button>
                 <div className="flex items-center gap-6 text-gray-500 text-sm">
                   <span className="flex items-center gap-2">

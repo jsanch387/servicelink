@@ -18,6 +18,14 @@ export const Navigation: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById('features');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    closeMobileMenu();
+  };
+
   return (
     <nav className="bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,24 +43,12 @@ export const Navigation: React.FC = () => {
             >
               Home
             </a>
-            <a
-              href={ROUTES.FEATURES}
+            <button
+              onClick={scrollToFeatures}
               className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Features
-            </a>
-            <a
-              href="#waitlist"
-              className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Waitlist
-            </a>
-            {/* <a
-              href={ROUTES.ABOUT}
-              className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              About
-            </a> */}
+            </button>
           </div>
 
           {/* Desktop Auth Buttons */}
@@ -101,27 +97,12 @@ export const Navigation: React.FC = () => {
               >
                 Home
               </a>
-              <a
-                href={ROUTES.FEATURES}
-                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                onClick={closeMobileMenu}
+              <button
+                onClick={scrollToFeatures}
+                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors w-full text-left"
               >
                 Features
-              </a>
-              <a
-                href="#waitlist"
-                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                onClick={closeMobileMenu}
-              >
-                Waitlist
-              </a>
-              <a
-                href={ROUTES.ABOUT}
-                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                onClick={closeMobileMenu}
-              >
-                About
-              </a>
+              </button>
 
               {/* Mobile Auth Buttons */}
               <div className="pt-4 space-y-2">

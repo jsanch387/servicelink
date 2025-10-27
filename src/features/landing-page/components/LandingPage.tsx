@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navigation } from './Navigation';
-import { HeroSection } from './HeroSection';
+import { BenefitsSection } from './BenefitsSection';
 import { FeaturesSection } from './FeaturesSection';
-import { WaitlistSection } from './WaitlistSection';
 import { Footer } from './Footer';
+import { HeroSection } from './HeroSection';
+import { Navigation } from './Navigation';
+import { TestimonialsSection } from './TestimonialsSection';
 
 export const LandingPage: React.FC = () => {
   return (
@@ -11,7 +12,8 @@ export const LandingPage: React.FC = () => {
       <Navigation />
       <HeroSection />
       <FeaturesSection />
-      <WaitlistSection />
+      <TestimonialsSection />
+      <BenefitsSection />
       <Footer />
     </div>
   );
