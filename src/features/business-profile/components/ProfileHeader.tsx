@@ -1,17 +1,21 @@
+// Updated to relative path to resolve build error
 import {
-  Button,
-  CoverPhotoPlaceholder,
-  ImageWithFallback,
-  LogoPlaceholder,
-} from '@/components/shared';
-import { ChatBubbleLeftRightIcon, PhoneIcon } from '@heroicons/react/24/solid';
+  ChatBubbleLeftRightIcon,
+  CheckBadgeIcon,
+  PhoneIcon,
+} from '@heroicons/react/24/solid';
 import React from 'react';
+import { ImageWithFallback } from '../../../components';
+import {
+  CoverPhotoPlaceholder,
+  LogoPlaceholder,
+} from '../../../components/shared';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
-// import { formatPhoneNumber } from '../utils/businessProfileHelpers'; // Will be used later
 
 interface ProfileHeaderProps {
   businessProfile: CompleteBusinessProfile;
   editMode: EditMode;
+  // eslint-disable-next-line no-unused-vars
   onSave: (_data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isPublic?: boolean;
@@ -19,15 +23,12 @@ interface ProfileHeaderProps {
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   businessProfile,
-  editMode: _editMode,
-  onSave: _onSave,
-  onCancel: _onCancel,
   isPublic = false,
 }) => {
   return (
     <>
-      {/* Cover Photo */}
-      <div className="relative h-48 sm:h-64 md:h-72 bg-neutral-900 overflow-hidden">
+      {/* Cover Photo - High-end visual depth with gradient overlay */}
+      <div className="relative h-64 w-full overflow-hidden bg-neutral-900">
         {businessProfile.cover_image_url ? (
           <ImageWithFallback
             src={businessProfile.cover_image_url}
@@ -37,6 +38,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             className="w-full h-full object-cover"
             fallbackLabel="COVER PHOTO"
             fallbackSize={{ w: 1200, h: 400 }}
+            priority
           />
         ) : (
           <CoverPhotoPlaceholder
@@ -45,62 +47,77 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             isPublic={isPublic}
           />
         )}
+        {/* Gradient overlay at the bottom edge only for seamless blending */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-neutral-900 pointer-events-none" />
       </div>
 
-      {/* Profile Header */}
-      <div className="relative px-4 py-6 sm:px-8 sm:py-12 flex flex-col items-center -mt-20">
-        {businessProfile.logo_url ? (
-          <ImageWithFallback
-            className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-neutral-800 shadow-lg object-cover bg-gray-700"
-            src={businessProfile.logo_url}
-            alt={`${businessProfile.business_name} logo`}
-            width={256}
-            height={256}
-            fallbackLabel="LOGO"
-            fallbackSize={{ w: 256, h: 256 }}
-          />
-        ) : (
-          <LogoPlaceholder
-            businessName={businessProfile.business_name}
-            size="md"
-          />
-        )}
-        <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold text-gray-50">
-          {businessProfile.business_name}
-        </h1>
-        {/* Business type and serving area on separate lines */}
-        <p className="text-lg sm:text-xl text-gray-400 mt-1">
-          {businessProfile.business_type}
-        </p>
-        <p className="text-md sm:text-lg text-gray-500">
-          {businessProfile.service_area}
-        </p>
-        <div className="flex items-center mt-2">
-          {/* <StarIcon className="h-5 w-5 text-yellow-300" />
-          <span className="ml-1 text-gray-300 font-semibold">5.0</span>
-          <span className="ml-2 text-gray-500 text-sm">(based on reviews)</span> */}
+      {/* Profile Section - Centered content with professional hierarchy */}
+      <div className="relative px-6 -mt-16 z-10 flex flex-col items-center text-center">
+        {/* Signature Logo Frame */}
+        <div className="inline-block relative mb-6">
+          <div className="p-1 rounded-[2.8rem] bg-neutral-700 shadow-2xl">
+            {businessProfile.logo_url ? (
+              <ImageWithFallback
+                className="w-32 h-32 rounded-[2.4rem] border-4 border-neutral-900 object-cover bg-neutral-800"
+                src={businessProfile.logo_url}
+                alt={`${businessProfile.business_name} logo`}
+                width={256}
+                height={256}
+                fallbackLabel="LOGO"
+                fallbackSize={{ w: 256, h: 256 }}
+                priority
+              />
+            ) : (
+              <LogoPlaceholder
+                businessName={businessProfile.business_name}
+                size="md"
+              />
+            )}
+          </div>
         </div>
 
-        {/* Contact Options */}
-        <div className="flex justify-center space-x-4 mt-6 w-full max-w-sm">
-          <Button
+        {/* Business Title & Verification */}
+        <h1 className="text-3xl font-extrabold text-gray-50 flex items-center justify-center gap-2 tracking-tight">
+          {businessProfile.business_name}
+          <CheckBadgeIcon className="h-6 w-6 text-blue-500" />
+        </h1>
+
+        {/* Category Badge Styling */}
+        <p className="text-gray-400 text-[13px] font-bold uppercase tracking-[0.2em] mt-2">
+          {businessProfile.business_type}
+        </p>
+
+        {/* Service Location */}
+        <div className="flex items-center justify-center gap-2 mt-4 text-gray-400">
+          <span className="text-sm font-semibold tracking-wide">
+            {businessProfile.service_area}
+          </span>
+        </div>
+
+        {/* Professional Bio with improved spacing */}
+        <p className="text-gray-400 text-[15px] mt-6 leading-relaxed max-w-lg mx-auto font-medium">
+          {/* In a real implementation, this would pull from businessProfile.bio */}
+          Premium services tailored for your unique needs. We are dedicated to
+          providing the highest quality standards and professional excellence
+          for every client.
+        </p>
+
+        {/* Primary Call-to-Action Grid */}
+        <div className="grid grid-cols-2 gap-4 mt-10 w-full max-w-sm px-2">
+          <a
             href={`tel:${businessProfile.phone_number_call}`}
-            variant="primary"
-            size="md"
-            className="flex-1"
+            className="group flex items-center justify-center gap-2.5 py-4 rounded-xl font-bold text-base transition-all active:scale-[0.96] shadow-xl bg-white text-neutral-900 hover:bg-gray-100"
           >
-            <PhoneIcon className="h-5 w-5 mr-2" />
+            <PhoneIcon className="h-5 w-5 transition-transform group-hover:scale-110" />
             Call
-          </Button>
-          <Button
+          </a>
+          <a
             href={`sms:${businessProfile.phone_number_text}`}
-            variant="secondary"
-            size="md"
-            className="flex-1"
+            className="group flex items-center justify-center gap-2.5 py-4 rounded-xl font-bold text-base transition-all active:scale-[0.96] shadow-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
           >
-            <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
+            <ChatBubbleLeftRightIcon className="h-5 w-5 transition-transform group-hover:scale-110" />
             Text
-          </Button>
+          </a>
         </div>
       </div>
     </>

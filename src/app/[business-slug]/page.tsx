@@ -14,6 +14,9 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
+// Enable static generation with revalidation for better performance
+export const revalidate = 60; // Revalidate every 60 seconds
+
 interface PublicProfilePageProps {
   params: Promise<{
     'business-slug': string;
@@ -23,8 +26,6 @@ interface PublicProfilePageProps {
 async function fetchBusinessProfileBySlug(
   slug: string
 ): Promise<CompleteBusinessProfile | null> {
-  console.log('🔍 [PublicProfile] Fetching profile for slug:', slug);
-
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -47,52 +48,29 @@ async function fetchBusinessProfileBySlug(
       .single();
 
     if (profileError || !profile) {
-      console.log(
-        '❌ [PublicProfile] Profile not found for slug:',
-        slug,
-        profileError
-      );
       return null;
     }
 
-    console.log('✅ [PublicProfile] Found profile:', {
-      id: profile.id,
-      businessName: profile.business_name,
-      slug: profile.business_slug,
-    });
+    // Fetch services and images in parallel for better performance
+    const [servicesResult, imagesResult] = await Promise.all([
+      supabase
+        .from('business_services')
+        .select('*')
+        .eq('business_id', profile.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('business_images')
+        .select('*')
+        .eq('business_id', profile.id)
+        .order('position', { ascending: true }),
+    ]);
 
-    // Get services
-    const { data: services, error: servicesError } = await supabase
-      .from('business_services')
-      .select('*')
-      .eq('business_id', profile.id)
-      .eq('is_active', true)
-      .order('created_at', { ascending: true });
+    const services = servicesResult.data || [];
+    const images = imagesResult.data || [];
 
-    if (servicesError) {
-      console.error(
-        '❌ [PublicProfile] Error fetching services:',
-        servicesError
-      );
-    } else {
-      console.log('✅ [PublicProfile] Services fetched:', services);
-    }
-
-    // Get portfolio images
-    const { data: images, error: imagesError } = await supabase
-      .from('business_images')
-      .select('*')
-      .eq('business_id', profile.id)
-      .order('position', { ascending: true });
-
-    if (imagesError) {
-      console.error('❌ [PublicProfile] Error fetching images:', imagesError);
-    } else {
-      console.log('✅ [PublicProfile] Images fetched:', images);
-    }
-
-    // Add preview URLs to images (same as BusinessProfileApi does)
-    const imagesWithUrls = (images || []).map(
+    // Add preview URLs to images
+    const imagesWithUrls = images.map(
       (img: { storage_path: string; [key: string]: unknown }) => ({
         ...img,
         preview_url: MediaService.getPublicUrl(img.storage_path),
@@ -110,18 +88,11 @@ async function fetchBusinessProfileBySlug(
     // Construct complete business profile
     const completeProfile: CompleteBusinessProfile = {
       ...profile,
-      services: services || [],
-      images: imagesWithUrls || [],
+      services,
+      images: imagesWithUrls,
       logo_url: logoUrl,
       cover_image_url: bannerUrl,
     };
-
-    console.log('✅ [PublicProfile] Complete profile constructed:', {
-      servicesCount: completeProfile.services.length,
-      imagesCount: completeProfile.images.length,
-      services: completeProfile.services,
-      images: completeProfile.images,
-    });
 
     return completeProfile;
   } catch (error) {
@@ -135,21 +106,13 @@ export default async function PublicProfilePage({
 }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
 
-  console.log('🌐 [PublicProfile] Loading public profile for slug:', slug);
-
   // Fetch the business profile by slug
   const businessProfile = await fetchBusinessProfileBySlug(slug);
 
   // If profile not found, show 404
   if (!businessProfile) {
-    console.log('❌ [PublicProfile] Profile not found, showing 404');
     notFound();
   }
-
-  console.log(
-    '✅ [PublicProfile] Rendering profile:',
-    businessProfile.business_name
-  );
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -173,15 +136,47 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
 
   try {
-    const businessProfile = await fetchBusinessProfileBySlug(slug);
+    // Use a lightweight fetch for metadata (only get what we need)
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
 
-    if (!businessProfile) {
+    const { data: profile } = await supabase
+      .from('business_profiles')
+      .select('business_name, business_type, service_area, bio, logo_path, banner_path, phone_number_call')
+      .eq('business_slug', slug)
+      .single();
+
+    if (!profile) {
       return {
         title: 'Business Profile Not Found | ServiceLink',
         description: 'The requested business profile could not be found.',
         robots: 'noindex, nofollow',
       };
     }
+
+    const businessProfile = {
+      business_name: profile.business_name,
+      business_type: profile.business_type,
+      service_area: profile.service_area,
+      bio: profile.bio,
+      logo_url: profile.logo_path
+        ? MediaService.getPublicUrl(profile.logo_path)
+        : null,
+      cover_image_url: profile.banner_path
+        ? MediaService.getPublicUrl(profile.banner_path)
+        : null,
+      phone_number_call: profile.phone_number_call,
+    };
 
     // Generate dynamic content for SEO
     const businessName = businessProfile.business_name;

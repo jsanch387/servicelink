@@ -1,16 +1,23 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
-import { AboutUs } from './AboutUs';
 import { ProfileHeader } from './ProfileHeader';
 import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
 // import { ReviewsSection } from './ReviewsSection'; // Will be used later
 import { Button } from '@/components/shared';
-import { LinkIcon, PencilIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowRightIcon,
+  LinkIcon,
+  PencilIcon,
+} from '@heroicons/react/24/outline';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
+
+type TabType = 'services' | 'portfolio';
 
 interface SlugData {
   hasSlug: boolean;
@@ -35,6 +42,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   const [businessProfile, setBusinessProfile] =
     useState<CompleteBusinessProfile>(initialBusinessProfile);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('services');
 
   // Debug logging for public profiles
   useEffect(() => {
@@ -197,30 +205,99 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onCancel={handleCancel}
                 isPublic={isPublic}
               />
-              <AboutUs
-                businessProfile={businessProfile}
-                editMode={editMode}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              />
-              <ServicesList
-                businessProfile={businessProfile}
-                editMode={editMode}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              />
-              <WorkShowcase
-                businessProfile={businessProfile}
-                editMode={editMode}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              />
-              {/* <ReviewsSection
-                businessProfile={businessProfile}
-                editMode={editMode}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              /> */}
+
+              {/* Tabs Navigation */}
+              <div className="px-4 sm:px-8 mt-8 border-b border-neutral-700">
+                <div className="flex justify-center gap-8">
+                  <button
+                    onClick={() => setActiveTab('services')}
+                    className={`pb-4 px-1 font-bold text-base transition-colors relative cursor-pointer ${
+                      activeTab === 'services'
+                        ? 'text-white'
+                        : 'text-gray-400 hover:text-gray-300'
+                    }`}
+                  >
+                    Services
+                    {activeTab === 'services' && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full"></span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('portfolio')}
+                    className={`pb-4 px-1 font-bold text-base transition-colors relative cursor-pointer ${
+                      activeTab === 'portfolio'
+                        ? 'text-white'
+                        : 'text-gray-400 hover:text-gray-300'
+                    }`}
+                  >
+                    Our work
+                    {activeTab === 'portfolio' && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full"></span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === 'services' ? (
+                <ServicesList
+                  businessProfile={businessProfile}
+                  editMode={editMode}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
+              ) : (
+                <WorkShowcase
+                  businessProfile={businessProfile}
+                  editMode={editMode}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
+              )}
+
+              {/* Footer - Only show on public profiles */}
+              {isPublic && (
+                <div className="px-4 sm:px-8 py-12 mt-12">
+                  {/* Separator Line */}
+                  <div className="w-full border-t border-neutral-800 mb-8"></div>
+
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    {/* Powered by text */}
+                    <p className="text-gray-400 text-xs uppercase tracking-wide">
+                      Powered by
+                    </p>
+
+                    {/* ServiceLink Button */}
+                    <Link
+                      href="/"
+                      className="group inline-flex items-center gap-3 px-4 py-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl border border-neutral-700 transition-all"
+                    >
+                      {/* Logo Image */}
+                      <div className="w-8 h-8 rounded-lg bg-neutral-700 flex items-center justify-center flex-shrink-0 p-1.5">
+                        <Image
+                          src="/favicon.png"
+                          alt="ServiceLink Logo"
+                          width={20}
+                          height={20}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      {/* ServiceLink Text */}
+                      <span className="text-white font-bold text-sm">
+                        ServiceLink
+                      </span>
+                      {/* Arrow Icon */}
+                      <ArrowRightIcon className="h-4 w-4 text-orange-400 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+
+                    {/* Call to Action Text */}
+                    <p className="text-gray-400 text-xs max-w-sm leading-relaxed">
+                      Get your own profile today and start booking clients with
+                      your own professional link.
+                    </p>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             // Edit Mode - Show unified edit form
