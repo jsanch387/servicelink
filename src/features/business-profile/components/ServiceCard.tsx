@@ -1,4 +1,5 @@
 import { Button } from '@/components/shared';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 interface Service {
@@ -6,7 +7,7 @@ interface Service {
   name: string;
   price: string | number;
   description: string;
-  hours_to_complete?: number;
+  hours_to_complete?: number | null;
 }
 
 interface ServiceCardProps {
@@ -44,36 +45,45 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     return 'Contact for quote';
   };
 
-  return (
-    <div className="bg-neutral-800 p-6 sm:p-8 rounded-2xl border border-neutral-700 w-full sm:w-64 h-auto sm:h-[24rem] flex flex-col justify-between">
-      <div>
-        <h3 className="text-xl font-bold text-white mb-2">{service.name}</h3>
-        <p className="text-gray-400 text-sm mb-6 overflow-hidden max-h-16 sm:max-h-24">
-          {service.description}
-        </p>
-      </div>
+  const formatDuration = (hours: number | null | undefined) => {
+    if (!hours) return null;
+    if (hours < 24) {
+      return `${hours} ${hours === 1 ? 'Hour' : 'Hours'}`;
+    }
+    const days = Math.floor(hours / 24);
+    return `${days} ${days === 1 ? 'Day' : 'Days'}`;
+  };
 
-      {/* Price and Hours are aligned at the bottom */}
-      <div className="flex flex-col items-start space-y-2 mt-auto">
-        <div className="flex items-center">
-          <span className="text-3xl font-extrabold text-orange-500">
+  return (
+    <div className="bg-neutral-800 rounded-2xl border border-neutral-700">
+      <div className="p-5">
+        {/* Header with Title and Price */}
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-lg font-bold text-white pr-4 flex-1">
+            {service.name}
+          </h3>
+          <span className="text-xl font-bold text-white flex-shrink-0">
             {formatPrice(service.price)}
           </span>
-          <span className="text-gray-400 text-sm ml-2">base price</span>
         </div>
+
+        {/* Description */}
+        <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+          {service.description}
+        </p>
+
+        {/* Duration - Pill Design */}
         {service.hours_to_complete && (
-          <div className="flex items-center">
-            <span className="text-xl text-gray-400 font-semibold">
-              {service.hours_to_complete}
-            </span>
-            <span className="text-gray-500 text-xs ml-1">hrs</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-700/50 rounded-full text-gray-400">
+            <ClockIcon className="h-4 w-4 text-gray-400" />
+            <span className="text-sm">{formatDuration(service.hours_to_complete)}</span>
           </div>
         )}
       </div>
 
       {/* Edit controls */}
       {isEditable && (
-        <div className="flex gap-2 pt-4 mt-4 border-t border-neutral-700">
+        <div className="px-5 pb-5 pt-4 flex gap-2 border-t border-neutral-700 mt-4">
           {onEdit && (
             <Button
               onClick={() => onEdit(service)}
