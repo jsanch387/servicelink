@@ -48,7 +48,7 @@ export default async function BusinessProfilePage({
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   // Get user profile to check onboarding status and get profile_id
@@ -59,7 +59,7 @@ export default async function BusinessProfilePage({
     .single();
 
   if (profileError) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   // Check if onboarding is completed

@@ -1,7 +1,7 @@
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Inter, Space_Grotesk } from 'next/font/google';
+import { Geist, Geist_Mono, Inter, Manrope, Outfit, Plus_Jakarta_Sans, Poppins, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({
@@ -22,6 +22,30 @@ const spaceGrotesk = Space_Grotesk({
 
 const inter = Inter({
   variable: '--font-inter',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+});
+
+const outfit = Outfit({
+  variable: '--font-outfit',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+});
+
+const manrope = Manrope({
+  variable: '--font-manrope',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+});
+
+const poppins = Poppins({
+  variable: '--font-poppins',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: '--font-plus-jakarta-sans',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
 });
@@ -104,7 +128,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#171717" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable} ${outfit.variable} ${manrope.variable} ${poppins.variable} ${plusJakartaSans.variable} antialiased`}
       >
         {children}
         <Analytics />

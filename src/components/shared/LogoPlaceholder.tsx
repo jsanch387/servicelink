@@ -45,10 +45,9 @@ export const LogoPlaceholder: React.FC<LogoPlaceholderProps> = ({
   if (isEditMode) {
     return (
       <div
-        className={`${config.container} ${className} rounded-full border-2 border-dashed border-neutral-600 bg-neutral-800 flex flex-col items-center justify-center`}
+        className={`${config.container} ${className} rounded-[2.4rem] border-2 border-dashed border-neutral-600 bg-neutral-800 flex items-center justify-center`}
       >
-        <CameraIcon className={`${config.icon} text-neutral-500 mb-2`} />
-        <span className="text-xs text-neutral-400 font-medium">Add Logo</span>
+        <CameraIcon className={`${config.icon} text-neutral-500`} />
       </div>
     );
   }
@@ -56,7 +55,7 @@ export const LogoPlaceholder: React.FC<LogoPlaceholderProps> = ({
   // For public viewing, show simple placeholder
   return (
     <div
-      className={`${config.container} ${className} rounded-full border-4 border-neutral-800 shadow-lg bg-neutral-700 flex items-center justify-center`}
+      className={`${config.container} ${className} rounded-[2.4rem] border-4 border-neutral-900 shadow-lg bg-neutral-700 flex items-center justify-center`}
     >
       <PhotoIcon className={`${config.icon} text-neutral-400`} />
     </div>

@@ -6,10 +6,14 @@ export const ROUTES = {
   ABOUT: '#about',
   CONTACT: '#contact',
 
+  // Legal routes
+  TERMS: '/terms',
+  PRIVACY: '/privacy',
+
   // Authentication routes
   AUTH: {
-    LOGIN: '/auth/login',
-    SIGNUP: '/auth/signup',
+    LOGIN: '/login',
+    SIGNUP: '/signup',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
   },

@@ -55,7 +55,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   };
 
   return (
-    <div className="bg-neutral-800 rounded-2xl border border-neutral-700">
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-colors">
       <div className="p-5">
         {/* Header with Title and Price */}
         <div className="flex justify-between items-start mb-3">
@@ -74,8 +74,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
         {/* Duration - Pill Design */}
         {service.hours_to_complete && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-700/50 rounded-full text-gray-400">
-            <ClockIcon className="h-4 w-4 text-gray-400" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full text-gray-500 border border-white/10">
+            <ClockIcon className="h-4 w-4 text-gray-500" />
             <span className="text-sm">{formatDuration(service.hours_to_complete)}</span>
           </div>
         )}
@@ -83,7 +83,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
       {/* Edit controls */}
       {isEditable && (
-        <div className="px-5 pb-5 pt-4 flex gap-2 border-t border-neutral-700 mt-4">
+        <div className="px-5 pb-5 pt-4 flex gap-2 border-t border-white/10 mt-4">
           {onEdit && (
             <Button
               onClick={() => onEdit(service)}

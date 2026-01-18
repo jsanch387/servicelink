@@ -44,13 +44,13 @@ export async function GET() {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${baseUrl}/auth/login</loc>
+    <loc>${baseUrl}/login</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>${baseUrl}/auth/signup</loc>
+    <loc>${baseUrl}/signup</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
