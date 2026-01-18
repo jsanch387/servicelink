@@ -36,7 +36,7 @@ export default async function SettingsPage() {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      redirect('/auth/login');
+      redirect('/login');
     }
 
     // Get complete onboarding state

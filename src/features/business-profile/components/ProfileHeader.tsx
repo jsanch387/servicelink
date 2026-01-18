@@ -28,14 +28,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <>
       {/* Cover Photo - High-end visual depth with gradient overlay */}
-      <div className="relative h-64 w-full overflow-hidden bg-neutral-900">
+      <div className="relative h-48 sm:h-56 md:h-64 w-full overflow-hidden bg-neutral-900">
         {businessProfile.cover_image_url ? (
           <ImageWithFallback
             src={businessProfile.cover_image_url}
             alt="Business Cover Photo"
             width={1200}
             height={400}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
             fallbackLabel="COVER PHOTO"
             fallbackSize={{ w: 1200, h: 400 }}
             priority

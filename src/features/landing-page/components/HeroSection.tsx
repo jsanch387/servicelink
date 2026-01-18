@@ -1,160 +1,188 @@
+'use client';
+
 import { ROUTES } from '@/constants/routes';
 import Image from 'next/image';
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '../../../components/shared/Button';
 
-// Custom CSS for animations
-const styleSheet = `
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse-light {
-  0%, 100% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
-@keyframes glow-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 60px rgba(251, 146, 60, 0.4)) drop-shadow(0 0 100px rgba(251, 146, 60, 0.2));
-  }
-  50% {
-    filter: drop-shadow(0 0 65px rgba(251, 146, 60, 0.45)) drop-shadow(0 0 105px rgba(251, 146, 60, 0.25));
-  }
-}
-
-.animate-fadeInUp {
-  animation: fadeInUp 0.8s ease-out forwards;
-}
-
-.animate-pulse-light {
-  animation: pulse-light 3s ease-in-out infinite;
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 4s ease-in-out infinite;
-}
-
-.animation-delay-200 { animation-delay: 0.2s; }
-.animation-delay-400 { animation-delay: 0.4s; }
-.animation-delay-600 { animation-delay: 0.6s; }
-
-.grid-bg {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-`;
-
 export const HeroSection: React.FC = () => {
+  const [slugInput, setSlugInput] = useState('');
+
   return (
-    <>
-      <style>{styleSheet}</style>
-      <section className="relative w-full pt-12 pb-20 md:pt-16 md:pb-32 lg:pt-20 lg:pb-40 overflow-hidden bg-neutral-900">
-        {/* Background Grid */}
-        <div className="absolute inset-0 z-0 grid-bg opacity-20"></div>
+    <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6 bg-neutral-900">
+      {/* Hero Glow Effect */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[50vh] -z-10"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(251, 146, 60, 0.15) 0%, transparent 70%)',
+        }}
+      />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-16 lg:gap-24">
-            {/* Text Content */}
-            <div className="text-center lg:text-left animate-fadeInUp">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight tracking-tighter">
-                <span className="block text-white">Your Business.</span>
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
-                  One Beautiful Link.
-                </span>
-              </h1>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+        {/* Hero Text */}
+        <div className="text-left">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-orange-400 text-xs font-bold tracking-widest uppercase mb-6 sm:mb-8">
+            Free Professional Link for Pros
+          </div>
 
-              <p className="text-lg sm:text-xl text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed animate-fadeInUp animation-delay-200">
-                Stop wasting money on expensive websites. Get a stunning
-                business profile that lets customers call you directly from one
-                beautiful link.
-              </p>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 md:mb-8 tracking-tighter leading-[0.95] uppercase text-white">
+            Stop Losing Clients <br />
+            <span
+              className="bg-clip-text text-transparent"
+              style={{
+                backgroundImage: 'linear-gradient(to right, #fb923c, #f97316)',
+              }}
+            >
+              In the DMs.
+            </span>
+          </h1>
 
-              {/* Call-to-Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-fadeInUp animation-delay-400">
-                <Button
-                  href={ROUTES.AUTH.SIGNUP}
-                  variant="primary"
-                  size="md"
-                  className="px-8 py-4 text-lg font-bold shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95"
-                >
-                  Get Your Free Business Profile
-                </Button>
-                <div className="flex items-center gap-6 text-gray-500 text-sm">
-                  <span className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                    No Credit Card
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse animation-delay-200"></div>
-                    5 Min Setup
-                  </span>
+          <p className="text-lg sm:text-xl text-gray-400 mb-6 sm:mb-8 md:mb-10 leading-relaxed font-medium max-w-xl">
+            Stop sending &quot;DM for price&quot; or messy text lists. Send one
+            professional link that showcases your services, photos, and lets
+            clients book you instantly.
+          </p>
+
+          {/* Slug Input in Hero */}
+          <div className="mb-6 sm:mb-8 md:mb-10 max-w-lg">
+            <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-3 px-1">
+              Claim your handle before someone else does
+            </p>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-orange-500/20 shadow-2xl gap-2">
+              <span className="pl-4 text-gray-500 font-bold hidden sm:inline">
+                servicelink.app/
+              </span>
+              <input
+                type="text"
+                placeholder="yourbusiness"
+                value={slugInput}
+                onChange={e => setSlugInput(e.target.value)}
+                className="bg-transparent border-none outline-none text-white font-bold w-full px-2 sm:px-2 py-3 text-sm sm:text-base"
+              />
+              <Button
+                href={ROUTES.AUTH.SIGNUP}
+                variant="primary"
+                size="sm"
+                className="px-6 sm:px-8 py-3 rounded-xl font-black whitespace-nowrap text-sm w-full sm:w-auto"
+              >
+                Check Now
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500 font-bold uppercase tracking-tighter">
+            <span className="flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-green-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Free Forever
+            </span>
+            <span className="flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-orange-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              2-Min Setup
+            </span>
+          </div>
+        </div>
+
+        {/* Hero Display Image */}
+        <div className="relative flex justify-center lg:justify-end mt-8 lg:mt-0">
+          <div className="absolute -z-10 w-64 h-64 sm:w-72 sm:h-72 bg-orange-600/20 blur-[100px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+
+          {/* Landing Page Display Image - Transparent background, no container */}
+          <div className="relative w-full max-w-[300px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] lg:-ml-4">
+            <Image
+              src="/landing-page-display-3.png"
+              alt="ServiceLink Profile Preview"
+              width={450}
+              height={900}
+              className="w-full h-auto object-contain"
+              priority
+              quality={90}
+              sizes="(max-width: 640px) 300px, (max-width: 768px) 380px, (max-width: 1024px) 420px, 480px"
+            />
+
+            {/* Floating Status Card A - New Booking (Top Left) */}
+            <div
+              className="absolute top-8 -left-8 sm:top-12 sm:-left-12 md:top-16 md:-left-16 lg:top-20 lg:-left-20 animate-subtle-float"
+              style={{ animationDelay: '0s' }}
+            >
+              <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl border border-gray-200 min-w-[140px] sm:min-w-[160px]">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wider">
+                      New Booking
+                    </p>
+                  </div>
                 </div>
+                <p className="text-xl sm:text-2xl font-extrabold text-black">
+                  $149.00
+                </p>
               </div>
             </div>
 
-            {/* Image with Subtle Orange Glow */}
-            <div className="relative flex justify-center items-center w-full max-w-lg lg:max-w-none lg:w-1/2 animate-fadeInUp animation-delay-600">
-              <div className="relative group transform-gpu">
-                <Image
-                  src="/service link mock 3.png"
-                  alt="ServiceLink Business Profile Preview"
-                  width={480}
-                  height={853}
-                  priority
-                  className="
-     w-80 h-auto lg:w-[480px]
-     block transform-gpu transition-all duration-500
-     group-hover:scale-105
-     relative z-10
-     drop-shadow-xl
-     animate-glow-pulse
-   "
-                />
+            {/* Floating Status Card B - Views Today (Bottom Right) */}
+            <div
+              className="absolute bottom-8 -right-8 sm:bottom-12 sm:-right-12 md:bottom-16 md:-right-16 lg:bottom-20 lg:-right-20 animate-subtle-float"
+              style={{ animationDelay: '1.5s' }}
+            >
+              <div className="bg-neutral-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl border border-neutral-700 min-w-[140px] sm:min-w-[160px]">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">
+                      Views Today
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xl sm:text-2xl font-extrabold text-white">
+                  342
+                </p>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Bottom Wave */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg
-            className="w-full h-24 text-neutral-900"
-            viewBox="0 0 1200 120"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-              fill="currentColor"
-            ></path>
-          </svg>
-        </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 };

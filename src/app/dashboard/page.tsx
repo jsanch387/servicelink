@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   // Get complete onboarding state
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
 
   if (!stateResult.success) {
     // If we can't determine state, redirect to login for safety
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   const {
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
         .single();
 
       if (profileError || !profile) {
-        redirect('/auth/login');
+        redirect('/login');
       }
 
       // Calculate analytics
@@ -160,6 +160,6 @@ export default async function DashboardPage() {
       return <DashboardContent dashboardData={dashboardData} />;
 
     default:
-      redirect('/auth/login');
+      redirect('/login');
   }
 }

@@ -158,6 +158,7 @@ export const SignupForm: React.FC = () => {
               >
                 Privacy Policy
               </Link>
+              . You also agree to receive emails from us, including account updates, product information, and promotional communications.
             </p>
           </div>
         </form>

@@ -59,7 +59,9 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Define protected and public routes
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/auth') ||
+                      request.nextUrl.pathname === '/login' ||
+                      request.nextUrl.pathname === '/signup';
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
   const isPublicProfileRoute = request.nextUrl.pathname.startsWith('/profile');
   const isWaitlistRoute = request.nextUrl.pathname.startsWith('/waitlist');
@@ -72,7 +74,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect unauthenticated users to login from protected routes
   if (isDashboardRoute && !user) {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Allow all public routes (home, auth, waitlist, profile, API routes, static files)

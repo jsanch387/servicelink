@@ -23,6 +23,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  scroll-behavior: smooth;
 }
 
 /* Dashboard layout fixes */
@@ -48,4 +49,25 @@ body {
   .dashboard-sidebar {
     position: fixed !important;
   }
+}
+
+/* Subtle floating animation for hero status cards */
+@keyframes subtle-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-subtle-float {
+  animation: subtle-float 3s ease-in-out infinite;
+}
+
+/* ServiceLink Logo Text Font - Plus Jakarta Sans (Modern, Clean SaaS Font) */
+.logo-text {
+  font-family: var(--font-plus-jakarta-sans), 'Plus Jakarta Sans', var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }

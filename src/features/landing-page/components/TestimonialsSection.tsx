@@ -1,109 +1,60 @@
-import { StarIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 
 const testimonials = [
   {
-    name: 'Sarah Johnson',
-    business: 'Johnson Cleaning Services',
+    name: 'Mike Aris',
+    business: 'Premium Auto Detail',
+    initials: 'MA',
     content:
-      'I was spending $200/month on a website that nobody could find. Now I just share my ServiceLink and customers call me directly. Made $3,000 in the first month!',
-    rating: 5,
+      'Service Link changed my mobile detailing business. I used to get DMs all day asking "Where are you based?" and "How much?". Now I just point them to my link and the calls start coming in.',
   },
   {
-    name: 'Mike Rodriguez',
-    business: 'Rodriguez Landscaping',
+    name: 'Carlos R.',
+    business: 'Elite Detailing Co',
+    initials: 'CR',
     content:
-      'My old website was so complicated to update. With ServiceLink, I just upload my work photos and customers can see everything. Bookings increased by 40%.',
-    rating: 5,
+      'Setting up a website was too much work and expensive. This literally took 3 minutes and looks better than any $2,000 custom job. My booking rate increased by 40% after adding it to my bio.',
   },
   {
-    name: 'Lisa Chen',
-    business: 'Chen Hair Studio',
+    name: 'James T.',
+    business: 'Black Label Detailing',
+    initials: 'JT',
     content:
-      'Perfect for my hair salon! Clients can see my work, read reviews, and book appointments. No more expensive website maintenance.',
-    rating: 5,
+      'The verification badge and clean cover photo make me look like a top-tier company. I\'ve noticed customers aren\'t questioning my prices as much anymore, and I spend way less time answering basic questions.',
   },
 ];
 
 export const TestimonialsSection: React.FC = () => {
   return (
-    <section className="py-24 bg-neutral-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-6 leading-tight tracking-tighter">
-            What Business Owners Are
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
-              Saying
-            </span>
-          </h2>
-          <p className="text-lg text-gray-400 max-w-xl mx-auto">
-            Real results from real businesses
-          </p>
-        </div>
-
-        {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <section id="testimonials" className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 bg-white/[0.02]">
+      <div className="max-w-7xl mx-auto text-center">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-10 sm:mb-12 md:mb-16 tracking-tight">
+          Trusted by 2,000+ Pros
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {testimonials.map((testimonial, index) => (
-            <div key={index} className="relative group">
-              {/* Frosted Glass Card */}
-              <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 transition-all duration-300 hover:bg-white/10 hover:border-white/20 flex flex-col h-full">
-                {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                {/* Content */}
-                <div className="relative z-10 flex flex-col h-full">
-                  {/* Rating */}
-                  <div className="flex items-center mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <StarIcon key={i} className="h-5 w-5 text-yellow-400" />
-                    ))}
-                  </div>
-
-                  {/* Content - Flexible height */}
-                  <div className="flex-1 flex flex-col">
-                    <p className="text-gray-200 leading-relaxed mb-6 text-sm flex-1">
-                      &ldquo;{testimonial.content}&rdquo;
-                    </p>
-
-                    {/* Author - Fixed at bottom */}
-                    <div className="border-t border-white/10 pt-4 mt-auto">
-                      <div className="font-semibold text-white text-sm">
-                        {testimonial.name}
-                      </div>
-                      <div className="text-orange-400 text-xs">
-                        {testimonial.business}
-                      </div>
-                    </div>
-                  </div>
+            <div
+              key={index}
+              className={`bg-white/5 backdrop-blur-xl p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/10 text-left ${
+                index === 1 ? 'md:translate-y-6' : ''
+              }`}
+            >
+              <p className="text-gray-300 italic mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base">
+                &ldquo;{testimonial.content}&rdquo;
+              </p>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-neutral-800 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-orange-400 text-sm sm:text-base">
+                  {testimonial.initials}
+                </div>
+                <div>
+                  <p className="font-bold text-white text-sm sm:text-base">{testimonial.name}</p>
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-black">
+                    {testimonial.business}
+                  </p>
                 </div>
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <div className="text-center mt-16">
-          <div className="relative group max-w-2xl mx-auto">
-            {/* Frosted Glass Card */}
-            <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 transition-all duration-300 hover:bg-white/10 hover:border-white/20">
-              {/* Subtle gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-              {/* Content */}
-              <div className="relative z-10">
-                <p className="text-gray-300 mb-4">
-                  Ready to join these successful business owners?
-                </p>
-                <div className="flex items-center justify-center gap-2 text-orange-400">
-                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-semibold">
-                    Start your free profile today
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>

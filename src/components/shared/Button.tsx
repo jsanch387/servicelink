@@ -44,7 +44,7 @@ export const Button: React.FC<ButtonProps> = ({
     primary:
       'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white focus:ring-orange-500',
     secondary:
-      'border border-orange-500/30 text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 hover:border-orange-400/50 focus:ring-orange-500',
+      'border border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30 focus:ring-white/50 backdrop-blur-sm',
     outline:
       'border border-orange-500/50 text-orange-400 bg-transparent hover:bg-orange-500/10 hover:border-orange-400 focus:ring-orange-500',
     ghost:

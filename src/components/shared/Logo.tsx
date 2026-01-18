@@ -1,29 +1,35 @@
 /**
- * Logo Component - Reusable ServiceLink branding component
- * Modern SaaS design with logo image and premium Poppins typography
+ * Branding Component - Reusable ServiceLink branding component
+ * Supports logo only, text only, or logo + text combinations
+ * Uses Space Grotesk for clean, modern SaaS typography
  */
 
 import Image from 'next/image';
+import Link from 'next/link';
 import React from 'react';
 
-interface LogoProps {
+export type BrandingVariant = 'logo' | 'text' | 'full';
+
+interface BrandingProps {
   size?: 'sm' | 'md' | 'lg';
-  showText?: boolean;
+  variant?: BrandingVariant;
   className?: string;
   href?: string;
+  logoSize?: 'sm' | 'md' | 'lg'; // Optional: separate size for logo image only
 }
 
-export const Logo: React.FC<LogoProps> = ({
+export const Logo: React.FC<BrandingProps> = ({
   size = 'md',
-  showText = true,
+  variant = 'full',
   className = '',
   href,
+  logoSize,
 }) => {
   const sizeConfig = {
     sm: {
       imageSize: 24,
       imageClass: 'h-6 w-6',
-      textClass: 'text-lg',
+      textClass: 'text-base',
       spacing: 'space-x-2',
     },
     md: {
@@ -41,28 +47,24 @@ export const Logo: React.FC<LogoProps> = ({
   };
 
   const config = sizeConfig[size];
+  const logoConfig = logoSize ? sizeConfig[logoSize] : config; // Use separate logo size if provided
+  const showLogo = variant === 'logo' || variant === 'full';
+  const showText = variant === 'text' || variant === 'full';
 
   const logoContent = (
-    <div className={`flex items-center  ${className}`}>
-      <Image
-        src="/service-link-logo.png"
-        alt="ServiceLink Logo"
-        width={config.imageSize}
-        height={config.imageSize}
-        className={`${config.imageClass} object-contain flex-shrink-0`}
-        priority
-      />
+    <div className={`flex items-center ${className}`}>
+      {showLogo && (
+        <Image
+          src="/service-link-logo.png"
+          alt="ServiceLink Logo"
+          width={logoConfig.imageSize}
+          height={logoConfig.imageSize}
+          className={`${logoConfig.imageClass} object-contain flex-shrink-0`}
+          priority
+        />
+      )}
       {showText && (
-        <span
-          className={`${config.textClass} text-white`}
-          style={{
-            fontFamily:
-              'var(--font-space-grotesk), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            fontWeight: '700',
-            letterSpacing: '-0.02em',
-            fontFeatureSettings: '"cv02", "cv03", "cv04", "cv11"',
-          }}
-        >
+        <span className={`${config.textClass} text-white logo-text`}>
           ServiceLink
         </span>
       )}
@@ -71,16 +73,18 @@ export const Logo: React.FC<LogoProps> = ({
 
   if (href) {
     return (
-      <a
+      <Link
         href={href}
         className="transition-opacity duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-neutral-800 rounded-lg"
       >
         {logoContent}
-      </a>
+      </Link>
     );
   }
 
   return logoContent;
 };
 
+// Alias for backward compatibility
+export const Branding = Logo;
 export default Logo;
