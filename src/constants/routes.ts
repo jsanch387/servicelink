@@ -24,6 +24,7 @@ export const ROUTES = {
     CREATE: '/business/create',
     EDIT: '/business/:id/edit',
     DASHBOARD: '/business/dashboard',
+    BOOK: '/:slug/book',
   },
 
   // Dashboard routes

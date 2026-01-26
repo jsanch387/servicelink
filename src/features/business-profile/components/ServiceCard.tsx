@@ -1,5 +1,8 @@
+'use client';
+
 import { Button } from '@/components/shared';
-import { ClockIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 interface Service {
@@ -15,6 +18,8 @@ interface ServiceCardProps {
   onEdit?: (_service: Service) => void;
   onDelete?: (_serviceId: string) => void;
   isEditable?: boolean;
+  isPublic?: boolean;
+  businessSlug?: string;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -22,7 +27,18 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   onEdit,
   onDelete,
   isEditable = false,
+  isPublic = false,
+  businessSlug = '',
 }) => {
+  const router = useRouter();
+
+  const handleBookClick = () => {
+    if (businessSlug) {
+      router.push(
+        `/${businessSlug}/book?service=${encodeURIComponent(service.name)}`
+      );
+    }
+  };
   const formatPrice = (price: string | number) => {
     // If it's already a formatted string (starts with $), return as is
     if (typeof price === 'string' && price.startsWith('$')) {
@@ -55,29 +71,47 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-white/20 transition-colors">
-      <div className="p-5">
-        {/* Header with Title and Price */}
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="text-lg font-bold text-white pr-4 flex-1">
-            {service.name}
-          </h3>
-          <span className="text-xl font-bold text-white flex-shrink-0">
-            {formatPrice(service.price)}
-          </span>
-        </div>
+    <div className="group relative bg-[#1c1c1e] border border-white/[0.08] rounded-3xl p-5 transition-all duration-300 hover:border-orange-500/30 hover:bg-[#242426]">
+      {/* Header Row */}
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="text-[19px] font-bold text-white tracking-tight pr-4 flex-1">
+          {service.name}
+        </h3>
+        <span className="text-[20px] font-black text-white flex-shrink-0">
+          {formatPrice(service.price)}
+        </span>
+      </div>
 
-        {/* Description */}
-        <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-          {service.description}
-        </p>
+      {/* Description */}
+      <p className="text-[#989899] text-[14px] leading-relaxed mb-6 pr-4">
+        {service.description}
+      </p>
 
+      {/* Footer Row */}
+      <div className="flex items-center justify-between mt-auto">
         {/* Duration - Pill Design */}
-        {service.hours_to_complete && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full text-gray-500 border border-white/10">
-            <ClockIcon className="h-4 w-4 text-gray-500" />
-            <span className="text-sm">{formatDuration(service.hours_to_complete)}</span>
+        {service.hours_to_complete ? (
+          <div className="flex items-center gap-2 bg-white/[0.05] px-3 py-1.5 rounded-full border border-white/[0.05]">
+            <ClockIcon className="h-3.5 w-3.5 text-orange-500" />
+            <span className="text-[12px] font-semibold text-zinc-300 tracking-wide">
+              {formatDuration(service.hours_to_complete)}
+            </span>
           </div>
+        ) : (
+          <div />
+        )}
+
+        {/* Book Button - Only show on public profiles */}
+        {isPublic && !isEditable && businessSlug && (
+          <button
+            onClick={handleBookClick}
+            className="flex items-center gap-1 group/btn"
+          >
+            <span className="text-orange-500 font-bold text-[15px] tracking-tight group-hover/btn:mr-1 transition-all">
+              Book Now
+            </span>
+            <ChevronRightIcon className="h-[18px] w-[18px] text-orange-500" />
+          </button>
         )}
       </div>
 

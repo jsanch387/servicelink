@@ -1,9 +1,6 @@
 // Updated to relative path to resolve build error
-import {
-  ChatBubbleLeftRightIcon,
-  CheckBadgeIcon,
-  PhoneIcon,
-} from '@heroicons/react/24/solid';
+import { BookingRequestButton } from '@/features/booking-request';
+import { CheckBadgeIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
 import {
@@ -102,23 +99,24 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           for every client.
         </p>
 
-        {/* Primary Call-to-Action Grid */}
-        <div className="grid grid-cols-2 gap-4 mt-10 w-full max-w-sm px-2">
-          <a
-            href={`tel:${businessProfile.phone_number_call}`}
-            className="group flex items-center justify-center gap-2.5 py-4 rounded-xl font-bold text-base transition-all active:scale-[0.96] shadow-xl bg-white text-neutral-900 hover:bg-gray-100"
-          >
-            <PhoneIcon className="h-5 w-5 transition-transform group-hover:scale-110" />
-            Call
-          </a>
-          <a
-            href={`sms:${businessProfile.phone_number_text}`}
-            className="group flex items-center justify-center gap-2.5 py-4 rounded-xl font-bold text-base transition-all active:scale-[0.96] shadow-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
-          >
-            <ChatBubbleLeftRightIcon className="h-5 w-5 transition-transform group-hover:scale-110" />
-            Text
-          </a>
-        </div>
+        {/* Primary Call-to-Action */}
+        {isPublic && (
+          <div className="flex gap-3 mt-8 w-full max-w-sm px-2">
+            <BookingRequestButton
+              businessName={businessProfile.business_name}
+              businessId={businessProfile.id}
+              businessSlug={(businessProfile as any).business_slug || undefined}
+            />
+            <a
+              href={`tel:${businessProfile.phone_number_call}`}
+              className="flex-1 py-4 bg-white/5 border border-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+              title="Call for inquiries"
+              aria-label="Call for inquiries"
+            >
+              <PhoneIcon className="h-5 w-5" />
+            </a>
+          </div>
+        )}
       </div>
     </>
   );
