@@ -62,7 +62,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const APP_DOMAIN = 'myservicelink.app';
 
   return (
-    <main className="flex-1 py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-neutral-900 min-h-screen">
+    <main className="flex-1 py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-[#0f0f0f] min-h-screen">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="mb-8 sm:mb-10 lg:mb-12">

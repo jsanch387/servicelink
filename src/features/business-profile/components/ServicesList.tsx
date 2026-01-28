@@ -10,6 +10,7 @@ interface ServicesListProps {
   editMode: EditMode;
   onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
+  isPublic?: boolean;
 }
 
 export const ServicesList: React.FC<ServicesListProps> = ({
@@ -17,9 +18,14 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   editMode: _editMode,
   onSave: _onSave,
   onCancel: _onCancel,
+  isPublic = false,
 }) => {
   const services = businessProfile.services || [];
   const hasServices = services && services.length > 0;
+  const businessSlug =
+    'business_slug' in businessProfile
+      ? businessProfile.business_slug || ''
+      : '';
 
   return (
     <section className="px-4 py-6 sm:px-8 sm:py-8">
@@ -35,6 +41,9 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                 price: service.price_cents || 0,
                 hours_to_complete: service.hours_to_complete || null,
               }}
+              isEditable={false}
+              isPublic={isPublic}
+              businessSlug={businessSlug}
             />
           ))}
         </div>

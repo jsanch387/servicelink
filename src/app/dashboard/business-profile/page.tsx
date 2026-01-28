@@ -110,7 +110,7 @@ export default async function BusinessProfilePage({
   const initialMode = params.mode === 'edit' ? 'edit' : 'view';
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-[#0f0f0f]">
       <BusinessProfileView
         businessProfile={businessProfile}
         initialMode={initialMode}

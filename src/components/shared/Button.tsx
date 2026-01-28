@@ -38,7 +38,10 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center font-medium rounded-md shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+    'inline-flex items-center justify-center rounded-xl shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+
+  // Default font weight - can be overridden by className
+  const defaultFontWeight = className.includes('font-') ? '' : 'font-medium';
 
   const variantClasses = {
     primary:
@@ -69,29 +72,25 @@ export const Button: React.FC<ButtonProps> = ({
     lg: 'h-5 w-5',
   };
 
-  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
+  const classes = `${baseClasses} ${defaultFontWeight} ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
 
   const isDisabled = disabled || loading;
 
   const content = (
-    <>
+    <span className="flex items-center justify-center gap-2">
       {loading && (
         <div
-          className={`animate-spin rounded-full border-b-2 border-current ${iconSizeClasses[size]} ${children ? 'mr-2' : ''}`}
+          className={`animate-spin rounded-full border-b-2 border-current ${iconSizeClasses[size]}`}
         />
       )}
       {!loading && icon && iconPosition === 'left' && (
-        <span className={`${iconSizeClasses[size]} ${children ? 'mr-2' : ''}`}>
-          {icon}
-        </span>
+        <span className="inline-flex items-center justify-center">{icon}</span>
       )}
       {children}
       {!loading && icon && iconPosition === 'right' && (
-        <span className={`${iconSizeClasses[size]} ${children ? 'ml-2' : ''}`}>
-          {icon}
-        </span>
+        <span className="inline-flex items-center justify-center">{icon}</span>
       )}
-    </>
+    </span>
   );
 
   if (href && !isDisabled) {

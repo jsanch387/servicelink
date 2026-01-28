@@ -331,7 +331,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900 pb-8">
+    <div className="min-h-screen bg-[#0f0f0f] pb-8">
       {/* Action Bar - Above all content */}
       <div className="sticky top-20 z-30 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
         <div className="bg-neutral-800/95 backdrop-blur-lg border border-neutral-700 rounded-xl px-4 py-3 shadow-2xl">

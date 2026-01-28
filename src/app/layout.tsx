@@ -1,7 +1,16 @@
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Inter, Manrope, Outfit, Plus_Jakarta_Sans, Poppins, Space_Grotesk } from 'next/font/google';
+import {
+  Geist,
+  Geist_Mono,
+  Inter,
+  Manrope,
+  Outfit,
+  Plus_Jakarta_Sans,
+  Poppins,
+  Space_Grotesk,
+} from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({

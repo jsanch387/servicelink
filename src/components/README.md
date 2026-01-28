@@ -113,9 +113,8 @@ Main component that composes all business profile sections.
 
 ```tsx
 import { BusinessProfileView } from '@/features/business-profile';
-import { businessData } from '@/data/businessData';
-
-<BusinessProfileView businessProfile={businessData} />;
+// Note: businessProfile data should come from your database/API
+<BusinessProfileView businessProfile={businessProfileData} />;
 ```
 
 ### ProfileHeader
@@ -203,10 +202,10 @@ interface Business {
 
 ```tsx
 import { BusinessProfileView } from '@/features/business-profile';
-import { businessData } from '@/data/businessData';
 
 export default function Home() {
-  return <BusinessProfileView businessProfile={businessData} />;
+  // businessProfileData should come from your database/API
+  return <BusinessProfileView businessProfile={businessProfileData} />;
 }
 ```
 
@@ -221,7 +220,7 @@ export default function Home() {
     console.log('Quote requested!');
   };
 
-  return <BusinessProfileView businessProfile={businessData} />;
+  return <BusinessProfileView businessProfile={businessProfileData} />;
 }
 ```
 
@@ -233,7 +232,7 @@ import { ProfileHeader, AboutUs } from '@/components';
 export default function CustomPage() {
   return (
     <div>
-      <ProfileHeader business={businessData} />
+      <ProfileHeader business={businessProfileData} />
       <AboutUs bio="Custom bio text" />
     </div>
   );
@@ -265,4 +264,4 @@ When updating components:
 - Components use Heroicons for consistent iconography
 - The design is mobile-first and responsive
 - Components are designed to be composable and reusable
-- Mock data is centralized in `src/data/businessData.ts`
+- Business profile data should be fetched from your database/API

@@ -82,16 +82,7 @@ Edit `src/styles/fonts.css` and update the CSS variables:
 
 ### TypeScript Utilities
 
-```tsx
-import { fonts, fontCombinations, getFontFamily } from '@/styles/fonts'
-
-// Get font family string
-const primaryFont = getFontFamily('primary')
-
-// Use predefined combinations
-<div className={fontCombinations.heading}>Heading</div>
-<div className={fontCombinations.body}>Body text</div>
-```
+Note: The TypeScript font utilities (`fonts.ts`) have been removed. Fonts are now configured via CSS in `fonts.css` and Tailwind classes.
 
 ### Inline Styles
 

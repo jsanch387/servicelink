@@ -24,12 +24,14 @@ export const ROUTES = {
     CREATE: '/business/create',
     EDIT: '/business/:id/edit',
     DASHBOARD: '/business/dashboard',
+    BOOK: '/:slug/book',
   },
 
   // Dashboard routes
   DASHBOARD: {
     MAIN: '/dashboard',
     BUSINESS_PROFILE: '/dashboard/business-profile',
+    BOOKINGS: '/dashboard/bookings',
     SETTINGS: '/dashboard/settings',
   },
 } as const;

@@ -13,6 +13,7 @@ interface InputProps {
   error?: string;
   disabled?: boolean;
   className?: string;
+  inputClassName?: string;
   name?: string;
   autoComplete?: string;
 }
@@ -27,6 +28,7 @@ export const Input: React.FC<InputProps> = ({
   error,
   disabled = false,
   className = '',
+  inputClassName = '',
   name,
   autoComplete,
 }) => {
@@ -41,7 +43,7 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className="block text-left text-sm font-semibold text-gray-200 mb-2.5">
           {label}
           {required && <span className="text-red-400 ml-1">*</span>}
         </label>
@@ -57,12 +59,13 @@ export const Input: React.FC<InputProps> = ({
           name={name}
           autoComplete={autoComplete}
           className={`
-            w-full px-4 py-3 bg-neutral-800 border rounded-md text-white placeholder-gray-400
-            focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-            transition-colors duration-200
-            ${error ? 'border-red-500' : 'border-neutral-600'}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-500'}
+            w-full px-4 py-3.5 sm:px-5 sm:py-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-medium
+            focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-white/8
+            transition-all duration-200 touch-manipulation
+            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
+            ${disabled ? 'opacity-60 cursor-not-allowed bg-white/3' : 'hover:border-white/20 active:bg-white/8'}
             ${isPasswordType ? 'pr-12' : ''}
+            ${inputClassName}
           `}
         />
         {isPasswordType && (

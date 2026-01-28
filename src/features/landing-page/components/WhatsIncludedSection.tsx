@@ -7,16 +7,21 @@ import React from 'react';
 
 export const WhatsIncludedSection: React.FC = () => {
   return (
-    <section id="whats-included" className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-white/5 overflow-hidden bg-neutral-900">
+    <section
+      id="whats-included"
+      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-white/5 overflow-hidden bg-neutral-900"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-center">
           {/* Left Content */}
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 sm:mb-6 md:mb-8 tracking-tight">
-              Your entire business, <br className="hidden sm:block" />in one clean link.
+              Your entire business, <br className="hidden sm:block" />
+              in one clean link.
             </h2>
             <p className="text-gray-400 text-base sm:text-lg mb-6 sm:mb-8 md:mb-10">
-              When you sign up for Service Link, you aren't just getting a page—you're getting a conversion machine built for the mobile age.
+              When you sign up for Service Link, you aren't just getting a
+              page—you're getting a conversion machine built for the mobile age.
             </p>
 
             <div className="space-y-6 sm:space-y-8">
@@ -26,9 +31,12 @@ export const WhatsIncludedSection: React.FC = () => {
                   <DevicePhoneMobileIcon className="text-orange-500 text-xl sm:text-2xl" />
                 </div>
                 <div>
-                  <h4 className="text-lg sm:text-xl font-bold mb-2 text-white">The Premium Mobile Profile</h4>
+                  <h4 className="text-lg sm:text-xl font-bold mb-2 text-white">
+                    The Premium Mobile Profile
+                  </h4>
                   <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
-                    A high-end, app-like landing page that showcases your logo, services, and area. No coding, no design skills needed.
+                    A high-end, app-like landing page that showcases your logo,
+                    services, and area. No coding, no design skills needed.
                   </p>
                 </div>
               </div>
@@ -39,9 +47,12 @@ export const WhatsIncludedSection: React.FC = () => {
                   <BoltIcon className="text-purple-500 text-xl sm:text-2xl" />
                 </div>
                 <div>
-                  <h4 className="text-lg sm:text-xl font-bold mb-2 text-white">The Action Dashboard</h4>
+                  <h4 className="text-lg sm:text-xl font-bold mb-2 text-white">
+                    The Action Dashboard
+                  </h4>
                   <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
-                    Direct 'Call', 'Text', and 'Booking' buttons that bypass the inbox and get you on the phone with customers immediately.
+                    Direct 'Call', 'Text', and 'Booking' buttons that bypass the
+                    inbox and get you on the phone with customers immediately.
                   </p>
                 </div>
               </div>
@@ -52,9 +63,14 @@ export const WhatsIncludedSection: React.FC = () => {
                   <AtSymbolIcon className="text-blue-500 text-xl sm:text-2xl" />
                 </div>
                 <div>
-                  <h4 className="text-lg sm:text-xl font-bold mb-2 text-white">Your Custom Handle</h4>
+                  <h4 className="text-lg sm:text-xl font-bold mb-2 text-white">
+                    Your Custom Handle
+                  </h4>
                   <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
-                    Get a clean, short URL like <strong className="text-white">sl.com/yourname</strong> that looks professional on your truck, business cards, and Instagram bio.
+                    Get a clean, short URL like{' '}
+                    <strong className="text-white">sl.com/yourname</strong> that
+                    looks professional on your truck, business cards, and
+                    Instagram bio.
                   </p>
                 </div>
               </div>
@@ -104,8 +120,12 @@ export const WhatsIncludedSection: React.FC = () => {
 
             {/* Stats Badge */}
             <div className="absolute -top-4 sm:-top-5 md:-top-6 -right-4 sm:-right-5 md:-right-6 bg-white/5 backdrop-blur-xl p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border border-white/10 hidden md:block">
-              <p className="text-orange-400 font-black text-xl sm:text-2xl">98%</p>
-              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Mobile Conversion</p>
+              <p className="text-orange-400 font-black text-xl sm:text-2xl">
+                98%
+              </p>
+              <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                Mobile Conversion
+              </p>
             </div>
           </div>
         </div>

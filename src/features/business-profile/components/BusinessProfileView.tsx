@@ -143,7 +143,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-[#0f0f0f]">
       {/* Floating Edit Button (FAB) - Only show in view mode for authenticated users */}
       {!isPublic && editMode === 'view' && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -159,7 +159,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       )}
 
       {/* Main Content */}
-      <div className="bg-neutral-900 min-h-screen">
+      <div className="bg-[#0f0f0f] min-h-screen">
         <div className="max-w-4xl mx-auto">
           {/* Create Link CTA - Only show for authenticated users without a slug */}
           {!isPublic && slugData && !slugData.hasSlug && (
@@ -245,6 +245,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   editMode={editMode}
                   onSave={handleSave}
                   onCancel={handleCancel}
+                  isPublic={isPublic}
                 />
               ) : (
                 <WorkShowcase
