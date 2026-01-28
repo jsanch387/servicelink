@@ -111,7 +111,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         {isPublic && !isEditable && businessSlug && (
           <button
             onClick={handleBookClick}
-            className="relative flex items-center gap-1 group/btn px-4 py-2 rounded-xl bg-white text-black shadow-lg shadow-white/20 hover:shadow-xl hover:shadow-white/30 transition-all"
+            className="relative flex items-center gap-1 group/btn px-4 py-2 rounded-xl bg-white text-black shadow-lg shadow-white/20 hover:shadow-xl hover:shadow-white/30 transition-all cursor-pointer"
           >
             <span className="font-bold text-[15px] tracking-tight group-hover/btn:mr-1 transition-all">
               Book Now
