@@ -91,7 +91,7 @@ export default async function SettingsPage() {
     };
 
     return (
-      <div className="min-h-screen bg-neutral-900">
+      <div className="min-h-screen bg-[#0f0f0f]">
         <SettingsContent
           businessProfile={businessProfile as any}
           settingsData={settingsData}

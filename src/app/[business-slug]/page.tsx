@@ -152,7 +152,9 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
 
     const { data: profile } = await supabase
       .from('business_profiles')
-      .select('business_name, business_type, service_area, bio, logo_path, banner_path, phone_number_call')
+      .select(
+        'business_name, business_type, service_area, bio, logo_path, banner_path, phone_number_call'
+      )
       .eq('business_slug', slug)
       .single();
 

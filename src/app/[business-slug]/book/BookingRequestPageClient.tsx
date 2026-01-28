@@ -29,24 +29,38 @@ export function BookingRequestPageClient({
     setIsSubmitting(true);
 
     try {
-      // For now, just log the data
-      // Later we'll add API calls and database writes
-      const submitData = {
-        ...data,
-        businessId,
-        businessSlug,
-        submittedAt: new Date().toISOString(),
-      };
+      // Call the API endpoint to submit the booking request
+      const response = await fetch('/api/booking-request/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessId,
+          businessSlug,
+          serviceName: serviceName || undefined,
+          servicePrice: servicePrice, // Already in cents from the database
+          formData: data,
+        }),
+      });
 
-      console.log('Booking Request Submitted:', submitData);
+      const result = await response.json();
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!result.success) {
+        // Handle error - you might want to show an error message to the user
+        console.error('Error submitting booking request:', result.error);
+        alert(
+          result.error || 'Failed to submit booking request. Please try again.'
+        );
+        setIsSubmitting(false);
+        return;
+      }
 
       // Show success message
       setShowSuccess(true);
     } catch (error) {
       console.error('Error submitting booking request:', error);
+      alert('An unexpected error occurred. Please try again.');
       setIsSubmitting(false);
     }
   };

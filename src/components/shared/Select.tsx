@@ -8,7 +8,8 @@ interface SelectOption {
 
 interface SelectProps {
   label?: string;
-  value: string;
+  value: string; // Used in component - see line 44
+  // eslint-disable-next-line no-unused-vars
   onChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;

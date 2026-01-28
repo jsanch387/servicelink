@@ -16,6 +16,7 @@ export async function middleware(request: NextRequest) {
       get: (name: string) => {
         return request.cookies.get(name)?.value;
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       set: (name: string, value: string, options: any) => {
         request.cookies.set({
           name,
@@ -33,6 +34,7 @@ export async function middleware(request: NextRequest) {
           ...options,
         });
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       remove: (name: string, options: any) => {
         request.cookies.set({
           name,
@@ -59,9 +61,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Define protected and public routes
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/auth') ||
-                      request.nextUrl.pathname === '/login' ||
-                      request.nextUrl.pathname === '/signup';
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith('/auth') ||
+    request.nextUrl.pathname === '/login' ||
+    request.nextUrl.pathname === '/signup';
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
   const isPublicProfileRoute = request.nextUrl.pathname.startsWith('/profile');
   const isWaitlistRoute = request.nextUrl.pathname.startsWith('/waitlist');

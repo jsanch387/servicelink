@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import { ChevronRightIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React from 'react';
@@ -15,7 +15,9 @@ interface Service {
 
 interface ServiceCardProps {
   service: Service;
+  // eslint-disable-next-line no-unused-vars
   onEdit?: (_service: Service) => void;
+  // eslint-disable-next-line no-unused-vars
   onDelete?: (_serviceId: string) => void;
   isEditable?: boolean;
   isPublic?: boolean;
@@ -71,7 +73,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   };
 
   return (
-    <div className="group relative bg-[#1c1c1e] border border-white/[0.08] rounded-3xl p-5 transition-all duration-300 hover:border-orange-500/30 hover:bg-[#242426]">
+    <GlassCard
+      blurColor="bg-orange-500"
+      className="group transition-all rounded-2xl duration-300 hover:border-orange-500/30"
+      padding="md"
+    >
       {/* Header Row */}
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-[19px] font-bold text-white tracking-tight pr-4 flex-1">
@@ -89,9 +95,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
       {/* Footer Row */}
       <div className="flex items-center justify-between mt-auto">
-        {/* Duration - Pill Design */}
+        {/* Duration - Enhanced Design */}
         {service.hours_to_complete ? (
-          <div className="flex items-center gap-2 bg-white/[0.05] px-3 py-1.5 rounded-full border border-white/[0.05]">
+          <div className="flex items-center gap-2 bg-white/[0.03] backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/[0.08]">
             <ClockIcon className="h-3.5 w-3.5 text-orange-500" />
             <span className="text-[12px] font-semibold text-zinc-300 tracking-wide">
               {formatDuration(service.hours_to_complete)}
@@ -105,12 +111,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         {isPublic && !isEditable && businessSlug && (
           <button
             onClick={handleBookClick}
-            className="flex items-center gap-1 group/btn"
+            className="relative flex items-center gap-1 group/btn px-4 py-2 rounded-xl bg-white text-black shadow-lg shadow-white/20 hover:shadow-xl hover:shadow-white/30 transition-all"
           >
-            <span className="text-orange-500 font-bold text-[15px] tracking-tight group-hover/btn:mr-1 transition-all">
+            <span className="font-bold text-[15px] tracking-tight group-hover/btn:mr-1 transition-all">
               Book Now
             </span>
-            <ChevronRightIcon className="h-[18px] w-[18px] text-orange-500" />
+            <ChevronRightIcon className="h-[18px] w-[18px] text-black" />
           </button>
         )}
       </div>
@@ -140,6 +146,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           )}
         </div>
       )}
-    </div>
+    </GlassCard>
   );
 };

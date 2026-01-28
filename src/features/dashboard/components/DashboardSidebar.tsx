@@ -5,6 +5,7 @@ import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth';
 import {
   ArrowRightOnRectangleIcon,
+  CalendarIcon,
   CogIcon,
   HomeIcon,
   UserIcon,
@@ -26,6 +27,12 @@ const allNavigationItems = [
     name: 'Business Profile',
     href: ROUTES.DASHBOARD.BUSINESS_PROFILE,
     icon: UserIcon,
+    requiresOnboarding: true,
+  },
+  {
+    name: 'Bookings',
+    href: ROUTES.DASHBOARD.BOOKINGS,
+    icon: CalendarIcon,
     requiresOnboarding: true,
   },
   {

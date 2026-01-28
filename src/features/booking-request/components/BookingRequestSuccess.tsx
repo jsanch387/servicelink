@@ -1,7 +1,7 @@
 'use client';
 
+import { Button, GlassCard } from '@/components/shared';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
-import { Button } from '@/components/shared';
 import React from 'react';
 
 interface BookingRequestSuccessProps {
@@ -16,7 +16,12 @@ export const BookingRequestSuccess: React.FC<BookingRequestSuccessProps> = ({
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 animate-in fade-in duration-300">
       {/* Card Container */}
-      <div className="w-full max-w-md bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-8 sm:p-10 shadow-2xl">
+      <GlassCard
+        blurColor="bg-orange-500"
+        className="w-full max-w-md"
+        padding="lg"
+        rounded="rounded-3xl"
+      >
         <div className="flex flex-col items-center text-center">
           {/* Green Checkmark */}
           <div className="mb-6">
@@ -32,7 +37,8 @@ export const BookingRequestSuccess: React.FC<BookingRequestSuccessProps> = ({
             </h2>
             <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
               Your booking request has been sent to{' '}
-              <span className="font-bold text-white">{businessName}</span>. They&apos;ll get back to you soon!
+              <span className="font-bold text-white">{businessName}</span>.
+              They&apos;ll get back to you soon!
             </p>
           </div>
 
@@ -46,7 +52,7 @@ export const BookingRequestSuccess: React.FC<BookingRequestSuccessProps> = ({
             Done
           </Button>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 };

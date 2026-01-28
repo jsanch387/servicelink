@@ -22,7 +22,10 @@ export const ServicesList: React.FC<ServicesListProps> = ({
 }) => {
   const services = businessProfile.services || [];
   const hasServices = services && services.length > 0;
-  const businessSlug = 'business_slug' in businessProfile ? businessProfile.business_slug || '' : '';
+  const businessSlug =
+    'business_slug' in businessProfile
+      ? businessProfile.business_slug || ''
+      : '';
 
   return (
     <section className="px-4 py-6 sm:px-8 sm:py-8">

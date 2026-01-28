@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Input,
-  PhoneInput,
-  Select,
-  TextArea,
-} from '@/components/shared';
+import { Button, Input, PhoneInput, Select } from '@/components/shared';
 import React, { useEffect, useState } from 'react';
 import { BookingRequestFormData } from '../types/bookingRequest';
 import { DateInput } from './DateInput';
@@ -15,7 +9,8 @@ interface BookingRequestFormProps {
   businessName: string;
   serviceName?: string;
   servicePrice?: number;
-  onSubmit: (data: BookingRequestFormData) => void;
+  // eslint-disable-next-line no-unused-vars
+  onSubmit: (_data: BookingRequestFormData) => void;
   isLoading?: boolean;
 }
 
@@ -212,7 +207,8 @@ export const BookingRequestForm: React.FC<BookingRequestFormProps> = ({
         </div>
 
         {/* Message - Optional */}
-        <div className="space-y-1.5">
+        {/* Commented out - can be re-enabled later if needed */}
+        {/* <div className="space-y-1.5">
           <label className="block text-left text-[11px] font-bold text-gray-500 tracking-wide ml-1">
             Message
           </label>
@@ -223,7 +219,7 @@ export const BookingRequestForm: React.FC<BookingRequestFormProps> = ({
             rows={3}
             maxLength={500}
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Submit Button */}

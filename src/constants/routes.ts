@@ -31,6 +31,7 @@ export const ROUTES = {
   DASHBOARD: {
     MAIN: '/dashboard',
     BUSINESS_PROFILE: '/dashboard/business-profile',
+    BOOKINGS: '/dashboard/bookings',
     SETTINGS: '/dashboard/settings',
   },
 } as const;

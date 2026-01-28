@@ -40,7 +40,7 @@ export const DashboardWrapper: React.FC<DashboardWrapperProps> = ({
 
   if (isLoadingOnboarding) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-neutral-900">
+      <div className="flex items-center justify-center min-h-screen bg-[#0f0f0f]">
         <ModernLoadingSpinner size="lg" text="Loading..." />
       </div>
     );

@@ -20,13 +20,16 @@ const testimonials = [
     business: 'Black Label Detailing',
     initials: 'JT',
     content:
-      'The verification badge and clean cover photo make me look like a top-tier company. I\'ve noticed customers aren\'t questioning my prices as much anymore, and I spend way less time answering basic questions.',
+      "The verification badge and clean cover photo make me look like a top-tier company. I've noticed customers aren't questioning my prices as much anymore, and I spend way less time answering basic questions.",
   },
 ];
 
 export const TestimonialsSection: React.FC = () => {
   return (
-    <section id="testimonials" className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 bg-white/[0.02]">
+    <section
+      id="testimonials"
+      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 bg-white/[0.02]"
+    >
       <div className="max-w-7xl mx-auto text-center">
         <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-10 sm:mb-12 md:mb-16 tracking-tight">
           Trusted by 2,000+ Pros
@@ -47,7 +50,9 @@ export const TestimonialsSection: React.FC = () => {
                   {testimonial.initials}
                 </div>
                 <div>
-                  <p className="font-bold text-white text-sm sm:text-base">{testimonial.name}</p>
+                  <p className="font-bold text-white text-sm sm:text-base">
+                    {testimonial.name}
+                  </p>
                   <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-black">
                     {testimonial.business}
                   </p>

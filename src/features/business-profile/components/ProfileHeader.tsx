@@ -25,7 +25,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <>
       {/* Cover Photo - High-end visual depth with gradient overlay */}
-      <div className="relative h-48 sm:h-56 md:h-64 w-full overflow-hidden bg-neutral-900">
+      <div className="relative h-48 sm:h-56 md:h-64 w-full overflow-hidden bg-[#0f0f0f]">
         {businessProfile.cover_image_url ? (
           <ImageWithFallback
             src={businessProfile.cover_image_url}
@@ -45,7 +45,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           />
         )}
         {/* Gradient overlay at the bottom edge only for seamless blending */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-neutral-900 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-[#0f0f0f] pointer-events-none" />
       </div>
 
       {/* Profile Section - Centered content with professional hierarchy */}
@@ -55,7 +55,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <div className="p-1 rounded-[2.8rem] bg-neutral-700 shadow-2xl">
             {businessProfile.logo_url ? (
               <ImageWithFallback
-                className="w-32 h-32 rounded-[2.4rem] border-4 border-neutral-900 object-cover bg-neutral-800"
+                className="w-32 h-32 rounded-[2.4rem] border-4 border-[#0f0f0f] object-cover bg-neutral-800"
                 src={businessProfile.logo_url}
                 alt={`${businessProfile.business_name} logo`}
                 width={256}

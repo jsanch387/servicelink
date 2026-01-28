@@ -21,7 +21,9 @@ export const ServiceBookingCTA: React.FC<ServiceBookingCTAProps> = ({
 
   const handleClick = () => {
     // Navigate to booking page with service name as query parameter
-    router.push(`/${businessSlug}/book?service=${encodeURIComponent(serviceName)}`);
+    router.push(
+      `/${businessSlug}/book?service=${encodeURIComponent(serviceName)}`
+    );
   };
 
   if (variant === 'link') {
