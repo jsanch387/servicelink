@@ -78,50 +78,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 Create a `.env.local` file based on `env.example`:
 
-```env
-# Database Configuration
-DATABASE_URL=your_database_url_here
 
-# Authentication
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://localhost:3000
-
-# API Keys
-API_KEY=your_api_key_here
-
-# External Services
-STRIPE_SECRET_KEY=your_stripe_secret_key_here
-STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
-
-# Email Configuration
-SMTP_HOST=your_smtp_host_here
-SMTP_PORT=587
-SMTP_USER=your_smtp_user_here
-SMTP_PASSWORD=your_smtp_password_here
-
-# App Configuration
-NODE_ENV=development
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-## 📁 Project Structure
-
-```
-business-profile/
-├── src/
-│   └── app/
-│       ├── page.tsx          # Landing page
-│       ├── layout.tsx        # Root layout
-│       └── globals.css       # Global styles
-├── public/                   # Static assets
-├── .env.example             # Environment variables template
-├── .prettierrc             # Prettier configuration
-├── .prettierignore         # Prettier ignore rules
-├── eslint.config.mjs       # ESLint configuration
-├── tailwind.config.ts      # Tailwind configuration
-├── tsconfig.json           # TypeScript configuration
-└── package.json            # Dependencies and scripts
-```
 
 ## 🎨 Customization
 
