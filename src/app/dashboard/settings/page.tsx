@@ -91,12 +91,10 @@ export default async function SettingsPage() {
     };
 
     return (
-      <div className="min-h-screen bg-[#0f0f0f]">
-        <SettingsContent
-          businessProfile={businessProfile as any}
-          settingsData={settingsData}
-        />
-      </div>
+      <SettingsContent
+        businessProfile={businessProfile as any}
+        settingsData={settingsData}
+      />
     );
   } catch {
     redirect('/dashboard');

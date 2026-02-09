@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import { MediaService } from '@/features/media';
 import { useUploadPortfolio } from '@/features/media/useUploadPortfolio';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -39,9 +39,8 @@ const SmartImagePreview: React.FC<{
 
   return (
     <div className="relative">
-      {/* Mobile-First Container - Clean design without hover effects */}
       <div
-        className={`aspect-square w-full rounded-xl overflow-hidden shadow-lg bg-neutral-900 border border-neutral-700 transition-all duration-300 ${isDeleting ? 'opacity-50' : ''}`}
+        className={`aspect-square w-full rounded-xl overflow-hidden bg-white/[0.04] border border-white/10 transition-all duration-300 ${isDeleting ? 'opacity-50' : ''}`}
       >
         <Image
           src={src}
@@ -82,10 +81,9 @@ const SmartImagePreview: React.FC<{
         </button>
       </div>
 
-      {/* Mobile-First Confirmation Dialog */}
       {showConfirmation && (
         <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-xl z-20">
-          <div className="bg-neutral-800 border border-neutral-600 rounded-xl p-6 mx-4 max-w-sm w-full">
+          <div className="bg-[var(--dashboard-bg)] border border-white/10 rounded-xl p-6 mx-4 max-w-sm w-full shadow-xl">
             <div className="text-center mb-6">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <XMarkIcon className="h-6 w-6 text-red-600" />
@@ -106,7 +104,7 @@ const SmartImagePreview: React.FC<{
               </button>
               <button
                 onClick={() => setShowConfirmation(false)}
-                className="w-full px-6 py-3 bg-neutral-600 text-white rounded-lg font-medium active:bg-neutral-500 transition duration-200 touch-manipulation"
+                className="w-full px-6 py-3 bg-white/10 text-white rounded-lg font-medium border border-white/10 hover:bg-white/15 transition-colors touch-manipulation"
               >
                 Cancel
               </button>
@@ -164,14 +162,14 @@ const EnhancedImageUpload: React.FC<{
   return (
     <label
       className={`
-        flex flex-col items-center justify-center w-full p-8 transition duration-300
-        border-4 border-dashed rounded-xl cursor-pointer
+        flex flex-col items-center justify-center w-full p-8 transition-colors
+        border-2 border-dashed rounded-xl cursor-pointer
         ${
           effectiveDisabled
-            ? 'opacity-50 cursor-not-allowed border-neutral-700 bg-neutral-900'
+            ? 'opacity-50 cursor-not-allowed border-white/10 bg-white/[0.02]'
             : dragActive
               ? 'border-orange-400 bg-orange-500/10'
-              : 'border-orange-400/50 bg-neutral-900 hover:bg-neutral-900/70'
+              : 'border-orange-400/40 bg-white/[0.04] hover:border-orange-400/60 hover:bg-white/[0.06]'
         }
       `}
       htmlFor="file-upload"
@@ -538,31 +536,30 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-      {/* Header Section */}
-      <div className="mb-10 sm:mb-12 text-center">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3 sm:mb-4 tracking-tight">
+      <div className="mb-8 sm:mb-10 text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           Showcase Your <span className="text-orange-400">Best Work</span>
         </h1>
-        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
-          Upload photos to build instant credibility and trust with potential
-          customers.
+        <p className="text-sm text-gray-400 mt-2">
+          Upload photos to build credibility with customers.
         </p>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 sm:mb-8 mx-2 sm:mx-0">
-          <p className="text-red-400 text-sm font-medium text-center">
-            {error}
-          </p>
-        </div>
-      )}
+      <GlassCard
+        padding="lg"
+        rounded="rounded-2xl"
+        blurColor="bg-orange-500"
+        showBlur={true}
+        className="mb-8 text-left"
+      >
+        {error && (
+          <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 mb-6 text-center">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
 
-      {/* Main Content Container */}
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl  sm:mx-0">
-        {/* Upload Section */}
         <div className="mb-8 sm:mb-10">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+          <h2 className="text-base font-semibold text-white mb-6">
             Add Photos to Portfolio
           </h2>
           <EnhancedImageUpload
@@ -573,24 +570,20 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           />
         </div>
 
-        {/* Portfolio Grid */}
         {images.length > 0 && (
-          <div className="pt-8 border-t border-neutral-700">
-            <div className="mb-6 sm:mb-8">
-              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
-                Your Current Portfolio ({images.length}/4)
+          <div className="pt-8 border-t border-white/10">
+            <div className="mb-6">
+              <h2 className="text-base font-semibold text-white mb-1">
+                Your Portfolio ({images.length}/4)
               </h2>
-              <p className="text-sm text-gray-400 pl-7">
-                {images.length === 0
-                  ? 'Upload your best work to build credibility with customers'
-                  : images.length === 4
-                    ? "Perfect! You've reached the maximum for onboarding"
-                    : `${4 - images.length} more image${4 - images.length === 1 ? '' : 's'} can be added`}
+              <p className="text-sm text-gray-400">
+                {images.length === 4
+                  ? "You've reached the max for now."
+                  : `${4 - images.length} more image${4 - images.length === 1 ? '' : 's'} can be added.`}
               </p>
             </div>
 
-            {/* Responsive Grid Layout - Optimized for better preview visibility */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
               {images.map((image, index) => (
                 <SmartImagePreview
                   key={`${image.id || 'temp'}-${index}`}
@@ -604,49 +597,41 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
           </div>
         )}
 
-        {/* Enhanced Empty State */}
         {images.length === 0 && (
-          <div className="pt-8 border-t border-neutral-700">
-            <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-neutral-700 rounded-xl p-8 sm:p-12 text-center border-dashed hover:border-orange-400/30 transition-colors duration-300">
-              <CameraIcon className="h-12 w-12 sm:h-16 sm:w-16 text-orange-400 mx-auto mb-4 sm:mb-6 opacity-60" />
-              <p className="text-gray-400 mb-2 font-semibold text-lg sm:text-xl">
-                Your portfolio is currently empty
+          <div className="pt-8 border-t border-white/10">
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-8 sm:p-10 text-center">
+              <CameraIcon className="h-12 w-12 sm:h-14 sm:w-14 text-orange-400 mx-auto mb-4 opacity-60" />
+              <p className="text-gray-400 mb-1 font-semibold text-base sm:text-lg">
+                No photos yet
               </p>
-              <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto mb-4">
-                Upload at least one high-quality photo to showcase your work and
-                build trust with customers!
+              <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                Upload a photo to showcase your work. You can add more later.
               </p>
-              <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-600">
-                <span className="bg-neutral-800 px-3 py-1 rounded-full">
-                  📱 iPhone photos supported
+              <div className="flex flex-wrap justify-center gap-2 mt-4 text-xs text-gray-500">
+                <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                  iPhone (HEIC) supported
                 </span>
-                <span className="bg-neutral-800 px-3 py-1 rounded-full">
-                  🖼️ Large previews
-                </span>
-                <span className="bg-neutral-800 px-3 py-1 rounded-full">
-                  ✨ Auto-optimized
+                <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                  Up to 10MB each
                 </span>
               </div>
             </div>
           </div>
         )}
-      </div>
+      </GlassCard>
 
-      {/* Action Buttons */}
-      <div className="flex flex-col gap-4 pt-6 sm:pt-8 mt-8 sm:mt-10 px-4 sm:px-0">
-        {/* Back Button */}
+      <div className="flex flex-col gap-4 pt-6 sm:pt-8">
         <Button
           type="button"
           onClick={onBack}
           variant="secondary"
-          className="w-full sm:w-auto px-6 sm:px-8 order-2 sm:order-1"
+          className="w-full sm:w-auto px-8 order-2 sm:order-1"
           disabled={isLoading || isUploadingPortfolio}
         >
           ← Back
         </Button>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 order-1 sm:order-2">
-          {/* Skip Button */}
           <Button
             type="button"
             onClick={handleSkip}
@@ -657,7 +642,6 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
             Skip for now
           </Button>
 
-          {/* Continue Button */}
           <Button
             type="button"
             onClick={handleSubmit}
@@ -671,9 +655,8 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
         </div>
       </div>
 
-      <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
-        Don&apos;t worry - you can always add, manage, and rearrange your photos
-        later.
+      <p className="text-xs text-gray-500 text-center mt-4">
+        You can add or change photos later.
       </p>
     </div>
   );

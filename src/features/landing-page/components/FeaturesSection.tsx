@@ -28,7 +28,7 @@ const features = [
 
 export const FeaturesSection: React.FC = () => {
   return (
-    <section id="features" className="py-24 bg-neutral-900">
+    <section id="features" className="py-24 bg-[var(--dashboard-bg)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">

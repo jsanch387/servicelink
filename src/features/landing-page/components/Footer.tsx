@@ -5,7 +5,7 @@ import React from 'react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="py-12 sm:py-14 md:py-16 px-4 sm:px-6 border-t border-white/5 bg-neutral-900">
+    <footer className="py-12 sm:py-14 md:py-16 px-4 sm:px-6 border-t border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]">
       <div className="max-w-7xl mx-auto">
         {/* Logo and Branding */}
         <div className="flex flex-col items-center mb-8 sm:mb-10">

@@ -21,7 +21,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const showHeader = !noHeaderRoutes.includes(pathname);
 
   return (
-    <div className="dashboard-container bg-[#0f0f0f] min-h-screen flex">
+    <div className="dashboard-container min-h-screen flex bg-[var(--dashboard-bg)]">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -37,12 +37,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
       />
       <div className="dashboard-content flex-1 flex flex-col lg:ml-64">
         {/* Sticky Header */}
-        <div className="sticky top-0 z-30 bg-[#0f0f0f]">
+        <div className="sticky top-0 z-30 bg-[var(--dashboard-bg)]">
           {showHeader ? (
             <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
           ) : (
             // Minimal mobile menu for routes without header
-            <div className="lg:hidden bg-neutral-800 border-b border-neutral-700">
+            <div className="lg:hidden bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
               <div className="flex h-16 items-center px-4">
                 <IconButton
                   icon={<Bars3Icon />}

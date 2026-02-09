@@ -27,7 +27,7 @@ export const Navigation: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white/5 backdrop-blur-xl border-b border-white/10">
+    <nav className="fixed top-0 w-full z-50 bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center">
@@ -101,7 +101,7 @@ export const Navigation: React.FC = () => {
 
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-white/10 bg-white/5 backdrop-blur-xl">
+        <div className="md:hidden border-t border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]">
           <div className="px-6 py-4 space-y-4">
             <button
               onClick={() => scrollToSection('how-it-works')}
@@ -115,7 +115,7 @@ export const Navigation: React.FC = () => {
             >
               The Problem
             </button>
-            <div className="pt-4 border-t border-white/10 space-y-2">
+            <div className="pt-4 border-t border-[var(--dashboard-border)] space-y-2">
               {isAuthenticated ? (
                 <Button
                   href={ROUTES.DASHBOARD.MAIN}

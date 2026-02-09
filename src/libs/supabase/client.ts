@@ -296,6 +296,44 @@ export type Database = {
           updated_at?: string;
         };
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          reference_type: string;
+          reference_id: string;
+          title: string;
+          body: string | null;
+          read: boolean;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: string;
+          reference_type: string;
+          reference_id: string;
+          title: string;
+          body?: string | null;
+          read?: boolean;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: string;
+          reference_type?: string;
+          reference_id?: string;
+          title?: string;
+          body?: string | null;
+          read?: boolean;
+          read_at?: string | null;
+          created_at?: string;
+        };
+      };
     };
   };
 };

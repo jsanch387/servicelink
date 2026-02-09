@@ -10,7 +10,7 @@ export const PricingCTASection: React.FC = () => {
   return (
     <section
       id="pricing"
-      className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-neutral-900"
+      className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-[var(--dashboard-bg)]"
     >
       <div className="max-w-4xl mx-auto text-center bg-white/5 backdrop-blur-xl p-6 sm:p-8 md:p-12 lg:p-16 xl:p-24 rounded-3xl sm:rounded-[3rem] md:rounded-[4rem] border border-orange-500/20 relative overflow-hidden shadow-3xl">
         {/* Background Glow */}

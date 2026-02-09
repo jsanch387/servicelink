@@ -65,14 +65,17 @@ export class ProfileService {
 
   /**
    * Gets user profile by user_id
+   * @param userId - The user ID to fetch profile for
+   * @param columns - Optional: specific columns to select (defaults to '*')
+   *                  Use this to optimize queries by only fetching needed columns
    */
-  static async getProfile(userId: string) {
+  static async getProfile(userId: string, columns: string = '*') {
     try {
       const supabase = createClient() as any;
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(columns)
         .eq('user_id', userId)
         .single();
 

@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, Input, Select, TextArea } from '@/components/shared';
+import {
+  Button,
+  GlassCard,
+  Input,
+  Select,
+  TextArea,
+} from '@/components/shared';
 import React, { useEffect, useState } from 'react';
 import { saveStepAndProgress } from '../utils/onboardingHelpers';
 
@@ -124,28 +130,30 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-      {/* Header Section */}
-      <div className="mb-10 sm:mb-12 text-center">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight leading-tight">
+    <div className="max-w-2xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           Tell us about your <span className="text-orange-400">business</span>
         </h1>
-        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
+        <p className="text-sm text-gray-400 mt-2">
           Help customers understand what you do and where you serve.
         </p>
       </div>
 
-      {/* Main Content Container (Modular Block Style) */}
-      <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl sm:mx-0">
-        {/* Error Message */}
+      <GlassCard
+        padding="lg"
+        rounded="rounded-2xl"
+        blurColor="bg-orange-500"
+        showBlur={true}
+        className="mb-8 text-left"
+      >
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
-            <p className="text-red-400 text-sm font-medium">{error}</p>
+          <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 mb-6 text-center">
+            <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-          {/* Business Name (Required) */}
           <Input
             label="Business Name"
             placeholder="e.g., Stellar Digital Marketing"
@@ -154,7 +162,6 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
             required
           />
 
-          {/* Business Type & Service Area (Grid Layout) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <Select
               label="Business Type"
@@ -172,7 +179,6 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
             />
           </div>
 
-          {/* Bio */}
           <TextArea
             label="Bio (Optional)"
             placeholder="Briefly describe your business, services, and what makes you unique. This will be the first thing customers read!"
@@ -182,9 +188,7 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
             maxLength={280}
           />
 
-          {/* Action Buttons - Mobile optimized */}
           <div className="flex flex-col gap-4 pt-6 sm:pt-8">
-            {/* Back Button */}
             <Button
               type="button"
               onClick={onBack}
@@ -194,9 +198,7 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
             >
               ← Back
             </Button>
-
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 order-1 sm:order-2">
-              {/* Skip Button (Outline Style) */}
               <Button
                 type="button"
                 onClick={handleSkip}
@@ -206,8 +208,6 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
               >
                 Skip for now
               </Button>
-
-              {/* Continue Button (Primary Orange Style) */}
               <Button
                 type="submit"
                 variant="primary"
@@ -216,16 +216,13 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
                 loading={isLoading}
               >
                 {isLoading ? 'Saving...' : 'Continue'}
-              </Button>
-            </div>
+              </Button>{' '}
+            </div>{' '}
           </div>
         </form>
-      </div>
+      </GlassCard>
 
-      <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
-        This information forms the core of your profile. You can always edit it
-        later.
-      </p>
+      <p className="text-xs text-gray-500">You can always edit this later.</p>
     </div>
   );
 };

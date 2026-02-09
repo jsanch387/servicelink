@@ -8,6 +8,7 @@ interface ButtonProps {
     | 'secondary'
     | 'outline'
     | 'ghost'
+    | 'inverse'
     | 'danger'
     | 'success'
     | 'warning';
@@ -52,6 +53,7 @@ export const Button: React.FC<ButtonProps> = ({
       'border border-orange-500/50 text-orange-400 bg-transparent hover:bg-orange-500/10 hover:border-orange-400 focus:ring-orange-500',
     ghost:
       'text-gray-300 hover:text-white hover:bg-neutral-700/50 focus:ring-neutral-500',
+    inverse: 'bg-white text-black hover:bg-gray-100 focus:ring-neutral-400',
     danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
     success: 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500',
     warning:

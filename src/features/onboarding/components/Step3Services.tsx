@@ -2,6 +2,7 @@
 
 import {
   Button,
+  GlassCard,
   Input,
   PriceInput,
   Select,
@@ -37,7 +38,6 @@ const HOURS_OPTIONS = [
   { value: '10', label: '10+ hours' },
 ];
 
-// Simple Service Card Component for the onboarding flow
 const ServiceCard = ({
   service,
   onDelete,
@@ -45,18 +45,17 @@ const ServiceCard = ({
   service: Service;
   onDelete: () => void;
 }) => (
-  <div className="flex items-start space-x-3 sm:space-x-4 p-4 sm:p-5 bg-neutral-900 rounded-xl transition duration-300 hover:bg-neutral-700/50 group border border-neutral-800 hover:border-orange-400/50">
-    {/* Service icon */}
-    <div className="p-1.5 sm:p-2 rounded-full bg-orange-900/40 border border-orange-500/20 flex-shrink-0">
-      <PlusIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" />
+  <div className="flex items-start gap-3 sm:gap-4 p-4 rounded-xl border border-white/10 bg-white/[0.04] hover:border-white/15 hover:bg-white/[0.06] transition-colors">
+    <div className="p-2 rounded-xl border border-orange-500/20 bg-orange-500/10 flex-shrink-0">
+      <PlusIcon className="h-5 w-5 text-orange-400" />
     </div>
     <div className="min-w-0 flex-1">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="text-white font-semibold block text-sm sm:text-base leading-tight">
+          <h3 className="text-white font-semibold text-sm sm:text-base leading-tight">
             {service.name}
           </h3>
-          <p className="text-xs sm:text-sm text-gray-400 block leading-relaxed mt-1">
+          <p className="text-xs sm:text-sm text-gray-400 leading-relaxed mt-0.5">
             {service.description || 'No description provided'}
           </p>
           <div className="flex flex-wrap gap-3 mt-2 text-xs font-medium">
@@ -78,7 +77,7 @@ const ServiceCard = ({
         </div>
         <button
           onClick={onDelete}
-          className="text-gray-500 hover:text-red-400 transition duration-150 p-1 rounded-full hover:bg-red-900/20 flex-shrink-0 ml-2"
+          className="text-gray-500 hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-red-500/10 flex-shrink-0"
           title="Remove service"
         >
           <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -336,33 +335,32 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-      {/* Header Section */}
-      <div className="mb-10 sm:mb-12 text-center">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 sm:mb-6 tracking-tight leading-tight">
+      <div className="mb-8 sm:mb-10 text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           List Your <span className="text-orange-400">Services</span>
         </h1>
-        <p className="text-lg sm:text-xl lg:text-2xl text-gray-400 leading-relaxed font-light max-w-3xl mx-auto">
-          Tell customers what you do and how much it costs. Keep it simple and
-          clear.
+        <p className="text-sm text-gray-400 mt-2">
+          Tell customers what you do and how much it costs.
         </p>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 sm:mb-8 mx-2 sm:mx-0">
-          <p className="text-red-400 text-sm font-medium text-center">
-            {error}
-          </p>
-        </div>
-      )}
-
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        {/* Add Service Form */}
-        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl sm:mx-0">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+        <GlassCard
+          padding="lg"
+          rounded="rounded-2xl"
+          blurColor="bg-orange-500"
+          showBlur={true}
+          className="text-left"
+        >
+          <h2 className="text-base font-semibold text-white mb-6">
             Add a Service
           </h2>
+
+          {error && (
+            <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 mb-6 text-center">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
 
           <form className="space-y-4 sm:space-y-6">
             <Input
@@ -387,12 +385,12 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
                   Describe what customers get with this service
                 </span>
                 <span
-                  className={`${
+                  className={
                     currentService.description.length >
                     MAX_DESCRIPTION_LENGTH * 0.9
                       ? 'text-orange-400'
                       : 'text-gray-500'
-                  }`}
+                  }
                 >
                   {currentService.description.length}/{MAX_DESCRIPTION_LENGTH}
                 </span>
@@ -413,11 +411,11 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
                     Enter price in dollars (e.g., 150.00)
                   </span>
                   <span
-                    className={`${
+                    className={
                       currentService.price.length > MAX_PRICE_LENGTH * 0.8
                         ? 'text-orange-400'
                         : 'text-gray-500'
-                    }`}
+                    }
                   >
                     {currentService.price.length}/{MAX_PRICE_LENGTH}
                   </span>
@@ -440,27 +438,32 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
               type="button"
               onClick={addService}
               variant="primary"
-              className="w-full mt-4 sm:mt-6 text-base sm:text-lg"
+              className="w-full mt-4 sm:mt-6"
               disabled={!currentService.name.trim()}
             >
               Add This Service
             </Button>
           </form>
-        </div>
+        </GlassCard>
 
-        {/* Services List */}
-        <div className="bg-neutral-800 border-2 border-neutral-700 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl mx-2 sm:mx-0">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-6 sm:mb-8 text-left border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+        <GlassCard
+          padding="lg"
+          rounded="rounded-2xl"
+          blurColor="bg-orange-500"
+          showBlur={true}
+          className="text-left"
+        >
+          <h2 className="text-base font-semibold text-white mb-6">
             Your Services ({services.length})
           </h2>
 
           {servicesLoaded && services.length === 0 ? (
-            <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 sm:p-8 text-center border-dashed">
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-6 sm:p-8 text-center">
               <PlusIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-400 mx-auto mb-3 sm:mb-4 opacity-60" />
-              <p className="text-gray-400 mb-2 font-semibold text-sm sm:text-base">
+              <p className="text-gray-400 mb-1 font-semibold text-sm sm:text-base">
                 No services yet
               </p>
-              <p className="text-xs sm:text-sm text-gray-500">
+              <p className="text-xs text-gray-500">
                 Add your first service using the form on the left.
               </p>
             </div>
@@ -475,24 +478,21 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
               ))}
             </div>
           )}
-        </div>
+        </GlassCard>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-col gap-4 pt-6 sm:pt-8 mt-8 sm:mt-10 px-4 sm:px-0">
-        {/* Back Button */}
+      <div className="flex flex-col gap-4 pt-6 sm:pt-8 mt-8">
         <Button
           type="button"
           onClick={onBack}
           variant="secondary"
-          className="w-full sm:w-auto px-6 sm:px-8 order-2 sm:order-1"
+          className="w-full sm:w-auto px-8 order-2 sm:order-1"
           disabled={isLoading}
         >
           ← Back
         </Button>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 order-1 sm:order-2">
-          {/* Skip Button */}
           <Button
             type="button"
             onClick={handleSkip}
@@ -503,7 +503,6 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
             Skip for now
           </Button>
 
-          {/* Continue Button */}
           <Button
             type="button"
             onClick={handleSubmit}
@@ -517,8 +516,8 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
         </div>
       </div>
 
-      <p className="text-sm sm:text-base text-gray-500 text-center mt-6 sm:mt-8 px-4 sm:px-0">
-        Don&apos;t worry - you can always add, change, or remove services later.
+      <p className="text-xs text-gray-500 text-center mt-4">
+        You can add, change, or remove services later.
       </p>
     </div>
   );
