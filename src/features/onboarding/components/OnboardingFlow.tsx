@@ -253,7 +253,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[var(--dashboard-bg)] flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         {/* Progress indicator - Hide during celebration */}
         {currentStep !== 6 && (

@@ -1,5 +1,6 @@
 'use client';
 
+import { NotificationBell } from '@/features/notifications';
 import React from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { IconButton } from '@/components/shared';
@@ -9,7 +10,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onMenuClick,
 }) => {
   return (
-    <header className="bg-neutral-800 border-b border-neutral-700">
+    <header className="bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
       <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
         {/* Mobile menu button */}
         <IconButton
@@ -20,8 +21,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           aria-label="Open sidebar"
         />
 
-        {/* Empty space - minimal header */}
-        <div className="flex-1"></div>
+        {/* Empty space */}
+        <div className="flex-1" />
+
+        {/* Notifications */}
+        <NotificationBell />
       </div>
     </header>
   );

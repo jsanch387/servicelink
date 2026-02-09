@@ -1,46 +1,53 @@
 /**
- * QuickActionsCard - Provides quick access to profile management actions
- * Contains buttons for viewing and editing the business profile
+ * QuickActionsCard - Quick profile actions in a glass morphism card
  */
 
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { EyeIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 export const QuickActionsCard: React.FC = () => {
   return (
-    <div className="bg-neutral-800 p-4 sm:p-5 lg:p-6 rounded-2xl border border-neutral-700 h-full flex flex-col">
-      <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center space-x-2">
-        <PencilIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400 flex-shrink-0" />
-        <span>Quick Profile Actions</span>
-      </h3>
+    <GlassCard
+      padding="md"
+      rounded="rounded-2xl"
+      blurColor="bg-zinc-500"
+      showBlur={true}
+      className="h-full flex flex-col"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+          <PencilSquareIcon className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-400" />
+        </div>
+        <h3 className="text-lg sm:text-xl font-semibold text-white">
+          Quick Actions
+        </h3>
+      </div>
 
-      <div className="space-y-2 sm:space-y-3 mt-auto">
+      <div className="flex flex-col gap-2 sm:gap-3 mt-auto">
         <Button
-          variant="outline"
+          variant="secondary"
+          size="md"
           fullWidth
-          icon={<EyeIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-          onClick={() =>
-            (window.location.href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=view`)
-          }
+          href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=view`}
+          icon={<EyeIcon className="h-4 w-4" />}
         >
           View Live Profile
         </Button>
         <Button
           variant="secondary"
+          size="md"
           fullWidth
-          icon={<PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-          onClick={() =>
-            (window.location.href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=edit`)
-          }
+          href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=edit`}
+          icon={<PencilSquareIcon className="h-4 w-4" />}
         >
           Edit Business Details
         </Button>
       </div>
-    </div>
+    </GlassCard>
   );
 };
 

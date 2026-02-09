@@ -9,7 +9,7 @@ export const WhatsIncludedSection: React.FC = () => {
   return (
     <section
       id="whats-included"
-      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-white/5 overflow-hidden bg-neutral-900"
+      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-[var(--dashboard-border)] overflow-hidden bg-[var(--dashboard-bg)]"
     >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-center">

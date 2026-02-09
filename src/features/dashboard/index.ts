@@ -1,11 +1,13 @@
 export { Dashboard } from './components/Dashboard';
 export { DashboardContent } from './components/DashboardContent';
+export { DashboardLoadingState } from './components/DashboardLoadingState';
 export { DashboardHeader } from './components/DashboardHeader';
 export { DashboardSidebar } from './components/DashboardSidebar';
 export { DashboardWrapper } from './components/DashboardWrapper';
 export { EditProfileCard } from './components/EditProfileCard';
 export { LinkSharingCard } from './components/LinkSharingCard';
 export { OnboardingCompleteCard } from './components/OnboardingCompleteCard';
+export { PendingRequestsCard } from './components/PendingRequestsCard';
 export { PerformanceCard } from './components/PerformanceCard';
 export { QuickActionsCard } from './components/QuickActionsCard';
 export { SettingsContent } from './components/SettingsContent';

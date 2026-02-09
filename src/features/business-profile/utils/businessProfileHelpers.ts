@@ -58,11 +58,7 @@ export function validateBusinessProfileForm(data: BusinessProfileFormData): {
   }
 
   if (data.phone_number_call && data.phone_number_call.length !== 10) {
-    errors.push('Call phone number must be 10 digits');
-  }
-
-  if (data.phone_number_text && data.phone_number_text.length !== 10) {
-    errors.push('Text phone number must be 10 digits');
+    errors.push('Phone number must be 10 digits');
   }
 
   return {

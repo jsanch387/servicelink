@@ -4,8 +4,6 @@
  * Shows a loading state while the booking page is being loaded
  */
 
-import { LoadingSpinner } from '@/components/shared';
-
 export default function BookingRequestLoading() {
   return (
     <div className="min-h-screen bg-neutral-900">

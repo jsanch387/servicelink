@@ -10,8 +10,6 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  console.log('📊 [Analytics] Tracking profile view...');
-
   try {
     const { businessSlug } = await request.json();
 
@@ -78,10 +76,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    console.log(
-      `✅ [Analytics] View tracked: ${businessSlug} - ${updatedProfile.profile_views} total views`
-    );
 
     return NextResponse.json({
       success: true,

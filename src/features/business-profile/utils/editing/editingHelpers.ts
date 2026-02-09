@@ -65,12 +65,9 @@ export function validateEditingForm(
     errors.push('Service area is required');
   }
 
-  // Phone Validation
+  // Phone Validation (single number for customers to call)
   if (!formData.phone_number_call || formData.phone_number_call.length !== 10) {
-    errors.push('Call phone number must be 10 digits');
-  }
-  if (!formData.phone_number_text || formData.phone_number_text.length !== 10) {
-    errors.push('Text phone number must be 10 digits');
+    errors.push('Phone number must be 10 digits');
   }
 
   // Services Validation
@@ -130,7 +127,7 @@ export function transformFormDataForAPI(
       service_area: formData.service_area,
       bio: formData.bio,
       phone_number_call: formData.phone_number_call,
-      phone_number_text: formData.phone_number_text,
+      phone_number_text: null, // Single number only; customers call this number
       logo_path: formData.logo_path,
       banner_path: formData.banner_path,
     },

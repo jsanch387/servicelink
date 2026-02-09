@@ -9,7 +9,7 @@ import { TestimonialsSection } from './TestimonialsSection';
 
 export const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-[var(--dashboard-bg)]">
       <Navigation />
       <HeroSection />
       <HowItWorksSection />

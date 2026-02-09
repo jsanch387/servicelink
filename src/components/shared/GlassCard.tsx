@@ -53,7 +53,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     none: '',
   };
 
-  const baseClasses = `relative overflow-hidden bg-white/[0.03] backdrop-blur-md border border-white/[0.08] ${rounded} transition-all active:scale-[0.98] w-full h-full`;
+  const baseClasses = `relative overflow-hidden bg-white/[0.03] backdrop-blur-md border border-white/[0.08] ${rounded} transition-all w-full h-full`;
 
   const combinedClasses =
     `${baseClasses} ${paddingClasses[padding]} ${className} ${

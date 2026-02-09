@@ -4,6 +4,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Dashboard: single source for background and divider (change once to update everywhere) */
+  --dashboard-bg: #0f0f0f;
+  --dashboard-border: #2a2a2a;
 }
 
 @theme inline {

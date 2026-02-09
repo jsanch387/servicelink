@@ -47,8 +47,11 @@ export async function getOnboardingState(userId: string): Promise<{
   error?: string;
 }> {
   try {
-    // Get user profile
-    const profileResult = await ProfileService.getProfile(userId);
+    // Get user profile - only fetch columns we actually need for performance
+    const profileResult = await ProfileService.getProfile(
+      userId,
+      'user_id, onboarding_status, onboarding_step, full_name, created_at, updated_at'
+    );
     if (!profileResult.success) {
       return { success: false, error: profileResult.error };
     }

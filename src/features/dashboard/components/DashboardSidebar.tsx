@@ -52,7 +52,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const router = useRouter();
   const { signOut } = useAuth();
 
-  // Filter navigation items based on onboarding completion
   const navigation = allNavigationItems.filter(
     item => !item.requiresOnboarding || isOnboardingCompleted
   );
@@ -60,16 +59,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const handleLogout = async () => {
     try {
       const result = await signOut();
-
-      if (result.success) {
-        // Redirect to home page after successful logout
-        router.push('/');
-      } else if (result.error) {
-        console.error('Logout failed:', result.error);
-        // Could show a toast notification here
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
+      if (result.success) router.push('/');
+    } catch {
+      // ignore
     }
   };
 
@@ -87,11 +79,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
       {/* Sidebar */}
       <div
-        className={`dashboard-sidebar fixed lg:fixed top-0 left-0 z-50 lg:z-auto w-64 h-screen bg-neutral-800 border-r border-neutral-700 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`dashboard-sidebar fixed lg:fixed top-0 left-0 z-50 lg:z-auto w-64 h-screen bg-[var(--dashboard-bg)] border-r border-[var(--dashboard-border)] transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex h-full flex-col overflow-y-auto">
+        <div className="flex h-full flex-col overflow-y-auto pb-24 lg:pb-6">
           {/* Logo and close button */}
           <div className="flex h-16 items-center justify-between px-6">
             <Logo size="md" href="/" />
@@ -113,16 +105,16 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   key={item.name}
                   href={item.href}
                   onClick={() => setOpen(false)} // Auto-hide sidebar on mobile when link is clicked
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
                     isActive
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-neutral-700 text-white'
                       : 'text-gray-300 hover:text-white hover:bg-neutral-700'
                   }`}
                 >
                   <item.icon
                     className={`mr-3 h-5 w-5 transition-colors ${
                       isActive
-                        ? 'text-white'
+                        ? 'text-gray-300'
                         : 'text-gray-400 group-hover:text-white'
                     }`}
                   />
@@ -132,11 +124,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             })}
           </nav>
 
-          {/* Logout */}
-          <div className="border-t border-neutral-700 p-4">
+          {/* Logout - extra bottom padding keeps it above mobile browser UI */}
+          <div className="mt-auto p-4 flex-shrink-0">
             <button
+              type="button"
               onClick={handleLogout}
-              className="group flex w-full items-center px-3 py-2 text-sm font-medium text-gray-300 rounded-md hover:text-white hover:bg-neutral-700 transition-colors cursor-pointer"
+              className="group flex w-full items-center px-3 py-2 text-sm font-medium text-gray-300 rounded-xl hover:text-white hover:bg-neutral-700 transition-colors cursor-pointer"
             >
               <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
               Logout

@@ -12,7 +12,7 @@ export const HowItWorksSection: React.FC = () => {
   return (
     <section
       id="how-it-works"
-      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-white/5 bg-neutral-900 space-y-24 sm:space-y-32"
+      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-[var(--dashboard-border)] bg-[var(--dashboard-bg)] space-y-24 sm:space-y-32"
     >
       {/* Highlight 1: Professionalism */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">

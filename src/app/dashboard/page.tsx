@@ -119,6 +119,13 @@ export default async function DashboardPage() {
         (checks.filter(Boolean).length / checks.length) * 100
       );
 
+      // Pending booking requests count (scoped to this business, count-only query)
+      const { count: pendingRequestsCount } = await supabase
+        .from('booking_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('business_id', profile.id)
+        .eq('status', 'pending');
+
       // Prepare dashboard data
       const dashboardData = {
         businessProfile: {
@@ -155,6 +162,7 @@ export default async function DashboardPage() {
             profile.bio &&
             profile.bio.trim().length >= 50,
         },
+        pendingRequestsCount: pendingRequestsCount ?? 0,
       };
 
       return <DashboardContent dashboardData={dashboardData} />;

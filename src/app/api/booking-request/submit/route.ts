@@ -10,6 +10,8 @@
 
 import { BookingRequestService } from '@/features/booking-request/services/bookingRequestService';
 import { BookingRequestFormData } from '@/features/booking-request/types/bookingRequest';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import type { Database } from '@/libs/supabase/client';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     const { data: businessProfile, error: businessError } = await supabase
       .from('business_profiles')
-      .select('id, business_slug')
+      .select('id, business_slug, profile_id')
       .eq('id', body.businessId)
       .single();
 
@@ -183,6 +185,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 400 }
+      );
+    }
+
+    // Create in-app notification for the business owner (profile_id = user who receives it)
+    const profileId =
+      (businessProfile as { profile_id?: string }).profile_id ?? null;
+    const bookingId = result.data?.id ?? null;
+
+    if (profileId && bookingId) {
+      try {
+        const admin = createSupabaseAdminClient();
+        const notificationRow: Database['public']['Tables']['notifications']['Insert'] =
+          {
+            user_id: profileId,
+            type: 'booking_request',
+            reference_type: 'booking_request',
+            reference_id: bookingId,
+            title: `New booking request from ${formData.name}`,
+            body: formData.service
+              ? `Service: ${formData.service} · ${formData.preferredDate}`
+              : null,
+          };
+        const { error: insertError } = await admin
+          .from('notifications')
+          .insert(notificationRow as never);
+
+        if (insertError) {
+          console.error(
+            '[booking-request/submit] Notification insert failed:',
+            insertError.message,
+            insertError.code,
+            insertError.details
+          );
+        }
+      } catch (notifError) {
+        const message =
+          notifError instanceof Error ? notifError.message : String(notifError);
+        console.error(
+          '[booking-request/submit] Notification create error:',
+          message
+        );
+        // Do not fail the request; booking was already created
+      }
+    } else {
+      console.warn(
+        '[booking-request/submit] Skipped notification: missing profile_id or booking id',
+        { hasProfileId: !!profileId, hasBookingId: !!bookingId }
       );
     }
 

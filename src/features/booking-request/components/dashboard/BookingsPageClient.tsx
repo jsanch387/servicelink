@@ -2,9 +2,9 @@
 
 import { BookingRequest } from '@/features/booking-request/types/bookingRequest';
 import {
-    ChevronDownIcon,
-    ChevronUpIcon,
-    InformationCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useCallback, useState } from 'react';
 import { BookingsHeader } from './BookingsHeader';
@@ -170,12 +170,13 @@ export function BookingsPageClient({
                 </div>
                 {isInfoExpanded && (
                   <p className="text-gray-300 text-xs sm:text-sm leading-relaxed mt-2.5">
-                    Contact each customer via phone or text to confirm details like
-                    address, date, and time. Once you&apos;ve scheduled with them, you
-                    can mark the request as{' '}
-                    <span className="font-semibold text-white">Confirmed</span>,{' '}
-                    <span className="font-semibold text-white">Declined</span>, or keep
-                    it as <span className="font-semibold text-white">Pending</span>.
+                    Contact each customer via phone or text to confirm details
+                    like address, date, and time. Once you&apos;ve scheduled
+                    with them, you can mark the request as{' '}
+                    <span className="font-semibold text-white">Approved</span>,{' '}
+                    <span className="font-semibold text-white">Declined</span>,
+                    or leave it as{' '}
+                    <span className="font-semibold text-white">Pending</span>.
                   </p>
                 )}
               </div>

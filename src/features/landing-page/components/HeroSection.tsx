@@ -9,7 +9,7 @@ export const HeroSection: React.FC = () => {
   const [slugInput, setSlugInput] = useState('');
 
   return (
-    <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6 bg-neutral-900">
+    <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6 bg-[var(--dashboard-bg)]">
       {/* Hero Glow Effect */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[50vh] -z-10"

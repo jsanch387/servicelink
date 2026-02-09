@@ -1,10 +1,10 @@
 'use client';
 
-import { ModernLoadingSpinner } from '@/components/shared';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { useEffect, useState } from 'react';
 import { Dashboard } from './Dashboard';
+import { DashboardLoadingState } from './DashboardLoadingState';
 
 interface DashboardWrapperProps {
   children: React.ReactNode;
@@ -40,8 +40,8 @@ export const DashboardWrapper: React.FC<DashboardWrapperProps> = ({
 
   if (isLoadingOnboarding) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0f0f0f]">
-        <ModernLoadingSpinner size="lg" text="Loading..." />
+      <div className="min-h-screen bg-[var(--dashboard-bg)]">
+        <DashboardLoadingState />
       </div>
     );
   }

@@ -101,10 +101,8 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     service_area: businessProfile.service_area || '',
     bio: businessProfile.bio || '',
     phone_number_call: businessProfile.phone_number_call || '',
-    phone_number_text: businessProfile.phone_number_text || '',
-    same_phone_for_both:
-      businessProfile.phone_number_call === businessProfile.phone_number_text &&
-      (businessProfile.phone_number_call?.length || 0) > 0,
+    phone_number_text: '', // Not used; we only store one number (call)
+    same_phone_for_both: false,
     logo_path: businessProfile.logo_path || '',
     banner_path: businessProfile.banner_path || '',
     services:
@@ -174,16 +172,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   //   });
   //   if (errors.length > 0) setErrors([]);
   // };
-
-  const handleSamePhoneChange = (checked: boolean) => {
-    setFormData(prev => {
-      const newData = { ...prev, same_phone_for_both: checked };
-      if (checked && prev.phone_number_call) {
-        newData.phone_number_text = prev.phone_number_call;
-      }
-      return newData;
-    });
-  };
 
   const handleServicesChange = (services: ServiceFormData[]) => {
     setFormData(prev => ({ ...prev, services }));
@@ -420,7 +408,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         <ContactSection
           formData={formData}
           onInputChange={handleInputChange}
-          onSamePhoneChange={handleSamePhoneChange}
           errors={errors}
         />
 
