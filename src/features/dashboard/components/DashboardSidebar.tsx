@@ -3,9 +3,11 @@
 import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth';
+import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
 import {
   ArrowRightOnRectangleIcon,
   CalendarIcon,
+  ClockIcon,
   CogIcon,
   HomeIcon,
   UserIcon,
@@ -35,6 +37,16 @@ const allNavigationItems = [
     icon: CalendarIcon,
     requiresOnboarding: true,
   },
+  ...(AVAILABILITY_FEATURE_ENABLED
+    ? [
+        {
+          name: 'Availability',
+          href: ROUTES.DASHBOARD.AVAILABILITY,
+          icon: ClockIcon,
+          requiresOnboarding: true,
+        },
+      ]
+    : []),
   {
     name: 'Settings',
     href: ROUTES.DASHBOARD.SETTINGS,

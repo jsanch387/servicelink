@@ -22,4 +22,5 @@ export { ModernLoadingSpinner } from './ModernLoadingSpinner';
 export { SectionTitle } from './SectionTitle';
 export { SettingsLoadingState } from './SettingsLoadingState';
 export { StructuredData } from './StructuredData';
+export { Switch } from './Switch';
 export { ToggleButton } from './ToggleButton';
