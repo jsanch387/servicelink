@@ -8,6 +8,7 @@ export { TextArea } from './TextArea';
 
 // Shared Components
 export { Button } from './Button';
+export { Calendar } from './Calendar';
 export { Card } from './Card';
 export { CompletionCelebration, SuccessMessage } from './CompletionCelebration';
 export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';

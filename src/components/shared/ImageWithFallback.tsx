@@ -25,6 +25,7 @@ interface ImageWithFallbackProps {
   fallbackLabel?: string;
   fallbackSize?: { w: number; h: number };
   priority?: boolean;
+  onLoad?: () => void;
 }
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
@@ -36,6 +37,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   fallbackLabel,
   fallbackSize = { w: 600, h: 400 },
   priority = false,
+  onLoad,
 }) => {
   // Handle empty string or null/undefined src by using fallback immediately
   const fallbackSrc = DATA_SVG(
@@ -61,6 +63,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         height={height}
         className={className}
         priority={priority}
+        onLoad={onLoad}
       />
     );
   }
@@ -74,6 +77,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       className={className}
       priority={priority}
       onError={handleError}
+      onLoad={onLoad}
     />
   );
 };

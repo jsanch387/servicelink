@@ -35,10 +35,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   const router = useRouter();
 
   const handleBookClick = () => {
-    if (businessSlug) {
-      router.push(
-        `/${businessSlug}/book?service=${encodeURIComponent(service.name)}`
-      );
+    if (businessSlug && service.id) {
+      router.push(`/${businessSlug}/book?serviceId=${service.id}`);
     }
   };
   const formatPrice = (price: string | number) => {
@@ -75,7 +73,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <GlassCard
       blurColor="bg-orange-500"
-      className="group transition-all rounded-2xl duration-300 hover:border-orange-500/30"
+      className="group rounded-2xl"
       padding="md"
     >
       {/* Header Row */}
@@ -98,7 +96,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         {/* Duration - Enhanced Design */}
         {service.hours_to_complete ? (
           <div className="flex items-center gap-2 bg-white/[0.03] backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/[0.08]">
-            <ClockIcon className="h-3.5 w-3.5 text-orange-500" />
+            <ClockIcon className="h-3.5 w-3.5 text-white" />
             <span className="text-[12px] font-semibold text-zinc-300 tracking-wide">
               {formatDuration(service.hours_to_complete)}
             </span>
@@ -107,8 +105,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <div />
         )}
 
-        {/* Book Button - Only show on public profiles */}
-        {isPublic && !isEditable && businessSlug && (
+        {/* Book Button - Only show on public profiles when service has id */}
+        {isPublic && !isEditable && businessSlug && service.id && (
           <button
             onClick={handleBookClick}
             className="relative flex items-center gap-1 group/btn px-4 py-2 rounded-xl bg-white text-black shadow-lg shadow-white/20 hover:shadow-xl hover:shadow-white/30 transition-all cursor-pointer"
