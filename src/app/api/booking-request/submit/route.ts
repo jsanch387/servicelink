@@ -10,10 +10,12 @@
 
 import { BookingRequestService } from '@/features/booking-request/services/bookingRequestService';
 import { BookingRequestFormData } from '@/features/booking-request/types/bookingRequest';
+import {
+  sendBookingNotificationEmail,
+  type BookingNotificationPayload,
+} from '@/features/email';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database } from '@/libs/supabase/client';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -91,21 +93,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify business exists
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-
-    const { data: businessProfile, error: businessError } = await supabase
+    // Verify business exists (use admin so RLS doesn't block unauthenticated requests)
+    const admin = createSupabaseAdminClient();
+    const { data: businessProfile, error: businessError } = await admin
       .from('business_profiles')
       .select('id, business_slug, profile_id')
       .eq('id', body.businessId)
@@ -121,7 +111,7 @@ export async function POST(request: NextRequest) {
     // If a service name is provided, try to find the service ID
     let serviceId: string | undefined;
     if (body.serviceName && body.serviceName !== 'General Inquiry') {
-      const { data: service } = await supabase
+      const { data: service } = await admin
         .from('business_services')
         .select('id')
         .eq('business_id', body.businessId)
@@ -130,7 +120,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (service) {
-        serviceId = service.id;
+        serviceId = (service as { id: string }).id;
       }
     }
 
@@ -195,7 +185,6 @@ export async function POST(request: NextRequest) {
 
     if (profileId && bookingId) {
       try {
-        const admin = createSupabaseAdminClient();
         const notificationRow: Database['public']['Tables']['notifications']['Insert'] =
           {
             user_id: profileId,
@@ -207,32 +196,53 @@ export async function POST(request: NextRequest) {
               ? `Service: ${formData.service} · ${formData.preferredDate}`
               : null,
           };
-        const { error: insertError } = await admin
-          .from('notifications')
-          .insert(notificationRow as never);
-
-        if (insertError) {
-          console.error(
-            '[booking-request/submit] Notification insert failed:',
-            insertError.message,
-            insertError.code,
-            insertError.details
-          );
-        }
-      } catch (notifError) {
-        const message =
-          notifError instanceof Error ? notifError.message : String(notifError);
-        console.error(
-          '[booking-request/submit] Notification create error:',
-          message
-        );
+        await admin.from('notifications').insert(notificationRow as never);
+      } catch {
         // Do not fail the request; booking was already created
       }
-    } else {
-      console.warn(
-        '[booking-request/submit] Skipped notification: missing profile_id or booking id',
-        { hasProfileId: !!profileId, hasBookingId: !!bookingId }
-      );
+    }
+
+    // Send email only after booking was created successfully (we only reach here when result.success)
+    try {
+      let ownerEmail: string | null = null;
+      if (profileId) {
+        try {
+          const {
+            data: { user },
+          } = await admin.auth.admin.getUserById(profileId);
+          ownerEmail = user?.email?.trim() ?? null;
+        } catch {
+          // Owner email unavailable from auth
+        }
+      }
+
+      if (ownerEmail) {
+        const payload: BookingNotificationPayload = {
+          customerName: formData.name,
+          serviceName: formData.service,
+          preferredDate: formData.preferredDate,
+          preferredTimeWindow: formData.preferredTimeWindow,
+        };
+        const emailResult = await sendBookingNotificationEmail(
+          ownerEmail,
+          payload
+        );
+        if (emailResult.sent && bookingId) {
+          try {
+            await admin
+              .from('booking_requests')
+              .update({
+                notification_sent: true,
+                notification_sent_at: new Date().toISOString(),
+              } as never)
+              .eq('id', bookingId);
+          } catch {
+            // Best-effort: notification_sent update failed
+          }
+        }
+      }
+    } catch {
+      // Email/notification_sent failure must not affect response; booking was already created
     }
 
     // Return success response
@@ -246,12 +256,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Error submitting booking request:', error);
+  } catch (err) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
+        error: err instanceof Error ? err.message : 'Internal server error',
       },
       { status: 500 }
     );
