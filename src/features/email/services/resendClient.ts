@@ -14,15 +14,26 @@ export function getResendClient(): Resend | null {
 
 /**
  * Base URL for the app (used for links in emails).
- * Checks NEXT_PUBLIC_SITE_URL, then NEXT_PUBLIC_APP_URL, then VERCEL_URL, then localhost.
+ * Set SITE_URL or APP_URL in Vercel (Production + Preview) to https://myservicelink.app
+ * so email links use your domain instead of the Vercel deployment URL.
+ * Order: SITE_URL → APP_URL → NEXT_PUBLIC_SITE_URL → NEXT_PUBLIC_APP_URL → VERCEL_URL → localhost.
  */
+function normalizeBaseUrl(raw: string): string {
+  const url = raw.endsWith('/') ? raw.slice(0, -1) : raw;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `https://${url}`;
+}
+
 export function getAppBaseUrl(): string {
-  const url =
+  const raw =
+    process.env.SITE_URL?.trim() ||
+    process.env.APP_URL?.trim() ||
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (url) {
-    return url.endsWith('/') ? url.slice(0, -1) : url;
+  if (raw) {
+    return normalizeBaseUrl(raw);
   }
+  // Avoid using Vercel deployment URL in emails; require explicit env for production domain
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
