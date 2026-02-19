@@ -32,6 +32,22 @@ function toHHmm(minutes: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
+/** Minutes from midnight for "now" in local time (used when selected date is today). */
+function getCurrentMinutesFromMidnight(): number {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+/** True if the given date is the same calendar day as today (local time). */
+function isToday(date: Date): boolean {
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
 /** Slots are in 30-minute increments; returns array of "HH:mm" for the given date. */
 export function generateTimeSlots(
   selectedDate: Date,
@@ -48,8 +64,12 @@ export function generateTimeSlots(
   const startMins = parseTimeHHmm(daySchedule.start);
   const endMins = parseTimeHHmm(daySchedule.end);
 
+  const nowMins = isToday(selectedDate) ? getCurrentMinutesFromMidnight() : -1;
+
   const slots: string[] = [];
   for (let t = startMins; t + serviceDurationMinutes <= endMins; t += incrementMinutes) {
+    if (nowMins >= 0 && t <= nowMins) continue;
+
     const slotStart = toHHmm(t);
     const slotEnd = toHHmm(t + serviceDurationMinutes);
 

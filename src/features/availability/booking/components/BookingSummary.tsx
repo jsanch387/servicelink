@@ -12,6 +12,14 @@ function formatAddress(customer: CustomerFormData): string {
   return parts.join(', ');
 }
 
+function formatPhoneDisplay(phone: string): string {
+  const digits = phone.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return phone;
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 interface BookingSummaryProps {
   serviceName: string;
   serviceDurationMinutes: number;
@@ -42,7 +50,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
         <div>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Service</p>
+          <p className="text-xs text-gray-500 tracking-wider mb-1">Service</p>
           <p className="text-white font-medium">{serviceName}</p>
           <p className="text-sm text-gray-400">
             {serviceDurationMinutes} min
@@ -53,26 +61,26 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Date & time</p>
+          <p className="text-xs text-gray-500 tracking-wider mb-1">Date & time</p>
           <p className="text-white font-medium">{dateFormatted}</p>
           <p className="text-sm text-gray-400">{time}</p>
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Contact</p>
+          <p className="text-xs text-gray-500 tracking-wider mb-1">Contact</p>
           <p className="text-white font-medium">{customer.fullName}</p>
           <p className="text-sm text-gray-400">{customer.email}</p>
-          <p className="text-sm text-gray-400">{customer.phone}</p>
+          <p className="text-sm text-gray-400">{formatPhoneDisplay(customer.phone)}</p>
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Address</p>
+          <p className="text-xs text-gray-500 tracking-wider mb-1">Address</p>
           <p className="text-white font-medium">{formatAddress(customer)}</p>
         </div>
 
         {customer.notes.trim() && (
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Notes</p>
+            <p className="text-xs text-gray-500 tracking-wider mb-1">Notes</p>
             <p className="text-sm text-gray-400">{customer.notes}</p>
           </div>
         )}

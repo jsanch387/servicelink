@@ -108,7 +108,7 @@ export const Calendar: React.FC<CalendarProps> = ({
             </h2>
           )}
           {subtitle && (
-            <p className="mt-0.5 text-xs text-gray-500 font-medium uppercase tracking-wider">
+            <p className="mt-0.5 text-xs text-gray-500 font-medium tracking-wider">
               {subtitle}
             </p>
           )}

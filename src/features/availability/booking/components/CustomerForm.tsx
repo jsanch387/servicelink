@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, TextArea } from '@/components/shared';
+import { Button, Input, PhoneInput, TextArea } from '@/components/shared';
 import React from 'react';
 import type { CustomerFormData } from '../types';
 
@@ -84,14 +84,14 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         error={errors.email}
         required
       />
-      <Input
+      <PhoneInput
         label="Phone"
-        type="tel"
         value={value.phone}
         onChange={v => update({ phone: v })}
-        placeholder="(555) 000-0000"
+        placeholder="(555) 123-4567"
         error={errors.phone}
         required
+        showDigitHint
       />
 
       <h2 className="text-xl font-semibold text-white tracking-tight pt-4">Address</h2>
@@ -121,7 +121,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         <Input
           label="State"
           value={value.state}
-          onChange={v => update({ state: v })}
+          onChange={v => update({ state: v.toUpperCase() })}
           placeholder="State"
           error={errors.state}
           required

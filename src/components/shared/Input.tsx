@@ -16,6 +16,10 @@ interface InputProps {
   inputClassName?: string;
   name?: string;
   autoComplete?: string;
+  /** Optional icon on the left (e.g. phone); adds left padding when set. */
+  leftIcon?: React.ReactNode;
+  /** Max length for the input value (native maxLength). */
+  maxLength?: number;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -31,6 +35,8 @@ export const Input: React.FC<InputProps> = ({
   inputClassName = '',
   name,
   autoComplete,
+  leftIcon,
+  maxLength,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordType = type === 'password';
@@ -39,6 +45,7 @@ export const Input: React.FC<InputProps> = ({
       ? 'text'
       : 'password'
     : type;
+  const hasLeftIcon = Boolean(leftIcon);
 
   return (
     <div className={`w-full ${className}`}>
@@ -49,6 +56,11 @@ export const Input: React.FC<InputProps> = ({
         </label>
       )}
       <div className="relative">
+        {hasLeftIcon && (
+          <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none text-gray-400">
+            {leftIcon}
+          </div>
+        )}
         <input
           type={inputType}
           value={value}
@@ -58,10 +70,12 @@ export const Input: React.FC<InputProps> = ({
           disabled={disabled}
           name={name}
           autoComplete={autoComplete}
+          maxLength={maxLength}
           className={`
-            w-full px-4 py-3.5 sm:px-5 sm:py-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-medium
-            focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 focus:bg-white/8
+            w-full py-3.5 sm:py-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-medium
+            focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
             transition-all duration-200 touch-manipulation
+            ${hasLeftIcon ? 'pl-10 sm:pl-12' : 'px-4 sm:px-5'}
             ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
             ${disabled ? 'opacity-60 cursor-not-allowed bg-white/3' : 'hover:border-white/20 active:bg-white/8'}
             ${isPasswordType ? 'pr-12' : ''}
