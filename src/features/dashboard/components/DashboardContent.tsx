@@ -5,9 +5,9 @@
 
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
 import { useAnalytics } from '@/features/analytics';
 import {
+  CreateLinkCard,
   LinkSharingCard,
   PendingRequestsCard,
   PerformanceCard,
@@ -85,28 +85,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               appDomain={APP_DOMAIN}
             />
           ) : (
-            <GlassCard
-              padding="lg"
-              rounded="rounded-2xl"
-              blurColor="bg-zinc-500"
-              showBlur={true}
-              className="text-left"
-            >
-              <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
-                Create your link
-              </h2>
-              <p className="text-gray-400 text-sm mb-6">
-                Share it anywhere—people who click it see your profile.
-              </p>
-              <Button
-                href="/dashboard/settings"
-                variant="primary"
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                Create your link
-              </Button>
-            </GlassCard>
+            <CreateLinkCard businessProfileId={businessProfile.id} />
           )}
 
           {/* Stats + actions grid: Profile views (if slug), Pending requests, Quick actions */}

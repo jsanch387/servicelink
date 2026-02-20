@@ -1,4 +1,5 @@
 export { Dashboard } from './components/Dashboard';
+export { CreateLinkCard } from './components/CreateLinkCard';
 export { DashboardContent } from './components/DashboardContent';
 export { DashboardLoadingState } from './components/DashboardLoadingState';
 export { DashboardHeader } from './components/DashboardHeader';

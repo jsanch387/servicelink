@@ -91,13 +91,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </span>
         </div>
 
-        {/* Professional Bio with improved spacing */}
-        <p className="text-gray-400 text-[15px] mt-6 leading-relaxed max-w-lg mx-auto font-medium">
-          {/* In a real implementation, this would pull from businessProfile.bio */}
-          Premium services tailored for your unique needs. We are dedicated to
-          providing the highest quality standards and professional excellence
-          for every client.
-        </p>
+        {/* Professional Bio from profile */}
+        {(businessProfile.bio?.trim() ?? '') && (
+          <p className="text-gray-400 text-[15px] mt-6 leading-relaxed max-w-lg mx-auto font-medium">
+            {businessProfile.bio}
+          </p>
+        )}
 
         {/* Primary Call-to-Action */}
         {isPublic && (

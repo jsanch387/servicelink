@@ -6,6 +6,7 @@ import {
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
   EnvelopeIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import React, { useCallback, useState } from 'react';
@@ -127,7 +128,30 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         <div className="space-y-8">
           {/* Custom link */}
           <div className={cardClass}>
-            <h2 className="text-base font-semibold text-white">Custom link</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-base font-semibold text-white">
+                Custom link
+              </h2>
+              {!linkGenerated && (
+                <span
+                  className="flex items-center gap-1.5 rounded-md bg-amber-500/15 px-2 py-0.5 text-amber-400 text-xs font-semibold"
+                  title="Create a link to share your profile"
+                >
+                  <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                  Required
+                </span>
+              )}
+            </div>
+            {!linkGenerated && (
+              <div className="mt-3 mb-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <ExclamationTriangleIcon className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-200/90">
+                  Without a custom link you can’t share your profile with
+                  customers. Create one below so people can find you and book
+                  your services.
+                </p>
+              </div>
+            )}
             <p className="text-sm text-gray-400 mt-1 mb-6">
               {linkGenerated
                 ? 'This is your public link. Copy and share it so customers can find you and book.'
@@ -154,7 +178,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                 )}
                 <Button
                   onClick={handleSaveSlug}
-                  variant="primary"
+                  variant="inverse"
                   size="lg"
                   loading={isUpdating}
                   disabled={isUpdating || !customSlugInput.trim()}
