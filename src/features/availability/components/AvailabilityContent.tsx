@@ -1,5 +1,9 @@
 'use client';
 
+import { Button } from '@/components/shared';
+import { CheckIcon } from '@heroicons/react/24/solid';
+import React, { useCallback, useRef, useState } from 'react';
+import { useAvailabilityBookingStore } from '../stores/availabilityBookingStore';
 import {
   DEFAULT_SCHEDULE,
   type MinimumNoticeValue,
@@ -10,13 +14,10 @@ import {
   PRESET_MON_SAT_8_6,
   PRESET_WEEKENDS_ONLY,
 } from '../utils/presets';
-import type { PresetKey } from './QuickPresetsSection';
-import { Button } from '@/components/shared';
 import { MasterToggleSection } from './MasterToggleSection';
-import { WorkingHoursCard } from './WorkingHoursCard';
 import { MinimumNoticeSection } from './MinimumNoticeSection';
-import React, { useCallback, useRef, useState } from 'react';
-import { CheckIcon } from '@heroicons/react/24/solid';
+import type { PresetKey } from './QuickPresetsSection';
+import { WorkingHoursCard } from './WorkingHoursCard';
 
 function getPresetSchedule(preset: PresetKey): WeeklySchedule | null {
   switch (preset) {
@@ -33,7 +34,10 @@ function getPresetSchedule(preset: PresetKey): WeeklySchedule | null {
 }
 
 export const AvailabilityContent: React.FC = () => {
-  const [acceptBookings, setAcceptBookings] = useState(true);
+  const acceptBookings = useAvailabilityBookingStore(s => s.acceptBookings);
+  const setAcceptBookings = useAvailabilityBookingStore(
+    s => s.setAcceptBookings
+  );
   const [schedule, setSchedule] = useState<WeeklySchedule>(() => ({
     ...DEFAULT_SCHEDULE,
   }));
@@ -56,9 +60,12 @@ export const AvailabilityContent: React.FC = () => {
     setSelectedPreset('custom');
   }, []);
 
-  const handleToggle = useCallback((value: boolean) => {
-    setAcceptBookings(value);
-  }, []);
+  const handleToggle = useCallback(
+    (value: boolean) => {
+      setAcceptBookings(value);
+    },
+    [setAcceptBookings]
+  );
 
   const handleMinimumNoticeChange = useCallback((value: MinimumNoticeValue) => {
     setMinimumNotice(value);
@@ -80,61 +87,66 @@ export const AvailabilityContent: React.FC = () => {
   }, [acceptBookings, schedule, minimumNotice]);
 
   return (
-    <main className="flex-1 py-6 sm:py-8 md:py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen">
-      <div className="max-w-2xl mx-auto relative">
-        {/* Subtle Saved indicator — stays in flow on small screens */}
-        {showSaved && (
-          <div className="absolute top-0 right-0 flex items-center gap-1.5 text-emerald-500 text-xs sm:text-sm">
-            <CheckIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-            <span>Saved</span>
-          </div>
-        )}
+    <main className="flex flex-col flex-1 min-h-screen bg-[var(--dashboard-bg)]">
+      <div className="flex-1 overflow-y-auto py-6 sm:py-8 md:py-10 px-4 sm:px-6 lg:px-8 pb-24">
+        <div className="max-w-2xl mx-auto relative">
+          {/* Subtle Saved indicator — stays in flow on small screens */}
+          {showSaved && (
+            <div className="absolute top-0 right-0 flex items-center gap-1.5 text-emerald-500 text-xs sm:text-sm">
+              <CheckIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span>Saved</span>
+            </div>
+          )}
 
-        <div className="mb-6 sm:mb-8 md:mb-10 pr-16 sm:pr-20">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
-            Availability
-          </h1>
-          <p className="text-gray-400 text-sm sm:text-base mt-1">
-            Set when you’re available for bookings
-          </p>
+          <div className="mb-6 sm:mb-8 md:mb-10 pr-16 sm:pr-20">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+              Availability
+            </h1>
+            <p className="text-gray-400 text-sm sm:text-base mt-1">
+              Set when you’re available for bookings
+            </p>
+          </div>
+
+          <div className="space-y-6 sm:space-y-8">
+            <MasterToggleSection
+              acceptBookings={acceptBookings}
+              onToggle={handleToggle}
+            />
+
+            <div className={acceptBookings ? '' : 'opacity-50'}>
+              <WorkingHoursCard
+                schedule={schedule}
+                onScheduleChange={handleScheduleChange}
+                selectedPreset={selectedPreset}
+                onSelectPreset={handlePresetSelect}
+                disabled={!acceptBookings}
+              />
+            </div>
+
+            <div className={acceptBookings ? '' : 'opacity-50'}>
+              <MinimumNoticeSection
+                value={minimumNotice}
+                onChange={handleMinimumNoticeChange}
+                disabled={!acceptBookings}
+              />
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div className="space-y-6 sm:space-y-8">
-          <MasterToggleSection
-            acceptBookings={acceptBookings}
-            onToggle={handleToggle}
-          />
-
-          <div className={acceptBookings ? '' : 'opacity-50'}>
-            <WorkingHoursCard
-              schedule={schedule}
-              onScheduleChange={handleScheduleChange}
-              selectedPreset={selectedPreset}
-              onSelectPreset={handlePresetSelect}
-              disabled={!acceptBookings}
-            />
-          </div>
-
-          <div className={acceptBookings ? '' : 'opacity-50'}>
-            <MinimumNoticeSection
-              value={minimumNotice}
-              onChange={handleMinimumNoticeChange}
-              disabled={!acceptBookings}
-            />
-          </div>
-
-          <div className="pt-2">
-            <Button
-              type="button"
-              onClick={handleSave}
-              variant="inverse"
-              size="lg"
-              fullWidth
-              className="font-semibold"
-            >
-              Save availability
-            </Button>
-          </div>
+      {/* Sticky Save button at bottom */}
+      <div className="sticky bottom-0 left-0 right-0 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-2xl mx-auto">
+          <Button
+            type="button"
+            onClick={handleSave}
+            variant="inverse"
+            size="lg"
+            fullWidth
+            className="font-semibold"
+          >
+            Save availability
+          </Button>
         </div>
       </div>
     </main>

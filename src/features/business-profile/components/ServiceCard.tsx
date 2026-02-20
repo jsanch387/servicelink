@@ -72,32 +72,32 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
   return (
     <GlassCard
-      blurColor="bg-orange-500"
-      className="group rounded-2xl"
+      blurColor="bg-zinc-500"
+      rounded="rounded-2xl"
+      className="group"
       padding="md"
     >
-      {/* Header Row */}
+      {/* Header: service name + price (thick black weight) */}
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-[19px] font-bold text-white tracking-tight pr-4 flex-1">
+        <h3 className="text-lg font-black text-white tracking-tight pr-4 flex-1">
           {service.name}
         </h3>
-        <span className="text-[20px] font-black text-white flex-shrink-0">
+        <span className="text-xl font-black text-white leading-none flex-shrink-0">
           {formatPrice(service.price)}
         </span>
       </div>
 
       {/* Description */}
-      <p className="text-[#989899] text-[14px] leading-relaxed mb-6 pr-4">
+      <p className="text-zinc-500 text-sm leading-relaxed mb-4 pr-4">
         {service.description}
       </p>
 
-      {/* Footer Row */}
-      <div className="flex items-center justify-between mt-auto">
-        {/* Duration - Enhanced Design */}
+      {/* Faint divider + footer: duration left, Book Now right */}
+      <div className="flex items-center justify-between pt-4 border-t border-white/[0.03]">
         {service.hours_to_complete ? (
-          <div className="flex items-center gap-2 bg-white/[0.03] backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/[0.08]">
-            <ClockIcon className="h-3.5 w-3.5 text-white" />
-            <span className="text-[12px] font-semibold text-zinc-300 tracking-wide">
+          <div className="flex items-center gap-1.5 text-zinc-500">
+            <ClockIcon className="h-3 w-3 flex-shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">
               {formatDuration(service.hours_to_complete)}
             </span>
           </div>
@@ -105,16 +105,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <div />
         )}
 
-        {/* Book Button - Only show on public profiles when service has id */}
         {isPublic && !isEditable && businessSlug && service.id && (
           <button
             onClick={handleBookClick}
-            className="relative flex items-center gap-1 group/btn px-4 py-2 rounded-xl bg-white text-black shadow-lg shadow-white/20 hover:shadow-xl hover:shadow-white/30 transition-all cursor-pointer"
+            type="button"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black text-xs font-black uppercase tracking-widest hover:bg-zinc-100 active:bg-zinc-200 transition-colors cursor-pointer"
           >
-            <span className="font-bold text-[15px] tracking-tight group-hover/btn:mr-1 transition-all">
-              Book Now
-            </span>
-            <ChevronRightIcon className="h-[18px] w-[18px] text-black" />
+            Book Now
+            <ChevronRightIcon className="h-3.5 w-3.5" />
           </button>
         )}
       </div>

@@ -5,7 +5,7 @@
  * Mobile-first, responsive design.
  */
 
-import { BookingsPageClient } from '@/features/booking-request/components/dashboard/BookingsPageClient';
+import { BookingsPageSwitch } from '@/features/availability/booking/dashboard';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -61,7 +61,7 @@ export default async function BookingsPage() {
   }
 
   return (
-    <BookingsPageClient
+    <BookingsPageSwitch
       businessName={businessProfile.business_name}
       initialBookings={bookingRequests || []}
     />

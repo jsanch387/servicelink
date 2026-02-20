@@ -44,7 +44,7 @@ export const WorkingHoursCard: React.FC<WorkingHoursCardProps> = ({
 
       {/* Schedule */}
       <section className="border-b border-white/10 last:border-b-0">
-        <div className="px-4 pt-4 pb-1 sm:px-6 sm:pt-6">
+        <div className="px-4 pt-4 pb-1 sm:px-4 sm:pt-6">
           <h3 className="text-sm font-medium text-gray-400">Weekly schedule</h3>
         </div>
         <WeeklyScheduleGrid

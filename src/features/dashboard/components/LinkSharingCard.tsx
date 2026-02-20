@@ -53,12 +53,12 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
     <GlassCard
       padding="lg"
       rounded="rounded-2xl"
-      blurColor="bg-orange-500"
+      blurColor="bg-zinc-500"
       showBlur={true}
     >
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20 flex-shrink-0">
-          <LinkIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" />
+        <div className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.08] flex-shrink-0">
+          <LinkIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white/80" />
         </div>
         <div className="min-w-0">
           <h2 className="text-lg sm:text-xl font-bold text-white truncate">

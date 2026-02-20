@@ -136,7 +136,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
 
             {!linkGenerated ? (
               <div className="space-y-4">
-                <div className="flex rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-orange-500/40 focus-within:ring-1 focus-within:ring-orange-500/20">
+                <div className="flex rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-white/30 focus-within:ring-1 focus-within:ring-white/20">
                   <span className="py-3 px-4 text-gray-500 font-mono text-sm border-r border-white/10">
                     {APP_DOMAIN}/
                   </span>

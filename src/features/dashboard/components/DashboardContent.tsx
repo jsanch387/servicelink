@@ -88,7 +88,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             <GlassCard
               padding="lg"
               rounded="rounded-2xl"
-              blurColor="bg-orange-500"
+              blurColor="bg-zinc-500"
               showBlur={true}
               className="text-left"
             >

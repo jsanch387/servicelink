@@ -10,7 +10,7 @@ export const EditProfileCard: React.FC = () => {
     <Card>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-          <PencilIcon className="h-5 w-5 text-orange-400" />
+          <PencilIcon className="h-5 w-5 text-white/80" />
           <span>Need to Make Changes?</span>
         </h3>
       </div>
