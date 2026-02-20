@@ -6,7 +6,9 @@
 
 export { AvailabilityContent } from './components/AvailabilityContent';
 export { AVAILABILITY_FEATURE_ENABLED } from './constants';
+export { useAvailability } from './hooks/useAvailability';
 export type {
+  BusinessAvailabilityRow,
   DayKey,
   DaySchedule,
   MinimumNoticeValue,
