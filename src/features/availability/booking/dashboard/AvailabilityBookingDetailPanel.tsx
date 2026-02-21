@@ -18,6 +18,8 @@ interface AvailabilityBookingDetailPanelProps {
   onClose: () => void;
   onMarkCompleted: (id: string) => void;
   onCancel: (id: string) => void;
+  isUpdating?: boolean;
+  updateError?: string | null;
 }
 
 function formatFullAddress(
@@ -42,6 +44,8 @@ export function AvailabilityBookingDetailPanel({
   onClose,
   onMarkCompleted,
   onCancel,
+  isUpdating = false,
+  updateError = null,
 }: AvailabilityBookingDetailPanelProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -57,7 +61,12 @@ export function AvailabilityBookingDetailPanel({
   const handleCancelConfirm = () => {
     onCancel(booking.id);
     setShowCancelConfirm(false);
-    onClose();
+    // Panel closes when parent's handleCancel succeeds (setSelectedBooking(null))
+  };
+
+  const handleMarkCompletedClick = () => {
+    onMarkCompleted(booking.id);
+    // Panel closes when parent's handleMarkCompleted succeeds (setSelectedBooking(null))
   };
 
   return (
@@ -179,24 +188,28 @@ export function AvailabilityBookingDetailPanel({
           {/* Actions – only for confirmed */}
           {isConfirmed && (
             <section className="pt-2">
+              {updateError && (
+                <p className="text-sm text-rose-400 mb-3" role="alert">
+                  {updateError}
+                </p>
+              )}
               <div className="flex flex-col gap-2">
                 <Button
                   variant="inverse"
                   size="lg"
                   fullWidth
                   className="font-semibold"
-                  onClick={() => {
-                    onMarkCompleted(booking.id);
-                    onClose();
-                  }}
+                  disabled={isUpdating}
+                  onClick={handleMarkCompletedClick}
                 >
-                  Mark as Completed
+                  {isUpdating ? 'Saving…' : 'Mark as Completed'}
                 </Button>
                 <Button
                   variant="outline"
                   size="lg"
                   fullWidth
                   className="font-semibold border-rose-500/50 text-rose-400 hover:bg-rose-500/10"
+                  disabled={isUpdating}
                   onClick={handleCancelClick}
                 >
                   Cancel Booking
@@ -223,14 +236,14 @@ export function AvailabilityBookingDetailPanel({
               Cancel booking?
             </h3>
             <p id="cancel-dialog-desc" className="text-gray-400 text-sm mb-6">
-              This will mark the booking as cancelled. The customer will not be
-              notified (mock).
+              This will mark the booking as cancelled.
             </p>
             <div className="flex gap-3">
               <Button
                 variant="secondary"
                 size="lg"
                 fullWidth
+                disabled={isUpdating}
                 onClick={() => setShowCancelConfirm(false)}
               >
                 Keep
@@ -239,9 +252,10 @@ export function AvailabilityBookingDetailPanel({
                 variant="danger"
                 size="lg"
                 fullWidth
+                disabled={isUpdating}
                 onClick={handleCancelConfirm}
               >
-                Cancel booking
+                {isUpdating ? 'Cancelling…' : 'Cancel booking'}
               </Button>
             </div>
           </div>

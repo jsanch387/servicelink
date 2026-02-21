@@ -3,8 +3,9 @@
 import { CalendarIcon } from '@heroicons/react/24/outline';
 import { useMemo, useState } from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
+import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
-import { MOCK_AVAILABILITY_BOOKINGS } from './mockData';
+import { useAvailabilityBookings } from './hooks/useAvailabilityBookings';
 import type { AvailabilityBookingDisplay } from './types';
 
 type TabId = 'upcoming' | 'past' | 'cancelled';
@@ -19,12 +20,13 @@ function sortByDateThenTime(
 }
 
 export function AvailabilityBookingsView() {
-  const [bookings, setBookings] = useState<AvailabilityBookingDisplay[]>(() => [
-    ...MOCK_AVAILABILITY_BOOKINGS,
-  ]);
+  const { bookings, isLoading, error, updateBookingStatus } =
+    useAvailabilityBookings();
   const [activeTab, setActiveTab] = useState<TabId>('upcoming');
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const { upcoming, past, cancelled } = useMemo(() => {
     const now = new Date();
@@ -65,19 +67,27 @@ export function AvailabilityBookingsView() {
         ? past
         : cancelled;
 
-  const handleMarkCompleted = (id: string) => {
-    setBookings(prev =>
-      prev.map(b => (b.id === id ? { ...b, status: 'completed' as const } : b))
-    );
-    setSelectedBooking(prev =>
-      prev?.id === id ? { ...prev, status: 'completed' } : prev
-    );
+  const handleMarkCompleted = async (id: string) => {
+    setUpdateError(null);
+    setUpdatingId(id);
+    const result = await updateBookingStatus(id, 'completed');
+    setUpdatingId(null);
+    if (!result.success) {
+      setUpdateError(result.error ?? 'Failed to update booking');
+      return;
+    }
+    setSelectedBooking(null);
   };
 
-  const handleCancel = (id: string) => {
-    setBookings(prev =>
-      prev.map(b => (b.id === id ? { ...b, status: 'cancelled' as const } : b))
-    );
+  const handleCancel = async (id: string) => {
+    setUpdateError(null);
+    setUpdatingId(id);
+    const result = await updateBookingStatus(id, 'cancelled');
+    setUpdatingId(null);
+    if (!result.success) {
+      setUpdateError(result.error ?? 'Failed to cancel booking');
+      return;
+    }
     setSelectedBooking(null);
   };
 
@@ -117,7 +127,14 @@ export function AvailabilityBookingsView() {
       </header>
 
       <main className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 max-w-xl lg:max-w-3xl mx-auto w-full">
-        {filteredList.length === 0 ? (
+        {(error || updateError) && (
+          <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 text-sm mb-4">
+            {error ?? updateError}
+          </div>
+        )}
+        {isLoading ? (
+          <AvailabilityBookingsViewSkeleton />
+        ) : filteredList.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 rounded-full bg-white/[0.05] flex items-center justify-center mb-4">
               <CalendarIcon className="w-8 h-8 text-gray-600" />
@@ -137,7 +154,10 @@ export function AvailabilityBookingsView() {
               <AvailabilityBookingCard
                 key={booking.id}
                 booking={booking}
-                onClick={() => setSelectedBooking(booking)}
+                onClick={() => {
+                  setUpdateError(null);
+                  setSelectedBooking(booking);
+                }}
               />
             ))}
           </div>
@@ -150,6 +170,8 @@ export function AvailabilityBookingsView() {
           onClose={() => setSelectedBooking(null)}
           onMarkCompleted={handleMarkCompleted}
           onCancel={handleCancel}
+          isUpdating={updatingId === selectedBooking.id}
+          updateError={updateError}
         />
       )}
     </div>

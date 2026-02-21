@@ -1,20 +1,19 @@
 /**
  * Bookings Dashboard Page
  *
- * Displays all booking requests for the authenticated user's business.
- * Mobile-first, responsive design.
+ * Renders either V1 (booking requests) or V2 (availability bookings) based on
+ * the business "Accept Bookings" toggle. V1 data is fetched here; V2 view
+ * fetches its own data via GET /api/availability/bookings so the two flows stay separate.
  */
 
-import { BookingsPageSwitch } from '@/features/availability/booking/dashboard';
+import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-// Force dynamic rendering (requires authentication)
 export const dynamic = 'force-dynamic';
 
 export default async function BookingsPage() {
-  // Create server client for SSR
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +27,6 @@ export default async function BookingsPage() {
     }
   );
 
-  // Get current user
   const {
     data: { user },
     error: userError,
@@ -38,7 +36,6 @@ export default async function BookingsPage() {
     redirect('/login');
   }
 
-  // Get the user's business profile
   const { data: businessProfile, error: businessError } = await supabase
     .from('business_profiles')
     .select('id, business_name')
@@ -49,21 +46,21 @@ export default async function BookingsPage() {
     redirect('/dashboard');
   }
 
-  // Fetch booking requests for this business
-  const { data: bookingRequests, error: bookingsError } = await supabase
+  // V1 only: fetch booking requests. V2 list is fetched client-side by AvailabilityBookingsView.
+  const { data: bookingRequests, error: requestsError } = await supabase
     .from('booking_requests')
     .select('*')
     .eq('business_id', businessProfile.id)
     .order('submitted_at', { ascending: false });
 
-  if (bookingsError) {
-    console.error('Error fetching booking requests:', bookingsError);
+  if (requestsError) {
+    console.error('Error fetching booking requests:', requestsError);
   }
 
   return (
     <BookingsPageSwitch
       businessName={businessProfile.business_name}
-      initialBookings={bookingRequests || []}
+      initialBookingRequests={bookingRequests ?? []}
     />
   );
 }

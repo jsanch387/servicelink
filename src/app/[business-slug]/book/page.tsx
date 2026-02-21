@@ -10,7 +10,8 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { AVAILABILITY_BOOKING_ENABLED } from '@/features/availability/constants';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { BookFlowSwitch } from './BookFlowSwitch';
 
 // Force dynamic rendering
@@ -60,7 +61,11 @@ async function fetchBusinessProfileBySlug(slug: string) {
 async function fetchServiceById(
   businessId: string,
   serviceId: string
-): Promise<{ name: string; price: number } | null> {
+): Promise<{
+  name: string;
+  price: number;
+  hours_to_complete: number | null;
+} | null> {
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -77,7 +82,7 @@ async function fetchServiceById(
 
     const { data: service, error } = await supabase
       .from('business_services')
-      .select('name, price_cents')
+      .select('name, price_cents, hours_to_complete')
       .eq('id', serviceId)
       .eq('business_id', businessId)
       .eq('is_active', true)
@@ -90,6 +95,7 @@ async function fetchServiceById(
     return {
       name: service.name,
       price: service.price_cents || 0,
+      hours_to_complete: service.hours_to_complete ?? null,
     };
   } catch (error) {
     console.error('Error fetching service by id:', error);
@@ -112,12 +118,25 @@ export default async function BookingRequestPage({
     notFound();
   }
 
+  // Fetch availability with admin client so RLS doesn't block (public page needs to read accept_bookings)
+  const adminClient = createSupabaseAdminClient();
+  const availabilityRow = await getAvailabilityForBusiness(
+    adminClient,
+    businessProfile.id
+  );
+  const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+  const weeklySchedule = availabilityRow?.weekly_schedule ?? null;
+
   // Fetch service by ID when present (validates business_id)
   const serviceDetails =
     serviceId && serviceId.trim()
       ? await fetchServiceById(businessProfile.id, serviceId.trim())
       : null;
   const serviceName = serviceDetails?.name ?? '';
+  const serviceDurationMinutes =
+    serviceDetails?.hours_to_complete != null
+      ? Math.max(15, Math.round(serviceDetails.hours_to_complete * 60))
+      : 60;
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -137,12 +156,15 @@ export default async function BookingRequestPage({
       {/* Form Container – availability booking or request booking by flag */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pt-8 sm:pb-24">
         <BookFlowSwitch
-          useAvailabilityBooking={AVAILABILITY_BOOKING_ENABLED}
+          useAvailabilityBooking={useAvailabilityBooking}
           businessName={businessProfile.business_name}
           businessId={businessProfile.id}
           businessSlug={businessProfile.business_slug || slug}
+          serviceId={serviceId?.trim() ?? undefined}
           serviceName={serviceName}
           servicePrice={serviceDetails?.price ?? undefined}
+          serviceDurationMinutes={serviceDurationMinutes}
+          weeklySchedule={weeklySchedule}
         />
       </div>
     </div>

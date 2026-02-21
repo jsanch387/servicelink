@@ -1,7 +1,9 @@
 'use client';
 
 import { BookingRequestPageClient } from './BookingRequestPageClient';
-import { AvailabilityBookingPage, MOCK_WEEKLY_SCHEDULE } from '@/features/availability/booking';
+import { AvailabilityBookingPage } from '@/features/availability/booking';
+import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
 import React from 'react';
 
 interface BookFlowSwitchProps {
@@ -9,32 +11,40 @@ interface BookFlowSwitchProps {
   businessName: string;
   businessId: string;
   businessSlug: string;
+  serviceId?: string;
   serviceName: string;
   servicePrice?: number;
+  serviceDurationMinutes?: number;
+  weeklySchedule?: WeeklySchedule | null;
 }
 
 /**
- * Renders either Availability Booking (date/time + form, no API) or
- * existing Request Booking flow based on feature flag.
+ * Renders V2 Availability Booking (calendar + form) or V1 Request Booking
+ * based on business_availability.accept_bookings for this business.
  */
 export function BookFlowSwitch({
   useAvailabilityBooking,
   businessName,
   businessId,
   businessSlug,
+  serviceId,
   serviceName,
   servicePrice,
+  serviceDurationMinutes = 60,
+  weeklySchedule,
 }: BookFlowSwitchProps) {
   if (useAvailabilityBooking) {
+    const schedule = weeklySchedule ?? DEFAULT_SCHEDULE;
     return (
       <AvailabilityBookingPage
         businessName={businessName}
+        businessId={businessId}
         businessSlug={businessSlug}
+        serviceId={serviceId}
         serviceName={serviceName || 'Booking'}
-        serviceDurationMinutes={60}
+        serviceDurationMinutes={serviceDurationMinutes}
         servicePriceCents={servicePrice}
-        weeklySchedule={MOCK_WEEKLY_SCHEDULE}
-        existingBookings={[]}
+        weeklySchedule={schedule}
       />
     );
   }

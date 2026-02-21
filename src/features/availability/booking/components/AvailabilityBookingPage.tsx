@@ -1,11 +1,10 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import type { CustomerFormData } from '../types';
-import type { AvailabilityBookingPageProps } from '../types';
-import { getMockExistingBookingsForMonth } from '../mockData';
+import { useState } from 'react';
+import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
+import type { AvailabilityBookingPageProps, CustomerFormData } from '../types';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
-import { useMemo, useState } from 'react';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
 import { CustomerForm, isCustomerFormValid } from './CustomerForm';
@@ -17,46 +16,82 @@ function formatTimeDisplay(hhmm: string): string {
   const [h, m] = hhmm.split(':').map(Number);
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   const ampm = h < 12 ? 'AM' : 'PM';
-  return m === 0 ? `${h12} ${ampm}` : `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+  return m === 0
+    ? `${h12} ${ampm}`
+    : `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
 }
 
 const CUSTOMER_FORM_ID = 'availability-booking-details-form';
 
 export function AvailabilityBookingPage({
   businessName,
+  businessId,
   businessSlug,
+  serviceId,
   serviceName,
   serviceDurationMinutes = 60,
   servicePriceCents,
   weeklySchedule,
+  existingBookings: existingBookingsProp,
 }: AvailabilityBookingPageProps) {
+  const { blockedSlots } = usePublicBlockedSlots(businessSlug);
+  const existingBookings = existingBookingsProp ?? blockedSlots;
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [customerData, setCustomerData] = useState<CustomerFormData>(INITIAL_CUSTOMER_FORM_DATA);
+  const [customerData, setCustomerData] = useState<CustomerFormData>(
+    INITIAL_CUSTOMER_FORM_DATA
+  );
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedData, setSubmittedData] = useState<{
     date: string;
     time: string;
     customer: CustomerFormData;
   } | null>(null);
-
-  const existingBookings = useMemo(() => {
-    const d = selectedDate || new Date();
-    return getMockExistingBookingsForMonth(d.getFullYear(), d.getMonth());
-  }, [selectedDate?.getFullYear(), selectedDate?.getMonth()]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
   const canContinueFromDetails = isCustomerFormValid(customerData);
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
-    setSubmittedData({
-      date: selectedDate.toISOString().slice(0, 10),
-      time: formatTimeDisplay(selectedTime),
-      customer: customerData,
-    });
-    setShowSuccess(true);
+    setSubmitError(null);
+    setIsSubmitting(true);
+    const scheduledDate = selectedDate.toISOString().slice(0, 10);
+    try {
+      const res = await fetch('/api/public/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessSlug,
+          businessId,
+          serviceId,
+          serviceName,
+          servicePriceCents: servicePriceCents ?? undefined,
+          durationMinutes: serviceDurationMinutes,
+          scheduledDate,
+          startTime: selectedTime,
+          customer: customerData,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setSubmitError(json.error ?? 'Something went wrong');
+        return;
+      }
+      setSubmittedData({
+        date: scheduledDate,
+        time: formatTimeDisplay(selectedTime),
+        customer: customerData,
+      });
+      setShowSuccess(true);
+    } catch {
+      setSubmitError('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (showSuccess && submittedData) {
@@ -125,7 +160,12 @@ export function AvailabilityBookingPage({
 
         {/* Step 3 – Confirm */}
         {step === 3 && selectedDate && selectedTime && (
-          <div className="pt-4">
+          <div className="pt-4 space-y-4">
+            {submitError && (
+              <p className="text-sm text-red-400" role="alert">
+                {submitError}
+              </p>
+            )}
             <BookingSummary
               serviceName={serviceName}
               serviceDurationMinutes={serviceDurationMinutes}
@@ -150,7 +190,7 @@ export function AvailabilityBookingPage({
               variant="secondary"
               size="lg"
               className="font-semibold shrink-0"
-              onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
+              onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)}
             >
               Back
             </Button>
@@ -186,9 +226,10 @@ export function AvailabilityBookingPage({
               variant="inverse"
               size="lg"
               className="flex-1 font-semibold"
+              disabled={isSubmitting}
               onClick={handleConfirmBooking}
             >
-              Confirm Booking
+              {isSubmitting ? 'Saving…' : 'Confirm Booking'}
             </Button>
           )}
         </div>

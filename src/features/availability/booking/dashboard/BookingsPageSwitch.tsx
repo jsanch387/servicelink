@@ -5,19 +5,23 @@ import { BookingsPageClient } from '@/features/booking-request/components/dashbo
 import type { BookingRequest } from '@/features/booking-request/types/bookingRequest';
 import { AvailabilityBookingsView } from './AvailabilityBookingsView';
 
+/**
+ * V1 = booking requests (preferred date + time window); V2 = availability bookings (exact slot).
+ * Kept separate so V1 can be decommissioned later without touching V2.
+ */
 export interface BookingsPageSwitchProps {
   businessName: string;
-  initialBookings: BookingRequest[];
+  /** V1 only: initial list of booking requests. V2 fetches its own data via API. */
+  initialBookingRequests: BookingRequest[];
 }
 
 /**
- * Switches between Request Booking (V1) and Availability Booking (V2) based on
- * the "Accept Bookings" toggle on the Availability route. Lives under availability
- * feature; request booking is only used when toggle is OFF.
+ * Switches between V1 (Request Booking) and V2 (Availability Bookings) based on
+ * the "Accept Bookings" toggle. V1 gets data from props; V2 fetches from GET /api/availability/bookings.
  */
 export function BookingsPageSwitch({
   businessName,
-  initialBookings,
+  initialBookingRequests,
 }: BookingsPageSwitchProps) {
   const acceptBookings = useAvailabilityBookingStore(s => s.acceptBookings);
 
@@ -26,7 +30,7 @@ export function BookingsPageSwitch({
   ) : (
     <BookingsPageClient
       businessName={businessName}
-      initialBookings={initialBookings}
+      initialBookings={initialBookingRequests}
     />
   );
 }

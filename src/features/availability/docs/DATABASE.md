@@ -67,10 +67,7 @@ Example:
 
 ## Security and access
 
-- Access to `business_availability` must be restricted by application or RLS so that:
-  - Only the owning business (or backend acting on their behalf) can **insert/update/delete**.
-  - Public profile may **read** only when resolving a business by slug to show booking UI (e.g. only `accept_bookings` and `weekly_schedule` / `minimum_notice` as needed for slot generation).
-- Do not expose raw DB connection details, credentials, or RLS policy logic in this doc or in repo docs. Keep this file to schema and purpose only.
+- **RLS is enabled** on `business_availability`. Only the business owner can insert, update, or delete their row. Select is allowed for the owner and for rows where `accept_bookings` is true (so the public booking flow can read availability without using the service role).
 
 ---
 

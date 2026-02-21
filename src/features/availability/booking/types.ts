@@ -31,14 +31,16 @@ export interface ExistingBooking {
 
 export interface AvailabilityBookingPageProps {
   businessName: string;
+  businessId: string;
   businessSlug: string;
+  serviceId?: string;
   serviceName: string;
   serviceDurationMinutes?: number;
   servicePriceCents?: number;
-  /** Mock weekly schedule (owner availability). */
+  /** Owner availability from DB. */
   weeklySchedule: WeeklySchedule;
-  /** Mock existing bookings to block slots. */
-  existingBookings: ExistingBooking[];
+  /** Fetched from API when businessSlug is set; omit to use [] or fetch internally. */
+  existingBookings?: ExistingBooking[];
 }
 
 export interface BookingSubmission {
@@ -46,5 +48,18 @@ export interface BookingSubmission {
   date: string;
   time: string;
   durationMinutes: number;
+  customer: CustomerFormData;
+}
+
+/** Payload for POST /api/public/bookings (client → API). */
+export interface CreateBookingRequest {
+  businessSlug: string;
+  businessId: string;
+  serviceId?: string;
+  serviceName: string;
+  servicePriceCents?: number;
+  durationMinutes: number;
+  scheduledDate: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
   customer: CustomerFormData;
 }
