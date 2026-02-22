@@ -9,6 +9,7 @@ export { EditProfileCard } from './components/EditProfileCard';
 export { LinkSharingCard } from './components/LinkSharingCard';
 export { OnboardingCompleteCard } from './components/OnboardingCompleteCard';
 export { PendingRequestsCard } from './components/PendingRequestsCard';
+export { UpcomingBookingsCard } from './components/UpcomingBookingsCard';
 export { PerformanceCard } from './components/PerformanceCard';
 export { QuickActionsCard } from './components/QuickActionsCard';
 export { SettingsContent } from './components/SettingsContent';

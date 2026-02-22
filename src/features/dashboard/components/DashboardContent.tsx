@@ -12,6 +12,7 @@ import {
   PendingRequestsCard,
   PerformanceCard,
   QuickActionsCard,
+  UpcomingBookingsCard,
 } from '@/features/dashboard';
 import React from 'react';
 
@@ -44,6 +45,9 @@ interface DashboardData {
     readyToShare: boolean;
   };
   pendingRequestsCount: number;
+  legacyRequestBookingEnabled: boolean;
+  useAvailabilityBooking: boolean;
+  upcomingBookingsCount: number;
 }
 
 interface DashboardContentProps {
@@ -88,7 +92,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             <CreateLinkCard businessProfileId={businessProfile.id} />
           )}
 
-          {/* Stats + actions grid: Profile views (if slug), Pending requests, Quick actions */}
+          {/* Stats + actions grid: Profile views (if slug), V1 pending requests or V2 upcoming, Quick actions */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
             {slugData?.hasSlug && (
               <PerformanceCard
@@ -97,9 +101,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 loading={analyticsLoading}
               />
             )}
-            <PendingRequestsCard
-              pendingCount={dashboardData.pendingRequestsCount}
-            />
+            {dashboardData.useAvailabilityBooking ||
+            !dashboardData.legacyRequestBookingEnabled ? (
+              <UpcomingBookingsCard
+                upcomingCount={dashboardData.upcomingBookingsCount}
+              />
+            ) : (
+              <PendingRequestsCard
+                pendingCount={dashboardData.pendingRequestsCount}
+              />
+            )}
             <QuickActionsCard />
           </div>
         </div>
