@@ -5,8 +5,12 @@
 
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import {
+  Button,
+  GlassCard,
+  RequiredLabel,
+  WarningCallout,
+} from '@/components/shared';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
@@ -51,34 +55,25 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
 
   return (
     <GlassCard
-      padding="lg"
+      padding="none"
       rounded="rounded-2xl"
       blurColor="bg-zinc-500"
       showBlur={true}
-      className="text-left"
+      className="text-left w-full min-w-0 p-4"
     >
-      <div className="flex items-center gap-3 mb-2">
-        <h2 className="text-lg sm:text-xl font-bold text-white">
-          Custom link
-        </h2>
-        <span
-          className="flex items-center gap-1.5 rounded-md bg-amber-500/15 px-2 py-0.5 text-amber-400 text-xs font-semibold"
-          title="Create a link to share your profile"
-        >
-          <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
-          Required
-        </span>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 min-w-0">
+        <h2 className="text-lg sm:text-xl font-bold text-white">Custom link</h2>
+        <RequiredLabel title="Create a link to share your profile" />
       </div>
-      <div className="mt-3 mb-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-        <ExclamationTriangleIcon className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-        <p className="text-sm text-amber-200/90">
-          Without a custom link you can’t share your profile with customers.
-          Create one below so people can find you and book your services.
-        </p>
+      <div className="mt-3 mb-6 min-w-0">
+        <WarningCallout>
+          You need a custom link so customers can find and book you. Create one
+          below.
+        </WarningCallout>
       </div>
-      <div className="space-y-4">
-        <div className="flex rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-white/30 focus-within:ring-1 focus-within:ring-white/20">
-          <span className="py-3 px-4 text-gray-500 font-mono text-sm border-r border-white/10">
+      <div className="space-y-4 min-w-0">
+        <div className="flex flex-col sm:flex-row rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-white/30 focus-within:ring-1 focus-within:ring-white/20 min-w-0">
+          <span className="py-2.5 px-4 sm:py-3 text-gray-500 font-mono text-xs sm:text-sm border-b border-white/10 sm:border-b-0 sm:border-r flex-shrink-0">
             {APP_DOMAIN}/
           </span>
           <input
@@ -87,12 +82,10 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
             onChange={e => setCustomSlugInput(e.target.value)}
             placeholder="my-business"
             disabled={isUpdating}
-            className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-sm outline-none placeholder:text-gray-500"
+            className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
           />
         </div>
-        {slugError && (
-          <p className="text-sm text-red-400">{slugError}</p>
-        )}
+        {slugError && <p className="text-sm text-red-400">{slugError}</p>}
         <Button
           onClick={handleSaveSlug}
           variant="inverse"

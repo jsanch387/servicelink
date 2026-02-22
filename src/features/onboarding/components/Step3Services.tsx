@@ -174,6 +174,14 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
       return;
     }
 
+    if (
+      currentService.hours_to_complete == null ||
+      currentService.hours_to_complete < 1
+    ) {
+      setError('Please select how long this service takes.');
+      return;
+    }
+
     const newService: Service = {
       ...currentService,
       id: `temp-${Date.now()}`,
@@ -423,7 +431,7 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
               </div>
 
               <Select
-                label="How long does it take? (Optional)"
+                label="How long does it take? (Required)"
                 placeholder="Select hours"
                 value={currentService.hours_to_complete?.toString() || ''}
                 onChange={value => {
@@ -431,6 +439,7 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
                   handleServiceChange('hours_to_complete', numValue);
                 }}
                 options={HOURS_OPTIONS}
+                required
               />
             </div>
 
@@ -439,7 +448,11 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
               onClick={addService}
               variant="primary"
               className="w-full mt-4 sm:mt-6"
-              disabled={!currentService.name.trim()}
+              disabled={
+                !currentService.name.trim() ||
+                !currentService.hours_to_complete ||
+                currentService.hours_to_complete < 1
+              }
             >
               Add This Service
             </Button>

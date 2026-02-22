@@ -35,7 +35,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         setOpen={setSidebarOpen}
         isOnboardingCompleted={isOnboardingCompleted}
       />
-      <div className="dashboard-content flex-1 flex flex-col lg:ml-64">
+      <div className="dashboard-content flex-1 flex flex-col lg:ml-64 min-w-0">
         {/* Sticky Header */}
         <div className="sticky top-0 z-30 bg-[var(--dashboard-bg)]">
           {showHeader ? (

@@ -51,10 +51,11 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
 
   return (
     <GlassCard
-      padding="lg"
+      padding="none"
       rounded="rounded-2xl"
       blurColor="bg-zinc-500"
       showBlur={true}
+      className="w-full min-w-0 p-4"
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.08] flex-shrink-0">
@@ -83,7 +84,7 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
           type="button"
           onClick={handleCopyLink}
           variant="inverse"
-          size="md"
+          size="lg"
           fullWidth
           className="sm:w-auto sm:flex-shrink-0 sm:min-w-[100px] sm:flex-initial"
           icon={

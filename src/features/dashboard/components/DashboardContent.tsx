@@ -62,8 +62,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const APP_DOMAIN = 'myservicelink.app';
 
   return (
-    <main className="flex-1 pt-6 pb-24 sm:pt-8 sm:pb-8 lg:pt-10 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen">
-      <div className="max-w-6xl mx-auto">
+    <main className="flex-1 pt-6 pb-24 sm:pt-8 sm:pb-8 lg:pt-10 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+      <div className="max-w-6xl mx-auto w-full min-w-0">
         {/* Header */}
         <div className="mb-6 sm:mb-8 lg:mb-10">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
@@ -76,7 +76,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           </p>
         </div>
 
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-6 sm:space-y-8 w-full min-w-0">
           {/* Link card or Create link CTA */}
           {slugData?.hasSlug ? (
             <LinkSharingCard
@@ -89,7 +89,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           )}
 
           {/* Stats + actions grid: Profile views (if slug), Pending requests, Quick actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
             {slugData?.hasSlug && (
               <PerformanceCard
                 profileViews={dashboardAnalytics?.profileViews ?? 0}
