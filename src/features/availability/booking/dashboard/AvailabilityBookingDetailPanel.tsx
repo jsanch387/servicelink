@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import type { AvailabilityBookingDisplay } from './types';
+import { formatDurationMinutes } from '../utils/formatDuration';
 
 interface AvailabilityBookingDetailPanelProps {
   booking: AvailabilityBookingDisplay;
@@ -125,7 +126,7 @@ export function AvailabilityBookingDetailPanel({
                 )}
               </p>
               <p className="text-gray-300">
-                {booking.time} · {booking.serviceDurationMinutes} min
+                {booking.time} · {formatDurationMinutes(booking.serviceDurationMinutes)}
               </p>
               {booking.servicePriceCents != null &&
                 booking.servicePriceCents > 0 && (

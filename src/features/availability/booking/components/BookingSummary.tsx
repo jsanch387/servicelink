@@ -1,6 +1,7 @@
 'use client';
 
 import type { CustomerFormData } from '../types';
+import { formatDurationMinutes } from '../utils/formatDuration';
 import React from 'react';
 
 function formatAddress(customer: CustomerFormData): string {
@@ -53,7 +54,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           <p className="text-xs text-gray-500 tracking-wider mb-1">Service</p>
           <p className="text-white font-medium">{serviceName}</p>
           <p className="text-sm text-gray-400">
-            {serviceDurationMinutes} min
+            {formatDurationMinutes(serviceDurationMinutes)}
             {servicePriceCents != null && (
               <> · ${(servicePriceCents / 100).toFixed(2)}</>
             )}

@@ -4,6 +4,7 @@ import { Button } from '@/components/shared';
 import { useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
 import type { AvailabilityBookingPageProps, CustomerFormData } from '../types';
+import { formatDurationMinutes } from '../utils/formatDuration';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
@@ -119,7 +120,7 @@ export function AvailabilityBookingPage({
                 {serviceName || 'Booking'}
               </h2>
               <p className="text-sm text-gray-400">
-                {serviceDurationMinutes} min
+                {formatDurationMinutes(serviceDurationMinutes)}
                 {servicePriceCents != null && (
                   <> · ${(servicePriceCents / 100).toFixed(2)}</>
                 )}
