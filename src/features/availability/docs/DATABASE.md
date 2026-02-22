@@ -71,6 +71,12 @@ Example:
 
 ---
 
+## Related: V2 bookings table
+
+The **availability booking (V2)** flow also uses the `bookings` table: one row per confirmed time slot. That table is documented in [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md). Flow overview (public calendar, time blocking, submit, dashboard) is in [FLOWS.md](./FLOWS.md).
+
+---
+
 ## Changelog
 
 - **Initial:** `business_availability` table with `accept_bookings`, `minimum_notice`, `weekly_schedule` (JSONB), timestamps, and `updated_at` trigger.

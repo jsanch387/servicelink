@@ -1,15 +1,15 @@
-# Bookings table (V2 availability booking) – data design
+# Bookings table (V2 availability booking)
 
-This doc is a **data/schema brainstorm** for the new `bookings` table. No code yet—just what we store and why, so we can add the table and RLS with a clear picture.
+This doc describes the **`bookings`** table used by the V2 (availability) booking flow: schema, how it’s used for **time blocking**, and **data flow** (APIs, who reads/writes). For end-to-end flows see [FLOWS.md](./FLOWS.md).
 
 ---
 
-## Context
+## Context: V1 vs V2
 
-- **V1:** `booking_requests` – customer submits a *request* (preferred date + time window like morning/afternoon); business approves/declines. No exact slot.
-- **V2:** Availability booking – business has set working hours; customer picks an **exact date and time** from available slots and submits. We record a **booking** (confirmed slot). This lives in a new table so we don’t mix flows and we can block that slot from future availability.
+- **V1:** `booking_requests` – customer submits a *request* (preferred date + time window); business approves/declines. No exact slot.
+- **V2:** Availability booking – business has set working hours; customer picks an **exact date and time** from available slots and submits. We record one row in **`bookings`** (confirmed slot). This table is separate so we don’t mix flows and so we can block that slot from future availability.
 
-**When each flow is used:** Public profile checks the business’s `business_availability.accept_bookings`. If off → “Request booking” (V1). If on → “Book” uses the availability flow (V2) and we insert into `bookings`.
+**When each flow is used:** Public profile checks `business_availability.accept_bookings`. If off → V1 (request booking). If on → V2 (Book with calendar); we read/write `bookings`.
 
 ---
 
@@ -98,15 +98,13 @@ All customer fields except name/email can be nullable if we later make address o
 
 ## RLS (high level)
 
-- **Select:** Business owner can select their rows (`business_id` in their `business_profiles`). No public read (customers don’t query this table directly).
-- **Insert:** Only via backend/API when a customer completes the V2 flow (e.g. API validates slot and inserts). So either service role or a policy that allows insert only in a controlled way (e.g. no direct anon insert).
-- **Update / Delete:** Only business owner (e.g. cancel, mark completed).
-
-We can spell out exact policies when we add the table.
+- **Select:** Business owner can select their rows (`business_id` in their `business_profiles`). No public read (customers don’t query this table directly; blocked-slots and create flow use service role / API).
+- **Insert:** Only via backend (POST /api/public/bookings uses admin client). No INSERT policy for anon/authenticated; service role inserts.
+- **Update / Delete:** Only business owner (e.g. cancel, mark completed) via RLS.
 
 ---
 
-## Summary table (columns to add)
+## Schema summary (current table)
 
 | Column | Type | Nullable | Default |
 |--------|------|----------|---------|
@@ -138,11 +136,28 @@ We can spell out exact policies when we add the table.
 
 ---
 
-## How it’s used (no code, just flow)
+## How it’s used: data flow and time blocking
 
-1. **Public profile:** If `business_availability.accept_bookings` is on, “Book” uses V2. We’ll need an API (or server logic) that reads `business_availability` + existing `bookings` for that business to build the calendar and slots.
-2. **Slot blocking:** When generating available slots for a date, we load `bookings` for that `business_id` and `scheduled_date` and treat each row as a blocked range `[start_time, start_time + duration_minutes]`. No second booking in that range.
-3. **Submit:** Customer submits form → API validates slot is still free → insert one row into `bookings` with all of the above.
-4. **Dashboard:** Owner sees “Bookings” (from `bookings`) and “Requests” (from `booking_requests`) separately; we can filter by status and date.
+### Time representation
 
-If this shape works for you, next step is the actual `CREATE TABLE` + RLS SQL; we can keep that in a migration file and still no app code until the table exists.
+- **Storage:** All times are stored in a form that can be interpreted as minutes or time-of-day: `scheduled_date` (date), `start_time` (time, e.g. 14:00), `duration_minutes` (integer). Slot length is always in **minutes** in the DB and in slot logic; the UI can display duration in hours (e.g. “2 hr”) via a formatter.
+
+### Slot blocking (avoiding double-booking)
+
+- **Source of blocked slots:** **GET /api/public/bookings/blocked/[slug]** returns, for that business, all rows in `bookings` with `status` in `('confirmed', 'completed')`, with fields `scheduled_date`, `start_time`, `duration_minutes`.
+- **Overlap rule:** Each existing booking blocks the range **`[start_time, start_time + duration_minutes]`**. When generating available slots for a date, we treat any candidate slot as **blocked** if it overlaps that range (i.e. candidate start &lt; booking end and candidate end &gt; booking start). Implemented in `booking/utils/slotGeneration.ts`. So we block for the **full duration** of the service that was booked.
+
+### APIs and who writes/reads
+
+| Action | API / layer | Who |
+|--------|-------------|-----|
+| List blocked slots (public calendar) | GET `/api/public/bookings/blocked/[slug]` | Public; admin client. |
+| Create booking (customer submit) | POST `/api/public/bookings` | Public; resolves business by slug, then `createBooking` (admin). |
+| List bookings (dashboard) | GET `/api/availability/bookings` | Authenticated owner; RLS. |
+| Update status (complete/cancel) | PATCH `/api/availability/bookings/[id]` | Authenticated owner; RLS. |
+
+Insert into `bookings` happens only via the public POST API (no direct anon insert). Select/update/delete are restricted by RLS to the business owner.
+
+### Dashboard
+
+- Owner sees “Bookings” (V2 list from `bookings`) when `accept_bookings` is on, and “Requests” (V1 from `booking_requests`) when off. List is grouped into Upcoming / Past / Cancelled; owner can mark completed or cancel (PATCH above).

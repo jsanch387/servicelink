@@ -1,10 +1,11 @@
 # Availability feature – docs
 
-Documentation for the **availability booking** feature (owner availability + customer booking flow).
+Documentation for the **availability** feature: owner-side availability settings and **V2 (availability) booking** flow. Use these for DB structure, data flow, and context when changing the feature.
 
 | Doc | Description |
 |-----|-------------|
-| [DATABASE.md](./DATABASE.md) | Database tables and schema: `business_availability`. Column reference, JSONB shape, indexes, triggers. |
-| [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md) | Data design for the V2 `bookings` table (availability-based bookings): columns, rationale, indexes, RLS. |
+| [FLOWS.md](./FLOWS.md) | **Start here.** End-to-end flows: owner availability (dashboard + API + DB), public V2 booking (calendar, time blocking, submit), dashboard bookings list/update. Time blocking and key files. |
+| [DATABASE.md](./DATABASE.md) | Table `business_availability`: columns, `weekly_schedule` JSONB shape, indexes, triggers, RLS. Owner availability only. |
+| [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md) | Table `bookings` (V2): schema, columns, indexes, RLS. How it’s used for slot blocking and dashboard. |
 
-Add new docs here (e.g. API contracts, flows) as the feature grows. Keep content factual and avoid including secrets or sensitive security details.
+Add new docs here as the feature grows. Keep content factual and avoid secrets or sensitive security details.
