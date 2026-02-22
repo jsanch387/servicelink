@@ -1,12 +1,12 @@
 /**
  * Bookings Dashboard Page
  *
- * Renders either V1 (booking requests) or V2 (availability bookings) based on
- * the business "Accept Bookings" toggle. V1 data is fetched here; V2 view
- * fetches its own data via GET /api/availability/bookings so the two flows stay separate.
+ * Renders V1 (booking requests), V2 (availability bookings), or "Turn on availability"
+ * based on legacy_request_booking_enabled and business_availability.accept_bookings.
  */
 
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -38,7 +38,7 @@ export default async function BookingsPage() {
 
   const { data: businessProfile, error: businessError } = await supabase
     .from('business_profiles')
-    .select('id, business_name')
+    .select('id, business_name, legacy_request_booking_enabled')
     .eq('profile_id', user.id)
     .single();
 
@@ -46,7 +46,15 @@ export default async function BookingsPage() {
     redirect('/dashboard');
   }
 
-  // V1 only: fetch booking requests. V2 list is fetched client-side by AvailabilityBookingsView.
+  const legacyRequestBookingEnabled =
+    businessProfile.legacy_request_booking_enabled === true;
+  const availabilityRow = await getAvailabilityForBusiness(
+    supabase,
+    businessProfile.id
+  );
+  const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+
+  // V1 only: fetch booking requests when legacy and V2 off. V2 list is fetched client-side.
   const { data: bookingRequests, error: requestsError } = await supabase
     .from('booking_requests')
     .select('*')
@@ -61,6 +69,8 @@ export default async function BookingsPage() {
     <BookingsPageSwitch
       businessName={businessProfile.business_name}
       initialBookingRequests={bookingRequests ?? []}
+      legacyRequestBookingEnabled={legacyRequestBookingEnabled}
+      useAvailabilityBooking={useAvailabilityBooking}
     />
   );
 }

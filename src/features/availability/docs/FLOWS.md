@@ -70,7 +70,7 @@ So: **time is handled in minutes** (storage and overlap logic). The UI can displ
 
 ### UI / data flow
 
-- Dashboard **Bookings** page: if `accept_bookings` is on, it renders the V2 view (`AvailabilityBookingsView`), which uses `useAvailabilityBookings()`. The hook calls GET /api/availability/bookings and caches the result (module-level cache) to avoid duplicate requests. List is grouped into Upcoming / Past / Cancelled.
+- Dashboard **Bookings** page: if `accept_bookings` is on, it renders the V2 view (`AvailabilityBookingsView`), which uses `useAvailabilityBookings()`. The hook calls GET /api/availability/bookings on every visit to the tab so the list is always fresh. Mark complete / cancel update via PATCH and local state only (no refetch). List is grouped into Upcoming / Past / Cancelled.
 - Mark as completed or Cancel calls PATCH with the booking id and new status; the hook updates local state (and cache) from the response so no refetch is needed.
 
 ---

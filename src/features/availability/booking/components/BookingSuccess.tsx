@@ -1,5 +1,6 @@
 'use client';
 
+import { GlassCard } from '@/components/shared';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import React from 'react';
@@ -19,12 +20,15 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   date,
   time,
 }) => {
-  const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString(
+    undefined,
+    {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }
+  );
 
   return (
     <div className="flex flex-col items-center py-10 px-4 pb-16">
@@ -34,20 +38,26 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
-        Booking confirmed
+        You&apos;re booked
       </h2>
       <p className="text-gray-400 text-sm mb-8 max-w-sm text-center">
-        Your appointment with {businessName} has been requested.
+        Your appointment with {businessName} is confirmed. See you then!
       </p>
 
       {/* Details card */}
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] overflow-hidden mb-8">
+      <GlassCard
+        padding="none"
+        rounded="rounded-2xl"
+        blurColor="bg-emerald-500"
+        showBlur={true}
+        className="w-full max-w-sm mb-8 overflow-hidden"
+      >
         <div className="px-4 py-3 border-b border-white/10">
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
             Your booking
           </p>
         </div>
-        <div className="p-4 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <div>
             <p className="text-xs text-gray-500 mb-0.5">Service</p>
             <p className="text-white font-semibold">{serviceName}</p>
@@ -62,7 +72,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
             <p className="text-white font-medium">{time}</p>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       <Link
         href={`/${businessSlug}`}

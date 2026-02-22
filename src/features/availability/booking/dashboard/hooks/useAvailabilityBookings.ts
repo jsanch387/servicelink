@@ -7,72 +7,40 @@ const API_URL = '/api/availability/bookings';
 
 type StatusUpdate = 'completed' | 'cancelled';
 
-/** Module-level cache so we only make one request per mount (avoids duplicate calls from Strict Mode or re-mounts). */
-let sharedPromise: Promise<void> | null = null;
-let sharedCache: {
-  bookings: AvailabilityBookingDisplay[];
-  error: string | null;
-} | null = null;
-
+/**
+ * Fetches V2 bookings on every visit to the Bookings tab so the list is always fresh.
+ * Mark complete / cancel still update via API and local state only (no refetch).
+ */
 export function useAvailabilityBookings() {
-  const [bookings, setBookings] = useState<AvailabilityBookingDisplay[]>(
-    () => sharedCache?.bookings ?? []
-  );
-  const [isLoading, setIsLoading] = useState(() => !sharedCache);
-  const [error, setError] = useState<string | null>(
-    () => sharedCache?.error ?? null
-  );
+  const [bookings, setBookings] = useState<AvailabilityBookingDisplay[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchBookings = useCallback(async (bypassCache = false) => {
-    if (!bypassCache && sharedPromise) {
-      await sharedPromise;
-      if (sharedCache) {
-        setBookings(sharedCache.bookings);
-        setError(sharedCache.error);
-      }
-      setIsLoading(false);
-      return;
-    }
-    if (bypassCache) {
-      sharedCache = null;
-      sharedPromise = null;
-    }
+  const fetchBookings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    sharedPromise = (async () => {
-      try {
-        const res = await fetch(API_URL);
-        const json = await res.json();
-        if (!res.ok) {
-          const err = json.error ?? 'Failed to load bookings';
-          sharedCache = { bookings: [], error: err };
-          setError(err);
-          setBookings([]);
-          return;
-        }
-        const list = Array.isArray(json.data) ? json.data : [];
-        sharedCache = { bookings: list, error: null };
-        setBookings(list);
-        setError(null);
-      } catch {
-        sharedCache = { bookings: [], error: 'Failed to load bookings' };
-        setError('Failed to load bookings');
+    try {
+      const res = await fetch(API_URL);
+      const json = await res.json();
+      if (!res.ok) {
+        const err = json.error ?? 'Failed to load bookings';
+        setError(err);
         setBookings([]);
-      } finally {
-        setIsLoading(false);
-        sharedPromise = null;
+        return;
       }
-    })();
-    await sharedPromise;
+      const list = Array.isArray(json.data) ? json.data : [];
+      setBookings(list);
+      setError(null);
+    } catch {
+      setError('Failed to load bookings');
+      setBookings([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  // Always fetch when the view mounts (user navigates to Bookings tab) for up-to-date data
   useEffect(() => {
-    if (sharedCache) {
-      setBookings(sharedCache.bookings);
-      setError(sharedCache.error);
-      setIsLoading(false);
-      return;
-    }
     fetchBookings();
   }, [fetchBookings]);
 
@@ -94,15 +62,9 @@ export function useAvailabilityBookings() {
             error: json.error ?? 'Failed to update booking',
           };
         }
-        const nextBookings = (prev: AvailabilityBookingDisplay[]) =>
-          prev.map(b => (b.id === id ? { ...b, status } : b));
-        setBookings(nextBookings);
-        if (sharedCache) {
-          sharedCache = {
-            bookings: nextBookings(sharedCache.bookings),
-            error: sharedCache.error,
-          };
-        }
+        setBookings(prev =>
+          prev.map(b => (b.id === id ? { ...b, status } : b))
+        );
         return { success: true };
       } catch {
         return { success: false, error: 'Failed to update booking' };
@@ -115,7 +77,7 @@ export function useAvailabilityBookings() {
     bookings,
     isLoading,
     error,
-    refetch: () => fetchBookings(true),
+    refetch: fetchBookings,
     updateBookingStatus,
   };
 }

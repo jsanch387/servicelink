@@ -43,7 +43,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
 
     const { data: profile, error } = await supabase
       .from('business_profiles')
-      .select('id, business_name, business_slug')
+      .select('id, business_name, business_slug, legacy_request_booking_enabled')
       .eq('business_slug', slug)
       .single();
 
@@ -126,6 +126,10 @@ export default async function BookingRequestPage({
   );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const weeklySchedule = availabilityRow?.weekly_schedule ?? null;
+  const legacyRequestBookingEnabled =
+    businessProfile.legacy_request_booking_enabled === true;
+  const showNotAcceptingBookings =
+    !legacyRequestBookingEnabled && !useAvailabilityBooking;
 
   // Fetch service by ID when present (validates business_id)
   const serviceDetails =
@@ -139,9 +143,9 @@ export default async function BookingRequestPage({
       : 60;
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-[var(--dashboard-bg)]">
       {/* Header with Back Button */}
-      <div className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800">
+      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <Link
             href={`/${slug}`}
@@ -157,6 +161,7 @@ export default async function BookingRequestPage({
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pt-8 sm:pb-24">
         <BookFlowSwitch
           useAvailabilityBooking={useAvailabilityBooking}
+          showNotAcceptingBookings={showNotAcceptingBookings}
           businessName={businessProfile.business_name}
           businessId={businessProfile.id}
           businessSlug={businessProfile.business_slug || slug}

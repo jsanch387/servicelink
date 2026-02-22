@@ -152,7 +152,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         {WEEKDAY_LABELS.map(day => (
           <span
             key={day}
-            className="text-[10px] font-bold text-gray-500 uppercase tracking-widest"
+            className="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
           >
             {day[0]}
           </span>

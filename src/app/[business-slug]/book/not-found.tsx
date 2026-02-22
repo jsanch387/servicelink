@@ -3,7 +3,7 @@ import { Button } from '@/components/shared';
 
 export default function BookingNotFound() {
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[var(--dashboard-bg)] flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         <h1 className="text-3xl font-bold text-white mb-4">
           Booking Page Not Found

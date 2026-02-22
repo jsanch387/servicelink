@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
 import type { AvailabilityBookingPageProps, CustomerFormData } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
@@ -55,6 +55,11 @@ export function AvailabilityBookingPage({
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
   const canContinueFromDetails = isCustomerFormValid(customerData);
+
+  // Scroll to top when step changes so user sees the top of the form (especially on mobile)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
@@ -181,7 +186,7 @@ export function AvailabilityBookingPage({
 
       {/* Sticky bottom CTA */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-neutral-900/95 backdrop-blur-sm p-4 safe-area-pb"
+        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-2xl mx-auto flex items-center gap-3">

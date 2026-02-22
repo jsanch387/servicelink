@@ -5,9 +5,9 @@
 
 export default function BookPageLoading() {
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-[var(--dashboard-bg)]">
       {/* Header with Back Button Skeleton */}
-      <div className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800">
+      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <div className="h-5 w-32 bg-neutral-800 rounded animate-pulse" />
         </div>
@@ -66,7 +66,7 @@ export default function BookPageLoading() {
       </div>
 
       {/* Sticky bottom CTA skeleton */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-neutral-900/95 p-4">
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4">
         <div className="max-w-2xl mx-auto">
           <div className="h-12 w-full rounded-xl bg-neutral-800 animate-pulse" />
         </div>
