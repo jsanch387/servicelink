@@ -14,6 +14,9 @@ import {
   QuickActionsCard,
   UpcomingBookingsCard,
 } from '@/features/dashboard';
+import { ROUTES } from '@/constants/routes';
+import { Button, GlassCard, Switch, WarningCallout } from '@/components/shared';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 interface DashboardData {
@@ -90,6 +93,48 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             />
           ) : (
             <CreateLinkCard businessProfileId={businessProfile.id} />
+          )}
+
+          {/* Nudge: availability booking is off – set schedule so customers can book */}
+          {!dashboardData.useAvailabilityBooking && (
+            <GlassCard
+              padding="none"
+              rounded="rounded-2xl"
+              blurColor="bg-amber-500"
+              showBlur={true}
+              className="w-full min-w-0 p-4 text-left"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-2 min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-amber-400 flex-shrink-0" />
+                  Availability booking is off
+                </h2>
+                <Switch
+                  checked={false}
+                  onCheckedChange={() => {}}
+                  disabled
+                  size="md"
+                  aria-label="Availability booking is off"
+                  className="flex-shrink-0"
+                />
+              </div>
+              <div className="mt-3 mb-4 min-w-0">
+                <WarningCallout>
+                  Set your schedule and turn on availability so customers can
+                  book appointments directly. Until then, they can&apos;t pick a
+                  time from your calendar.
+                </WarningCallout>
+              </div>
+              <Button
+                href={ROUTES.DASHBOARD.AVAILABILITY}
+                variant="inverse"
+                size="md"
+                className="w-full sm:w-auto"
+                icon={<ClockIcon className="h-4 w-4" />}
+              >
+                Set availability
+              </Button>
+            </GlassCard>
           )}
 
           {/* Stats + actions grid: Profile views (if slug), V1 pending requests or V2 upcoming, Quick actions */}
