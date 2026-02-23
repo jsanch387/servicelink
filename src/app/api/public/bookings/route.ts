@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
-      .select('id, business_slug')
+      .select('id, business_slug, profile_id')
       .eq('business_slug', body.businessSlug.trim())
       .single();
 
@@ -79,7 +79,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const p = profile as { id: string; business_slug: string | null };
+    const p = profile as {
+      id: string;
+      business_slug: string | null;
+      profile_id: string | null;
+    };
     const businessId = p.id;
     const businessSlug = p.business_slug ?? body.businessSlug.trim();
 
@@ -94,6 +98,28 @@ export async function POST(request: NextRequest) {
       startTime: body.startTime.trim(),
       customer: body.customer,
     });
+
+    // In-app notification for the business owner (V2 availability booking)
+    const profileId = p.profile_id ?? null;
+    if (profileId && result?.id) {
+      const customerName = body.customer?.fullName?.trim() ?? 'A customer';
+      const title = `New appointment from ${customerName}`;
+      const bodyText = body.serviceName?.trim()
+        ? `Service: ${body.serviceName.trim()} · ${body.scheduledDate}`
+        : null;
+      try {
+        await supabase.from('notifications').insert({
+          user_id: profileId,
+          type: 'availability_booking',
+          reference_type: 'booking',
+          reference_id: result.id,
+          title,
+          body: bodyText,
+        } as never);
+      } catch {
+        // Do not fail the request; booking was already created
+      }
+    }
 
     return NextResponse.json(
       { success: true, data: { id: result.id } },
