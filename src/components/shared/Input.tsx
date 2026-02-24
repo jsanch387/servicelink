@@ -16,6 +16,8 @@ interface InputProps {
   inputClassName?: string;
   name?: string;
   autoComplete?: string;
+  /** Hint for virtual keyboard (e.g. "tel", "email", "numeric"). */
+  inputMode?: 'text' | 'tel' | 'email' | 'numeric' | 'decimal' | 'search' | 'url';
   /** Optional icon on the left (e.g. phone); adds left padding when set. */
   leftIcon?: React.ReactNode;
   /** Max length for the input value (native maxLength). */
@@ -35,6 +37,7 @@ export const Input: React.FC<InputProps> = ({
   inputClassName = '',
   name,
   autoComplete,
+  inputMode,
   leftIcon,
   maxLength,
 }) => {
@@ -70,6 +73,7 @@ export const Input: React.FC<InputProps> = ({
           disabled={disabled}
           name={name}
           autoComplete={autoComplete}
+          inputMode={inputMode}
           maxLength={maxLength}
           className={`
             w-full py-3.5 sm:py-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-medium
