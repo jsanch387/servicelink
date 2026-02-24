@@ -11,7 +11,9 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
-async function getAuthAndBusinessId(supabase: ReturnType<typeof createServerClient>) {
+async function getAuthAndBusinessId(
+  supabase: ReturnType<typeof createServerClient>
+) {
   const {
     data: { user },
     error: authError,
@@ -57,7 +59,10 @@ export async function GET() {
       );
     }
 
-    const data = await getAvailabilityForBusiness(supabase, authResult.businessId);
+    const data = await getAvailabilityForBusiness(
+      supabase,
+      authResult.businessId
+    );
 
     return NextResponse.json({ success: true, data });
   } catch (err) {
@@ -104,12 +109,15 @@ export async function POST(request: NextRequest) {
     const acceptBookings = Boolean(body.acceptBookings);
     const schedule = body.schedule ?? null;
     const minimumNotice =
-      typeof body.minimumNotice === 'string' && MINIMUM_NOTICE_VALUES.includes(body.minimumNotice)
+      typeof body.minimumNotice === 'string' &&
+      MINIMUM_NOTICE_VALUES.includes(body.minimumNotice)
         ? body.minimumNotice
         : 'none';
     const selectedPreset =
       typeof body.selectedPreset === 'string' &&
-      SELECTED_PRESET_VALUES.includes(body.selectedPreset as (typeof SELECTED_PRESET_VALUES)[number])
+      SELECTED_PRESET_VALUES.includes(
+        body.selectedPreset as (typeof SELECTED_PRESET_VALUES)[number]
+      )
         ? body.selectedPreset
         : 'custom';
 
@@ -120,12 +128,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await upsertAvailabilityForBusiness(supabase, authResult.businessId, {
-      accept_bookings: acceptBookings,
-      minimum_notice: minimumNotice,
-      weekly_schedule: schedule,
-      selected_preset: selectedPreset,
-    });
+    const data = await upsertAvailabilityForBusiness(
+      supabase,
+      authResult.businessId,
+      {
+        accept_bookings: acceptBookings,
+        minimum_notice: minimumNotice,
+        weekly_schedule: schedule,
+        selected_preset: selectedPreset,
+      }
+    );
 
     return NextResponse.json({ success: true, data });
   } catch (err) {

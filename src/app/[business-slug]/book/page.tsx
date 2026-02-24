@@ -5,13 +5,13 @@
  * Displays the booking request form for a specific business
  */
 
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { BookFlowSwitch } from './BookFlowSwitch';
 
 // Force dynamic rendering
@@ -43,7 +43,9 @@ async function fetchBusinessProfileBySlug(slug: string) {
 
     const { data: profile, error } = await supabase
       .from('business_profiles')
-      .select('id, business_name, business_slug, legacy_request_booking_enabled')
+      .select(
+        'id, business_name, business_slug, legacy_request_booking_enabled'
+      )
       .eq('business_slug', slug)
       .single();
 

@@ -19,7 +19,9 @@ export default function BookPageLoading() {
           {[1, 2, 3].map(i => (
             <div key={i} className="flex items-center gap-2">
               <div className="h-9 w-9 rounded-full bg-neutral-800 animate-pulse" />
-              {i < 3 && <div className="h-px w-6 bg-neutral-800 rounded animate-pulse" />}
+              {i < 3 && (
+                <div className="h-px w-6 bg-neutral-800 rounded animate-pulse" />
+              )}
             </div>
           ))}
         </div>
@@ -48,7 +50,10 @@ export default function BookPageLoading() {
             </div>
             <div className="grid grid-cols-7 gap-2">
               {Array.from({ length: 35 }).map((_, i) => (
-                <div key={i} className="aspect-square rounded-xl bg-neutral-800" />
+                <div
+                  key={i}
+                  className="aspect-square rounded-xl bg-neutral-800"
+                />
               ))}
             </div>
           </div>
@@ -58,7 +63,10 @@ export default function BookPageLoading() {
             <div className="h-6 w-28 bg-neutral-800 rounded animate-pulse" />
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-xl bg-neutral-800 animate-pulse" />
+                <div
+                  key={i}
+                  className="h-12 rounded-xl bg-neutral-800 animate-pulse"
+                />
               ))}
             </div>
           </div>

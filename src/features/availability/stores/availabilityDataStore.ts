@@ -40,8 +40,7 @@ export const useAvailabilityDataStore = create<AvailabilityDataState>()(
     setHasFetched: hasFetched => set({ hasFetched }),
     setLoading: loading => set({ loading }),
     setError: error => set({ error }),
-    updateFromSave: row =>
-      set({ row, error: null, hasFetched: true }),
+    updateFromSave: row => set({ row, error: null, hasFetched: true }),
     reset: () => set(initialState),
   })
 );

@@ -38,6 +38,7 @@ export async function GET(
     }
 
     const businessId = (profile as { id: string }).id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: rows, error } = await (supabase as any)
       .from('bookings')
       .select('scheduled_date, start_time, duration_minutes')

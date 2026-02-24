@@ -1,8 +1,8 @@
 'use client';
 
+import React from 'react';
 import type { CustomerFormData } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
-import React from 'react';
 
 function formatAddress(customer: CustomerFormData): string {
   const parts = [
@@ -38,16 +38,22 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   time,
   customer,
 }) => {
-  const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString(
+    undefined,
+    {
+      weekday: 'long',
+      month: 'long',
+
+      day: 'numeric',
+      year: 'numeric',
+    }
+  );
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-white tracking-tight">Review your booking</h2>
+      <h2 className="text-xl font-semibold text-white tracking-tight">
+        Review your booking
+      </h2>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
         <div>
@@ -62,7 +68,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 tracking-wider mb-1">Date & time</p>
+          <p className="text-xs text-gray-500 tracking-wider mb-1">
+            Date & time
+          </p>
           <p className="text-white font-medium">{dateFormatted}</p>
           <p className="text-sm text-gray-400">{time}</p>
         </div>
@@ -71,7 +79,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           <p className="text-xs text-gray-500 tracking-wider mb-1">Contact</p>
           <p className="text-white font-medium">{customer.fullName}</p>
           <p className="text-sm text-gray-400">{customer.email}</p>
-          <p className="text-sm text-gray-400">{formatPhoneDisplay(customer.phone)}</p>
+          <p className="text-sm text-gray-400">
+            {formatPhoneDisplay(customer.phone)}
+          </p>
         </div>
 
         <div>

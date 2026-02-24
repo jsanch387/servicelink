@@ -23,7 +23,7 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
   const [loadedIds, setLoadedIds] = React.useState<Set<string>>(new Set());
 
   const handleImageLoad = React.useCallback((id: string) => {
-    setLoadedIds((prev) => new Set(prev).add(id));
+    setLoadedIds(prev => new Set(prev).add(id));
   }, []);
 
   return (

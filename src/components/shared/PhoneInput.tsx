@@ -11,7 +11,8 @@ function formatPhoneDisplay(digits: string): string {
   const cleaned = digits.replace(/\D/g, '');
   if (cleaned.length === 0) return '';
   if (cleaned.length <= 3) return `(${cleaned}`;
-  if (cleaned.length <= 6) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+  if (cleaned.length <= 6)
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
   return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, PHONE_DIGIT_LIMIT)}`;
 }
 
@@ -47,7 +48,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   showDigitHint = true,
 }) => {
   const digits = value.replace(/\D/g, '').slice(0, PHONE_DIGIT_LIMIT);
-  const [displayValue, setDisplayValue] = useState(() => formatPhoneDisplay(digits));
+  const [displayValue, setDisplayValue] = useState(() =>
+    formatPhoneDisplay(digits)
+  );
 
   useEffect(() => {
     setDisplayValue(formatPhoneDisplay(value.replace(/\D/g, '')));
@@ -79,7 +82,8 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
       />
       {showDigitHint && digitCount > 0 && digitCount < PHONE_DIGIT_LIMIT && (
         <p className="mt-1 text-sm text-gray-400">
-          {PHONE_DIGIT_LIMIT - digitCount} more digit{digitCount === 9 ? '' : 's'} needed
+          {PHONE_DIGIT_LIMIT - digitCount} more digit
+          {digitCount === 9 ? '' : 's'} needed
         </p>
       )}
     </div>

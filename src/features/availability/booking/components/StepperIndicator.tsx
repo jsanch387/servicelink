@@ -27,10 +27,7 @@ export const StepperIndicator: React.FC<StepperIndicatorProps> = ({
         const isActive = currentStep === stepNumber;
         const isCompleted = currentStep > stepNumber;
         return (
-          <div
-            key={step.key}
-            className="flex items-center gap-2"
-          >
+          <div key={step.key} className="flex items-center gap-2">
             <div className="flex flex-col items-center gap-1">
               <span
                 className={`

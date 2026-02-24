@@ -39,7 +39,9 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   submitLabel = 'Review Booking',
   id,
 }) => {
-  const [errors, setErrors] = React.useState<Partial<Record<keyof CustomerFormData, string>>>({});
+  const [errors, setErrors] = React.useState<
+    Partial<Record<keyof CustomerFormData, string>>
+  >({});
 
   const update = (updates: Partial<CustomerFormData>) => {
     onChange({ ...value, ...updates });
@@ -50,7 +52,8 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     if (!value.fullName.trim()) next.fullName = 'Full name is required';
     if (!value.email.trim()) next.email = 'Email is required';
     if (!value.phone.trim()) next.phone = 'Phone is required';
-    if (!value.streetAddress.trim()) next.streetAddress = 'Street address is required';
+    if (!value.streetAddress.trim())
+      next.streetAddress = 'Street address is required';
     if (!value.city.trim()) next.city = 'City is required';
     if (!value.state.trim()) next.state = 'State is required';
     if (!value.zip.trim()) next.zip = 'ZIP is required';
@@ -66,7 +69,9 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
 
   return (
     <form id={id} onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-semibold text-white tracking-tight">Your details</h2>
+      <h2 className="text-xl font-semibold text-white tracking-tight">
+        Your details
+      </h2>
       <Input
         label="Full Name"
         value={value.fullName}
@@ -94,7 +99,9 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         showDigitHint
       />
 
-      <h2 className="text-xl font-semibold text-white tracking-tight pt-4">Address</h2>
+      <h2 className="text-xl font-semibold text-white tracking-tight pt-4">
+        Address
+      </h2>
       <Input
         label="Street Address"
         value={value.streetAddress}
@@ -145,7 +152,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       />
 
       {!hideSubmitButton && (
-        <Button type="submit" variant="inverse" size="lg" fullWidth className="font-semibold">
+        <Button
+          type="submit"
+          variant="inverse"
+          size="lg"
+          fullWidth
+          className="font-semibold"
+        >
           {submitLabel}
         </Button>
       )}

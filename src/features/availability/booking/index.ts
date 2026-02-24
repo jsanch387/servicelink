@@ -5,7 +5,10 @@
  */
 
 export { AvailabilityBookingPage } from './components/AvailabilityBookingPage';
-export { MOCK_WEEKLY_SCHEDULE, getMockExistingBookingsForMonth } from './mockData';
+export {
+  MOCK_WEEKLY_SCHEDULE,
+  getMockExistingBookingsForMonth,
+} from './mockData';
 export type {
   AvailabilityBookingPageProps,
   BookingSubmission,

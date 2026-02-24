@@ -1,9 +1,9 @@
 'use client';
 
-import type { ExistingBooking } from '../types';
-import type { WeeklySchedule } from '../../types/availability';
-import { generateTimeSlots } from '../utils/slotGeneration';
 import React from 'react';
+import type { WeeklySchedule } from '../../types/availability';
+import type { ExistingBooking } from '../types';
+import { generateTimeSlots } from '../utils/slotGeneration';
 
 interface TimeSlotGridProps {
   selectedDate: Date | null;
@@ -50,7 +50,9 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
 
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold text-white tracking-tight">Choose time</h2>
+      <h2 className="text-xl font-semibold text-white tracking-tight">
+        Choose time
+      </h2>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {slots.map(time => (
           <button
@@ -74,5 +76,7 @@ function formatTimeLabel(hhmm: string): string {
   const [h, m] = hhmm.split(':').map(Number);
   const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   const ampm = h < 12 ? 'AM' : 'PM';
-  return m === 0 ? `${h12} ${ampm}` : `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+  return m === 0
+    ? `${h12} ${ampm}`
+    : `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
 }

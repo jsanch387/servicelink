@@ -67,7 +67,11 @@ export function generateTimeSlots(
   const nowMins = isToday(selectedDate) ? getCurrentMinutesFromMidnight() : -1;
 
   const slots: string[] = [];
-  for (let t = startMins; t + serviceDurationMinutes <= endMins; t += incrementMinutes) {
+  for (
+    let t = startMins;
+    t + serviceDurationMinutes <= endMins;
+    t += incrementMinutes
+  ) {
     if (nowMins >= 0 && t <= nowMins) continue;
 
     const slotStart = toHHmm(t);

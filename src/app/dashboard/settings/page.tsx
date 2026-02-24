@@ -1,7 +1,6 @@
 import { SettingsContent } from '@/features/dashboard/components/SettingsContent';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
 // Force dynamic rendering (requires authentication)
@@ -15,19 +14,7 @@ export const dynamic = 'force-dynamic';
  */
 export default async function SettingsPage() {
   try {
-    // Create Supabase client
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     // Check authentication
     const {
@@ -63,12 +50,15 @@ export default async function SettingsPage() {
       .eq('id', businessProfile.id)
       .single();
 
-    if (slugError) {
+    if (slugError || !slugData) {
       redirect('/dashboard');
     }
 
-    // Prepare settings data
-    const hasSlug = !!(slugData.business_slug && slugData.business_link);
+    const slug = slugData as {
+      business_slug: string | null;
+      business_link: string | null;
+    };
+    const hasSlug = !!(slug.business_slug && slug.business_link);
     const settingsData = {
       businessProfile: {
         id: businessProfile.id,
@@ -82,8 +72,8 @@ export default async function SettingsPage() {
       slugData: hasSlug
         ? {
             hasSlug: true,
-            slug: slugData.business_slug,
-            fullLink: slugData.business_link,
+            slug: slug.business_slug ?? undefined,
+            fullLink: slug.business_link ?? undefined,
           }
         : {
             hasSlug: false,
