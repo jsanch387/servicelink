@@ -35,7 +35,7 @@ const HOURS_OPTIONS = [
   { value: '7', label: '7 hours' },
   { value: '8', label: '8 hours' },
   { value: '9', label: '9 hours' },
-  { value: '10', label: '10+ hours' },
+  { value: '10', label: '10 hours' },
 ];
 
 const ServiceCard = ({
@@ -354,11 +354,11 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         <GlassCard
-          padding="lg"
+          padding="none"
           rounded="rounded-2xl"
           blurColor="bg-orange-500"
           showBlur={true}
-          className="text-left"
+          className="text-left p-4"
         >
           <h2 className="text-base font-semibold text-white mb-6">
             Add a Service
@@ -460,18 +460,18 @@ export const Step3Services: React.FC<Step3ServicesProps> = ({
         </GlassCard>
 
         <GlassCard
-          padding="lg"
+          padding="none"
           rounded="rounded-2xl"
           blurColor="bg-orange-500"
           showBlur={true}
-          className="text-left"
+          className="text-left p-4"
         >
           <h2 className="text-base font-semibold text-white mb-6">
             Your Services ({services.length})
           </h2>
 
           {servicesLoaded && services.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-6 sm:p-8 text-center">
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-center">
               <PlusIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-400 mx-auto mb-3 sm:mb-4 opacity-60" />
               <p className="text-gray-400 mb-1 font-semibold text-sm sm:text-base">
                 No services yet

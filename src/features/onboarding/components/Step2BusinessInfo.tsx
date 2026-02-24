@@ -130,7 +130,7 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
   };
 
   return (
-    <div className="max-w-2xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+    <div className="max-w-2xl mx-auto text-center sm:px-6 lg:px-8">
       <div className="mb-8 sm:mb-10">
         <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           Tell us about your <span className="text-orange-400">business</span>
@@ -141,11 +141,11 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
       </div>
 
       <GlassCard
-        padding="lg"
+        padding="none"
         rounded="rounded-2xl"
         blurColor="bg-orange-500"
         showBlur={true}
-        className="mb-8 text-left"
+        className="mb-8 text-left p-4"
       >
         {error && (
           <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 mb-6 text-center">
