@@ -5,6 +5,7 @@
  * Resolves business by slug, then inserts one row into bookings via feature service.
  */
 
+import { sendAvailabilityBookingNotificationEmail } from '@/features/email';
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -116,6 +117,36 @@ export async function POST(request: NextRequest) {
           title,
           body: bodyText,
         } as never);
+      } catch {
+        // Do not fail the request; booking was already created
+      }
+    }
+
+    // Email notification for the business owner (V2 availability booking)
+    if (profileId) {
+      try {
+        let ownerEmail: string | null = null;
+        try {
+          const {
+            data: { user },
+          } = await supabase.auth.admin.getUserById(profileId);
+          ownerEmail = user?.email?.trim() ?? null;
+        } catch {
+          // Owner email unavailable from auth
+        }
+        if (ownerEmail) {
+          const customerName = body.customer?.fullName?.trim() ?? 'A customer';
+          const customerEmail = body.customer?.email?.trim() ?? '';
+          await sendAvailabilityBookingNotificationEmail(ownerEmail, {
+            customerName,
+            customerEmail,
+            serviceName: body.serviceName.trim(),
+            scheduledDate: body.scheduledDate,
+            startTime: body.startTime.trim(),
+            durationMinutes: body.durationMinutes,
+            servicePriceCents: body.servicePriceCents,
+          });
+        }
       } catch {
         // Do not fail the request; booking was already created
       }
