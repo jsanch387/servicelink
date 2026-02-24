@@ -8,3 +8,9 @@ export type {
   BookingNotificationPayload,
   SendBookingNotificationResult,
 } from './booking-notification/types';
+
+export { sendAvailabilityBookingNotificationEmail } from './availability-booking-notification/sendAvailabilityBookingNotificationEmail';
+export type {
+  AvailabilityBookingNotificationPayload,
+  SendAvailabilityBookingNotificationResult,
+} from './availability-booking-notification/types';

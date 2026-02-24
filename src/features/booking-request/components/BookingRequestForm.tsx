@@ -169,7 +169,7 @@ export const BookingRequestForm: React.FC<BookingRequestFormProps> = ({
             placeholder="(555) 000-0000"
             required
             error={errors.phone}
-            className="[&>label]:hidden [&_input]:!bg-white/5 [&_input]:!border-white/10 [&_input]:!rounded-lg [&_input]:!text-white [&_input]:!placeholder-gray-500 [&_input]:!text-base [&_input]:sm:!text-sm [&_input]:!font-medium [&_input]:!py-3.5 [&_input]:sm:!py-4 [&_input]:!pr-4 [&_input]:sm:!pr-5 [&_input]:!focus:ring-orange-500/50 [&_input]:!focus:border-orange-500/50 [&_input]:!focus:bg-white/8 [&_input]:!hover:border-white/20 [&_input]:!active:bg-white/8 [&_input]:!focus:outline-none [&_input]:!focus:ring-2 [&>div>div]:!pl-4 [&>div>div]:!left-0 [&_input]:!pl-12"
+            className="[&>label]:hidden [&_input]:!bg-white/5 [&_input]:!border-white/10 [&_input]:!rounded-lg [&_input]:!text-white [&_input]:!placeholder-gray-500 [&_input]:!text-base [&_input]:sm:!text-sm [&_input]:!font-medium [&_input]:!py-3.5 [&_input]:sm:!py-4 [&_input]:!px-4 [&_input]:sm:!px-5 [&_input]:!focus:ring-white/20 [&_input]:!focus:border-white/30 [&_input]:!focus:bg-white/8 [&_input]:!hover:border-white/20 [&_input]:!active:bg-white/8 [&_input]:!focus:outline-none [&_input]:!focus:ring-2 w-full"
           />
         </div>
 

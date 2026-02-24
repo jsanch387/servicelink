@@ -1,20 +1,19 @@
 /**
  * Bookings Dashboard Page
  *
- * Displays all booking requests for the authenticated user's business.
- * Mobile-first, responsive design.
+ * Renders V1 (booking requests), V2 (availability bookings), or "Turn on availability"
+ * based on legacy_request_booking_enabled and business_availability.accept_bookings.
  */
 
-import { BookingsPageClient } from '@/features/booking-request/components/dashboard/BookingsPageClient';
+import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-// Force dynamic rendering (requires authentication)
 export const dynamic = 'force-dynamic';
 
 export default async function BookingsPage() {
-  // Create server client for SSR
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +27,6 @@ export default async function BookingsPage() {
     }
   );
 
-  // Get current user
   const {
     data: { user },
     error: userError,
@@ -38,10 +36,9 @@ export default async function BookingsPage() {
     redirect('/login');
   }
 
-  // Get the user's business profile
   const { data: businessProfile, error: businessError } = await supabase
     .from('business_profiles')
-    .select('id, business_name')
+    .select('id, business_name, legacy_request_booking_enabled')
     .eq('profile_id', user.id)
     .single();
 
@@ -49,21 +46,31 @@ export default async function BookingsPage() {
     redirect('/dashboard');
   }
 
-  // Fetch booking requests for this business
-  const { data: bookingRequests, error: bookingsError } = await supabase
+  const legacyRequestBookingEnabled =
+    businessProfile.legacy_request_booking_enabled === true;
+  const availabilityRow = await getAvailabilityForBusiness(
+    supabase,
+    businessProfile.id
+  );
+  const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+
+  // V1 only: fetch booking requests when legacy and V2 off. V2 list is fetched client-side.
+  const { data: bookingRequests, error: requestsError } = await supabase
     .from('booking_requests')
     .select('*')
     .eq('business_id', businessProfile.id)
     .order('submitted_at', { ascending: false });
 
-  if (bookingsError) {
-    console.error('Error fetching booking requests:', bookingsError);
+  if (requestsError) {
+    console.error('Error fetching booking requests:', requestsError);
   }
 
   return (
-    <BookingsPageClient
+    <BookingsPageSwitch
       businessName={businessProfile.business_name}
-      initialBookings={bookingRequests || []}
+      initialBookingRequests={bookingRequests ?? []}
+      legacyRequestBookingEnabled={legacyRequestBookingEnabled}
+      useAvailabilityBooking={useAvailabilityBooking}
     />
   );
 }

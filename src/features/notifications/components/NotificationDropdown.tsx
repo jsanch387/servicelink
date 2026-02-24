@@ -24,7 +24,7 @@ export function NotificationDropdown({
 
   return (
     <div
-      className="absolute right-0 top-full z-50 mt-2 w-[320px] overflow-hidden rounded-lg border border-neutral-600 bg-neutral-800 shadow-xl"
+      className="absolute right-0 top-full z-50 mt-2 w-[320px] rounded-2xl border border-neutral-700 bg-neutral-900 shadow-xl overflow-hidden"
       role="dialog"
       aria-label="Notifications"
     >
@@ -33,10 +33,8 @@ export function NotificationDropdown({
         {hasUnread && (
           <button
             type="button"
-            onClick={() => {
-              onMarkAllAsRead();
-            }}
-            className="text-xs font-medium text-orange-500 hover:text-orange-400 transition-colors"
+            onClick={() => onMarkAllAsRead()}
+            className="text-xs font-medium text-neutral-300 hover:text-white transition-colors"
           >
             Mark all read
           </button>
@@ -66,7 +64,7 @@ export function NotificationDropdown({
         <Link
           href={ROUTES.DASHBOARD.BOOKINGS}
           onClick={onClose}
-          className="block text-center text-sm font-medium text-orange-500 hover:text-orange-400 transition-colors py-2"
+          className="block text-center text-sm font-medium text-neutral-300 hover:text-white transition-colors py-2"
         >
           View all bookings
         </Link>

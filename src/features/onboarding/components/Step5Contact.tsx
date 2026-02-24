@@ -111,11 +111,11 @@ export const Step5Contact: React.FC<Step5ContactProps> = ({
       </div>
 
       <GlassCard
-        padding="lg"
+        padding="none"
         rounded="rounded-2xl"
         blurColor="bg-orange-500"
         showBlur={true}
-        className="mb-8 text-left"
+        className="mb-8 text-left p-4"
       >
         {error && (
           <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 mb-6 text-center">

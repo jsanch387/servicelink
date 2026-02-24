@@ -1,4 +1,5 @@
 export { Dashboard } from './components/Dashboard';
+export { CreateLinkCard } from './components/CreateLinkCard';
 export { DashboardContent } from './components/DashboardContent';
 export { DashboardLoadingState } from './components/DashboardLoadingState';
 export { DashboardHeader } from './components/DashboardHeader';
@@ -8,6 +9,7 @@ export { EditProfileCard } from './components/EditProfileCard';
 export { LinkSharingCard } from './components/LinkSharingCard';
 export { OnboardingCompleteCard } from './components/OnboardingCompleteCard';
 export { PendingRequestsCard } from './components/PendingRequestsCard';
+export { UpcomingBookingsCard } from './components/UpcomingBookingsCard';
 export { PerformanceCard } from './components/PerformanceCard';
 export { QuickActionsCard } from './components/QuickActionsCard';
 export { SettingsContent } from './components/SettingsContent';

@@ -35,7 +35,7 @@ export const QuickActionsCard: React.FC = () => {
           href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=view`}
           icon={<EyeIcon className="h-4 w-4" />}
         >
-          View Live Profile
+          View Your Profile
         </Button>
         <Button
           variant="secondary"

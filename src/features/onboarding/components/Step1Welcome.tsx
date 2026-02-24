@@ -45,11 +45,11 @@ export const Step1Welcome: React.FC<Step1WelcomeProps> = ({
       </div>
 
       <GlassCard
-        padding="lg"
+        padding="none"
         rounded="rounded-2xl"
         blurColor="bg-orange-500"
         showBlur={true}
-        className="mb-8 text-left"
+        className="mb-8 text-left p-4"
       >
         <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
           You&apos;ll add your business name, what you do, and how customers can

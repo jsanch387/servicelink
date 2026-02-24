@@ -106,7 +106,12 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
   };
 
   const addService = () => {
-    if (!currentService.name.trim() || !currentService.price.trim()) {
+    if (
+      !currentService.name.trim() ||
+      !currentService.price.trim() ||
+      currentService.hours_to_complete == null ||
+      currentService.hours_to_complete < 1
+    ) {
       return;
     }
 
@@ -208,7 +213,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
             </div>
 
             <Select
-              label="Duration (Optional)"
+              label="Duration (Required)"
               placeholder="Select hours"
               value={currentService.hours_to_complete?.toString() || ''}
               onChange={value => {
@@ -216,6 +221,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
                 handleServiceChange('hours_to_complete', numValue);
               }}
               options={HOURS_OPTIONS}
+              required
             />
           </div>
 
@@ -224,7 +230,11 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
             onClick={addService}
             variant="primary"
             className="w-full mt-4"
-            disabled={!currentService.name.trim()}
+            disabled={
+              !currentService.name.trim() ||
+              !currentService.hours_to_complete ||
+              currentService.hours_to_complete < 1
+            }
           >
             Add This Service
           </Button>

@@ -25,7 +25,7 @@ export const BookingRequestButton: React.FC<BookingRequestButtonProps> = ({
   return (
     <Button
       onClick={handleClick}
-      variant="primary"
+      variant="inverse"
       className="flex-[3] py-3.5 !font-black text-base tracking-tight "
       icon={<CalendarIcon className="h-5 w-5" />}
       iconPosition="left"

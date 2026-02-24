@@ -5,14 +5,18 @@
 
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
 import { useAnalytics } from '@/features/analytics';
 import {
+  CreateLinkCard,
   LinkSharingCard,
   PendingRequestsCard,
   PerformanceCard,
   QuickActionsCard,
+  UpcomingBookingsCard,
 } from '@/features/dashboard';
+import { ROUTES } from '@/constants/routes';
+import { Button, GlassCard, Switch, WarningCallout } from '@/components/shared';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 interface DashboardData {
@@ -44,6 +48,9 @@ interface DashboardData {
     readyToShare: boolean;
   };
   pendingRequestsCount: number;
+  legacyRequestBookingEnabled: boolean;
+  useAvailabilityBooking: boolean;
+  upcomingBookingsCount: number;
 }
 
 interface DashboardContentProps {
@@ -62,8 +69,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const APP_DOMAIN = 'myservicelink.app';
 
   return (
-    <main className="flex-1 pt-6 pb-24 sm:pt-8 sm:pb-8 lg:pt-10 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen">
-      <div className="max-w-6xl mx-auto">
+    <main className="flex-1 pt-6 pb-24 sm:pt-8 sm:pb-8 lg:pt-10 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+      <div className="max-w-6xl mx-auto w-full min-w-0">
         {/* Header */}
         <div className="mb-6 sm:mb-8 lg:mb-10">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
@@ -76,7 +83,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           </p>
         </div>
 
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-6 sm:space-y-8 w-full min-w-0">
           {/* Link card or Create link CTA */}
           {slugData?.hasSlug ? (
             <LinkSharingCard
@@ -85,32 +92,53 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               appDomain={APP_DOMAIN}
             />
           ) : (
+            <CreateLinkCard businessProfileId={businessProfile.id} />
+          )}
+
+          {/* Nudge: availability booking is off – set schedule so customers can book */}
+          {!dashboardData.useAvailabilityBooking && (
             <GlassCard
-              padding="lg"
+              padding="none"
               rounded="rounded-2xl"
-              blurColor="bg-orange-500"
+              blurColor="bg-amber-500"
               showBlur={true}
-              className="text-left"
+              className="w-full min-w-0 p-4 text-left"
             >
-              <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
-                Create your link
-              </h2>
-              <p className="text-gray-400 text-sm mb-6">
-                Share it anywhere—people who click it see your profile.
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-2 min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <ClockIcon className="h-5 w-5 text-amber-400 flex-shrink-0" />
+                  Availability booking is off
+                </h2>
+                <Switch
+                  checked={false}
+                  onCheckedChange={() => {}}
+                  disabled
+                  size="md"
+                  aria-label="Availability booking is off"
+                  className="flex-shrink-0"
+                />
+              </div>
+              <div className="mt-3 mb-4 min-w-0">
+                <WarningCallout>
+                  Set your schedule and turn on availability so customers can
+                  book appointments directly. Until then, they can&apos;t pick a
+                  time from your calendar.
+                </WarningCallout>
+              </div>
               <Button
-                href="/dashboard/settings"
-                variant="primary"
-                size="lg"
+                href={ROUTES.DASHBOARD.AVAILABILITY}
+                variant="inverse"
+                size="md"
                 className="w-full sm:w-auto"
+                icon={<ClockIcon className="h-4 w-4" />}
               >
-                Create your link
+                Set availability
               </Button>
             </GlassCard>
           )}
 
-          {/* Stats + actions grid: Profile views (if slug), Pending requests, Quick actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Stats + actions grid: Profile views (if slug), V1 pending requests or V2 upcoming, Quick actions */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
             {slugData?.hasSlug && (
               <PerformanceCard
                 profileViews={dashboardAnalytics?.profileViews ?? 0}
@@ -118,9 +146,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 loading={analyticsLoading}
               />
             )}
-            <PendingRequestsCard
-              pendingCount={dashboardData.pendingRequestsCount}
-            />
+            {dashboardData.useAvailabilityBooking ||
+            !dashboardData.legacyRequestBookingEnabled ? (
+              <UpcomingBookingsCard
+                upcomingCount={dashboardData.upcomingBookingsCount}
+              />
+            ) : (
+              <PendingRequestsCard
+                pendingCount={dashboardData.pendingRequestsCount}
+              />
+            )}
             <QuickActionsCard />
           </div>
         </div>

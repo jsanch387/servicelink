@@ -8,12 +8,14 @@ import { ProfileHeader } from './ProfileHeader';
 import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
 // import { ReviewsSection } from './ReviewsSection'; // Will be used later
-import { Button } from '@/components/shared';
 import {
-  ArrowRightIcon,
-  LinkIcon,
-  PencilIcon,
-} from '@heroicons/react/24/outline';
+  Button,
+  GlassCard,
+  RequiredLabel,
+  WarningCallout,
+} from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
+import { ArrowRightIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
@@ -163,35 +165,37 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
         <div className="max-w-4xl mx-auto">
           {/* Create Link CTA - Only show for authenticated users without a slug */}
           {!isPublic && slugData && !slugData.hasSlug && (
-            <div className="px-4 pt-4 pb-3 sm:pt-6 sm:pb-4">
-              <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-4 sm:p-5">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    <div className="bg-orange-500/10 rounded-full p-2">
-                      <LinkIcon className="h-5 w-5 text-orange-400" />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-semibold text-base sm:text-lg mb-1">
-                      Create your public link
-                    </h3>
-                    <p className="text-gray-400 text-sm mb-3">
-                      Get a custom link to share your profile with customers and
-                      start getting business.
-                    </p>
-                    <Button
-                      onClick={() =>
-                        (window.location.href = '/dashboard/settings')
-                      }
-                      variant="primary"
-                      size="sm"
-                      className="w-full sm:w-auto"
-                    >
-                      Create Link Now
-                    </Button>
-                  </div>
+            <div className="px-4 pt-4 pb-3 sm:pt-6 sm:pb-4 w-full min-w-0">
+              <GlassCard
+                padding="none"
+                rounded="rounded-2xl"
+                blurColor="bg-zinc-500"
+                showBlur={true}
+                className="text-left w-full min-w-0 p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-white">
+                    Custom link
+                  </h2>
+                  <RequiredLabel title="Create a link to share your profile" />
                 </div>
-              </div>
+                <div className="mt-3 mb-4 min-w-0">
+                  <WarningCallout>
+                    You need a custom link so customers can find and book you.
+                    Add one in Settings.
+                  </WarningCallout>
+                </div>
+                <Button
+                  href={ROUTES.DASHBOARD.SETTINGS}
+                  variant="inverse"
+                  size="md"
+                  className="w-full sm:w-auto"
+                  icon={<ArrowRightIcon className="h-4 w-4" />}
+                  iconPosition="right"
+                >
+                  Go to Settings
+                </Button>
+              </GlassCard>
             </div>
           )}
 

@@ -2,7 +2,7 @@
  * Notification types aligned with public.notifications table.
  */
 
-export type NotificationType = 'booking_request';
+export type NotificationType = 'booking_request' | 'availability_booking';
 
 /** Row from notifications table (API/DB) */
 export interface Notification {

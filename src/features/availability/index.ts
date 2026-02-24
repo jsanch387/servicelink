@@ -1,0 +1,16 @@
+/**
+ * Availability Feature
+ *
+ * Exports for the availability feature. Gated by AVAILABILITY_FEATURE_ENABLED.
+ */
+
+export { AvailabilityContent } from './components/AvailabilityContent';
+export { AVAILABILITY_FEATURE_ENABLED } from './constants';
+export { useAvailability } from './hooks/useAvailability';
+export type {
+  BusinessAvailabilityRow,
+  DayKey,
+  DaySchedule,
+  MinimumNoticeValue,
+  WeeklySchedule,
+} from './types/availability';

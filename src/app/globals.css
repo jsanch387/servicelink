@@ -139,3 +139,24 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Image loading skeleton – shimmer (e.g. Our Work / portfolio) */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-image {
+  background: linear-gradient(
+    90deg,
+    rgb(38 38 38) 0%,
+    rgb(64 64 64) 50%,
+    rgb(38 38 38) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}

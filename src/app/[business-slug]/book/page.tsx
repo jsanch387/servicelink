@@ -5,12 +5,14 @@
  * Displays the booking request form for a specific business
  */
 
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { BookingRequestPageClient } from './BookingRequestPageClient';
+import { BookFlowSwitch } from './BookFlowSwitch';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -20,7 +22,7 @@ interface BookingRequestPageProps {
     'business-slug': string;
   }>;
   searchParams: Promise<{
-    service?: string;
+    serviceId?: string;
   }>;
 }
 
@@ -41,7 +43,9 @@ async function fetchBusinessProfileBySlug(slug: string) {
 
     const { data: profile, error } = await supabase
       .from('business_profiles')
-      .select('id, business_name, business_slug')
+      .select(
+        'id, business_name, business_slug, legacy_request_booking_enabled'
+      )
       .eq('business_slug', slug)
       .single();
 
@@ -56,10 +60,14 @@ async function fetchBusinessProfileBySlug(slug: string) {
   }
 }
 
-async function fetchServiceDetails(
+async function fetchServiceById(
   businessId: string,
-  serviceName: string
-): Promise<{ name: string; price: number } | null> {
+  serviceId: string
+): Promise<{
+  name: string;
+  price: number;
+  hours_to_complete: number | null;
+} | null> {
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -76,9 +84,10 @@ async function fetchServiceDetails(
 
     const { data: service, error } = await supabase
       .from('business_services')
-      .select('name, price_cents')
+      .select('name, price_cents, hours_to_complete')
+      .eq('id', serviceId)
       .eq('business_id', businessId)
-      .eq('name', serviceName)
+      .eq('is_active', true)
       .single();
 
     if (error || !service) {
@@ -88,9 +97,10 @@ async function fetchServiceDetails(
     return {
       name: service.name,
       price: service.price_cents || 0,
+      hours_to_complete: service.hours_to_complete ?? null,
     };
   } catch (error) {
-    console.error('Error fetching service details:', error);
+    console.error('Error fetching service by id:', error);
     return null;
   }
 }
@@ -100,7 +110,7 @@ export default async function BookingRequestPage({
   searchParams,
 }: BookingRequestPageProps) {
   const { 'business-slug': slug } = await params;
-  const { service } = await searchParams;
+  const { serviceId } = await searchParams;
 
   // Fetch the business profile by slug
   const businessProfile = await fetchBusinessProfileBySlug(slug);
@@ -110,18 +120,34 @@ export default async function BookingRequestPage({
     notFound();
   }
 
-  // Decode service name from URL
-  const serviceName = service ? decodeURIComponent(service) : '';
+  // Fetch availability with admin client so RLS doesn't block (public page needs to read accept_bookings)
+  const adminClient = createSupabaseAdminClient();
+  const availabilityRow = await getAvailabilityForBusiness(
+    adminClient,
+    businessProfile.id
+  );
+  const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+  const weeklySchedule = availabilityRow?.weekly_schedule ?? null;
+  const legacyRequestBookingEnabled =
+    businessProfile.legacy_request_booking_enabled === true;
+  const showNotAcceptingBookings =
+    !legacyRequestBookingEnabled && !useAvailabilityBooking;
 
-  // Fetch service details if service name is provided
-  const serviceDetails = serviceName
-    ? await fetchServiceDetails(businessProfile.id, serviceName)
-    : null;
+  // Fetch service by ID when present (validates business_id)
+  const serviceDetails =
+    serviceId && serviceId.trim()
+      ? await fetchServiceById(businessProfile.id, serviceId.trim())
+      : null;
+  const serviceName = serviceDetails?.name ?? '';
+  const serviceDurationMinutes =
+    serviceDetails?.hours_to_complete != null
+      ? Math.max(15, Math.round(serviceDetails.hours_to_complete * 60))
+      : 60;
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-[var(--dashboard-bg)]">
       {/* Header with Back Button */}
-      <div className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800">
+      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <Link
             href={`/${slug}`}
@@ -133,14 +159,19 @@ export default async function BookingRequestPage({
         </div>
       </div>
 
-      {/* Form Container */}
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <BookingRequestPageClient
+      {/* Form Container – availability booking or request booking by flag */}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pt-8 sm:pb-24">
+        <BookFlowSwitch
+          useAvailabilityBooking={useAvailabilityBooking}
+          showNotAcceptingBookings={showNotAcceptingBookings}
           businessName={businessProfile.business_name}
           businessId={businessProfile.id}
           businessSlug={businessProfile.business_slug || slug}
+          serviceId={serviceId?.trim() ?? undefined}
           serviceName={serviceName}
-          servicePrice={serviceDetails?.price}
+          servicePrice={serviceDetails?.price ?? undefined}
+          serviceDurationMinutes={serviceDurationMinutes}
+          weeklySchedule={weeklySchedule}
         />
       </div>
     </div>

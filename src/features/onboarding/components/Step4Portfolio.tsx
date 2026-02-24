@@ -83,7 +83,7 @@ const SmartImagePreview: React.FC<{
 
       {showConfirmation && (
         <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-xl z-20">
-          <div className="bg-[var(--dashboard-bg)] border border-white/10 rounded-xl p-6 mx-4 max-w-sm w-full shadow-xl">
+          <div className="bg-[var(--dashboard-bg)] border border-white/10 rounded-xl p-4 mx-4 max-w-sm w-full shadow-xl">
             <div className="text-center mb-6">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <XMarkIcon className="h-6 w-6 text-red-600" />
@@ -546,11 +546,11 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
       </div>
 
       <GlassCard
-        padding="lg"
+        padding="none"
         rounded="rounded-2xl"
         blurColor="bg-orange-500"
         showBlur={true}
-        className="mb-8 text-left"
+        className="mb-8 text-left p-4"
       >
         {error && (
           <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 mb-6 text-center">
@@ -599,7 +599,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
 
         {images.length === 0 && (
           <div className="pt-8 border-t border-white/10">
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-8 sm:p-10 text-center">
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-center">
               <CameraIcon className="h-12 w-12 sm:h-14 sm:w-14 text-orange-400 mx-auto mb-4 opacity-60" />
               <p className="text-gray-400 mb-1 font-semibold text-base sm:text-lg">
                 No photos yet

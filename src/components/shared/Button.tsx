@@ -17,6 +17,8 @@ interface ButtonProps {
   onClick?: () => void;
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
+  /** Associate submit/reset button with a form by id (native form attribute). */
+  form?: string;
   href?: string;
   loading?: boolean;
   icon?: React.ReactNode;
@@ -32,6 +34,7 @@ export const Button: React.FC<ButtonProps> = ({
   onClick,
   disabled = false,
   type = 'button',
+  form,
   href,
   loading = false,
   icon,
@@ -106,6 +109,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       type={type}
+      form={form}
       className={classes}
       onClick={onClick}
       disabled={isDisabled}

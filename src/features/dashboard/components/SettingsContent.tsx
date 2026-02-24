@@ -1,6 +1,11 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import {
+  Button,
+  GlassCard,
+  RequiredLabel,
+  WarningCallout,
+} from '@/components/shared';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import {
   ArrowTopRightOnSquareIcon,
@@ -109,12 +114,12 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
     }
   };
 
-  const cardClass =
-    'rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8';
+  const supportCardClass =
+    'rounded-2xl border border-white/10 bg-white/[0.02] p-4 w-full min-w-0';
 
   return (
-    <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen">
-      <div className="max-w-2xl mx-auto">
+    <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+      <div className="max-w-2xl mx-auto w-full min-w-0">
         <div className="mb-10">
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Settings
@@ -124,10 +129,31 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
           </p>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-8 w-full min-w-0">
           {/* Custom link */}
-          <div className={cardClass}>
-            <h2 className="text-base font-semibold text-white">Custom link</h2>
+          <GlassCard
+            padding="none"
+            rounded="rounded-2xl"
+            blurColor="bg-zinc-500"
+            showBlur={true}
+            className="w-full min-w-0 p-4 text-left"
+          >
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
+                Custom link
+              </h2>
+              {!linkGenerated && (
+                <RequiredLabel title="Create a link to share your profile" />
+              )}
+            </div>
+            {!linkGenerated && (
+              <div className="mt-3 mb-6 min-w-0">
+                <WarningCallout>
+                  You need a custom link so customers can find and book you.
+                  Create one below.
+                </WarningCallout>
+              </div>
+            )}
             <p className="text-sm text-gray-400 mt-1 mb-6">
               {linkGenerated
                 ? 'This is your public link. Copy and share it so customers can find you and book.'
@@ -135,9 +161,9 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             </p>
 
             {!linkGenerated ? (
-              <div className="space-y-4">
-                <div className="flex rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-orange-500/40 focus-within:ring-1 focus-within:ring-orange-500/20">
-                  <span className="py-3 px-4 text-gray-500 font-mono text-sm border-r border-white/10">
+              <div className="space-y-4 min-w-0">
+                <div className="flex flex-col sm:flex-row rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-white/30 focus-within:ring-1 focus-within:ring-white/20 min-w-0">
+                  <span className="py-2.5 px-4 sm:py-3 text-gray-500 font-mono text-xs sm:text-sm border-b border-white/10 sm:border-b-0 sm:border-r flex-shrink-0">
                     {APP_DOMAIN}/
                   </span>
                   <input
@@ -146,7 +172,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     onChange={e => setCustomSlugInput(e.target.value)}
                     placeholder="my-business"
                     disabled={isUpdating}
-                    className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-sm outline-none placeholder:text-gray-500"
+                    className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
                   />
                 </div>
                 {slugError && (
@@ -154,18 +180,19 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                 )}
                 <Button
                   onClick={handleSaveSlug}
-                  variant="primary"
+                  variant="inverse"
                   size="lg"
                   loading={isUpdating}
                   disabled={isUpdating || !customSlugInput.trim()}
+                  className="w-full sm:w-auto"
                 >
                   {isUpdating ? 'Creating…' : 'Create link'}
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex-1 min-w-0 rounded-xl border border-white/10 bg-white/[0.04] py-3 px-4">
+              <div className="space-y-4 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
+                  <div className="flex-1 min-w-0 rounded-xl border border-white/10 bg-white/[0.04] py-3 px-4 overflow-hidden">
                     <p
                       className="font-mono text-sm text-gray-200 truncate"
                       title={fullLinkForCopy}
@@ -174,9 +201,11 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     </p>
                   </div>
                   <Button
+                    type="button"
                     onClick={handleCopyLink}
                     variant="inverse"
-                    size="md"
+                    size="lg"
+                    className="w-full sm:w-auto sm:flex-shrink-0"
                     icon={
                       copied ? (
                         <CheckIcon className="h-4 w-4 text-emerald-600" />
@@ -198,10 +227,10 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                 </button>
               </div>
             )}
-          </div>
+          </GlassCard>
 
           {/* Support */}
-          <div className={cardClass}>
+          <div className={supportCardClass}>
             <h2 className="text-base font-semibold text-white">Support</h2>
             <p className="text-sm text-gray-400 mt-1 mb-6">
               Questions or feedback? We reply within 24 hours.

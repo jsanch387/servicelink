@@ -1,6 +1,6 @@
-// Updated to relative path to resolve build error
-import { BookingRequestButton } from '@/features/booking-request';
-import { CheckBadgeIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/shared';
+import { CheckBadgeIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
 import {
@@ -91,31 +91,26 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </span>
         </div>
 
-        {/* Professional Bio with improved spacing */}
-        <p className="text-gray-400 text-[15px] mt-6 leading-relaxed max-w-lg mx-auto font-medium">
-          {/* In a real implementation, this would pull from businessProfile.bio */}
-          Premium services tailored for your unique needs. We are dedicated to
-          providing the highest quality standards and professional excellence
-          for every client.
-        </p>
+        {/* Professional Bio from profile */}
+        {(businessProfile.bio?.trim() ?? '') && (
+          <p className="text-gray-400 text-[15px] mt-6 leading-relaxed max-w-lg mx-auto font-medium">
+            {businessProfile.bio}
+          </p>
+        )}
 
-        {/* Primary Call-to-Action */}
-        {isPublic && (
-          <div className="flex gap-3 mt-8 w-full max-w-sm px-2">
-            <BookingRequestButton
-              businessName={businessProfile.business_name}
-              businessId={businessProfile.id}
-              businessSlug={(businessProfile as any).business_slug || undefined}
-            />
-            <a
-              href={`tel:${businessProfile.phone_number_call}`}
-              className="flex-1 py-4 bg-white/5 border border-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-all"
-              title="Call for inquiries"
-              aria-label="Call for inquiries"
-            >
-              <PhoneIcon className="h-5 w-5" />
-            </a>
-          </div>
+        {/* Call button - icon + phone number, only when business has a phone number */}
+        {isPublic && businessProfile.phone_number_call?.trim() && (
+          <Button
+            href={`tel:${businessProfile.phone_number_call.trim()}`}
+            variant="inverse"
+            size="lg"
+            icon={<PhoneIcon className="h-5 w-5" />}
+            iconPosition="left"
+            className="mt-6 font-medium"
+            aria-label="Call business"
+          >
+            Get In Touch
+          </Button>
         )}
       </div>
     </>

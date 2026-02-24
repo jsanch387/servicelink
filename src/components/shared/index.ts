@@ -8,6 +8,7 @@ export { TextArea } from './TextArea';
 
 // Shared Components
 export { Button } from './Button';
+export { Calendar } from './Calendar';
 export { Card } from './Card';
 export { CompletionCelebration, SuccessMessage } from './CompletionCelebration';
 export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';
@@ -19,7 +20,10 @@ export { Logo } from './Logo';
 export { LogoPlaceholder } from './LogoPlaceholder';
 export { Modal } from './Modal';
 export { ModernLoadingSpinner } from './ModernLoadingSpinner';
+export { RequiredLabel } from './RequiredLabel';
 export { SectionTitle } from './SectionTitle';
 export { SettingsLoadingState } from './SettingsLoadingState';
+export { WarningCallout } from './WarningCallout';
 export { StructuredData } from './StructuredData';
+export { Switch } from './Switch';
 export { ToggleButton } from './ToggleButton';

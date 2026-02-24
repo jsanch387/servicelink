@@ -27,7 +27,7 @@ export const PerformanceCard: React.FC<PerformanceCardProps> = ({
       >
         <div className="animate-pulse">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10" />
+            <div className="w-10 h-10 rounded-xl bg-sky-500/10" />
             <div className="h-5 bg-white/10 rounded w-32" />
           </div>
           <div className="h-12 bg-white/10 rounded w-20 mb-2" />
@@ -50,8 +50,8 @@ export const PerformanceCard: React.FC<PerformanceCardProps> = ({
       className="h-full flex flex-col"
     >
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-          <EyeIcon className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400" />
+        <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20">
+          <EyeIcon className="h-5 w-5 sm:h-6 sm:w-6 text-sky-400" />
         </div>
         <h3 className="text-lg sm:text-xl font-semibold text-white">
           Profile Views
@@ -62,7 +62,7 @@ export const PerformanceCard: React.FC<PerformanceCardProps> = ({
         <p className="text-3xl sm:text-4xl font-bold text-white mb-1">
           {profileViews.toLocaleString()}
         </p>
-        <p className="text-sm text-gray-400 mb-4">To tal views</p>
+        <p className="text-sm text-gray-400 mb-4">Total views</p>
 
         {lastViewed && (
           <div className="flex items-center gap-2 pt-3 border-t border-white/[0.08]">

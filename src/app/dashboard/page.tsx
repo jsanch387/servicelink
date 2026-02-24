@@ -80,13 +80,13 @@ export default async function DashboardPage() {
       );
 
     case 'completed':
-      // Fetch business profile with counts directly from database
+      // Fetch business profile with counts and legacy booking flag
       const { data: profile, error: profileError } = await supabase
         .from('business_profiles')
         .select(
           `
           id, business_name, business_type, service_area, bio, created_at, updated_at,
-          business_slug, business_link,
+          business_slug, business_link, legacy_request_booking_enabled,
           services:business_services(count),
           images:business_images(count)
         `
@@ -119,12 +119,34 @@ export default async function DashboardPage() {
         (checks.filter(Boolean).length / checks.length) * 100
       );
 
-      // Pending booking requests count (scoped to this business, count-only query)
+      // Pending booking requests count (V1 only)
       const { count: pendingRequestsCount } = await supabase
         .from('booking_requests')
         .select('*', { count: 'exact', head: true })
         .eq('business_id', profile.id)
         .eq('status', 'pending');
+
+      // V2: availability on? and upcoming (confirmed) bookings count
+      const { data: availabilityRow } = await supabase
+        .from('business_availability')
+        .select('accept_bookings')
+        .eq('business_id', profile.id)
+        .maybeSingle();
+      const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+      const today = new Date().toISOString().slice(0, 10);
+      let upcomingBookingsCount = 0;
+      if (useAvailabilityBooking) {
+        const { count } = await supabase
+          .from('bookings')
+          .select('*', { count: 'exact', head: true })
+          .eq('business_id', profile.id)
+          .eq('status', 'confirmed')
+          .gte('scheduled_date', today);
+        upcomingBookingsCount = count ?? 0;
+      }
+
+      const legacyRequestBookingEnabled =
+        profile.legacy_request_booking_enabled === true;
 
       // Prepare dashboard data
       const dashboardData = {
@@ -163,6 +185,9 @@ export default async function DashboardPage() {
             profile.bio.trim().length >= 50,
         },
         pendingRequestsCount: pendingRequestsCount ?? 0,
+        legacyRequestBookingEnabled,
+        useAvailabilityBooking,
+        upcomingBookingsCount,
       };
 
       return <DashboardContent dashboardData={dashboardData} />;

@@ -46,7 +46,7 @@ export function NotificationItem({
       <div className="flex items-start gap-3">
         {isUnread && (
           <span
-            className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange-500"
+            className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-white"
             aria-hidden
           />
         )}

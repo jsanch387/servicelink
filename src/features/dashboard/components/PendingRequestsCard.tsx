@@ -22,7 +22,7 @@ export const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
     <GlassCard
       padding="md"
       rounded="rounded-2xl"
-      blurColor="bg-orange-500"
+      blurColor="bg-zinc-500"
       showBlur={true}
       className="h-full flex flex-col"
     >
