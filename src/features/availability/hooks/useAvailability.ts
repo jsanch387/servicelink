@@ -58,10 +58,10 @@ export function useAvailability(): UseAvailabilityResult {
   }, [setLoading, setError, setRow, setHasFetched]);
 
   useEffect(() => {
-    if (!hasFetched) {
+    if (!hasFetched && !loading) {
       fetchAvailability();
     }
-  }, [hasFetched, fetchAvailability]);
+  }, [hasFetched, loading, fetchAvailability]);
 
   return {
     data: row,

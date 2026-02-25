@@ -7,6 +7,9 @@ export const metadata: Metadata = {
     'Login to your ServiceLink account to manage your business profile.',
 };
 
-export default function LoginPage() {
-  return <LoginForm />;
+type Props = { searchParams: Promise<{ error?: string }> };
+
+export default async function LoginPage({ searchParams }: Props) {
+  const params = await searchParams;
+  return <LoginForm redirectError={params.error} />;
 }

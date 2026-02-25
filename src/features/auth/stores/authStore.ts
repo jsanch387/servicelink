@@ -188,6 +188,36 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
+      // Sign in with Google (OAuth redirect)
+      signInWithGoogle: async () => {
+        const supabase = createClient();
+        set({ isLoading: true });
+
+        try {
+          const redirectTo = `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`;
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo },
+          });
+
+          if (error) {
+            set({ isLoading: false });
+            return { error: error.message };
+          }
+
+          if (data?.url) {
+            window.location.href = data.url;
+            return {};
+          }
+
+          set({ isLoading: false });
+          return { error: 'Could not start Google sign-in' };
+        } catch (error: any) {
+          set({ isLoading: false });
+          return { error: error.message || 'An error occurred during sign in' };
+        }
+      },
+
       // Sign out
       signOut: async () => {
         const supabase = createClient();

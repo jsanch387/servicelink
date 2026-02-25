@@ -32,7 +32,7 @@ export const PriceInput: React.FC<PriceInputProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-gray-300 mb-1.5">
           {label}
           {required && <span className="text-red-400 ml-1">*</span>}
         </label>
@@ -46,7 +46,7 @@ export const PriceInput: React.FC<PriceInputProps> = ({
           required={required}
           disabled={disabled}
           className={`
-            w-full px-4 py-3 bg-neutral-800 border rounded-md text-white placeholder-gray-400
+            w-full py-2.5 px-3.5 text-sm bg-neutral-800 border rounded-md text-white placeholder-gray-400
             focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
             transition-colors duration-200
             ${error ? 'border-red-500' : 'border-neutral-600'}
