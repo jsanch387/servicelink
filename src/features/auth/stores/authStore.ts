@@ -194,7 +194,11 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true });
 
         try {
-          const redirectTo = `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`;
+          // Use explicit site URL in prod so redirect never goes to localhost
+          const baseUrl =
+            process.env.NEXT_PUBLIC_SITE_URL ||
+            (typeof window !== 'undefined' ? window.location.origin : '');
+          const redirectTo = `${baseUrl}/auth/callback`;
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo },
