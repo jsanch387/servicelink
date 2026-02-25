@@ -19,6 +19,16 @@ function parseHashParams(hash: string): Record<string, string> {
   return params;
 }
 
+function parseSearchParams(search: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (!search || search.charAt(0) !== '?') return params;
+  search.slice(1).split('&').forEach(part => {
+    const [key, value] = part.split('=');
+    if (key && value) params[decodeURIComponent(key)] = decodeURIComponent(value);
+  });
+  return params;
+}
+
 export const ResetPasswordForm: React.FC = () => {
   const router = useRouter();
   const [password, setPassword] = useState('');
@@ -34,30 +44,57 @@ export const ResetPasswordForm: React.FC = () => {
     const supabase = createClient();
 
     const initSession = async () => {
-      const params = parseHashParams(window.location.hash);
-      if (params.type === 'recovery' && params.access_token && params.refresh_token) {
+      const hashParams = parseHashParams(window.location.hash);
+      const queryParams = parseSearchParams(window.location.search);
+
+      // Flow 1: tokens in hash (access_token + refresh_token)
+      if (hashParams.type === 'recovery' && hashParams.access_token && hashParams.refresh_token) {
         try {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: params.access_token,
-            refresh_token: params.refresh_token,
+          const { error: err } = await supabase.auth.setSession({
+            access_token: hashParams.access_token,
+            refresh_token: hashParams.refresh_token,
           });
-          if (sessionError) {
+          if (err) {
             setSessionError('This link is invalid or has expired. Please request a new one.');
             setSessionReady(true);
             return;
           }
-          // Clear hash from URL without reload
           window.history.replaceState(null, '', window.location.pathname);
         } catch {
           setSessionError('Something went wrong. Please request a new reset link.');
         }
-      } else {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
+        setSessionReady(true);
+        return;
+      }
+
+      // Flow 2: token_hash in query (Supabase PKCE / newer flow)
+      const tokenHash = queryParams.token_hash || hashParams.token_hash;
+      const type = queryParams.type || hashParams.type;
+      if (type === 'recovery' && tokenHash) {
+        try {
+          const { error: err } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            token_hash: tokenHash,
+          });
+          if (err) {
+            setSessionError('This link is invalid or has expired. Please request a new one.');
+            setSessionReady(true);
+            return;
+          }
           window.history.replaceState(null, '', window.location.pathname);
-        } else {
-          setSessionError('This link is invalid or has expired. Please request a new one.');
+        } catch {
+          setSessionError('Something went wrong. Please request a new reset link.');
         }
+        setSessionReady(true);
+        return;
+      }
+
+      // Already have a session (e.g. came back to the page)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        window.history.replaceState(null, '', window.location.pathname);
+      } else {
+        setSessionError('This link is invalid or has expired. Please request a new one.');
       }
       setSessionReady(true);
     };

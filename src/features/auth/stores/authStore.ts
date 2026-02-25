@@ -222,7 +222,7 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // Request password reset email
+      // Request password reset email (must use prod URL in prod so email link goes to app, not localhost)
       requestPasswordReset: async (email: string) => {
         const supabase = createClient();
         set({ isLoading: true });
@@ -230,10 +230,13 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const origin =
             typeof window !== 'undefined' ? window.location.origin : '';
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
           const baseUrl =
-            origin && !origin.includes('localhost')
-              ? origin
-              : process.env.NEXT_PUBLIC_SITE_URL || origin;
+            siteUrl && !siteUrl.includes('localhost')
+              ? siteUrl.replace(/\/$/, '')
+              : origin && !origin.includes('localhost')
+                ? origin
+                : origin || siteUrl;
           const redirectTo = `${baseUrl}/auth/reset-password`;
 
           const { error } = await supabase.auth.resetPasswordForEmail(email, {
