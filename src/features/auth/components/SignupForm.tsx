@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input } from '@/components/shared';
+import { Button, GoogleIcon, Input } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -10,7 +10,7 @@ import { validateSignUpForm } from '../utils/validation';
 
 export const SignupForm: React.FC = () => {
   const router = useRouter();
-  const { signUp, isLoading } = useAuth();
+  const { signUp, signInWithGoogle, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,6 +18,20 @@ export const SignupForm: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [authError, setAuthError] = useState<string>('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setAuthError('');
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result?.error) {
+        setAuthError(result.error);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,11 +88,11 @@ export const SignupForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+        <div className="text-left">
+          <h2 className="text-2xl font-semibold text-white tracking-tight">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-400">
+          <p className="mt-1.5 text-sm text-gray-400">
             Already have an account?{' '}
             <a
               href={ROUTES.AUTH.LOGIN}
@@ -95,6 +109,31 @@ export const SignupForm: React.FC = () => {
               <p className="text-red-400 text-sm">{authError}</p>
             </div>
           )}
+
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            fullWidth
+            loading={googleLoading}
+            disabled={isLoading || googleLoading}
+            onClick={handleGoogleSignIn}
+            icon={<GoogleIcon className="h-4 w-4" />}
+            iconPosition="left"
+          >
+            {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-gray-600" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-neutral-900 px-2 text-gray-400">
+                Or sign up with email
+              </span>
+            </div>
+          </div>
 
           <div className="space-y-4">
             <Input
@@ -134,7 +173,7 @@ export const SignupForm: React.FC = () => {
           <Button
             type="submit"
             variant="primary"
-            size="lg"
+            size="md"
             fullWidth
             loading={isLoading}
             disabled={isLoading}

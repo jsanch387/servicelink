@@ -28,6 +28,7 @@ export const useAuth = () => {
     // Actions
     signIn: store.signIn,
     signUp: store.signUp,
+    signInWithGoogle: store.signInWithGoogle,
     signOut: store.signOut,
     updateUser: store.updateUser,
 

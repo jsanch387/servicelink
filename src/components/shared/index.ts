@@ -13,6 +13,7 @@ export { Card } from './Card';
 export { CompletionCelebration, SuccessMessage } from './CompletionCelebration';
 export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';
 export { GlassCard } from './GlassCard';
+export { GoogleIcon } from './GoogleIcon';
 export { IconButton } from './IconButton';
 export { ImageWithFallback } from './ImageWithFallback';
 export { LoadingSpinner } from './LoadingSpinner';

@@ -4,7 +4,7 @@ import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
-import { useAvailabilityAcceptBookings } from '@/features/dashboard/hooks/useAvailabilityAcceptBookings';
+import { useAvailability } from '@/features/availability/hooks/useAvailability';
 import {
   ArrowRightOnRectangleIcon,
   CalendarIcon,
@@ -64,13 +64,17 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useAuth();
-  const { acceptBookings, loading } = useAvailabilityAcceptBookings();
+  const { data: availabilityData, loading: availabilityLoading } =
+    useAvailability();
+  const acceptBookings = availabilityData?.accept_bookings === true;
 
   const navigation = allNavigationItems.filter(
     item => !item.requiresOnboarding || isOnboardingCompleted
   );
   const showAvailabilityNudge =
-    AVAILABILITY_FEATURE_ENABLED && !loading && acceptBookings === false;
+    AVAILABILITY_FEATURE_ENABLED &&
+    !availabilityLoading &&
+    acceptBookings === false;
 
   const handleLogout = async () => {
     try {
