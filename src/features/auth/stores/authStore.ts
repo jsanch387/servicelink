@@ -222,6 +222,33 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
+      // Request password reset email
+      requestPasswordReset: async (email: string) => {
+        const supabase = createClient();
+        set({ isLoading: true });
+
+        try {
+          const origin =
+            typeof window !== 'undefined' ? window.location.origin : '';
+          const baseUrl =
+            origin && !origin.includes('localhost')
+              ? origin
+              : process.env.NEXT_PUBLIC_SITE_URL || origin;
+          const redirectTo = `${baseUrl}/auth/reset-password`;
+
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo,
+          });
+
+          set({ isLoading: false });
+          if (error) return { error: error.message };
+          return {};
+        } catch (error: any) {
+          set({ isLoading: false });
+          return { error: error.message || 'Failed to send reset email' };
+        }
+      },
+
       // Sign out
       signOut: async () => {
         const supabase = createClient();

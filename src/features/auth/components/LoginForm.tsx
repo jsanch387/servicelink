@@ -2,6 +2,7 @@
 
 import { Button, GoogleIcon, Input } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -12,9 +13,10 @@ const REDIRECT_ERROR_MESSAGES: Record<string, string> = {
     'This email is already registered. Please sign in with your password.',
 };
 
-export const LoginForm: React.FC<{ redirectError?: string }> = ({
-  redirectError,
-}) => {
+export const LoginForm: React.FC<{
+  redirectError?: string;
+  resetSuccess?: boolean;
+}> = ({ redirectError, resetSuccess }) => {
   const router = useRouter();
   const { signIn, signInWithGoogle, isLoading } = useAuth();
   const [formData, setFormData] = useState({
@@ -31,6 +33,10 @@ export const LoginForm: React.FC<{ redirectError?: string }> = ({
       router.replace(ROUTES.AUTH.LOGIN);
     }
   }, [redirectError, router]);
+
+  useEffect(() => {
+    if (resetSuccess) router.replace(ROUTES.AUTH.LOGIN);
+  }, [resetSuccess, router]);
 
   const handleGoogleSignIn = async () => {
     setAuthError('');
@@ -115,6 +121,13 @@ export const LoginForm: React.FC<{ redirectError?: string }> = ({
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {resetSuccess && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-md p-3">
+              <p className="text-green-400 text-sm">
+                Your password has been updated. You can sign in now.
+              </p>
+            </div>
+          )}
           {authError && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3">
               <p className="text-red-400 text-sm">{authError}</p>
@@ -172,12 +185,12 @@ export const LoginForm: React.FC<{ redirectError?: string }> = ({
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <a
-                href="#"
+              <Link
+                href={ROUTES.AUTH.FORGOT_PASSWORD}
                 className="font-medium text-orange-400 hover:text-orange-300"
               >
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           </div>
 

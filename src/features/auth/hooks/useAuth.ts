@@ -29,6 +29,7 @@ export const useAuth = () => {
     signIn: store.signIn,
     signUp: store.signUp,
     signInWithGoogle: store.signInWithGoogle,
+    requestPasswordReset: store.requestPasswordReset,
     signOut: store.signOut,
     updateUser: store.updateUser,
 
