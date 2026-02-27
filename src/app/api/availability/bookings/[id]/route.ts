@@ -10,15 +10,13 @@ import {
   updateBookingStatus,
   type BookingStatusUpdate,
 } from '@/features/availability/services/bookingService';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 const ALLOWED_STATUSES: BookingStatusUpdate[] = ['completed', 'cancelled'];
 
-async function getAuthAndBusinessId(
-  supabase: ReturnType<typeof createServerClient>
-) {
+async function getAuthAndBusinessId(supabase: SupabaseClient) {
   const {
     data: { user },
     error: authError,
@@ -63,18 +61,7 @@ export async function PATCH(
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const authResult = await getAuthAndBusinessId(supabase);
     if ('status' in authResult) {

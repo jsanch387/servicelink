@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createBrowserClient } from '@supabase/ssr';
 
 // Client-side Supabase client (for use in React components)
@@ -126,6 +127,7 @@ export type Database = {
           description: string | null;
           price_cents: number | null;
           hours_to_complete: number | null;
+          duration_minutes: number | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -137,6 +139,7 @@ export type Database = {
           description?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
+          duration_minutes?: number | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -148,6 +151,7 @@ export type Database = {
           description?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
+          duration_minutes?: number | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;

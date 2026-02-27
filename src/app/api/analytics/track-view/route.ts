@@ -5,9 +5,15 @@
  * Tracks a profile view with deduplication.
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+
+type AnalyticsProfileRow = {
+  id: string;
+  profile_views: number | null;
+  business_slug: string | null;
+  last_viewed_at?: string | null;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,25 +33,15 @@ export async function POST(request: NextRequest) {
     //   request.headers.get('x-real-ip') ||
     //   'unknown';
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     // Get business profile by slug
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('business_profiles')
       .select('id, profile_views, business_slug')
       .eq('business_slug', businessSlug)
       .single();
+    const profile = profileData as AnalyticsProfileRow | null;
 
     if (profileError || !profile) {
       console.error('Profile not found:', profileError);
@@ -59,17 +55,19 @@ export async function POST(request: NextRequest) {
     // For MVP, we'll implement simple rate limiting
 
     // Update profile views
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('business_profiles')
-      .update({
-        profile_views: (profile.profile_views || 0) + 1,
-        last_viewed_at: new Date().toISOString(),
-      })
-      .eq('id', profile.id)
-      .select('profile_views, last_viewed_at')
-      .single();
+    const { data: updatedProfileData, error: updateError } =
+      await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('business_profiles')
+        .update({
+          profile_views: (profile.profile_views || 0) + 1,
+          last_viewed_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id)
+        .select('profile_views, last_viewed_at');
+    const updatedProfile = updatedProfileData as AnalyticsProfileRow;
 
-    if (updateError) {
+    if (updateError || !updatedProfile) {
       console.error('Error updating profile views:', updateError);
       return NextResponse.json(
         { success: false, error: 'Failed to update analytics' },

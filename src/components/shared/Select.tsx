@@ -48,7 +48,7 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           name={name}
           className={`
-            w-full px-4 py-3.5 sm:px-5 sm:py-4 bg-white/5 border border-white/10 rounded-lg text-white text-base sm:text-sm font-medium
+            w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-medium
             focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
             transition-all duration-200 appearance-none touch-manipulation
             ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
@@ -65,7 +65,7 @@ export const Select: React.FC<SelectProps> = ({
             </option>
           ))}
         </select>
-        <ChevronDownIcon className="absolute right-3 sm:right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 sm:h-5 sm:w-5 text-gray-400 pointer-events-none" />
+        <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
       </div>
       {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
     </div>

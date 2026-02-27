@@ -6,13 +6,11 @@
  */
 
 import { listBookingsForBusiness } from '@/features/availability/services/bookingService';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-async function getAuthAndBusinessId(
-  supabase: ReturnType<typeof createServerClient>
-) {
+async function getAuthAndBusinessId(supabase: SupabaseClient) {
   const {
     data: { user },
     error: authError,
@@ -37,18 +35,7 @@ async function getAuthAndBusinessId(
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const authResult = await getAuthAndBusinessId(supabase);
     if ('status' in authResult) {

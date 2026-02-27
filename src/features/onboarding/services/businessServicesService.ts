@@ -22,6 +22,7 @@ export interface ServiceRow {
   description: string | null;
   price_cents: number | null;
   hours_to_complete: number | null;
+  duration_minutes: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -72,14 +73,19 @@ export class BusinessServicesService {
         return { success: false, error: error.message };
       }
 
-      // Convert database rows to frontend format
-      const services: Service[] = data.map((row: ServiceRow) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description || '',
-        price: this.centsToPrice(row.price_cents),
-        hours_to_complete: row.hours_to_complete || undefined,
-      }));
+      // Convert database rows to frontend format (prefer duration_minutes, fallback to hours_to_complete)
+      const services: Service[] = data.map((row: ServiceRow) => {
+        const hoursFromMinutes =
+          row.duration_minutes != null ? row.duration_minutes / 60 : null;
+        const hours = hoursFromMinutes ?? row.hours_to_complete ?? undefined;
+        return {
+          id: row.id,
+          name: row.name,
+          description: row.description || '',
+          price: this.centsToPrice(row.price_cents),
+          hours_to_complete: hours,
+        };
+      });
 
       return { success: true, data: services };
     } catch (error) {
@@ -116,6 +122,7 @@ export class BusinessServicesService {
 
       const { data, error } = await supabase
         .from('business_services')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert(serviceData as any)
         .select()
         .single();
@@ -272,6 +279,7 @@ export class BusinessServicesService {
 
       const { data, error } = await supabase
         .from('business_services')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert(servicesData as any)
         .select();
 

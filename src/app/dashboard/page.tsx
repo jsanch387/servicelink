@@ -1,9 +1,30 @@
+import type { PresetKey } from '@/features/availability/components/QuickPresetsSection';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { DashboardContent } from '@/features/dashboard/components/DashboardContent';
-import { OnboardingFlow } from '@/features/onboarding/components/OnboardingFlow';
+import { OnboardingFlowV2 } from '@/features/onboarding-v2';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
+
+type DashboardProfileRow = {
+  id: string;
+  business_name: string;
+  business_type: string | null;
+  service_area: string | null;
+  bio: string | null;
+  created_at: string;
+  updated_at: string;
+  business_slug: string | null;
+  business_link: string | null;
+  legacy_request_booking_enabled: boolean | null;
+  services: { count: number }[] | null;
+  images: { count: number }[] | null;
+};
+
+type BusinessAvailabilityRow = {
+  accept_bookings: boolean | null;
+};
 
 // Force dynamic rendering (requires authentication)
 export const dynamic = 'force-dynamic';
@@ -18,18 +39,7 @@ export const dynamic = 'force-dynamic';
  */
 export default async function DashboardPage() {
   // Create server client for SSR
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
+  const supabase = await createSupabaseServerClient();
 
   // Get current user
   const {
@@ -52,36 +62,87 @@ export default async function DashboardPage() {
   const {
     status,
     currentStep,
-    // userProfile, // Will be used later
     businessProfile,
-    services,
-    images,
-    contactInfo,
+    services: existingServices,
   } = stateResult.data!;
 
-  // Render based on onboarding status
+  // Map old onboarding services to v2 shape (for step 2 resume)
+  const initialStep2Services = Array.isArray(existingServices)
+    ? (
+        existingServices as Array<{
+          id?: string;
+          name?: string;
+          price?: string;
+          hours_to_complete?: number | null;
+          description?: string | null;
+        }>
+      ).map(s => ({
+        id: s.id ?? `loaded-${Math.random().toString(36).slice(2)}`,
+        name: (s.name as string) ?? '',
+        price: (s.price as string) ?? '',
+        durationMinutes: Math.round((s.hours_to_complete ?? 0) * 60 || 60),
+        description: (s.description as string) || undefined,
+      }))
+    : undefined;
+
+  let initialStep3:
+    | { schedule?: WeeklySchedule; selectedPreset?: PresetKey | null }
+    | undefined;
+  if (
+    (status === 'not_started' || status === 'in_progress') &&
+    businessProfile?.id
+  ) {
+    try {
+      const availability = await getAvailabilityForBusiness(
+        supabase,
+        businessProfile.id
+      );
+      if (availability?.weekly_schedule) {
+        initialStep3 = {
+          schedule: availability.weekly_schedule as WeeklySchedule,
+          selectedPreset:
+            (availability.selected_preset as PresetKey | null) ?? null,
+        };
+      }
+    } catch {
+      // ignore; step 3 will use defaults
+    }
+  }
+
+  // Render based on onboarding status (new signups and in-progress see v2 flow)
   switch (status) {
     case 'not_started':
-      return <OnboardingFlow profileId={user.id} initialStep={1} />;
-
     case 'in_progress':
       return (
-        <OnboardingFlow
+        <OnboardingFlowV2
           profileId={user.id}
-          businessProfileId={businessProfile?.id as string}
-          initialStep={currentStep}
-          existingData={{
-            ...businessProfile,
-            services: services,
-            images: images,
-            ...contactInfo,
+          businessProfileId={businessProfile?.id as string | undefined}
+          currentStep={currentStep}
+          initialStep1={{
+            businessName: (businessProfile?.business_name as string) ?? '',
+            businessType: (businessProfile?.business_type as string) ?? '',
           }}
+          initialStep2={
+            initialStep2Services?.length
+              ? { services: initialStep2Services }
+              : undefined
+          }
+          initialStep3={initialStep3}
+          initialStep4={
+            (businessProfile as Record<string, unknown>)?.business_slug
+              ? {
+                  slug: String(
+                    (businessProfile as Record<string, unknown>).business_slug
+                  ),
+                }
+              : undefined
+          }
         />
       );
 
     case 'completed':
       // Fetch business profile with counts and legacy booking flag
-      const { data: profile, error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('business_profiles')
         .select(
           `
@@ -93,6 +154,8 @@ export default async function DashboardPage() {
         )
         .eq('profile_id', user.id)
         .single();
+
+      const profile = profileData as DashboardProfileRow | null;
 
       if (profileError || !profile) {
         redirect('/login');
@@ -132,7 +195,8 @@ export default async function DashboardPage() {
         .select('accept_bookings')
         .eq('business_id', profile.id)
         .maybeSingle();
-      const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+      const availability = availabilityRow as BusinessAvailabilityRow | null;
+      const useAvailabilityBooking = availability?.accept_bookings === true;
       const today = new Date().toISOString().slice(0, 10);
       let upcomingBookingsCount = 0;
       if (useAvailabilityBooking) {
@@ -162,8 +226,8 @@ export default async function DashboardPage() {
         slugData: hasSlug
           ? {
               hasSlug: true,
-              slug: profile.business_slug,
-              fullLink: profile.business_link,
+              slug: profile.business_slug ?? undefined,
+              fullLink: profile.business_link ?? undefined,
               createdAt: profile.updated_at,
             }
           : { hasSlug: false },
@@ -178,10 +242,10 @@ export default async function DashboardPage() {
           needsImages: imagesCount === 0,
           needsBio: !profile.bio || profile.bio.trim().length < 50,
           readyToShare:
-            hasSlug &&
+            !!hasSlug &&
             servicesCount > 0 &&
             imagesCount > 0 &&
-            profile.bio &&
+            !!profile.bio &&
             profile.bio.trim().length >= 50,
         },
         pendingRequestsCount: pendingRequestsCount ?? 0,

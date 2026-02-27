@@ -63,18 +63,19 @@ export const Button: React.FC<ButtonProps> = ({
       'bg-yellow-600 hover:bg-yellow-700 text-white focus:ring-yellow-500',
   };
 
+  // Standard UI sizes: compact (xs/sm), default (md), medium (lg)
   const sizeClasses = {
     xs: 'px-2 py-1 text-xs',
-    sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-3 py-2 text-sm',
+    lg: 'px-4 py-2.5 text-sm',
   };
 
   const iconSizeClasses = {
     xs: 'h-3 w-3',
-    sm: 'h-4 w-4',
+    sm: 'h-3.5 w-3.5',
     md: 'h-4 w-4',
-    lg: 'h-5 w-5',
+    lg: 'h-4 w-4',
   };
 
   const classes = `${baseClasses} ${defaultFontWeight} ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`;

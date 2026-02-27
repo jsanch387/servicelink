@@ -4,6 +4,7 @@ interface PriceInputProps {
   label?: string;
   placeholder?: string;
   value: string;
+  // eslint-disable-next-line no-unused-vars
   onChange: (value: string) => void;
   required?: boolean;
   error?: string;
@@ -46,11 +47,11 @@ export const PriceInput: React.FC<PriceInputProps> = ({
           required={required}
           disabled={disabled}
           className={`
-            w-full py-2.5 px-3.5 text-sm bg-neutral-800 border rounded-md text-white placeholder-gray-400
-            focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-            transition-colors duration-200
-            ${error ? 'border-red-500' : 'border-neutral-600'}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-500'}
+            w-full py-2.5 px-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm font-normal
+            focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
+            transition-all duration-200 touch-manipulation
+            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
+            ${disabled ? 'opacity-60 cursor-not-allowed bg-white/3' : 'hover:border-white/20 active:bg-white/8'}
           `}
         />
       </div>

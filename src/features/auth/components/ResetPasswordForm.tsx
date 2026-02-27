@@ -22,10 +22,14 @@ function parseHashParams(hash: string): Record<string, string> {
 function parseSearchParams(search: string): Record<string, string> {
   const params: Record<string, string> = {};
   if (!search || search.charAt(0) !== '?') return params;
-  search.slice(1).split('&').forEach(part => {
-    const [key, value] = part.split('=');
-    if (key && value) params[decodeURIComponent(key)] = decodeURIComponent(value);
-  });
+  search
+    .slice(1)
+    .split('&')
+    .forEach(part => {
+      const [key, value] = part.split('=');
+      if (key && value)
+        params[decodeURIComponent(key)] = decodeURIComponent(value);
+    });
   return params;
 }
 
@@ -48,20 +52,28 @@ export const ResetPasswordForm: React.FC = () => {
       const queryParams = parseSearchParams(window.location.search);
 
       // Flow 1: tokens in hash (access_token + refresh_token)
-      if (hashParams.type === 'recovery' && hashParams.access_token && hashParams.refresh_token) {
+      if (
+        hashParams.type === 'recovery' &&
+        hashParams.access_token &&
+        hashParams.refresh_token
+      ) {
         try {
           const { error: err } = await supabase.auth.setSession({
             access_token: hashParams.access_token,
             refresh_token: hashParams.refresh_token,
           });
           if (err) {
-            setSessionError('This link is invalid or has expired. Please request a new one.');
+            setSessionError(
+              'This link is invalid or has expired. Please request a new one.'
+            );
             setSessionReady(true);
             return;
           }
           window.history.replaceState(null, '', window.location.pathname);
         } catch {
-          setSessionError('Something went wrong. Please request a new reset link.');
+          setSessionError(
+            'Something went wrong. Please request a new reset link.'
+          );
         }
         setSessionReady(true);
         return;
@@ -77,24 +89,32 @@ export const ResetPasswordForm: React.FC = () => {
             token_hash: tokenHash,
           });
           if (err) {
-            setSessionError('This link is invalid or has expired. Please request a new one.');
+            setSessionError(
+              'This link is invalid or has expired. Please request a new one.'
+            );
             setSessionReady(true);
             return;
           }
           window.history.replaceState(null, '', window.location.pathname);
         } catch {
-          setSessionError('Something went wrong. Please request a new reset link.');
+          setSessionError(
+            'Something went wrong. Please request a new reset link.'
+          );
         }
         setSessionReady(true);
         return;
       }
 
       // Already have a session (e.g. came back to the page)
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         window.history.replaceState(null, '', window.location.pathname);
       } else {
-        setSessionError('This link is invalid or has expired. Please request a new one.');
+        setSessionError(
+          'This link is invalid or has expired. Please request a new one.'
+        );
       }
       setSessionReady(true);
     };
@@ -121,7 +141,9 @@ export const ResetPasswordForm: React.FC = () => {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({ password });
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
 
       if (updateError) {
         setError(updateError.message);
