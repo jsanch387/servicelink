@@ -42,8 +42,10 @@ export const ForgotPasswordForm: React.FC = () => {
             Check your email
           </h2>
           <p className="text-sm text-gray-400">
-            We sent a password reset link to <strong className="text-gray-300">{email}</strong>.
-            Click the link to set a new password. If you don&apos;t see it, check your spam folder.
+            We sent a password reset link to{' '}
+            <strong className="text-gray-300">{email}</strong>. Click the link
+            to set a new password. If you don&apos;t see it, check your spam
+            folder.
           </p>
           <Link
             href={ROUTES.AUTH.LOGIN}
@@ -64,7 +66,8 @@ export const ForgotPasswordForm: React.FC = () => {
             Forgot your password?
           </h2>
           <p className="mt-1.5 text-sm text-gray-400">
-            Enter your email and we&apos;ll send you a link to reset your password.
+            Enter your email and we&apos;ll send you a link to reset your
+            password.
           </p>
         </div>
 

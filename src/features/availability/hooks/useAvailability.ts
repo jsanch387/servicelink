@@ -6,21 +6,24 @@
  * - After save, use updateFromSave(responseData) instead of refetching.
  */
 
-import type { BusinessAvailabilityRow } from '../types/availability';
 import { useCallback, useEffect } from 'react';
 import { useAvailabilityDataStore } from '../stores/availabilityDataStore';
+import type { BusinessAvailabilityRow } from '../types/availability';
 
 interface UseAvailabilityResult {
   data: BusinessAvailabilityRow | null;
   loading: boolean;
   error: string | null;
   /** Update cache from a successful POST save (avoids refetch). */
+  // eslint-disable-next-line no-unused-vars
   updateFromSave: (row: BusinessAvailabilityRow) => void;
   /** Force a fresh fetch (e.g. when cache should be invalidated). */
   refetch: () => Promise<void>;
 }
 
-export function useAvailability(): UseAvailabilityResult {
+export function useAvailability(
+  enabled: boolean = true
+): UseAvailabilityResult {
   const row = useAvailabilityDataStore(s => s.row);
   const hasFetched = useAvailabilityDataStore(s => s.hasFetched);
   const loading = useAvailabilityDataStore(s => s.loading);
@@ -58,16 +61,17 @@ export function useAvailability(): UseAvailabilityResult {
   }, [setLoading, setError, setRow, setHasFetched]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (!hasFetched && !loading) {
       fetchAvailability();
     }
-  }, [hasFetched, loading, fetchAvailability]);
+  }, [enabled, hasFetched, loading, fetchAvailability]);
 
   return {
-    data: row,
-    loading: !hasFetched ? true : loading,
-    error,
+    data: enabled ? row : null,
+    loading: enabled ? (!hasFetched ? true : loading) : false,
+    error: enabled ? error : null,
     updateFromSave,
-    refetch: fetchAvailability,
+    refetch: enabled ? fetchAvailability : async () => {},
   };
 }

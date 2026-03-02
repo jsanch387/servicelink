@@ -8,8 +8,7 @@
  */
 
 import { BookingRequestService } from '@/features/booking-request/services/bookingRequestService';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface UpdateBookingRequestBody {
@@ -21,18 +20,7 @@ interface UpdateBookingRequestBody {
 export async function PATCH(request: NextRequest) {
   try {
     // Get authenticated user
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const {
       data: { user },
@@ -71,7 +59,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get the user's business profile
-    const { data: businessProfile, error: businessError } = await supabase
+    const {
+      data: businessProfile,
+      error: businessError,
+    }: {
+      data: { id: string } | null;
+      error: unknown;
+    } = await supabase
       .from('business_profiles')
       .select('id')
       .eq('profile_id', user.id)
@@ -85,7 +79,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify the booking request belongs to this business
-    const { data: bookingRequest, error: bookingError } = await supabase
+    const {
+      data: bookingRequest,
+      error: bookingError,
+    }: {
+      data: { id: string; business_id: string } | null;
+      error: unknown;
+    } = await supabase
       .from('booking_requests')
       .select('id, business_id')
       .eq('id', requestId)

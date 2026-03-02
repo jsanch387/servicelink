@@ -7,9 +7,8 @@
 
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BookFlowSwitch } from './BookFlowSwitch';
@@ -26,22 +25,26 @@ interface BookingRequestPageProps {
   }>;
 }
 
+type PublicBusinessProfileForBooking = {
+  id: string;
+  business_name: string;
+  business_slug: string | null;
+  legacy_request_booking_enabled: boolean | null;
+  [key: string]: unknown;
+};
+
+type PublicServiceForBooking = {
+  name: string;
+  price_cents: number | null;
+  hours_to_complete: number | null;
+  duration_minutes: number | null;
+};
+
 async function fetchBusinessProfileBySlug(slug: string) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
-    const { data: profile, error } = await supabase
+    const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
         'id, business_name, business_slug, legacy_request_booking_enabled'
@@ -49,11 +52,11 @@ async function fetchBusinessProfileBySlug(slug: string) {
       .eq('business_slug', slug)
       .single();
 
-    if (error || !profile) {
+    if (error || !profileData) {
       return null;
     }
 
-    return profile;
+    return profileData as PublicBusinessProfileForBooking;
   } catch (error) {
     console.error('Error fetching business profile:', error);
     return null;
@@ -67,37 +70,30 @@ async function fetchServiceById(
   name: string;
   price: number;
   hours_to_complete: number | null;
+  duration_minutes: number | null;
 } | null> {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
-    const { data: service, error } = await supabase
+    const { data: serviceData, error } = await supabase
       .from('business_services')
-      .select('name, price_cents, hours_to_complete')
+      .select('name, price_cents, hours_to_complete, duration_minutes')
       .eq('id', serviceId)
       .eq('business_id', businessId)
       .eq('is_active', true)
       .single();
 
-    if (error || !service) {
+    if (error || !serviceData) {
       return null;
     }
+
+    const service = serviceData as PublicServiceForBooking;
 
     return {
       name: service.name,
       price: service.price_cents || 0,
       hours_to_complete: service.hours_to_complete ?? null,
+      duration_minutes: service.duration_minutes ?? null,
     };
   } catch (error) {
     console.error('Error fetching service by id:', error);
@@ -140,9 +136,11 @@ export default async function BookingRequestPage({
       : null;
   const serviceName = serviceDetails?.name ?? '';
   const serviceDurationMinutes =
-    serviceDetails?.hours_to_complete != null
-      ? Math.max(15, Math.round(serviceDetails.hours_to_complete * 60))
-      : 60;
+    serviceDetails?.duration_minutes != null
+      ? Math.max(15, serviceDetails.duration_minutes)
+      : serviceDetails?.hours_to_complete != null
+        ? Math.max(15, Math.round(serviceDetails.hours_to_complete * 60))
+        : 60;
 
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">

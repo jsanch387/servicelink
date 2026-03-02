@@ -11,6 +11,7 @@ interface Service {
   price: string | number;
   description: string;
   hours_to_complete?: number | null;
+  duration_minutes?: number | null;
 }
 
 interface ServiceCardProps {
@@ -33,6 +34,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   businessSlug = '',
 }) => {
   const router = useRouter();
+
+  const effectiveHours =
+    service.duration_minutes != null && service.duration_minutes > 0
+      ? service.duration_minutes / 60
+      : (service.hours_to_complete ?? null);
 
   const handleBookClick = () => {
     if (businessSlug && service.id) {
@@ -94,11 +100,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
       {/* Faint divider + footer: duration left, Book Now right */}
       <div className="flex items-center justify-between pt-4 border-t border-white/[0.03]">
-        {service.hours_to_complete ? (
+        {effectiveHours ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3 w-3 flex-shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider">
-              {formatDuration(service.hours_to_complete)}
+              {formatDuration(effectiveHours)}
             </span>
           </div>
         ) : (

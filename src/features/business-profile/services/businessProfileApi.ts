@@ -139,7 +139,8 @@ export class BusinessProfileApi {
       name: string;
       description: string | null;
       price_cents: number;
-      hours_to_complete: number | null;
+      /** Moving forward we only persist duration_minutes; hours_to_complete is legacy read-only. */
+      duration_minutes?: number | null;
       is_active: boolean;
     }>
   ): Promise<ServiceResponse> {
@@ -181,7 +182,7 @@ export class BusinessProfileApi {
           name: service.name,
           description: service.description,
           price_cents: service.price_cents,
-          hours_to_complete: service.hours_to_complete,
+          duration_minutes: service.duration_minutes ?? null,
           business_id: businessId,
           is_active: service.is_active,
         }));

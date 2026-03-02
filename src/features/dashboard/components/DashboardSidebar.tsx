@@ -4,7 +4,6 @@ import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
-import { useAvailability } from '@/features/availability/hooks/useAvailability';
 import {
   ArrowRightOnRectangleIcon,
   CalendarIcon,
@@ -64,17 +63,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useAuth();
-  const { data: availabilityData, loading: availabilityLoading } =
-    useAvailability();
-  const acceptBookings = availabilityData?.accept_bookings === true;
 
   const navigation = allNavigationItems.filter(
     item => !item.requiresOnboarding || isOnboardingCompleted
   );
-  const showAvailabilityNudge =
-    AVAILABILITY_FEATURE_ENABLED &&
-    !availabilityLoading &&
-    acceptBookings === false;
 
   const handleLogout = async () => {
     try {
@@ -120,9 +112,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           <nav className="flex-1 space-y-1 px-4 py-6">
             {navigation.map(item => {
               const isActive = pathname === item.href;
-              const showNudge =
-                item.href === ROUTES.DASHBOARD.AVAILABILITY &&
-                showAvailabilityNudge;
               return (
                 <Link
                   key={item.name}
@@ -142,11 +131,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     }`}
                   />
                   <span className="flex-1">{item.name}</span>
-                  {showNudge && (
-                    <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400">
-                      Set up
-                    </span>
-                  )}
                 </Link>
               );
             })}

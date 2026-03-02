@@ -10,8 +10,7 @@ import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { MediaService } from '@/features/media';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { notFound } from 'next/navigation';
 
 // Enable static generation with revalidation for better performance
@@ -23,33 +22,36 @@ interface PublicProfilePageProps {
   }>;
 }
 
+type PublicBusinessProfileRow = {
+  id: string;
+  business_name: string;
+  business_type: string | null;
+  service_area: string | null;
+  bio: string | null;
+  logo_path: string | null;
+  banner_path: string | null;
+  phone_number_call?: string | null;
+  [key: string]: unknown;
+};
+
 async function fetchBusinessProfileBySlug(
   slug: string
 ): Promise<CompleteBusinessProfile | null> {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     // Get business profile by slug
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('business_profiles')
       .select('*')
       .eq('business_slug', slug)
       .single();
 
-    if (profileError || !profile) {
+    if (profileError || !profileData) {
       return null;
     }
+
+    const profile = profileData as PublicBusinessProfileRow;
 
     // Fetch services and images in parallel for better performance
     const [servicesResult, imagesResult] = await Promise.all([
@@ -70,12 +72,18 @@ async function fetchBusinessProfileBySlug(
     const images = imagesResult.data || [];
 
     // Add preview URLs to images
-    const imagesWithUrls = images.map(
-      (img: { storage_path: string; [key: string]: unknown }) => ({
-        ...img,
-        preview_url: MediaService.getPublicUrl(img.storage_path),
-      })
-    );
+    const imagesWithUrls = images.map(img => ({
+      ...(img as {
+        id: string;
+        business_id: string;
+        storage_path: string;
+        position: number;
+        created_at: string;
+      }),
+      preview_url: MediaService.getPublicUrl(
+        (img as { storage_path: string }).storage_path
+      ),
+    }));
 
     // Add logo and banner URLs if they exist
     const logoUrl = profile.logo_path
@@ -86,13 +94,13 @@ async function fetchBusinessProfileBySlug(
       : null;
 
     // Construct complete business profile
-    const completeProfile: CompleteBusinessProfile = {
+    const completeProfile = {
       ...profile,
       services,
       images: imagesWithUrls,
       logo_url: logoUrl,
       cover_image_url: bannerUrl,
-    };
+    } as unknown as CompleteBusinessProfile;
 
     return completeProfile;
   } catch (error) {
@@ -137,20 +145,9 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
 
   try {
     // Use a lightweight fetch for metadata (only get what we need)
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
-    const { data: profile } = await supabase
+    const { data: profileData } = await supabase
       .from('business_profiles')
       .select(
         'business_name, business_type, service_area, bio, logo_path, banner_path, phone_number_call'
@@ -158,13 +155,15 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
       .eq('business_slug', slug)
       .single();
 
-    if (!profile) {
+    if (!profileData) {
       return {
         title: 'Business Profile Not Found | ServiceLink',
         description: 'The requested business profile could not be found.',
         robots: 'noindex, nofollow',
       };
     }
+
+    const profile = profileData as PublicBusinessProfileRow;
 
     const businessProfile = {
       business_name: profile.business_name,

@@ -7,9 +7,12 @@
  * Used for public profile viewing.
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import type { Database } from '@/libs/supabase/client';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+
+type PublicBusinessProfileRow =
+  Database['public']['Tables']['business_profiles']['Row'];
 
 export async function GET(
   request: NextRequest,
@@ -18,25 +21,15 @@ export async function GET(
   const { slug } = await params;
 
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     // Get business profile by slug
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('business_profiles')
       .select('*')
       .eq('business_slug', slug)
       .single();
+    const profile = profileData as PublicBusinessProfileRow | null;
 
     if (profileError || !profile) {
       return NextResponse.json(

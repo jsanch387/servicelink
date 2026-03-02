@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API Route: Business Profile Slug Management
  *
@@ -8,26 +9,14 @@
  */
 
 import { slugService } from '@/features/business-profile/services/slugService';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST /api/business-profile/slug - Create business slug
 export async function POST(request: NextRequest) {
   try {
     // Get authenticated user
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const {
       data: { user },
@@ -42,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { businessProfileId, slugInput } = body;
+    const { businessProfileId, slugInput, advanceOnboardingStep } = body;
 
     if (!businessProfileId || !slugInput) {
       return NextResponse.json(
@@ -69,10 +58,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the slug using the service
+    // Normalize to lowercase so we never store mixed-case slugs (e.g. EliteDetail → elitedetail)
+    const normalizedInput = String(slugInput).trim().toLowerCase();
+
+    // Create the slug using the service (service also enforces lowercase and char limit)
     const result = await slugService.createBusinessSlug(
-      businessProfileId,
-      slugInput
+      String(businessProfileId),
+      normalizedInput
     );
 
     if (!result.success) {
@@ -80,6 +72,25 @@ export async function POST(request: NextRequest) {
         { success: false, error: result.error },
         { status: 400 }
       );
+    }
+
+    // When called from onboarding step 4, advance to step 5
+    if (advanceOnboardingStep === true) {
+      const { error: stepError } = await (supabase as any)
+        .from('profiles')
+        .update({
+          onboarding_step: 5,
+          onboarding_status: 'in_progress',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (stepError) {
+        return NextResponse.json(
+          { success: false, error: stepError.message },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({
@@ -102,18 +113,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Get authenticated user
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const {
       data: { user },
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user owns this business profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await (supabase as any)
       .from('business_profiles')
       .select('id, business_name, business_slug, business_link')
       .eq('id', businessProfileId)
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!profile.business_slug || !profile.business_link) {
+    if (!(profile as any).business_slug || !(profile as any).business_link) {
       return NextResponse.json({
         success: true,
         data: null,
@@ -162,9 +162,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        slug: profile.business_slug,
-        fullLink: profile.business_link,
-        businessProfileId: profile.id,
+        slug: (profile as any).business_slug,
+        fullLink: (profile as any).business_link,
+        businessProfileId: (profile as any).id,
       },
     });
   } catch {

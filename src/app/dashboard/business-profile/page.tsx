@@ -3,8 +3,7 @@ import {
   isOnboardingCompleted,
 } from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
 // Force dynamic rendering (requires authentication)
@@ -28,18 +27,7 @@ export default async function BusinessProfilePage({
   const params = await searchParams;
 
   // Create server client for SSR
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
+  const supabase = await createSupabaseServerClient();
 
   // Get current user
   const {
@@ -52,13 +40,18 @@ export default async function BusinessProfilePage({
   }
 
   // Get user profile to check onboarding status and get profile_id
-  const { data: userProfile, error: profileError } = await supabase
+  const { data: userProfileData, error: profileError } = await supabase
     .from('profiles')
     .select('onboarding_status, user_id')
     .eq('user_id', user.id)
     .single();
 
-  if (profileError) {
+  const userProfile = userProfileData as {
+    onboarding_status: 'not_started' | 'in_progress' | 'completed';
+    user_id: string;
+  } | null;
+
+  if (profileError || !userProfile) {
     redirect('/login');
   }
 
@@ -68,12 +61,18 @@ export default async function BusinessProfilePage({
   }
 
   // Get business profile by profile_id (including slug data)
-  const { data: businessProfileData, error: businessProfileError } =
+  const { data: businessProfileRow, error: businessProfileError } =
     await supabase
       .from('business_profiles')
       .select('id, business_slug, business_link')
       .eq('profile_id', userProfile.user_id)
       .single();
+
+  const businessProfileData = businessProfileRow as {
+    id: string;
+    business_slug: string | null;
+    business_link: string | null;
+  } | null;
 
   if (businessProfileError || !businessProfileData) {
     redirect('/dashboard');
@@ -88,8 +87,8 @@ export default async function BusinessProfilePage({
   const slugData = hasSlug
     ? {
         hasSlug: true,
-        slug: businessProfileData.business_slug,
-        fullLink: businessProfileData.business_link,
+        slug: businessProfileData.business_slug ?? undefined,
+        fullLink: businessProfileData.business_link ?? undefined,
       }
     : {
         hasSlug: false,

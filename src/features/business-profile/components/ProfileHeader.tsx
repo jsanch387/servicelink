@@ -1,5 +1,4 @@
 import { Button } from '@/components/shared';
-import { CheckBadgeIcon } from '@heroicons/react/24/outline';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
@@ -73,11 +72,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </div>
         </div>
 
-        {/* Business Title & Verification */}
-        <h1 className="text-3xl font-extrabold text-gray-50 flex items-center justify-center gap-2 tracking-tight">
-          {businessProfile.business_name}
-          <CheckBadgeIcon className="h-6 w-6 text-blue-500" />
-        </h1>
+        {/* Business Title */}
+        <div className="w-full max-w-2xl mx-auto px-2">
+          <h1 className="text-3xl font-extrabold text-gray-50 tracking-tight text-center break-words">
+            {businessProfile.business_name}
+          </h1>
+        </div>
 
         {/* Category Badge Styling */}
         <p className="text-gray-400 text-[13px] font-bold uppercase tracking-[0.2em] mt-2">

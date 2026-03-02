@@ -5,24 +5,12 @@
  * PATCH /api/notifications – mark notification(s) as read
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const {
       data: { user },
@@ -73,18 +61,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const {
       data: { user },
@@ -102,9 +79,13 @@ export async function PATCH(request: NextRequest) {
     const { notificationId, markAll } = body;
 
     if (markAll === true) {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('notifications')
-        .update({ read: true, read_at: new Date().toISOString() })
+        .update({
+          read: true,
+          read_at: new Date().toISOString(),
+        })
         .eq('user_id', user.id)
         .eq('read', false);
 
@@ -125,9 +106,13 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
       .from('notifications')
-      .update({ read: true, read_at: new Date().toISOString() })
+      .update({
+        read: true,
+        read_at: new Date().toISOString(),
+      })
       .eq('id', notificationId)
       .eq('user_id', user.id);
 

@@ -7,25 +7,13 @@
 
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BookingsPage() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
+  const supabase = await createSupabaseServerClient();
 
   const {
     data: { user },
@@ -36,11 +24,17 @@ export default async function BookingsPage() {
     redirect('/login');
   }
 
-  const { data: businessProfile, error: businessError } = await supabase
+  const { data: businessProfileRow, error: businessError } = await supabase
     .from('business_profiles')
     .select('id, business_name, legacy_request_booking_enabled')
     .eq('profile_id', user.id)
     .single();
+
+  const businessProfile = businessProfileRow as {
+    id: string;
+    business_name: string;
+    legacy_request_booking_enabled: boolean | null;
+  } | null;
 
   if (businessError || !businessProfile) {
     redirect('/dashboard');

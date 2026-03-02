@@ -5,8 +5,7 @@
  * Returns all data needed for the dashboard including business profile, slug status, and analytics
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
 
 interface DashboardData {
@@ -42,18 +41,7 @@ interface DashboardData {
 export async function GET() {
   try {
     // Get authenticated user
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
+    const supabase = await createSupabaseServerClient();
 
     const {
       data: { user },
@@ -67,7 +55,25 @@ export async function GET() {
     }
 
     // Fetch business profile with all related data
-    const { data: businessProfile, error: profileError } = await supabase
+    const {
+      data: businessProfile,
+      error: profileError,
+    }: {
+      data: {
+        id: string;
+        business_name: string;
+        business_type: string | null;
+        service_area: string | null;
+        bio: string | null;
+        created_at: string;
+        updated_at: string;
+        business_slug: string | null;
+        business_link: string | null;
+        services: unknown;
+        images: unknown;
+      } | null;
+      error: unknown;
+    } = await supabase
       .from('business_profiles')
       .select(
         `
@@ -96,9 +102,9 @@ export async function GET() {
     const slugData = hasSlug
       ? {
           hasSlug: true,
-          slug: businessProfile.business_slug,
-          fullLink: businessProfile.business_link,
-          createdAt: businessProfile.updated_at, // When slug was last updated
+          slug: businessProfile.business_slug ?? undefined,
+          fullLink: businessProfile.business_link ?? undefined,
+          createdAt: businessProfile.updated_at,
         }
       : {
           hasSlug: false,
@@ -135,7 +141,7 @@ export async function GET() {
         hasSlug &&
         servicesCount > 0 &&
         imagesCount > 0 &&
-        businessProfile.bio &&
+        !!businessProfile.bio &&
         businessProfile.bio.trim().length >= 50,
     };
 

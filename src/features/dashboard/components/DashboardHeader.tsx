@@ -8,6 +8,7 @@ import type { DashboardHeaderProps } from '../types/dashboard';
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onMenuClick,
+  showNotifications = true,
 }) => {
   return (
     <header className="bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
@@ -24,8 +25,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         {/* Empty space */}
         <div className="flex-1" />
 
-        {/* Notifications */}
-        <NotificationBell />
+        {/* Notifications – hidden during onboarding so users don't hit not-ready routes */}
+        {showNotifications && <NotificationBell />}
       </div>
     </header>
   );

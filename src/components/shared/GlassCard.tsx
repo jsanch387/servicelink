@@ -19,7 +19,7 @@ interface GlassCardProps {
    */
   className?: string;
   /**
-   * Padding size - defaults to responsive p-4 sm:p-6
+   * Padding size - defaults to p-4 (16px)
    */
   padding?: 'sm' | 'md' | 'lg' | 'none';
   /**
@@ -48,7 +48,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 }) => {
   const paddingClasses = {
     sm: 'p-3 sm:p-4',
-    md: 'p-4 sm:p-6',
+    md: 'p-4', // 16px on all breakpoints
     lg: 'p-6 sm:p-8',
     none: '',
   };
