@@ -79,6 +79,7 @@ export async function PATCH(request: NextRequest) {
     const { notificationId, markAll } = body;
 
     if (markAll === true) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('notifications')
         .update({
@@ -105,6 +106,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('notifications')
       .update({
