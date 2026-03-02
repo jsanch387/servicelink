@@ -79,9 +79,12 @@ export async function PATCH(request: NextRequest) {
     const { notificationId, markAll } = body;
 
     if (markAll === true) {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('notifications')
-        .update({ read: true, read_at: new Date().toISOString() })
+        .update({
+          read: true,
+          read_at: new Date().toISOString(),
+        })
         .eq('user_id', user.id)
         .eq('read', false);
 
@@ -102,9 +105,12 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('notifications')
-      .update({ read: true, read_at: new Date().toISOString() })
+      .update({
+        read: true,
+        read_at: new Date().toISOString(),
+      })
       .eq('id', notificationId)
       .eq('user_id', user.id);
 

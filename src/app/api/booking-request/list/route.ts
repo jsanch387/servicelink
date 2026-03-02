@@ -28,7 +28,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the user's business profile
-    const { data: businessProfile, error: businessError } = await supabase
+    const {
+      data: businessProfile,
+      error: businessError,
+    }: {
+      data: { id: string } | null;
+      error: unknown;
+    } = await supabase
       .from('business_profiles')
       .select('id')
       .eq('profile_id', user.id)
