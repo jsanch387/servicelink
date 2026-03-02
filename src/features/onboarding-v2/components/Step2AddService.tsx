@@ -6,6 +6,7 @@ import {
   PriceInput,
   Select,
   TextArea,
+  SERVICE_DURATION_HOURS_OPTIONS,
 } from '@/components/shared';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
@@ -15,14 +16,16 @@ import { formatDurationMinutes } from '../utils/formatDuration';
 /** Short description for service cards; keeps cards from getting bloated. */
 const DESCRIPTION_MAX_LENGTH = 250;
 
-// Duration options: 30 min only half-hour; rest are full hours. Values in minutes.
+// Duration options: 30 min only half-hour; rest are full hours up to 10. Values in minutes.
 const DURATION_OPTIONS = [
   { value: '30', label: '30 min' },
-  { value: '60', label: '1 hr' },
-  { value: '120', label: '2 hrs' },
-  { value: '180', label: '3 hrs' },
-  { value: '240', label: '4 hrs' },
-  { value: '300', label: '5 hrs' },
+  ...SERVICE_DURATION_HOURS_OPTIONS.map(opt => {
+    const hours = parseInt(opt.value, 10);
+    return {
+      value: String(hours * 60),
+      label: opt.label.replace('hour', 'hr').replace('hours', 'hrs'),
+    };
+  }),
 ];
 
 interface Step2AddServiceProps {
@@ -120,7 +123,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4 sm:p-6">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4">
           {error && (
             <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
               <p className="text-sm text-red-200">{error}</p>
@@ -152,19 +155,14 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
               options={DURATION_OPTIONS}
               required
             />
-            <div className="space-y-1.5">
-              <TextArea
-                label="What's included? (optional)"
-                placeholder="e.g. Exterior wash, interior vacuum, window clean"
-                value={description}
-                onChange={setDescription}
-                rows={3}
-                maxLength={DESCRIPTION_MAX_LENGTH}
-              />
-              <p className="text-right text-xs text-gray-500">
-                {description.length}/{DESCRIPTION_MAX_LENGTH}
-              </p>
-            </div>
+            <TextArea
+              label="What's included? (optional)"
+              placeholder="e.g. Exterior wash, interior vacuum, window clean"
+              value={description}
+              onChange={setDescription}
+              rows={3}
+              maxLength={DESCRIPTION_MAX_LENGTH}
+            />
             <Button
               type="button"
               onClick={addService}
@@ -180,12 +178,12 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4 sm:p-6">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4">
           <h2 className="text-base font-semibold text-white mb-4">
             Your services ({services.length})
           </h2>
           {services.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-center">
               <PlusIcon className="h-10 w-10 text-gray-500 mx-auto mb-3 opacity-60" />
               <p className="text-gray-400 text-sm">
                 No services yet. Add one using the form on the left.

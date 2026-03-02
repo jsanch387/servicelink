@@ -40,6 +40,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                 description: service.description || '',
                 price: service.price_cents || 0,
                 hours_to_complete: service.hours_to_complete || null,
+                duration_minutes: service.duration_minutes ?? null,
               }}
               isEditable={false}
               isPublic={isPublic}

@@ -8,6 +8,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { SLUG_MAX_LENGTH } from '@/constants/slug';
 import { createClient } from '@/libs/supabase/client';
 
 const APP_DOMAIN = 'myservicelink.app';
@@ -44,20 +45,22 @@ class SlugService {
   private supabase = createClient();
 
   /**
-   * Generate a URL-friendly slug from business name
+   * Generate a URL-friendly slug from business name.
+   * Always returns lowercase (a-z, 0-9, hyphens only) for consistent DB storage.
    */
   generateSlugFromName(businessName: string): string {
     const slug = businessName
       .toLowerCase()
       .trim()
-      // Replace spaces and special characters with hyphens
+      // Replace spaces and underscores with hyphens
       .replace(/[\s_]+/g, '-')
       // Remove all non-alphanumeric characters except hyphens
       .replace(/[^a-z0-9-]/g, '')
-      // Replace multiple consecutive hyphens with single hyphen
+      // Collapse multiple consecutive hyphens
       .replace(/-+/g, '-')
       // Remove leading and trailing hyphens
-      .replace(/^-|-$/g, '');
+      .replace(/^-|-$/g, '')
+      .slice(0, SLUG_MAX_LENGTH);
 
     return slug;
   }
@@ -92,10 +95,10 @@ class SlugService {
       };
     }
 
-    if (cleanSlug.length > 50) {
+    if (cleanSlug.length > SLUG_MAX_LENGTH) {
       return {
         isValid: false,
-        error: 'Your link name is too long. Please use 50 letters or less.',
+        error: `Your link name is too long. Please use ${SLUG_MAX_LENGTH} characters or less.`,
       };
     }
 
@@ -194,7 +197,8 @@ class SlugService {
       };
     }
 
-    const cleanSlug = validation.cleanSlug!;
+    // Always store lowercase in DB (defensive; cleanSlug is already from generateSlugFromName)
+    const cleanSlug = validation.cleanSlug!.toLowerCase();
 
     // Step 2: Check availability
     const availability = await this.checkSlugAvailability(cleanSlug);

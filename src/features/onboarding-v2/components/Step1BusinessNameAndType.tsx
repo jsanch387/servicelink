@@ -70,7 +70,7 @@ export const Step1BusinessNameAndType: React.FC<
         </p>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4 sm:p-6">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4">
         {error && (
           <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3">
             <p className="text-sm text-red-200">{error}</p>

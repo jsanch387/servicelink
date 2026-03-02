@@ -45,7 +45,10 @@ export interface ServiceFormData {
   name: string;
   description: string;
   price: string; // Formatted string like "500"
+  /** Form dropdown uses hours; prefer duration_minutes when present for display/save. */
   hours_to_complete: number | null;
+  /** Stored in DB for new services; prioritized over hours_to_complete when reading. */
+  duration_minutes?: number | null;
   isEditing?: boolean;
 }
 

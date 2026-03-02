@@ -28,16 +28,20 @@ export interface DashboardProps {
   isOnboardingCompleted?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DashboardContentProps {
   // No props needed for now
 }
 
 export interface DashboardHeaderProps {
   onMenuClick: () => void;
+  /** Hide notification bell when false (e.g. during onboarding to avoid routing to not-ready experiences) */
+  showNotifications?: boolean;
 }
 
 export interface DashboardSidebarProps {
   open: boolean;
+  // eslint-disable-next-line no-unused-vars
   setOpen: (_open: boolean) => void;
   isOnboardingCompleted?: boolean;
 }

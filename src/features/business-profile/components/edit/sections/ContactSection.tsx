@@ -34,7 +34,9 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           </div>
           <div>
             <h3 className="text-white font-semibold">Phone Number</h3>
-            <p className="text-xs text-gray-400">For voice calls</p>
+            <p className="text-xs text-gray-400">
+              Optional, but helps customers reach you
+            </p>
           </div>
         </div>
         <PhoneInput
@@ -42,7 +44,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           value={formData.phone_number_call}
           onChange={value => onInputChange('phone_number_call', value)}
           placeholder="(555) 123-4567"
-          required
           error={
             errors.some(e => e.includes('phone number'))
               ? 'Please enter a valid 10-digit phone number'

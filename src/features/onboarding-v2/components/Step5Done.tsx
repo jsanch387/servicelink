@@ -48,7 +48,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4 sm:p-6">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4">
         {error && (
           <p className="text-red-400 text-sm mb-4" role="alert">
             {error}

@@ -83,6 +83,7 @@ const convertHeicFiles = async (files: File[]): Promise<File[]> => {
 
 interface EditBusinessProfileProps {
   businessProfile: CompleteBusinessProfile;
+  // eslint-disable-next-line no-unused-vars
   onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
@@ -106,16 +107,29 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     logo_path: businessProfile.logo_path || '',
     banner_path: businessProfile.banner_path || '',
     services:
-      businessProfile.services?.map(service => ({
-        id: service.id,
-        name: service.name,
-        description: service.description || '',
-        price: service.price_cents
-          ? (service.price_cents / 100).toString()
-          : '',
-        hours_to_complete: service.hours_to_complete || null,
-        isEditing: false,
-      })) || [],
+      businessProfile.services?.map(service => {
+        // Prioritize duration_minutes (new onboarding); fallback to hours_to_complete (legacy)
+        const durationMinutes =
+          service.duration_minutes ??
+          (service.hours_to_complete != null
+            ? Math.round(service.hours_to_complete * 60)
+            : null);
+        const hoursForForm =
+          durationMinutes != null && durationMinutes > 0
+            ? Math.max(1, Math.round(durationMinutes / 60))
+            : service.hours_to_complete || null;
+        return {
+          id: service.id,
+          name: service.name,
+          description: service.description || '',
+          price: service.price_cents
+            ? (service.price_cents / 100).toString()
+            : '',
+          hours_to_complete: hoursForForm,
+          duration_minutes: durationMinutes ?? undefined,
+          isEditing: false,
+        };
+      }) || [],
     images:
       businessProfile.images?.map(image => ({
         id: image.id,
@@ -356,6 +370,19 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
 
       {/* Content Sections */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
+        {/* Error Messages - surfaced near top so they are visible after Save */}
+        {errors.length > 0 && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/25 rounded-xl p-4">
+            <h4 className="text-red-400 font-medium mb-2">
+              Please fix the following before saving:
+            </h4>
+            <ul className="text-red-300 text-sm space-y-1">
+              {errors.map((error, index) => (
+                <li key={index}>• {error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {/* Cover Banner */}
         <BannerSection
           businessProfile={{
@@ -422,20 +449,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           businessProfile={businessProfile}
           isLoading={isLoading}
         />
-
-        {/* Error Messages */}
-        {errors.length > 0 && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-            <h4 className="text-red-400 font-medium mb-2">
-              Please fix the following errors:
-            </h4>
-            <ul className="text-red-400 text-sm space-y-1">
-              {errors.map((error, index) => (
-                <li key={index}>• {error}</li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
     </div>
   );

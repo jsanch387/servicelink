@@ -6,6 +6,7 @@ import React from 'react';
 
 interface BusinessInfoSectionProps {
   formData: EditingFormData;
+  // eslint-disable-next-line no-unused-vars
   onInputChange: (field: string, value: string) => void;
   errors: string[];
 }
@@ -67,8 +68,8 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
 
       {/* Bio */}
       <TextArea
-        label="Business Description (Optional)"
-        placeholder="Briefly describe your business, services, and what makes you unique. This will be the first thing customers read!"
+        label="Business Bio (Optional)"
+        placeholder="Briefly describe your business, services, and what makes you unique. This appears on your public profile and is often the first thing customers read."
         value={formData.bio}
         onChange={value => onInputChange('bio', value)}
         rows={5}

@@ -1,5 +1,6 @@
 'use client';
 
+import { SLUG_MAX_LENGTH } from '@/constants/slug';
 import {
   Button,
   GlassCard,
@@ -97,7 +98,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessProfileId: businessProfile.id,
-          slugInput: customSlugInput.trim(),
+          slugInput: customSlugInput.trim().toLowerCase(),
         }),
       });
       const result = await response.json();
@@ -172,7 +173,9 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     onChange={e => setCustomSlugInput(e.target.value)}
                     placeholder="my-business"
                     disabled={isUpdating}
+                    maxLength={SLUG_MAX_LENGTH}
                     className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
+                    aria-label="Custom link slug"
                   />
                 </div>
                 {slugError && (

@@ -61,13 +61,10 @@ export const CoverPhotoPlaceholder: React.FC<CoverPhotoPlaceholderProps> = ({
         </div>
 
         {/* Prompt text - smaller on mobile */}
-        <div className="space-y-1">
+        <div>
           <h3 className="text-sm sm:text-base md:text-lg font-bold text-white">
             Add a Cover Photo
           </h3>
-          <p className="text-neutral-400 text-xs sm:text-sm md:text-base max-w-xs mx-auto leading-relaxed">
-            Showcase your business with a professional cover image
-          </p>
         </div>
       </div>
 

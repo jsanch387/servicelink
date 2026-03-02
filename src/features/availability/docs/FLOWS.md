@@ -52,6 +52,31 @@ This doc describes how the **owner availability** settings and **V2 (availabilit
 
 So: **time is handled in minutes** (storage and overlap logic). The UI can display duration in hours (e.g. “2 hr”) via a formatter; the underlying logic stays in minutes.
 
+#### Service duration: `duration_minutes` vs legacy `hours_to_complete`
+
+- **Database:** `business_services` has:
+  - `duration_minutes INT NULL` – preferred going forward.
+  - `hours_to_complete NUMERIC NULL` – legacy field kept for backward compatibility.
+- **Writing duration (new flow):**
+  - **Onboarding V2 Step 2** and any new availability-based flows write **only** `duration_minutes` (in minutes, e.g. 90 for 1.5 hours).
+  - Legacy service-creation/editing flows may still write `hours_to_complete`; these rows will continue to work.
+- **Reading duration for display (service cards):**
+  - In `BusinessProfileView → ServicesList → ServiceCard`:
+    - If `duration_minutes` is present and > 0, we compute `hours = duration_minutes / 60` and display that in the UI (e.g. “2 Hours”), using a formatter.
+    - If `duration_minutes` is null but `hours_to_complete` is present, we display `hours_to_complete` instead (legacy behavior).
+    - If neither is present, no duration badge is shown.
+- **Reading duration for booking (public `/[business-slug]/book`):**
+  - The server fetches the selected service and derives `serviceDurationMinutes` as:
+    - If `duration_minutes` is present → use it directly, with a minimum of 15 minutes.
+    - Else if `hours_to_complete` is present → convert to minutes (`hours_to_complete * 60`), with a minimum of 15 minutes.
+    - Else → default to 60 minutes.
+  - That `serviceDurationMinutes` is passed into `AvailabilityBookingPage` and used for:
+    - Time-slot generation (slot length in minutes).
+    - Display (via `formatDurationMinutes`).
+    - The booking payload (`durationMinutes` in `POST /api/public/bookings`).
+
+In short: **we always prioritize `duration_minutes` when present**, but gracefully fall back to `hours_to_complete` so older services and bookings continue to behave correctly. All booking logic runs in minutes; hours are now only a presentation concern.
+
 ### Submitting a booking
 
 - **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, `durationMinutes`, `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).

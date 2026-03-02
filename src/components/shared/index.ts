@@ -28,3 +28,4 @@ export { WarningCallout } from './WarningCallout';
 export { StructuredData } from './StructuredData';
 export { Switch } from './Switch';
 export { ToggleButton } from './ToggleButton';
+export { SERVICE_DURATION_HOURS_OPTIONS } from './ServiceDurationOptions';

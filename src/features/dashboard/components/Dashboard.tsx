@@ -39,7 +39,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Sticky Header */}
         <div className="sticky top-0 z-30 bg-[var(--dashboard-bg)]">
           {showHeader ? (
-            <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
+            <DashboardHeader
+              onMenuClick={() => setSidebarOpen(true)}
+              showNotifications={isOnboardingCompleted}
+            />
           ) : (
             // Minimal mobile menu for routes without header
             <div className="lg:hidden bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">

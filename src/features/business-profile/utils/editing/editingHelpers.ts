@@ -29,6 +29,8 @@ export interface ServiceFormData {
   description: string;
   price: string;
   hours_to_complete: number | null;
+  /** Prefer when present (new services); fallback to hours_to_complete for legacy. */
+  duration_minutes?: number | null;
   isEditing?: boolean;
 }
 
@@ -61,12 +63,14 @@ export function validateEditingForm(
   if (!formData.business_type.trim()) {
     errors.push('Business type is required');
   }
-  if (!formData.service_area.trim()) {
-    errors.push('Service area is required');
-  }
+  // Service area is optional
 
-  // Phone Validation (single number for customers to call)
-  if (!formData.phone_number_call || formData.phone_number_call.length !== 10) {
+  // Phone Validation (single number for customers to call - optional, but must be valid if provided)
+  if (
+    formData.phone_number_call &&
+    formData.phone_number_call.trim() !== '' &&
+    formData.phone_number_call.length !== 10
+  ) {
     errors.push('Phone number must be 10 digits');
   }
 
@@ -96,14 +100,22 @@ export function transformFormDataForAPI(
   formData: EditingFormData,
   _businessProfileId: string
 ) {
-  const servicesToSave = formData.services.map(service => ({
-    id: service.id?.toString().startsWith('temp-') ? undefined : service.id,
-    name: service.name,
-    description: service.description || null,
-    price_cents: service.price ? parseInt(service.price) * 100 : 0,
-    hours_to_complete: service.hours_to_complete || null,
-    is_active: true,
-  }));
+  const servicesToSave = formData.services.map(service => {
+    // Moving forward we only store duration_minutes; hours_to_complete is read-only for legacy data
+    const durationMinutes =
+      service.duration_minutes ??
+      (service.hours_to_complete != null
+        ? Math.round(service.hours_to_complete * 60)
+        : null);
+    return {
+      id: service.id?.toString().startsWith('temp-') ? undefined : service.id,
+      name: service.name,
+      description: service.description || null,
+      price_cents: service.price ? parseInt(service.price) * 100 : 0,
+      duration_minutes: durationMinutes ?? undefined,
+      is_active: true,
+    };
+  });
 
   const imagesToSave = formData.images
     .filter(image => {

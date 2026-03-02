@@ -58,10 +58,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the slug using the service
+    // Normalize to lowercase so we never store mixed-case slugs (e.g. EliteDetail → elitedetail)
+    const normalizedInput = String(slugInput).trim().toLowerCase();
+
+    // Create the slug using the service (service also enforces lowercase and char limit)
     const result = await slugService.createBusinessSlug(
       String(businessProfileId),
-      String(slugInput)
+      normalizedInput
     );
 
     if (!result.success) {
