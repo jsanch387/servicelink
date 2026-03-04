@@ -20,8 +20,12 @@ const MAX_DESCRIPTION_LENGTH = 280;
 
 export interface EditServiceModalProps {
   service: BusinessServiceRow | null;
+  /** When true and service is null, show empty form for adding a new service. */
+  showAddForm?: boolean;
   onClose: () => void;
-  onSave: (serviceId: string, data: EditServiceFormData) => void;
+  /** For edit: serviceId is set. For add: serviceId is undefined. */
+  // eslint-disable-next-line no-unused-vars -- callback type; params used by caller
+  onSave: (serviceId: string | undefined, data: EditServiceFormData) => void;
   isSaving?: boolean;
 }
 
@@ -61,6 +65,7 @@ function serviceToForm(service: BusinessServiceRow): {
 
 export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   service,
+  showAddForm = false,
   onClose,
   onSave,
   isSaving = false,
@@ -71,6 +76,9 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [durationHours, setDurationHours] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  const isAddMode = showAddForm && !service;
+  const isOpen = !!service || showAddForm;
+
   useEffect(() => {
     if (service) {
       const form = serviceToForm(service);
@@ -79,13 +87,18 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setPrice(form.price);
       setDurationHours(form.durationHours);
       setError(null);
+    } else if (showAddForm) {
+      setName('');
+      setDescription('');
+      setPrice('');
+      setDurationHours('');
+      setError(null);
     }
-  }, [service]);
+  }, [service, showAddForm]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!service) return;
 
       const nameTrim = name.trim();
       if (!nameTrim) {
@@ -104,17 +117,22 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       }
 
       setError(null);
-      onSave(service.id, {
+      const data: EditServiceFormData = {
         name: nameTrim,
         description: description.trim() || '',
         price_cents: Math.round(priceNum * 100),
         duration_minutes: hours * 60,
-      });
+      };
+      if (service) {
+        onSave(service.id, data);
+      } else {
+        onSave(undefined, data);
+      }
     },
-    [service, name, price, durationHours, onSave]
+    [service, name, description, price, durationHours, onSave]
   );
 
-  if (!service) return null;
+  if (!isOpen) return null;
 
   const isValid =
     name.trim().length > 0 &&
@@ -126,9 +144,9 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
   return (
     <Modal
-      isOpen={!!service}
+      isOpen={isOpen}
       onClose={onClose}
-      title="Edit service"
+      title={isAddMode ? 'Add service' : 'Edit service'}
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -199,7 +217,13 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             disabled={!isValid || isSaving}
             className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-white hover:bg-gray-100 text-black transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? 'Saving…' : 'Save changes'}
+            {isSaving
+              ? isAddMode
+                ? 'Adding…'
+                : 'Saving…'
+              : isAddMode
+                ? 'Add service'
+                : 'Save changes'}
           </button>
         </div>
       </form>

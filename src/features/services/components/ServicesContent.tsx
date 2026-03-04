@@ -46,48 +46,70 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [editingService, setEditingService] =
     useState<BusinessServiceRow | null>(null);
+  const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [serviceToDelete, setServiceToDelete] =
     useState<BusinessServiceRow | null>(null);
 
-  const handleToggleActive = useCallback(() => {
-    // TODO: persist is_active
-  }, []);
-
-  const handleEdit = useCallback((service: BusinessServiceRow) => {
-    setEditingService(service);
-  }, []);
-
-  const handleCloseEdit = useCallback(() => {
-    if (!isSavingEdit) setEditingService(null);
-  }, [isSavingEdit]);
-
-  const handleSaveEdit = useCallback(
-    (serviceId: string, data: EditServiceFormData) => {
-      setIsSavingEdit(true);
+  const handleToggleActive = useCallback(
+    (serviceId: string, active: boolean) => {
       setServices(prev =>
-        prev.map(s =>
-          s.id === serviceId
-            ? {
-                ...s,
-                name: data.name,
-                description: data.description || null,
-                price_cents: data.price_cents,
-                duration_minutes: data.duration_minutes,
-                hours_to_complete: data.duration_minutes
-                  ? data.duration_minutes / 60
-                  : null,
-                updated_at: new Date().toISOString(),
-              }
-            : s
-        )
+        prev.map(s => (s.id === serviceId ? { ...s, is_active: active } : s))
       );
-      setIsSavingEdit(false);
-      setEditingService(null);
-      // TODO: persist to API
+      // TODO: persist is_active to API
     },
     []
   );
+
+  const handleEdit = useCallback((service: BusinessServiceRow) => {
+    setEditingService(service);
+    setIsAddServiceOpen(false);
+  }, []);
+
+  const handleCloseEdit = useCallback(() => {
+    if (!isSavingEdit) {
+      setEditingService(null);
+      setIsAddServiceOpen(false);
+    }
+  }, [isSavingEdit]);
+
+  const handleSaveEdit = useCallback(
+    (serviceId: string | undefined, data: EditServiceFormData) => {
+      if (serviceId != null) {
+        setIsSavingEdit(true);
+        setServices(prev =>
+          prev.map(s =>
+            s.id === serviceId
+              ? {
+                  ...s,
+                  name: data.name,
+                  description: data.description || null,
+                  price_cents: data.price_cents,
+                  duration_minutes: data.duration_minutes,
+                  hours_to_complete: data.duration_minutes
+                    ? data.duration_minutes / 60
+                    : null,
+                  updated_at: new Date().toISOString(),
+                }
+              : s
+          )
+        );
+        setIsSavingEdit(false);
+        setEditingService(null);
+        // TODO: persist to API
+      } else {
+        console.log('Add service:', data);
+        setIsAddServiceOpen(false);
+        // TODO: persist new service to API
+      }
+    },
+    []
+  );
+
+  const handleAddService = useCallback(() => {
+    setEditingService(null);
+    setIsAddServiceOpen(true);
+  }, []);
 
   const handleDelete = useCallback(
     (serviceId: string) => {
@@ -155,10 +177,6 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
       [next[index], next[index + 1]] = [next[index + 1], next[index]];
       return next;
     });
-  }, []);
-
-  const handleAddService = useCallback(() => {
-    // TODO: open add-service flow
   }, []);
 
   return (
@@ -281,7 +299,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                     service={service}
                     index={index}
                     isReorderMode={isReorderMode}
-                    onToggleActive={() => handleToggleActive()}
+                    onToggleActive={handleToggleActive}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onDragStart={handleDragStart}
@@ -299,6 +317,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
 
         <EditServiceModal
           service={editingService}
+          showAddForm={isAddServiceOpen}
           onClose={handleCloseEdit}
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}

@@ -135,11 +135,6 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
               <span className="text-xl font-black text-white leading-none">
                 {formatPrice(service.price_cents)}
               </span>
-              {!service.is_active && (
-                <span className="inline-block mt-1.5 text-[9px] bg-white/5 text-zinc-500 px-2 py-0.5 rounded border border-white/10 font-bold uppercase tracking-tight">
-                  Hidden
-                </span>
-              )}
             </div>
           </div>
 
@@ -207,7 +202,9 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
         isReorderMode
           ? 'border-emerald-500/40 shadow-lg shadow-emerald-500/5'
           : ''
-      } ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      } ${draggable ? 'cursor-grab active:cursor-grabbing' : ''} ${
+        !service.is_active ? 'opacity-70' : ''
+      }`}
     >
       <div
         draggable={draggable}
