@@ -1,7 +1,7 @@
 'use client';
 
 import { GlassCard, Switch } from '@/components/shared';
-import type { BusinessServiceRow } from '@/features/business-profile/types/businessProfile';
+import type { ServiceRow } from '@/features/services/types/services';
 import {
   Bars3Icon,
   ChevronDownIcon,
@@ -18,7 +18,7 @@ function formatPrice(priceCents: number | null): string {
   return `$${(priceCents / 100).toFixed(0)}`;
 }
 
-function formatDuration(service: BusinessServiceRow): string | null {
+function formatDuration(service: ServiceRow): string | null {
   const minutes = service.duration_minutes;
   const hours = service.hours_to_complete;
   if (minutes != null && minutes > 0) {
@@ -36,7 +36,7 @@ function formatDuration(service: BusinessServiceRow): string | null {
 }
 
 export interface ServiceManagementCardProps {
-  service: BusinessServiceRow;
+  service: ServiceRow;
   /** Index in list (for drag-and-drop reorder). */
   index: number;
   /** When true, show drag handle and allow drag; hide Edit/Delete row. */
@@ -46,7 +46,7 @@ export interface ServiceManagementCardProps {
   onToggleActive?: (serviceId: string, active: boolean) => void;
   /** Edit — no-op for now. */
   // eslint-disable-next-line no-unused-vars
-  onEdit?: (service: BusinessServiceRow) => void;
+  onEdit?: (service: ServiceRow) => void;
   /** Delete — no-op for now. */
   // eslint-disable-next-line no-unused-vars
   onDelete?: (serviceId: string) => void;

@@ -1,7 +1,7 @@
 'use client';
 
 import { Modal } from '@/components/shared';
-import type { BusinessServiceRow } from '@/features/business-profile/types/businessProfile';
+import type { ServiceRow } from '@/features/services/types/services';
 import {
   ArrowsUpDownIcon,
   RectangleStackIcon,
@@ -27,7 +27,9 @@ function BoldPlusIcon({ className }: { className?: string }) {
 import { ServiceManagementCard } from './ServiceManagementCard';
 
 export interface ServicesContentProps {
-  initialServices: BusinessServiceRow[];
+  initialServices: ServiceRow[];
+  /** When set, services failed to load; show error state instead of list. */
+  fetchError?: string | null;
 }
 
 /**
@@ -36,20 +38,17 @@ export interface ServicesContentProps {
  */
 export const ServicesContent: React.FC<ServicesContentProps> = ({
   initialServices,
+  fetchError = null,
 }) => {
-  const [services, setServices] =
-    useState<BusinessServiceRow[]>(initialServices);
-  const [activeTab, setActiveTab] = useState<'services' | 'add-ons'>(
-    'services'
-  );
+  const [services, setServices] = useState<ServiceRow[]>(initialServices);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [editingService, setEditingService] =
-    useState<BusinessServiceRow | null>(null);
+  const [editingService, setEditingService] = useState<ServiceRow | null>(null);
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [serviceToDelete, setServiceToDelete] =
-    useState<BusinessServiceRow | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<ServiceRow | null>(
+    null
+  );
 
   const handleToggleActive = useCallback(
     (serviceId: string, active: boolean) => {
@@ -61,7 +60,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
     []
   );
 
-  const handleEdit = useCallback((service: BusinessServiceRow) => {
+  const handleEdit = useCallback((service: ServiceRow) => {
     setEditingService(service);
     setIsAddServiceOpen(false);
   }, []);
@@ -182,37 +181,12 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
       <div className="max-w-2xl mx-auto w-full min-w-0 pt-0 sm:pt-6">
-        {/* Tabs: Services | Add-ons */}
-        <div className="flex rounded-xl bg-white/5 border border-white/10 p-1 mb-6">
-          <button
-            type="button"
-            onClick={() => setActiveTab('services')}
-            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-              activeTab === 'services'
-                ? 'bg-white/10 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Services
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('add-ons')}
-            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-              activeTab === 'add-ons'
-                ? 'bg-white/10 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            Add-ons
-          </button>
-        </div>
-
-        {activeTab === 'add-ons' ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 sm:p-10 text-center">
-            <p className="text-gray-400 text-sm">
-              Add-ons coming soon. You’ll be able to create add-ons that
-              customers can attach to your services.
+        {fetchError ? (
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 sm:p-8 text-center">
+            <p className="text-red-400 font-medium">Could not load services</p>
+            <p className="text-gray-400 text-sm mt-2">{fetchError}</p>
+            <p className="text-gray-500 text-xs mt-4">
+              Refresh the page or try again later.
             </p>
           </div>
         ) : services.length === 0 ? (

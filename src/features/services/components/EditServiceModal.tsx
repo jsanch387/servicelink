@@ -8,7 +8,7 @@ import {
   SERVICE_DURATION_HOURS_OPTIONS,
   TextArea,
 } from '@/components/shared';
-import type { BusinessServiceRow } from '@/features/business-profile/types/businessProfile';
+import type { ServiceRow } from '@/features/services/types/services';
 import React, { useCallback, useEffect, useState } from 'react';
 
 const DURATION_OPTIONS = [
@@ -19,7 +19,7 @@ const DURATION_OPTIONS = [
 const MAX_DESCRIPTION_LENGTH = 280;
 
 export interface EditServiceModalProps {
-  service: BusinessServiceRow | null;
+  service: ServiceRow | null;
   /** When true and service is null, show empty form for adding a new service. */
   showAddForm?: boolean;
   onClose: () => void;
@@ -36,7 +36,7 @@ export interface EditServiceFormData {
   duration_minutes: number | null;
 }
 
-function serviceToForm(service: BusinessServiceRow): {
+function serviceToForm(service: ServiceRow): {
   name: string;
   description: string;
   price: string;

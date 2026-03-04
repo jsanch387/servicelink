@@ -1,12 +1,12 @@
 /**
  * Services Dashboard Page
  *
- * Manage services: edit, reorder, toggle on/off.
+ * Fetches services from the database and renders the services management UI.
+ * Auth and onboarding are required; loading and errors are handled in the feature.
  */
 
-import type { BusinessServiceRow } from '@/features/business-profile/types/businessProfile';
-import { ServicesContent } from '@/features/services';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { getServices, ServicesContent } from '@/features/services';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -34,13 +34,12 @@ export default async function ServicesPage() {
     redirect('/dashboard');
   }
 
-  const { data: services, error: servicesError } = await supabase
-    .from('business_services')
-    .select('*')
-    .eq('business_id', businessProfile.id)
-    .order('created_at', { ascending: true });
+  const result = await getServices(businessProfile.id);
 
-  const servicesList = servicesError ? [] : (services ?? []);
-
-  return <ServicesContent initialServices={servicesList as BusinessServiceRow[]} />;
+  return (
+    <ServicesContent
+      initialServices={result.data ?? []}
+      fetchError={result.success ? null : result.error}
+    />
+  );
 }
