@@ -108,6 +108,11 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         setError('Service name is required.');
         return;
       }
+      const descriptionTrim = description.trim();
+      if (!descriptionTrim) {
+        setError('Description is required.');
+        return;
+      }
       const priceNum = price.trim() ? parseFloat(price.replace(/,/g, '')) : NaN;
       if (!price.trim() || isNaN(priceNum) || priceNum < 0) {
         setError('Please enter a valid price.');
@@ -122,7 +127,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setError(null);
       const data: EditServiceFormData = {
         name: nameTrim,
-        description: description.trim() || '',
+        description: descriptionTrim,
         price_cents: Math.round(priceNum * 100),
         duration_minutes: hours * 60,
       };
@@ -139,6 +144,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
   const isValid =
     name.trim().length > 0 &&
+    description.trim().length > 0 &&
     price.trim().length > 0 &&
     !Number.isNaN(parseFloat(price.replace(/,/g, ''))) &&
     parseFloat(price.replace(/,/g, '')) >= 0 &&
@@ -169,14 +175,15 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
         <div className="space-y-2">
           <TextArea
-            label="Description"
+            label="Description (Required)"
             placeholder="Tell customers what they get. Keep it simple."
             value={description}
             onChange={setDescription}
             rows={3}
+            required
           />
           <div className="flex justify-between text-xs text-gray-500">
-            <span>Optional</span>
+            <span>Required</span>
             <span
               className={
                 description.length > MAX_DESCRIPTION_LENGTH * 0.9

@@ -30,3 +30,18 @@ export interface UpdateServiceResult {
   data: ServiceRow | null;
   error: string | null;
 }
+
+/** Payload for creating a new service (same shape as update). */
+export interface CreateServicePayload {
+  name: string;
+  description: string;
+  price_cents: number | null;
+  duration_minutes: number | null;
+}
+
+/** Result of creating a single service. */
+export interface CreateServiceResult {
+  success: boolean;
+  data: ServiceRow | null;
+  error: string | null;
+}

@@ -7,6 +7,7 @@ import {
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 import React, { useCallback, useState } from 'react';
+import { createServiceAction } from '../actions/createService';
 import { updateServiceAction } from '../actions/updateService';
 import type { EditServiceFormData } from './EditServiceModal';
 import { EditServiceModal } from './EditServiceModal';
@@ -97,9 +98,21 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
           setSaveError(result.error ?? 'Failed to update service');
         }
       } else {
-        console.log('Add service:', data);
-        setIsAddServiceOpen(false);
-        // TODO: persist new service to API
+        setSaveError(null);
+        setIsSavingEdit(true);
+        const result = await createServiceAction({
+          name: data.name,
+          description: data.description,
+          price_cents: data.price_cents,
+          duration_minutes: data.duration_minutes,
+        });
+        setIsSavingEdit(false);
+        if (result.success && result.data) {
+          setServices(prev => [...prev, result.data!]);
+          setIsAddServiceOpen(false);
+        } else {
+          setSaveError(result.error ?? 'Failed to add service');
+        }
       }
     },
     []

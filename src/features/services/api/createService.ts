@@ -1,57 +1,48 @@
 /**
- * Services API - Update a single service.
+ * Services API - Create a new service.
  * Server-only; use from server actions or route handlers.
  */
 
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
+  CreateServicePayload,
+  CreateServiceResult,
   ServiceRow,
-  UpdateServicePayload,
-  UpdateServiceResult,
 } from '../types/services';
 
 /**
- * Updates a service by id, scoped to the given business.
- * Returns the updated row or an error (e.g. not found, RLS, DB error).
+ * Creates a new service for the given business.
+ * Returns the created row or an error.
  */
-export async function updateService(
+export async function createService(
   supabase: SupabaseClient<Database>,
-  serviceId: string,
   businessId: string,
-  payload: UpdateServicePayload
-): Promise<UpdateServiceResult> {
+  payload: CreateServicePayload
+): Promise<CreateServiceResult> {
   try {
-    type TableUpdate =
-      Database['public']['Tables']['business_services']['Update'];
-    const updatePayload: TableUpdate = {
+    type TableInsert =
+      Database['public']['Tables']['business_services']['Insert'];
+    const insertPayload: TableInsert = {
+      business_id: businessId,
       name: payload.name,
-      description: payload.description || null,
+      description: payload.description.trim() || null,
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes,
-      updated_at: new Date().toISOString(),
+      is_active: true,
     };
 
     const { data, error } = await supabase
       .from('business_services')
-      .update(updatePayload as never)
-      .eq('id', serviceId)
-      .eq('business_id', businessId)
+      .insert(insertPayload as never)
       .select()
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return {
-          success: false,
-          data: null,
-          error: 'Service not found or you don’t have permission to update it.',
-        };
-      }
       return {
         success: false,
         data: null,
-        error: error.message ?? 'Failed to update service',
+        error: error.message ?? 'Failed to create service',
       };
     }
 
