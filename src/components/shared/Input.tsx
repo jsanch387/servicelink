@@ -7,6 +7,7 @@ interface InputProps {
   label?: string;
   placeholder?: string;
   value: string;
+  // eslint-disable-next-line no-unused-vars
   onChange: (value: string) => void;
   type?: 'text' | 'email' | 'tel' | 'url' | 'password';
   required?: boolean;
@@ -83,7 +84,7 @@ export const Input: React.FC<InputProps> = ({
           inputMode={inputMode}
           maxLength={maxLength}
           className={`
-            w-full py-2.5 px-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm font-normal
+            w-full py-2.5 px-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-normal
             focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
             transition-all duration-200 touch-manipulation
             ${hasLeftIcon ? 'pl-9' : ''}
