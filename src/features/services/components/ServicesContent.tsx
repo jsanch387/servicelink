@@ -3,10 +3,26 @@
 import type { BusinessServiceRow } from '@/features/business-profile/types/businessProfile';
 import {
   ArrowsUpDownIcon,
-  PlusIcon,
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 import React, { useCallback, useState } from 'react';
+import type { EditServiceFormData } from './EditServiceModal';
+import { EditServiceModal } from './EditServiceModal';
+
+/** Thick plus icon for Add service (more visible than Heroicons solid). */
+function BoldPlusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <rect x="10" y="3" width="4" height="18" rx="1.5" />
+      <rect x="3" y="10" width="18" height="4" rx="1.5" />
+    </svg>
+  );
+}
 import { ServiceManagementCard } from './ServiceManagementCard';
 
 export interface ServicesContentProps {
@@ -27,15 +43,52 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   );
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [editingService, setEditingService] =
+    useState<BusinessServiceRow | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const handleToggleActive = useCallback(() => {
     // TODO: persist is_active
   }, []);
-  const handleEdit = useCallback(() => {
-    // TODO: open edit flow
+
+  const handleEdit = useCallback((service: BusinessServiceRow) => {
+    setEditingService(service);
   }, []);
-  const handleDelete = useCallback(() => {
-    // TODO: confirm and delete
+
+  const handleCloseEdit = useCallback(() => {
+    if (!isSavingEdit) setEditingService(null);
+  }, [isSavingEdit]);
+
+  const handleSaveEdit = useCallback(
+    (serviceId: string, data: EditServiceFormData) => {
+      setIsSavingEdit(true);
+      setServices(prev =>
+        prev.map(s =>
+          s.id === serviceId
+            ? {
+                ...s,
+                name: data.name,
+                description: data.description || null,
+                price_cents: data.price_cents,
+                duration_minutes: data.duration_minutes,
+                hours_to_complete: data.duration_minutes
+                  ? data.duration_minutes / 60
+                  : null,
+                updated_at: new Date().toISOString(),
+              }
+            : s
+        )
+      );
+      setIsSavingEdit(false);
+      setEditingService(null);
+      // TODO: persist to API
+    },
+    []
+  );
+
+  const handleDelete = useCallback((serviceId: string) => {
+    // TODO: confirm and delete; serviceId will be used for API call
+    void serviceId;
   }, []);
 
   const handleDragStart = useCallback((index: number) => {
@@ -143,9 +196,9 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             <button
               type="button"
               onClick={handleAddService}
-              className="mt-6 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-bold uppercase tracking-wider transition-all cursor-pointer"
+              className="mt-6 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-gray-100 text-black text-sm font-medium transition-all cursor-pointer"
             >
-              <PlusIcon className="h-4 w-4" />
+              <BoldPlusIcon className="h-4 w-4 text-emerald-500" />
               Add service
             </button>
           </div>
@@ -162,16 +215,16 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                   <button
                     type="button"
                     onClick={handleAddService}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-bold uppercase tracking-widest transition-all border border-emerald-500 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-gray-100 text-black text-sm font-medium transition-all cursor-pointer"
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <BoldPlusIcon className="h-4 w-4 text-emerald-500" />
                     Add service
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setIsReorderMode(prev => !prev)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border cursor-pointer ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer ${
                     isReorderMode
                       ? 'bg-white/5 border-white/20 text-white hover:bg-white/10'
                       : 'bg-[var(--dashboard-bg)] border-white/10 text-gray-400 hover:text-white hover:border-white/20'
@@ -211,8 +264,8 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                     index={index}
                     isReorderMode={isReorderMode}
                     onToggleActive={() => handleToggleActive()}
-                    onEdit={() => handleEdit()}
-                    onDelete={() => handleDelete()}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     onMoveUp={handleMoveUp}
@@ -225,6 +278,13 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             </ul>
           </>
         )}
+
+        <EditServiceModal
+          service={editingService}
+          onClose={handleCloseEdit}
+          onSave={handleSaveEdit}
+          isSaving={isSavingEdit}
+        />
       </div>
     </main>
   );

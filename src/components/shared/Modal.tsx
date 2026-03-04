@@ -1,6 +1,5 @@
 'use client';
 
-import { XMarkIcon } from '@heroicons/react/24/outline';
 import React, { useEffect } from 'react';
 
 interface ModalProps {
@@ -84,26 +83,17 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-white/3 border border-white/8 backdrop-blur-xl rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full ${maxWidthClasses[maxWidth]} mx-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out`}
+        className={`bg-[var(--dashboard-bg)] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full ${maxWidthClasses[maxWidth]} mx-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out`}
         style={{
           transform: 'translateY(0)',
           animation: 'slideUp 0.3s ease-out',
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Close Button - Always visible */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 sm:right-6 sm:top-6 w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white active:bg-white/10 transition-colors z-10 flex-shrink-0 touch-manipulation"
-          aria-label="Close modal"
-        >
-          <XMarkIcon className="w-6 h-6 sm:w-5 sm:h-5" />
-        </button>
-
-        {/* Fixed Header - Only show if title provided */}
+        {/* Fixed Header: title only (close via Cancel button or overlay) */}
         {title && (
-          <div className="flex justify-between items-center p-4 sm:p-6 border-b border-neutral-700 flex-shrink-0">
-            <h3 className="text-lg sm:text-xl font-bold text-white border-l-4 border-orange-400 pl-3 uppercase tracking-wider">
+          <div className="flex items-center p-4 sm:p-6 border-b border-white/10 flex-shrink-0">
+            <h3 className="text-lg font-semibold text-white min-w-0">
               {title}
             </h3>
           </div>

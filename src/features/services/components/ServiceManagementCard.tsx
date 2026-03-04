@@ -165,7 +165,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
                 <button
                   type="button"
                   onClick={() => onEdit?.(service)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 bg-neutral-800 hover:bg-neutral-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl sm:rounded-2xl border border-neutral-700 transition-all active:scale-95 min-w-0 cursor-pointer"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-neutral-700 transition-all active:scale-95 min-w-0 cursor-pointer"
                   aria-label="Edit service"
                 >
                   <PencilSquareIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-emerald-500 flex-shrink-0" />
@@ -174,7 +174,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
                 <button
                   type="button"
                   onClick={() => onDelete?.(service.id)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 bg-neutral-800 hover:bg-red-500/10 text-white hover:text-red-400 text-[11px] font-black uppercase tracking-wider rounded-xl sm:rounded-2xl border border-neutral-700 hover:border-red-500/30 transition-all active:scale-95 min-w-0 cursor-pointer"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 bg-neutral-800 hover:bg-red-500/10 text-white hover:text-red-400 text-sm font-medium rounded-xl sm:rounded-2xl border border-neutral-700 hover:border-red-500/30 transition-all active:scale-95 min-w-0 cursor-pointer"
                   aria-label="Delete service"
                 >
                   <TrashIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-red-500 flex-shrink-0" />
