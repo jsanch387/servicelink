@@ -15,3 +15,18 @@ export interface GetServicesResult {
   data: ServiceRow[] | null;
   error: string | null;
 }
+
+/** Payload for updating a service (editable fields only). */
+export interface UpdateServicePayload {
+  name: string;
+  description: string;
+  price_cents: number | null;
+  duration_minutes: number | null;
+}
+
+/** Result of updating a single service. */
+export interface UpdateServiceResult {
+  success: boolean;
+  data: ServiceRow | null;
+  error: string | null;
+}

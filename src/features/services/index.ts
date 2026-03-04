@@ -4,7 +4,13 @@
  * Manage services: edit, reorder, toggle on/off.
  */
 
+export { updateServiceAction } from './actions/updateService';
 export { getServices } from './api/getServices';
 export { ServicesContent } from './components/ServicesContent';
 export { ServicesLoadingSkeleton } from './components/ServicesLoadingSkeleton';
-export type { GetServicesResult, ServiceRow } from './types/services';
+export type {
+  GetServicesResult,
+  ServiceRow,
+  UpdateServicePayload,
+  UpdateServiceResult,
+} from './types/services';

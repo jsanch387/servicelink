@@ -22,6 +22,8 @@ export interface EditServiceModalProps {
   service: ServiceRow | null;
   /** When true and service is null, show empty form for adding a new service. */
   showAddForm?: boolean;
+  /** Server/save error to show above the form (e.g. service unavailable). */
+  saveError?: string | null;
   onClose: () => void;
   /** For edit: serviceId is set. For add: serviceId is undefined. */
   // eslint-disable-next-line no-unused-vars -- callback type; params used by caller
@@ -66,6 +68,7 @@ function serviceToForm(service: ServiceRow): {
 export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   service,
   showAddForm = false,
+  saveError = null,
   onClose,
   onSave,
   isSaving = false,
@@ -150,9 +153,9 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
+        {(error || saveError) && (
           <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-            {error}
+            {saveError ?? error}
           </p>
         )}
 

@@ -7,6 +7,7 @@ import {
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 import React, { useCallback, useState } from 'react';
+import { updateServiceAction } from '../actions/updateService';
 import type { EditServiceFormData } from './EditServiceModal';
 import { EditServiceModal } from './EditServiceModal';
 
@@ -46,6 +47,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const [editingService, setEditingService] = useState<ServiceRow | null>(null);
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<ServiceRow | null>(
     null
   );
@@ -61,6 +63,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   );
 
   const handleEdit = useCallback((service: ServiceRow) => {
+    setSaveError(null);
     setEditingService(service);
     setIsAddServiceOpen(false);
   }, []);
@@ -69,33 +72,30 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
     if (!isSavingEdit) {
       setEditingService(null);
       setIsAddServiceOpen(false);
+      setSaveError(null);
     }
   }, [isSavingEdit]);
 
   const handleSaveEdit = useCallback(
-    (serviceId: string | undefined, data: EditServiceFormData) => {
+    async (serviceId: string | undefined, data: EditServiceFormData) => {
       if (serviceId != null) {
+        setSaveError(null);
         setIsSavingEdit(true);
-        setServices(prev =>
-          prev.map(s =>
-            s.id === serviceId
-              ? {
-                  ...s,
-                  name: data.name,
-                  description: data.description || null,
-                  price_cents: data.price_cents,
-                  duration_minutes: data.duration_minutes,
-                  hours_to_complete: data.duration_minutes
-                    ? data.duration_minutes / 60
-                    : null,
-                  updated_at: new Date().toISOString(),
-                }
-              : s
-          )
-        );
+        const result = await updateServiceAction(serviceId, {
+          name: data.name,
+          description: data.description,
+          price_cents: data.price_cents,
+          duration_minutes: data.duration_minutes,
+        });
         setIsSavingEdit(false);
-        setEditingService(null);
-        // TODO: persist to API
+        if (result.success && result.data) {
+          setServices(prev =>
+            prev.map(s => (s.id === serviceId ? result.data! : s))
+          );
+          setEditingService(null);
+        } else {
+          setSaveError(result.error ?? 'Failed to update service');
+        }
       } else {
         console.log('Add service:', data);
         setIsAddServiceOpen(false);
@@ -106,6 +106,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   );
 
   const handleAddService = useCallback(() => {
+    setSaveError(null);
     setEditingService(null);
     setIsAddServiceOpen(true);
   }, []);
@@ -292,6 +293,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         <EditServiceModal
           service={editingService}
           showAddForm={isAddServiceOpen}
+          saveError={saveError}
           onClose={handleCloseEdit}
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}
