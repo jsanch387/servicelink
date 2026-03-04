@@ -59,12 +59,13 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Full width on mobile; apply max-width from sm breakpoint up (matches edit modal)
   const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
+    sm: 'max-w-full sm:max-w-sm',
+    md: 'max-w-full sm:max-w-md',
+    lg: 'max-w-full sm:max-w-lg',
+    xl: 'max-w-full sm:max-w-xl',
+    '2xl': 'max-w-full sm:max-w-2xl',
   };
 
   return (
@@ -83,7 +84,7 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-[var(--dashboard-bg)] border border-white/10 rounded-t-2xl sm:rounded-2xl w-full ${maxWidthClasses[maxWidth]} mx-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out`}
+        className={`bg-[var(--dashboard-bg)] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full ${maxWidthClasses[maxWidth]} mx-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out`}
         style={{
           transform: 'translateY(0)',
           animation: 'slideUp 0.3s ease-out',

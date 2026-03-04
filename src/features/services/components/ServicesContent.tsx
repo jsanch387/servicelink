@@ -1,5 +1,6 @@
 'use client';
 
+import { Modal } from '@/components/shared';
 import type { BusinessServiceRow } from '@/features/business-profile/types/businessProfile';
 import {
   ArrowsUpDownIcon,
@@ -46,6 +47,8 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const [editingService, setEditingService] =
     useState<BusinessServiceRow | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [serviceToDelete, setServiceToDelete] =
+    useState<BusinessServiceRow | null>(null);
 
   const handleToggleActive = useCallback(() => {
     // TODO: persist is_active
@@ -86,9 +89,24 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
     []
   );
 
-  const handleDelete = useCallback((serviceId: string) => {
-    // TODO: confirm and delete; serviceId will be used for API call
-    void serviceId;
+  const handleDelete = useCallback(
+    (serviceId: string) => {
+      const service = services.find(s => s.id === serviceId) ?? null;
+      setServiceToDelete(service);
+    },
+    [services]
+  );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (serviceToDelete) {
+      console.log('Delete service:', serviceToDelete.id, serviceToDelete.name);
+      // TODO: call API to delete service
+      setServiceToDelete(null);
+    }
+  }, [serviceToDelete]);
+
+  const handleCancelDelete = useCallback(() => {
+    setServiceToDelete(null);
   }, []);
 
   const handleDragStart = useCallback((index: number) => {
@@ -285,6 +303,33 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}
         />
+
+        <Modal
+          isOpen={!!serviceToDelete}
+          onClose={handleCancelDelete}
+          title="Delete service?"
+          maxWidth="sm"
+        >
+          <p className="text-gray-300 text-sm mb-6">
+            Are you sure you want to delete the service?
+          </p>
+          <div className="flex flex-col-reverse sm:flex-row gap-3">
+            <button
+              type="button"
+              onClick={handleCancelDelete}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all cursor-pointer"
+            >
+              No
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-white hover:bg-gray-100 text-black transition-all cursor-pointer"
+            >
+              Yes
+            </button>
+          </div>
+        </Modal>
       </div>
     </main>
   );
