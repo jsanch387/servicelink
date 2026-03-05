@@ -51,3 +51,9 @@ export interface DeleteServiceResult {
   success: boolean;
   error: string | null;
 }
+
+/** Result of updating a service's is_active flag. */
+export interface UpdateServiceIsActiveResult {
+  success: boolean;
+  error: string | null;
+}

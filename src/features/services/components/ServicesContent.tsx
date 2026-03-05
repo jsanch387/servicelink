@@ -10,6 +10,7 @@ import React, { useCallback, useState } from 'react';
 import { createServiceAction } from '../actions/createService';
 import { deleteServiceAction } from '../actions/deleteService';
 import { updateServiceAction } from '../actions/updateService';
+import { updateServiceIsActiveAction } from '../actions/updateServiceIsActive';
 import type { EditServiceFormData } from './EditServiceModal';
 import { EditServiceModal } from './EditServiceModal';
 
@@ -55,19 +56,33 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   );
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   const handleToggleActive = useCallback(
-    (serviceId: string, active: boolean) => {
+    async (serviceId: string, active: boolean) => {
+      setToggleError(null);
+      const previous = services.find(s => s.id === serviceId);
       setServices(prev =>
         prev.map(s => (s.id === serviceId ? { ...s, is_active: active } : s))
       );
-      // TODO: persist is_active to API
+      const result = await updateServiceIsActiveAction(serviceId, active);
+      if (!result.success) {
+        if (previous) {
+          setServices(prev =>
+            prev.map(s =>
+              s.id === serviceId ? { ...s, is_active: previous.is_active } : s
+            )
+          );
+        }
+        setToggleError(result.error ?? 'Failed to update visibility');
+      }
     },
-    []
+    [services]
   );
 
   const handleEdit = useCallback((service: ServiceRow) => {
     setSaveError(null);
+    setToggleError(null);
     setEditingService(service);
     setIsAddServiceOpen(false);
   }, []);
@@ -123,6 +138,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
 
   const handleAddService = useCallback(() => {
     setSaveError(null);
+    setToggleError(null);
     setEditingService(null);
     setIsAddServiceOpen(true);
   }, []);
@@ -130,6 +146,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const handleDelete = useCallback(
     (serviceId: string) => {
       setDeleteError(null);
+      setToggleError(null);
       const service = services.find(s => s.id === serviceId) ?? null;
       setServiceToDelete(service);
     },
@@ -270,6 +287,12 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                 </button>
               </div>
             </div>
+
+            {toggleError && (
+              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
+                {toggleError}
+              </p>
+            )}
 
             {isReorderMode && (
               <p className="text-sm text-gray-500 mb-4">
