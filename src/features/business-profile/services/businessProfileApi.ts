@@ -42,11 +42,12 @@ export class BusinessProfileApi {
         };
       }
 
-      // Get services
+      // Get services (order by sort_order then created_at for consistent display)
       const { data: services, error: servicesError } = await supabase
         .from('business_services')
         .select('*')
         .eq('business_id', businessId)
+        .order('sort_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true });
 
       if (servicesError) {

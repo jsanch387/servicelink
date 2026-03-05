@@ -57,3 +57,9 @@ export interface UpdateServiceIsActiveResult {
   success: boolean;
   error: string | null;
 }
+
+/** Result of saving services sort order. */
+export interface UpdateServicesOrderResult {
+  success: boolean;
+  error: string | null;
+}

@@ -9,6 +9,7 @@ import {
 import React, { useCallback, useState } from 'react';
 import { createServiceAction } from '../actions/createService';
 import { deleteServiceAction } from '../actions/deleteService';
+import { saveServicesOrderAction } from '../actions/saveServicesOrder';
 import { updateServiceAction } from '../actions/updateService';
 import { updateServiceIsActiveAction } from '../actions/updateServiceIsActive';
 import type { EditServiceFormData } from './EditServiceModal';
@@ -57,6 +58,29 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toggleError, setToggleError] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  const handleFinishSorting = useCallback(async () => {
+    setOrderError(null);
+    setIsSavingOrder(true);
+    const result = await saveServicesOrderAction(services.map(s => s.id));
+    setIsSavingOrder(false);
+    if (result.success) {
+      setIsReorderMode(false);
+    } else {
+      setOrderError(result.error ?? 'Failed to save order. Please try again.');
+    }
+  }, [services]);
+
+  const handleSortOrderClick = useCallback(() => {
+    if (isReorderMode) {
+      handleFinishSorting();
+    } else {
+      setOrderError(null);
+      setIsReorderMode(true);
+    }
+  }, [isReorderMode, handleFinishSorting]);
 
   const handleToggleActive = useCallback(
     async (serviceId: string, active: boolean) => {
@@ -275,15 +299,20 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                 )}
                 <button
                   type="button"
-                  onClick={() => setIsReorderMode(prev => !prev)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer ${
+                  onClick={handleSortOrderClick}
+                  disabled={isSavingOrder}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
                     isReorderMode
                       ? 'bg-white/5 border-white/20 text-white hover:bg-white/10'
                       : 'bg-[var(--dashboard-bg)] border-white/10 text-gray-400 hover:text-white hover:border-white/20'
                   }`}
                 >
                   <ArrowsUpDownIcon className="h-4 w-4" />
-                  {isReorderMode ? 'Finish sorting' : 'Sort order'}
+                  {isSavingOrder
+                    ? 'Saving…'
+                    : isReorderMode
+                      ? 'Finish sorting'
+                      : 'Sort order'}
                 </button>
               </div>
             </div>
@@ -295,9 +324,17 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             )}
 
             {isReorderMode && (
-              <p className="text-sm text-gray-500 mb-4">
-                Tap the arrows to move services, or drag to reorder on desktop.
-              </p>
+              <>
+                <p className="text-sm text-gray-500 mb-4">
+                  Tap the arrows to move services, or drag to reorder on
+                  desktop.
+                </p>
+                {orderError && (
+                  <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
+                    {orderError}
+                  </p>
+                )}
+              </>
             )}
 
             {/* Services list — draggable in reorder mode */}

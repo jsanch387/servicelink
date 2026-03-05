@@ -6,6 +6,7 @@
 
 export { createServiceAction } from './actions/createService';
 export { deleteServiceAction } from './actions/deleteService';
+export { saveServicesOrderAction } from './actions/saveServicesOrder';
 export { updateServiceAction } from './actions/updateService';
 export { updateServiceIsActiveAction } from './actions/updateServiceIsActive';
 export { getServices } from './api/getServices';
@@ -19,5 +20,6 @@ export type {
   ServiceRow,
   UpdateServiceIsActiveResult,
   UpdateServicePayload,
+  UpdateServicesOrderResult,
   UpdateServiceResult,
 } from './types/services';

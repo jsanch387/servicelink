@@ -8,7 +8,7 @@ import type { GetServicesResult, ServiceRow } from '../types/services';
 
 /**
  * Fetches all services for the given business (any is_active value).
- * Ordered by created_at ascending.
+ * Ordered by sort_order ascending (nulls last), then created_at ascending.
  */
 export async function getServices(
   businessId: string
@@ -20,6 +20,7 @@ export async function getServices(
       .from('business_services')
       .select('*')
       .eq('business_id', businessId)
+      .order('sort_order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
     if (error) {
