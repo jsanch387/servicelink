@@ -10,7 +10,10 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import React from 'react';
+import React, { useState } from 'react';
+
+/** Max description length before collapsing; matches public ServiceCard. */
+const DESCRIPTION_PREVIEW_LENGTH = 120;
 
 function formatPrice(priceCents: number | null): string {
   if (priceCents == null) return 'Contact for quote';
@@ -81,6 +84,15 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   totalCount = 0,
   draggable = false,
 }) => {
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  const description = service.description || '';
+  const isLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
+  const previewText =
+    isLongDescription && !isDescriptionExpanded
+      ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+      : description;
+
   const duration = formatDuration(service);
   const isFirst = index === 0;
   const isLast = index === totalCount - 1;
@@ -148,10 +160,38 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
             </div>
           )}
 
-          {/* Description — same as public ServiceCard */}
-          <p className="text-zinc-500 text-sm leading-relaxed mb-4 pr-4">
-            {service.description || ''}
-          </p>
+          {/* Description — collapsible like public ServiceCard for uniform card height */}
+          <div className="mb-4 pr-4 min-h-[4.5rem]">
+            <p
+              className={`text-zinc-500 text-sm leading-relaxed ${
+                isLongDescription && !isDescriptionExpanded
+                  ? 'line-clamp-3'
+                  : ''
+              }`}
+            >
+              {previewText}
+            </p>
+            {isLongDescription && (
+              <button
+                type="button"
+                onClick={() => setIsDescriptionExpanded(prev => !prev)}
+                className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-white active:text-white transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
+                aria-expanded={isDescriptionExpanded}
+              >
+                {isDescriptionExpanded ? (
+                  <>
+                    <ChevronUpIcon className="h-3.5 w-3.5" />
+                    See less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDownIcon className="h-3.5 w-3.5" />
+                    See more
+                  </>
+                )}
+              </button>
+            )}
+          </div>
 
           {/* Action row: Edit, Delete, Switch — reference style (dark containers, icon + label) */}
           {!isReorderMode && (
