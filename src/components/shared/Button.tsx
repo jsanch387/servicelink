@@ -24,6 +24,7 @@ interface ButtonProps {
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
+  'aria-label'?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -40,6 +41,7 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   iconPosition = 'left',
   fullWidth = false,
+  'aria-label': ariaLabel,
 }) => {
   const baseClasses =
     'inline-flex items-center justify-center rounded-lg shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
@@ -101,7 +103,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   if (href && !isDisabled) {
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} className={classes} aria-label={ariaLabel}>
         {content}
       </Link>
     );
@@ -114,6 +116,7 @@ export const Button: React.FC<ButtonProps> = ({
       className={classes}
       onClick={onClick}
       disabled={isDisabled}
+      aria-label={ariaLabel}
     >
       {content}
     </button>

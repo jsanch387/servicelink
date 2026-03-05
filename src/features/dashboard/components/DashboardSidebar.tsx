@@ -10,6 +10,7 @@ import {
   ClockIcon,
   CogIcon,
   HomeIcon,
+  RectangleStackIcon,
   UserIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -29,6 +30,12 @@ const allNavigationItems = [
     name: 'Business Profile',
     href: ROUTES.DASHBOARD.BUSINESS_PROFILE,
     icon: UserIcon,
+    requiresOnboarding: true,
+  },
+  {
+    name: 'Services',
+    href: ROUTES.DASHBOARD.SERVICES,
+    icon: RectangleStackIcon,
     requiresOnboarding: true,
   },
   {

@@ -8,7 +8,6 @@ import { CompleteBusinessProfile } from '../../types/businessProfile';
 import {
   EditingFormData,
   ImageFormData,
-  ServiceFormData,
   cleanupPreviewUrls,
   saveBusinessProfile,
 } from '../../utils/editing/editingHelpers';
@@ -17,7 +16,6 @@ import { BusinessInfoSection } from './sections/BusinessInfoSection';
 import { ContactSection } from './sections/ContactSection';
 import { PortfolioSection } from './sections/PortfolioSection';
 import { ProfileImageSection } from './sections/ProfileImageSection';
-import { ServicesSection } from './sections/ServicesSection';
 
 /**
  * HEIC Conversion for MVP
@@ -106,30 +104,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     same_phone_for_both: false,
     logo_path: businessProfile.logo_path || '',
     banner_path: businessProfile.banner_path || '',
-    services:
-      businessProfile.services?.map(service => {
-        // Prioritize duration_minutes (new onboarding); fallback to hours_to_complete (legacy)
-        const durationMinutes =
-          service.duration_minutes ??
-          (service.hours_to_complete != null
-            ? Math.round(service.hours_to_complete * 60)
-            : null);
-        const hoursForForm =
-          durationMinutes != null && durationMinutes > 0
-            ? Math.max(1, Math.round(durationMinutes / 60))
-            : service.hours_to_complete || null;
-        return {
-          id: service.id,
-          name: service.name,
-          description: service.description || '',
-          price: service.price_cents
-            ? (service.price_cents / 100).toString()
-            : '',
-          hours_to_complete: hoursForForm,
-          duration_minutes: durationMinutes ?? undefined,
-          isEditing: false,
-        };
-      }) || [],
     images:
       businessProfile.images?.map(image => ({
         id: image.id,
@@ -186,10 +160,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   //   });
   //   if (errors.length > 0) setErrors([]);
   // };
-
-  const handleServicesChange = (services: ServiceFormData[]) => {
-    setFormData(prev => ({ ...prev, services }));
-  };
 
   const handleImagesChange = (images: ImageFormData[]) => {
     setFormData(prev => ({ ...prev, images }));
@@ -417,15 +387,6 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           formData={formData}
           onInputChange={handleInputChange}
           errors={errors}
-        />
-
-        {/* Divider */}
-        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
-
-        {/* Services */}
-        <ServicesSection
-          services={formData.services}
-          onServicesChange={handleServicesChange}
         />
 
         {/* Divider */}

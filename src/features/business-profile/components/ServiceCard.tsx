@@ -1,9 +1,17 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
-import { ChevronRightIcon, ClockIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  ClockIcon,
+} from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import React, { useState } from 'react';
+
+/** Max description length before collapsing. Keeps cards uniform height on mobile. */
+const DESCRIPTION_PREVIEW_LENGTH = 120;
 
 interface Service {
   id?: string;
@@ -34,6 +42,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   businessSlug = '',
 }) => {
   const router = useRouter();
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  const description = service.description || '';
+  const isLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
+  const previewText =
+    isLongDescription && !isDescriptionExpanded
+      ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+      : description;
 
   const effectiveHours =
     service.duration_minutes != null && service.duration_minutes > 0
@@ -93,10 +109,36 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </span>
       </div>
 
-      {/* Description */}
-      <p className="text-zinc-500 text-sm leading-relaxed mb-4 pr-4">
-        {service.description}
-      </p>
+      {/* Description — fixed min-height so all cards align; long text is collapsible */}
+      <div className="mb-4 pr-4 min-h-[4.5rem]">
+        <p
+          className={`text-zinc-500 text-sm leading-relaxed ${
+            isLongDescription && !isDescriptionExpanded ? 'line-clamp-3' : ''
+          }`}
+        >
+          {previewText}
+        </p>
+        {isLongDescription && (
+          <button
+            type="button"
+            onClick={() => setIsDescriptionExpanded(prev => !prev)}
+            className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-white active:text-white transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
+            aria-expanded={isDescriptionExpanded}
+          >
+            {isDescriptionExpanded ? (
+              <>
+                <ChevronUpIcon className="h-3.5 w-3.5" />
+                See less
+              </>
+            ) : (
+              <>
+                <ChevronDownIcon className="h-3.5 w-3.5" />
+                See more
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
       {/* Faint divider + footer: duration left, Book Now right */}
       <div className="flex items-center justify-between pt-4 border-t border-white/[0.03]">

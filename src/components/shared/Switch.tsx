@@ -61,7 +61,7 @@ export const Switch: React.FC<SwitchProps> = ({
       className={`
         relative inline-flex flex-shrink-0 cursor-pointer rounded-full
         transition-colors duration-200 ease-out
-        focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 focus:ring-offset-[var(--dashboard-bg)]
+        focus:outline-none
         disabled:cursor-not-allowed disabled:opacity-50
         ${size === 'lg' ? 'min-h-[44px] min-w-[44px]' : ''}
         ${config.track}

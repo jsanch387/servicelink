@@ -44,6 +44,7 @@ export async function GET(
       .select('*')
       .eq('business_id', profile.id)
       .eq('is_active', true)
+      .order('sort_order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
     if (servicesError) {

@@ -31,6 +31,7 @@ export const ROUTES = {
   DASHBOARD: {
     MAIN: '/dashboard',
     BUSINESS_PROFILE: '/dashboard/business-profile',
+    SERVICES: '/dashboard/services',
     BOOKINGS: '/dashboard/bookings',
     AVAILABILITY: '/dashboard/availability',
     SETTINGS: '/dashboard/settings',

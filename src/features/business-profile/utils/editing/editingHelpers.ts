@@ -19,19 +19,7 @@ export interface EditingFormData {
   logo_url?: string;
   logo_path?: string;
   banner_path?: string;
-  services: ServiceFormData[];
   images: ImageFormData[];
-}
-
-export interface ServiceFormData {
-  id?: string;
-  name: string;
-  description: string;
-  price: string;
-  hours_to_complete: number | null;
-  /** Prefer when present (new services); fallback to hours_to_complete for legacy. */
-  duration_minutes?: number | null;
-  isEditing?: boolean;
 }
 
 export interface ImageFormData {
@@ -74,19 +62,6 @@ export function validateEditingForm(
     errors.push('Phone number must be 10 digits');
   }
 
-  // Services Validation
-  formData.services.forEach((service, index) => {
-    if (!service.name.trim()) {
-      errors.push(`Service ${index + 1}: Name is required`);
-    }
-    if (!service.price.trim()) {
-      errors.push(`Service ${index + 1}: Price is required`);
-    }
-    if (service.price && isNaN(parseInt(service.price))) {
-      errors.push(`Service ${index + 1}: Price must be a valid number`);
-    }
-  });
-
   return {
     isValid: errors.length === 0,
     errors,
@@ -100,23 +75,6 @@ export function transformFormDataForAPI(
   formData: EditingFormData,
   _businessProfileId: string
 ) {
-  const servicesToSave = formData.services.map(service => {
-    // Moving forward we only store duration_minutes; hours_to_complete is read-only for legacy data
-    const durationMinutes =
-      service.duration_minutes ??
-      (service.hours_to_complete != null
-        ? Math.round(service.hours_to_complete * 60)
-        : null);
-    return {
-      id: service.id?.toString().startsWith('temp-') ? undefined : service.id,
-      name: service.name,
-      description: service.description || null,
-      price_cents: service.price ? parseInt(service.price) * 100 : 0,
-      duration_minutes: durationMinutes ?? undefined,
-      is_active: true,
-    };
-  });
-
   const imagesToSave = formData.images
     .filter(image => {
       // Only include images with real storage paths (not preview images)
@@ -143,7 +101,6 @@ export function transformFormDataForAPI(
       logo_path: formData.logo_path,
       banner_path: formData.banner_path,
     },
-    services: servicesToSave,
     images: imagesToSave,
   };
 }
@@ -177,18 +134,6 @@ export async function saveBusinessProfile(
       return {
         success: false,
         error: profileResult.error || 'Failed to save business profile',
-      };
-    }
-
-    // Save services
-    const servicesResult = await BusinessProfileApi.updateServices(
-      businessProfileId,
-      apiData.services
-    );
-    if (!servicesResult.success) {
-      return {
-        success: false,
-        error: servicesResult.error || 'Failed to save services',
       };
     }
 
@@ -228,19 +173,6 @@ export function formatPhoneForDisplay(phone: string): string {
  */
 export function formatPriceForDisplay(priceCents: number): string {
   return `$${(priceCents / 100).toFixed(0)}`;
-}
-
-/**
- * Creates a new service form data object
- */
-export function createNewService(): ServiceFormData {
-  return {
-    name: '',
-    description: '',
-    price: '',
-    hours_to_complete: null,
-    isEditing: false,
-  };
 }
 
 /**

@@ -91,25 +91,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     setIsLoading(true);
 
     try {
-      // Transform the form data to match the expected structure
-      const transformedData = {
-        ...data,
-        services: Array.isArray(data.services)
-          ? data.services.map((service: Record<string, unknown>) => ({
-              ...service,
-              price_cents: service.price
-                ? parseInt(service.price as string) * 100
-                : 0,
-            }))
-          : [],
-      };
-
-      // Update local state with the transformed data
+      // Merge saved data into state. Services are managed on the Services dashboard
+      // route only, so always preserve existing services when updating from this form.
       setBusinessProfile(prev => ({
         ...prev,
-        ...transformedData,
-        services:
-          transformedData.services as CompleteBusinessProfile['services'],
+        ...data,
+        services: prev.services,
       }));
 
       // Check if this is a partial update (like cover photo upload)
