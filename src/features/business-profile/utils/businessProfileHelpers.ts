@@ -5,10 +5,7 @@
  * Clean, reusable helper functions.
  */
 
-import {
-  BusinessProfileFormData,
-  ServiceFormData,
-} from '../types/businessProfile';
+import { BusinessProfileFormData } from '../types/businessProfile';
 
 /**
  * Formats phone number for display
@@ -59,36 +56,6 @@ export function validateBusinessProfileForm(data: BusinessProfileFormData): {
 
   if (data.phone_number_call && data.phone_number_call.length !== 10) {
     errors.push('Phone number must be 10 digits');
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Validates service form data
- */
-export function validateServiceForm(data: ServiceFormData): {
-  isValid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-
-  if (!data.name?.trim()) {
-    errors.push('Service name is required');
-  }
-
-  if (!data.price?.trim()) {
-    errors.push('Service price is required');
-  }
-
-  if (
-    data.hours_to_complete &&
-    (data.hours_to_complete < 1 || data.hours_to_complete > 10)
-  ) {
-    errors.push('Hours to complete must be between 1 and 10');
   }
 
   return {

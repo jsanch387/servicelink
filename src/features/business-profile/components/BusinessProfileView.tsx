@@ -91,25 +91,28 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     setIsLoading(true);
 
     try {
-      // Transform the form data to match the expected structure
+      // Transform the form data to match the expected structure.
+      // Services are no longer edited here (managed on the Services dashboard route),
+      // so preserve existing services when the payload doesn't include them.
       const transformedData = {
         ...data,
-        services: Array.isArray(data.services)
-          ? data.services.map((service: Record<string, unknown>) => ({
-              ...service,
-              price_cents: service.price
-                ? parseInt(service.price as string) * 100
-                : 0,
-            }))
-          : [],
+        ...(Array.isArray(data.services) && {
+          services: data.services.map((service: Record<string, unknown>) => ({
+            ...service,
+            price_cents: service.price
+              ? parseInt(service.price as string) * 100
+              : 0,
+          })),
+        }),
       };
 
-      // Update local state with the transformed data
+      // Update local state; keep existing services/images when not in payload
       setBusinessProfile(prev => ({
         ...prev,
         ...transformedData,
-        services:
-          transformedData.services as CompleteBusinessProfile['services'],
+        ...(Array.isArray(transformedData.services)
+          ? { services: transformedData.services as CompleteBusinessProfile['services'] }
+          : {}),
       }));
 
       // Check if this is a partial update (like cover photo upload)

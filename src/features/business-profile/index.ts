@@ -23,7 +23,6 @@ export { EditBusinessProfile } from './components/edit/EditBusinessProfile';
 // Edit Section Components
 export { BusinessInfoSection } from './components/edit/sections/BusinessInfoSection';
 export { ContactSection } from './components/edit/sections/ContactSection';
-export { ServicesSection } from './components/edit/sections/ServicesSection';
 export { BannerSection } from './components/edit/sections/BannerSection';
 export { ProfileImageSection } from './components/edit/sections/ProfileImageSection';
 export { PortfolioSection } from './components/edit/sections/PortfolioSection';
@@ -44,7 +43,6 @@ export {
   saveBusinessProfile,
   formatPhoneForDisplay,
   formatPriceForDisplay,
-  createNewService,
   createNewImage,
   cleanupPreviewUrls,
 } from './utils/editing/editingHelpers';

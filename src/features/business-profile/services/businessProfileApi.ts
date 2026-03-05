@@ -13,7 +13,6 @@ import {
   BusinessProfileUpdate,
   CompleteBusinessProfile,
   ImageResponse,
-  ServiceResponse,
 } from '../types/businessProfile';
 
 export class BusinessProfileApi {
@@ -122,82 +121,6 @@ export class BusinessProfileApi {
       }
 
       return { success: true, data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
-
-  /**
-   * Updates services for a business
-   */
-  static async updateServices(
-    businessId: string,
-    services: Array<{
-      id?: string;
-      name: string;
-      description: string | null;
-      price_cents: number;
-      /** Moving forward we only persist duration_minutes; hours_to_complete is legacy read-only. */
-      duration_minutes?: number | null;
-      is_active: boolean;
-    }>
-  ): Promise<ServiceResponse> {
-    try {
-      const supabase = createClient();
-
-      // Validate all services before making any changes
-      for (const service of services) {
-        if (!service.name || service.name.trim() === '') {
-          return {
-            success: false,
-            error: 'Service name is required',
-          };
-        }
-        if (service.price_cents === null || service.price_cents === undefined) {
-          return {
-            success: false,
-            error: 'Service price is required',
-          };
-        }
-      }
-
-      // Simple approach: Delete all existing services and insert all current services
-      // This ensures consistency and avoids complex update logic
-
-      // First, delete all existing services for this business
-      const { error: deleteError } = await supabase
-        .from('business_services')
-        .delete()
-        .eq('business_id', businessId);
-
-      if (deleteError) {
-        return { success: false, error: deleteError.message };
-      }
-
-      // Then insert all current services (without ID field to let DB auto-generate)
-      if (services.length > 0) {
-        const servicesToInsert = services.map(service => ({
-          name: service.name,
-          description: service.description,
-          price_cents: service.price_cents,
-          duration_minutes: service.duration_minutes ?? null,
-          business_id: businessId,
-          is_active: service.is_active,
-        }));
-
-        const { error: insertError } = await (
-          supabase.from('business_services') as any
-        ).insert(servicesToInsert);
-
-        if (insertError) {
-          return { success: false, error: insertError.message };
-        }
-      }
-
-      return { success: true };
     } catch (error) {
       return {
         success: false,
