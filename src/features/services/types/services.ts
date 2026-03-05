@@ -45,3 +45,9 @@ export interface CreateServiceResult {
   data: ServiceRow | null;
   error: string | null;
 }
+
+/** Result of deleting a service. */
+export interface DeleteServiceResult {
+  success: boolean;
+  error: string | null;
+}

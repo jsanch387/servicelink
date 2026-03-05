@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import React, { useCallback, useState } from 'react';
 import { createServiceAction } from '../actions/createService';
+import { deleteServiceAction } from '../actions/deleteService';
 import { updateServiceAction } from '../actions/updateService';
 import type { EditServiceFormData } from './EditServiceModal';
 import { EditServiceModal } from './EditServiceModal';
@@ -52,6 +53,8 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const [serviceToDelete, setServiceToDelete] = useState<ServiceRow | null>(
     null
   );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleToggleActive = useCallback(
     (serviceId: string, active: boolean) => {
@@ -126,22 +129,30 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
 
   const handleDelete = useCallback(
     (serviceId: string) => {
+      setDeleteError(null);
       const service = services.find(s => s.id === serviceId) ?? null;
       setServiceToDelete(service);
     },
     [services]
   );
 
-  const handleConfirmDelete = useCallback(() => {
-    if (serviceToDelete) {
-      console.log('Delete service:', serviceToDelete.id, serviceToDelete.name);
-      // TODO: call API to delete service
+  const handleConfirmDelete = useCallback(async () => {
+    if (!serviceToDelete) return;
+    setDeleteError(null);
+    setIsDeleting(true);
+    const result = await deleteServiceAction(serviceToDelete.id);
+    setIsDeleting(false);
+    if (result.success) {
+      setServices(prev => prev.filter(s => s.id !== serviceToDelete.id));
       setServiceToDelete(null);
+    } else {
+      setDeleteError(result.error ?? 'Failed to delete service');
     }
   }, [serviceToDelete]);
 
   const handleCancelDelete = useCallback(() => {
     setServiceToDelete(null);
+    setDeleteError(null);
   }, []);
 
   const handleDragStart = useCallback((index: number) => {
@@ -321,20 +332,27 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
           <p className="text-gray-300 text-sm mb-6">
             Are you sure you want to delete the service?
           </p>
+          {deleteError && (
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
+              {deleteError}
+            </p>
+          )}
           <div className="flex flex-col-reverse sm:flex-row gap-3">
             <button
               type="button"
               onClick={handleCancelDelete}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all cursor-pointer"
+              disabled={isDeleting}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               No
             </button>
             <button
               type="button"
               onClick={handleConfirmDelete}
-              className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-white hover:bg-gray-100 text-black transition-all cursor-pointer"
+              disabled={isDeleting}
+              className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-white hover:bg-gray-100 text-black transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Yes
+              {isDeleting ? 'Deleting…' : 'Yes'}
             </button>
           </div>
         </Modal>
