@@ -174,6 +174,9 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
                 width={96}
                 height={96}
                 className="w-full h-full object-cover"
+                unoptimized={(businessProfile.logo_url as string).startsWith('http')}
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <CameraIcon className="h-8 w-8 text-neutral-500" />
@@ -243,6 +246,9 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
                     width={128}
                     height={128}
                     className="w-full h-full object-cover"
+                    unoptimized={tempLogo.startsWith('http')}
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>

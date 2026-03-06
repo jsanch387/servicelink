@@ -46,6 +46,10 @@ const SmartImagePreview: React.FC<{
           width={400}
           height={400}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          unoptimized={src.startsWith('http')}
+          loading="lazy"
+          decoding="async"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           onError={e => {
             e.currentTarget.src =
               'https://placehold.co/400x400/374151/E5E7EB?text=No+Preview';

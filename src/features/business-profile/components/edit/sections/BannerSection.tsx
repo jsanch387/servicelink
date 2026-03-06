@@ -175,6 +175,9 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
               width={800}
               height={320}
               className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+              unoptimized={(businessProfile.cover_image_url as string).startsWith('http')}
+              loading="lazy"
+              decoding="async"
             />
             {/* Always visible edit indicator */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -244,6 +247,9 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
                   width={800}
                   height={320}
                   className="w-full h-full object-cover"
+                  unoptimized={tempCoverPhoto.startsWith('http')}
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>

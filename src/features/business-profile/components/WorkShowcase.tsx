@@ -56,6 +56,7 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
                   height={600}
                   fallbackLabel="WORK"
                   fallbackSize={{ w: 600, h: 600 }}
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   onLoad={() => handleImageLoad(id)}
                 />
               </div>
