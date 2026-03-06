@@ -43,14 +43,13 @@ export async function saveStep2(
   }
 
   try {
-    // Require at least one service
+    // Require at least one service; each must have name, duration, and description
     const validServices = services.filter(
       s =>
         s?.name?.trim() &&
         typeof s.durationMinutes === 'number' &&
-        s?.name?.trim() &&
-        typeof s.durationMinutes === 'number' &&
-        s.durationMinutes >= 30
+        s.durationMinutes >= 30 &&
+        s?.description?.trim()
     );
     if (validServices.length === 0) {
       return { success: false, error: 'Add at least one service' };

@@ -52,7 +52,8 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
   const [error, setError] = useState<string>('');
 
   const addService = () => {
-    if (!name.trim() || !price.trim() || !durationMinutes) return;
+    const descTrim = description.trim();
+    if (!name.trim() || !price.trim() || !durationMinutes || !descTrim) return;
     const minutes = parseInt(durationMinutes, 10);
     if (Number.isNaN(minutes) || minutes < 1) return;
     const next: OnboardingV2Service = {
@@ -60,7 +61,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
       name: name.trim(),
       price: price.trim(),
       durationMinutes: minutes,
-      description: description.trim() || undefined,
+      description: descTrim,
     };
     onUpdate([...services, next]);
     setName('');
@@ -77,7 +78,8 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
     name.trim().length > 0 &&
     price.trim().length > 0 &&
     durationMinutes !== '' &&
-    parseInt(durationMinutes, 10) >= 30;
+    parseInt(durationMinutes, 10) >= 30 &&
+    description.trim().length > 0;
   const canContinue = services.length > 0;
 
   const handleNext = async () => {
@@ -156,12 +158,13 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
               required
             />
             <TextArea
-              label="What's included? (optional)"
+              label="What's included? (required)"
               placeholder="e.g. Exterior wash, interior vacuum, window clean"
               value={description}
               onChange={setDescription}
               rows={3}
               maxLength={DESCRIPTION_MAX_LENGTH}
+              required
             />
             <Button
               type="button"

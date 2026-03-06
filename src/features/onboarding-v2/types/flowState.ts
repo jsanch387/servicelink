@@ -11,7 +11,7 @@ export interface OnboardingV2Service {
   price: string;
   /** Duration in minutes (for booking). Stored in DB as duration_minutes. */
   durationMinutes: number;
-  /** Optional short description of what's included. Max 250 chars for card display. */
+  /** Short description of what's included (required). Max 250 chars for card display. */
   description?: string;
 }
 
