@@ -35,6 +35,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             fallbackLabel="COVER PHOTO"
             fallbackSize={{ w: 1200, h: 400 }}
             priority
+            sizes="100vw"
           />
         ) : (
           <CoverPhotoPlaceholder
@@ -62,6 +63,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 fallbackLabel="LOGO"
                 fallbackSize={{ w: 256, h: 256 }}
                 priority
+                sizes="128px"
               />
             ) : (
               <LogoPlaceholder

@@ -24,7 +24,10 @@ interface ImageWithFallbackProps {
   className?: string;
   fallbackLabel?: string;
   fallbackSize?: { w: number; h: number };
+  /** LCP images (e.g. cover, logo) should use priority for faster load. */
   priority?: boolean;
+  /** Responsive size hint for layout; e.g. "(max-width: 768px) 100vw, 1200px". */
+  sizes?: string;
   onLoad?: () => void;
 }
 
@@ -37,6 +40,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   fallbackLabel,
   fallbackSize = { w: 600, h: 400 },
   priority = false,
+  sizes,
   onLoad,
 }) => {
   // Handle empty string or null/undefined src by using fallback immediately
@@ -52,6 +56,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   const handleError = () => {
     setImageSrc(fallbackSrc);
   };
+
+  // External URLs (e.g. Supabase): load directly to avoid Vercel Image Optimization (402).
+  const isExternal = imageSrc.startsWith('http://') || imageSrc.startsWith('https://');
 
   // If src is empty or null, use fallback immediately
   if (!src || src.trim() === '') {
@@ -76,6 +83,10 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       height={height}
       className={className}
       priority={priority}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding={priority ? 'auto' : 'async'}
+      sizes={sizes}
+      unoptimized={isExternal}
       onError={handleError}
       onLoad={onLoad}
     />

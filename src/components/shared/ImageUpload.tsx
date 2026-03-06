@@ -141,6 +141,9 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
         width={256}
         height={128}
         className="w-full h-32 object-cover rounded-lg border border-neutral-700"
+        unoptimized={src.startsWith('http')}
+        loading="lazy"
+        decoding="async"
       />
 
       <button
