@@ -59,14 +59,12 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ['400', '500', '600', '700', '800'],
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default:
-      'ServiceLink | One Link for Your Service Business — Get Booked Instantly',
+    default: 'ServiceLink | One Link. Your Services. Get Booked.',
     template: '%s | ServiceLink',
   },
   description:
@@ -106,19 +104,18 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  // Link previews (Facebook, LinkedIn, iMessage, Slack): title, description, image from here (public/open-graph.png).
+  // Link previews: public/open-graph.png must exist and be 1200×630px (1.91:1) for optimal ratio.
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: siteUrl,
     siteName: 'ServiceLink',
-    title:
-      'ServiceLink | One Link for Your Service Business — Get Booked Instantly',
+    title: 'ServiceLink | One Link. Your Services. Get Booked.',
     description:
       'Create a professional booking link. Share one link and let customers see your services and book instantly. Built for service pros.',
     images: [
       {
-        url: `${siteUrl}/open-graph.png`,
+        url: '/open-graph.png',
         width: 1200,
         height: 630,
         alt: 'ServiceLink — Your business, ready to book.',
@@ -128,11 +125,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title:
-      'ServiceLink | One Link for Your Service Business — Get Booked Instantly',
+    title: 'ServiceLink | One Link. Your Services. Get Booked.',
     description:
       'Create a professional booking link. Share one link and let customers see your services and book instantly.',
-    images: [`${siteUrl}/open-graph.png`],
+    images: ['/open-graph.png'],
   },
   alternates: {
     canonical: siteUrl,
