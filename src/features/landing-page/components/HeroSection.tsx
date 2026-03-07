@@ -9,49 +9,33 @@ export const HeroSection: React.FC = () => {
   const [slugInput, setSlugInput] = useState('');
 
   return (
-    <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6 bg-[var(--dashboard-bg)]">
-      {/* Hero Glow Effect */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[50vh] -z-10"
-        style={{
-          background:
-            'radial-gradient(circle, rgba(251, 146, 60, 0.15) 0%, transparent 70%)',
-        }}
-      />
-
+    <section
+      className="relative pt-32 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6"
+      aria-labelledby="hero-heading"
+    >
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
         {/* Hero Text */}
         <div className="text-left">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-orange-400 text-xs font-bold tracking-widest uppercase mb-6 sm:mb-8">
-            Free Professional Link for Pros
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 md:mb-8 tracking-tighter leading-[0.95] uppercase text-white">
-            Stop Losing Clients <br />
-            <span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage: 'linear-gradient(to right, #fb923c, #f97316)',
-              }}
-            >
-              In the DMs.
-            </span>
+          <h1
+            id="hero-heading"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 md:mb-8 tracking-tight leading-[1.05] text-white uppercase"
+          >
+            Your business, ready to book.
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-400 mb-6 sm:mb-8 md:mb-10 leading-relaxed font-medium max-w-xl">
-            Stop sending &quot;DM for price&quot; or messy text lists. Send one
-            professional link that showcases your services, photos, and lets
-            clients book you instantly.
+            Create a clean booking link where customers can see your services
+            and book instantly.
           </p>
 
           {/* Slug Input in Hero */}
           <div className="mb-6 sm:mb-8 md:mb-10 max-w-lg">
-            <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-3 px-1">
-              Claim your handle before someone else does
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">
+              Claim your custom link
             </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-orange-500/20 shadow-2xl gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl gap-2">
               <span className="pl-4 text-gray-500 font-bold hidden sm:inline">
-                servicelink.app/
+                myservicelink.app/
               </span>
               <input
                 type="text"
@@ -62,11 +46,11 @@ export const HeroSection: React.FC = () => {
               />
               <Button
                 href={ROUTES.AUTH.SIGNUP}
-                variant="primary"
+                variant="secondary"
                 size="sm"
-                className="px-6 sm:px-8 py-3 rounded-xl font-black whitespace-nowrap text-sm w-full sm:w-auto"
+                className="px-6 sm:px-8 py-3 rounded-lg font-black whitespace-nowrap text-sm w-full sm:w-auto !border-0 !bg-orange-500 hover:!bg-orange-600 !text-white focus:!ring-orange-500"
               >
-                Check Now
+                Get My Link
               </Button>
             </div>
           </div>
@@ -84,11 +68,11 @@ export const HeroSection: React.FC = () => {
                   clipRule="evenodd"
                 />
               </svg>
-              Free Forever
+              No code required
             </span>
             <span className="flex items-center gap-2">
               <svg
-                className="w-4 h-4 text-orange-500"
+                className="w-4 h-4 text-gray-400"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -105,12 +89,12 @@ export const HeroSection: React.FC = () => {
 
         {/* Hero Display Image */}
         <div className="relative flex justify-center lg:justify-end mt-8 lg:mt-0">
-          <div className="absolute -z-10 w-64 h-64 sm:w-72 sm:h-72 bg-orange-600/20 blur-[100px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute -z-10 w-64 h-64 sm:w-72 sm:h-72 bg-white/[0.03] blur-[100px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
 
           {/* Landing Page Display Image - Transparent background, no container */}
           <div className="relative w-full max-w-[300px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] lg:-ml-4">
             <Image
-              src="/landing-page-display-3.png"
+              src="/landing-page-display.png"
               alt="ServiceLink Profile Preview"
               width={450}
               height={900}
@@ -160,7 +144,7 @@ export const HeroSection: React.FC = () => {
             >
               <div className="bg-neutral-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl border border-neutral-700 min-w-[140px] sm:min-w-[160px]">
                 <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-500 rounded-lg flex items-center justify-center">
                     <svg
                       className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                       fill="currentColor"

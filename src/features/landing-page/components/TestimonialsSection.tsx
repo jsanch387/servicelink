@@ -1,26 +1,27 @@
+import { GlassCard } from '@/components/shared';
 import React from 'react';
 
 const testimonials = [
   {
-    name: 'Mike Aris',
-    business: 'Premium Auto Detail',
+    name: 'Mike A.',
+    business: 'Detailer',
     initials: 'MA',
     content:
-      'Service Link changed my mobile detailing business. I used to get DMs all day asking "Where are you based?" and "How much?". Now I just point them to my link and the calls start coming in.',
+      'Just one link in my bio, customers see my services and book. No more back and forth DMs.',
   },
   {
-    name: 'Carlos R.',
-    business: 'Elite Detailing Co',
-    initials: 'CR',
+    name: 'Sarah K.',
+    business: 'Pressure Washing',
+    initials: 'SK',
     content:
-      'Setting up a website was too much work and expensive. This literally took 3 minutes and looks better than any $2,000 custom job. My booking rate increased by 40% after adding it to my bio.',
+      'Setup took 2 minutes. My clients love how clean it looks. Bookings went up right away.',
   },
   {
-    name: 'James T.',
-    business: 'Black Label Detailing',
-    initials: 'JT',
+    name: 'David M.',
+    business: 'Lawn Care',
+    initials: 'DM',
     content:
-      "The verification badge and clean cover photo make me look like a top-tier company. I've noticed customers aren't questioning my prices as much anymore, and I spend way less time answering basic questions.",
+      'Finally looks professional without paying for a full website. Exactly what I needed.',
   },
 ];
 
@@ -28,37 +29,84 @@ export const TestimonialsSection: React.FC = () => {
   return (
     <section
       id="testimonials"
-      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 bg-white/[0.02]"
+      className="relative py-12 sm:py-8 px-4 sm:px-6 overflow-hidden border-t border-b border-white/[0.08]"
     >
-      <div className="max-w-7xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-10 sm:mb-12 md:mb-16 tracking-tight">
-          Trusted by 2,000+ Pros
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+      {/* Subtle background texture */}
+      <div
+        className="absolute inset-0 -z-10 opacity-[0.015]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+          backgroundSize: '32px 32px',
+        }}
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 -z-10 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent"
+        aria-hidden
+      />
+
+      <div className="max-w-6xl mx-auto">
+        <header className="text-center mb-8 sm:mb-10">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
+            Testimonials
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
+            Trusted by service pros
+          </h2>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
           {testimonials.map((testimonial, index) => (
-            <div
+            <GlassCard
               key={index}
-              className={`bg-white/5 backdrop-blur-xl p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/10 text-left ${
-                index === 1 ? 'md:translate-y-6' : ''
-              }`}
+              padding="md"
+              rounded="rounded-2xl"
+              showBlur={false}
+              className="h-full min-h-[200px] flex flex-col group hover:border-white/15 transition-colors duration-300 !pt-4 !px-5 sm:!px-6 !pb-5"
             >
-              <p className="text-gray-300 italic mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base">
-                &ldquo;{testimonial.content}&rdquo;
-              </p>
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-neutral-800 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-orange-400 text-sm sm:text-base">
-                  {testimonial.initials}
-                </div>
-                <div>
-                  <p className="font-bold text-white text-sm sm:text-base">
-                    {testimonial.name}
-                  </p>
-                  <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase tracking-widest font-black">
-                    {testimonial.business}
-                  </p>
+              <div className="flex flex-col flex-1 min-h-0">
+                {/* Decorative quote */}
+                <span
+                  className="block text-3xl font-serif text-white/[0.06] leading-none mb-1 select-none flex-shrink-0"
+                  aria-hidden
+                >
+                  &ldquo;
+                </span>
+                <p className="text-gray-300 text-[15px] sm:text-base leading-[1.6] mb-4 flex-1 min-h-0">
+                  {testimonial.content}
+                </p>
+                <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.08] flex-shrink-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center font-semibold text-gray-400 text-sm tracking-tight">
+                      {testimonial.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-white text-sm truncate">
+                        {testimonial.name}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
+                        {testimonial.business}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className="flex gap-px text-amber-400 flex-shrink-0"
+                    aria-hidden
+                  >
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            </GlassCard>
           ))}
         </div>
       </div>

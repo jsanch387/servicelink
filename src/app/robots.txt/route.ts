@@ -8,20 +8,18 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
   const robotsTxt = `User-agent: *
 Allow: /
-Allow: /[business-slug]$
+Allow: /signup
+Allow: /login
 Disallow: /dashboard/
 Disallow: /auth/
 Disallow: /api/
 Disallow: /settings/
 Disallow: /waitlist/
 
-# Sitemap
-Sitemap: https://myservicelink.app/sitemap.xml
-
-# Crawl delay (optional)
-Crawl-delay: 1`;
+Sitemap: ${baseUrl}/sitemap.xml`;
 
   return new NextResponse(robotsTxt, {
     headers: {

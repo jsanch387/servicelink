@@ -69,8 +69,8 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         />
       )}
 
-      {/* Content with z-index to appear above blur */}
-      <div className="relative z-10">{children}</div>
+      {/* Content with z-index to appear above blur; flex so children can stretch when card has flex-col */}
+      <div className="relative z-10 flex flex-1 min-h-0 flex-col">{children}</div>
     </div>
   );
 };

@@ -10,7 +10,7 @@ export const PricingCTASection: React.FC = () => {
   return (
     <section
       id="pricing"
-      className="py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-[var(--dashboard-bg)]"
+      className="py-16 sm:py-24 md:py-32 px-4 sm:px-6"
     >
       <div className="max-w-4xl mx-auto text-center bg-white/5 backdrop-blur-xl p-6 sm:p-8 md:p-12 lg:p-16 xl:p-24 rounded-3xl sm:rounded-[3rem] md:rounded-[4rem] border border-orange-500/20 relative overflow-hidden shadow-3xl">
         {/* Background Glow */}
@@ -39,7 +39,7 @@ export const PricingCTASection: React.FC = () => {
           {/* Slug Checker Input */}
           <div className="flex items-center bg-white/5 backdrop-blur-xl p-2 sm:p-2.5 md:p-3 rounded-xl sm:rounded-2xl border border-white/10 w-full max-w-md shadow-inner">
             <span className="pl-2 sm:pl-3 md:pl-4 text-gray-500 font-bold text-xs sm:text-sm">
-              servicelink.app/
+              myservicelink.app/
             </span>
             <input
               type="text"
@@ -65,7 +65,7 @@ export const PricingCTASection: React.FC = () => {
             size="lg"
             className="w-full max-w-sm py-3 sm:py-4 md:py-5 bg-white text-black rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl hover:scale-105 transition-all shadow-2xl"
           >
-            Create My Free Profile
+            Create My Profile
           </Button>
 
           {/* Trust Badge */}

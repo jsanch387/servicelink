@@ -1,75 +1,87 @@
-import { CheckCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { GlassCard } from '@/components/shared';
+
+const frictionItems = [
+  '"DM me for prices" — confusing for customers',
+  'Sending price lists manually, over and over',
+  'Customers don\'t know your location or services',
+  'Missed DMs and texts mean lost bookings',
+];
+
+const solutionItems = [
+  'One professional link — your storefront',
+  'Services and prices clear at a glance',
+  'Service area and contact visible',
+  'Book instantly — no back-and-forth',
+];
 
 export const ProblemSolutionSection: React.FC = () => {
   return (
     <section
       id="problem"
-      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 bg-white/[0.01] border-t border-white/5"
+      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-white/[0.06]"
     >
-      <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-10 sm:mb-12 md:mb-16 tracking-tight">
-          Built for Service Pros
-        </h2>
+      <div className="max-w-6xl mx-auto">
+        <header className="text-center mb-12 sm:mb-14">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
+            Built for service pros
+          </p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-white tracking-tight">
+            Less friction. More bookings.
+          </h2>
+        </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 text-left">
           {/* The Friction */}
-          <div className="bg-white/5 backdrop-blur-xl p-8 sm:p-10 rounded-3xl border border-red-500/10">
-            <h4 className="text-red-400 font-bold mb-4 sm:mb-6 flex items-center gap-2 uppercase tracking-widest text-xs sm:text-sm">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              The Friction
-            </h4>
-            <ul className="space-y-4 sm:space-y-6 text-gray-400 text-sm sm:text-base">
-              <li className="flex gap-3">
-                <span>•</span>
-                <span>&quot;DM me for prices&quot; (confusing)</span>
-              </li>
-              <li className="flex gap-3">
-                <span>•</span>
-                <span>Sending price lists manually</span>
-              </li>
-              <li className="flex gap-3">
-                <span>•</span>
-                <span>Customers don&apos;t know your location</span>
-              </li>
-              <li className="flex gap-3">
-                <span>•</span>
-                <span>Missed DMs = Lost Money</span>
-              </li>
+          <GlassCard
+            padding="lg"
+            rounded="rounded-2xl"
+            showBlur={false}
+            className="border-white/[0.08]"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <XCircleIcon className="w-5 h-5 text-red-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                The friction
+              </h3>
+            </div>
+            <ul className="space-y-3 sm:space-y-4">
+              {frictionItems.map((item, i) => (
+                <li key={i} className="flex gap-3 text-gray-400 text-sm sm:text-base leading-relaxed">
+                  <span className="text-gray-500 mt-1">•</span>
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
-          </div>
+          </GlassCard>
 
-          {/* Service Link Solution */}
-          <div className="bg-white/5 backdrop-blur-xl p-8 sm:p-10 rounded-3xl border border-green-500/10">
-            <h4 className="text-green-400 font-bold mb-4 sm:mb-6 flex items-center gap-2 uppercase tracking-widest text-xs sm:text-sm">
-              <CheckCircleIcon className="w-4 h-4" />
-              ServiceLink
-            </h4>
-            <ul className="space-y-4 sm:space-y-6 text-gray-200 text-sm sm:text-base">
-              <li className="flex gap-3">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Professional storefront link</span>
-              </li>
-              <li className="flex gap-3">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Automatic pricing & service layout</span>
-              </li>
-              <li className="flex gap-3">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>Visible service area & contact buttons</span>
-              </li>
-              <li className="flex gap-3">
-                <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                <span>High-converting mobile landing page</span>
-              </li>
+          {/* The Solution */}
+          <GlassCard
+            padding="lg"
+            rounded="rounded-2xl"
+            showBlur={false}
+            className="border-white/[0.08]"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                <CheckCircleIcon className="w-5 h-5 text-green-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                With ServiceLink
+              </h3>
+            </div>
+            <ul className="space-y-3 sm:space-y-4">
+              {solutionItems.map((item, i) => (
+                <li key={i} className="flex gap-3 text-gray-300 text-sm sm:text-base leading-relaxed">
+                  <CheckCircleIcon className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
-          </div>
+          </GlassCard>
         </div>
       </div>
     </section>

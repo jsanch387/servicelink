@@ -59,16 +59,18 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ['400', '500', '600', '700', '800'],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  ),
+  metadataBase: new URL(siteUrl),
   title: {
-    default: 'ServiceLink - Your Business. One Beautiful Link.',
+    default:
+      'ServiceLink | One Link for Your Service Business — Get Booked Instantly',
     template: '%s | ServiceLink',
   },
   description:
-    'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link. Better than Linktree, built for service businesses.',
+    'Create a professional booking link for your service business. Share one link—myservicelink.app/yourbusiness—and let customers see your services and book instantly. Built for detailers, pressure washers, lawn care, and service pros.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -78,14 +80,19 @@ export const metadata: Metadata = {
     apple: [{ url: '/favicon.png', sizes: '180x180', type: 'image/png' }],
   },
   keywords: [
-    'business profile',
-    'service business',
-    'professional profile',
-    'business link',
-    'service directory',
-    'small business website',
+    'booking link for business',
+    'service business link',
+    'myservicelink',
+    'get booked',
+    'service pros',
+    'detailer booking',
+    'pressure washing booking',
+    'lawn care booking',
+    'professional booking link',
+    'one link business',
+    'service business website alternative',
   ],
-  authors: [{ name: 'ServiceLink' }],
+  authors: [{ name: 'ServiceLink', url: siteUrl }],
   creator: 'ServiceLink',
   publisher: 'ServiceLink',
   robots: {
@@ -99,30 +106,36 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Link previews (Facebook, LinkedIn, iMessage, Slack): title, description, image from here (public/open-graph.png).
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://servicelink.app',
+    url: siteUrl,
     siteName: 'ServiceLink',
-    title: 'ServiceLink - Your Business. One Beautiful Link.',
+    title:
+      'ServiceLink | One Link for Your Service Business — Get Booked Instantly',
     description:
-      'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link.',
+      'Create a professional booking link. Share one link and let customers see your services and book instantly. Built for service pros.',
     images: [
       {
-        url: '/og-image.jpg', // You can add this later
+        url: `${siteUrl}/open-graph.png`,
         width: 1200,
         height: 630,
-        alt: 'ServiceLink - Professional Business Profiles',
+        alt: 'ServiceLink — Your business, ready to book.',
+        type: 'image/png',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ServiceLink - Your Business. One Beautiful Link.',
+    title:
+      'ServiceLink | One Link for Your Service Business — Get Booked Instantly',
     description:
-      'Stop wasting money on expensive websites. Get a stunning business profile that lets customers call you directly from one beautiful link.',
-    images: ['/og-image.jpg'], // You can add this later
-    creator: '@servicelink', // Update with your actual Twitter handle
+      'Create a professional booking link. Share one link and let customers see your services and book instantly.',
+    images: [`${siteUrl}/open-graph.png`],
+  },
+  alternates: {
+    canonical: siteUrl,
   },
 };
 

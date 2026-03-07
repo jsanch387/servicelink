@@ -50,33 +50,18 @@ export const Navigation: React.FC = () => {
           </button>
         </div>
 
-        {/* Desktop Auth Buttons */}
+        {/* Desktop Auth Buttons — shared Button variants only */}
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated ? (
-            <Button
-              href={ROUTES.DASHBOARD.MAIN}
-              variant="primary"
-              size="sm"
-              className="px-6 py-2.5 rounded-full font-bold text-sm hover:scale-105 transition-all"
-            >
+            <Button href={ROUTES.DASHBOARD.MAIN} variant="secondary" size="md">
               Dashboard
             </Button>
           ) : (
             <>
-              <Button
-                href={ROUTES.AUTH.LOGIN}
-                variant="secondary"
-                size="sm"
-                className="px-6 py-2.5 rounded-full font-bold text-sm hover:scale-105 transition-all"
-              >
+              <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="md">
                 Login
               </Button>
-              <Button
-                href={ROUTES.AUTH.SIGNUP}
-                variant="primary"
-                size="sm"
-                className="px-6 py-2.5 bg-white text-black rounded-full font-bold text-sm hover:scale-105 transition-all"
-              >
+              <Button href={ROUTES.AUTH.SIGNUP} variant="inverse" size="md">
                 Sign Up
               </Button>
             </>
@@ -99,29 +84,29 @@ export const Navigation: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Navigation Menu */}
+      {/* Mobile Navigation Menu - touch-friendly buttons matching auth pages */}
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]">
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-4 py-5 space-y-1">
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="text-gray-300 hover:text-white block w-full text-left text-base font-medium transition-colors"
+              className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
             >
               How it Works
             </button>
             <button
               onClick={() => scrollToSection('problem')}
-              className="text-gray-300 hover:text-white block w-full text-left text-base font-medium transition-colors"
+              className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
             >
               The Problem
             </button>
-            <div className="pt-4 border-t border-[var(--dashboard-border)] space-y-2">
+            <div className="pt-5 mt-4 border-t border-[var(--dashboard-border)] space-y-3">
               {isAuthenticated ? (
                 <Button
                   href={ROUTES.DASHBOARD.MAIN}
-                  variant="primary"
-                  size="sm"
-                  className="w-full justify-center rounded-full"
+                  variant="secondary"
+                  size="md"
+                  fullWidth
                   onClick={closeMobileMenu}
                 >
                   Dashboard
@@ -131,17 +116,17 @@ export const Navigation: React.FC = () => {
                   <Button
                     href={ROUTES.AUTH.LOGIN}
                     variant="secondary"
-                    size="sm"
-                    className="w-full justify-center rounded-full"
+                    size="md"
+                    fullWidth
                     onClick={closeMobileMenu}
                   >
                     Login
                   </Button>
                   <Button
                     href={ROUTES.AUTH.SIGNUP}
-                    variant="primary"
-                    size="sm"
-                    className="w-full justify-center rounded-full bg-white text-black"
+                    variant="inverse"
+                    size="md"
+                    fullWidth
                     onClick={closeMobileMenu}
                   >
                     Sign Up

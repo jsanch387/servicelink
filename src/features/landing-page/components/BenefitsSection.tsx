@@ -11,7 +11,7 @@ const benefits = [
   {
     title: 'Save Money',
     description:
-      'Stop paying $200+ per month for websites. Get everything you need for free with ServiceLink.',
+      'Stop paying $200+ per month for websites. Get everything you need with simple, transparent pricing.',
     icon: <CurrencyDollarIcon className="h-6 w-6" />,
     color: 'from-green-500 to-emerald-600',
   },
@@ -33,7 +33,7 @@ const benefits = [
 
 const comparison = [
   { feature: 'Setup Time', serviceLink: '5 minutes', traditional: '2-4 weeks' },
-  { feature: 'Monthly Cost', serviceLink: 'Free', traditional: '$200+' },
+  { feature: 'Monthly Cost', serviceLink: 'Simple pricing', traditional: '$200+' },
   {
     feature: 'Mobile Friendly',
     serviceLink: 'Perfect',
@@ -168,17 +168,13 @@ export const BenefitsSection: React.FC = () => {
                   size="lg"
                   className="px-8 py-4 text-lg font-bold shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95"
                 >
-                  Get Your Free Business Profile
+                  Get Your Business Profile
                 </Button>
 
                 <div className="flex flex-wrap justify-center gap-6 text-gray-300 text-sm mt-6">
                   <span className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                    Completely Free
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                    No Credit Card
+                    No credit card to start
                   </span>
                   <span className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
