@@ -34,14 +34,21 @@ export const ForgotPasswordForm: React.FC = () => {
     setSent(true);
   };
 
+  const layoutClass =
+    'min-h-[100dvh] bg-neutral-900 flex items-center justify-center py-6 px-4 pb-[env(safe-area-inset-bottom)] sm:py-8 sm:px-6 md:py-10 lg:py-12 lg:px-8';
+  const containerClass =
+    'w-full max-w-[min(100%,26rem)] sm:max-w-[28rem] md:max-w-[30rem]';
+  const inputSizeClass =
+    'py-3.5 px-4 text-base min-h-[48px] sm:min-h-[52px] rounded-xl';
+
   if (sent) {
     return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-6 text-left">
-          <h2 className="text-2xl font-semibold text-white tracking-tight">
+      <div className={layoutClass}>
+        <div className={`${containerClass} space-y-6 sm:space-y-8 text-left`}>
+          <h1 className="text-2xl font-semibold text-white tracking-tight sm:text-3xl md:text-4xl">
             Check your email
-          </h2>
-          <p className="text-sm text-gray-400">
+          </h1>
+          <p className="text-base text-gray-400 leading-relaxed">
             We sent a password reset link to{' '}
             <strong className="text-gray-300">{email}</strong>. Click the link
             to set a new password. If you don&apos;t see it, check your spam
@@ -49,7 +56,7 @@ export const ForgotPasswordForm: React.FC = () => {
           </p>
           <Link
             href={ROUTES.AUTH.LOGIN}
-            className="inline-block text-sm font-medium text-orange-400 hover:text-orange-300"
+            className="inline-block text-base font-medium text-orange-400 hover:text-orange-300"
           >
             Back to sign in
           </Link>
@@ -59,22 +66,22 @@ export const ForgotPasswordForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className={layoutClass}>
+      <div className={`${containerClass} space-y-6 sm:space-y-8`}>
         <div className="text-left">
-          <h2 className="text-2xl font-semibold text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-white tracking-tight sm:text-3xl md:text-4xl">
             Forgot your password?
-          </h2>
-          <p className="mt-1.5 text-sm text-gray-400">
+          </h1>
+          <p className="mt-2 text-base text-gray-400 sm:mt-2.5">
             Enter your email and we&apos;ll send you a link to reset your
             password.
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+              <p className="text-red-400 text-base">{error}</p>
             </div>
           )}
 
@@ -86,12 +93,13 @@ export const ForgotPasswordForm: React.FC = () => {
             placeholder="Enter your email"
             autoComplete="email"
             required
+            inputClassName={inputSizeClass}
           />
 
           <Button
             type="submit"
-            variant="primary"
-            size="md"
+            variant="inverse"
+            size="lg"
             fullWidth
             loading={isLoading}
             disabled={isLoading}
@@ -99,7 +107,7 @@ export const ForgotPasswordForm: React.FC = () => {
             {isLoading ? 'Sending...' : 'Send reset link'}
           </Button>
 
-          <p className="text-center text-sm text-gray-400">
+          <p className="text-center text-base text-gray-400">
             <Link
               href={ROUTES.AUTH.LOGIN}
               className="font-medium text-orange-400 hover:text-orange-300"

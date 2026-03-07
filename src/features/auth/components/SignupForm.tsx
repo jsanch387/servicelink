@@ -85,14 +85,17 @@ export const SignupForm: React.FC = () => {
     }
   };
 
+  const inputSizeClass =
+    'py-3.5 px-4 text-base min-h-[48px] sm:min-h-[52px] rounded-xl';
+
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-[100dvh] bg-neutral-900 flex items-center justify-center py-6 px-4 pb-[env(safe-area-inset-bottom)] sm:py-8 sm:px-6 md:py-10 lg:py-12 lg:px-8">
+      <div className="w-full max-w-[min(100%,26rem)] sm:max-w-[28rem] md:max-w-[30rem] space-y-6 sm:space-y-8">
         <div className="text-left">
-          <h2 className="text-2xl font-semibold text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-white tracking-tight sm:text-3xl md:text-4xl">
             Create your account
-          </h2>
-          <p className="mt-1.5 text-sm text-gray-400">
+          </h1>
+          <p className="mt-2 text-base text-gray-400 sm:mt-2.5 sm:text-base">
             Already have an account?{' '}
             <a
               href={ROUTES.AUTH.LOGIN}
@@ -103,22 +106,22 @@ export const SignupForm: React.FC = () => {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
           {authError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3">
-              <p className="text-red-400 text-sm">{authError}</p>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 sm:p-4">
+              <p className="text-red-400 text-base sm:text-base">{authError}</p>
             </div>
           )}
 
           <Button
             type="button"
             variant="secondary"
-            size="md"
+            size="lg"
             fullWidth
             loading={googleLoading}
             disabled={isLoading || googleLoading}
             onClick={handleGoogleSignIn}
-            icon={<GoogleIcon className="h-4 w-4" />}
+            icon={<GoogleIcon className="h-5 w-5" />}
             iconPosition="left"
           >
             {googleLoading ? 'Redirecting...' : 'Continue with Google'}
@@ -131,14 +134,14 @@ export const SignupForm: React.FC = () => {
             >
               <div className="w-full border-t border-gray-600" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-neutral-900 px-2 text-gray-400">
+            <div className="relative flex justify-center text-sm sm:text-base">
+              <span className="bg-neutral-900 px-3 text-gray-400">
                 Or sign up with email
               </span>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5 sm:space-y-6">
             <Input
               label="Email address"
               type="email"
@@ -148,6 +151,7 @@ export const SignupForm: React.FC = () => {
               placeholder="Enter your email"
               autoComplete="email"
               required
+              inputClassName={inputSizeClass}
             />
 
             <Input
@@ -159,6 +163,7 @@ export const SignupForm: React.FC = () => {
               placeholder="Create a strong password"
               autoComplete="new-password"
               required
+              inputClassName={inputSizeClass}
             />
 
             <Input
@@ -170,13 +175,14 @@ export const SignupForm: React.FC = () => {
               placeholder="Confirm your password"
               autoComplete="new-password"
               required
+              inputClassName={inputSizeClass}
             />
           </div>
 
           <Button
             type="submit"
-            variant="primary"
-            size="md"
+            variant="inverse"
+            size="lg"
             fullWidth
             loading={isLoading}
             disabled={isLoading}
@@ -185,18 +191,18 @@ export const SignupForm: React.FC = () => {
           </Button>
 
           <div className="text-center">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
               By creating an account, you agree to our{' '}
               <Link
                 href="/terms"
-                className="text-orange-400 hover:text-orange-300"
+                className="font-medium text-orange-400 hover:text-orange-300"
               >
                 Terms of Service
               </Link>{' '}
               and{' '}
               <Link
                 href="/privacy"
-                className="text-orange-400 hover:text-orange-300"
+                className="font-medium text-orange-400 hover:text-orange-300"
               >
                 Privacy Policy
               </Link>

@@ -31,7 +31,7 @@ export async function GET() {
       return new NextResponse('Error generating sitemap', { status: 500 });
     }
 
-    const baseUrl = 'https://myservicelink.app';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
     const currentDate = new Date().toISOString();
 
     // Generate sitemap XML
@@ -54,6 +54,18 @@ export async function GET() {
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/terms</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/privacy</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
   </url>
 ${(profiles || [])
   .map(
