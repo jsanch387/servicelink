@@ -119,6 +119,35 @@ export type Database = {
           updated_at?: string;
         };
       };
+      service_addons: {
+        Row: {
+          id: string;
+          business_id: string;
+          service_id: string;
+          name: string;
+          price_cents: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          service_id: string;
+          name: string;
+          price_cents?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          service_id?: string;
+          name?: string;
+          price_cents?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       business_services: {
         Row: {
           id: string;

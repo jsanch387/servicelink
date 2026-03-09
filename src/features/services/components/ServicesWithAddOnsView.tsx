@@ -1,5 +1,6 @@
 'use client';
 
+import type { AddOnRow } from '@/features/services/components/add-ons/addOnTypes';
 import type { ServiceRow } from '@/features/services/types/services';
 import { useState } from 'react';
 import { ServicesContent } from './ServicesContent';
@@ -17,6 +18,10 @@ export interface ServicesWithAddOnsViewProps {
   fetchError?: string | null;
   /** Map of service ID → add-on count. */
   addOnCounts?: Record<string, number>;
+  /** Add-ons from database (for Add-ons tab). */
+  initialAddOns?: AddOnRow[];
+  /** Error from add-ons fetch. */
+  addOnsFetchError?: string | null;
 }
 
 /**
@@ -27,6 +32,8 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
   initialServices,
   fetchError,
   addOnCounts,
+  initialAddOns = [],
+  addOnsFetchError,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('services');
 
@@ -62,7 +69,10 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
           addOnCounts={addOnCounts}
         />
       ) : (
-        <AddOnsContent />
+        <AddOnsContent
+          initialAddOns={initialAddOns}
+          fetchError={addOnsFetchError}
+        />
       )}
     </div>
   );

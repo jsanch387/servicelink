@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-unused-vars */
 /**
  * Mock data for the service details + add-ons flow (UI prototype only).
  * Not connected to database.

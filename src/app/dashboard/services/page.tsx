@@ -8,6 +8,7 @@
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import {
   getAddOnCounts,
+  getAddOns,
   getServices,
   ServicesWithAddOnsView,
 } from '@/features/services';
@@ -38,18 +39,24 @@ export default async function ServicesPage() {
     redirect('/dashboard');
   }
 
-  const result = await getServices(businessProfile.id);
-  const services = result.data ?? [];
-  const addOnCounts = await getAddOnCounts(
-    businessProfile.id,
-    services.map(s => s.id)
-  );
+  const servicesResult = await getServices(businessProfile.id);
+  const services = servicesResult.data ?? [];
+
+  const [addOnsResult, addOnCounts] = await Promise.all([
+    getAddOns(businessProfile.id),
+    getAddOnCounts(
+      businessProfile.id,
+      services.map(s => s.id)
+    ),
+  ]);
 
   return (
     <ServicesWithAddOnsView
       initialServices={services}
-      fetchError={result.success ? null : result.error}
+      fetchError={servicesResult.success ? null : servicesResult.error}
       addOnCounts={addOnCounts}
+      initialAddOns={addOnsResult.data ?? []}
+      addOnsFetchError={addOnsResult.success ? null : addOnsResult.error}
     />
   );
 }

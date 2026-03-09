@@ -9,6 +9,7 @@ export { deleteServiceAction } from './actions/deleteService';
 export { saveServicesOrderAction } from './actions/saveServicesOrder';
 export { updateServiceAction } from './actions/updateService';
 export { updateServiceIsActiveAction } from './actions/updateServiceIsActive';
+export { getAddOns } from './add-ons';
 export { getAddOnCounts } from './api/getAddOnCounts';
 export { getServices } from './api/getServices';
 export { ServicesContent } from './components/ServicesContent';
@@ -26,3 +27,4 @@ export type {
   UpdateServicesOrderResult,
   UpdateServiceResult,
 } from './types/services';
+export type { GetAddOnsResult } from './add-ons';

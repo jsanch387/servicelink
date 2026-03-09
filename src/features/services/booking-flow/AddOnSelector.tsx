@@ -6,6 +6,7 @@ import type { ServiceAddOn } from './types';
 interface AddOnSelectorProps {
   addOns: ServiceAddOn[];
   selectedIds: Set<string>;
+  // eslint-disable-next-line no-unused-vars
   onToggle: (id: string) => void;
 }
 

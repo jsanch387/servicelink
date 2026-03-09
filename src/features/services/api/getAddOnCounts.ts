@@ -1,22 +1,39 @@
 /**
  * Services API - Fetch add-on counts per service.
  * Server-only. Returns number of add-ons assigned to each service.
- *
- * TODO: When business_service_addons table exists, replace mock with real query.
  */
 
+import { createSupabaseServerClient } from '@/libs/supabase/server';
+
 /**
- * Returns a map of service ID → add-on count.
- * Mock: returns 0 for all until DB table exists.
+ * Returns a map of service ID → add-on count from service_addons.
  */
 export async function getAddOnCounts(
-  _businessId: string,
+  businessId: string,
   serviceIds: string[]
 ): Promise<Record<string, number>> {
-  // TODO: Query business_service_addons and count per service_id
-  const counts: Record<string, number> = {};
-  for (let i = 0; i < serviceIds.length; i++) {
-    counts[serviceIds[i]] = 0;
+  if (serviceIds.length === 0) return {};
+
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    const { data, error } = await supabase
+      .from('service_addons')
+      .select('service_id')
+      .eq('business_id', businessId)
+      .in('service_id', serviceIds);
+
+    if (error) return Object.fromEntries(serviceIds.map(id => [id, 0]));
+
+    const counts: Record<string, number> = Object.fromEntries(
+      serviceIds.map(id => [id, 0])
+    );
+    const rows = (data ?? []) as { service_id: string }[];
+    for (const row of rows) {
+      counts[row.service_id] = (counts[row.service_id] ?? 0) + 1;
+    }
+    return counts;
+  } catch {
+    return Object.fromEntries(serviceIds.map(id => [id, 0]));
   }
-  return counts;
 }

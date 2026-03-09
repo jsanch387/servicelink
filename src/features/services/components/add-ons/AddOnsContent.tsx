@@ -2,19 +2,34 @@
 
 import { Button, Modal } from '@/components/shared';
 import { PlusIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AddOnManagementCard } from './AddOnManagementCard';
 import { EditAddOnModal } from './EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './addOnTypes';
-import { MOCK_ADDONS_POOL, nextAddOnId } from './mockAddOnsPool';
+import { nextAddOnId } from './mockAddOnsPool';
+
+export interface AddOnsContentProps {
+  /** Add-ons loaded from database. */
+  initialAddOns?: AddOnRow[];
+  /** Error from fetch (e.g. failed to load add-ons). */
+  fetchError?: string | null;
+}
 
 /**
- * Add-ons tab content. Manages the global add-on pool.
- * Add, edit, delete add-ons. No service selector.
+ * Add-ons tab content. Displays add-ons from database.
+ * Add, edit, delete (create/update/delete API integration pending).
  */
-export const AddOnsContent: React.FC = () => {
-  const [addOns, setAddOns] = useState<AddOnRow[]>(() => [...MOCK_ADDONS_POOL]);
+export const AddOnsContent: React.FC<AddOnsContentProps> = ({
+  initialAddOns = [],
+  fetchError = null,
+}) => {
+  const [addOns, setAddOns] = useState<AddOnRow[]>(initialAddOns);
   const [editingAddOn, setEditingAddOn] = useState<AddOnRow | null>(null);
+
+  useEffect(() => {
+    setAddOns(initialAddOns);
+  }, [initialAddOns]);
+
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [addOnToDelete, setAddOnToDelete] = useState<AddOnRow | null>(null);
 
@@ -76,7 +91,15 @@ export const AddOnsContent: React.FC = () => {
   return (
     <main className="flex-1 py-4 sm:py-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full pb-[max(2rem,env(safe-area-inset-bottom))] sm:pb-8">
       <div className="max-w-2xl mx-auto w-full min-w-0 pt-0 sm:pt-6">
-        {addOns.length === 0 ? (
+        {fetchError ? (
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 sm:p-8 text-center">
+            <p className="text-red-400 font-medium">Could not load add-ons</p>
+            <p className="text-gray-400 text-sm mt-2">{fetchError}</p>
+            <p className="text-gray-500 text-xs mt-4">
+              Refresh the page or try again later.
+            </p>
+          </div>
+        ) : addOns.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-10 text-center">
             <div className="flex justify-center">
               <div className="rounded-2xl bg-white/5 p-4">
@@ -87,9 +110,8 @@ export const AddOnsContent: React.FC = () => {
               No add-ons yet
             </h2>
             <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">
-              Add optional add-ons like &quot;Pet Hair Removal&quot; or
-              &quot;Headlight Restoration&quot; that customers can select when
-              booking. Then assign them to services when editing each service.
+              Add-ons are extras customers can add to a service. Create them
+              here, then pick which ones to offer when you edit each service.
             </p>
             <Button
               variant="inverse"

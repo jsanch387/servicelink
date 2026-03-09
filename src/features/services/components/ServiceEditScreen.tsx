@@ -171,12 +171,11 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
               Add-ons for this service
             </h2>
             <p className="text-sm text-gray-500 mb-4">
-              Select which add-ons customers can choose when booking this
-              service.
+              Pick which add-ons to offer with this service.
             </p>
             {addOnsPool.length === 0 ? (
               <p className="text-sm text-gray-500 mb-4">
-                No add-ons yet. Create add-ons in the Add-ons tab first.
+                No add-ons yet. Create some in the Add-ons tab first.
               </p>
             ) : null}
             <div
