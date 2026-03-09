@@ -64,9 +64,13 @@ add-ons/
 ├── README.md           # This file
 ├── api/
 │   ├── createAddOn.ts  # Insert into service_addons (pool)
+│   ├── updateAddOn.ts  # Update name, price_cents (updated_at via trigger)
+│   ├── deleteAddOn.ts  # Delete from service_addons (CASCADE clears assignments)
 │   └── getAddOns.ts    # Select from service_addons by business_id
 ├── actions/
-│   └── createAddOn.ts  # Server action (auth + business resolution → api)
+│   ├── createAddOn.ts
+│   ├── updateAddOn.ts
+│   └── deleteAddOn.ts
 └── (components live in components/add-ons/)
 ```
 
