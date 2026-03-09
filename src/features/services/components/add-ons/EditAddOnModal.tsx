@@ -74,11 +74,7 @@ export const EditAddOnModal: React.FC<EditAddOnModalProps> = ({
         name: nameTrim,
         price_cents: Math.round(priceNum * 100),
       };
-      if (addOn) {
-        onSave(addOn.id, data);
-      } else {
-        onSave(undefined, data);
-      }
+      onSave(addOn?.id, data);
     },
     [addOn, name, price, onSave]
   );

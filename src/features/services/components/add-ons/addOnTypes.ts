@@ -1,7 +1,6 @@
 /**
  * Add-on types for owner management UI.
- * Mirrors future DB schema (business_service_addons).
- * UI prototype: no backend yet.
+ * Add-ons live in service_addons pool; assignment to services via service_addon_assignments.
  */
 
 export interface AddOnRow {
@@ -9,8 +8,6 @@ export interface AddOnRow {
   name: string;
   price_cents: number;
   sort_order: number | null;
-  /** Optional; used when add-on was per-service (legacy). Pool add-ons omit this. */
-  service_id?: string;
 }
 
 export interface EditAddOnFormData {

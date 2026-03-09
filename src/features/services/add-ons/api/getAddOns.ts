@@ -1,6 +1,7 @@
 /**
  * Add-ons API - Fetch add-ons for a business.
  * Server-only; use from server components or route handlers.
+ * Returns add-ons from the business pool (no service assignment here).
  */
 
 import type { Database } from '@/libs/supabase/client';
@@ -22,12 +23,11 @@ function mapToAddOnRow(row: ServiceAddOnRow): AddOnRow {
     name: row.name,
     price_cents: row.price_cents ?? 0,
     sort_order: null,
-    service_id: row.service_id,
   };
 }
 
 /**
- * Fetches all add-ons for the given business.
+ * Fetches all add-ons in the business pool.
  * Ordered by created_at ascending.
  */
 export async function getAddOns(businessId: string): Promise<GetAddOnsResult> {

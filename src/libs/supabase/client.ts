@@ -123,7 +123,6 @@ export type Database = {
         Row: {
           id: string;
           business_id: string;
-          service_id: string;
           name: string;
           price_cents: number;
           created_at: string;
@@ -132,7 +131,6 @@ export type Database = {
         Insert: {
           id?: string;
           business_id: string;
-          service_id: string;
           name: string;
           price_cents?: number;
           created_at?: string;
@@ -141,11 +139,27 @@ export type Database = {
         Update: {
           id?: string;
           business_id?: string;
-          service_id?: string;
           name?: string;
           price_cents?: number;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      service_addon_assignments: {
+        Row: {
+          service_id: string;
+          addon_id: string;
+          created_at: string;
+        };
+        Insert: {
+          service_id: string;
+          addon_id: string;
+          created_at?: string;
+        };
+        Update: {
+          service_id?: string;
+          addon_id?: string;
+          created_at?: string;
         };
       };
       business_services: {

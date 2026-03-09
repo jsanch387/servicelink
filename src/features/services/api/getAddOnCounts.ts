@@ -1,15 +1,15 @@
 /**
  * Services API - Fetch add-on counts per service.
- * Server-only. Returns number of add-ons assigned to each service.
+ * Server-only. Returns number of add-ons assigned to each service (from business_service_addons).
  */
 
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 
 /**
- * Returns a map of service ID → add-on count from service_addons.
+ * Returns a map of service ID → add-on count from service_addon_assignments.
  */
 export async function getAddOnCounts(
-  businessId: string,
+  _businessId: string,
   serviceIds: string[]
 ): Promise<Record<string, number>> {
   if (serviceIds.length === 0) return {};
@@ -18,9 +18,8 @@ export async function getAddOnCounts(
     const supabase = await createSupabaseServerClient();
 
     const { data, error } = await supabase
-      .from('service_addons')
+      .from('service_addon_assignments')
       .select('service_id')
-      .eq('business_id', businessId)
       .in('service_id', serviceIds);
 
     if (error) return Object.fromEntries(serviceIds.map(id => [id, 0]));

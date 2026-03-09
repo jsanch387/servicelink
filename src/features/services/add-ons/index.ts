@@ -1,6 +1,7 @@
 /**
- * Add-ons feature - API and types.
+ * Add-ons feature - actions and types for client use.
+ * getAddOns is server-only; import from @/features/services.
  */
 
-export { getAddOns } from './api/getAddOns';
-export type { GetAddOnsResult } from './api/getAddOns';
+export { createAddOnAction } from './actions/createAddOn';
+export type { CreateAddOnPayload, CreateAddOnResult } from './api/createAddOn';

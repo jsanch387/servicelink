@@ -2,11 +2,12 @@
 
 import { Button, Modal } from '@/components/shared';
 import { PlusIcon, RectangleStackIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
+import { createAddOnAction } from '@/features/services/add-ons';
 import { AddOnManagementCard } from './AddOnManagementCard';
 import { EditAddOnModal } from './EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './addOnTypes';
-import { nextAddOnId } from './mockAddOnsPool';
 
 export interface AddOnsContentProps {
   /** Add-ons loaded from database. */
@@ -23,8 +24,11 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
   initialAddOns = [],
   fetchError = null,
 }) => {
+  const router = useRouter();
   const [addOns, setAddOns] = useState<AddOnRow[]>(initialAddOns);
   const [editingAddOn, setEditingAddOn] = useState<AddOnRow | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setAddOns(initialAddOns);
@@ -35,6 +39,7 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
 
   const handleAddAddOn = useCallback(() => {
     setEditingAddOn(null);
+    setSaveError(null);
     setIsAddFormOpen(true);
   }, []);
 
@@ -49,8 +54,9 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
   }, []);
 
   const handleSaveAddOn = useCallback(
-    (addOnId: string | undefined, data: EditAddOnFormData) => {
+    async (addOnId: string | undefined, data: EditAddOnFormData) => {
       if (addOnId) {
+        // TODO: Update add-on API
         setAddOns(prev =>
           prev.map(a =>
             a.id === addOnId
@@ -59,18 +65,29 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
           )
         );
         setEditingAddOn(null);
-      } else {
-        const newAddOn: AddOnRow = {
-          id: nextAddOnId(),
-          name: data.name,
-          price_cents: data.price_cents ?? 0,
-          sort_order: addOns.length,
-        };
-        setAddOns(prev => [...prev, newAddOn]);
+        return;
+      }
+
+      setSaveError(null);
+      setIsSaving(true);
+      const result = await createAddOnAction({
+        name: data.name,
+        price_cents: data.price_cents ?? 0,
+      });
+      setIsSaving(false);
+
+      if (result.success) {
+        const newAddOn = result.data;
+        if (newAddOn) {
+          setAddOns(prev => [...prev, newAddOn]);
+        }
         setIsAddFormOpen(false);
+        router.refresh();
+      } else {
+        setSaveError(result.error ?? 'Failed to create add-on.');
       }
     },
-    [addOns.length]
+    [router]
   );
 
   const handleDelete = useCallback(
@@ -158,8 +175,13 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
         <EditAddOnModal
           addOn={editingAddOn}
           showAddForm={isAddFormOpen}
-          onClose={handleCloseEdit}
+          saveError={saveError}
+          onClose={() => {
+            setSaveError(null);
+            handleCloseEdit();
+          }}
           onSave={handleSaveAddOn}
+          isSaving={isSaving}
         />
 
         <Modal
