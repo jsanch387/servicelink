@@ -14,6 +14,8 @@ interface BookFlowSwitchProps {
   businessId: string;
   businessSlug: string;
   serviceId?: string;
+  /** Comma-separated add-on IDs from service details page. */
+  addOnIds?: string;
   serviceName: string;
   servicePrice?: number;
   serviceDurationMinutes?: number;
@@ -31,6 +33,7 @@ export function BookFlowSwitch({
   businessId,
   businessSlug,
   serviceId,
+  addOnIds,
   serviceName,
   servicePrice,
   serviceDurationMinutes = 60,
@@ -44,6 +47,7 @@ export function BookFlowSwitch({
         businessId={businessId}
         businessSlug={businessSlug}
         serviceId={serviceId}
+        addOnIds={addOnIds}
         serviceName={serviceName || 'Booking'}
         serviceDurationMinutes={serviceDurationMinutes}
         servicePriceCents={servicePrice}

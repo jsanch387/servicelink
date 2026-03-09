@@ -10,6 +10,7 @@ export {
   getMockExistingBookingsForMonth,
 } from './mockData';
 export type {
+  AddOnDisplay,
   AvailabilityBookingPageProps,
   BookingSubmission,
   CustomerFormData,

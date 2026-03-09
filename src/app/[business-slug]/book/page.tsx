@@ -22,6 +22,7 @@ interface BookingRequestPageProps {
   }>;
   searchParams: Promise<{
     serviceId?: string;
+    addOnIds?: string;
   }>;
 }
 
@@ -106,7 +107,7 @@ export default async function BookingRequestPage({
   searchParams,
 }: BookingRequestPageProps) {
   const { 'business-slug': slug } = await params;
-  const { serviceId } = await searchParams;
+  const { serviceId, addOnIds } = await searchParams;
 
   // Fetch the business profile by slug
   const businessProfile = await fetchBusinessProfileBySlug(slug);
@@ -148,11 +149,17 @@ export default async function BookingRequestPage({
       <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <Link
-            href={`/${slug}`}
+            href={
+              serviceId?.trim()
+                ? `/${slug}/book/details?serviceId=${encodeURIComponent(serviceId.trim())}${addOnIds?.trim() ? `&addOnIds=${encodeURIComponent(addOnIds.trim())}` : ''}`
+                : `/${slug}`
+            }
             className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeftIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">Back to profile</span>
+            <span className="text-sm font-medium">
+              {serviceId?.trim() ? 'Back to service' : 'Back to profile'}
+            </span>
           </Link>
         </div>
       </div>
@@ -166,6 +173,7 @@ export default async function BookingRequestPage({
           businessId={businessProfile.id}
           businessSlug={businessProfile.business_slug || slug}
           serviceId={serviceId?.trim() ?? undefined}
+          addOnIds={addOnIds?.trim() || undefined}
           serviceName={serviceName}
           servicePrice={serviceDetails?.price ?? undefined}
           serviceDurationMinutes={serviceDurationMinutes}

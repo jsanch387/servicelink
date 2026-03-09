@@ -1,9 +1,10 @@
 'use client';
 
-import { Modal } from '@/components/shared';
+import { Button, Modal } from '@/components/shared';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   ArrowsUpDownIcon,
+  PlusIcon,
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 import React, { useCallback, useState } from 'react';
@@ -15,26 +16,14 @@ import { updateServiceIsActiveAction } from '../actions/updateServiceIsActive';
 import type { EditServiceFormData } from './EditServiceModal';
 import { EditServiceModal } from './EditServiceModal';
 
-/** Thick plus icon for Add service (more visible than Heroicons solid). */
-function BoldPlusIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      aria-hidden
-    >
-      <rect x="10" y="3" width="4" height="18" rx="1.5" />
-      <rect x="3" y="10" width="18" height="4" rx="1.5" />
-    </svg>
-  );
-}
 import { ServiceManagementCard } from './ServiceManagementCard';
 
 export interface ServicesContentProps {
   initialServices: ServiceRow[];
   /** When set, services failed to load; show error state instead of list. */
   fetchError?: string | null;
+  /** Map of service ID → add-on count. */
+  addOnCounts?: Record<string, number>;
 }
 
 /**
@@ -44,11 +33,11 @@ export interface ServicesContentProps {
 export const ServicesContent: React.FC<ServicesContentProps> = ({
   initialServices,
   fetchError = null,
+  addOnCounts,
 }) => {
   const [services, setServices] = useState<ServiceRow[]>(initialServices);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [editingService, setEditingService] = useState<ServiceRow | null>(null);
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -104,16 +93,8 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
     [services]
   );
 
-  const handleEdit = useCallback((service: ServiceRow) => {
-    setSaveError(null);
-    setToggleError(null);
-    setEditingService(service);
-    setIsAddServiceOpen(false);
-  }, []);
-
   const handleCloseEdit = useCallback(() => {
     if (!isSavingEdit) {
-      setEditingService(null);
       setIsAddServiceOpen(false);
       setSaveError(null);
     }
@@ -135,7 +116,6 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
           setServices(prev =>
             prev.map(s => (s.id === serviceId ? result.data! : s))
           );
-          setEditingService(null);
         } else {
           setSaveError(result.error ?? 'Failed to update service');
         }
@@ -163,7 +143,6 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const handleAddService = useCallback(() => {
     setSaveError(null);
     setToggleError(null);
-    setEditingService(null);
     setIsAddServiceOpen(true);
   }, []);
 
@@ -245,7 +224,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   }, []);
 
   return (
-    <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+    <main className="flex-1 py-4 sm:py-8 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full pb-[max(2rem,env(safe-area-inset-bottom))] sm:pb-8">
       <div className="max-w-2xl mx-auto w-full min-w-0 pt-0 sm:pt-6">
         {fetchError ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 sm:p-8 text-center">
@@ -256,7 +235,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             </p>
           </div>
         ) : services.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 sm:p-10 text-center">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-10 text-center">
             <div className="flex justify-center">
               <div className="rounded-2xl bg-white/5 p-4">
                 <RectangleStackIcon className="h-10 w-10 sm:h-12 sm:w-12 text-gray-500" />
@@ -266,45 +245,47 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
               No services yet
             </h2>
             <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">
-              Add services from your Business Profile. Then come back here to
-              reorder them, turn them on or off, and make quick edits.
+              Add your first service here. You can reorder them, turn them on or
+              off, and edit details anytime.
             </p>
-            <button
-              type="button"
+            <Button
+              variant="inverse"
+              size="lg"
               onClick={handleAddService}
-              className="mt-6 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-gray-100 text-black text-sm font-medium transition-all cursor-pointer"
+              icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
+              className="mt-6"
             >
-              <BoldPlusIcon className="h-4 w-4 text-emerald-500" />
               Add service
-            </button>
+            </Button>
           </div>
         ) : (
           <>
-            {/* Controls row: count + Add service + Sort Order / Finish Sorting */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-6 px-0.5">
+            {/* Controls row — mobile-first: stack on very small, wrap on larger */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-4 mb-6 px-0.5">
               <p className="text-white text-lg font-bold">
                 {services.length} Service
                 {services.length === 1 ? '' : 's'}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex gap-2">
                 {!isReorderMode && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="inverse"
+                    size="md"
                     onClick={handleAddService}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-gray-100 text-black text-sm font-medium transition-all cursor-pointer"
+                    icon={<PlusIcon className="h-4 w-4 text-emerald-500" />}
+                    className="flex-1 sm:flex-none"
                   >
-                    <BoldPlusIcon className="h-4 w-4 text-emerald-500" />
                     Add service
-                  </button>
+                  </Button>
                 )}
                 <button
                   type="button"
                   onClick={handleSortOrderClick}
                   disabled={isSavingOrder}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[44px] px-4 py-3 rounded-xl text-sm font-medium transition-all border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed touch-manipulation ${
                     isReorderMode
-                      ? 'bg-white/5 border-white/20 text-white hover:bg-white/10'
-                      : 'bg-[var(--dashboard-bg)] border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+                      ? 'bg-white/5 border-white/20 text-white hover:bg-white/10 active:bg-white/15'
+                      : 'bg-[var(--dashboard-bg)] border-white/10 text-gray-400 hover:text-white hover:border-white/20 active:text-white active:border-white/30'
                   }`}
                 >
                   <ArrowsUpDownIcon className="h-4 w-4" />
@@ -338,7 +319,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             )}
 
             {/* Services list — draggable in reorder mode */}
-            <ul className="space-y-4 list-none p-0 m-0">
+            <ul className="space-y-3 sm:space-y-4 list-none p-0 m-0">
               {services.map((service, index) => (
                 <li
                   key={`${service.id}-${index}`}
@@ -359,7 +340,6 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                     index={index}
                     isReorderMode={isReorderMode}
                     onToggleActive={handleToggleActive}
-                    onEdit={handleEdit}
                     onDelete={handleDelete}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
@@ -367,6 +347,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                     onMoveDown={handleMoveDown}
                     totalCount={services.length}
                     draggable={isReorderMode}
+                    addOnCount={addOnCounts?.[service.id]}
                   />
                 </li>
               ))}
@@ -375,7 +356,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         )}
 
         <EditServiceModal
-          service={editingService}
+          service={null}
           showAddForm={isAddServiceOpen}
           saveError={saveError}
           onClose={handleCloseEdit}
@@ -402,7 +383,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
               type="button"
               onClick={handleCancelDelete}
               disabled={isDeleting}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl text-base font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 active:bg-white/15 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               No
             </button>
@@ -410,7 +391,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
               type="button"
               onClick={handleConfirmDelete}
               disabled={isDeleting}
-              className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-white hover:bg-gray-100 text-black transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:flex-1 min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl text-base font-medium bg-white hover:bg-gray-100 active:bg-gray-200 text-black transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               {isDeleting ? 'Deleting…' : 'Yes'}
             </button>

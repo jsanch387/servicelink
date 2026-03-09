@@ -9,8 +9,11 @@ export { deleteServiceAction } from './actions/deleteService';
 export { saveServicesOrderAction } from './actions/saveServicesOrder';
 export { updateServiceAction } from './actions/updateService';
 export { updateServiceIsActiveAction } from './actions/updateServiceIsActive';
+export { getAddOnCounts } from './api/getAddOnCounts';
 export { getServices } from './api/getServices';
 export { ServicesContent } from './components/ServicesContent';
+export { ServicesWithAddOnsView } from './components/ServicesWithAddOnsView';
+export { ServiceEditScreen } from './components/ServiceEditScreen';
 export { ServicesLoadingSkeleton } from './components/ServicesLoadingSkeleton';
 export type {
   CreateServicePayload,

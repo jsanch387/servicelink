@@ -56,9 +56,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       ? service.duration_minutes / 60
       : (service.hours_to_complete ?? null);
 
-  const handleBookClick = () => {
+  const handleSelectClick = () => {
     if (businessSlug && service.id) {
-      router.push(`/${businessSlug}/book?serviceId=${service.id}`);
+      router.push(`/${businessSlug}/book/details?serviceId=${service.id}`);
     }
   };
   const formatPrice = (price: string | number) => {
@@ -155,11 +155,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
         {isPublic && !isEditable && businessSlug && service.id && (
           <button
-            onClick={handleBookClick}
+            onClick={handleSelectClick}
             type="button"
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black text-xs font-black uppercase tracking-widest hover:bg-zinc-100 active:bg-zinc-200 transition-colors cursor-pointer"
           >
-            Book Now
+            Select
             <ChevronRightIcon className="h-3.5 w-3.5" />
           </button>
         )}

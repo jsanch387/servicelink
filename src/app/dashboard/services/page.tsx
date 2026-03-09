@@ -6,7 +6,11 @@
  */
 
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { getServices, ServicesContent } from '@/features/services';
+import {
+  getAddOnCounts,
+  getServices,
+  ServicesWithAddOnsView,
+} from '@/features/services';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -35,11 +39,17 @@ export default async function ServicesPage() {
   }
 
   const result = await getServices(businessProfile.id);
+  const services = result.data ?? [];
+  const addOnCounts = await getAddOnCounts(
+    businessProfile.id,
+    services.map(s => s.id)
+  );
 
   return (
-    <ServicesContent
-      initialServices={result.data ?? []}
+    <ServicesWithAddOnsView
+      initialServices={services}
       fetchError={result.success ? null : result.error}
+      addOnCounts={addOnCounts}
     />
   );
 }

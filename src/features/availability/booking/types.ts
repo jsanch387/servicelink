@@ -29,11 +29,19 @@ export interface ExistingBooking {
   durationMinutes: number;
 }
 
+export interface AddOnDisplay {
+  id: string;
+  name: string;
+  priceCents: number;
+}
+
 export interface AvailabilityBookingPageProps {
   businessName: string;
   businessId: string;
   businessSlug: string;
   serviceId?: string;
+  /** Comma-separated add-on IDs from service details page. */
+  addOnIds?: string;
   serviceName: string;
   serviceDurationMinutes?: number;
   servicePriceCents?: number;
