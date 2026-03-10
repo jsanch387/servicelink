@@ -61,6 +61,13 @@ export interface BookingSubmission {
   customer: CustomerFormData;
 }
 
+/** Add-on at booking time (denormalized for storage/emails). */
+export interface AddOnAtBooking {
+  id: string;
+  name: string;
+  priceCents: number;
+}
+
 /** Payload for POST /api/public/bookings (client → API). */
 export interface CreateBookingRequest {
   businessSlug: string;
@@ -68,6 +75,8 @@ export interface CreateBookingRequest {
   serviceId?: string;
   serviceName: string;
   servicePriceCents?: number;
+  /** Add-ons selected by customer (stored with booking, shown in emails/dashboard). */
+  selectedAddOns?: AddOnAtBooking[];
   durationMinutes: number;
   scheduledDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm

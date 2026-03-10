@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 'use client';
 
 import { Button } from '@/components/shared';
@@ -32,6 +33,7 @@ export function AvailabilityBookingPage({
   businessId,
   businessSlug,
   serviceId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addOnIds,
   selectedAddOns: selectedAddOnsProp,
   serviceName,
@@ -44,6 +46,7 @@ export function AvailabilityBookingPage({
   const existingBookings = existingBookingsProp ?? blockedSlots;
 
   // Use server-resolved add-ons when provided; otherwise fall back to empty (addOnIds alone can't resolve without a fetch)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const selectedAddOns: AddOnDisplay[] = selectedAddOnsProp ?? [];
 
   const totalPriceCents = useMemo(() => {
@@ -91,6 +94,14 @@ export function AvailabilityBookingPage({
           serviceId,
           serviceName,
           servicePriceCents: servicePriceCents ?? undefined,
+          selectedAddOns:
+            selectedAddOns.length > 0
+              ? selectedAddOns.map(a => ({
+                  id: a.id,
+                  name: a.name,
+                  priceCents: a.priceCents,
+                }))
+              : undefined,
           durationMinutes: serviceDurationMinutes,
           scheduledDate,
           startTime: selectedTime,

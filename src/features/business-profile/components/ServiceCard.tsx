@@ -112,7 +112,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       {/* Description — fixed min-height so all cards align; long text is collapsible */}
       <div className="mb-4 pr-4 min-h-[4.5rem]">
         <p
-          className={`text-zinc-500 text-sm leading-relaxed ${
+          className={`text-zinc-400 text-sm leading-relaxed ${
             isLongDescription && !isDescriptionExpanded ? 'line-clamp-3' : ''
           }`}
         >
@@ -122,7 +122,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <button
             type="button"
             onClick={() => setIsDescriptionExpanded(prev => !prev)}
-            className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-white active:text-white transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
+            className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 active:text-zinc-300 transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
             aria-expanded={isDescriptionExpanded}
           >
             {isDescriptionExpanded ? (
@@ -145,7 +145,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         {effectiveHours ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3 w-3 flex-shrink-0" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">
+            <span className="text-xs font-medium">
               {formatDuration(effectiveHours)}
             </span>
           </div>
@@ -157,7 +157,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <button
             onClick={handleSelectClick}
             type="button"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black text-xs font-black uppercase tracking-widest hover:bg-zinc-100 active:bg-zinc-200 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/20 bg-white/5 text-zinc-200 text-sm font-medium hover:bg-white/10 hover:border-white/30 hover:text-white transition-colors cursor-pointer"
           >
             Select
             <ChevronRightIcon className="h-3.5 w-3.5" />

@@ -114,6 +114,7 @@ All customer fields except name/email can be nullable if we later make address o
 | service_id | uuid | yes | – |
 | service_name | text | no | – |
 | service_price_cents | integer | yes | – |
+| addon_details | jsonb | yes | – |
 | duration_minutes | integer | no | – |
 | scheduled_date | date | no | – |
 | start_time | time | no | – |

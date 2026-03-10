@@ -8,7 +8,7 @@ import {
   mapBookingRowToDisplay,
   type BookingRow,
 } from '../booking/dashboard/utils/mapBookingRowToDisplay';
-import type { CustomerFormData } from '../booking/types';
+import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
 
 const TABLE = 'bookings';
 
@@ -18,6 +18,7 @@ export interface CreateBookingPayload {
   service_id: string | null;
   service_name: string;
   service_price_cents: number | null;
+  addon_details: AddOnAtBooking[] | null;
   duration_minutes: number;
   scheduled_date: string; // YYYY-MM-DD
   start_time: string; // HH:mm (Postgres time accepts this)
@@ -41,6 +42,7 @@ function mapCustomerToRow(
   | 'service_id'
   | 'service_name'
   | 'service_price_cents'
+  | 'addon_details'
   | 'duration_minutes'
   | 'scheduled_date'
   | 'start_time'
@@ -70,24 +72,32 @@ export async function createBooking(
     serviceId?: string;
     serviceName: string;
     servicePriceCents?: number;
+    selectedAddOns?: AddOnAtBooking[];
     durationMinutes: number;
     scheduledDate: string;
     startTime: string;
     customer: CustomerFormData;
   }
 ): Promise<{ id: string }> {
+  const addonDetails =
+    payload.selectedAddOns?.length && payload.selectedAddOns.length > 0
+      ? payload.selectedAddOns
+      : null;
+
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
     service_price_cents: payload.servicePriceCents ?? null,
+    addon_details: addonDetails,
     duration_minutes: payload.durationMinutes,
     scheduled_date: payload.scheduledDate,
     start_time: payload.startTime,
     ...mapCustomerToRow(payload.customer),
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
     .insert(row)
@@ -109,6 +119,7 @@ export async function listBookingsForBusiness(
   supabase: SupabaseClient,
   businessId: string
 ): Promise<ReturnType<typeof mapBookingRowToDisplay>[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
     .select('*')
@@ -136,6 +147,7 @@ export async function updateBookingStatus(
   bookingId: string,
   status: BookingStatusUpdate
 ): Promise<BookingRow | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
     .update({ status })

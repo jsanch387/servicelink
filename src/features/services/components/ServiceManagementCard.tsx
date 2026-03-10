@@ -78,7 +78,6 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   index,
   isReorderMode,
   onToggleActive,
-  onEdit,
   onDelete,
   onDragStart,
   onDragEnd,
