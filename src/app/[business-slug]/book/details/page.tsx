@@ -1,19 +1,30 @@
 /**
  * Service Details page (add-ons step before calendar).
- * UI prototype: mock service + mock add-ons. Not connected to database.
- * Flow: Services list → Select → this page → Continue to Date & Time → calendar.
+ * Fetches real service + assigned add-ons. If service has no add-ons, redirects to date selection.
  */
 
+import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 interface ServiceDetailsPageProps {
   params: Promise<{ 'business-slug': string }>;
   searchParams: Promise<{ serviceId?: string; addOnIds?: string }>;
+}
+
+async function fetchBusinessIdBySlug(slug: string): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('business_profiles')
+    .select('id')
+    .eq('business_slug', slug)
+    .single();
+  return (data as { id: string } | null)?.id ?? null;
 }
 
 export default async function ServiceDetailsPage({
@@ -27,9 +38,27 @@ export default async function ServiceDetailsPage({
     notFound();
   }
 
+  const businessId = await fetchBusinessIdBySlug(slug);
+  if (!businessId) notFound();
+
+  const result = await getServiceWithAddOnsForBooking(
+    businessId,
+    serviceId.trim()
+  );
+
+  if (!result) notFound();
+
+  const { service, addOns } = result;
+
+  // No add-ons: skip details and go straight to date selection (skipDetails tells book page: back = profile)
+  if (addOns.length === 0) {
+    redirect(
+      `/${slug}/book?serviceId=${encodeURIComponent(serviceId.trim())}&skipDetails=1`
+    );
+  }
+
   const initialAddOnIds = addOnIds?.trim()
     ? addOnIds
-
         .split(',')
         .map(s => s.trim())
         .filter(Boolean)
@@ -53,6 +82,8 @@ export default async function ServiceDetailsPage({
         <ServiceDetailsScreen
           businessSlug={slug}
           serviceId={serviceId.trim()}
+          service={service}
+          addOns={addOns}
           initialAddOnIds={initialAddOnIds}
         />
       </div>

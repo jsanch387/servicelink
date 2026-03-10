@@ -2,16 +2,23 @@
 
 import { Button } from '@/components/shared';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import type {
+  AddOnForBooking,
+  ServiceForBooking,
+} from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useMemo, useState } from 'react';
 import { AddOnSelector } from './AddOnSelector';
 import { ServiceDetailsBookingSummary } from './ServiceDetailsBookingSummary';
-import { getMockAddOnsForService, getMockServiceForId } from './mockData';
 import type { ServiceAddOn } from './types';
 
 interface ServiceDetailsScreenProps {
   businessSlug: string;
   serviceId: string;
+  /** Service details from DB (passed by parent page). */
+  service: ServiceForBooking;
+  /** Add-ons assigned to this service from DB (passed by parent page). */
+  addOns: AddOnForBooking[];
   /** Restore add-on selections when returning from calendar (from URL). */
   initialAddOnIds?: string[];
 }
@@ -23,11 +30,10 @@ function formatPrice(cents: number): string {
 export function ServiceDetailsScreen({
   businessSlug,
   serviceId,
+  service,
+  addOns,
   initialAddOnIds,
 }: ServiceDetailsScreenProps) {
-  const service = getMockServiceForId(serviceId);
-  const addOns = getMockAddOnsForService(serviceId);
-
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<Set<string>>(
     () => new Set(initialAddOnIds ?? [])
   );
@@ -83,7 +89,7 @@ export function ServiceDetailsScreen({
             Optional add-ons
           </h2>
           <AddOnSelector
-            addOns={addOns}
+            addOns={addOns as ServiceAddOn[]}
             selectedIds={selectedAddOnIds}
             onToggle={handleToggleAddOn}
           />

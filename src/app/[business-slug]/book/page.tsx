@@ -6,6 +6,7 @@
  */
 
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -23,6 +24,7 @@ interface BookingRequestPageProps {
   searchParams: Promise<{
     serviceId?: string;
     addOnIds?: string;
+    skipDetails?: string;
   }>;
 }
 
@@ -107,7 +109,7 @@ export default async function BookingRequestPage({
   searchParams,
 }: BookingRequestPageProps) {
   const { 'business-slug': slug } = await params;
-  const { serviceId, addOnIds } = await searchParams;
+  const { serviceId, addOnIds, skipDetails } = await searchParams;
 
   // Fetch the business profile by slug
   const businessProfile = await fetchBusinessProfileBySlug(slug);
@@ -143,6 +145,19 @@ export default async function BookingRequestPage({
         ? Math.max(15, Math.round(serviceDetails.hours_to_complete * 60))
         : 60;
 
+  // Fetch add-ons when addOnIds present (resolves IDs to full objects for display)
+  const addonIdList = addOnIds?.trim()
+    ? addOnIds
+
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : [];
+  const selectedAddOns =
+    addonIdList.length > 0
+      ? await getAddOnsByIdsForBooking(businessProfile.id, addonIdList)
+      : [];
+
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
       {/* Header with Back Button */}
@@ -150,7 +165,7 @@ export default async function BookingRequestPage({
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <Link
             href={
-              serviceId?.trim()
+              serviceId?.trim() && !skipDetails
                 ? `/${slug}/book/details?serviceId=${encodeURIComponent(serviceId.trim())}${addOnIds?.trim() ? `&addOnIds=${encodeURIComponent(addOnIds.trim())}` : ''}`
                 : `/${slug}`
             }
@@ -158,7 +173,9 @@ export default async function BookingRequestPage({
           >
             <ArrowLeftIcon className="h-5 w-5" />
             <span className="text-sm font-medium">
-              {serviceId?.trim() ? 'Back to service' : 'Back to profile'}
+              {serviceId?.trim() && !skipDetails
+                ? 'Back to service'
+                : 'Back to profile'}
             </span>
           </Link>
         </div>
@@ -174,6 +191,7 @@ export default async function BookingRequestPage({
           businessSlug={businessProfile.business_slug || slug}
           serviceId={serviceId?.trim() ?? undefined}
           addOnIds={addOnIds?.trim() || undefined}
+          selectedAddOns={selectedAddOns}
           serviceName={serviceName}
           servicePrice={serviceDetails?.price ?? undefined}
           serviceDurationMinutes={serviceDurationMinutes}

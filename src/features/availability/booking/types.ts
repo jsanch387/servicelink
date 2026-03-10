@@ -42,6 +42,8 @@ export interface AvailabilityBookingPageProps {
   serviceId?: string;
   /** Comma-separated add-on IDs from service details page. */
   addOnIds?: string;
+  /** Resolved add-on objects from server (preferred over addOnIds). */
+  selectedAddOns?: AddOnDisplay[];
   serviceName: string;
   serviceDurationMinutes?: number;
   servicePriceCents?: number;

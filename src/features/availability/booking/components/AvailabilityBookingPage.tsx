@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { getAddOnsByIds } from '@/features/services/booking-flow/mockData';
 import { useEffect, useMemo, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
 import type {
@@ -34,6 +33,7 @@ export function AvailabilityBookingPage({
   businessSlug,
   serviceId,
   addOnIds,
+  selectedAddOns: selectedAddOnsProp,
   serviceName,
   serviceDurationMinutes = 60,
   servicePriceCents,
@@ -43,15 +43,8 @@ export function AvailabilityBookingPage({
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
 
-  const selectedAddOns: AddOnDisplay[] = useMemo(() => {
-    if (!addOnIds?.trim()) return [];
-    const ids = addOnIds
-
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean);
-    return getAddOnsByIds(ids);
-  }, [addOnIds]);
+  // Use server-resolved add-ons when provided; otherwise fall back to empty (addOnIds alone can't resolve without a fetch)
+  const selectedAddOns: AddOnDisplay[] = selectedAddOnsProp ?? [];
 
   const totalPriceCents = useMemo(() => {
     const base = servicePriceCents ?? 0;
