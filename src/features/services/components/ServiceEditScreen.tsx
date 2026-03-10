@@ -8,6 +8,7 @@ import {
   SERVICE_DURATION_HOURS_OPTIONS,
   TextArea,
 } from '@/components/shared';
+import { createAddOnAction } from '@/features/services/add-ons';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';
 import { updateServiceAction } from '@/features/services/actions/updateService';
 import type { ServiceRow } from '@/features/services/types/services';
@@ -16,7 +17,8 @@ import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { AddOnRow } from './add-ons/addOnTypes';
+import { EditAddOnModal } from './add-ons/EditAddOnModal';
+import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
 
 const DURATION_OPTIONS = [
   { value: '', label: 'Select duration' },
@@ -87,8 +89,10 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  const addOnsPool: AddOnRow[] = initialAddOns;
+  const [addOnsPool, setAddOnsPool] = useState<AddOnRow[]>(initialAddOns);
+  const [isAddOnModalOpen, setIsAddOnModalOpen] = useState(false);
+  const [isSavingAddOn, setIsSavingAddOn] = useState(false);
+  const [addOnSaveError, setAddOnSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     const form = serviceToForm(service);
@@ -102,6 +106,10 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     setSelectedAddOnIds(new Set(initialSelectedAddOnIds));
   }, [initialSelectedAddOnIds]);
 
+  useEffect(() => {
+    setAddOnsPool(initialAddOns);
+  }, [initialAddOns]);
+
   const handleAddOnToggle = useCallback((addOnId: string) => {
     setSelectedAddOnIds(prev => {
       const next = new Set(prev);
@@ -112,8 +120,44 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   }, []);
 
   const handleAddNewAddOn = useCallback(() => {
-    // Placeholder - could link to Add-ons tab
+    setAddOnSaveError(null);
+    setIsAddOnModalOpen(true);
   }, []);
+
+  const handleAddOnModalSave = useCallback(
+    async (addOnId: string | undefined, data: EditAddOnFormData) => {
+      if (addOnId) return;
+      setAddOnSaveError(null);
+      setIsSavingAddOn(true);
+      const createResult = await createAddOnAction({
+        name: data.name,
+        price_cents: data.price_cents ?? 0,
+      });
+      if (!createResult.success || !createResult.data) {
+        setIsSavingAddOn(false);
+        setAddOnSaveError(createResult.error ?? 'Failed to add add-on.');
+        return;
+      }
+      const newAddOn = createResult.data;
+      const newSelectedIds = [...selectedAddOnIds, newAddOn.id];
+      const assignResult = await saveServiceAddOnAssignmentsAction(
+        service.id,
+        newSelectedIds
+      );
+      setIsSavingAddOn(false);
+      if (!assignResult.success) {
+        setAddOnSaveError(
+          assignResult.error ?? 'Failed to assign add-on to this service.'
+        );
+        return;
+      }
+      setAddOnsPool(prev => [...prev, newAddOn]);
+      setSelectedAddOnIds(new Set(newSelectedIds));
+      setIsAddOnModalOpen(false);
+      router.refresh();
+    },
+    [selectedAddOnIds, service.id, router]
+  );
 
   const handleSave = useCallback(async () => {
     setSaveError(null);
@@ -308,6 +352,18 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
           </section>
         </div>
       </div>
+
+      <EditAddOnModal
+        addOn={null}
+        showAddForm={isAddOnModalOpen}
+        saveError={addOnSaveError}
+        onClose={() => {
+          setAddOnSaveError(null);
+          setIsAddOnModalOpen(false);
+        }}
+        onSave={handleAddOnModalSave}
+        isSaving={isSavingAddOn}
+      />
 
       {/* Sticky bottom actions */}
       <div
