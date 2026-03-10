@@ -1,8 +1,8 @@
 'use client';
 
 import { Calendar } from '@/components/shared';
-import type { DayKey, WeeklySchedule } from '../../types/availability';
 import React, { useCallback } from 'react';
+import type { DayKey, WeeklySchedule } from '../../types/availability';
 
 const DAY_KEYS: DayKey[] = [
   'sunday',
@@ -21,6 +21,7 @@ function getDayKey(date: Date): DayKey {
 interface DateSelectorProps {
   weeklySchedule: WeeklySchedule;
   selectedDate: Date | null;
+  // eslint-disable-next-line no-unused-vars
   onSelectDate: (date: Date) => void;
   minDate?: Date;
 }
@@ -45,8 +46,6 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       onChange={onSelectDate}
       minDate={minDate}
       isDateDisabled={isDateDisabled}
-      title="Choose date"
-      subtitle="Pick a date for your booking"
       showYear={true}
     />
   );

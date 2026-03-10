@@ -36,6 +36,18 @@ function formatPriceCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function buildAddOnsRows(
+  addons: { name: string; priceCents: number }[]
+): string {
+  if (!addons?.length) return '';
+  return addons
+    .map(
+      a =>
+        `<tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">+ ${escapeHtml(a.name)}</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${escapeHtml(formatPriceCents(a.priceCents))}</td></tr>`
+    )
+    .join('');
+}
+
 export function buildAvailabilityBookingNotificationHtml(
   payload: AvailabilityBookingNotificationPayload,
   dashboardBookingsUrl: string
@@ -43,10 +55,23 @@ export function buildAvailabilityBookingNotificationHtml(
   const timeLabel = formatTimeHHmm(payload.startTime);
   const dateLabel = formatDateLong(payload.scheduledDate);
   const durationLabel = formatDurationHours(payload.durationMinutes);
-  const priceRow =
-    payload.servicePriceCents != null && payload.servicePriceCents > 0
-      ? `<tr><td style="padding: 8px 0;"><strong>Price</strong></td><td style="padding: 8px 0;">${escapeHtml(formatPriceCents(payload.servicePriceCents))}</td></tr>`
-      : '';
+  const hasBasePrice =
+    payload.servicePriceCents != null && payload.servicePriceCents > 0;
+  const addOns = payload.selectedAddOns ?? [];
+  const addOnsRows = buildAddOnsRows(addOns);
+  const hasTotalPrice =
+    payload.totalPriceCents != null &&
+    payload.totalPriceCents > 0 &&
+    (hasBasePrice || addOns.length > 0);
+  const priceRow = hasBasePrice
+    ? `<tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Service price</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${escapeHtml(formatPriceCents(payload.servicePriceCents!))}</td></tr>`
+    : '';
+  const totalRow =
+    hasTotalPrice && addOns.length > 0
+      ? `<tr><td style="padding: 8px 0;"><strong>Total</strong></td><td style="padding: 8px 0;"><strong>${escapeHtml(formatPriceCents(payload.totalPriceCents!))}</strong></td></tr>`
+      : hasBasePrice
+        ? `<tr><td style="padding: 8px 0;"><strong>Price</strong></td><td style="padding: 8px 0;">${escapeHtml(formatPriceCents(payload.servicePriceCents!))}</td></tr>`
+        : '';
 
   return `
 <!DOCTYPE html>
@@ -67,6 +92,8 @@ export function buildAvailabilityBookingNotificationHtml(
     <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Time</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${escapeHtml(timeLabel)}</td></tr>
     <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Duration</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${escapeHtml(durationLabel)}</td></tr>
     ${priceRow}
+    ${addOnsRows}
+    ${totalRow}
   </table>
   <p>
     <a href="${escapeHtml(dashboardBookingsUrl)}" style="display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 8px;">View booking in dashboard</a>

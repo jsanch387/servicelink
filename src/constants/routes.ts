@@ -25,6 +25,7 @@ export const ROUTES = {
     EDIT: '/business/:id/edit',
     DASHBOARD: '/business/dashboard',
     BOOK: '/:slug/book',
+    BOOK_SERVICE_DETAILS: '/:slug/book/details',
   },
 
   // Dashboard routes
@@ -32,6 +33,7 @@ export const ROUTES = {
     MAIN: '/dashboard',
     BUSINESS_PROFILE: '/dashboard/business-profile',
     SERVICES: '/dashboard/services',
+    SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
     AVAILABILITY: '/dashboard/availability',
     SETTINGS: '/dashboard/settings',

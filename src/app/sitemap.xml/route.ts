@@ -31,7 +31,8 @@ export async function GET() {
       return new NextResponse('Error generating sitemap', { status: 500 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
     const currentDate = new Date().toISOString();
 
     // Generate sitemap XML

@@ -13,6 +13,12 @@ export interface AvailabilityBookingAddress {
   zip: string;
 }
 
+export interface AddOnAtBookingDisplay {
+  id: string;
+  name: string;
+  priceCents: number;
+}
+
 export interface AvailabilityBookingDisplay {
   id: string;
   customerName: string;
@@ -21,6 +27,8 @@ export interface AvailabilityBookingDisplay {
   serviceName: string;
   serviceDurationMinutes: number;
   servicePriceCents: number | null;
+  /** Add-ons selected at booking time. */
+  addonDetails: AddOnAtBookingDisplay[];
   date: string;
   time: string;
   status: AvailabilityBookingStatus;

@@ -198,32 +198,32 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
               />
 
               {/* Tabs Navigation */}
-              <div className="px-4 sm:px-8 mt-8 border-b border-neutral-700">
-                <div className="flex justify-center gap-8">
+              <div className="px-4 sm:px-8 mt-8 border-b border-white/[0.06]">
+                <div className="flex gap-6">
                   <button
                     onClick={() => setActiveTab('services')}
-                    className={`pb-4 px-1 font-bold text-base transition-colors relative cursor-pointer ${
+                    className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
                       activeTab === 'services'
                         ? 'text-white'
-                        : 'text-gray-400 hover:text-gray-300'
+                        : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
                     Services
                     {activeTab === 'services' && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full"></span>
+                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
                   </button>
                   <button
                     onClick={() => setActiveTab('portfolio')}
-                    className={`pb-4 px-1 font-bold text-base transition-colors relative cursor-pointer ${
+                    className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
                       activeTab === 'portfolio'
                         ? 'text-white'
-                        : 'text-gray-400 hover:text-gray-300'
+                        : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
                     Our work
                     {activeTab === 'portfolio' && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full"></span>
+                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
                   </button>
                 </div>
@@ -249,44 +249,31 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
               {/* Footer - Only show on public profiles */}
               {isPublic && (
-                <div className="px-4 sm:px-8 py-12 mt-12">
-                  {/* Separator Line */}
-                  <div className="w-full border-t border-neutral-800 mb-8"></div>
-
-                  <div className="flex flex-col items-center gap-4 text-center">
-                    {/* Powered by text */}
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">
-                      Powered by
-                    </p>
-
-                    {/* ServiceLink Button */}
-                    <Link
-                      href="/"
-                      className="group inline-flex items-center gap-3 px-4 py-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl border border-neutral-700 transition-all"
-                    >
-                      {/* Logo Image */}
-                      <div className="w-8 h-8 rounded-lg bg-neutral-700 flex items-center justify-center flex-shrink-0 p-1.5">
+                <div className="px-4 sm:px-8 py-8 sm:py-10 mt-8">
+                  <div className="w-full border-t border-white/[0.06] pt-6">
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <Link
+                        href="/"
+                        className="group inline-flex items-center gap-2 text-gray-500 hover:text-gray-300 transition-colors"
+                      >
+                        <span className="text-[11px] uppercase tracking-wider">
+                          Powered by
+                        </span>
                         <Image
                           src="/favicon.png"
-                          alt="ServiceLink Logo"
-                          width={20}
-                          height={20}
-                          className="w-full h-full object-contain"
+                          alt=""
+                          width={14}
+                          height={14}
+                          className="opacity-70 group-hover:opacity-100 transition-opacity"
                         />
-                      </div>
-                      {/* ServiceLink Text */}
-                      <span className="text-white font-bold text-sm">
-                        ServiceLink
-                      </span>
-                      {/* Arrow Icon */}
-                      <ArrowRightIcon className="h-4 w-4 text-orange-400 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-
-                    {/* Call to Action Text */}
-                    <p className="text-gray-400 text-xs max-w-sm leading-relaxed">
-                      Get your own profile today and start booking clients with
-                      your own professional link.
-                    </p>
+                        <span className="text-gray-400 text-sm font-medium group-hover:text-white transition-colors">
+                          ServiceLink
+                        </span>
+                      </Link>
+                      <p className="text-gray-500 text-[11px] max-w-xs leading-relaxed">
+                        Get your own profile and start booking clients.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}

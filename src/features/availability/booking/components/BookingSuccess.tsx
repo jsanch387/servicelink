@@ -4,19 +4,30 @@ import { GlassCard } from '@/components/shared';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import React from 'react';
+import type { AddOnDisplay } from '../types';
 
 interface BookingSuccessProps {
   businessName: string;
   businessSlug: string;
   serviceName: string;
+  /** Add-ons selected on the service details page. */
+  selectedAddOns?: AddOnDisplay[];
+  /** Total price including base service + add-ons. */
+  totalPriceCents?: number;
   date: string;
   time: string;
+}
+
+function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   businessName,
   businessSlug,
   serviceName,
+  selectedAddOns = [],
+  totalPriceCents,
   date,
   time,
 }) => {
@@ -62,6 +73,37 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
             <p className="text-xs text-gray-500 mb-0.5">Service</p>
             <p className="text-white font-semibold">{serviceName}</p>
           </div>
+          {selectedAddOns.length > 0 && (
+            <>
+              <div className="h-px bg-white/10" />
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Add-ons</p>
+                <ul className="space-y-1">
+                  {selectedAddOns.map(addOn => (
+                    <li key={addOn.id} className="flex justify-between text-sm">
+                      <span className="text-white">{addOn.name}</span>
+                      <span className="text-gray-400">
+                        {formatPrice(addOn.priceCents)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+          {selectedAddOns.length > 0 &&
+            totalPriceCents != null &&
+            totalPriceCents > 0 && (
+              <>
+                <div className="h-px bg-white/10" />
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium text-white">Total</p>
+                  <p className="text-lg font-semibold text-white">
+                    {formatPrice(totalPriceCents)}
+                  </p>
+                </div>
+              </>
+            )}
           <div className="h-px bg-white/10" />
           <div>
             <p className="text-xs text-gray-500 mb-0.5">Date</p>
@@ -73,6 +115,11 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
           </div>
         </div>
       </GlassCard>
+
+      <p className="text-xs text-gray-500 text-center mb-6 max-w-sm">
+        Payment is collected in person. The provider will let you know their
+        accepted payment methods.
+      </p>
 
       <Link
         href={`/${businessSlug}`}

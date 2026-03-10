@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { CustomerFormData } from '../types';
+import type { AddOnDisplay, CustomerFormData } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
 
 function formatAddress(customer: CustomerFormData): string {
@@ -25,15 +25,25 @@ interface BookingSummaryProps {
   serviceName: string;
   serviceDurationMinutes: number;
   servicePriceCents?: number;
+  /** Add-ons selected on the service details page. */
+  selectedAddOns?: AddOnDisplay[];
+  /** Total price including base service + add-ons. */
+  totalPriceCents?: number;
   date: string;
   time: string;
   customer: CustomerFormData;
+}
+
+function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
   serviceName,
   serviceDurationMinutes,
   servicePriceCents,
+  selectedAddOns = [],
+  totalPriceCents,
   date,
   time,
   customer,
@@ -62,10 +72,39 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           <p className="text-sm text-gray-400">
             {formatDurationMinutes(serviceDurationMinutes)}
             {servicePriceCents != null && (
-              <> · ${(servicePriceCents / 100).toFixed(2)}</>
+              <> · {formatPrice(servicePriceCents)}</>
             )}
           </p>
         </div>
+
+        {selectedAddOns.length > 0 && (
+          <div>
+            <p className="text-xs text-gray-500 tracking-wider mb-1">Add-ons</p>
+            <ul className="space-y-1">
+              {selectedAddOns.map(addOn => (
+                <li key={addOn.id} className="flex justify-between text-sm">
+                  <span className="text-white">{addOn.name}</span>
+                  <span className="text-gray-400">
+                    {formatPrice(addOn.priceCents)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {selectedAddOns.length > 0 &&
+          totalPriceCents != null &&
+          totalPriceCents > 0 && (
+            <div className="pt-2 border-t border-white/10">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-white">Total</span>
+                <span className="text-lg font-semibold text-white">
+                  {formatPrice(totalPriceCents)}
+                </span>
+              </div>
+            </div>
+          )}
 
         <div>
           <p className="text-xs text-gray-500 tracking-wider mb-1">
@@ -96,6 +135,11 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           </div>
         )}
       </div>
+
+      <p className="text-xs text-gray-500 text-center">
+        Payment is collected in person. The provider will let you know their
+        accepted payment methods.
+      </p>
     </div>
   );
 };

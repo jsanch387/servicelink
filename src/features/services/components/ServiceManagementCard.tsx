@@ -10,6 +10,7 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import React, { useState } from 'react';
 
 /** Max description length before collapsing; matches public ServiceCard. */
@@ -47,7 +48,7 @@ export interface ServiceManagementCardProps {
   /** Toggle on/off. */
   // eslint-disable-next-line no-unused-vars
   onToggleActive?: (serviceId: string, active: boolean) => void;
-  /** Edit — no-op for now. */
+  /** Edit — deprecated; Edit button links to service edit page. */
   // eslint-disable-next-line no-unused-vars
   onEdit?: (service: ServiceRow) => void;
   /** Delete — no-op for now. */
@@ -68,6 +69,8 @@ export interface ServiceManagementCardProps {
   totalCount?: number;
   /** Draggable when in reorder mode. */
   draggable?: boolean;
+  /** Number of add-ons assigned to this service (quick glance). */
+  addOnCount?: number;
 }
 
 export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
@@ -75,7 +78,6 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   index,
   isReorderMode,
   onToggleActive,
-  onEdit,
   onDelete,
   onDragStart,
   onDragEnd,
@@ -83,6 +85,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   onMoveDown,
   totalCount = 0,
   draggable = false,
+  addOnCount,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
@@ -114,7 +117,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
               >
                 <ChevronUpIcon className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
               </button>
-              <span className="flex items-center justify-center w-[44px] sm:w-auto text-sm font-semibold text-white sm:text-[10px] sm:font-medium sm:text-gray-500 sm:uppercase sm:tracking-wider tabular-nums">
+              <span className="flex items-center justify-center w-[44px] sm:w-auto text-sm font-semibold text-white sm:text-[10px] sm:font-medium sm:text-gray-500 sm:tracking-wider tabular-nums">
                 {index + 1}
               </span>
               <button
@@ -139,8 +142,8 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
 
         <div className="flex-1 min-w-0">
           {/* Header: name + price — same as public ServiceCard */}
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-black text-white tracking-tight pr-4 flex-1">
+          <div className="flex justify-between items-start gap-2 mb-2 min-w-0">
+            <h3 className="text-lg font-black text-white tracking-tight flex-1 min-w-0 truncate">
               {service.name}
             </h3>
             <div className="text-right flex-shrink-0">
@@ -150,15 +153,27 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
             </div>
           </div>
 
-          {/* Duration — same position as public card */}
-          {duration && (
-            <div className="flex items-center gap-1.5 text-zinc-500 mb-2">
-              <ClockIcon className="h-3 w-3 flex-shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">
-                {duration}
+          {/* Duration + add-on count (only show add-ons when count > 0) */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
+            {duration && (
+              <div className="flex items-center gap-1.5 text-zinc-500">
+                <ClockIcon className="h-3 w-3 flex-shrink-0" />
+                <span className="text-[10px] font-medium tracking-wide">
+                  {duration}
+                </span>
+              </div>
+            )}
+            {duration && addOnCount != null && addOnCount > 0 && (
+              <span className="text-zinc-500 text-[10px]" aria-hidden>
+                ·
               </span>
-            </div>
-          )}
+            )}
+            {addOnCount != null && addOnCount > 0 && (
+              <span className="text-[10px] font-medium tracking-wide text-zinc-500">
+                {addOnCount} add-on{addOnCount === 1 ? '' : 's'}
+              </span>
+            )}
+          </div>
 
           {/* Description — collapsible like public ServiceCard for uniform card height */}
           <div className="mb-4 pr-4 min-h-[4.5rem]">
@@ -193,23 +208,22 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
             )}
           </div>
 
-          {/* Action row: Edit, Delete, Switch — reference style (dark containers, icon + label) */}
+          {/* Action row: Edit, Delete, Switch — outlined style */}
           {!isReorderMode && (
             <div className="flex items-center justify-between pt-5 border-t border-white/[0.08]">
               <div className="flex gap-2 w-auto sm:w-full sm:max-w-[240px]">
-                <button
-                  type="button"
-                  onClick={() => onEdit?.(service)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-neutral-700 transition-all active:scale-95 min-w-0 cursor-pointer"
+                <Link
+                  href={`/dashboard/services/${service.id}`}
+                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95 cursor-pointer"
                   aria-label="Edit service"
                 >
                   <PencilSquareIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-emerald-500 flex-shrink-0" />
                   <span className="hidden sm:inline">Edit</span>
-                </button>
+                </Link>
                 <button
                   type="button"
                   onClick={() => onDelete?.(service.id)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 bg-neutral-800 hover:bg-red-500/10 text-white hover:text-red-400 text-sm font-medium rounded-xl sm:rounded-2xl border border-neutral-700 hover:border-red-500/30 transition-all active:scale-95 min-w-0 cursor-pointer"
+                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-400 transition-all active:scale-95 cursor-pointer"
                   aria-label="Delete service"
                 >
                   <TrashIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-red-500 flex-shrink-0" />

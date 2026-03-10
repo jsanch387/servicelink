@@ -29,11 +29,21 @@ export interface ExistingBooking {
   durationMinutes: number;
 }
 
+export interface AddOnDisplay {
+  id: string;
+  name: string;
+  priceCents: number;
+}
+
 export interface AvailabilityBookingPageProps {
   businessName: string;
   businessId: string;
   businessSlug: string;
   serviceId?: string;
+  /** Comma-separated add-on IDs from service details page. */
+  addOnIds?: string;
+  /** Resolved add-on objects from server (preferred over addOnIds). */
+  selectedAddOns?: AddOnDisplay[];
   serviceName: string;
   serviceDurationMinutes?: number;
   servicePriceCents?: number;
@@ -51,6 +61,13 @@ export interface BookingSubmission {
   customer: CustomerFormData;
 }
 
+/** Add-on at booking time (denormalized for storage/emails). */
+export interface AddOnAtBooking {
+  id: string;
+  name: string;
+  priceCents: number;
+}
+
 /** Payload for POST /api/public/bookings (client → API). */
 export interface CreateBookingRequest {
   businessSlug: string;
@@ -58,6 +75,8 @@ export interface CreateBookingRequest {
   serviceId?: string;
   serviceName: string;
   servicePriceCents?: number;
+  /** Add-ons selected by customer (stored with booking, shown in emails/dashboard). */
+  selectedAddOns?: AddOnAtBooking[];
   durationMinutes: number;
   scheduledDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm

@@ -13,6 +13,7 @@ export interface BookingRow {
   service_id: string | null;
   service_name: string;
   service_price_cents: number | null;
+  addon_details: { id: string; name: string; priceCents: number }[] | null;
   duration_minutes: number;
   scheduled_date: string;
   start_time: string;
@@ -45,6 +46,9 @@ function formatTimeDisplay(timeStr: string): string {
 export function mapBookingRowToDisplay(
   row: BookingRow
 ): AvailabilityBookingDisplay {
+  const addonDetails = Array.isArray(row.addon_details)
+    ? row.addon_details
+    : [];
   return {
     id: row.id,
     customerName: row.customer_name,
@@ -53,6 +57,7 @@ export function mapBookingRowToDisplay(
     serviceName: row.service_name,
     serviceDurationMinutes: row.duration_minutes,
     servicePriceCents: row.service_price_cents ?? 0,
+    addonDetails,
     date: row.scheduled_date,
     time: formatTimeDisplay(row.start_time ?? ''),
     status: row.status as AvailabilityBookingDisplay['status'],

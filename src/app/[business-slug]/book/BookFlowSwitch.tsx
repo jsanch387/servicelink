@@ -2,6 +2,7 @@
 
 import { BookingRequestPageClient } from './BookingRequestPageClient';
 import { AvailabilityBookingPage } from '@/features/availability/booking';
+import type { AddOnDisplay } from '@/features/availability/booking/types';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import React from 'react';
@@ -14,6 +15,10 @@ interface BookFlowSwitchProps {
   businessId: string;
   businessSlug: string;
   serviceId?: string;
+  /** Comma-separated add-on IDs from service details page. */
+  addOnIds?: string;
+  /** Resolved add-on objects (from server fetch). Used instead of addOnIds when available. */
+  selectedAddOns?: AddOnDisplay[];
   serviceName: string;
   servicePrice?: number;
   serviceDurationMinutes?: number;
@@ -31,6 +36,8 @@ export function BookFlowSwitch({
   businessId,
   businessSlug,
   serviceId,
+  addOnIds,
+  selectedAddOns,
   serviceName,
   servicePrice,
   serviceDurationMinutes = 60,
@@ -44,6 +51,8 @@ export function BookFlowSwitch({
         businessId={businessId}
         businessSlug={businessSlug}
         serviceId={serviceId}
+        addOnIds={addOnIds}
+        selectedAddOns={selectedAddOns}
         serviceName={serviceName || 'Booking'}
         serviceDurationMinutes={serviceDurationMinutes}
         servicePriceCents={servicePrice}

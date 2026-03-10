@@ -5,9 +5,9 @@
  * Resolves business by slug, then inserts one row into bookings via feature service.
  */
 
-import { sendAvailabilityBookingNotificationEmail } from '@/features/email';
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import { createBooking } from '@/features/availability/services/bookingService';
+import { sendAvailabilityBookingNotificationEmail } from '@/features/email';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       serviceId: body.serviceId,
       serviceName: body.serviceName.trim(),
       servicePriceCents: body.servicePriceCents,
+      selectedAddOns: body.selectedAddOns,
       durationMinutes: body.durationMinutes,
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
@@ -137,6 +138,13 @@ export async function POST(request: NextRequest) {
         if (ownerEmail) {
           const customerName = body.customer?.fullName?.trim() ?? 'A customer';
           const customerEmail = body.customer?.email?.trim() ?? '';
+          const selectedAddOns = body.selectedAddOns ?? [];
+          const basePrice = body.servicePriceCents ?? 0;
+          const addOnTotal = selectedAddOns.reduce(
+            (s, a) => s + a.priceCents,
+            0
+          );
+          const totalPriceCents = basePrice + addOnTotal;
           await sendAvailabilityBookingNotificationEmail(ownerEmail, {
             customerName,
             customerEmail,
@@ -145,6 +153,8 @@ export async function POST(request: NextRequest) {
             startTime: body.startTime.trim(),
             durationMinutes: body.durationMinutes,
             servicePriceCents: body.servicePriceCents,
+            selectedAddOns,
+            totalPriceCents,
           });
         }
       } catch {

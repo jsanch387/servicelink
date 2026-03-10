@@ -1,0 +1,92 @@
+/**
+ * Service Details page (add-ons step before calendar).
+ * Fetches real service + assigned add-ons. If service has no add-ons, redirects to date selection.
+ */
+
+import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
+import { ServiceDetailsScreen } from '@/features/services/booking-flow';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { redirect, notFound } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
+
+interface ServiceDetailsPageProps {
+  params: Promise<{ 'business-slug': string }>;
+  searchParams: Promise<{ serviceId?: string; addOnIds?: string }>;
+}
+
+async function fetchBusinessIdBySlug(slug: string): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('business_profiles')
+    .select('id')
+    .eq('business_slug', slug)
+    .single();
+  return (data as { id: string } | null)?.id ?? null;
+}
+
+export default async function ServiceDetailsPage({
+  params,
+  searchParams,
+}: ServiceDetailsPageProps) {
+  const { 'business-slug': slug } = await params;
+  const { serviceId, addOnIds } = await searchParams;
+
+  if (!serviceId?.trim()) {
+    notFound();
+  }
+
+  const businessId = await fetchBusinessIdBySlug(slug);
+  if (!businessId) notFound();
+
+  const result = await getServiceWithAddOnsForBooking(
+    businessId,
+    serviceId.trim()
+  );
+
+  if (!result) notFound();
+
+  const { service, addOns } = result;
+
+  // No add-ons: skip details and go straight to date selection (skipDetails tells book page: back = profile)
+  if (addOns.length === 0) {
+    redirect(
+      `/${slug}/book?serviceId=${encodeURIComponent(serviceId.trim())}&skipDetails=1`
+    );
+  }
+
+  const initialAddOnIds = addOnIds?.trim()
+    ? addOnIds
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  return (
+    <div className="min-h-screen bg-[var(--dashboard-bg)]">
+      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
+          <Link
+            href={`/${slug}`}
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeftIcon className="h-5 w-5" />
+            <span className="text-sm font-medium">Back to profile</span>
+          </Link>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24">
+        <ServiceDetailsScreen
+          businessSlug={slug}
+          serviceId={serviceId.trim()}
+          service={service}
+          addOns={addOns}
+          initialAddOnIds={initialAddOnIds}
+        />
+      </div>
+    </div>
+  );
+}

@@ -1,16 +1,20 @@
+/* eslint-disable no-unused-vars */
 'use client';
 
 import { Button } from '@/components/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
-import type { AvailabilityBookingPageProps, CustomerFormData } from '../types';
+import type {
+  AddOnDisplay,
+  AvailabilityBookingPageProps,
+  CustomerFormData,
+} from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
 import { CustomerForm, isCustomerFormValid } from './CustomerForm';
 import { DateSelector } from './DateSelector';
-import { StepperIndicator } from './StepperIndicator';
 import { TimeSlotGrid } from './TimeSlotGrid';
 
 function formatTimeDisplay(hhmm: string): string {
@@ -29,6 +33,9 @@ export function AvailabilityBookingPage({
   businessId,
   businessSlug,
   serviceId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  addOnIds,
+  selectedAddOns: selectedAddOnsProp,
   serviceName,
   serviceDurationMinutes = 60,
   servicePriceCents,
@@ -37,6 +44,16 @@ export function AvailabilityBookingPage({
 }: AvailabilityBookingPageProps) {
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
+
+  // Use server-resolved add-ons when provided; otherwise fall back to empty (addOnIds alone can't resolve without a fetch)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const selectedAddOns: AddOnDisplay[] = selectedAddOnsProp ?? [];
+
+  const totalPriceCents = useMemo(() => {
+    const base = servicePriceCents ?? 0;
+    const addOnTotal = selectedAddOns.reduce((sum, a) => sum + a.priceCents, 0);
+    return base + addOnTotal;
+  }, [servicePriceCents, selectedAddOns]);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -49,6 +66,7 @@ export function AvailabilityBookingPage({
     date: string;
     time: string;
     customer: CustomerFormData;
+    selectedAddOns: AddOnDisplay[];
   } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +94,14 @@ export function AvailabilityBookingPage({
           serviceId,
           serviceName,
           servicePriceCents: servicePriceCents ?? undefined,
+          selectedAddOns:
+            selectedAddOns.length > 0
+              ? selectedAddOns.map(a => ({
+                  id: a.id,
+                  name: a.name,
+                  priceCents: a.priceCents,
+                }))
+              : undefined,
           durationMinutes: serviceDurationMinutes,
           scheduledDate,
           startTime: selectedTime,
@@ -91,6 +117,7 @@ export function AvailabilityBookingPage({
         date: scheduledDate,
         time: formatTimeDisplay(selectedTime),
         customer: customerData,
+        selectedAddOns,
       });
       setShowSuccess(true);
     } catch {
@@ -106,6 +133,8 @@ export function AvailabilityBookingPage({
         businessName={businessName}
         businessSlug={businessSlug}
         serviceName={serviceName}
+        selectedAddOns={submittedData.selectedAddOns}
+        totalPriceCents={totalPriceCents}
         date={submittedData.date}
         time={submittedData.time}
       />
@@ -114,8 +143,6 @@ export function AvailabilityBookingPage({
 
   return (
     <div className="flex flex-col min-h-[60vh]">
-      <StepperIndicator currentStep={step} />
-
       <div className="flex-1 pb-28">
         {/* Step 1 – Schedule */}
         {step === 1 && (
@@ -176,6 +203,8 @@ export function AvailabilityBookingPage({
               serviceName={serviceName}
               serviceDurationMinutes={serviceDurationMinutes}
               servicePriceCents={servicePriceCents}
+              selectedAddOns={selectedAddOns}
+              totalPriceCents={totalPriceCents}
               date={selectedDate.toISOString().slice(0, 10)}
               time={formatTimeDisplay(selectedTime)}
               customer={customerData}
