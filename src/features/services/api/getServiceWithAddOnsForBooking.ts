@@ -1,9 +1,10 @@
 /**
  * Services API - Get service + its assigned add-ons for public booking.
- * Server-only; used by the book/details page.
+ * Server-only; used by the book/details page. Uses admin client so RLS
+ * does not block unauthenticated (signed-out) visitors.
  */
 
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 
 export interface ServiceForBooking {
   id: string;
@@ -33,7 +34,7 @@ export async function getServiceWithAddOnsForBooking(
   serviceId: string
 ): Promise<ServiceWithAddOnsForBooking | null> {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     const { data: serviceRow, error: serviceError } = await supabase
       .from('business_services')

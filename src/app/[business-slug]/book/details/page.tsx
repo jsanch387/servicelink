@@ -5,7 +5,7 @@
 
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
@@ -18,7 +18,7 @@ interface ServiceDetailsPageProps {
 }
 
 async function fetchBusinessIdBySlug(slug: string): Promise<string | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data } = await supabase
     .from('business_profiles')
     .select('id')

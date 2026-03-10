@@ -1,9 +1,10 @@
 /**
  * Services API - Resolve add-on IDs to full add-on objects for public booking.
  * Server-only; used when passing addOnIds from details → book page.
+ * Uses admin client so RLS does not block unauthenticated visitors.
  */
 
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 
 export interface AddOnForBooking {
   id: string;
@@ -22,7 +23,7 @@ export async function getAddOnsByIdsForBooking(
   if (addonIds.length === 0) return [];
 
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
     const ids = [...new Set(addonIds)].filter(Boolean);
 
     const { data } = await supabase

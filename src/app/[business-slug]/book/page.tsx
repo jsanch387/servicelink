@@ -8,7 +8,6 @@
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -45,7 +44,7 @@ type PublicServiceForBooking = {
 
 async function fetchBusinessProfileBySlug(slug: string) {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     const { data: profileData, error } = await supabase
       .from('business_profiles')
@@ -76,7 +75,7 @@ async function fetchServiceById(
   duration_minutes: number | null;
 } | null> {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
 
     const { data: serviceData, error } = await supabase
       .from('business_services')
