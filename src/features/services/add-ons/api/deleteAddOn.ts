@@ -5,6 +5,7 @@
  */
 
 import type { Database } from '@/libs/supabase/client';
+import { sanitizeDbError } from '@/utils/sanitizeDbError';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface DeleteAddOnResult {
@@ -30,7 +31,10 @@ export async function deleteAddOn(
     if (error) {
       return {
         success: false,
-        error: error.message ?? 'Failed to delete add-on',
+        error: sanitizeDbError(
+          error.message,
+          'Failed to delete add-on. Please try again.'
+        ),
       };
     }
 
@@ -40,7 +44,10 @@ export async function deleteAddOn(
       err instanceof Error ? err.message : 'An unexpected error occurred';
     return {
       success: false,
-      error: message,
+      error: sanitizeDbError(
+        message,
+        'Failed to delete add-on. Please try again.'
+      ),
     };
   }
 }

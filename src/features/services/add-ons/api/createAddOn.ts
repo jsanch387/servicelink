@@ -5,6 +5,7 @@
  */
 
 import type { Database } from '@/libs/supabase/client';
+import { sanitizeDbError } from '@/utils/sanitizeDbError';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AddOnRow } from '../../components/add-ons/addOnTypes';
 
@@ -46,7 +47,10 @@ export async function createAddOn(
       return {
         success: false,
         data: null,
-        error: error.message ?? 'Failed to create add-on',
+        error: sanitizeDbError(
+          error.message,
+          'Failed to create add-on. Please try again.'
+        ),
       };
     }
 
@@ -70,7 +74,10 @@ export async function createAddOn(
     return {
       success: false,
       data: null,
-      error: message,
+      error: sanitizeDbError(
+        message,
+        'Failed to create add-on. Please try again.'
+      ),
     };
   }
 }

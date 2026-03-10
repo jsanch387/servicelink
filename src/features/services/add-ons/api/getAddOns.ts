@@ -6,6 +6,7 @@
 
 import type { Database } from '@/libs/supabase/client';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { sanitizeDbError } from '@/utils/sanitizeDbError';
 import type { AddOnRow } from '../../components/add-ons/addOnTypes';
 
 type ServiceAddOnRow = Database['public']['Tables']['service_addons']['Row'];
@@ -44,7 +45,10 @@ export async function getAddOns(businessId: string): Promise<GetAddOnsResult> {
       return {
         success: false,
         data: null,
-        error: error.message ?? 'Failed to load add-ons',
+        error: sanitizeDbError(
+          error.message,
+          'Failed to load add-ons. Please try again.'
+        ),
       };
     }
 
@@ -61,7 +65,10 @@ export async function getAddOns(businessId: string): Promise<GetAddOnsResult> {
     return {
       success: false,
       data: null,
-      error: message,
+      error: sanitizeDbError(
+        message,
+        'Failed to load add-ons. Please try again.'
+      ),
     };
   }
 }
