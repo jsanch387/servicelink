@@ -8,17 +8,17 @@ import {
   SERVICE_DURATION_HOURS_OPTIONS,
   TextArea,
 } from '@/components/shared';
-import { createAddOnAction } from '@/features/services/add-ons';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';
 import { updateServiceAction } from '@/features/services/actions/updateService';
+import { createAddOnAction } from '@/features/services/add-ons';
 import type { ServiceRow } from '@/features/services/types/services';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
-import { EditAddOnModal } from './add-ons/EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
+import { EditAddOnModal } from './add-ons/EditAddOnModal';
 
 const DURATION_OPTIONS = [
   { value: '', label: 'Select duration' },
@@ -139,7 +139,10 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
         return;
       }
       const newAddOn = createResult.data;
-      const newSelectedIds = [...selectedAddOnIds, newAddOn.id];
+      const validPoolIds = new Set([...addOnsPool.map(a => a.id), newAddOn.id]);
+      const newSelectedIds = [...selectedAddOnIds, newAddOn.id].filter(id =>
+        validPoolIds.has(id)
+      );
       const assignResult = await saveServiceAddOnAssignmentsAction(
         service.id,
         newSelectedIds
@@ -156,7 +159,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       setIsAddOnModalOpen(false);
       router.refresh();
     },
-    [selectedAddOnIds, service.id, router]
+    [addOnsPool, selectedAddOnIds, service.id, router]
   );
 
   const handleSave = useCallback(async () => {
@@ -177,6 +180,10 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
 
     setIsSaving(true);
 
+    const validAddOnIds = Array.from(selectedAddOnIds).filter(id =>
+      addOnsPool.some(a => a.id === id)
+    );
+
     const [updateResult, assignmentsResult] = await Promise.all([
       updateServiceAction(service.id, {
         name: nameTrim,
@@ -184,10 +191,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
         price_cents: priceCents,
         duration_minutes: durationMinutes,
       }),
-      saveServiceAddOnAssignmentsAction(
-        service.id,
-        Array.from(selectedAddOnIds)
-      ),
+      saveServiceAddOnAssignmentsAction(service.id, validAddOnIds),
     ]);
 
     setIsSaving(false);
@@ -211,6 +215,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     price,
     durationHours,
     selectedAddOnIds,
+    addOnsPool,
     service.id,
     backHref,
     router,
