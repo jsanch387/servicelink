@@ -118,7 +118,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
               >
                 <ChevronUpIcon className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
               </button>
-              <span className="flex items-center justify-center w-[44px] sm:w-auto text-sm font-semibold text-white sm:text-[10px] sm:font-medium sm:text-gray-500 sm:uppercase sm:tracking-wider tabular-nums">
+              <span className="flex items-center justify-center w-[44px] sm:w-auto text-sm font-semibold text-white sm:text-[10px] sm:font-medium sm:text-gray-500 sm:tracking-wider tabular-nums">
                 {index + 1}
               </span>
               <button
@@ -154,21 +154,24 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
             </div>
           </div>
 
-          {/* Duration + add-on count — same position as public card */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+          {/* Duration + add-on count (only show add-ons when count > 0) */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
             {duration && (
               <div className="flex items-center gap-1.5 text-zinc-500">
                 <ClockIcon className="h-3 w-3 flex-shrink-0" />
-                <span className="text-[10px] font-bold uppercase tracking-wider">
+                <span className="text-[10px] font-medium tracking-wide">
                   {duration}
                 </span>
               </div>
             )}
-            {addOnCount != null && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                {addOnCount === 0
-                  ? 'No add-ons'
-                  : `${addOnCount} add-on${addOnCount === 1 ? '' : 's'}`}
+            {duration && addOnCount != null && addOnCount > 0 && (
+              <span className="text-zinc-500 text-[10px]" aria-hidden>
+                ·
+              </span>
+            )}
+            {addOnCount != null && addOnCount > 0 && (
+              <span className="text-[10px] font-medium tracking-wide text-zinc-500">
+                {addOnCount} add-on{addOnCount === 1 ? '' : 's'}
               </span>
             )}
           </div>

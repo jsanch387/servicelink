@@ -6,11 +6,13 @@
 
 export { createServiceAction } from './actions/createService';
 export { deleteServiceAction } from './actions/deleteService';
+export { saveServiceAddOnAssignmentsAction } from './actions/saveServiceAddOnAssignments';
 export { saveServicesOrderAction } from './actions/saveServicesOrder';
 export { updateServiceAction } from './actions/updateService';
 export { updateServiceIsActiveAction } from './actions/updateServiceIsActive';
 export { getAddOns } from './add-ons/api/getAddOns';
 export { getAddOnCounts } from './api/getAddOnCounts';
+export { getServiceAddOnIds } from './api/getServiceAddOnIds';
 export { getServices } from './api/getServices';
 export { ServicesContent } from './components/ServicesContent';
 export { ServicesWithAddOnsView } from './components/ServicesWithAddOnsView';

@@ -50,10 +50,10 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 
 ---
 
-## User flow (current)
+## User flow
 
-1. **Add-ons tab** – User creates add-ons (name + price). Each insert goes into `service_addons` only. No `service_addon_assignments` rows yet.
-2. **Service edit** *(coming soon)* – When editing a service, user selects which add-ons to offer. That creates/deletes rows in `service_addon_assignments`.
+1. **Add-ons tab** – User creates add-ons (name + price). Each insert goes into `service_addons` only.
+2. **Service edit** – When editing a service, user sees the full add-on pool and selects which to offer. On Save, service details and add-on assignments are persisted. Assignments are stored in `service_addon_assignments` (replace-all for that service).
 
 ---
 
@@ -87,3 +87,5 @@ add-ons/
 
 - **Services README:** `../README.md` – main services feature docs.
 - **getAddOnCounts:** `../api/getAddOnCounts.ts` – counts add-ons per service (from `service_addon_assignments`), used on the services list to show badges.
+- **getServiceAddOnIds:** `../api/getServiceAddOnIds.ts` – returns addon_id[] for a service (for the edit screen).
+- **saveServiceAddOnAssignments:** `../api/saveServiceAddOnAssignments.ts` – replaces assignments for a service with the given addon IDs (called on Save).

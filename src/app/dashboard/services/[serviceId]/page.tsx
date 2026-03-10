@@ -1,14 +1,19 @@
 /**
  * Service Edit Page
  *
- * Full-page edit for a single service: details + add-ons assignment.
- * Fetches service by ID and renders ServiceEditScreen.
+ * Full-page edit for a single service: details + add-ons pool (display only for now).
+ * Fetches service by ID and add-ons from DB, renders ServiceEditScreen.
  */
 
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { getServices, ServiceEditScreen } from '@/features/services';
+import {
+  getAddOns,
+  getServiceAddOnIds,
+  getServices,
+  ServiceEditScreen,
+} from '@/features/services';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { redirect, notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,25 +46,30 @@ export default async function ServiceEditPage({
     redirect('/dashboard');
   }
 
-  const result = await getServices(businessProfile.id);
-  if (!result.success || !result.data) {
+  const [servicesResult, addOnsResult, assignedResult] = await Promise.all([
+    getServices(businessProfile.id),
+    getAddOns(businessProfile.id),
+    getServiceAddOnIds(serviceId),
+  ]);
+
+  if (!servicesResult.success || !servicesResult.data) {
     redirect('/dashboard/services');
   }
 
-  const service = result.data.find(s => s.id === serviceId);
+  const service = servicesResult.data.find(s => s.id === serviceId);
   if (!service) {
     notFound();
   }
 
-  // Mock: seed first 2 add-on IDs as selected for demo (UI prototype)
-  const { MOCK_ADDONS_POOL } = await import(
-    '@/features/services/components/add-ons/mockAddOnsPool'
-  );
-  const initialSelectedAddOnIds = MOCK_ADDONS_POOL.slice(0, 2).map(a => a.id);
+  const addOns =
+    addOnsResult.success && addOnsResult.data ? addOnsResult.data : [];
+  const initialSelectedAddOnIds =
+    assignedResult.success && assignedResult.data ? assignedResult.data : [];
 
   return (
     <ServiceEditScreen
       service={service}
+      initialAddOns={addOns}
       initialSelectedAddOnIds={initialSelectedAddOnIds}
       backHref="/dashboard/services"
     />
