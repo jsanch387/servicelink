@@ -10,6 +10,11 @@ export const ROUTES = {
   TERMS: '/terms',
   PRIVACY: '/privacy',
 
+  // Public content (guides, blogs, SEO)
+  RESOURCES: '/resources',
+  /** Path for a single guide; use getResourceGuidePath(slug) for links. */
+  RESOURCE_GUIDE: (slug: string) => `/resources/${slug}`,
+
   // Authentication routes
   AUTH: {
     LOGIN: '/login',

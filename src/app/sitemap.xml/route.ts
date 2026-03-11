@@ -1,10 +1,12 @@
 /**
  * Dynamic Sitemap Generation
  *
- * Generates a sitemap.xml file with all public business profiles.
- * Helps search engines discover and index all business profiles.
+ * Generates a sitemap.xml file with all public pages: home, auth, legal,
+ * resources (guides), and business profiles. Helps search engines and AI
+ * crawlers discover and index content.
  */
 
+import { GUIDES } from '@/features/resources';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
@@ -34,6 +36,23 @@ export async function GET() {
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
     const currentDate = new Date().toISOString();
+
+    // Resources index and guide URLs for SEO
+    const resourcesUrls = `
+  <url>
+    <loc>${baseUrl}/resources</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+${GUIDES.map(
+  guide => `  <url>
+    <loc>${baseUrl}/resources/${guide.slug}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`
+).join('\n')}`;
 
     // Generate sitemap XML
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -67,7 +86,7 @@ export async function GET() {
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
-  </url>
+  </url>${resourcesUrls}
 ${(profiles || [])
   .map(
     profile => `  <url>

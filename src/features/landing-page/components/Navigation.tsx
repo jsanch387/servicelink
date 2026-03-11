@@ -48,6 +48,12 @@ export const Navigation: React.FC = () => {
           >
             The Problem
           </button>
+          <a
+            href={ROUTES.RESOURCES}
+            className="hover:text-white transition-colors"
+          >
+            Resources
+          </a>
         </div>
 
         {/* Desktop Auth Buttons — shared Button variants only */}
@@ -100,6 +106,13 @@ export const Navigation: React.FC = () => {
             >
               The Problem
             </button>
+            <a
+              href={ROUTES.RESOURCES}
+              className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+              onClick={closeMobileMenu}
+            >
+              Resources
+            </a>
             <div className="pt-5 mt-4 border-t border-[var(--dashboard-border)] space-y-3">
               {isAuthenticated ? (
                 <Button

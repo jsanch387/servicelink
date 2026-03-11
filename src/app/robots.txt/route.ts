@@ -13,12 +13,15 @@ export async function GET() {
 Allow: /
 Allow: /signup
 Allow: /login
+Allow: /resources
+Allow: /resources/
 Disallow: /dashboard/
 Disallow: /auth/
 Disallow: /api/
 Disallow: /settings/
 Disallow: /waitlist/
 
+# Sitemap for discoverability (Google, Bing, AI crawlers)
 Sitemap: ${baseUrl}/sitemap.xml`;
 
   return new NextResponse(robotsTxt, {

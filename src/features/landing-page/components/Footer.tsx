@@ -38,8 +38,15 @@ export const Footer: React.FC = () => {
             app.servicelink@gmail.com
           </a>
 
-          {/* Legal Links */}
-          <div className="flex items-center gap-4 sm:gap-6">
+          {/* Resources & Legal Links */}
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
+            <Link
+              href={ROUTES.RESOURCES}
+              className="hover:text-white transition-colors"
+            >
+              Resources
+            </Link>
+            <span className="text-gray-600">•</span>
             <Link
               href={ROUTES.TERMS}
               className="hover:text-white transition-colors"
