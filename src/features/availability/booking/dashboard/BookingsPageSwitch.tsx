@@ -11,25 +11,25 @@ import { AvailabilityBookingsView } from './AvailabilityBookingsView';
 
 /**
  * V1 = booking requests (preferred date + time window); V2 = availability bookings (exact slot).
- * Legacy users (legacy_request_booking_enabled) see V1 when V2 is off; new users see "Turn on availability" prompt.
+ * When V2 is off: show V1 only if showRequestBookingFallback (legacy user who never set availability); else "Turn on availability" prompt.
  */
 export interface BookingsPageSwitchProps {
   businessName: string;
   /** V1 only: initial list of booking requests. V2 fetches its own data via API. */
   initialBookingRequests: BookingRequest[];
-  /** From business_profiles.legacy_request_booking_enabled. When true, show V1 when V2 is off. */
-  legacyRequestBookingEnabled: boolean;
+  /** When true, show V1 (request booking) when V2 is off. False when legacy user has set availability (no fallback). */
+  showRequestBookingFallback: boolean;
   /** From business_availability.accept_bookings. When true, show V2 UI. */
   useAvailabilityBooking: boolean;
 }
 
 /**
- * Switches between V1, V2, or "Turn on availability" based on legacy flag and accept_bookings.
+ * Switches between V1, V2, or "Turn on availability" based on accept_bookings and request-booking fallback.
  */
 export function BookingsPageSwitch({
   businessName,
   initialBookingRequests,
-  legacyRequestBookingEnabled,
+  showRequestBookingFallback,
   useAvailabilityBooking,
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
@@ -45,7 +45,7 @@ export function BookingsPageSwitch({
     return <AvailabilityBookingsView />;
   }
 
-  if (legacyRequestBookingEnabled) {
+  if (showRequestBookingFallback) {
     return (
       <BookingsPageClient
         businessName={businessName}
@@ -54,7 +54,7 @@ export function BookingsPageSwitch({
     );
   }
 
-  // New user: no V1, prompt to set schedule and turn on availability
+  // No V1 fallback (e.g. legacy user turned off availability after setting it): prompt to turn on availability
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <div className="mx-auto max-w-md rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-6 text-center">

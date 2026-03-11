@@ -3,6 +3,8 @@
  * Fetches real service + assigned add-ons. If service has no add-ons, redirects to date selection.
  */
 
+import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -34,12 +36,36 @@ export default async function ServiceDetailsPage({
   const { 'business-slug': slug } = await params;
   const { serviceId, addOnIds } = await searchParams;
 
+  // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
   if (!serviceId?.trim()) {
-    notFound();
+    redirect(`/${slug}/book`);
   }
 
   const businessId = await fetchBusinessIdBySlug(slug);
   if (!businessId) notFound();
+
+  const adminClient = createSupabaseAdminClient();
+  const [profileRow, availabilityRow] = await Promise.all([
+    adminClient
+      .from('business_profiles')
+      .select('legacy_request_booking_enabled')
+      .eq('id', businessId)
+      .single(),
+    getAvailabilityForBusiness(adminClient, businessId),
+  ]);
+
+  const legacyRequestBookingEnabled =
+    (profileRow.data as { legacy_request_booking_enabled?: boolean } | null)
+      ?.legacy_request_booking_enabled === true;
+  const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+  const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
+  const showNotAcceptingBookings =
+    !useAvailabilityBooking &&
+    (!legacyRequestBookingEnabled || availabilityConfigured);
+
+  if (showNotAcceptingBookings) {
+    redirect(`/${slug}/book`);
+  }
 
   const result = await getServiceWithAddOnsForBooking(
     businessId,

@@ -5,6 +5,7 @@
  * Displays the booking request form for a specific business
  */
 
+import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -128,8 +129,11 @@ export default async function BookingRequestPage({
   const weeklySchedule = availabilityRow?.weekly_schedule ?? null;
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
+  const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
+  // If they've set availability and toggle off, don't fall back to legacy request booking
   const showNotAcceptingBookings =
-    !legacyRequestBookingEnabled && !useAvailabilityBooking;
+    !useAvailabilityBooking &&
+    (!legacyRequestBookingEnabled || availabilityConfigured);
 
   // Fetch service by ID when present (validates business_id)
   const serviceDetails =

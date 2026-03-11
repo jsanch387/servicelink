@@ -157,6 +157,29 @@ export function AvailabilityBookingPage({
                   <> · ${(servicePriceCents / 100).toFixed(2)}</>
                 )}
               </p>
+              {selectedAddOns.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <p className="text-xs text-gray-500 tracking-wider mb-1.5">
+                    Add-ons
+                  </p>
+                  <ul className="space-y-1">
+                    {selectedAddOns.map(addOn => (
+                      <li
+                        key={addOn.id}
+                        className="flex justify-between text-sm text-gray-300"
+                      >
+                        <span>{addOn.name}</span>
+                        <span>${(addOn.priceCents / 100).toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {totalPriceCents != null && totalPriceCents > 0 && (
+                    <p className="text-sm font-medium text-white mt-2">
+                      Total · ${(totalPriceCents / 100).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              )}
             </section>
             <DateSelector
               weeklySchedule={weeklySchedule}

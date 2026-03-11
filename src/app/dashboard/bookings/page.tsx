@@ -7,6 +7,7 @@
 
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -47,6 +48,10 @@ export default async function BookingsPage() {
     businessProfile.id
   );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
+  const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
+  // Legacy request booking only when legacy user has NOT set availability; once set, no fallback
+  const showRequestBookingFallback =
+    legacyRequestBookingEnabled && !availabilityConfigured;
 
   // V1 only: fetch booking requests when legacy and V2 off. V2 list is fetched client-side.
   const { data: bookingRequests, error: requestsError } = await supabase
@@ -63,7 +68,7 @@ export default async function BookingsPage() {
     <BookingsPageSwitch
       businessName={businessProfile.business_name}
       initialBookingRequests={bookingRequests ?? []}
-      legacyRequestBookingEnabled={legacyRequestBookingEnabled}
+      showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
     />
   );
