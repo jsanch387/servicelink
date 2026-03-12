@@ -1,10 +1,10 @@
-import { Logo } from '@/components/shared';
+import { Navigation } from '@/features/landing-page/components/Navigation';
 import { GuideCard, GUIDES } from '@/features/resources';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import React from 'react';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 
 export const metadata: Metadata = {
   title: 'Resources – Guides for Service Businesses | ServiceLink',
@@ -28,7 +28,14 @@ export const metadata: Metadata = {
     siteName: 'ServiceLink',
     type: 'website',
     locale: 'en_US',
-    images: [{ url: '/open-graph.png', width: 1200, height: 630, alt: 'ServiceLink Resources' }],
+    images: [
+      {
+        url: '/open-graph.png',
+        width: 1200,
+        height: 630,
+        alt: 'ServiceLink Resources',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
@@ -82,7 +89,12 @@ export default function ResourcesPage() {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Resources', item: `${SITE_URL}/resources` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Resources',
+        item: `${SITE_URL}/resources`,
+      },
     ],
   };
 
@@ -100,15 +112,11 @@ export default function ResourcesPage() {
           __html: JSON.stringify(breadcrumbStructuredData),
         }}
       />
-      {/* Header */}
-      <header className="border-b border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center">
-            <Logo size="md" variant="full" />
-          </Link>
-        </div>
-      </header>
-
+      <Navigation />
+      {/* Spacer: matches fixed nav height so content starts below it */}
+      <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+      {/* Visible gap between nav and content */}
+      <div className="h-12 sm:h-16 shrink-0" aria-hidden />
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 sm:mb-8 tracking-tight">
@@ -120,7 +128,7 @@ export default function ResourcesPage() {
         </p>
 
         <section className="space-y-4" aria-label="Guides and articles">
-          {GUIDES.map((guide) => (
+          {GUIDES.map(guide => (
             <GuideCard key={guide.slug} guide={guide} />
           ))}
         </section>

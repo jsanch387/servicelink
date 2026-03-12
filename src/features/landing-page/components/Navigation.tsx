@@ -4,11 +4,15 @@ import { Button, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import React, { useState } from 'react';
 
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
+  const isHome = pathname === '/';
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -26,6 +30,8 @@ export const Navigation: React.FC = () => {
     closeMobileMenu();
   };
 
+  const navLinkClass = 'hover:text-white transition-colors';
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
@@ -36,22 +42,35 @@ export const Navigation: React.FC = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
-          <button
-            onClick={() => scrollToSection('how-it-works')}
-            className="hover:text-white transition-colors"
-          >
-            How it Works
-          </button>
-          <button
-            onClick={() => scrollToSection('problem')}
-            className="hover:text-white transition-colors"
-          >
-            The Problem
-          </button>
-          <a
-            href={ROUTES.RESOURCES}
-            className="hover:text-white transition-colors"
-          >
+          {isHome ? (
+            <>
+              <button
+                onClick={() => scrollToSection('how-it-works')}
+                className={navLinkClass}
+              >
+                How it Works
+              </button>
+              <button
+                onClick={() => scrollToSection('problem')}
+                className={navLinkClass}
+              >
+                The Problem
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/#how-it-works" className={navLinkClass}>
+                How it Works
+              </Link>
+              <Link href="/#problem" className={navLinkClass}>
+                The Problem
+              </Link>
+            </>
+          )}
+          <a href={ROUTES.PRICING_PAGE} className={navLinkClass}>
+            Pricing
+          </a>
+          <a href={ROUTES.RESOURCES} className={navLinkClass}>
             Resources
           </a>
         </div>
@@ -94,18 +113,46 @@ export const Navigation: React.FC = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]">
           <div className="px-4 py-5 space-y-1">
-            <button
-              onClick={() => scrollToSection('how-it-works')}
+            {isHome ? (
+              <>
+                <button
+                  onClick={() => scrollToSection('how-it-works')}
+                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                >
+                  How it Works
+                </button>
+                <button
+                  onClick={() => scrollToSection('problem')}
+                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                >
+                  The Problem
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/#how-it-works"
+                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                  onClick={closeMobileMenu}
+                >
+                  How it Works
+                </Link>
+                <Link
+                  href="/#problem"
+                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                  onClick={closeMobileMenu}
+                >
+                  The Problem
+                </Link>
+              </>
+            )}
+            <a
+              href={ROUTES.PRICING_PAGE}
               className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+              onClick={closeMobileMenu}
             >
-              How it Works
-            </button>
-            <button
-              onClick={() => scrollToSection('problem')}
-              className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
-            >
-              The Problem
-            </button>
+              Pricing
+            </a>
             <a
               href={ROUTES.RESOURCES}
               className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
