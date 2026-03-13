@@ -1,13 +1,34 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import React from 'react';
+import React, { useState } from 'react';
 import { PLANS, PRO_FEATURES } from '../types';
 
 export const UpgradeContent: React.FC = () => {
   const plan = PLANS.pro;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGetPro = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.url) {
+        setError(data.error ?? 'Something went wrong');
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setError('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
@@ -58,11 +79,19 @@ export const UpgradeContent: React.FC = () => {
             ))}
           </ul>
 
+          {error && (
+            <p className="text-rose-400 text-sm mb-4" role="alert">
+              {error}
+            </p>
+          )}
           <Button
-            href={ROUTES.PRICING_PAGE}
+            type="button"
             variant="inverse"
             size="lg"
             className="w-full sm:w-auto"
+            onClick={handleGetPro}
+            disabled={loading}
+            loading={loading}
           >
             Get Pro
           </Button>

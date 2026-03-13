@@ -1,8 +1,3 @@
-/**
- * FreeBookingsTracker - Small inline indicator: X of 5 free bookings + upgrade link.
- * Shown on dashboard for free users. No card; minimal footprint.
- */
-
 'use client';
 
 import { ROUTES } from '@/constants/routes';
@@ -12,7 +7,7 @@ import React from 'react';
 import { FREE_BOOKINGS_LIMIT } from '../types';
 
 interface FreeBookingsTrackerProps {
-  /** Number of free bookings used this month (0–5). From API later. */
+  /** Number of bookings used this month (0–5). */
   bookingsUsed?: number;
   className?: string;
 }
@@ -25,21 +20,33 @@ export const FreeBookingsTracker: React.FC<FreeBookingsTrackerProps> = ({
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-sm ${className}`.trim()}
+      className={`flex flex-row items-center justify-between gap-2 text-sm ${className}`.trim()}
     >
-      <TicketIcon className="h-4 w-4 text-amber-400/80 flex-shrink-0" />
-      <span className="text-gray-400">
-        <span className="text-white font-medium">{bookingsUsed}</span>
-        <span className="text-gray-500"> / {FREE_BOOKINGS_LIMIT}</span>
-        <span className="text-gray-400"> free bookings this month</span>
-      </span>
-      <span className="text-gray-600">·</span>
-      <Link
-        href={ROUTES.DASHBOARD.UPGRADE}
-        className="text-amber-400 hover:text-amber-300 font-medium transition-colors"
-      >
-        {atLimit ? 'Upgrade for unlimited' : 'Upgrade'}
-      </Link>
+      <div className="flex flex-col items-start gap-0.5">
+        <div className="inline-flex items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/30 px-2.5 py-1">
+          <TicketIcon className="h-3.5 w-3.5 text-amber-400/90 mr-1.5" />
+          <span className="text-xs font-medium text-amber-100">
+            {bookingsUsed} / {FREE_BOOKINGS_LIMIT}
+          </span>
+        </div>
+        <span className="text-[11px] sm:text-xs text-gray-500">
+          bookings this month
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        {atLimit && (
+          <span className="text-[11px] sm:text-xs text-gray-400">
+            Limit reached
+          </span>
+        )}
+        <Link
+          href={ROUTES.DASHBOARD.UPGRADE}
+          className="text-xs font-semibold text-amber-400 hover:text-amber-300 underline-offset-2 hover:underline transition-colors"
+        >
+          Upgrade
+        </Link>
+      </div>
     </div>
   );
 };

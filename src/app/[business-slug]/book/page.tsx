@@ -5,8 +5,8 @@
  * Displays the booking request form for a specific business
  */
 
-import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -33,6 +33,9 @@ type PublicBusinessProfileForBooking = {
   business_name: string;
   business_slug: string | null;
   legacy_request_booking_enabled: boolean | null;
+  profile_id: string | null;
+  free_bookings_month: string | null;
+  free_bookings_count: number | null;
   [key: string]: unknown;
 };
 
@@ -50,7 +53,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, legacy_request_booking_enabled'
+        'id, business_name, business_slug, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count'
       )
       .eq('business_slug', slug)
       .single();
@@ -130,10 +133,54 @@ export default async function BookingRequestPage({
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
-  // If they've set availability and toggle off, don't fall back to legacy request booking
+
+  // Free-tier cap: if this owner is on the free tier and has already used
+  // all 5 bookings for the current month, treat as not accepting bookings
+  // so we don't show the calendar/form at all.
+  let reachedFreeCap = false;
+  if (businessProfile.profile_id) {
+    const { data: ownerProfileRaw } = await adminClient
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('user_id', businessProfile.profile_id)
+      .maybeSingle();
+
+    const ownerProfile: { subscription_tier?: string | null } | null =
+      ownerProfileRaw as { subscription_tier?: string | null } | null;
+
+    // Treat missing subscription_tier as 'free' for legacy rows.
+    const tier = ownerProfile?.subscription_tier ?? 'free';
+    const isFreeTier = tier === 'free';
+    if (isFreeTier) {
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const storedMonth = businessProfile.free_bookings_month;
+      const count = businessProfile.free_bookings_count ?? 0;
+
+      if (storedMonth === currentMonth && count >= 5) {
+        reachedFreeCap = true;
+      }
+    }
+  } else {
+    // Legacy data without profile_id: fall back purely on the stored month/count.
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const storedMonth = businessProfile.free_bookings_month;
+    const count = businessProfile.free_bookings_count ?? 0;
+    if (storedMonth === currentMonth && count >= 5) {
+      reachedFreeCap = true;
+    }
+  }
+
+  // If they've set availability and toggle off, don't fall back to legacy request booking.
+  // Also, if they've hit the free plan cap, show the \"not accepting\" message immediately.
   const showNotAcceptingBookings =
-    !useAvailabilityBooking &&
-    (!legacyRequestBookingEnabled || availabilityConfigured);
+    (!useAvailabilityBooking &&
+      (!legacyRequestBookingEnabled || availabilityConfigured)) ||
+    reachedFreeCap;
+
+  // When the free-plan cap is reached, force the UI into the \"not accepting\"
+  // state even if availability booking is technically on.
+  const effectiveUseAvailabilityBooking =
+    useAvailabilityBooking && !reachedFreeCap;
 
   // Fetch service by ID when present (validates business_id)
   const serviceDetails =
@@ -187,7 +234,7 @@ export default async function BookingRequestPage({
       {/* Form Container – availability booking or request booking by flag */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pt-8 sm:pb-24">
         <BookFlowSwitch
-          useAvailabilityBooking={useAvailabilityBooking}
+          useAvailabilityBooking={effectiveUseAvailabilityBooking}
           showNotAcceptingBookings={showNotAcceptingBookings}
           businessName={businessProfile.business_name}
           businessId={businessProfile.id}

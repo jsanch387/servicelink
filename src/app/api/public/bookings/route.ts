@@ -69,7 +69,9 @@ export async function POST(request: NextRequest) {
 
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
-      .select('id, business_slug, profile_id')
+      .select(
+        'id, business_slug, profile_id, free_bookings_month, free_bookings_count'
+      )
       .eq('business_slug', body.businessSlug.trim())
       .single();
 
@@ -84,9 +86,59 @@ export async function POST(request: NextRequest) {
       id: string;
       business_slug: string | null;
       profile_id: string | null;
+      free_bookings_month: string | null;
+      free_bookings_count: number | null;
     };
     const businessId = p.id;
     const businessSlug = p.business_slug ?? body.businessSlug.trim();
+    const profileId = p.profile_id ?? null;
+
+    // If this owner is on the free tier, enforce the 5-bookings-per-month cap
+    if (profileId) {
+      const { data: ownerProfileRaw } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('user_id', profileId)
+        .maybeSingle();
+
+      const ownerProfile: { subscription_tier?: string | null } | null =
+        ownerProfileRaw as { subscription_tier?: string | null } | null;
+
+      const isFreeTier = ownerProfile?.subscription_tier === 'free';
+
+      if (isFreeTier) {
+        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+        let month = p.free_bookings_month;
+        let count = p.free_bookings_count ?? 0;
+
+        // If month is unset or from a previous month, reset window
+        if (!month || month !== currentMonth) {
+          month = currentMonth;
+          count = 0;
+        }
+
+        if (count >= 5) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "This business isn't accepting new bookings right now. They've reached the limit for their current plan.",
+            },
+            { status: 403 }
+          );
+        }
+
+        // Persist updated month/count before creating the booking
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('business_profiles')
+          .update({
+            free_bookings_month: month,
+            free_bookings_count: count + 1,
+          })
+          .eq('id', businessId);
+      }
+    }
 
     const result = await createBooking(supabase, {
       businessId,
@@ -102,7 +154,6 @@ export async function POST(request: NextRequest) {
     });
 
     // In-app notification for the business owner (V2 availability booking)
-    const profileId = p.profile_id ?? null;
     if (profileId && result?.id) {
       const customerName = body.customer?.fullName?.trim() ?? 'A customer';
       const title = `New appointment from ${customerName}`;
