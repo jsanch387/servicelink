@@ -8,6 +8,7 @@ import {
   WarningCallout,
 } from '@/components/shared';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
+import { PlanSection } from '@/features/pricing';
 import {
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
@@ -131,6 +132,9 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         </div>
 
         <div className="space-y-8 w-full min-w-0">
+          {/* Subscription plan */}
+          <PlanSection planId="free" />
+
           {/* Custom link */}
           <GlassCard
             padding="none"

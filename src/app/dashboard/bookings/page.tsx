@@ -64,12 +64,15 @@ export default async function BookingsPage() {
     console.error('Error fetching booking requests:', requestsError);
   }
 
+  const freeBookingsUsed = 0; // TODO: from subscription/usage API when ready
+
   return (
     <BookingsPageSwitch
       businessName={businessProfile.business_name}
       initialBookingRequests={bookingRequests ?? []}
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
+      freeBookingsUsed={freeBookingsUsed}
     />
   );
 }

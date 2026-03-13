@@ -252,6 +252,7 @@ export default async function DashboardPage() {
         legacyRequestBookingEnabled,
         useAvailabilityBooking,
         upcomingBookingsCount,
+        freeBookingsUsed: 0, // TODO: from subscription/usage API when ready
       };
 
       return <DashboardContent dashboardData={dashboardData} />;
