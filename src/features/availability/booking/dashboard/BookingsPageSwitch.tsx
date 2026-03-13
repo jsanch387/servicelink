@@ -24,6 +24,8 @@ export interface BookingsPageSwitchProps {
   useAvailabilityBooking: boolean;
   /** Free plan: bookings used this month (0–5). Shown in tracker. */
   freeBookingsUsed?: number;
+  /** When false (Pro), hide the free bookings tracker. */
+  showFreeBookingsTracker?: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ export function BookingsPageSwitch({
   showRequestBookingFallback,
   useAvailabilityBooking,
   freeBookingsUsed = 0,
+  showFreeBookingsTracker = true,
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
     s => s.setAcceptBookings
@@ -46,7 +49,12 @@ export function BookingsPageSwitch({
   }, [useAvailabilityBooking, setAcceptBookings]);
 
   if (useAvailabilityBooking) {
-    return <AvailabilityBookingsView freeBookingsUsed={freeBookingsUsed} />;
+    return (
+      <AvailabilityBookingsView
+        freeBookingsUsed={freeBookingsUsed}
+        showFreeBookingsTracker={showFreeBookingsTracker}
+      />
+    );
   }
 
   if (showRequestBookingFallback) {
@@ -55,6 +63,7 @@ export function BookingsPageSwitch({
         businessName={businessName}
         initialBookings={initialBookingRequests}
         freeBookingsUsed={freeBookingsUsed}
+        showFreeBookingsTracker={showFreeBookingsTracker}
       />
     );
   }
@@ -63,10 +72,12 @@ export function BookingsPageSwitch({
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <div className="mx-auto max-w-md">
-        <FreeBookingsTracker
-          bookingsUsed={freeBookingsUsed}
-          className="mb-4 justify-center"
-        />
+        {showFreeBookingsTracker && (
+          <FreeBookingsTracker
+            bookingsUsed={freeBookingsUsed}
+            className="mb-4 justify-center"
+          />
+        )}
         <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-6 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10">
             <CalendarDaysIcon className="h-6 w-6 text-gray-400" />

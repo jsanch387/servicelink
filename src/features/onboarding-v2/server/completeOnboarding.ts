@@ -36,6 +36,7 @@ export async function completeOnboardingV2(
   // if it hasn't been set yet.
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from('business_profiles')
     .update({

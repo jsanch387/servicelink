@@ -43,13 +43,21 @@ export default async function SettingsPage() {
       redirect('/dashboard');
     }
 
-    // Fetch slug data directly from database
-    const { data: slugData, error: slugError } = await supabase
-      .from('business_profiles')
-      .select('business_slug, business_link')
-      .eq('id', businessProfile.id)
-      .single();
+    // Fetch slug data and subscription tier from database
+    const [slugResult, profileResult] = await Promise.all([
+      supabase
+        .from('business_profiles')
+        .select('business_slug, business_link')
+        .eq('id', businessProfile.id)
+        .single(),
+      supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
 
+    const { data: slugData, error: slugError } = slugResult;
     if (slugError || !slugData) {
       redirect('/dashboard');
     }
@@ -59,6 +67,14 @@ export default async function SettingsPage() {
       business_link: string | null;
     };
     const hasSlug = !!(slug.business_slug && slug.business_link);
+
+    const profileRow = profileResult.data as {
+      subscription_tier?: string | null;
+    } | null;
+    const subscriptionTier = profileRow?.subscription_tier;
+    const planId =
+      subscriptionTier === 'pro' ? ('pro' as const) : ('free' as const);
+
     const settingsData = {
       businessProfile: {
         id: businessProfile.id,
@@ -78,6 +94,7 @@ export default async function SettingsPage() {
         : {
             hasSlug: false,
           },
+      planId,
     };
 
     return (

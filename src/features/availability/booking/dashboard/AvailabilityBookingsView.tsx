@@ -23,10 +23,13 @@ function sortByDateThenTime(
 export interface AvailabilityBookingsViewProps {
   /** Free plan: bookings used this month (0–5). Shown in tracker. */
   freeBookingsUsed?: number;
+  /** When false (Pro), hide the free bookings tracker. */
+  showFreeBookingsTracker?: boolean;
 }
 
 export function AvailabilityBookingsView({
   freeBookingsUsed = 0,
+  showFreeBookingsTracker = true,
 }: AvailabilityBookingsViewProps = {}) {
   const { bookings, isLoading, error, updateBookingStatus } =
     useAvailabilityBookings();
@@ -140,7 +143,12 @@ export function AvailabilityBookingsView({
             {error ?? updateError}
           </div>
         )}
-        <FreeBookingsTracker bookingsUsed={freeBookingsUsed} className="mb-4" />
+        {showFreeBookingsTracker && (
+          <FreeBookingsTracker
+            bookingsUsed={freeBookingsUsed}
+            className="mb-4"
+          />
+        )}
         {isLoading ? (
           <AvailabilityBookingsViewSkeleton />
         ) : filteredList.length === 0 ? (

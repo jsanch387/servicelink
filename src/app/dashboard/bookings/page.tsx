@@ -94,6 +94,7 @@ export default async function BookingsPage() {
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
       freeBookingsUsed={freeBookingsUsed}
+      showFreeBookingsTracker={isFreeTier}
     />
   );
 }

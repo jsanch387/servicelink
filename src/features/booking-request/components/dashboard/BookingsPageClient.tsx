@@ -16,6 +16,8 @@ interface BookingsPageClientProps {
   initialBookings: BookingRequest[];
   /** Free plan: bookings used this month (0–5). Shown in tracker. */
   freeBookingsUsed?: number;
+  /** When false (Pro), hide the free bookings tracker. */
+  showFreeBookingsTracker?: boolean;
 }
 
 // Sort bookings: pending first, then by submitted_at (newest first)
@@ -36,6 +38,7 @@ export function BookingsPageClient({
   businessName,
   initialBookings,
   freeBookingsUsed = 0,
+  showFreeBookingsTracker = true,
 }: BookingsPageClientProps) {
   const [bookings, setBookings] = useState<BookingRequest[]>(
     sortBookings(initialBookings)
@@ -193,7 +196,12 @@ export function BookingsPageClient({
             {statusFilter} requests — {filteredBookings.length}
           </h2>
         </div>
-        <FreeBookingsTracker bookingsUsed={freeBookingsUsed} className="mb-4" />
+        {showFreeBookingsTracker && (
+          <FreeBookingsTracker
+            bookingsUsed={freeBookingsUsed}
+            className="mb-4"
+          />
+        )}
         <BookingsList
           bookings={filteredBookings}
           onAction={handleStatusUpdate}

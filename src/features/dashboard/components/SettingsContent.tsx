@@ -9,6 +9,7 @@ import {
 } from '@/components/shared';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { PlanSection } from '@/features/pricing';
+import type { PlanId } from '@/features/pricing';
 import {
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
@@ -32,6 +33,8 @@ interface SettingsData {
     slug?: string;
     fullLink?: string;
   } | null;
+  /** Current plan from profiles.subscription_tier. */
+  planId?: PlanId;
 }
 
 interface SettingsContentProps {
@@ -133,7 +136,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
 
         <div className="space-y-8 w-full min-w-0">
           {/* Subscription plan */}
-          <PlanSection planId="free" />
+          <PlanSection planId={settingsData.planId ?? 'free'} />
 
           {/* Custom link */}
           <GlassCard
