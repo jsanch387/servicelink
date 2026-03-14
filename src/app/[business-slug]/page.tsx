@@ -10,6 +10,7 @@ import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { MediaService } from '@/features/media';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { notFound } from 'next/navigation';
 
@@ -123,6 +124,21 @@ export default async function PublicProfilePage({
     notFound();
   }
 
+  // Derive verified badge from owner's subscription (Pro = verified); single source of truth is profiles.subscription_tier
+  const profileId = (businessProfile as { profile_id?: string }).profile_id;
+  let showVerifiedBadge = false;
+  if (profileId) {
+    const admin = createSupabaseAdminClient();
+    const { data: ownerProfile } = await admin
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('user_id', profileId)
+      .maybeSingle();
+    const tier = (ownerProfile as { subscription_tier?: string } | null)
+      ?.subscription_tier;
+    showVerifiedBadge = tier === 'pro';
+  }
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
@@ -135,6 +151,7 @@ export default async function PublicProfilePage({
         businessProfile={businessProfile}
         initialMode="view"
         isPublic={true}
+        showVerifiedBadge={showVerifiedBadge}
       />
     </div>
   );

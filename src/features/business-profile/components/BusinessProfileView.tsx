@@ -32,6 +32,8 @@ interface BusinessProfileViewProps {
   initialMode?: EditMode;
   isPublic?: boolean; // New prop to indicate public viewing
   slugData?: SlugData; // Optional slug data for authenticated users
+  /** When true, show verified badge on logo (Pro tier from owner profile). */
+  showVerifiedBadge?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -39,6 +41,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   initialMode = 'view',
   isPublic = false,
   slugData,
+  showVerifiedBadge = false,
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
@@ -195,6 +198,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onSave={handleSave}
                 onCancel={handleCancel}
                 isPublic={isPublic}
+                showVerifiedBadge={showVerifiedBadge}
               />
 
               {/* Tabs Navigation */}

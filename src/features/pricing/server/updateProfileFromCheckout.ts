@@ -48,6 +48,7 @@ export async function updateProfileFromCheckout(
     updates.subscription_current_period_end = currentPeriodEnd;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('profiles')
     .update(updates)

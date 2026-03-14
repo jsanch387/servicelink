@@ -1,5 +1,5 @@
 import { Button } from '@/components/shared';
-import { PhoneIcon } from '@heroicons/react/24/solid';
+import { CheckBadgeIcon, PhoneIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
 import {
@@ -15,11 +15,14 @@ interface ProfileHeaderProps {
   onSave: (_data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isPublic?: boolean;
+  /** When true, show verified badge on logo (derived from owner subscription_tier === 'pro'). */
+  showVerifiedBadge?: boolean;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   businessProfile,
   isPublic = false,
+  showVerifiedBadge = false,
 }) => {
   return (
     <>
@@ -72,6 +75,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               />
             )}
           </div>
+          {showVerifiedBadge && (
+            <span
+              className="absolute -bottom-0.5 -right-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-[#0f0f0f] border-2 border-neutral-600 shadow-lg"
+              aria-label="Verified business"
+            >
+              <CheckBadgeIcon className="h-5 w-5 text-blue-400" />
+            </span>
+          )}
         </div>
 
         {/* Business Title */}
