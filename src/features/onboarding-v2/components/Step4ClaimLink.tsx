@@ -1,7 +1,7 @@
 'use client';
 
-import { SLUG_MAX_LENGTH } from '@/constants/slug';
 import { Button } from '@/components/shared';
+import { SLUG_MAX_LENGTH } from '@/constants/slug';
 import React, { useState } from 'react';
 
 const APP_DOMAIN = 'myservicelink.app';
@@ -127,14 +127,13 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
         </div>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3">
-          <Button type="button" onClick={onBack} variant="secondary" size="md">
+          <Button type="button" onClick={onBack} variant="secondary">
             Back
           </Button>
           <Button
             type="button"
             onClick={handleClaim}
             variant="inverse"
-            size="md"
             disabled={!canContinue || saving}
             className="sm:ml-auto"
           >

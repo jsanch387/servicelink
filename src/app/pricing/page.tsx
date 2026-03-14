@@ -3,7 +3,6 @@ import { ROUTES } from '@/constants/routes';
 import { Navigation } from '@/features/landing-page/components/Navigation';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
-import React from 'react';
 
 const FREE_FEATURES = [
   'Public booking page',
@@ -67,7 +66,6 @@ export default function PricingPage() {
               <Button
                 href={ROUTES.AUTH.SIGNUP}
                 variant="secondary"
-                size="lg"
                 className="w-full"
               >
                 Get started
@@ -94,7 +92,6 @@ export default function PricingPage() {
               <Button
                 href={ROUTES.AUTH.SIGNUP}
                 variant="inverse"
-                size="lg"
                 className="w-full"
               >
                 Get Pro

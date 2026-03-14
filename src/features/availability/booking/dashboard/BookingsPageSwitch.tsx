@@ -92,7 +92,6 @@ export function BookingsPageSwitch({
           <Button
             href={ROUTES.DASHBOARD.AVAILABILITY}
             variant="inverse"
-            size="md"
             className="mt-6"
           >
             Go to Availability

@@ -116,7 +116,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <Button
             href={`tel:${businessProfile.phone_number_call.trim()}`}
             variant="inverse"
-            size="lg"
             icon={<PhoneIcon className="h-5 w-5" />}
             iconPosition="left"
             className="mt-6 font-medium"

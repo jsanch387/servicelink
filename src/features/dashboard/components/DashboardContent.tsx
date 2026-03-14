@@ -130,7 +130,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               <Button
                 href={ROUTES.DASHBOARD.AVAILABILITY}
                 variant="inverse"
-                size="md"
                 className="w-full sm:w-auto"
                 icon={<ClockIcon className="h-4 w-4" />}
               >

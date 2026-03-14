@@ -66,7 +66,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
         <Button
           onClick={handleSeeProfile}
           variant="inverse"
-          size="lg"
           className="w-full sm:w-auto min-w-[200px]"
           icon={<CheckCircleIcon className="h-5 w-5" />}
           iconPosition="left"

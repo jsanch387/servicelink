@@ -78,15 +78,15 @@ export const Navigation: React.FC = () => {
         {/* Desktop Auth Buttons — shared Button variants only */}
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated ? (
-            <Button href={ROUTES.DASHBOARD.MAIN} variant="secondary" size="md">
+            <Button href={ROUTES.DASHBOARD.MAIN} variant="secondary">
               Dashboard
             </Button>
           ) : (
             <>
-              <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="md">
+              <Button href={ROUTES.AUTH.LOGIN} variant="secondary">
                 Login
               </Button>
-              <Button href={ROUTES.AUTH.SIGNUP} variant="inverse" size="md">
+              <Button href={ROUTES.AUTH.SIGNUP} variant="inverse">
                 Sign Up
               </Button>
             </>
@@ -165,7 +165,6 @@ export const Navigation: React.FC = () => {
                 <Button
                   href={ROUTES.DASHBOARD.MAIN}
                   variant="secondary"
-                  size="md"
                   fullWidth
                   onClick={closeMobileMenu}
                 >
@@ -176,7 +175,6 @@ export const Navigation: React.FC = () => {
                   <Button
                     href={ROUTES.AUTH.LOGIN}
                     variant="secondary"
-                    size="md"
                     fullWidth
                     onClick={closeMobileMenu}
                   >
@@ -185,7 +183,6 @@ export const Navigation: React.FC = () => {
                   <Button
                     href={ROUTES.AUTH.SIGNUP}
                     variant="inverse"
-                    size="md"
                     fullWidth
                     onClick={closeMobileMenu}
                   >

@@ -42,7 +42,6 @@ export const SuccessMessage: React.FC<SuccessMessageProps> = ({
       <Button
         onClick={onGoToDashboard}
         variant="primary"
-        size="lg"
         className="w-full sm:w-auto min-w-[200px]"
       >
         Go to Dashboard

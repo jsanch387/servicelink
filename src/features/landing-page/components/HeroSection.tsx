@@ -47,7 +47,6 @@ export const HeroSection: React.FC = () => {
               <Button
                 href={ROUTES.AUTH.SIGNUP}
                 variant="secondary"
-                size="sm"
                 className="px-6 sm:px-8 py-3 rounded-lg font-black whitespace-nowrap text-sm w-full sm:w-auto !border-0 !bg-orange-500 hover:!bg-orange-600 !text-white focus:!ring-orange-500"
               >
                 Get My Link

@@ -164,14 +164,14 @@ const EnhancedImageUpload: React.FC<{
   return (
     <label
       className={`
-        flex flex-col items-center justify-center w-full p-8 transition-colors
-        border-2 border-dashed rounded-xl cursor-pointer
+        flex flex-col items-center justify-center w-full min-h-[120px] sm:min-h-[140px] p-5 sm:p-6 transition duration-200
+        border-2 border-dashed rounded-xl cursor-pointer touch-manipulation
         ${
           effectiveDisabled
             ? 'opacity-50 cursor-not-allowed border-white/10 bg-white/[0.02]'
             : dragActive
-              ? 'border-orange-400 bg-orange-500/10'
-              : 'border-orange-400/40 bg-white/[0.04] hover:border-orange-400/60 hover:bg-white/[0.06]'
+              ? 'border-white/30 bg-white/[0.04]'
+              : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] active:bg-white/[0.06]'
         }
       `}
       htmlFor="file-upload"
@@ -181,33 +181,19 @@ const EnhancedImageUpload: React.FC<{
       onDrop={handleDrop}
     >
       <CameraIcon
-        className={`h-12 w-12 mb-4 ${isAtLimit ? 'text-gray-500' : 'text-orange-400'}`}
+        className={`h-9 w-9 sm:h-10 sm:w-10 mb-2 flex-shrink-0 ${isAtLimit ? 'text-gray-500' : 'text-gray-400'}`}
       />
-      <p className="mb-2 text-lg text-white font-semibold">
+      <p className="text-sm font-medium text-white">
         {isAtLimit
-          ? `Maximum ${maxImages} images reached`
+          ? `Max reached (${maxImages})`
           : dragActive
-            ? 'Drop your photo here'
-            : 'Click to upload or drag & drop'}
+            ? 'Drop here'
+            : 'Add photo'}
       </p>
-      <p className="text-sm text-gray-500 text-center max-w-xs">
-        {isAtLimit ? (
-          <>
-            You&apos;ve reached the onboarding limit of {maxImages} images.
-            <br />
-            You can add more photos later in your profile settings.
-          </>
-        ) : (
-          <>
-            Any size works! We&apos;ll automatically make it look perfect.
-            <br />
-            JPG, PNG, HEIC up to 10MB • {imageCount}/{maxImages} images
-            <br />
-            <span className="text-orange-400 text-xs">
-              📱 iPhone photos (HEIC) will show preview after saving
-            </span>
-          </>
-        )}
+      <p className="text-xs text-gray-500 mt-0.5">
+        {isAtLimit
+          ? 'Add more later in profile'
+          : `JPG, PNG · 10MB max · ${imageCount}/${maxImages}`}
       </p>
       <input
         id="file-upload"
@@ -609,14 +595,7 @@ export const Step4Portfolio: React.FC<Step4PortfolioProps> = ({
               <p className="text-sm text-gray-500 max-w-sm mx-auto">
                 Upload a photo to showcase your work. You can add more later.
               </p>
-              <div className="flex flex-wrap justify-center gap-2 mt-4 text-xs text-gray-500">
-                <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                  iPhone (HEIC) supported
-                </span>
-                <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                  Up to 10MB each
-                </span>
-              </div>
+              <p className="text-xs text-gray-500 mt-2">JPG, PNG · 10MB max</p>
             </div>
           </div>
         )}

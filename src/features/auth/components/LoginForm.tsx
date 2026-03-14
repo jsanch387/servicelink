@@ -140,7 +140,6 @@ export const LoginForm: React.FC<{
           <Button
             type="button"
             variant="secondary"
-            size="lg"
             fullWidth
             loading={googleLoading}
             disabled={isLoading || googleLoading}
@@ -205,7 +204,6 @@ export const LoginForm: React.FC<{
           <Button
             type="submit"
             variant="inverse"
-            size="lg"
             fullWidth
             loading={isLoading}
             disabled={isLoading}

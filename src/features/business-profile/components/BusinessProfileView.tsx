@@ -178,7 +178,6 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 <Button
                   href={ROUTES.DASHBOARD.SETTINGS}
                   variant="inverse"
-                  size="md"
                   className="w-full sm:w-auto"
                   icon={<ArrowRightIcon className="h-4 w-4" />}
                   iconPosition="right"

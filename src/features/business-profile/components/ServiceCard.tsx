@@ -172,7 +172,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             <Button
               onClick={() => onEdit(service)}
               variant="primary"
-              size="sm"
               className="flex-1 hover:scale-105"
             >
               Edit Service
@@ -182,7 +181,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             <Button
               onClick={() => onDelete(service.id!)}
               variant="danger"
-              size="sm"
               className="flex-1 hover:scale-105"
             >
               Delete

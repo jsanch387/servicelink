@@ -1,19 +1,9 @@
 /* eslint-disable no-unused-vars */
 'use client';
 
+import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import { Button, Input, Select } from '@/components/shared';
 import React, { useState } from 'react';
-
-// Categories for target audience: auto, exterior cleaning, lawn, beauty, mobile repair, window tinting, etc.
-const SERVICE_TYPES = [
-  { value: 'Auto & Detailing', label: 'Auto & Detailing' },
-  { value: 'Pressure Washing', label: 'Pressure Washing' },
-  { value: 'Lawn Care & Landscaping', label: 'Lawn Care & Landscaping' },
-  { value: 'Beauty', label: 'Beauty' },
-  { value: 'Mobile Repair', label: 'Mobile Repair' },
-  { value: 'Window Tinting', label: 'Window Tinting' },
-  { value: 'Other', label: 'Other' },
-];
 
 interface Step1BusinessNameAndTypeProps {
   profileId: string;
@@ -89,7 +79,7 @@ export const Step1BusinessNameAndType: React.FC<
             placeholder="Pick one"
             value={businessType}
             onChange={value => onUpdate({ businessType: value })}
-            options={SERVICE_TYPES}
+            options={BUSINESS_TYPE_OPTIONS}
           />
         </div>
 
@@ -97,7 +87,6 @@ export const Step1BusinessNameAndType: React.FC<
           <Button
             onClick={handleNext}
             variant="inverse"
-            size="lg"
             disabled={!canContinue || isLoading}
             loading={isLoading}
             className="w-full sm:w-auto min-w-[140px]"

@@ -250,7 +250,6 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             </p>
             <Button
               variant="inverse"
-              size="lg"
               onClick={handleAddService}
               icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
               className="mt-6"
@@ -270,7 +269,6 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                 {!isReorderMode && (
                   <Button
                     variant="inverse"
-                    size="md"
                     onClick={handleAddService}
                     icon={<PlusIcon className="h-4 w-4 text-emerald-500" />}
                     className="flex-1 sm:flex-none"
@@ -379,22 +377,25 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             </p>
           )}
           <div className="flex flex-col-reverse sm:flex-row gap-3">
-            <button
+            <Button
               type="button"
               onClick={handleCancelDelete}
+              variant="secondary"
               disabled={isDeleting}
-              className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl text-base font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 active:bg-white/15 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              className="w-full sm:w-auto"
             >
               No
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleConfirmDelete}
+              variant="danger"
+              loading={isDeleting}
               disabled={isDeleting}
-              className="w-full sm:flex-1 min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl text-base font-medium bg-white hover:bg-gray-100 active:bg-gray-200 text-black transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              className="w-full sm:flex-1"
             >
               {isDeleting ? 'Deleting…' : 'Yes'}
-            </button>
+            </Button>
           </div>
         </Modal>
       </div>

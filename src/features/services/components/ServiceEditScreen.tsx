@@ -345,7 +345,6 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
             )}
             <Button
               variant="outline"
-              size="md"
               onClick={handleAddNewAddOn}
               icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
               fullWidth
@@ -376,20 +375,23 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-2xl mx-auto flex flex-col-reverse sm:flex-row gap-3">
-          <Link
+          <Button
             href={backHref}
-            className="w-full sm:w-auto min-h-[48px] flex items-center justify-center px-4 py-3 rounded-xl text-base font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 active:bg-white/15 transition-all text-center touch-manipulation"
+            variant="secondary"
+            className="w-full sm:w-auto flex-1 sm:flex-initial"
           >
             Cancel
-          </Link>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleSave}
+            variant="inverse"
+            loading={isSaving}
             disabled={isSaving}
-            className="w-full sm:flex-1 min-h-[48px] px-4 py-3 rounded-xl text-base font-medium bg-white hover:bg-gray-100 active:bg-gray-200 text-black transition-all cursor-pointer touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:flex-1"
           >
             {isSaving ? 'Saving…' : 'Save changes'}
-          </button>
+          </Button>
         </div>
       </div>
     </main>

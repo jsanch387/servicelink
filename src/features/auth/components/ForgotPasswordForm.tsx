@@ -99,7 +99,6 @@ export const ForgotPasswordForm: React.FC = () => {
           <Button
             type="submit"
             variant="inverse"
-            size="lg"
             fullWidth
             loading={isLoading}
             disabled={isLoading}

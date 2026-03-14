@@ -1,6 +1,7 @@
 'use client';
 
-import { Input, TextArea } from '@/components/shared';
+import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
+import { Input, Select, TextArea } from '@/components/shared';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
 import React from 'react';
 
@@ -18,9 +19,9 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
 }) => {
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Section Header - More Prominent */}
+      {/* Section Header */}
       <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
           Business Information
         </h2>
         <p className="text-sm sm:text-base text-gray-400">
@@ -45,11 +46,12 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
 
       {/* Business Type & Service Area (Grid Layout) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <Input
+        <Select
           label="Business Type"
-          placeholder="e.g., Auto Detailing, Car Wash"
+          placeholder="Pick one"
           value={formData.business_type}
           onChange={value => onInputChange('business_type', value)}
+          options={BUSINESS_TYPE_OPTIONS}
           required
           error={
             errors.some(e => e.includes('Business type'))

@@ -67,7 +67,6 @@ export const Step1Welcome: React.FC<Step1WelcomeProps> = ({
       <Button
         onClick={handleGetStarted}
         variant="primary"
-        size="lg"
         loading={isLoading}
         disabled={isLoading}
         className="w-full sm:w-auto min-w-[200px]"

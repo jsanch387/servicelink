@@ -33,7 +33,11 @@ const benefits = [
 
 const comparison = [
   { feature: 'Setup Time', serviceLink: '5 minutes', traditional: '2-4 weeks' },
-  { feature: 'Monthly Cost', serviceLink: 'Simple pricing', traditional: '$200+' },
+  {
+    feature: 'Monthly Cost',
+    serviceLink: 'Simple pricing',
+    traditional: '$200+',
+  },
   {
     feature: 'Mobile Friendly',
     serviceLink: 'Perfect',
@@ -165,7 +169,6 @@ export const BenefitsSection: React.FC = () => {
                 <Button
                   href={ROUTES.AUTH.SIGNUP}
                   variant="primary"
-                  size="lg"
                   className="px-8 py-4 text-lg font-bold shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                   Get Your Business Profile

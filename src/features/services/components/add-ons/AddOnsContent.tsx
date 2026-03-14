@@ -156,7 +156,6 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
             </p>
             <Button
               variant="inverse"
-              size="md"
               onClick={handleAddAddOn}
               icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
               className="mt-6"
@@ -172,7 +171,6 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
               </p>
               <Button
                 variant="inverse"
-                size="md"
                 onClick={handleAddAddOn}
                 icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
                 fullWidth

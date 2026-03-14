@@ -87,7 +87,6 @@ export const UpgradeContent: React.FC = () => {
           <Button
             type="button"
             variant="inverse"
-            size="lg"
             className="w-full sm:w-auto"
             onClick={handleGetPro}
             disabled={loading}

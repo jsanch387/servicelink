@@ -55,14 +55,14 @@ const EnhancedImageUpload: React.FC<{
   return (
     <label
       className={`
-        flex flex-col items-center justify-center w-full p-4 sm:p-6 transition duration-300
-        border-2 sm:border-4 border-dashed rounded-lg sm:rounded-xl cursor-pointer
+        flex flex-col items-center justify-center w-full min-h-[120px] sm:min-h-[140px] p-5 sm:p-6 transition duration-200
+        border-2 border-dashed rounded-xl cursor-pointer touch-manipulation
         ${
           disabled
-            ? 'opacity-50 cursor-not-allowed border-neutral-700 bg-neutral-900'
+            ? 'opacity-50 cursor-not-allowed border-white/10 bg-white/[0.02]'
             : dragActive
-              ? 'border-orange-400 bg-orange-500/10'
-              : 'border-orange-400/50 bg-neutral-900 hover:bg-neutral-900/70'
+              ? 'border-white/30 bg-white/[0.04]'
+              : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] active:bg-white/[0.06]'
         }
       `}
       htmlFor="cover-photo-upload"
@@ -71,17 +71,11 @@ const EnhancedImageUpload: React.FC<{
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-400 mb-3" />
-      <p className="mb-1 text-sm sm:text-base text-white font-semibold">
-        {dragActive ? 'Drop your photo here' : 'Click to upload or drag & drop'}
+      <CameraIcon className="h-9 w-9 sm:h-10 sm:w-10 text-gray-400 mb-2 flex-shrink-0" />
+      <p className="text-sm font-medium text-white">
+        {dragActive ? 'Drop here' : 'Add cover photo'}
       </p>
-      <p className="text-xs sm:text-sm text-gray-500 text-center max-w-xs">
-        Any size works! JPG, PNG, HEIC up to 10MB
-        <br />
-        <span className="text-orange-400 text-xs">
-          📱 iPhone photos (HEIC) will show preview after saving
-        </span>
-      </p>
+      <p className="text-xs text-gray-500 mt-0.5">JPG, PNG · 10MB max</p>
       <input
         id="cover-photo-upload"
         type="file"
@@ -153,7 +147,7 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
     <div className="space-y-4">
       {/* Section Header - More Prominent */}
       <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
           Cover Photo
         </h2>
         <p className="text-sm sm:text-base text-gray-400">
@@ -164,7 +158,7 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
       {/* Cover Photo Display with Clear Edit Indicator */}
       <div
         onClick={openModal}
-        className="relative group w-full h-48 sm:h-56 md:h-64 bg-neutral-800 rounded-xl overflow-hidden cursor-pointer border-2 border-neutral-700 hover:border-orange-400 transition-all duration-300"
+        className="relative group w-full h-48 sm:h-56 md:h-64 rounded-xl overflow-hidden cursor-pointer border-2 border-white/10 bg-white/[0.02] hover:border-white/20 transition-all duration-300"
       >
         {businessProfile.cover_image_url &&
         (businessProfile.cover_image_url as string).trim() ? (
@@ -175,7 +169,9 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
               width={800}
               height={320}
               className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-              unoptimized={(businessProfile.cover_image_url as string).startsWith('http')}
+              unoptimized={(
+                businessProfile.cover_image_url as string
+              ).startsWith('http')}
               loading="lazy"
               decoding="async"
             />
@@ -185,16 +181,16 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
               <span className="text-white text-sm font-medium bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
                 Click to change
               </span>
-              <div className="bg-orange-500 text-white p-2 rounded-full">
+              <div className="bg-white/20 text-white p-2 rounded-full">
                 <CameraIcon className="h-5 w-5" />
               </div>
             </div>
           </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-neutral-600 rounded-xl hover:border-orange-400 transition-colors">
+          <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/10 rounded-xl hover:border-white/20 transition-colors">
             <div className="text-center text-gray-400">
-              <div className="bg-neutral-700 rounded-full p-4 mx-auto mb-3 w-fit">
-                <CameraIcon className="h-8 w-8 text-orange-400" />
+              <div className="rounded-full bg-white/10 p-4 mx-auto mb-3 w-fit">
+                <CameraIcon className="h-8 w-8 text-gray-400" />
               </div>
               <p className="text-base font-semibold mb-1 text-white">
                 Click to add cover photo
@@ -206,7 +202,7 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
         {/* Hover overlay - only shows on hover */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div className="text-white text-center">
-            <div className="bg-orange-500 rounded-full p-3 mx-auto mb-2 w-fit">
+            <div className="rounded-full bg-white/20 p-3 mx-auto mb-2 w-fit">
               <PencilIcon className="h-6 w-6" />
             </div>
             <span className="font-semibold text-base">
@@ -240,7 +236,7 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
               <h4 className="text-sm sm:text-base font-semibold text-white">
                 Current Photo
               </h4>
-              <div className="w-full h-32 sm:h-40 rounded-lg bg-neutral-700 overflow-hidden relative border border-neutral-600">
+              <div className="w-full h-32 sm:h-40 rounded-lg overflow-hidden relative border border-white/10 bg-white/[0.04]">
                 <Image
                   src={tempCoverPhoto}
                   alt="Cover Photo Preview"

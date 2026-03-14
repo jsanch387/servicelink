@@ -121,7 +121,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
               <Button
                 onClick={() => setCurrentStep(1)}
                 variant="primary"
-                size="md"
                 className="mt-4"
               >
                 Start Over
@@ -150,7 +149,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
               <Button
                 onClick={() => setCurrentStep(1)}
                 variant="primary"
-                size="md"
                 className="mt-4"
               >
                 Start Over
@@ -179,7 +177,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
               <Button
                 onClick={() => setCurrentStep(1)}
                 variant="primary"
-                size="md"
                 className="mt-4"
               >
                 Start Over
@@ -208,7 +205,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
               <Button
                 onClick={() => setCurrentStep(1)}
                 variant="primary"
-                size="md"
                 className="mt-4"
               >
                 Start Over

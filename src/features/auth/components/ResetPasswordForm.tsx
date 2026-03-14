@@ -231,7 +231,6 @@ export const ResetPasswordForm: React.FC = () => {
           <Button
             type="submit"
             variant="primary"
-            size="md"
             fullWidth
             loading={loading}
             disabled={loading}

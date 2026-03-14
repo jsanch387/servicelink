@@ -306,13 +306,13 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     <div className="min-h-screen bg-[#0f0f0f] pb-8">
       {/* Action Bar - Above all content */}
       <div className="sticky top-20 z-30 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <div className="bg-neutral-800/95 backdrop-blur-lg border border-neutral-700 rounded-xl px-4 py-3 shadow-2xl">
-          <div className="flex gap-3">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm px-4 py-2.5">
+          <div className="flex gap-2">
             {/* Preview Button */}
             <Button
               onClick={onCancel}
               variant="secondary"
-              className="flex-1 flex items-center justify-center gap-2 rounded-lg"
+              className="flex-1"
               disabled={isAnyLoading}
             >
               <EyeIcon className="h-4 w-4" />
@@ -323,8 +323,8 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
             {/* Save Button */}
             <Button
               onClick={handleSave}
-              variant="primary"
-              className="flex-1 rounded-lg font-semibold"
+              variant="inverse"
+              className="flex-1"
               disabled={isAnyLoading}
               loading={isSaving}
             >
@@ -342,7 +342,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
         {/* Error Messages - surfaced near top so they are visible after Save */}
         {errors.length > 0 && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/25 rounded-xl p-4">
+          <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
             <h4 className="text-red-400 font-medium mb-2">
               Please fix the following before saving:
             </h4>
@@ -366,7 +366,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         />
 
         {/* Divider */}
-        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
+        <div className="border-t border-white/10 my-8 sm:my-12" />
 
         {/* Profile Image */}
         <ProfileImageSection
@@ -380,7 +380,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         />
 
         {/* Divider */}
-        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
+        <div className="border-t border-white/10 my-8 sm:my-12" />
 
         {/* Business Information */}
         <BusinessInfoSection
@@ -390,7 +390,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         />
 
         {/* Divider */}
-        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
+        <div className="border-t border-white/10 my-8 sm:my-12" />
 
         {/* Contact Information */}
         <ContactSection
@@ -400,7 +400,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         />
 
         {/* Divider */}
-        <div className="border-t border-neutral-700 my-8 sm:my-12"></div>
+        <div className="border-t border-white/10 my-8 sm:my-12" />
 
         {/* Portfolio */}
         <PortfolioSection

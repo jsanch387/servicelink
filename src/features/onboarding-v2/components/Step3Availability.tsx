@@ -123,14 +123,13 @@ export const Step3Availability: React.FC<Step3AvailabilityProps> = ({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button type="button" onClick={onBack} variant="secondary" size="lg">
+        <Button type="button" onClick={onBack} variant="secondary">
           Back
         </Button>
         <Button
           type="button"
           onClick={handleNext}
           variant="inverse"
-          size="lg"
           className="sm:ml-auto"
           disabled={saving}
         >

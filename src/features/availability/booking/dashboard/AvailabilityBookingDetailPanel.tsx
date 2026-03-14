@@ -240,7 +240,6 @@ export function AvailabilityBookingDetailPanel({
               <div className="flex flex-col gap-2">
                 <Button
                   variant="inverse"
-                  size="lg"
                   fullWidth
                   className="font-semibold"
                   disabled={isUpdating}
@@ -250,7 +249,6 @@ export function AvailabilityBookingDetailPanel({
                 </Button>
                 <Button
                   variant="outline"
-                  size="lg"
                   fullWidth
                   className="font-semibold border-rose-500/50 text-rose-400 hover:bg-rose-500/10"
                   disabled={isUpdating}
@@ -285,7 +283,6 @@ export function AvailabilityBookingDetailPanel({
             <div className="flex gap-3">
               <Button
                 variant="secondary"
-                size="lg"
                 fullWidth
                 disabled={isUpdating}
                 onClick={() => setShowCancelConfirm(false)}
@@ -294,7 +291,6 @@ export function AvailabilityBookingDetailPanel({
               </Button>
               <Button
                 variant="danger"
-                size="lg"
                 fullWidth
                 disabled={isUpdating}
                 onClick={handleCancelConfirm}

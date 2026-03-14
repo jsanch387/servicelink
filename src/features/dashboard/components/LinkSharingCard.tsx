@@ -84,7 +84,6 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
           type="button"
           onClick={handleCopyLink}
           variant="inverse"
-          size="lg"
           fullWidth
           className="sm:w-auto sm:flex-shrink-0 sm:min-w-[100px] sm:flex-initial"
           icon={

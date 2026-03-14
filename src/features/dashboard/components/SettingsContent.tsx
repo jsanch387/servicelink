@@ -191,7 +191,6 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                 <Button
                   onClick={handleSaveSlug}
                   variant="inverse"
-                  size="lg"
                   loading={isUpdating}
                   disabled={isUpdating || !customSlugInput.trim()}
                   className="w-full sm:w-auto"
@@ -214,7 +213,6 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                     type="button"
                     onClick={handleCopyLink}
                     variant="inverse"
-                    size="lg"
                     className="w-full sm:w-auto sm:flex-shrink-0"
                     icon={
                       copied ? (

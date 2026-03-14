@@ -69,7 +69,6 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
           <Button
             type="button"
             variant="secondary"
-            size="md"
             className="w-full sm:w-auto"
             onClick={handleManageSubscription}
             disabled={portalLoading}
@@ -83,7 +82,6 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
           <Button
             href={ROUTES.DASHBOARD.UPGRADE}
             variant="secondary"
-            size="md"
             className="w-full sm:w-auto"
           >
             View plans & upgrade
