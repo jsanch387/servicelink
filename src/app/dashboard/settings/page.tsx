@@ -99,6 +99,7 @@ export default async function SettingsPage() {
 
     return (
       <SettingsContent
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         businessProfile={businessProfile as any}
         settingsData={settingsData}
       />

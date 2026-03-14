@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     // Idempotency: process this event only once
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('stripe_webhook_events').insert({
         event_id: event.id,
         event_type: event.type,
