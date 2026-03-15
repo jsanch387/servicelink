@@ -9,7 +9,7 @@
  */
 
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 function getStripe(): Stripe {
@@ -20,7 +20,15 @@ function getStripe(): Stripe {
   return new Stripe(secret);
 }
 
-function getBaseUrl(): string {
+function getBaseUrl(request: NextRequest): string {
+  const host =
+    request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto =
+    request.headers.get('x-forwarded-proto') ||
+    (process.env.NODE_ENV === 'development' ? 'http' : 'https');
+  if (host) {
+    return `${proto}://${host}`;
+  }
   return (
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     (typeof process.env.VERCEL_URL === 'string'
@@ -29,7 +37,7 @@ function getBaseUrl(): string {
   );
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -53,7 +61,7 @@ export async function POST() {
       );
     }
 
-    const baseUrl = getBaseUrl();
+    const baseUrl = getBaseUrl(request);
     const stripe = getStripe();
 
     const session = await stripe.checkout.sessions.create({
