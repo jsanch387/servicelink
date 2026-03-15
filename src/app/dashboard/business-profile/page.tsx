@@ -22,10 +22,11 @@ export const dynamic = 'force-dynamic';
 export default async function BusinessProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; onboarding?: string }>;
 }) {
   // Await searchParams since it's now a Promise in Next.js 15
   const params = await searchParams;
+  const onboardingComplete = params.onboarding === 'complete';
 
   // Create server client for SSR
   const supabase = await createSupabaseServerClient();
@@ -128,6 +129,7 @@ export default async function BusinessProfilePage({
         slugData={slugData}
         isFreeTier={isFreeTier}
         showVerifiedBadge={showVerifiedBadge}
+        onboardingCompleteFromUrl={onboardingComplete}
       />
     </div>
   );

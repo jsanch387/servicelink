@@ -19,6 +19,19 @@ import { Button, GlassCard, Switch, WarningCallout } from '@/components/shared';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
+/** Small crown icon for Pro CTAs (Heroicons has no crown). */
+const CrownIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden
+  >
+    <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z" />
+  </svg>
+);
+
 interface DashboardData {
   businessProfile: {
     id: string;
@@ -53,6 +66,8 @@ interface DashboardData {
   upcomingBookingsCount: number;
   /** Free plan: bookings used this month (0–5). Omit or leave 0 until API is ready. */
   freeBookingsUsed?: number;
+  /** When true, show "Try Pro" CTA (post-onboarding invite for free users). */
+  isFreeTier?: boolean;
 }
 
 interface DashboardContentProps {
@@ -83,6 +98,19 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               ? 'Manage your link, views, and bookings in one place.'
               : 'Create your public link to start sharing with customers.'}
           </p>
+          {dashboardData.isFreeTier && (
+            <div className="mt-3">
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="ghost"
+                size="xs"
+                className="text-gray-400 hover:text-white border border-white/10 hover:border-white/20 text-xs font-medium"
+                icon={<CrownIcon className="h-3.5 w-3.5" />}
+              >
+                Try Pro
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6 sm:space-y-8 w-full min-w-0">

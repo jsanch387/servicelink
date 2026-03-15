@@ -4,6 +4,7 @@ import type { WeeklySchedule } from '@/features/availability/types/availability'
 import { DashboardContent } from '@/features/dashboard/components/DashboardContent';
 import { OnboardingFlowV2 } from '@/features/onboarding-v2';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -140,7 +141,22 @@ export default async function DashboardPage() {
         />
       );
 
-    case 'completed':
+    case 'completed': {
+      // Fetch profile subscription for Pro CTA (show only to free users)
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('subscription_tier, subscription_current_period_end')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const tier = (profileRow as { subscription_tier?: string | null } | null)
+        ?.subscription_tier;
+      const periodEnd = (
+        profileRow as {
+          subscription_current_period_end?: string | null;
+        } | null
+      )?.subscription_current_period_end;
+      const isFreeTier = !isProAccess(tier, periodEnd);
+
       // Fetch business profile with counts and legacy booking flag
       const { data: profileData, error: profileError } = await supabase
         .from('business_profiles')
@@ -253,9 +269,11 @@ export default async function DashboardPage() {
         useAvailabilityBooking,
         upcomingBookingsCount,
         freeBookingsUsed: 0, // TODO: from subscription/usage API when ready
+        isFreeTier,
       };
 
       return <DashboardContent dashboardData={dashboardData} />;
+    }
 
     default:
       redirect('/login');

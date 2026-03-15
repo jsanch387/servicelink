@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
-import { CheckIcon } from '@heroicons/react/24/solid';
+import { CheckIcon, StarIcon } from '@heroicons/react/24/solid';
 import React, { useState } from 'react';
 import { PLANS, PRO_FEATURES } from '../types';
 
@@ -65,16 +65,29 @@ export const UpgradeContent: React.FC = () => {
           </div>
 
           <ul className="space-y-3 mb-8">
-            {PRO_FEATURES.map(text => (
+            {PRO_FEATURES.map((item, i) => (
               <li
-                key={text}
+                key={i}
                 className="flex items-center gap-3 text-gray-300 text-sm sm:text-base"
               >
-                <CheckIcon
-                  className="h-5 w-5 shrink-0 text-green-500"
-                  aria-hidden
-                />
-                <span>{text}</span>
+                {item.highlight ? (
+                  <StarIcon
+                    className="h-5 w-5 shrink-0 text-amber-400"
+                    aria-hidden
+                  />
+                ) : (
+                  <CheckIcon
+                    className="h-5 w-5 shrink-0 text-green-500"
+                    aria-hidden
+                  />
+                )}
+                <span
+                  className={
+                    item.highlight ? 'font-semibold text-white' : undefined
+                  }
+                >
+                  {item.text}
+                </span>
               </li>
             ))}
           </ul>

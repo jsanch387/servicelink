@@ -1,7 +1,9 @@
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { Navigation } from '@/features/landing-page/components/Navigation';
-import { CheckIcon } from '@heroicons/react/24/solid';
+import { PRO_FEATURES } from '@/features/pricing';
+import type { ProFeatureItem } from '@/features/pricing';
+import { CheckIcon, StarIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 
 const FREE_FEATURES = [
@@ -10,25 +12,56 @@ const FREE_FEATURES = [
   'Up to 5 bookings / month',
 ];
 
-const PRO_FEATURES = [
-  'Unlimited bookings',
-  'More gallery images',
-  'Priority support',
-  'Future features',
-];
-
-function FeatureList({ items }: { items: string[] }) {
+function FeatureList({
+  items,
+}: {
+  items: string[] | readonly ProFeatureItem[];
+}) {
+  const isProList =
+    items.length > 0 &&
+    typeof items[0] === 'object' &&
+    items[0] !== null &&
+    'text' in (items[0] as object);
   return (
     <ul className="space-y-3">
-      {items.map(text => (
-        <li
-          key={text}
-          className="flex items-center gap-3 text-gray-300 text-sm sm:text-base"
-        >
-          <CheckIcon className="h-5 w-5 shrink-0 text-green-500" aria-hidden />
-          <span>{text}</span>
-        </li>
-      ))}
+      {isProList
+        ? (items as readonly ProFeatureItem[]).map((item, i) => (
+            <li
+              key={i}
+              className="flex items-center gap-3 text-gray-300 text-sm sm:text-base"
+            >
+              {item.highlight ? (
+                <StarIcon
+                  className="h-5 w-5 shrink-0 text-amber-400"
+                  aria-hidden
+                />
+              ) : (
+                <CheckIcon
+                  className="h-5 w-5 shrink-0 text-green-500"
+                  aria-hidden
+                />
+              )}
+              <span
+                className={
+                  item.highlight ? 'font-semibold text-white' : undefined
+                }
+              >
+                {item.text}
+              </span>
+            </li>
+          ))
+        : (items as string[]).map(text => (
+            <li
+              key={text}
+              className="flex items-center gap-3 text-gray-300 text-sm sm:text-base"
+            >
+              <CheckIcon
+                className="h-5 w-5 shrink-0 text-green-500"
+                aria-hidden
+              />
+              <span>{text}</span>
+            </li>
+          ))}
     </ul>
   );
 }

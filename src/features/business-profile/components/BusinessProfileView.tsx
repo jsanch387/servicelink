@@ -15,6 +15,8 @@ import {
   WarningCallout,
 } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
+import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ArrowRightIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
@@ -36,6 +38,8 @@ interface BusinessProfileViewProps {
   showVerifiedBadge?: boolean;
   /** When true, user is on free tier (e.g. show upgrade CTA in portfolio at limit). */
   isFreeTier?: boolean;
+  /** When true, user just landed from onboarding complete; may show one-time Try Pro modal (free only). */
+  onboardingCompleteFromUrl?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -45,12 +49,14 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   slugData,
   showVerifiedBadge = false,
   isFreeTier = false,
+  onboardingCompleteFromUrl = false,
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
     useState<CompleteBusinessProfile>(initialBusinessProfile);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('services');
+  const [showOnboardingProModal, setShowOnboardingProModal] = useState(false);
 
   // Debug logging for public profiles
   useEffect(() => {
@@ -68,6 +74,18 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       setEditMode(initialMode);
     }
   }, [initialMode, isPublic]);
+
+  // One-time Try Pro modal when user lands from onboarding complete (free tier only)
+  useEffect(() => {
+    if (isPublic || !onboardingCompleteFromUrl || !isFreeTier) return;
+    try {
+      if (!window.localStorage.getItem(ONBOARDING_PRO_MODAL_SEEN_KEY)) {
+        setShowOnboardingProModal(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, [isPublic, onboardingCompleteFromUrl, isFreeTier]);
 
   const handleEdit = () => {
     // Prevent editing in public mode
@@ -139,22 +157,14 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      {/* Floating Edit Button (FAB) - Only show in view mode for authenticated users */}
-      {!isPublic && editMode === 'view' && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <Button
-            onClick={handleEdit}
-            variant="primary"
-            className="flex items-center gap-2 shadow-2xl px-6 py-3 text-base font-semibold rounded-full"
-          >
-            <PencilIcon className="h-5 w-5" />
-            Edit Profile
-          </Button>
-        </div>
-      )}
-
+      <TryProPostOnboardingModal
+        isOpen={showOnboardingProModal}
+        onClose={() => setShowOnboardingProModal(false)}
+      />
       {/* Main Content */}
-      <div className="bg-[#0f0f0f] min-h-screen">
+      <div
+        className={`bg-[#0f0f0f] min-h-screen ${!isPublic && editMode === 'view' ? 'pb-24 sm:pb-24' : ''}`}
+      >
         <div className="max-w-4xl mx-auto">
           {/* Create Link CTA - Only show for authenticated users without a slug */}
           {!isPublic && slugData && !slugData.hasSlug && (
@@ -251,6 +261,29 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   onSave={handleSave}
                   onCancel={handleCancel}
                 />
+              )}
+
+              {/* Sticky Edit Profile button - view mode, authenticated users only */}
+              {!isPublic && editMode === 'view' && (
+                <div
+                  className="fixed bottom-0 left-0 right-0 lg:left-64 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm px-4 sm:px-8 py-4"
+                  style={{
+                    paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                  }}
+                >
+                  <div className="max-w-2xl w-full mx-auto">
+                    <Button
+                      type="button"
+                      onClick={handleEdit}
+                      variant="inverse"
+                      fullWidth
+                      className="font-semibold"
+                      icon={<PencilIcon className="h-4 w-4" />}
+                    >
+                      Edit profile
+                    </Button>
+                  </div>
+                </div>
               )}
 
               {/* Footer - Only show on public profiles */}

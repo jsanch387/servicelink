@@ -27,7 +27,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
         setError(data.error ?? 'Something went wrong.');
         return;
       }
-      window.location.href = ROUTES.DASHBOARD.BUSINESS_PROFILE;
+      window.location.href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
     } finally {
       setLoading(false);
     }
