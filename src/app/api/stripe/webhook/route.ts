@@ -8,6 +8,9 @@
  * Requires stripe_webhook_events table for idempotency (see README).
  */
 
+import { sendSubscriptionPaymentFailedEmail } from '@/features/email';
+import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
+import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
@@ -130,6 +133,130 @@ export async function POST(request: NextRequest) {
         { error: 'Profile update failed' },
         { status: 500 }
       );
+    }
+  }
+
+  // Subscription updated (renewal, status change to past_due/unpaid, etc.)
+  if (event.type === 'customer.subscription.updated') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+    const subscription = event.data.object as Stripe.Subscription;
+    const subId = typeof subscription.id === 'string' ? subscription.id : null;
+    const periodEnd = (subscription as { current_period_end?: number })
+      .current_period_end;
+    const status = (subscription as { status?: string }).status ?? 'active';
+    if (!subId) {
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+    const result = await syncProfileFromSubscriptionUpdated(supabase, {
+      stripeSubscriptionId: subId,
+      subscriptionStatus: status,
+      currentPeriodEndUnix: periodEnd ?? null,
+    });
+    if (!result.success) {
+      console.error(
+        'Stripe webhook: syncProfileFromSubscriptionUpdated failed',
+        result.error
+      );
+      return NextResponse.json(
+        { error: 'Profile sync failed' },
+        { status: 500 }
+      );
+    }
+  }
+
+  // When subscription ends (user cancelled and period ended, or payment failed etc.)
+  if (event.type === 'customer.subscription.deleted') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+    const subscription = event.data.object as Stripe.Subscription;
+    const subscriptionId =
+      typeof subscription.id === 'string' ? subscription.id : null;
+    if (!subscriptionId) {
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+    const result = await downgradeProfileFromSubscriptionEnd(
+      supabase,
+      subscriptionId
+    );
+    if (!result.success) {
+      console.error(
+        'Stripe webhook: downgradeProfileFromSubscriptionEnd failed',
+        result.error
+      );
+      return NextResponse.json(
+        { error: 'Profile downgrade failed' },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Recurring payment failed (card declined, expired, etc.) – notify customer
+  if (event.type === 'invoice.payment_failed') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+    const invoice = event.data.object as Stripe.Invoice;
+    const customerEmail = (invoice as { customer_email?: string | null })
+      .customer_email;
+    if (customerEmail?.trim()) {
+      const emailResult = await sendSubscriptionPaymentFailedEmail(
+        customerEmail.trim()
+      );
+      if (!emailResult.sent) {
+        console.error(
+          'Stripe webhook: sendSubscriptionPaymentFailedEmail failed',
+          emailResult.error
+        );
+        // Don't return 500 – we've recorded idempotency; Stripe would retry and we'd skip. Log is enough.
+      }
     }
   }
 

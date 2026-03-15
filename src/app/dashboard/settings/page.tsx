@@ -1,5 +1,6 @@
 import { SettingsContent } from '@/features/dashboard/components/SettingsContent';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -11,8 +12,15 @@ export const dynamic = 'force-dynamic';
  *
  * Shows app settings including link management.
  * Redirects to dashboard if onboarding is not completed.
+ * Supports ?checkout=success to show one-time Pro welcome modal after upgrade.
  */
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const params = await searchParams;
+  const checkoutSuccess = params?.checkout === 'success';
   try {
     const supabase = await createSupabaseServerClient();
 
@@ -52,7 +60,9 @@ export default async function SettingsPage() {
         .single(),
       supabase
         .from('profiles')
-        .select('subscription_tier')
+        .select(
+          'subscription_tier, subscription_current_period_end, subscription_status'
+        )
         .eq('user_id', user.id)
         .maybeSingle(),
     ]);
@@ -70,10 +80,14 @@ export default async function SettingsPage() {
 
     const profileRow = profileResult.data as {
       subscription_tier?: string | null;
+      subscription_current_period_end?: string | null;
+      subscription_status?: string | null;
     } | null;
-    const subscriptionTier = profileRow?.subscription_tier;
-    const planId =
-      subscriptionTier === 'pro' ? ('pro' as const) : ('free' as const);
+    const hasProAccess = isProAccess(
+      profileRow?.subscription_tier,
+      profileRow?.subscription_current_period_end
+    );
+    const planId = hasProAccess ? ('pro' as const) : ('free' as const);
 
     const settingsData = {
       businessProfile: {
@@ -95,6 +109,7 @@ export default async function SettingsPage() {
             hasSlug: false,
           },
       planId,
+      subscriptionStatus: profileRow?.subscription_status ?? null,
     };
 
     return (
@@ -102,6 +117,7 @@ export default async function SettingsPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         businessProfile={businessProfile as any}
         settingsData={settingsData}
+        checkoutSuccess={checkoutSuccess}
       />
     );
   } catch {

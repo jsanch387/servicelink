@@ -30,6 +30,11 @@ export const PLANS: Record<PlanId, PlanInfo> = {
 /** Free plan: max bookings per month before upgrade prompt */
 export const FREE_BOOKINGS_LIMIT = 5;
 
+/** Free plan: max portfolio images (edit + public display). */
+export const FREE_MAX_PORTFOLIO_IMAGES = 4;
+/** Pro plan: max portfolio images (edit + public display). */
+export const PRO_MAX_PORTFOLIO_IMAGES = 8;
+
 /** Pro plan feature list for upgrade and pricing UIs */
 export const PRO_FEATURES = [
   'Unlimited bookings',
@@ -37,3 +42,6 @@ export const PRO_FEATURES = [
   'Priority support',
   'Future features',
 ] as const;
+
+/** localStorage key: set after user dismisses the post-upgrade welcome modal (show once). */
+export const PRO_WELCOME_MODAL_SEEN_KEY = 'servicelink_pro_welcome_seen';

@@ -8,6 +8,7 @@
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -27,7 +28,7 @@ export default async function BookingsPage() {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('subscription_tier')
+    .select('subscription_tier, subscription_current_period_end')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -78,8 +79,14 @@ export default async function BookingsPage() {
   // but only for users on the free tier. If the stored month is
   // from a previous month or unset, treat usage as 0.
   let freeBookingsUsed = 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const isFreeTier = (profileRow as any)?.subscription_tier === 'free';
+  const profile = profileRow as {
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
+  } | null;
+  const isFreeTier = !isProAccess(
+    profile?.subscription_tier ?? 'free',
+    profile?.subscription_current_period_end ?? null
+  );
   if (isFreeTier) {
     const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
     if (businessProfile.free_bookings_month === currentMonth) {

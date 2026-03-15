@@ -8,6 +8,7 @@
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { sendAvailabilityBookingNotificationEmail } from '@/features/email';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -97,14 +98,22 @@ export async function POST(request: NextRequest) {
     if (profileId) {
       const { data: ownerProfileRaw } = await supabase
         .from('profiles')
-        .select('subscription_tier')
+        .select('subscription_tier, subscription_current_period_end')
         .eq('user_id', profileId)
         .maybeSingle();
 
-      const ownerProfile: { subscription_tier?: string | null } | null =
-        ownerProfileRaw as { subscription_tier?: string | null } | null;
+      const ownerProfile: {
+        subscription_tier?: string | null;
+        subscription_current_period_end?: string | null;
+      } | null = ownerProfileRaw as {
+        subscription_tier?: string | null;
+        subscription_current_period_end?: string | null;
+      } | null;
 
-      const isFreeTier = ownerProfile?.subscription_tier === 'free';
+      const isFreeTier = !isProAccess(
+        ownerProfile?.subscription_tier,
+        ownerProfile?.subscription_current_period_end
+      );
 
       if (isFreeTier) {
         const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM

@@ -8,6 +8,7 @@
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -141,16 +142,23 @@ export default async function BookingRequestPage({
   if (businessProfile.profile_id) {
     const { data: ownerProfileRaw } = await adminClient
       .from('profiles')
-      .select('subscription_tier')
+      .select('subscription_tier, subscription_current_period_end')
       .eq('user_id', businessProfile.profile_id)
       .maybeSingle();
 
-    const ownerProfile: { subscription_tier?: string | null } | null =
-      ownerProfileRaw as { subscription_tier?: string | null } | null;
+    const ownerProfile: {
+      subscription_tier?: string | null;
+      subscription_current_period_end?: string | null;
+    } | null = ownerProfileRaw as {
+      subscription_tier?: string | null;
+      subscription_current_period_end?: string | null;
+    } | null;
 
-    // Treat missing subscription_tier as 'free' for legacy rows.
-    const tier = ownerProfile?.subscription_tier ?? 'free';
-    const isFreeTier = tier === 'free';
+    const hasPro = isProAccess(
+      ownerProfile?.subscription_tier,
+      ownerProfile?.subscription_current_period_end
+    );
+    const isFreeTier = !hasPro;
     if (isFreeTier) {
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
       const storedMonth = businessProfile.free_bookings_month;

@@ -8,15 +8,17 @@ import {
   WarningCallout,
 } from '@/components/shared';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
-import { PlanSection } from '@/features/pricing';
+import { PlanSection, ProWelcomeModal } from '@/features/pricing';
 import type { PlanId } from '@/features/pricing';
+import { PRO_WELCOME_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import {
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
   EnvelopeIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import React, { useCallback, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface SettingsData {
   businessProfile: {
@@ -33,20 +35,62 @@ interface SettingsData {
     slug?: string;
     fullLink?: string;
   } | null;
-  /** Current plan from profiles.subscription_tier. */
+  /** Current plan from profiles.subscription_tier + period end. */
   planId?: PlanId;
+  /** Stripe subscription status (active, past_due, unpaid, etc.) for Pro users. */
+  subscriptionStatus?: string | null;
 }
 
 interface SettingsContentProps {
   businessProfile: CompleteBusinessProfile;
   settingsData: SettingsData;
+  /** True when redirected from Stripe with ?checkout=success (show Pro welcome once). */
+  checkoutSuccess?: boolean;
 }
 
 export const SettingsContent: React.FC<SettingsContentProps> = ({
   businessProfile,
   settingsData,
+  checkoutSuccess: checkoutSuccessProp = false,
 }) => {
   const APP_DOMAIN = 'myservicelink.app';
+  const planId = settingsData.planId ?? 'free';
+  const subscriptionStatus = settingsData.subscriptionStatus ?? null;
+  const [showProWelcomeModal, setShowProWelcomeModal] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const searchParams = useSearchParams();
+
+  const handleOpenPortal = useCallback(async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setPortalLoading(false);
+    } catch {
+      setPortalLoading(false);
+    }
+  }, []);
+
+  // Show Pro welcome modal when user returns from Stripe with ?checkout=success.
+  // Read from URL on the client so we don't rely on server-passed props (avoids
+  // hydration/cache issues when landing from Stripe redirect).
+  useEffect(() => {
+    const fromUrl = searchParams.get('checkout') === 'success';
+    const shouldShow = fromUrl || checkoutSuccessProp;
+    if (!shouldShow) return;
+    try {
+      const seen = window.localStorage.getItem(PRO_WELCOME_MODAL_SEEN_KEY);
+      if (!seen) setShowProWelcomeModal(true);
+    } catch {
+      // ignore
+    }
+  }, [searchParams, checkoutSuccessProp]);
 
   const hasSlug = settingsData.slugData?.hasSlug || false;
   const existingSlug = settingsData.slugData?.slug;
@@ -124,6 +168,10 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
 
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+      <ProWelcomeModal
+        isOpen={showProWelcomeModal}
+        onClose={() => setShowProWelcomeModal(false)}
+      />
       <div className="max-w-2xl mx-auto w-full min-w-0">
         <div className="mb-10">
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
@@ -135,8 +183,30 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         </div>
 
         <div className="space-y-8 w-full min-w-0">
+          {/* Payment failed banner for Pro users */}
+          {planId === 'pro' &&
+            (subscriptionStatus === 'past_due' ||
+              subscriptionStatus === 'unpaid') && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <p className="text-amber-200 text-sm font-medium mb-3">
+                  We couldn&apos;t charge your card. Please update your payment
+                  method to keep your Pro access.
+                </p>
+                <Button
+                  type="button"
+                  variant="inverse"
+                  onClick={handleOpenPortal}
+                  loading={portalLoading}
+                  disabled={portalLoading}
+                  className="w-full sm:w-auto"
+                >
+                  Update payment method
+                </Button>
+              </div>
+            )}
+
           {/* Subscription plan */}
-          <PlanSection planId={settingsData.planId ?? 'free'} />
+          <PlanSection planId={planId} />
 
           {/* Custom link */}
           <GlassCard

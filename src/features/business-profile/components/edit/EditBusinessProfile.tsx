@@ -85,6 +85,8 @@ interface EditBusinessProfileProps {
   onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
+  /** When true, show upgrade CTA in portfolio when at image limit. */
+  isFreeTier?: boolean;
 }
 
 export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
@@ -92,6 +94,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   onSave,
   onCancel,
   isLoading,
+  isFreeTier = false,
 }) => {
   // Form state
   const [formData, setFormData] = useState<EditingFormData>({
@@ -409,6 +412,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           onFilesChange={handleFilesChange}
           businessProfile={businessProfile}
           isLoading={isLoading}
+          isFreeTier={isFreeTier}
         />
       </div>
     </div>

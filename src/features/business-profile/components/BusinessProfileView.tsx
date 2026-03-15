@@ -34,6 +34,8 @@ interface BusinessProfileViewProps {
   slugData?: SlugData; // Optional slug data for authenticated users
   /** When true, show verified badge on logo (Pro tier from owner profile). */
   showVerifiedBadge?: boolean;
+  /** When true, user is on free tier (e.g. show upgrade CTA in portfolio at limit). */
+  isFreeTier?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -42,6 +44,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   isPublic = false,
   slugData,
   showVerifiedBadge = false,
+  isFreeTier = false,
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
@@ -289,6 +292,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onSave={handleSave}
                 onCancel={handleCancel}
                 isLoading={isLoading}
+                isFreeTier={isFreeTier}
               />
             </div>
           )}

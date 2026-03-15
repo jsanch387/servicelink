@@ -1,7 +1,13 @@
 'use client';
 
+import { Button } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ImageFormData } from '@/features/business-profile/utils/editing/editingHelpers';
+import {
+  FREE_MAX_PORTFOLIO_IMAGES,
+  PRO_MAX_PORTFOLIO_IMAGES,
+} from '@/features/pricing/types';
 // Server-side HEIC conversion - no client-side imports needed
 import {
   CameraIcon,
@@ -17,6 +23,8 @@ interface PortfolioSectionProps {
   onFilesChange: (files: File[]) => void;
   businessProfile: CompleteBusinessProfile;
   isLoading: boolean;
+  /** When true, show upgrade CTA when at image limit (free tier). */
+  isFreeTier?: boolean;
 }
 
 // Smart Image Preview Component with Mobile-First Design
@@ -100,7 +108,8 @@ const SmartImagePreview: React.FC<{
 const EnhancedImageUpload: React.FC<{
   onImageSelect: (_file: File) => void;
   disabled: boolean;
-}> = ({ onImageSelect, disabled }) => {
+  maxCount: number;
+}> = ({ onImageSelect, disabled, maxCount }) => {
   const [dragActive, setDragActive] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,7 +164,7 @@ const EnhancedImageUpload: React.FC<{
         {dragActive ? 'Drop here' : 'Add photo'}
       </p>
       <p className="text-xs text-gray-500 mt-0.5">
-        JPG, PNG · 10MB max · 4 max
+        JPG, PNG · 10MB max · {maxCount} max
       </p>
       <input
         id="portfolio-file-upload"
@@ -175,14 +184,17 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   onFilesChange,
   businessProfile,
   isLoading,
+  isFreeTier = false,
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const MAX_IMAGES = 4;
+  const maxImages = isFreeTier
+    ? FREE_MAX_PORTFOLIO_IMAGES
+    : PRO_MAX_PORTFOLIO_IMAGES;
 
   const handleImageSelect = (file: File) => {
     // Validate limits and file type
-    if (images.length >= MAX_IMAGES) {
-      alert(`Maximum of ${MAX_IMAGES} images allowed`);
+    if (images.length >= maxImages) {
+      alert(`Maximum of ${maxImages} images allowed`);
       return;
     }
 
@@ -287,7 +299,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
     onImagesChange(images.filter((_, i) => i !== index));
   };
 
-  const hasReachedLimit = images.length >= MAX_IMAGES;
+  const hasReachedLimit = images.length >= maxImages;
 
   return (
     <div className="space-y-6">
@@ -300,7 +312,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
           Showcase your best work with high-quality photos
           {hasReachedLimit && (
             <span className="text-gray-300 font-medium ml-2">
-              (Maximum {MAX_IMAGES} images reached)
+              (Maximum {maxImages} images reached)
             </span>
           )}
         </p>
@@ -312,20 +324,35 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
           <EnhancedImageUpload
             onImageSelect={handleImageSelect}
             disabled={isLoading}
+            maxCount={maxImages}
           />
         </div>
       )}
 
       {/* Maximum Limit Reached Message */}
       {hasReachedLimit && (
-        <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.04] p-4">
-          <div className="flex items-start gap-3">
-            <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
-            <p className="text-gray-400 text-sm">
-              You&apos;ve reached the maximum of {MAX_IMAGES} images. Remove an
-              image to add a new one.
-            </p>
+        <div className="mb-6 space-y-3">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex items-start gap-3">
+              <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+              <p className="text-gray-400 text-sm">
+                {isFreeTier && images.length > FREE_MAX_PORTFOLIO_IMAGES
+                  ? `Customers see only your first ${FREE_MAX_PORTFOLIO_IMAGES} images on your public profile. Upgrade to show all ${images.length}.`
+                  : `You've reached the maximum of ${maxImages} images.${isFreeTier ? ' Upgrade to add more.' : ' Remove an image to add a new one.'}`}
+              </p>
+            </div>
           </div>
+          {isFreeTier && (
+            <Button
+              href={ROUTES.DASHBOARD.UPGRADE}
+              variant="inverse"
+              className="w-full sm:w-auto"
+            >
+              {images.length > FREE_MAX_PORTFOLIO_IMAGES
+                ? 'Upgrade to show all images'
+                : 'Upgrade to add more images'}
+            </Button>
+          )}
         </div>
       )}
 
@@ -333,7 +360,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
       {images.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
-            Your Portfolio ({images.length}/{MAX_IMAGES})
+            Your Portfolio ({images.length}/{maxImages})
           </h3>
 
           {/* Smart Grid Layout - Always square containers */}
