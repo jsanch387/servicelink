@@ -163,7 +163,6 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
           type="button"
           onClick={handleUpdateTime}
           variant="inverse"
-          size="lg"
           fullWidth
           className="font-semibold"
         >

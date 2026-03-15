@@ -32,8 +32,7 @@ export default function NotFound() {
         <div className="space-y-4">
           <Link href="/" className="block">
             <Button
-              variant="primary"
-              size="lg"
+              variant="inverse"
               fullWidth
               icon={<HomeIcon className="h-5 w-5" />}
             >

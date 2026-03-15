@@ -3,6 +3,7 @@ import {
   isOnboardingCompleted,
 } from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -21,10 +22,11 @@ export const dynamic = 'force-dynamic';
 export default async function BusinessProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; onboarding?: string }>;
 }) {
   // Await searchParams since it's now a Promise in Next.js 15
   const params = await searchParams;
+  const onboardingComplete = params.onboarding === 'complete';
 
   // Create server client for SSR
   const supabase = await createSupabaseServerClient();
@@ -39,16 +41,20 @@ export default async function BusinessProfilePage({
     redirect('/login');
   }
 
-  // Get user profile to check onboarding status and get profile_id
+  // Get user profile to check onboarding status and subscription tier
   const { data: userProfileData, error: profileError } = await supabase
     .from('profiles')
-    .select('onboarding_status, user_id')
+    .select(
+      'onboarding_status, user_id, subscription_tier, subscription_current_period_end'
+    )
     .eq('user_id', user.id)
     .single();
 
   const userProfile = userProfileData as {
     onboarding_status: 'not_started' | 'in_progress' | 'completed';
     user_id: string;
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
   } | null;
 
   if (profileError || !userProfile) {
@@ -108,12 +114,22 @@ export default async function BusinessProfilePage({
   // Determine initial edit mode from URL parameters
   const initialMode = params.mode === 'edit' ? 'edit' : 'view';
 
+  const hasProAccess = isProAccess(
+    userProfile?.subscription_tier,
+    userProfile?.subscription_current_period_end
+  );
+  const isFreeTier = !hasProAccess;
+  const showVerifiedBadge = hasProAccess;
+
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <BusinessProfileView
         businessProfile={businessProfile}
         initialMode={initialMode}
         slugData={slugData}
+        isFreeTier={isFreeTier}
+        showVerifiedBadge={showVerifiedBadge}
+        onboardingCompleteFromUrl={onboardingComplete}
       />
     </div>
   );

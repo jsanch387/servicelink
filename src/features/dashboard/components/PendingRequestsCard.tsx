@@ -46,7 +46,6 @@ export const PendingRequestsCard: React.FC<PendingRequestsCardProps> = ({
         <Button
           href={ROUTES.DASHBOARD.BOOKINGS}
           variant="secondary"
-          size="md"
           fullWidth
           icon={<CalendarDaysIcon className="h-4 w-4" />}
         >

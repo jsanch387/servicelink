@@ -32,7 +32,7 @@ A versatile button component with multiple variants and sizes.
 **Props:**
 
 - `variant`: 'primary' | 'secondary' (default: 'primary')
-- `size`: 'sm' | 'md' | 'lg' (default: 'md')
+- `size`: 'xs' | 'sm' | 'md' | 'lg' (default: 'sm')
 - `href`: Optional link URL
 - `onClick`: Click handler
 - `disabled`: Disabled state
@@ -43,7 +43,7 @@ A versatile button component with multiple variants and sizes.
 ```tsx
 import { Button } from '@/components';
 
-<Button variant="primary" size="md" onClick={handleClick}>
+<Button variant="primary" onClick={handleClick}>
   Click Me
 </Button>
 

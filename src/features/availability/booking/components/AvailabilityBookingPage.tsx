@@ -246,7 +246,6 @@ export function AvailabilityBookingPage({
             <Button
               type="button"
               variant="secondary"
-              size="lg"
               className="font-semibold shrink-0"
               onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)}
             >
@@ -257,7 +256,6 @@ export function AvailabilityBookingPage({
             <Button
               type="button"
               variant="inverse"
-              size="lg"
               fullWidth
               className="font-semibold"
               disabled={!canContinueFromSchedule}
@@ -271,7 +269,6 @@ export function AvailabilityBookingPage({
               type="submit"
               form={CUSTOMER_FORM_ID}
               variant="inverse"
-              size="lg"
               className="flex-1 font-semibold"
               disabled={!canContinueFromDetails}
             >
@@ -282,7 +279,6 @@ export function AvailabilityBookingPage({
             <Button
               type="button"
               variant="inverse"
-              size="lg"
               className="flex-1 font-semibold"
               disabled={isSubmitting}
               onClick={handleConfirmBooking}

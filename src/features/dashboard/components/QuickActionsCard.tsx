@@ -30,7 +30,6 @@ export const QuickActionsCard: React.FC = () => {
       <div className="flex flex-col gap-2 sm:gap-3 mt-auto">
         <Button
           variant="secondary"
-          size="md"
           fullWidth
           href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=view`}
           icon={<EyeIcon className="h-4 w-4" />}
@@ -39,7 +38,6 @@ export const QuickActionsCard: React.FC = () => {
         </Button>
         <Button
           variant="secondary"
-          size="md"
           fullWidth
           href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=edit`}
           icon={<PencilSquareIcon className="h-4 w-4" />}

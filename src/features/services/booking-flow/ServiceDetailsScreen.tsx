@@ -115,7 +115,6 @@ export function ServiceDetailsScreen({
           <Button
             href={calendarUrl}
             variant="inverse"
-            size="lg"
             fullWidth
             className="font-semibold"
             icon={<ChevronRightIcon className="h-5 w-5" />}

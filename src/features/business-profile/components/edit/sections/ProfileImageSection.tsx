@@ -55,14 +55,14 @@ const EnhancedImageUpload: React.FC<{
   return (
     <label
       className={`
-        flex flex-col items-center justify-center w-full p-4 sm:p-6 transition duration-300
-        border-2 sm:border-4 border-dashed rounded-lg sm:rounded-xl cursor-pointer
+        flex flex-col items-center justify-center w-full min-h-[120px] sm:min-h-[140px] p-5 sm:p-6 transition duration-200
+        border-2 border-dashed rounded-xl cursor-pointer touch-manipulation
         ${
           disabled
-            ? 'opacity-50 cursor-not-allowed border-neutral-700 bg-neutral-900'
+            ? 'opacity-50 cursor-not-allowed border-white/10 bg-white/[0.02]'
             : dragActive
-              ? 'border-orange-400 bg-orange-500/10'
-              : 'border-orange-400/50 bg-neutral-900 hover:bg-neutral-900/70'
+              ? 'border-white/30 bg-white/[0.04]'
+              : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] active:bg-white/[0.06]'
         }
       `}
       htmlFor="logo-upload"
@@ -71,17 +71,11 @@ const EnhancedImageUpload: React.FC<{
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <CameraIcon className="h-8 w-8 sm:h-10 sm:w-10 text-orange-400 mb-3" />
-      <p className="mb-1 text-sm sm:text-base text-white font-semibold">
-        {dragActive ? 'Drop your logo here' : 'Click to upload or drag & drop'}
+      <CameraIcon className="h-9 w-9 sm:h-10 sm:w-10 text-gray-400 mb-2 flex-shrink-0" />
+      <p className="text-sm font-medium text-white">
+        {dragActive ? 'Drop here' : 'Add logo'}
       </p>
-      <p className="text-xs sm:text-sm text-gray-500 text-center max-w-xs">
-        Square logos work best! JPG, PNG, HEIC up to 10MB
-        <br />
-        <span className="text-orange-400 text-xs">
-          📱 iPhone photos (HEIC) will show preview after saving
-        </span>
-      </p>
+      <p className="text-xs text-gray-500 mt-0.5">JPG, PNG · 10MB max</p>
       <input
         id="logo-upload"
         type="file"
@@ -153,7 +147,7 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
     <div className="space-y-4">
       {/* Section Header */}
       <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
           Business Logo
         </h2>
         <p className="text-sm sm:text-base text-gray-400">
@@ -163,9 +157,9 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
 
       {/* Logo Display - Using Full Space */}
       <div onClick={openModal} className="relative group cursor-pointer">
-        <div className="flex items-center gap-4 p-4 bg-neutral-800/50 rounded-xl border border-neutral-700 hover:border-orange-400/50 transition-all duration-300">
+        <div className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/[0.04] hover:border-white/20 transition-all duration-300">
           {/* Logo Circle */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-neutral-800 rounded-full overflow-hidden flex items-center justify-center border-2 border-neutral-600 flex-shrink-0">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/10 bg-white/[0.04] flex-shrink-0">
             {businessProfile.logo_url &&
             (businessProfile.logo_url as string).trim() ? (
               <Image
@@ -174,7 +168,9 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
                 width={96}
                 height={96}
                 className="w-full h-full object-cover"
-                unoptimized={(businessProfile.logo_url as string).startsWith('http')}
+                unoptimized={(businessProfile.logo_url as string).startsWith(
+                  'http'
+                )}
                 loading="lazy"
                 decoding="async"
               />
@@ -209,8 +205,8 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
 
           {/* Action Indicator */}
           <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
-              <CameraIcon className="h-4 w-4 text-orange-400" />
+            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+              <CameraIcon className="h-4 w-4 text-gray-300" />
             </div>
           </div>
         </div>
@@ -239,7 +235,7 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
                 Current Logo
               </h4>
               <div className="flex justify-center">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-neutral-700 overflow-hidden relative border-2 sm:border-4 border-neutral-600">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden relative border-2 sm:border-4 border-white/10 bg-white/[0.04]">
                   <Image
                     src={tempLogo}
                     alt="Logo Preview"

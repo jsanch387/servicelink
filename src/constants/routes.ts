@@ -10,6 +10,9 @@ export const ROUTES = {
   TERMS: '/terms',
   PRIVACY: '/privacy',
 
+  // Pricing (dedicated page)
+  PRICING_PAGE: '/pricing',
+
   // Public content (guides, blogs, SEO)
   RESOURCES: '/resources',
   /** Path for a single guide; use getResourceGuidePath(slug) for links. */
@@ -42,6 +45,7 @@ export const ROUTES = {
     BOOKINGS: '/dashboard/bookings',
     AVAILABILITY: '/dashboard/availability',
     SETTINGS: '/dashboard/settings',
+    UPGRADE: '/dashboard/upgrade',
   },
 } as const;
 

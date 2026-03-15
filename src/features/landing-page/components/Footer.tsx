@@ -41,6 +41,13 @@ export const Footer: React.FC = () => {
           {/* Resources & Legal Links */}
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
             <Link
+              href={ROUTES.PRICING_PAGE}
+              className="hover:text-white transition-colors"
+            >
+              Pricing
+            </Link>
+            <span className="text-gray-600">•</span>
+            <Link
               href={ROUTES.RESOURCES}
               className="hover:text-white transition-colors"
             >

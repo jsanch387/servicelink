@@ -1,5 +1,6 @@
 'use client';
 
+import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 import { useMemo, useState } from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
@@ -19,7 +20,17 @@ function sortByDateThenTime(
   return a.time.localeCompare(b.time);
 }
 
-export function AvailabilityBookingsView() {
+export interface AvailabilityBookingsViewProps {
+  /** Free plan: bookings used this month (0–5). Shown in tracker. */
+  freeBookingsUsed?: number;
+  /** When false (Pro), hide the free bookings tracker. */
+  showFreeBookingsTracker?: boolean;
+}
+
+export function AvailabilityBookingsView({
+  freeBookingsUsed = 0,
+  showFreeBookingsTracker = true,
+}: AvailabilityBookingsViewProps = {}) {
   const { bookings, isLoading, error, updateBookingStatus } =
     useAvailabilityBookings();
   const [activeTab, setActiveTab] = useState<TabId>('upcoming');
@@ -131,6 +142,12 @@ export function AvailabilityBookingsView() {
           <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 text-sm mb-4">
             {error ?? updateError}
           </div>
+        )}
+        {showFreeBookingsTracker && (
+          <FreeBookingsTracker
+            bookingsUsed={freeBookingsUsed}
+            className="mb-4"
+          />
         )}
         {isLoading ? (
           <AvailabilityBookingsViewSkeleton />

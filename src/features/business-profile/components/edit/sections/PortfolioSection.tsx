@@ -1,7 +1,14 @@
+/* eslint-disable no-unused-vars */
 'use client';
 
+import { Button } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ImageFormData } from '@/features/business-profile/utils/editing/editingHelpers';
+import {
+  FREE_MAX_PORTFOLIO_IMAGES,
+  PRO_MAX_PORTFOLIO_IMAGES,
+} from '@/features/pricing/types';
 // Server-side HEIC conversion - no client-side imports needed
 import {
   CameraIcon,
@@ -17,6 +24,8 @@ interface PortfolioSectionProps {
   onFilesChange: (files: File[]) => void;
   businessProfile: CompleteBusinessProfile;
   isLoading: boolean;
+  /** When true, show upgrade CTA when at image limit (free tier). */
+  isFreeTier?: boolean;
 }
 
 // Smart Image Preview Component with Mobile-First Design
@@ -39,7 +48,7 @@ const SmartImagePreview: React.FC<{
   return (
     <div className="relative group">
       {/* Fixed Square Container - Always maintains consistent size */}
-      <div className="aspect-square w-full rounded-xl overflow-hidden bg-neutral-900 border border-neutral-700">
+      <div className="aspect-square w-full rounded-xl overflow-hidden border border-white/10 bg-white/[0.02]">
         <Image
           src={src}
           alt={alt}
@@ -71,7 +80,7 @@ const SmartImagePreview: React.FC<{
       {/* Confirmation Dialog */}
       {showConfirmation && (
         <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl z-10">
-          <div className="bg-neutral-800 border border-neutral-600 rounded-xl p-4 mx-4 max-w-sm">
+          <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4 mx-4 max-w-sm backdrop-blur-sm">
             <p className="text-white text-center mb-4 text-sm">
               Remove this image?
             </p>
@@ -100,7 +109,8 @@ const SmartImagePreview: React.FC<{
 const EnhancedImageUpload: React.FC<{
   onImageSelect: (_file: File) => void;
   disabled: boolean;
-}> = ({ onImageSelect, disabled }) => {
+  maxCount: number;
+}> = ({ onImageSelect, disabled, maxCount }) => {
   const [dragActive, setDragActive] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,14 +144,14 @@ const EnhancedImageUpload: React.FC<{
   return (
     <label
       className={`
-        flex flex-col items-center justify-center w-full p-8 transition duration-300
-        border-4 border-dashed rounded-xl cursor-pointer
+        flex flex-col items-center justify-center w-full min-h-[120px] sm:min-h-[140px] p-5 sm:p-6 transition duration-200
+        border-2 border-dashed rounded-xl cursor-pointer touch-manipulation
         ${
           disabled
-            ? 'opacity-50 cursor-not-allowed border-neutral-700 bg-neutral-900'
+            ? 'opacity-50 cursor-not-allowed border-white/10 bg-white/[0.02]'
             : dragActive
-              ? 'border-orange-400 bg-orange-500/10'
-              : 'border-orange-400/50 bg-neutral-900 hover:bg-neutral-900/70'
+              ? 'border-white/30 bg-white/[0.04]'
+              : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] active:bg-white/[0.06]'
         }
       `}
       htmlFor="portfolio-file-upload"
@@ -150,18 +160,12 @@ const EnhancedImageUpload: React.FC<{
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <CameraIcon className="h-12 w-12 text-orange-400 mb-4" />
-      <p className="mb-2 text-lg text-white font-semibold">
-        {dragActive ? 'Drop your photo here' : 'Click to upload or drag & drop'}
+      <CameraIcon className="h-9 w-9 sm:h-10 sm:w-10 text-gray-400 mb-2 flex-shrink-0" />
+      <p className="text-sm font-medium text-white">
+        {dragActive ? 'Drop here' : 'Add photo'}
       </p>
-      <p className="text-sm text-gray-500 text-center max-w-xs">
-        Any size works! We&apos;ll automatically make it look perfect.
-        <br />
-        JPG, PNG, HEIC up to 10MB • Maximum 4 images
-        <br />
-        <span className="text-orange-400 text-xs">
-          📱 iPhone photos (HEIC) will show preview after saving
-        </span>
+      <p className="text-xs text-gray-500 mt-0.5">
+        JPG, PNG · 10MB max · {maxCount} max
       </p>
       <input
         id="portfolio-file-upload"
@@ -181,14 +185,17 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   onFilesChange,
   businessProfile,
   isLoading,
+  isFreeTier = false,
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const MAX_IMAGES = 4;
+  const maxImages = isFreeTier
+    ? FREE_MAX_PORTFOLIO_IMAGES
+    : PRO_MAX_PORTFOLIO_IMAGES;
 
   const handleImageSelect = (file: File) => {
     // Validate limits and file type
-    if (images.length >= MAX_IMAGES) {
-      alert(`Maximum of ${MAX_IMAGES} images allowed`);
+    if (images.length >= maxImages) {
+      alert(`Maximum of ${maxImages} images allowed`);
       return;
     }
 
@@ -262,7 +269,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
 
         <!-- Status message using app's neutral colors -->
         <rect x="50" y="270" width="300" height="60" fill="#262626" rx="12" stroke="#404040" stroke-width="1"/>
-        <text x="200" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="#f97316" text-anchor="middle">Preview will show after saving</text>
+        <text x="200" y="295" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="#a3a3a3" text-anchor="middle">Preview will show after saving</text>
         <text x="200" y="315" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#a3a3a3" text-anchor="middle">Image will be converted to JPEG format</text>
       </svg>
     `;
@@ -293,20 +300,20 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
     onImagesChange(images.filter((_, i) => i !== index));
   };
 
-  const hasReachedLimit = images.length >= MAX_IMAGES;
+  const hasReachedLimit = images.length >= maxImages;
 
   return (
     <div className="space-y-6">
       {/* Section Header - More Prominent */}
       <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 border-l-4 border-orange-400 pl-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
           Portfolio Gallery
         </h2>
         <p className="text-sm sm:text-base text-gray-400">
           Showcase your best work with high-quality photos
           {hasReachedLimit && (
-            <span className="text-orange-400 font-semibold ml-2">
-              (Maximum {MAX_IMAGES} images reached)
+            <span className="text-gray-300 font-medium ml-2">
+              (Maximum {maxImages} images reached)
             </span>
           )}
         </p>
@@ -318,20 +325,35 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
           <EnhancedImageUpload
             onImageSelect={handleImageSelect}
             disabled={isLoading}
+            maxCount={maxImages}
           />
         </div>
       )}
 
       {/* Maximum Limit Reached Message */}
       {hasReachedLimit && (
-        <div className="mb-6 bg-neutral-800/50 border border-neutral-700 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
-            <p className="text-gray-400 text-sm">
-              You&apos;ve reached the maximum of {MAX_IMAGES} images. Remove an
-              image to add a new one.
-            </p>
+        <div className="mb-6 space-y-3">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex items-start gap-3">
+              <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+              <p className="text-gray-400 text-sm">
+                {isFreeTier && images.length > FREE_MAX_PORTFOLIO_IMAGES
+                  ? `Customers see only your first ${FREE_MAX_PORTFOLIO_IMAGES} images on your public profile. Upgrade to show all ${images.length}.`
+                  : `You've reached the maximum of ${maxImages} images.${isFreeTier ? ' Upgrade to add more.' : ' Remove an image to add a new one.'}`}
+              </p>
+            </div>
           </div>
+          {isFreeTier && (
+            <Button
+              href={ROUTES.DASHBOARD.UPGRADE}
+              variant="inverse"
+              className="w-full sm:w-auto"
+            >
+              {images.length > FREE_MAX_PORTFOLIO_IMAGES
+                ? 'Upgrade to show all images'
+                : 'Upgrade to add more images'}
+            </Button>
+          )}
         </div>
       )}
 
@@ -339,8 +361,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
       {images.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
-            <span className="text-orange-400">●</span> Your Portfolio (
-            {images.length}/{MAX_IMAGES})
+            Your Portfolio ({images.length}/{maxImages})
           </h3>
 
           {/* Smart Grid Layout - Always square containers */}
@@ -364,8 +385,8 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
 
       {/* Empty State */}
       {images.length === 0 && (
-        <div className="bg-neutral-800/50 border border-neutral-700 rounded-lg p-8 text-center border-dashed">
-          <CameraIcon className="h-12 w-12 text-orange-400 mx-auto mb-4 opacity-60" />
+        <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.04] p-8 text-center">
+          <CameraIcon className="h-12 w-12 text-gray-400 mx-auto mb-4 opacity-60" />
           <p className="text-gray-400 mb-2 font-semibold">
             Your portfolio is currently empty
           </p>

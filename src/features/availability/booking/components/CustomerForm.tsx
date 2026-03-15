@@ -155,7 +155,6 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         <Button
           type="submit"
           variant="inverse"
-          size="lg"
           fullWidth
           className="font-semibold"
         >

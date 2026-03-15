@@ -252,7 +252,6 @@ export const AvailabilityContent: React.FC = () => {
             type="button"
             onClick={handleSave}
             variant="inverse"
-            size="lg"
             fullWidth
             className="font-semibold"
             loading={saving}

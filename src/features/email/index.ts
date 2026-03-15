@@ -14,3 +14,6 @@ export type {
   AvailabilityBookingNotificationPayload,
   SendAvailabilityBookingNotificationResult,
 } from './availability-booking-notification/types';
+
+export { sendSubscriptionPaymentFailedEmail } from './subscription-payment-failed/sendSubscriptionPaymentFailedEmail';
+export type { SendSubscriptionPaymentFailedResult } from './subscription-payment-failed/types';

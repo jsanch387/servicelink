@@ -1,5 +1,6 @@
 'use client';
 
+import { PhoneIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { Input } from './Input';
 
@@ -28,6 +29,8 @@ interface PhoneInputProps {
   name?: string;
   /** When true, show a hint like "X more digits needed" under the field. */
   showDigitHint?: boolean;
+  /** When true, show a phone icon inside the input (left side). */
+  showIcon?: boolean;
 }
 
 /**
@@ -46,6 +49,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   className = '',
   name,
   showDigitHint = true,
+  showIcon = false,
 }) => {
   const digits = value.replace(/\D/g, '').slice(0, PHONE_DIGIT_LIMIT);
   const [displayValue, setDisplayValue] = useState(() =>
@@ -79,6 +83,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
         disabled={disabled}
         name={name}
         maxLength={PHONE_FORMATTED_MAX_LENGTH}
+        leftIcon={showIcon ? <PhoneIcon className="h-5 w-5" /> : undefined}
       />
       {showDigitHint && digitCount > 0 && digitCount < PHONE_DIGIT_LIMIT && (
         <p className="mt-1 text-sm text-gray-400">

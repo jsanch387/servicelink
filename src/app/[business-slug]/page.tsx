@@ -9,7 +9,10 @@ import { StructuredData } from '@/components/shared';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
+import { isProAccess } from '@/features/pricing';
+import { FREE_MAX_PORTFOLIO_IMAGES } from '@/features/pricing/types';
 import { MediaService } from '@/features/media';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { notFound } from 'next/navigation';
 
@@ -123,18 +126,51 @@ export default async function PublicProfilePage({
     notFound();
   }
 
+  // Derive verified badge and portfolio visibility from owner's subscription
+  const profileId = (businessProfile as { profile_id?: string }).profile_id;
+  let showVerifiedBadge = false;
+  let ownerTier: 'free' | 'pro' = 'free';
+  if (profileId) {
+    const admin = createSupabaseAdminClient();
+    const { data: ownerProfile } = await admin
+      .from('profiles')
+      .select('subscription_tier, subscription_current_period_end')
+      .eq('user_id', profileId)
+      .maybeSingle();
+    const row = ownerProfile as {
+      subscription_tier?: string | null;
+      subscription_current_period_end?: string | null;
+    } | null;
+    const hasPro = isProAccess(
+      row?.subscription_tier,
+      row?.subscription_current_period_end
+    );
+    ownerTier = hasPro ? 'pro' : 'free';
+    showVerifiedBadge = hasPro;
+  }
+
+  // Free tier: only first 4 images visible on public profile (soft limit; no DB delete on cancel)
+  const displayProfile: CompleteBusinessProfile =
+    ownerTier === 'pro'
+      ? businessProfile
+      : {
+          ...businessProfile,
+          images: businessProfile.images.slice(0, FREE_MAX_PORTFOLIO_IMAGES),
+        };
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
       <ViewTracker businessSlug={slug} />
 
       {/* Structured Data for SEO */}
-      <StructuredData businessProfile={businessProfile} slug={slug} />
+      <StructuredData businessProfile={displayProfile} slug={slug} />
 
       <BusinessProfileView
-        businessProfile={businessProfile}
+        businessProfile={displayProfile}
         initialMode="view"
         isPublic={true}
+        showVerifiedBadge={showVerifiedBadge}
       />
     </div>
   );

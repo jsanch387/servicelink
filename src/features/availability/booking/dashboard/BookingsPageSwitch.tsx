@@ -2,11 +2,12 @@
 
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { useAvailabilityBookingStore } from '@/features/availability/stores/availabilityBookingStore';
 import { BookingsPageClient } from '@/features/booking-request/components/dashboard/BookingsPageClient';
 import type { BookingRequest } from '@/features/booking-request/types/bookingRequest';
-import { useAvailabilityBookingStore } from '@/features/availability/stores/availabilityBookingStore';
+import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { AvailabilityBookingsView } from './AvailabilityBookingsView';
 
 /**
@@ -21,6 +22,10 @@ export interface BookingsPageSwitchProps {
   showRequestBookingFallback: boolean;
   /** From business_availability.accept_bookings. When true, show V2 UI. */
   useAvailabilityBooking: boolean;
+  /** Free plan: bookings used this month (0–5). Shown in tracker. */
+  freeBookingsUsed?: number;
+  /** When false (Pro), hide the free bookings tracker. */
+  showFreeBookingsTracker?: boolean;
 }
 
 /**
@@ -31,6 +36,8 @@ export function BookingsPageSwitch({
   initialBookingRequests,
   showRequestBookingFallback,
   useAvailabilityBooking,
+  freeBookingsUsed = 0,
+  showFreeBookingsTracker = true,
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
     s => s.setAcceptBookings
@@ -42,7 +49,12 @@ export function BookingsPageSwitch({
   }, [useAvailabilityBooking, setAcceptBookings]);
 
   if (useAvailabilityBooking) {
-    return <AvailabilityBookingsView />;
+    return (
+      <AvailabilityBookingsView
+        freeBookingsUsed={freeBookingsUsed}
+        showFreeBookingsTracker={showFreeBookingsTracker}
+      />
+    );
   }
 
   if (showRequestBookingFallback) {
@@ -50,6 +62,8 @@ export function BookingsPageSwitch({
       <BookingsPageClient
         businessName={businessName}
         initialBookings={initialBookingRequests}
+        freeBookingsUsed={freeBookingsUsed}
+        showFreeBookingsTracker={showFreeBookingsTracker}
       />
     );
   }
@@ -57,25 +71,32 @@ export function BookingsPageSwitch({
   // No V1 fallback (e.g. legacy user turned off availability after setting it): prompt to turn on availability
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <div className="mx-auto max-w-md rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-6 text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10">
-          <CalendarDaysIcon className="h-6 w-6 text-gray-400" />
+      <div className="mx-auto max-w-md">
+        {showFreeBookingsTracker && (
+          <FreeBookingsTracker
+            bookingsUsed={freeBookingsUsed}
+            className="mb-4 justify-center"
+          />
+        )}
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-6 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10">
+            <CalendarDaysIcon className="h-6 w-6 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-white">
+            Turn on your schedule to get bookings
+          </h3>
+          <p className="text-gray-400 text-sm mt-2 mx-auto leading-relaxed">
+            Right now customers can&apos;t book because your schedule is off.
+            Turn it on and set your hours. Then new bookings will show up here.
+          </p>
+          <Button
+            href={ROUTES.DASHBOARD.AVAILABILITY}
+            variant="inverse"
+            className="mt-6"
+          >
+            Go to Availability
+          </Button>
         </div>
-        <h3 className="text-lg font-semibold text-white">
-          Turn on your schedule to get bookings
-        </h3>
-        <p className="text-gray-400 text-sm mt-2 mx-auto leading-relaxed">
-          Right now customers can&apos;t book because your schedule is off. Turn
-          it on and set your hours. Then new bookings will show up here.
-        </p>
-        <Button
-          href={ROUTES.DASHBOARD.AVAILABILITY}
-          variant="inverse"
-          size="md"
-          className="mt-6"
-        >
-          Go to Availability
-        </Button>
       </div>
     </div>
   );

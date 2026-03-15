@@ -8,10 +8,7 @@ export const PricingCTASection: React.FC = () => {
   const [slugInput, setSlugInput] = useState('');
 
   return (
-    <section
-      id="pricing"
-      className="py-16 sm:py-24 md:py-32 px-4 sm:px-6"
-    >
+    <section id="pricing" className="py-16 sm:py-24 md:py-32 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto text-center bg-white/5 backdrop-blur-xl p-6 sm:p-8 md:p-12 lg:p-16 xl:p-24 rounded-3xl sm:rounded-[3rem] md:rounded-[4rem] border border-orange-500/20 relative overflow-hidden shadow-3xl">
         {/* Background Glow */}
         <div
@@ -51,7 +48,6 @@ export const PricingCTASection: React.FC = () => {
             <Button
               href={ROUTES.AUTH.SIGNUP}
               variant="primary"
-              size="sm"
               className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-black"
             >
               Check
@@ -62,7 +58,6 @@ export const PricingCTASection: React.FC = () => {
           <Button
             href={ROUTES.AUTH.SIGNUP}
             variant="primary"
-            size="lg"
             className="w-full max-w-sm py-3 sm:py-4 md:py-5 bg-white text-black rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl hover:scale-105 transition-all shadow-2xl"
           >
             Create My Profile

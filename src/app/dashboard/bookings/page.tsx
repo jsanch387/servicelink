@@ -8,6 +8,7 @@
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -25,9 +26,17 @@ export default async function BookingsPage() {
     redirect('/login');
   }
 
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('subscription_tier, subscription_current_period_end')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
   const { data: businessProfileRow, error: businessError } = await supabase
     .from('business_profiles')
-    .select('id, business_name, legacy_request_booking_enabled')
+    .select(
+      'id, business_name, legacy_request_booking_enabled, free_bookings_month, free_bookings_count'
+    )
     .eq('profile_id', user.id)
     .single();
 
@@ -35,6 +44,8 @@ export default async function BookingsPage() {
     id: string;
     business_name: string;
     legacy_request_booking_enabled: boolean | null;
+    free_bookings_month: string | null;
+    free_bookings_count: number | null;
   } | null;
 
   if (businessError || !businessProfile) {
@@ -64,12 +75,33 @@ export default async function BookingsPage() {
     console.error('Error fetching booking requests:', requestsError);
   }
 
+  // Derive free bookings used this month from business_profiles,
+  // but only for users on the free tier. If the stored month is
+  // from a previous month or unset, treat usage as 0.
+  let freeBookingsUsed = 0;
+  const profile = profileRow as {
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
+  } | null;
+  const isFreeTier = !isProAccess(
+    profile?.subscription_tier ?? 'free',
+    profile?.subscription_current_period_end ?? null
+  );
+  if (isFreeTier) {
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    if (businessProfile.free_bookings_month === currentMonth) {
+      freeBookingsUsed = businessProfile.free_bookings_count ?? 0;
+    }
+  }
+
   return (
     <BookingsPageSwitch
       businessName={businessProfile.business_name}
       initialBookingRequests={bookingRequests ?? []}
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
+      freeBookingsUsed={freeBookingsUsed}
+      showFreeBookingsTracker={isFreeTier}
     />
   );
 }

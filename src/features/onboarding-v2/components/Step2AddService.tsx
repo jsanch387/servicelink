@@ -4,9 +4,9 @@ import {
   Button,
   Input,
   PriceInput,
+  SERVICE_DURATION_HOURS_OPTIONS,
   Select,
   TextArea,
-  SERVICE_DURATION_HOURS_OPTIONS,
 } from '@/components/shared';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
@@ -170,7 +170,6 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
               type="button"
               onClick={addService}
               variant="inverse"
-              size="lg"
               className="w-full"
               disabled={!canAdd}
               icon={<PlusIcon className="h-5 w-5" />}
@@ -233,7 +232,6 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           type="button"
           onClick={onBack}
           variant="secondary"
-          size="lg"
           disabled={isLoading}
         >
           Back
@@ -242,7 +240,6 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           type="button"
           onClick={handleNext}
           variant="inverse"
-          size="lg"
           disabled={!canContinue || isLoading || !businessProfileId}
           loading={isLoading}
           className="sm:ml-auto"

@@ -31,5 +31,20 @@ export async function completeOnboardingV2(
     return { success: false, error: error.message };
   }
 
+  // Onboarding complete = user is ready to accept bookings.
+  // Initialize the free bookings tracking window for the associated business profile
+  // if it hasn't been set yet.
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('business_profiles')
+    .update({
+      free_bookings_month: currentMonth,
+      free_bookings_count: 0,
+    })
+    .eq('profile_id', profileId)
+    .is('free_bookings_month', null);
+
   return { success: true };
 }

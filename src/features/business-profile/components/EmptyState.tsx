@@ -65,7 +65,6 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Button
           onClick={onEdit}
           variant="primary"
-          size="sm"
           className="inline-flex items-center space-x-2"
         >
           <PlusIcon className="h-4 w-4" />

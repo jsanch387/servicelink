@@ -27,7 +27,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
         setError(data.error ?? 'Something went wrong.');
         return;
       }
-      window.location.href = ROUTES.DASHBOARD.BUSINESS_PROFILE;
+      window.location.href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
         <Button
           onClick={handleSeeProfile}
           variant="inverse"
-          size="lg"
           className="w-full sm:w-auto min-w-[200px]"
           icon={<CheckCircleIcon className="h-5 w-5" />}
           iconPosition="left"

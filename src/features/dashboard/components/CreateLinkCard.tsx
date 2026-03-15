@@ -92,7 +92,6 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
         <Button
           onClick={handleSaveSlug}
           variant="inverse"
-          size="lg"
           loading={isUpdating}
           disabled={isUpdating || !customSlugInput.trim()}
           className="w-full sm:w-auto"

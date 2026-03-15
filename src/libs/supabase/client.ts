@@ -21,6 +21,11 @@ export type Database = {
           onboarding_status: 'not_started' | 'in_progress' | 'completed';
           created_at: string;
           updated_at: string;
+          subscription_tier: string;
+          subscription_status: string | null;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          subscription_current_period_end: string | null;
         };
         Insert: {
           user_id: string;
@@ -29,6 +34,11 @@ export type Database = {
           onboarding_status?: 'not_started' | 'in_progress' | 'completed';
           created_at?: string;
           updated_at?: string;
+          subscription_tier?: string;
+          subscription_status?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_current_period_end?: string | null;
         };
         Update: {
           user_id?: string;
@@ -37,6 +47,11 @@ export type Database = {
           onboarding_status?: 'not_started' | 'in_progress' | 'completed';
           created_at?: string;
           updated_at?: string;
+          subscription_tier?: string;
+          subscription_status?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_current_period_end?: string | null;
         };
       };
       business_profiles: {
@@ -65,6 +80,8 @@ export type Database = {
           last_edited: string;
           created_at: string;
           updated_at: string;
+          free_bookings_month: string | null;
+          free_bookings_count: number;
         };
         Insert: {
           id?: string;
@@ -72,6 +89,8 @@ export type Database = {
           public_id: string;
           business_name: string;
           business_type?: string | null;
+          free_bookings_month?: string | null;
+          free_bookings_count?: number;
           service_area?: string | null;
           bio?: string | null;
           phone_number_call?: string | null;
@@ -117,6 +136,8 @@ export type Database = {
           last_edited?: string;
           created_at?: string;
           updated_at?: string;
+          free_bookings_month?: string | null;
+          free_bookings_count?: number;
         };
       };
       service_addons: {

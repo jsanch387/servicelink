@@ -30,7 +30,7 @@ interface ButtonProps {
 export const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
-  size = 'md',
+  size = 'sm',
   className = '',
   onClick,
   disabled = false,
@@ -43,37 +43,40 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   'aria-label': ariaLabel,
 }) => {
-  // Rectangular, slightly rounded — single source of truth for all buttons
+  // Modern rectangular rounded buttons — consistent across the app
   const baseClasses =
-    'inline-flex items-center justify-center rounded-xl font-semibold shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+    'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0f0f0f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer select-none';
 
   const variantClasses = {
     primary:
-      'bg-orange-500 hover:bg-orange-600 text-white focus:ring-orange-500',
+      'bg-orange-500 hover:bg-orange-600 text-white shadow-sm focus:ring-orange-500',
     secondary:
-      'border border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30 focus:ring-white/50 backdrop-blur-sm',
+      'border border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30 focus:ring-white/40 backdrop-blur-sm',
     outline:
       'border border-orange-500/50 text-orange-400 bg-transparent hover:bg-orange-500/10 hover:border-orange-400 focus:ring-orange-500',
     ghost:
-      'text-gray-300 hover:text-white hover:bg-neutral-700/50 focus:ring-neutral-500',
-    inverse: 'bg-white text-black hover:bg-gray-100 focus:ring-neutral-400',
-    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
-    success: 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500',
+      'text-gray-300 hover:text-white hover:bg-white/5 focus:ring-neutral-500',
+    inverse:
+      'bg-white text-neutral-900 hover:bg-gray-100 shadow-sm focus:ring-neutral-400',
+    danger:
+      'bg-red-600 hover:bg-red-700 text-white shadow-sm focus:ring-red-500',
+    success:
+      'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:ring-emerald-500',
     warning:
-      'bg-yellow-600 hover:bg-yellow-700 text-white focus:ring-yellow-500',
+      'bg-amber-500 hover:bg-amber-600 text-black shadow-sm focus:ring-amber-500',
   };
 
-  // Sizes match login/signup style: touch-friendly min-heights, text-base for lg
+  // Generous touch targets, clear hierarchy
   const sizeClasses = {
-    xs: 'px-2 py-1 text-xs min-h-[32px]',
-    sm: 'px-2.5 py-1.5 text-xs min-h-[36px]',
-    md: 'px-4 py-2 text-sm min-h-[44px]',
-    lg: 'px-5 py-3 text-base min-h-[48px]',
+    xs: 'px-3 py-1.5 text-xs min-h-[36px]',
+    sm: 'px-4 py-2 text-sm min-h-[42px]',
+    md: 'px-5 py-2.5 text-sm min-h-[48px]',
+    lg: 'px-6 py-3.5 text-base min-h-[52px]',
   };
 
   const iconSizeClasses = {
-    xs: 'h-3 w-3',
-    sm: 'h-3.5 w-3.5',
+    xs: 'h-3.5 w-3.5',
+    sm: 'h-4 w-4',
     md: 'h-4 w-4',
     lg: 'h-5 w-5',
   };
