@@ -17,6 +17,7 @@ import {
 import { ROUTES } from '@/constants/routes';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { TryProPostOnboardingModal } from '@/features/pricing';
+import { StoryPostShareButton } from '@/features/story-post';
 import { ArrowRightIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
@@ -200,6 +201,24 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
               </GlassCard>
             </div>
           )}
+
+          {/* Action bar above profile header (icon-only actions, e.g. share) */}
+          {!isPublic &&
+            slugData &&
+            slugData.hasSlug &&
+            slugData.fullLink &&
+            businessProfile.logo_url && (
+              <div className="px-2 sm:px-4 py-2 flex justify-end">
+                <div className="inline-flex items-center gap-2">
+                  <StoryPostShareButton
+                    businessName={businessProfile.business_name}
+                    logoUrl={businessProfile.logo_url}
+                    bookingUrl={slugData.fullLink}
+                  />
+                  {/* Future action icons can be added here */}
+                </div>
+              </div>
+            )}
 
           {editMode === 'view' ? (
             // Preview Mode - Show customer view
