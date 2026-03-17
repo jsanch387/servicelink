@@ -8,6 +8,8 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  /** When true, modal takes full screen height on mobile for better preview space. */
+  fullScreenMobile?: boolean;
 }
 
 /**
@@ -22,6 +24,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   maxWidth = '2xl',
+  fullScreenMobile = false,
 }) => {
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -84,7 +87,13 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-[var(--dashboard-bg)] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full ${maxWidthClasses[maxWidth]} mx-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out`}
+        className={`bg-[var(--dashboard-bg)] border border-white/10 ${
+          fullScreenMobile
+            ? 'rounded-none h-full sm:rounded-3xl sm:h-auto'
+            : 'rounded-t-3xl sm:rounded-3xl'
+        } w-full ${maxWidthClasses[maxWidth]} mx-auto ${
+          fullScreenMobile ? 'max-h-screen' : 'max-h-[95vh] sm:max-h-[90vh]'
+        } flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out`}
         style={{
           transform: 'translateY(0)',
           animation: 'slideUp 0.3s ease-out',
