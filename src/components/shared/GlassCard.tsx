@@ -39,10 +39,8 @@ interface GlassCardProps {
 
 export const GlassCard: React.FC<GlassCardProps> = ({
   children,
-  blurColor = 'bg-zinc-500',
   className = '',
   padding = 'md',
-  showBlur = true,
   onClick,
   rounded = 'rounded-[2rem]',
 }) => {
@@ -62,13 +60,6 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   return (
     <div className={combinedClasses} onClick={onClick}>
-      {/* Decorative blur element in top right corner */}
-      {showBlur && (
-        <div
-          className={`absolute top-0 right-0 w-32 h-32 ${blurColor} opacity-[0.05] blur-3xl -mr-16 -mt-16 pointer-events-none`}
-        />
-      )}
-
       {/* Content with z-index to appear above blur; flex so children can stretch when card has flex-col */}
       <div className="relative z-10 flex flex-1 min-h-0 flex-col">{children}</div>
     </div>
