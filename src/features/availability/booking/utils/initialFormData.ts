@@ -9,5 +9,8 @@ export const INITIAL_CUSTOMER_FORM_DATA: CustomerFormData = {
   city: '',
   state: '',
   zip: '',
+  vehicleYear: '',
+  vehicleMake: '',
+  vehicleModel: '',
   notes: '',
 };

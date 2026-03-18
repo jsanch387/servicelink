@@ -6,6 +6,7 @@
  */
 
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import {
   getAddOns,
   getServiceAddOnIds,
@@ -66,12 +67,17 @@ export default async function ServiceEditPage({
   const initialSelectedAddOnIds =
     assignedResult.success && assignedResult.data ? assignedResult.data : [];
 
+  const showVehicleBookingOptions = isVehicleRelatedBusinessType(
+    businessProfile.business_type
+  );
+
   return (
     <ServiceEditScreen
       service={service}
       initialAddOns={addOns}
       initialSelectedAddOnIds={initialSelectedAddOnIds}
       backHref="/dashboard/services"
+      showVehicleBookingOptions={showVehicleBookingOptions}
     />
   );
 }

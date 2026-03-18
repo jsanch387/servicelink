@@ -21,6 +21,16 @@ function formatPhoneDisplay(phone: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
+function formatVehicle(customer: CustomerFormData): string | null {
+  const parts = [
+    customer.vehicleYear?.trim() ? customer.vehicleYear.trim() : null,
+    customer.vehicleMake?.trim() ? customer.vehicleMake.trim() : null,
+    customer.vehicleModel?.trim() ? customer.vehicleModel.trim() : null,
+  ].filter(Boolean);
+  if (parts.length === 0) return null;
+  return parts.join(' ');
+}
+
 interface BookingSummaryProps {
   serviceName: string;
   serviceDurationMinutes: number;
@@ -127,6 +137,13 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           <p className="text-xs text-gray-500 tracking-wider mb-1">Address</p>
           <p className="text-white font-medium">{formatAddress(customer)}</p>
         </div>
+
+        {formatVehicle(customer) && (
+          <div>
+            <p className="text-xs text-gray-500 tracking-wider mb-1">Vehicle</p>
+            <p className="text-white font-medium">{formatVehicle(customer)}</p>
+          </div>
+        )}
 
         {customer.notes.trim() && (
           <div>

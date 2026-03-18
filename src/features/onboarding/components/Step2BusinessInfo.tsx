@@ -7,6 +7,7 @@ import {
   Select,
   TextArea,
 } from '@/components/shared';
+import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import React, { useEffect, useState } from 'react';
 import { saveStepAndProgress } from '../utils/onboardingHelpers';
 
@@ -17,19 +18,6 @@ interface Step2BusinessInfoProps {
   onNext: () => void;
   onBack: () => void;
 }
-
-const BUSINESS_TYPES = [
-  'Service Provider',
-  'Restaurant',
-  'Retail Store',
-  'Professional Services',
-  'Healthcare',
-  'Beauty & Wellness',
-  'Automotive',
-  'Real Estate',
-  'Technology',
-  'Other',
-];
 
 export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
   profileId,
@@ -60,10 +48,7 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
     }
   }, [existingData]);
 
-  const businessTypeOptions = BUSINESS_TYPES.map(type => ({
-    value: type,
-    label: type,
-  }));
+  const businessTypeOptions = BUSINESS_TYPE_OPTIONS;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({

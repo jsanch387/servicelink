@@ -20,6 +20,9 @@ export interface CustomerFormData {
   city: string;
   state: string;
   zip: string;
+  vehicleYear: string;
+  vehicleMake: string;
+  vehicleModel: string;
   notes: string;
 }
 
@@ -39,6 +42,8 @@ export interface AvailabilityBookingPageProps {
   businessName: string;
   businessId: string;
   businessSlug: string;
+  /** When true, booking details form includes vehicle year/make/model. */
+  showVehicleFields?: boolean;
   serviceId?: string;
   /** Comma-separated add-on IDs from service details page. */
   addOnIds?: string;

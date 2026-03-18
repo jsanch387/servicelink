@@ -10,6 +10,7 @@ import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvai
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { isProAccess } from '@/features/pricing';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -33,6 +34,7 @@ type PublicBusinessProfileForBooking = {
   id: string;
   business_name: string;
   business_slug: string | null;
+  business_type: string | null;
   legacy_request_booking_enabled: boolean | null;
   profile_id: string | null;
   free_bookings_month: string | null;
@@ -54,7 +56,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count'
       )
       .eq('business_slug', slug)
       .single();
@@ -216,6 +218,10 @@ export default async function BookingRequestPage({
       ? await getAddOnsByIdsForBooking(businessProfile.id, addonIdList)
       : [];
 
+  const showVehicleFields = isVehicleRelatedBusinessType(
+    businessProfile.business_type
+  );
+
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
       {/* Header with Back Button */}
@@ -247,6 +253,7 @@ export default async function BookingRequestPage({
           businessName={businessProfile.business_name}
           businessId={businessProfile.id}
           businessSlug={businessProfile.business_slug || slug}
+          showVehicleFields={showVehicleFields}
           serviceId={serviceId?.trim() ?? undefined}
           addOnIds={addOnIds?.trim() || undefined}
           selectedAddOns={selectedAddOns}

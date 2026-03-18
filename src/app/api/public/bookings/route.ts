@@ -208,6 +208,9 @@ export async function POST(request: NextRequest) {
           await sendAvailabilityBookingNotificationEmail(ownerEmail, {
             customerName,
             customerEmail,
+            customerVehicleYear: body.customer?.vehicleYear?.trim(),
+            customerVehicleMake: body.customer?.vehicleMake?.trim(),
+            customerVehicleModel: body.customer?.vehicleModel?.trim(),
             serviceName: body.serviceName.trim(),
             scheduledDate: body.scheduledDate,
             startTime: body.startTime.trim(),

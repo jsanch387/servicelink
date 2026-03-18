@@ -25,6 +25,9 @@ export interface BookingRow {
   customer_city: string | null;
   customer_state: string | null;
   customer_zip: string | null;
+  customer_vehicle_year: string | null;
+  customer_vehicle_make: string | null;
+  customer_vehicle_model: string | null;
   customer_notes: string | null;
   status: string;
   created_at: string;
@@ -54,6 +57,9 @@ export function mapBookingRowToDisplay(
     customerName: row.customer_name,
     customerPhone: row.customer_phone ?? '',
     customerEmail: row.customer_email,
+    customerVehicleYear: row.customer_vehicle_year ?? undefined,
+    customerVehicleMake: row.customer_vehicle_make ?? undefined,
+    customerVehicleModel: row.customer_vehicle_model ?? undefined,
     serviceName: row.service_name,
     serviceDurationMinutes: row.duration_minutes,
     servicePriceCents: row.service_price_cents ?? 0,
