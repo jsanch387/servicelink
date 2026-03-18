@@ -7,7 +7,7 @@ import {
   ChevronUpIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import React, { useState } from 'react';
 
 /** Max description length before collapsing. Keeps cards uniform height on mobile. */
@@ -41,7 +41,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   isPublic = false,
   businessSlug = '',
 }) => {
-  const router = useRouter();
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const description = service.description || '';
@@ -56,11 +55,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       ? service.duration_minutes / 60
       : (service.hours_to_complete ?? null);
 
-  const handleSelectClick = () => {
-    if (businessSlug && service.id) {
-      router.push(`/${businessSlug}/book/details?serviceId=${service.id}`);
-    }
-  };
   const formatPrice = (price: string | number) => {
     // If it's already a formatted string (starts with $), return as is
     if (typeof price === 'string' && price.startsWith('$')) {
@@ -154,14 +148,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         )}
 
         {isPublic && !isEditable && businessSlug && service.id && (
-          <button
-            onClick={handleSelectClick}
-            type="button"
+          <Link
+            href={`/${businessSlug}/book/details?serviceId=${encodeURIComponent(
+              service.id
+            )}`}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/20 bg-white/5 text-zinc-200 text-sm font-medium hover:bg-white/10 hover:border-white/30 hover:text-white transition-colors cursor-pointer"
           >
             Select
             <ChevronRightIcon className="h-3.5 w-3.5" />
-          </button>
+          </Link>
         )}
       </div>
 

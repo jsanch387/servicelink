@@ -11,6 +11,7 @@ import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,27 @@ async function fetchBusinessIdBySlug(slug: string): Promise<string | null> {
     .eq('business_slug', slug)
     .single();
   return (data as { id: string } | null)?.id ?? null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ 'business-slug': string }>;
+}): Promise<Metadata> {
+  const { 'business-slug': slug } = await params;
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
+  ).replace(/\/$/, '');
+
+  const canonicalUrl = `${siteUrl}/${slug}`;
+
+  return {
+    title: `Book Details | ServiceLink`,
+    robots: 'noindex, follow',
+    alternates: {
+      canonical: canonicalUrl,
+    },
+  };
 }
 
 export default async function ServiceDetailsPage({

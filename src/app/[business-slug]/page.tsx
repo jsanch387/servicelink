@@ -181,6 +181,10 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
 
   try {
+    const siteUrl = (
+      process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
+    ).replace(/\/$/, '');
+
     // Use a lightweight fetch for metadata (only get what we need)
     const supabase = await createSupabaseServerClient();
 
@@ -249,7 +253,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
       .join(', ');
 
     // Generate canonical URL
-    const canonicalUrl = `https://myservicelink.app/${slug}`;
+    const canonicalUrl = `${siteUrl}/${slug}`;
 
     return {
       title,

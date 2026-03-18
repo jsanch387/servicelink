@@ -17,6 +17,10 @@ export const StructuredData: React.FC<StructuredDataProps> = ({
   businessProfile,
   slug,
 }) => {
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
+  ).replace(/\/$/, '');
+
   // Generate structured data for Local Business
   const structuredData = {
     '@context': 'https://schema.org',
@@ -24,7 +28,7 @@ export const StructuredData: React.FC<StructuredDataProps> = ({
     name: businessProfile.business_name,
     description:
       businessProfile.bio || `${businessProfile.business_type} services`,
-    url: `https://myservicelink.app/${slug}`,
+    url: `${siteUrl}/${slug}`,
     image: businessProfile.cover_image_url || businessProfile.logo_url,
     logo: businessProfile.logo_url,
     telephone: businessProfile.phone_number_call,
