@@ -6,6 +6,8 @@ import {
   ArrowLeftIcon,
   CalendarIcon,
   EnvelopeIcon,
+  PhoneIcon,
+  ArrowTopRightOnSquareIcon,
   MapPinIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -39,6 +41,16 @@ function formatPhoneDisplay(phone: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
+function formatVehicle(booking: AvailabilityBookingDisplay): string | null {
+  const parts = [
+    booking.customerVehicleYear?.trim(),
+    booking.customerVehicleMake?.trim(),
+    booking.customerVehicleModel?.trim(),
+  ].filter(Boolean);
+  if (parts.length === 0) return null;
+  return parts.join(' ');
+}
+
 export function AvailabilityBookingDetailPanel({
   booking,
   onClose,
@@ -53,6 +65,26 @@ export function AvailabilityBookingDetailPanel({
   const phoneFormatted = formatPhoneDisplay(booking.customerPhone);
   const telHref = `tel:${booking.customerPhone.replace(/\D/g, '')}`;
   const isConfirmed = booking.status === 'confirmed';
+
+  const navigationUrl = (() => {
+    const destination = fullAddress.trim();
+    if (!destination) return null;
+
+    const encoded = encodeURIComponent(destination);
+    const ua =
+      typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    const isIOS =
+      /iPad|iPhone|iPod/.test(ua) ||
+      // iPadOS Safari reports as MacIntel with touch points.
+      (typeof navigator !== 'undefined' &&
+        /Macintosh/.test(ua) &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (navigator as any).maxTouchPoints > 1);
+
+    return isIOS
+      ? `https://maps.apple.com/?daddr=${encoded}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
+  })();
 
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
@@ -190,13 +222,16 @@ export function AvailabilityBookingDetailPanel({
               <p className="font-semibold text-white">{booking.customerName}</p>
               <a
                 href={telHref}
-                className="block text-gray-300 hover:text-white transition-colors"
+                aria-label="Call customer"
+                className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors hover:bg-blue-500/10"
               >
+                <PhoneIcon className="h-4 w-4" />
                 {phoneFormatted}
               </a>
               <a
                 href={`mailto:${booking.customerEmail}`}
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+                aria-label="Email customer"
+                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors hover:bg-white/[0.06]"
               >
                 <EnvelopeIcon className="h-4 w-4" />
                 {booking.customerEmail}
@@ -206,14 +241,42 @@ export function AvailabilityBookingDetailPanel({
 
           {/* Location */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3 flex items-center gap-2">
-              <MapPinIcon className="h-4 w-4" />
-              Location
-            </h3>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h3 className="text-xs font-semibold text-gray-500 tracking-wider flex items-center gap-2">
+                <MapPinIcon className="h-4 w-4" />
+                Location
+              </h3>
+
+              {navigationUrl && (
+                <a
+                  href={navigationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Navigate to booking location"
+                  className="inline-flex items-center justify-center rounded-xl border border-blue-500/30 bg-blue-500/[0.06] text-blue-300 hover:text-blue-100 hover:border-blue-500/60 hover:bg-blue-500/10 transition-colors w-10 h-10"
+                >
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4 text-blue-400" />
+                </a>
+              )}
+            </div>
             <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
               <p className="text-gray-300 whitespace-pre-line">{fullAddress}</p>
             </div>
           </section>
+
+          {/* Vehicle */}
+          {formatVehicle(booking) && (
+            <section>
+              <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
+                Vehicle
+              </h3>
+              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
+                <p className="text-gray-300 whitespace-pre-line">
+                  {formatVehicle(booking)}
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* Notes */}
           {booking.notes.trim() && (

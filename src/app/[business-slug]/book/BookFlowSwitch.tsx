@@ -14,6 +14,8 @@ interface BookFlowSwitchProps {
   businessName: string;
   businessId: string;
   businessSlug: string;
+  /** When true, booking details form includes vehicle year/make/model. */
+  showVehicleFields?: boolean;
   serviceId?: string;
   /** Comma-separated add-on IDs from service details page. */
   addOnIds?: string;
@@ -35,6 +37,7 @@ export function BookFlowSwitch({
   businessName,
   businessId,
   businessSlug,
+  showVehicleFields = false,
   serviceId,
   addOnIds,
   selectedAddOns,
@@ -50,6 +53,7 @@ export function BookFlowSwitch({
         businessName={businessName}
         businessId={businessId}
         businessSlug={businessSlug}
+        showVehicleFields={showVehicleFields}
         serviceId={serviceId}
         addOnIds={addOnIds}
         selectedAddOns={selectedAddOns}

@@ -6,6 +6,7 @@ import {
   PriceInput,
   Select,
   SERVICE_DURATION_HOURS_OPTIONS,
+  Switch,
   TextArea,
 } from '@/components/shared';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';
@@ -67,6 +68,11 @@ export interface ServiceEditScreenProps {
   initialSelectedAddOnIds?: string[];
   /** Back link URL (e.g. /dashboard/services). */
   backHref: string;
+  /**
+   * From business profile type (e.g. Auto & Detailing). When true, show booking
+   * options like "ask for year/make/model".
+   */
+  showVehicleBookingOptions?: boolean;
 }
 
 /**
@@ -78,6 +84,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   initialAddOns = [],
   initialSelectedAddOnIds = [],
   backHref,
+  showVehicleBookingOptions = false,
 }) => {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -93,6 +100,9 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   const [isAddOnModalOpen, setIsAddOnModalOpen] = useState(false);
   const [isSavingAddOn, setIsSavingAddOn] = useState(false);
   const [addOnSaveError, setAddOnSaveError] = useState<string | null>(null);
+  const [askVehicleDetails, setAskVehicleDetails] = useState<boolean>(
+    showVehicleBookingOptions
+  );
 
   useEffect(() => {
     const form = serviceToForm(service);
@@ -101,6 +111,15 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     setPrice(form.price);
     setDurationHours(form.durationHours);
   }, [service]);
+
+  // Sync when business type implies vehicle booking options (e.g. after profile edit).
+  useEffect(() => {
+    if (showVehicleBookingOptions) {
+      setAskVehicleDetails(true);
+    } else {
+      setAskVehicleDetails(false);
+    }
+  }, [showVehicleBookingOptions]);
 
   useEffect(() => {
     setSelectedAddOnIds(new Set(initialSelectedAddOnIds));
@@ -281,6 +300,38 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
               </div>
             </form>
           </section>
+
+          {/* Booking options – shown for vehicle-related services */}
+          {showVehicleBookingOptions && (
+            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6 sm:mb-8">
+              <h2 className="text-base font-semibold text-white mb-1">
+                Booking options
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                For vehicle services, you can ask customers for year, make, and
+                model when they book.
+              </p>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white">
+                    Ask for vehicle details
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Customers will be asked for year, make, and model on the
+                    booking form.
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <Switch
+                    size="md"
+                    checked={askVehicleDetails}
+                    onCheckedChange={setAskVehicleDetails}
+                    aria-label="Ask customers for vehicle details (year, make, model)"
+                  />
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Add-ons section — pool from DB; user selects which to offer for this service */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6 sm:mb-8">

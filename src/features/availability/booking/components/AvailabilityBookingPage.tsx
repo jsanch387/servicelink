@@ -32,6 +32,7 @@ export function AvailabilityBookingPage({
   businessName,
   businessId,
   businessSlug,
+  showVehicleFields = false,
   serviceId,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addOnIds,
@@ -72,7 +73,10 @@ export function AvailabilityBookingPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
-  const canContinueFromDetails = isCustomerFormValid(customerData);
+  const canContinueFromDetails = isCustomerFormValid(
+    customerData,
+    showVehicleFields
+  );
 
   // Scroll to top when step changes so user sees the top of the form (especially on mobile)
   useEffect(() => {
@@ -133,8 +137,10 @@ export function AvailabilityBookingPage({
         businessName={businessName}
         businessSlug={businessSlug}
         serviceName={serviceName}
+        servicePriceCents={servicePriceCents}
         selectedAddOns={submittedData.selectedAddOns}
         totalPriceCents={totalPriceCents}
+        customer={submittedData.customer}
         date={submittedData.date}
         time={submittedData.time}
       />
@@ -208,6 +214,7 @@ export function AvailabilityBookingPage({
               value={customerData}
               onChange={setCustomerData}
               onSubmit={() => setStep(3)}
+              showVehicleFields={showVehicleFields}
               hideSubmitButton
               submitLabel="Review Booking"
             />

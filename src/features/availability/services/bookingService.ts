@@ -30,6 +30,9 @@ export interface CreateBookingPayload {
   customer_city: string | null;
   customer_state: string | null;
   customer_zip: string | null;
+  customer_vehicle_year: string | null;
+  customer_vehicle_make: string | null;
+  customer_vehicle_model: string | null;
   customer_notes: string | null;
 }
 
@@ -56,6 +59,9 @@ function mapCustomerToRow(
     customer_city: c.city?.trim() || null,
     customer_state: c.state?.trim() || null,
     customer_zip: c.zip?.trim() || null,
+    customer_vehicle_year: c.vehicleYear?.trim() || null,
+    customer_vehicle_make: c.vehicleMake?.trim() || null,
+    customer_vehicle_model: c.vehicleModel?.trim() || null,
     customer_notes: c.notes?.trim() || null,
   };
 }

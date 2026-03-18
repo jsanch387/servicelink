@@ -24,6 +24,9 @@ export interface AvailabilityBookingDisplay {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
+  customerVehicleYear?: string;
+  customerVehicleMake?: string;
+  customerVehicleModel?: string;
   serviceName: string;
   serviceDurationMinutes: number;
   servicePriceCents: number | null;
