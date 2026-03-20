@@ -8,6 +8,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignUpForm } from '../utils/validation';
 
+const SIGNUP_PIXEL_FLAG_KEY = 'sl_meta_complete_registration_pending';
+
 export const SignupForm: React.FC = () => {
   const router = useRouter();
   const { signUp, signInWithGoogle, isLoading } = useAuth();
@@ -62,6 +64,10 @@ export const SignupForm: React.FC = () => {
 
       // Small delay to ensure cookies are set before navigation
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Mark that a completed signup reached the dashboard.
+      // Dashboard layout consumes this one-time flag and fires Meta CompleteRegistration.
+      window.sessionStorage.setItem(SIGNUP_PIXEL_FLAG_KEY, '1');
 
       router.push(ROUTES.DASHBOARD.MAIN);
     } catch (error) {

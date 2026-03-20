@@ -1,4 +1,5 @@
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
+import { MetaCompleteRegistrationTracker } from '@/features/analytics';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -17,5 +18,10 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardWrapper>{children}</DashboardWrapper>;
+  return (
+    <DashboardWrapper>
+      <MetaCompleteRegistrationTracker />
+      {children}
+    </DashboardWrapper>
+  );
 }

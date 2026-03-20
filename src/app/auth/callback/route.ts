@@ -55,6 +55,8 @@ export async function GET(request: Request) {
     .eq('user_id', user.id)
     .single();
 
+  let isNewOAuthSignup = false;
+
   if (!existingProfile) {
     const name =
       user.user_metadata?.full_name ??
@@ -65,7 +67,15 @@ export async function GET(request: Request) {
       user_id: user.id,
       full_name: name,
     });
+    isNewOAuthSignup = true;
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  const redirectUrl = new URL(next, request.url);
+
+  // Mark new Google OAuth signups so dashboard can fire Meta CompleteRegistration once.
+  if (isNewOAuthSignup) {
+    redirectUrl.searchParams.set('sl_signup', '1');
+  }
+
+  return NextResponse.redirect(redirectUrl);
 }
