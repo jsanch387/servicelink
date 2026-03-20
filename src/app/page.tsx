@@ -8,10 +8,27 @@ export const metadata: Metadata = {
   description:
     'Create a professional booking link for your service business. Share one link—myservicelink.app/yourbusiness—and let customers see your services and book instantly.',
   openGraph: {
+    type: 'website',
     url: siteUrl,
     title: 'ServiceLink | One Link. Your Services. Get Booked.',
     description:
       'Create a professional booking link. Share one link and let customers see your services and book instantly.',
+    images: [
+      {
+        url: '/open-graph.png',
+        width: 1200,
+        height: 630,
+        alt: 'ServiceLink — Your business, ready to book.',
+        type: 'image/png',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ServiceLink | One Link. Your Services. Get Booked.',
+    description:
+      'Create a professional booking link. Share one link and let customers see your services and book instantly.',
+    images: ['/open-graph.png'],
   },
   alternates: {
     canonical: siteUrl,

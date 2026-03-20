@@ -35,126 +35,186 @@ export default function PrivacyPage() {
               1. Information We Collect
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              We collect information that you provide directly to us, including:
+              We collect information you provide directly and information
+              generated through use of ServiceLink.
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Account information (name, email address, business name)</li>
               <li>
-                Profile information (business type, service area, contact
-                information)
+                Account and profile data (name, email, business name, business
+                details, service offerings, pricing, and availability)
               </li>
               <li>
-                Content you upload (logos, cover photos, service listings,
-                portfolio images)
+                Booking form data submitted by customers (name, email, phone
+                number, address, appointment preferences, and service notes)
               </li>
               <li>
-                Payment information (processed securely through third-party
-                providers)
+                Content uploads (logos, images, service descriptions, and other
+                profile content)
+              </li>
+              <li>
+                Billing and subscription data related to plan purchases and
+                renewals
+              </li>
+              <li>
+                Usage and device data (logs, browser information, and platform
+                activity)
               </li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              2. How We Use Your Information
+              2. How We Use Information
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              We use the information we collect to:
+              We use personal information to operate and improve ServiceLink,
+              including to:
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Provide, maintain, and improve our services</li>
-              <li>Create and manage your account and profile</li>
-              <li>Process transactions and send related information</li>
-              <li>Send technical notices, updates, and support messages</li>
+              <li>Create and manage business owner accounts and profiles</li>
+              <li>Deliver booking requests and notifications</li>
               <li>
-                Send marketing communications, product information, and
-                promotional emails
+                Process subscriptions, payments, and billing communications
               </li>
-              <li>Respond to your comments and questions</li>
+              <li>Provide customer support and service communications</li>
+              <li>
+                Detect abuse, fraud, unauthorized activity, and policy
+                violations
+              </li>
+              <li>Send product updates and promotional emails where permitted</li>
             </ul>
             <p className="text-base leading-relaxed mt-4">
-              By signing up for an account, you consent to receive email
-              communications from us, including but not limited to account
-              updates, product announcements, service information, and
-              promotional content. You may opt-out of promotional emails at any
-              time by clicking the unsubscribe link in any email or by
-              contacting us directly.
+              You can opt out of marketing emails using the unsubscribe link.
+              We may still send transactional or service-related communications.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              3. Information Sharing and Disclosure
+              3. Booking Data and Business Owners
             </h2>
             <p className="text-base leading-relaxed">
-              We do not sell, trade, or rent your personal information to third
-              parties. We may share your information only in the following
-              circumstances:
+              When customers submit booking information, that information is
+              shared with the selected business owner so they can communicate
+              with the customer and complete the requested service. Business
+              owners are responsible for their own use of customer data and must
+              comply with applicable privacy and consumer protection laws.
             </p>
-            <ul className="list-disc list-inside space-y-2 ml-4 mt-4">
-              <li>With your consent</li>
-              <li>To comply with legal obligations</li>
-              <li>To protect and defend our rights or property</li>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              4. Payments and Stripe
+            </h2>
+            <p className="text-base leading-relaxed">
+              Subscription payments are processed by Stripe. We do not store
+              full payment card numbers on our servers. Stripe processes
+              payment-related information in accordance with its own terms and
+              privacy policy.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              5. Sharing and Disclosure
+            </h2>
+            <p className="text-base leading-relaxed mb-4">
+              We do not sell personal information. We may share information:
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>With service providers that help run the platform</li>
               <li>
-                With service providers who assist us in operating our platform
+                With payment processors and infrastructure partners, including
+                Stripe
+              </li>
+              <li>
+                With business owners when customers submit booking requests to
+                them
+              </li>
+              <li>To comply with legal obligations or enforce our rights</li>
+              <li>
+                In connection with a merger, acquisition, financing, or sale of
+                assets
               </li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              4. Data Security
+              6. Data Retention
             </h2>
             <p className="text-base leading-relaxed">
-              We implement appropriate technical and organizational measures to
-              protect your personal information. However, no method of
-              transmission over the Internet or electronic storage is 100%
-              secure.
+              We retain personal information for as long as needed to provide
+              the platform, comply with legal obligations, resolve disputes, and
+              enforce agreements. Retention periods vary based on the type of
+              data and legal requirements.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              5. Your Rights
+              7. Data Security
+            </h2>
+            <p className="text-base leading-relaxed">
+              We use reasonable technical and organizational safeguards to
+              protect personal information. No method of transmission or storage
+              is completely secure, and we cannot guarantee absolute security.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              8. Your Privacy Rights
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              You have the right to:
+              Depending on your location, you may have rights to access, correct,
+              delete, or object to certain processing of your personal
+              information.
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Access and receive a copy of your personal data</li>
-              <li>Rectify inaccurate or incomplete data</li>
-              <li>Request deletion of your personal data</li>
-              <li>Object to or restrict processing of your personal data</li>
-              <li>Data portability</li>
+              <li>Request access to or a copy of your personal information</li>
+              <li>Request correction of inaccurate information</li>
+              <li>Request deletion, subject to legal exceptions</li>
+              <li>Request limits on certain processing activities</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              6. Cookies and Tracking Technologies
+              9. Cookies and Similar Technologies
             </h2>
             <p className="text-base leading-relaxed">
-              We use cookies and similar tracking technologies to track activity
-              on our service and hold certain information. You can instruct your
-              browser to refuse all cookies or to indicate when a cookie is
-              being sent.
+              We may use cookies and similar technologies for authentication,
+              preferences, analytics, and platform functionality. You can
+              control cookies through browser settings, though some features may
+              not work properly if cookies are disabled.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              7. Changes to This Privacy Policy
+              10. Children&apos;s Privacy
             </h2>
             <p className="text-base leading-relaxed">
-              We may update our Privacy Policy from time to time. We will notify
-              you of any changes by posting the new Privacy Policy on this page
-              and updating the &quot;Last updated&quot; date.
+              ServiceLink is not intended for children under 13, and we do not
+              knowingly collect personal information from children under 13.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              8. Contact Us
+              11. Changes to This Privacy Policy
+            </h2>
+            <p className="text-base leading-relaxed">
+              We may update this Privacy Policy from time to time. We will post
+              the updated version on this page and revise the &quot;Last
+              updated&quot; date.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              12. Contact Us
             </h2>
             <p className="text-base leading-relaxed">
               If you have any questions about this Privacy Policy, please

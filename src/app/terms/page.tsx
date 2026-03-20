@@ -35,109 +35,172 @@ export default function TermsPage() {
               1. Acceptance of Terms
             </h2>
             <p className="text-base leading-relaxed">
-              By accessing and using Service Link, you accept and agree to be
-              bound by the terms and provision of this agreement.
+              By accessing or using ServiceLink, you agree to these Terms of
+              Service. If you do not agree, please do not use the platform.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              2. Use License
+              2. Platform Overview
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              Permission is granted to temporarily use Service Link for
-              personal, non-commercial use. This is the grant of a license, not
-              a transfer of title, and under this license you may not:
+              ServiceLink helps business owners create a public booking page,
+              list services, accept booking requests, and receive customer
+              details needed to complete jobs.
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>modify or copy the materials</li>
               <li>
-                use the materials for any commercial purpose or for any public
-                display
+                Business owners create and manage service profiles, pricing, and
+                availability.
               </li>
               <li>
-                attempt to decompile or reverse engineer any software contained
-                on Service Link
+                Customers can submit booking forms and request services.
               </li>
               <li>
-                remove any copyright or other proprietary notations from the
-                materials
+                ServiceLink may send booking-related and account-related email
+                notifications.
               </li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              3. User Accounts
-            </h2>
-            <p className="text-base leading-relaxed">
-              When you create an account with us, you must provide information
-              that is accurate, complete, and current at all times. You are
-              responsible for safeguarding the password and for all activities
-              that occur under your account.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              4. Content
-            </h2>
-            <p className="text-base leading-relaxed">
-              Our Service allows you to post, link, store, share and otherwise
-              make available certain information, text, graphics, or other
-              material. You are responsible for the content that you post on or
-              through the Service.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              5. Prohibited Uses
+              3. Accounts and Eligibility
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              You may not use our Service:
+              To use certain features, you must create an account and provide
+              accurate, complete, and current information.
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>
-                In any way that violates any applicable national or
-                international law or regulation
+                You are responsible for safeguarding your account credentials.
               </li>
+              <li>You are responsible for all activity under your account.</li>
               <li>
-                To transmit, or procure the sending of, any advertising or
-                promotional material
-              </li>
-              <li>
-                To impersonate or attempt to impersonate the company, a company
-                employee, another user, or any other person or entity
+                You agree to update account information as needed to keep it
+                accurate.
               </li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              6. Termination
+              4. Customer Booking Data
+            </h2>
+            <p className="text-base leading-relaxed mb-4">
+              Customers may provide personal information in booking forms,
+              including name, email, phone number, address, and service details.
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>
+                Business owners are responsible for how they use customer data
+                received through bookings.
+              </li>
+              <li>
+                Business owners must comply with applicable privacy and consumer
+                protection laws.
+              </li>
+              <li>
+                You may not misuse booking data, including spam or unauthorized
+                marketing.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              5. Content and Business Information
             </h2>
             <p className="text-base leading-relaxed">
-              We may terminate or suspend your account and bar access to the
-              Service immediately, without prior notice or liability, under our
-              sole discretion, for any reason whatsoever and without limitation.
+              You are responsible for all content you upload or publish,
+              including service descriptions, pricing, contact details, and
+              images. You represent that you have the rights to use and share
+              that content.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              7. Limitation of Liability
+              6. Paid Plans, Billing, and Stripe
+            </h2>
+            <p className="text-base leading-relaxed mb-4">
+              ServiceLink offers paid subscriptions, including a Pro plan.
+              Subscription charges are processed securely by Stripe.
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>
+                By subscribing, you authorize recurring charges at the rate
+                shown during checkout.
+              </li>
+              <li>
+                You are responsible for maintaining a valid payment method.
+              </li>
+              <li>
+                Renewal timing, upgrades, cancellations, and billing are handled
+                through Stripe-powered checkout and billing tools.
+              </li>
+              <li>
+                Unless otherwise stated, fees are non-refundable except where
+                required by law.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              7. Prohibited Uses
+            </h2>
+            <p className="text-base leading-relaxed mb-4">
+              You may not use ServiceLink to:
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>Violate applicable laws or regulations</li>
+              <li>Upload deceptive, unlawful, or infringing content</li>
+              <li>Attempt unauthorized access to data, systems, or accounts</li>
+              <li>Disrupt, damage, or impair platform performance</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              8. Termination
             </h2>
             <p className="text-base leading-relaxed">
-              In no event shall Service Link, nor its directors, employees,
-              partners, agents, suppliers, or affiliates, be liable for any
-              indirect, incidental, special, consequential, or punitive damages.
+              We may suspend or terminate accounts for violations of these
+              Terms, fraudulent activity, payment failures, or behavior that
+              creates legal, security, or operational risk.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              8. Contact Us
+              9. Disclaimers and Limitation of Liability
+            </h2>
+            <p className="text-base leading-relaxed">
+              ServiceLink is provided on an &quot;as is&quot; and &quot;as
+              available&quot; basis. To the fullest extent permitted by law, we
+              disclaim all warranties and are not liable for indirect,
+              incidental, special, consequential, or punitive damages, including
+              lost profits, lost data, and business interruption.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              10. Changes to These Terms
+            </h2>
+            <p className="text-base leading-relaxed">
+              We may update these Terms from time to time. Updated versions will
+              be posted on this page with a revised &quot;Last updated&quot;
+              date. Continued use of ServiceLink after updates means you accept
+              the updated Terms.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              11. Contact Us
             </h2>
             <p className="text-base leading-relaxed">
               If you have any questions about these Terms of Service, please
