@@ -1,11 +1,13 @@
 'use client';
 
+import { Button } from '@/components/shared';
 import { FreeBookingsTracker } from '@/features/pricing';
-import { CalendarIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useMemo, useState } from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
 import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
+import { BookingsStatusFilter } from './BookingsStatusFilter';
 import { BookingsViewModeToggle } from './BookingsViewModeToggle';
 import { DayPlannerView } from './DayPlannerView';
 import { localDateKey } from './dayPlannerUtils';
@@ -190,41 +192,30 @@ export function AvailabilityBookingsView({
     setSelectedBooking(null);
   };
 
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'upcoming', label: 'Upcoming' },
-    { id: 'past', label: 'Past' },
-    { id: 'cancelled', label: 'Cancelled' },
-  ];
-
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white w-full overflow-x-hidden">
       <header className="sticky top-0 z-10 bg-[#0f0f0f]/80 backdrop-blur-xl border-b border-white/[0.05] px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-3 sm:pb-4 w-full">
-        <div className="w-full text-left">
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-            Bookings
-          </h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            Manage your appointments
-          </p>
-        </div>
-
-        {layoutMode === 'list' && (
-          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 mt-4">
-            {tabs.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={`rounded-[10px] px-3 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-bold whitespace-nowrap transition-all flex-shrink-0 cursor-pointer ${
-                  activeTab === t.id
-                    ? 'bg-white text-black'
-                    : 'bg-white/[0.05] text-gray-500 border border-white/[0.06]'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 text-left">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+              Bookings
+            </h1>
+            <p className="text-gray-500 text-sm mt-0.5">
+              Manage your appointments
+            </p>
           </div>
-        )}
+          {/* TODO: open owner flow to book on behalf of a customer */}
+          <Button
+            type="button"
+            variant="inverse"
+            size="sm"
+            icon={<PlusIcon className="h-4 w-4" aria-hidden />}
+            className="w-full shrink-0 sm:mt-0.5 sm:w-auto"
+            aria-label="New appointment for a customer"
+          >
+            New appointment
+          </Button>
+        </div>
       </header>
 
       <main className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 max-w-xl lg:max-w-3xl mx-auto w-full">
@@ -239,11 +230,20 @@ export function AvailabilityBookingsView({
             className="mb-4"
           />
         )}
-        <BookingsViewModeToggle
-          value={layoutMode}
-          onChange={setLayoutMode}
-          className="mb-4 flex w-full justify-start"
-        />
+        <div className="mb-4 flex w-full flex-row items-center justify-between gap-2">
+          <BookingsViewModeToggle
+            value={layoutMode}
+            onChange={setLayoutMode}
+            className="flex min-w-0 shrink justify-start"
+          />
+          {layoutMode === 'list' ? (
+            <BookingsStatusFilter
+              value={activeTab}
+              onChange={setActiveTab}
+              className="shrink-0"
+            />
+          ) : null}
+        </div>
         {isLoading ? (
           <AvailabilityBookingsViewSkeleton />
         ) : layoutMode === 'planner' ? (
