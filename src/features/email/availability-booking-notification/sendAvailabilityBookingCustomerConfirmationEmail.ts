@@ -1,17 +1,12 @@
 /**
- * Sends the "new availability booking" email to the business owner (V2).
- * Used when a customer completes a booking on the public availability page.
+ * Sends the appointment confirmation email to the customer (V2 availability booking).
+ * Best-effort: failures are logged by the caller; booking creation is never rolled back.
  */
 
-import { ROUTES } from '@/constants/routes';
-import {
-  getAppBaseUrl,
-  getFromEmail,
-  getResendClient,
-} from '../services/resendClient';
+import { getFromEmail, getResendClient } from '../services/resendClient';
 import {
   buildAvailabilityBookingEmailHtml,
-  getAvailabilityBookingNotificationSubject,
+  getAvailabilityBookingCustomerSubject,
 } from './availabilityBookingNotificationTemplate';
 import type {
   AvailabilityBookingNotificationPayload,
@@ -19,11 +14,11 @@ import type {
 } from './types';
 
 /**
- * Sends the new-availability-booking notification email to the given address.
- * Returns { sent: true } on success, { sent: false, error } on failure.
+ * Sends the customer-facing confirmation to the address they provided on the booking form.
  */
-export async function sendAvailabilityBookingNotificationEmail(
+export async function sendAvailabilityBookingCustomerConfirmationEmail(
   to: string,
+  businessName: string,
   payload: AvailabilityBookingNotificationPayload
 ): Promise<SendAvailabilityBookingNotificationResult> {
   const client = getResendClient();
@@ -31,14 +26,10 @@ export async function sendAvailabilityBookingNotificationEmail(
     return { sent: false, error: 'RESEND_API_KEY is not set' };
   }
 
-  const baseUrl = getAppBaseUrl();
-  const dashboardBookingsUrl = `${baseUrl}${ROUTES.DASHBOARD.BOOKINGS}`;
-  const subject = getAvailabilityBookingNotificationSubject(
-    payload.customerName
-  );
+  const subject = getAvailabilityBookingCustomerSubject(businessName);
   const html = buildAvailabilityBookingEmailHtml(payload, {
-    audience: 'owner',
-    dashboardBookingsUrl,
+    audience: 'customer',
+    businessName,
   });
 
   const { data, error } = await client.emails.send({

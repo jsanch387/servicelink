@@ -10,6 +10,7 @@ export type {
 } from './booking-notification/types';
 
 export { sendAvailabilityBookingNotificationEmail } from './availability-booking-notification/sendAvailabilityBookingNotificationEmail';
+export { sendAvailabilityBookingCustomerConfirmationEmail } from './availability-booking-notification/sendAvailabilityBookingCustomerConfirmationEmail';
 export type {
   AvailabilityBookingNotificationPayload,
   SendAvailabilityBookingNotificationResult,

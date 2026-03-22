@@ -1,9 +1,14 @@
 /**
- * HTML template for the "new availability booking" email sent to the business owner (V2).
+ * HTML for availability booking emails — owner notification and customer confirmation (V2).
  */
 
+import { formatPhoneUsDisplay } from '@/lib/formatPhoneUs';
 import { escapeHtml } from '../utils/escapeHtml';
 import type { AvailabilityBookingNotificationPayload } from './types';
+
+export type AvailabilityBookingEmailOptions =
+  | { audience: 'owner'; dashboardBookingsUrl: string }
+  | { audience: 'customer'; businessName: string };
 
 function formatTimeHHmm(hhmm: string): string {
   const match = hhmm.trim().match(/^(\d{1,2}):(\d{2})$/);
@@ -49,21 +54,9 @@ function formatVehicleLine(
   return parts.join(' ');
 }
 
-function buildAddOnsRows(
-  addons: { name: string; priceCents: number }[]
-): string {
-  if (!addons?.length) return '';
-  return addons
-    .map(
-      a =>
-        `<tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;">+ ${escapeHtml(a.name)}</td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${escapeHtml(formatPriceCents(a.priceCents))}</td></tr>`
-    )
-    .join('');
-}
-
-export function buildAvailabilityBookingNotificationHtml(
+export function buildAvailabilityBookingEmailHtml(
   payload: AvailabilityBookingNotificationPayload,
-  dashboardBookingsUrl: string
+  options: AvailabilityBookingEmailOptions
 ): string {
   const timeLabel = formatTimeHHmm(payload.startTime);
   const dateLabel = formatDateLong(payload.scheduledDate);
@@ -78,10 +71,6 @@ export function buildAvailabilityBookingNotificationHtml(
   const basePriceLabel = hasBasePrice
     ? formatPriceCents(payload.servicePriceCents!)
     : null;
-
-  const hasAddOnsPrice = addOns.some(
-    a => a.priceCents != null && a.priceCents > 0
-  );
 
   const totalLabel =
     payload.totalPriceCents != null && payload.totalPriceCents > 0
@@ -106,9 +95,6 @@ export function buildAvailabilityBookingNotificationHtml(
           .join('')
       : '';
 
-  const addOnsText = addOnsNames || 'None';
-
-  // Pricing rows in the "Estimated Cost Breakdown" card.
   const pricingRows = `
     ${
       hasBasePrice
@@ -138,13 +124,109 @@ export function buildAvailabilityBookingNotificationHtml(
 
   const showPricingCard = Boolean(hasBasePrice) || (addOns?.length ?? 0) > 0;
 
+  const phoneRow = payload.customerPhone?.trim()
+    ? `
+      <tr>
+        <td class="detail-label" style="padding-bottom: 12px;">Phone</td>
+        <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(formatPhoneUsDisplay(payload.customerPhone.trim()))}</td>
+      </tr>
+    `
+    : '';
+
+  const heroHtml =
+    options.audience === 'owner'
+      ? `
+          <h1 style="font-size:26px;margin:0;color:#1e293b;letter-spacing:-0.02em;">New appointment</h1>
+          <p style="font-size:16px;color:#64748b;margin-top:8px;">You have a new appointment, here are the details:</p>
+        `
+      : `
+          <h1 style="font-size:26px;margin:0;color:#1e293b;letter-spacing:-0.02em;">Your appointment is confirmed</h1>
+          <p style="font-size:16px;color:#64748b;margin-top:8px;">Here are the details for your visit with ${escapeHtml(options.businessName)}:</p>
+        `;
+
+  const firstCardHtml =
+    options.audience === 'owner'
+      ? `
+          <div class="card">
+            <div class="section-title">Customer Info</div>
+            <table width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Name</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerName)}</td>
+              </tr>
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Email</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerEmail)}</td>
+              </tr>
+              ${phoneRow}
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Date</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(dateLabel)}</td>
+              </tr>
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Time</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(
+                  timeLabel
+                )} (${escapeHtml(durationLabel)})</td>
+              </tr>
+            </table>
+          </div>
+        `
+      : `
+          <div class="card">
+            <div class="section-title">Your appointment</div>
+            <table width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Business</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(options.businessName)}</td>
+              </tr>
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Date</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(dateLabel)}</td>
+              </tr>
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Time</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(
+                  timeLabel
+                )} (${escapeHtml(durationLabel)})</td>
+              </tr>
+            </table>
+          </div>
+          <div class="card">
+            <div class="section-title">Your information</div>
+            <table width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Name</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerName)}</td>
+              </tr>
+              <tr>
+                <td class="detail-label" style="padding-bottom: 12px;">Email</td>
+                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerEmail)}</td>
+              </tr>
+              ${phoneRow}
+            </table>
+          </div>
+        `;
+
+  const ctaHtml =
+    options.audience === 'owner'
+      ? `<a href="${escapeHtml(options.dashboardBookingsUrl)}" class="button">View in dashboard</a>`
+      : '';
+
+  const footerHtml =
+    options.audience === 'owner'
+      ? `This email was sent because someone booked an appointment with your business.<br>
+          &copy; ${new Date().getFullYear()} ServiceLink.`
+      : `You received this email because an appointment was scheduled using this address.<br>
+          &copy; ${new Date().getFullYear()} ServiceLink.`;
+
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Appointment Confirmation</title>
+  <title>Appointment</title>
   <style>
     body {
       margin: 0;
@@ -233,39 +315,13 @@ export function buildAvailabilityBookingNotificationHtml(
 
       <tr>
         <td class="hero">
-          <div style="background-color:#dcfce7;color:#166534;padding:6px 14px;border-radius:20px;display:inline-block;font-size:12px;font-weight:600;margin-bottom:16px;">
-            Booking Request Received
-          </div>
-          <h1 style="font-size:26px;margin:0;color:#1e293b;letter-spacing:-0.02em;">New Appointment</h1>
-          <p style="font-size:16px;color:#64748b;margin-top:8px;">You have a new booking, here are the details:</p>
+          ${heroHtml}
         </td>
       </tr>
 
       <tr>
         <td class="content">
-          <div class="card">
-            <div class="section-title">Customer Info</div>
-            <table width="100%" cellspacing="0" cellpadding="0">
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Name</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerName)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Email</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerEmail)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Date</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(dateLabel)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Time</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(
-                  timeLabel
-                )} (${escapeHtml(durationLabel)})</td>
-              </tr>
-            </table>
-          </div>
+          ${firstCardHtml}
 
           <div class="card" style="background-color:#ffffff;">
             <div class="section-title">Service Details</div>
@@ -279,7 +335,7 @@ export function buildAvailabilityBookingNotificationHtml(
                 addOns.length > 0
                   ? `<tr>
                       <td class="detail-label" style="padding-bottom: 12px;">Add-ons</td>
-                      <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(addOnsText)}</td>
+                      <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(addOnsNames)}</td>
                     </tr>`
                   : ''
               }
@@ -301,21 +357,17 @@ export function buildAvailabilityBookingNotificationHtml(
                       </td>
                     </tr>
                   </table>
-                  <p style="font-size:11px;color:#94a3b8;margin-top:16px;font-style:italic;text-align:center;">
-                    Final price to be confirmed upon arrival.
-                  </p>
                 </div>`
               : ''
           }
 
-          <a href="${escapeHtml(dashboardBookingsUrl)}" class="button">View Booking in Dashboard</a>
+          ${ctaHtml}
         </td>
       </tr>
 
       <tr>
         <td class="footer">
-          This notification was generated automatically following a customer booking.<br>
-          &copy; ${new Date().getFullYear()} ServiceLink.
+          ${footerHtml}
         </td>
       </tr>
     </table>
@@ -329,4 +381,10 @@ export function getAvailabilityBookingNotificationSubject(
   customerName: string
 ): string {
   return `New appointment from ${customerName}`;
+}
+
+export function getAvailabilityBookingCustomerSubject(
+  businessName: string
+): string {
+  return `Your appointment with ${businessName}`;
 }

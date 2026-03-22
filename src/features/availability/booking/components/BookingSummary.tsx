@@ -1,5 +1,6 @@
 'use client';
 
+import { formatPhoneUsDisplay } from '@/lib/formatPhoneUs';
 import React from 'react';
 import type { AddOnDisplay, CustomerFormData } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
@@ -11,14 +12,6 @@ function formatAddress(customer: CustomerFormData): string {
     [customer.city, customer.state, customer.zip].filter(Boolean).join(', '),
   ].filter(Boolean);
   return parts.join(', ');
-}
-
-function formatPhoneDisplay(phone: string): string {
-  const digits = phone.replace(/\D/g, '').slice(0, 10);
-  if (digits.length === 0) return phone;
-  if (digits.length <= 3) return `(${digits}`;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
 function formatVehicle(customer: CustomerFormData): string | null {
@@ -138,7 +131,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           <p className="text-white font-medium">{customer.fullName}</p>
           <p className="text-sm text-gray-400">{customer.email}</p>
           <p className="text-sm text-gray-400">
-            {formatPhoneDisplay(customer.phone)}
+            {formatPhoneUsDisplay(customer.phone)}
           </p>
         </div>
 

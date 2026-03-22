@@ -7,7 +7,11 @@
 
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import { createBooking } from '@/features/availability/services/bookingService';
-import { sendAvailabilityBookingNotificationEmail } from '@/features/email';
+import {
+  sendAvailabilityBookingCustomerConfirmationEmail,
+  sendAvailabilityBookingNotificationEmail,
+  type AvailabilityBookingNotificationPayload,
+} from '@/features/email';
 import { isProAccess } from '@/features/pricing';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
@@ -71,7 +75,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_slug, profile_id, free_bookings_month, free_bookings_count'
+        'id, business_slug, business_name, profile_id, free_bookings_month, free_bookings_count'
       )
       .eq('business_slug', body.businessSlug.trim())
       .single();
@@ -86,12 +90,14 @@ export async function POST(request: NextRequest) {
     const p = profile as {
       id: string;
       business_slug: string | null;
+      business_name: string | null;
       profile_id: string | null;
       free_bookings_month: string | null;
       free_bookings_count: number | null;
     };
     const businessId = p.id;
     const businessSlug = p.business_slug ?? body.businessSlug.trim();
+    const businessDisplayName = p.business_name?.trim() || businessSlug;
     const profileId = p.profile_id ?? null;
 
     // If this owner is on the free tier, enforce the 5-bookings-per-month cap
@@ -162,6 +168,30 @@ export async function POST(request: NextRequest) {
       customer: body.customer,
     });
 
+    const selectedAddOnsForEmail = body.selectedAddOns ?? [];
+    const basePriceForEmail = body.servicePriceCents ?? 0;
+    const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
+      (s, a) => s + a.priceCents,
+      0
+    );
+    const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
+
+    const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
+      customerName: body.customer.fullName.trim(),
+      customerEmail: body.customer.email.trim(),
+      customerPhone: body.customer.phone?.trim(),
+      customerVehicleYear: body.customer.vehicleYear?.trim(),
+      customerVehicleMake: body.customer.vehicleMake?.trim(),
+      customerVehicleModel: body.customer.vehicleModel?.trim(),
+      serviceName: body.serviceName.trim(),
+      scheduledDate: body.scheduledDate,
+      startTime: body.startTime.trim(),
+      durationMinutes: body.durationMinutes,
+      servicePriceCents: body.servicePriceCents,
+      selectedAddOns: selectedAddOnsForEmail,
+      totalPriceCents: totalPriceCentsForEmail,
+    };
+
     // In-app notification for the business owner (V2 availability booking)
     if (profileId && result?.id) {
       const customerName = body.customer?.fullName?.trim() ?? 'A customer';
@@ -196,33 +226,24 @@ export async function POST(request: NextRequest) {
           // Owner email unavailable from auth
         }
         if (ownerEmail) {
-          const customerName = body.customer?.fullName?.trim() ?? 'A customer';
-          const customerEmail = body.customer?.email?.trim() ?? '';
-          const selectedAddOns = body.selectedAddOns ?? [];
-          const basePrice = body.servicePriceCents ?? 0;
-          const addOnTotal = selectedAddOns.reduce(
-            (s, a) => s + a.priceCents,
-            0
+          await sendAvailabilityBookingNotificationEmail(
+            ownerEmail,
+            availabilityEmailPayload
           );
-          const totalPriceCents = basePrice + addOnTotal;
-          await sendAvailabilityBookingNotificationEmail(ownerEmail, {
-            customerName,
-            customerEmail,
-            customerVehicleYear: body.customer?.vehicleYear?.trim(),
-            customerVehicleMake: body.customer?.vehicleMake?.trim(),
-            customerVehicleModel: body.customer?.vehicleModel?.trim(),
-            serviceName: body.serviceName.trim(),
-            scheduledDate: body.scheduledDate,
-            startTime: body.startTime.trim(),
-            durationMinutes: body.durationMinutes,
-            servicePriceCents: body.servicePriceCents,
-            selectedAddOns,
-            totalPriceCents,
-          });
         }
       } catch {
         // Do not fail the request; booking was already created
       }
+    }
+
+    try {
+      await sendAvailabilityBookingCustomerConfirmationEmail(
+        body.customer.email.trim(),
+        businessDisplayName,
+        availabilityEmailPayload
+      );
+    } catch {
+      // Best-effort; booking already succeeded
     }
 
     return NextResponse.json(
