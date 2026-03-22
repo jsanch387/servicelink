@@ -6,10 +6,14 @@ import { useMemo, useState } from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
 import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
+import { BookingsViewModeToggle } from './BookingsViewModeToggle';
+import { DayPlannerView } from './DayPlannerView';
+import { localDateKey } from './dayPlannerUtils';
 import { useAvailabilityBookings } from './hooks/useAvailabilityBookings';
 import type { AvailabilityBookingDisplay } from './types';
 
 type TabId = 'upcoming' | 'past' | 'cancelled';
+type LayoutMode = 'list' | 'planner';
 
 function sortByDateThenTime(
   a: AvailabilityBookingDisplay,
@@ -18,6 +22,74 @@ function sortByDateThenTime(
   const dateCompare = a.date.localeCompare(b.date);
   if (dateCompare !== 0) return dateCompare;
   return a.time.localeCompare(b.time);
+}
+
+/** YYYY-MM-DD → "Mar 25" */
+function formatDayGroupLabel(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function maxCreatedAtMs(bookings: AvailabilityBookingDisplay[]): number {
+  return Math.max(
+    ...bookings.map(b => new Date(b.createdAt).getTime()),
+    Number.NEGATIVE_INFINITY
+  );
+}
+
+/**
+ * One heading per calendar day; order matches each tab (upcoming asc, past desc,
+ * cancelled by most recent cancellation in that day).
+ */
+function groupBookingsByDayForTab(
+  list: AvailabilityBookingDisplay[],
+  tab: TabId
+): {
+  dateKey: string;
+  label: string;
+  bookings: AvailabilityBookingDisplay[];
+}[] {
+  if (list.length === 0) return [];
+
+  const map = new Map<string, AvailabilityBookingDisplay[]>();
+  for (const b of list) {
+    const arr = map.get(b.date) ?? [];
+    arr.push(b);
+    map.set(b.date, arr);
+  }
+
+  for (const arr of map.values()) {
+    if (tab === 'cancelled') {
+      arr.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } else if (tab === 'past') {
+      arr.sort((a, b) => -sortByDateThenTime(a, b));
+    } else {
+      arr.sort(sortByDateThenTime);
+    }
+  }
+
+  const dayKeys = [...map.keys()];
+  if (tab === 'upcoming') {
+    dayKeys.sort((a, b) => a.localeCompare(b));
+  } else if (tab === 'past') {
+    dayKeys.sort((a, b) => b.localeCompare(a));
+  } else {
+    dayKeys.sort(
+      (a, b) => maxCreatedAtMs(map.get(b)!) - maxCreatedAtMs(map.get(a)!)
+    );
+  }
+
+  return dayKeys.map(dateKey => ({
+    dateKey,
+    label: formatDayGroupLabel(dateKey),
+    bookings: map.get(dateKey)!,
+  }));
 }
 
 export interface AvailabilityBookingsViewProps {
@@ -34,6 +106,10 @@ export function AvailabilityBookingsView({
   const { bookings, isLoading, error, updateBookingStatus } =
     useAvailabilityBookings();
   const [activeTab, setActiveTab] = useState<TabId>('upcoming');
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('list');
+  const [plannerDateKey, setPlannerDateKey] = useState(() =>
+    localDateKey(new Date())
+  );
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -78,6 +154,18 @@ export function AvailabilityBookingsView({
         ? past
         : cancelled;
 
+  const groupedByDay = useMemo(
+    () => groupBookingsByDayForTab(filteredList, activeTab),
+    [filteredList, activeTab]
+  );
+
+  /** Day planner shows every booking that day (incl. cancelled), not list-tab filter. */
+  const plannerDayBookings = useMemo(
+    () =>
+      bookings.filter(b => b.date === plannerDateKey).sort(sortByDateThenTime),
+    [bookings, plannerDateKey]
+  );
+
   const handleMarkCompleted = async (id: string) => {
     setUpdateError(null);
     setUpdatingId(id);
@@ -116,25 +204,27 @@ export function AvailabilityBookingsView({
             Bookings
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Customers can book available time slots directly.
+            Manage your appointments
           </p>
         </div>
 
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 mt-4">
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[12px] sm:text-[13px] font-bold whitespace-nowrap transition-all flex-shrink-0 cursor-pointer ${
-                activeTab === t.id
-                  ? 'bg-white text-black'
-                  : 'bg-white/[0.05] text-gray-500 border border-white/[0.06]'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {layoutMode === 'list' && (
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 mt-4">
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`rounded-[10px] px-3 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-bold whitespace-nowrap transition-all flex-shrink-0 cursor-pointer ${
+                  activeTab === t.id
+                    ? 'bg-white text-black'
+                    : 'bg-white/[0.05] text-gray-500 border border-white/[0.06]'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       <main className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 max-w-xl lg:max-w-3xl mx-auto w-full">
@@ -149,8 +239,23 @@ export function AvailabilityBookingsView({
             className="mb-4"
           />
         )}
+        <BookingsViewModeToggle
+          value={layoutMode}
+          onChange={setLayoutMode}
+          className="mb-4 flex w-full justify-start"
+        />
         {isLoading ? (
           <AvailabilityBookingsViewSkeleton />
+        ) : layoutMode === 'planner' ? (
+          <DayPlannerView
+            dateKey={plannerDateKey}
+            onDateKeyChange={setPlannerDateKey}
+            dayBookings={plannerDayBookings}
+            onSelectBooking={booking => {
+              setUpdateError(null);
+              setSelectedBooking(booking);
+            }}
+          />
         ) : filteredList.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 rounded-full bg-white/[0.05] flex items-center justify-center mb-4">
@@ -166,16 +271,31 @@ export function AvailabilityBookingsView({
             </p>
           </div>
         ) : (
-          <div className="space-y-3 pb-20 sm:pb-24">
-            {filteredList.map(booking => (
-              <AvailabilityBookingCard
-                key={booking.id}
-                booking={booking}
-                onClick={() => {
-                  setUpdateError(null);
-                  setSelectedBooking(booking);
-                }}
-              />
+          <div className="space-y-6 sm:space-y-7 pb-20 sm:pb-24">
+            {groupedByDay.map(group => (
+              <section
+                key={group.dateKey}
+                aria-labelledby={`bookings-day-${group.dateKey}`}
+              >
+                <h2
+                  id={`bookings-day-${group.dateKey}`}
+                  className="text-gray-400 font-bold text-sm sm:text-base tracking-tight mb-3"
+                >
+                  {group.label}
+                </h2>
+                <div className="space-y-3">
+                  {group.bookings.map(booking => (
+                    <AvailabilityBookingCard
+                      key={booking.id}
+                      booking={booking}
+                      onClick={() => {
+                        setUpdateError(null);
+                        setSelectedBooking(booking);
+                      }}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}

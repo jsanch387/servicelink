@@ -21,7 +21,7 @@ export default function BookingsLoading() {
             Bookings
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Customers can book available time slots directly.
+            Manage your appointments
           </p>
         </div>
 
@@ -29,7 +29,7 @@ export default function BookingsLoading() {
           {TABS.map(t => (
             <div
               key={t.id}
-              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[12px] sm:text-[13px] font-bold whitespace-nowrap flex-shrink-0 bg-white/[0.05] text-gray-500 border border-white/[0.06]"
+              className="rounded-[10px] px-3 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-bold whitespace-nowrap flex-shrink-0 bg-white/[0.05] text-gray-500 border border-white/[0.06]"
             >
               {t.label}
             </div>
