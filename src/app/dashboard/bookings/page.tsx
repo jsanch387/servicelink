@@ -6,6 +6,7 @@
  */
 
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isProAccess } from '@/features/pricing';
@@ -61,6 +62,9 @@ export default async function BookingsPage() {
   );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
+  const timeOffBlocks = parseStoredTimeOffBlocks(
+    availabilityRow?.time_off_blocks
+  );
   // Legacy request booking only when legacy user has NOT set availability; once set, no fallback
   const showRequestBookingFallback =
     legacyRequestBookingEnabled && !availabilityConfigured;
@@ -102,6 +106,7 @@ export default async function BookingsPage() {
       initialBookingRequests={bookingRequests ?? []}
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
+      timeOffBlocks={timeOffBlocks}
       freeBookingsUsed={freeBookingsUsed}
       showFreeBookingsTracker={isFreeTier}
     />

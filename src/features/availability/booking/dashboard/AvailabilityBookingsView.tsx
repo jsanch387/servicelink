@@ -12,6 +12,7 @@ import { BookingsStatusFilter } from './BookingsStatusFilter';
 import { BookingsViewModeToggle } from './BookingsViewModeToggle';
 import { DayPlannerView } from './DayPlannerView';
 import { localDateKey } from './dayPlannerUtils';
+import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
 import { useAvailabilityBookings } from './hooks/useAvailabilityBookings';
 import type { AvailabilityBookingDisplay } from './types';
 
@@ -102,12 +103,15 @@ export interface AvailabilityBookingsViewProps {
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;
+  /** Owner time-off blocks for planner overlay (from availability). */
+  timeOffBlocks?: BlockTimeEntry[];
 }
 
 export function AvailabilityBookingsView({
   businessSlug = null,
   freeBookingsUsed = 0,
   showFreeBookingsTracker = true,
+  timeOffBlocks = [],
 }: AvailabilityBookingsViewProps = {}) {
   const { bookings, isLoading, error, updateBookingStatus } =
     useAvailabilityBookings();
@@ -175,6 +179,11 @@ export function AvailabilityBookingsView({
     () =>
       bookings.filter(b => b.date === plannerDateKey).sort(sortByDateThenTime),
     [bookings, plannerDateKey]
+  );
+
+  const plannerDayTimeOff = useMemo(
+    () => timeOffBlocks.filter(b => b.date === plannerDateKey),
+    [timeOffBlocks, plannerDateKey]
   );
 
   const handleMarkCompleted = async (id: string) => {
@@ -269,6 +278,7 @@ export function AvailabilityBookingsView({
             dateKey={plannerDateKey}
             onDateKeyChange={setPlannerDateKey}
             dayBookings={plannerDayBookings}
+            dayTimeOffBlocks={plannerDayTimeOff}
             onSelectBooking={booking => {
               setUpdateError(null);
               setSelectedBooking(booking);

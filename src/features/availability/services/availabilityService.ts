@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BusinessAvailabilityRow } from '../types/availability';
+import type { TimeOffBlockStored } from '../types/blockTime';
 
 const TABLE = 'business_availability';
 
@@ -16,6 +17,7 @@ export async function getAvailabilityForBusiness(
   supabase: SupabaseClient,
   businessId: string
 ): Promise<BusinessAvailabilityRow | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
     .select('*')
@@ -39,6 +41,11 @@ export interface SaveAvailabilityPayload {
   minimum_notice: string;
   weekly_schedule: BusinessAvailabilityRow['weekly_schedule'];
   selected_preset: string;
+  /**
+   * When set, persisted on upsert. When omitted (e.g. onboarding Step 3), the column
+   * is left to DB default on insert or unchanged on update.
+   */
+  time_off_blocks?: TimeOffBlockStored[];
 }
 
 /**
@@ -50,14 +57,18 @@ export async function upsertAvailabilityForBusiness(
   businessId: string,
   payload: SaveAvailabilityPayload
 ): Promise<BusinessAvailabilityRow> {
-  const row = {
+  const row: Record<string, unknown> = {
     business_id: businessId,
     accept_bookings: payload.accept_bookings,
     minimum_notice: payload.minimum_notice,
     weekly_schedule: payload.weekly_schedule,
     selected_preset: payload.selected_preset,
   };
+  if (payload.time_off_blocks !== undefined) {
+    row.time_off_blocks = payload.time_off_blocks;
+  }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
     .upsert(row, { onConflict: 'business_id' })

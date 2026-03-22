@@ -1,9 +1,12 @@
 'use client';
 
+import { parseTimeHHmm } from '@/features/availability/booking/utils/slotGeneration';
+import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MapPinIcon,
+  NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 import { forwardRef, useLayoutEffect, useMemo, useRef } from 'react';
 import {
@@ -35,6 +38,18 @@ function hourLabel(h: number): string {
   return s.replace(/\s+/g, '\u00A0');
 }
 
+/** "09:00" / "12:30" → short 12h label for planner chips. */
+function formatWallTime12h(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h ?? 0, m ?? 0, 0, 0);
+  return d.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: (m ?? 0) !== 0 ? '2-digit' : undefined,
+    hour12: true,
+  });
+}
+
 function shortStreet(booking: AvailabilityBookingDisplay): string {
   const { address } = booking;
   return (
@@ -54,8 +69,12 @@ function statusAccentClass(
 
 export interface DayPlannerViewProps {
   dateKey: string;
+  // eslint-disable-next-line no-unused-vars
   onDateKeyChange: (next: string) => void;
   dayBookings: AvailabilityBookingDisplay[];
+  /** Time off on this calendar day (from availability). */
+  dayTimeOffBlocks?: BlockTimeEntry[];
+  // eslint-disable-next-line no-unused-vars
   onSelectBooking: (booking: AvailabilityBookingDisplay) => void;
 }
 
@@ -63,6 +82,7 @@ export function DayPlannerView({
   dateKey,
   onDateKeyChange,
   dayBookings,
+  dayTimeOffBlocks = [],
   onSelectBooking,
 }: DayPlannerViewProps) {
   /** Scroll document so "now" is visible when viewing today (no nested timeline scroll). */
@@ -107,6 +127,23 @@ export function DayPlannerView({
     return items;
   }, [dayBookings, pxPerMinute, windowEndMin, windowStartMin]);
 
+  const placedTimeOff = useMemo(() => {
+    const items: { block: BlockTimeEntry; top: number; height: number }[] = [];
+    for (const block of dayTimeOffBlocks) {
+      const startM = parseTimeHHmm(block.startTime);
+      const endM = parseTimeHHmm(block.endTime);
+      if (endM <= startM) continue;
+      const visStart = Math.max(startM, windowStartMin);
+      const visEnd = Math.min(endM, windowEndMin);
+      if (visEnd <= visStart) continue;
+      const top = (visStart - windowStartMin) * pxPerMinute;
+      const height = Math.max((visEnd - visStart) * pxPerMinute, MIN_BLOCK_PX);
+      items.push({ block, top, height });
+    }
+    items.sort((a, b) => a.top - b.top);
+    return items;
+  }, [dayTimeOffBlocks, pxPerMinute, windowEndMin, windowStartMin]);
+
   useLayoutEffect(() => {
     if (!isDateKeyToday(dateKey)) return;
     const node = nowAnchorRef.current;
@@ -147,9 +184,7 @@ export function DayPlannerView({
       </div>
 
       {!dayBookings.length && (
-        <p className="text-gray-500 text-sm mb-3">
-          No appointments on this day.
-        </p>
+        <p className="text-gray-500 text-sm mb-3">No appointments.</p>
       )}
 
       <div className="flex min-w-0">
@@ -181,6 +216,36 @@ export function DayPlannerView({
           ))}
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-white/[0.06]" />
 
+          {placedTimeOff.map(({ block, top, height }) => (
+            <div
+              key={`timeoff-${block.id}`}
+              className="absolute left-1 right-1 sm:left-1.5 sm:right-1.5 z-[1] rounded-lg sm:rounded-xl border border-dashed border-amber-500/35 bg-amber-500/[0.08] px-1.5 py-1 overflow-hidden flex flex-col pointer-events-none"
+              style={{ top, height, minHeight: MIN_BLOCK_PX }}
+              role="img"
+              aria-label={
+                block.title?.trim()
+                  ? `Time off: ${formatWallTime12h(block.startTime)} to ${formatWallTime12h(block.endTime)}. ${block.title.trim()}`
+                  : `Time off: ${formatWallTime12h(block.startTime)} to ${formatWallTime12h(block.endTime)}`
+              }
+            >
+              <div className="flex min-w-0 items-center gap-1 text-amber-200/90">
+                <NoSymbolIcon className="h-3.5 w-3.5 shrink-0 opacity-90" />
+                <span className="text-[11px] font-semibold leading-tight uppercase tracking-wide">
+                  Time off
+                </span>
+              </div>
+              <span className="mt-0.5 text-[11px] leading-tight text-amber-100/75 tabular-nums">
+                {formatWallTime12h(block.startTime)} –{' '}
+                {formatWallTime12h(block.endTime)}
+              </span>
+              {block.title?.trim() ? (
+                <span className="mt-auto line-clamp-2 text-[10px] leading-tight text-amber-200/55 pt-0.5">
+                  {block.title.trim()}
+                </span>
+              ) : null}
+            </div>
+          ))}
+
           {isDateKeyToday(dateKey) && (
             <NowIndicator
               ref={nowAnchorRef}
@@ -203,7 +268,7 @@ export function DayPlannerView({
                     ? `${booking.customerName}, cancelled appointment`
                     : undefined
                 }
-                className={`absolute left-1 right-1 sm:left-1.5 sm:right-1.5 rounded-lg sm:rounded-xl border-y border-r px-1.5 py-1 transition-colors overflow-hidden flex flex-col cursor-pointer text-left ${statusAccentClass(booking.status)} ${
+                className={`absolute left-1 right-1 sm:left-1.5 sm:right-1.5 z-[2] rounded-lg sm:rounded-xl border-y border-r px-1.5 py-1 transition-colors overflow-hidden flex flex-col cursor-pointer text-left ${statusAccentClass(booking.status)} ${
                   isCancelled
                     ? 'border-white/[0.05] bg-[#121212] opacity-[0.92] hover:bg-[#161616] hover:opacity-100'
                     : 'border-white/[0.08] bg-[#1a1a1a] hover:bg-[#222222]'

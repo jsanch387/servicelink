@@ -91,7 +91,7 @@ export const Modal: React.FC<ModalProps> = ({
           fullScreenMobile
             ? 'rounded-none h-full sm:rounded-3xl sm:h-auto'
             : 'rounded-t-3xl sm:rounded-3xl'
-        } w-full ${maxWidthClasses[maxWidth]} mx-auto ${
+        } w-full min-w-0 ${maxWidthClasses[maxWidth]} mx-auto ${
           fullScreenMobile ? 'max-h-screen' : 'max-h-[95vh] sm:max-h-[90vh]'
         } flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out`}
         style={{
@@ -102,7 +102,7 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {/* Fixed Header: title only (close via Cancel button or overlay) */}
         {title && (
-          <div className="flex items-center p-4 sm:p-6 border-b border-white/10 flex-shrink-0">
+          <div className="flex min-w-0 items-center p-4 sm:p-6 border-b border-white/10 flex-shrink-0">
             <h3 className="text-lg font-semibold text-white min-w-0">
               {title}
             </h3>
@@ -111,7 +111,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Scrollable Content */}
         <div
-          className="overflow-y-auto overscroll-contain pt-6 pb-6 px-4 sm:pt-8 sm:px-6 md:px-8 sm:pb-8 flex-1"
+          className="min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain pt-6 pb-6 px-4 sm:pt-8 sm:px-6 md:px-8 sm:pb-8 flex-1"
           onWheel={handleContentScroll}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >

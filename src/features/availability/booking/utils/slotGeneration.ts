@@ -1,10 +1,10 @@
 /**
  * Generate available time slots in 30-minute increments.
- * Respects weekly schedule and existing bookings.
+ * Respects weekly schedule, existing bookings, and owner time-off blocks.
  */
 
 import type { DayKey, WeeklySchedule } from '../../types/availability';
-import type { ExistingBooking } from '../types';
+import type { ExistingBooking, TimeOffInterval } from '../types';
 
 const DAY_KEYS: DayKey[] = [
   'sunday',
@@ -21,9 +21,29 @@ function getDayKey(date: Date): DayKey {
   return DAY_KEYS[dayIndex];
 }
 
-function parseTimeHHmm(s: string): number {
+export function parseTimeHHmm(s: string): number {
   const [h, m] = s.split(':').map(Number);
   return (h ?? 0) * 60 + (m ?? 0);
+}
+
+/**
+ * True if a booking [startTime, startTime + duration) overlaps any time-off
+ * block on the same calendar day (half-open intervals: block end is exclusive).
+ */
+export function bookingOverlapsTimeOff(
+  scheduledDate: string,
+  startTime: string,
+  durationMinutes: number,
+  timeOffBlocks: ReadonlyArray<TimeOffInterval>
+): boolean {
+  const sStart = parseTimeHHmm(startTime.trim());
+  const sEnd = sStart + durationMinutes;
+  return timeOffBlocks.some(b => {
+    if (b.date !== scheduledDate) return false;
+    const bStart = parseTimeHHmm(b.startTime);
+    const bEnd = parseTimeHHmm(b.endTime);
+    return sStart < bEnd && sEnd > bStart;
+  });
 }
 
 function toHHmm(minutes: number): string {
@@ -54,7 +74,8 @@ export function generateTimeSlots(
   weeklySchedule: WeeklySchedule,
   serviceDurationMinutes: number,
   existingBookings: ExistingBooking[],
-  incrementMinutes: number = 30
+  incrementMinutes: number = 30,
+  timeOffBlocks: ReadonlyArray<TimeOffInterval> = []
 ): string[] {
   const dayKey = getDayKey(selectedDate);
   const daySchedule = weeklySchedule[dayKey];
@@ -75,9 +96,8 @@ export function generateTimeSlots(
     if (nowMins >= 0 && t <= nowMins) continue;
 
     const slotStart = toHHmm(t);
-    const slotEnd = toHHmm(t + serviceDurationMinutes);
 
-    const overlaps = existingBookings.some(b => {
+    const overlapsBooking = existingBookings.some(b => {
       if (b.date !== dayStr) return false;
       const bStart = parseTimeHHmm(b.startTime);
       const bEnd = bStart + b.durationMinutes;
@@ -85,7 +105,15 @@ export function generateTimeSlots(
       const sEnd = t + serviceDurationMinutes;
       return sStart < bEnd && sEnd > bStart;
     });
-    if (!overlaps) slots.push(slotStart);
+    if (overlapsBooking) continue;
+
+    const overlapsTimeOff = bookingOverlapsTimeOff(
+      dayStr,
+      slotStart,
+      serviceDurationMinutes,
+      timeOffBlocks
+    );
+    if (!overlapsTimeOff) slots.push(slotStart);
   }
   return slots;
 }

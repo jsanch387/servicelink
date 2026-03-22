@@ -6,6 +6,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAvailability } from '../hooks/useAvailability';
 import { useAvailabilityBookingStore } from '../stores/availabilityBookingStore';
 import {
+  parseStoredTimeOffBlocks,
+  type BlockTimeEntry,
+} from '../types/blockTime';
+import {
   DEFAULT_SCHEDULE,
   SELECTED_PRESET_VALUES,
   type MinimumNoticeValue,
@@ -16,6 +20,7 @@ import {
   PRESET_MON_SAT_8_6,
   PRESET_WEEKENDS_ONLY,
 } from '../utils/presets';
+import { BlockTimeSection } from './BlockTimeSection';
 import { MasterToggleSection } from './MasterToggleSection';
 // import { MinimumNoticeSection } from './MinimumNoticeSection';
 import type { PresetKey } from './QuickPresetsSection';
@@ -57,6 +62,7 @@ export const AvailabilityContent: React.FC = () => {
   const [showSaved, setShowSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [timeOffBlocks, setTimeOffBlocks] = useState<BlockTimeEntry[]>([]);
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync from API when data loads: no row = toggle off (first-time); has row = apply saved values
@@ -64,6 +70,7 @@ export const AvailabilityContent: React.FC = () => {
     if (loading) return;
     if (!availabilityData) {
       setAcceptBookings(false);
+      setTimeOffBlocks([]);
       return;
     }
     setAcceptBookings(availabilityData.accept_bookings);
@@ -80,6 +87,9 @@ export const AvailabilityContent: React.FC = () => {
     if (['none', '1h', '2h', '4h', '24h'].includes(notice)) {
       setMinimumNotice(notice);
     }
+    setTimeOffBlocks(
+      parseStoredTimeOffBlocks(availabilityData.time_off_blocks)
+    );
   }, [loading, availabilityData, setAcceptBookings]);
 
   const handlePresetSelect = useCallback((preset: PresetKey) => {
@@ -117,6 +127,7 @@ export const AvailabilityContent: React.FC = () => {
           schedule,
           minimumNotice,
           selectedPreset,
+          timeOffBlocks,
         }),
       });
       const json = await res.json();
@@ -136,7 +147,14 @@ export const AvailabilityContent: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [acceptBookings, schedule, minimumNotice, selectedPreset, updateFromSave]);
+  }, [
+    acceptBookings,
+    schedule,
+    minimumNotice,
+    selectedPreset,
+    timeOffBlocks,
+    updateFromSave,
+  ]);
 
   if (loading) {
     return (
@@ -229,6 +247,14 @@ export const AvailabilityContent: React.FC = () => {
                 onScheduleChange={handleScheduleChange}
                 selectedPreset={selectedPreset}
                 onSelectPreset={handlePresetSelect}
+                disabled={!acceptBookings}
+              />
+            </div>
+
+            <div className={acceptBookings ? '' : 'opacity-50'}>
+              <BlockTimeSection
+                entries={timeOffBlocks}
+                onEntriesChange={setTimeOffBlocks}
                 disabled={!acceptBookings}
               />
             </div>

@@ -4,6 +4,7 @@ import { BookingRequestPageClient } from './BookingRequestPageClient';
 import { AvailabilityBookingPage } from '@/features/availability/booking';
 import type { AddOnDisplay } from '@/features/availability/booking/types';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
+import type { TimeOffInterval } from '@/features/availability/booking/types';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import React from 'react';
 
@@ -25,6 +26,7 @@ interface BookFlowSwitchProps {
   servicePrice?: number;
   serviceDurationMinutes?: number;
   weeklySchedule?: WeeklySchedule | null;
+  timeOffBlocks?: TimeOffInterval[];
   isOwnerManualBooking?: boolean;
 }
 
@@ -46,6 +48,7 @@ export function BookFlowSwitch({
   servicePrice,
   serviceDurationMinutes = 60,
   weeklySchedule,
+  timeOffBlocks = [],
   isOwnerManualBooking = false,
 }: BookFlowSwitchProps) {
   if (useAvailabilityBooking) {
@@ -63,6 +66,7 @@ export function BookFlowSwitch({
         serviceDurationMinutes={serviceDurationMinutes}
         servicePriceCents={servicePrice}
         weeklySchedule={schedule}
+        timeOffBlocks={timeOffBlocks}
         isOwnerManualBooking={isOwnerManualBooking}
       />
     );

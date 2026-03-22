@@ -16,4 +16,5 @@ export type {
   CustomerFormData,
   ExistingBooking,
   ServiceSummary,
+  TimeOffInterval,
 } from './types';

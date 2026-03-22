@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { WeeklySchedule } from '../../types/availability';
-import type { ExistingBooking } from '../types';
+import type { ExistingBooking, TimeOffInterval } from '../types';
 import { generateTimeSlots } from '../utils/slotGeneration';
 
 interface TimeSlotGridProps {
@@ -10,7 +10,9 @@ interface TimeSlotGridProps {
   serviceDurationMinutes: number;
   weeklySchedule: WeeklySchedule;
   existingBookings: ExistingBooking[];
+  timeOffBlocks: TimeOffInterval[];
   selectedTime: string | null;
+  // eslint-disable-next-line no-unused-vars
   onSelectTime: (time: string) => void;
 }
 
@@ -19,6 +21,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   serviceDurationMinutes,
   weeklySchedule,
   existingBookings,
+  timeOffBlocks,
   selectedTime,
   onSelectTime,
 }) => {
@@ -28,7 +31,8 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
         weeklySchedule,
         serviceDurationMinutes,
         existingBookings,
-        30
+        30,
+        timeOffBlocks
       )
     : [];
 

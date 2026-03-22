@@ -7,6 +7,7 @@ import { BookingsPageClient } from '@/features/booking-request/components/dashbo
 import type { BookingRequest } from '@/features/booking-request/types/bookingRequest';
 import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
 import { useEffect } from 'react';
 import { AvailabilityBookingsView } from './AvailabilityBookingsView';
 
@@ -28,6 +29,8 @@ export interface BookingsPageSwitchProps {
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;
+  /** Owner time-off blocks (planner view). */
+  timeOffBlocks?: BlockTimeEntry[];
 }
 
 /**
@@ -41,6 +44,7 @@ export function BookingsPageSwitch({
   useAvailabilityBooking,
   freeBookingsUsed = 0,
   showFreeBookingsTracker = true,
+  timeOffBlocks = [],
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
     s => s.setAcceptBookings
@@ -57,6 +61,7 @@ export function BookingsPageSwitch({
         businessSlug={businessSlug}
         freeBookingsUsed={freeBookingsUsed}
         showFreeBookingsTracker={showFreeBookingsTracker}
+        timeOffBlocks={timeOffBlocks}
       />
     );
   }
