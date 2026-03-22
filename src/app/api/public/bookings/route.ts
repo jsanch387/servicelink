@@ -5,7 +5,10 @@
  * Resolves business by slug, then inserts one row into bookings via feature service.
  */
 
+import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createBooking } from '@/features/availability/services/bookingService';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
@@ -153,6 +156,30 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', businessId);
       }
+    }
+
+    const availabilityRow = await getAvailabilityForBusiness(
+      supabase,
+      businessId
+    );
+    const timeOffIntervals = parseStoredTimeOffBlocks(
+      availabilityRow?.time_off_blocks
+    );
+    if (
+      bookingOverlapsTimeOff(
+        body.scheduledDate,
+        body.startTime.trim(),
+        body.durationMinutes,
+        timeOffIntervals
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'That time is not available. Please choose another slot.',
+        },
+        { status: 409 }
+      );
     }
 
     const result = await createBooking(supabase, {

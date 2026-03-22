@@ -7,6 +7,7 @@ import {
   getAvailabilityForBusiness,
   upsertAvailabilityForBusiness,
 } from '@/features/availability/services/availabilityService';
+import { parseTimeOffBlocksFromRequestBody } from '@/features/availability/utils/timeOffBlocksPayload';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
@@ -104,6 +105,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const timeOffParsed = parseTimeOffBlocksFromRequestBody(body.timeOffBlocks);
+    if (!timeOffParsed.ok) {
+      return NextResponse.json(
+        { success: false, error: timeOffParsed.error },
+        { status: 400 }
+      );
+    }
+
     const data = await upsertAvailabilityForBusiness(
       supabase,
       authResult.businessId,
@@ -112,6 +121,7 @@ export async function POST(request: NextRequest) {
         minimum_notice: minimumNotice,
         weekly_schedule: schedule,
         selected_preset: selectedPreset,
+        time_off_blocks: timeOffParsed.value,
       }
     );
 

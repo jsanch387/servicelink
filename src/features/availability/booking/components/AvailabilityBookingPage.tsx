@@ -41,6 +41,7 @@ export function AvailabilityBookingPage({
   serviceDurationMinutes = 60,
   servicePriceCents,
   weeklySchedule,
+  timeOffBlocks: timeOffBlocksProp = [],
   existingBookings: existingBookingsProp,
   isOwnerManualBooking = false,
 }: AvailabilityBookingPageProps) {
@@ -202,6 +203,7 @@ export function AvailabilityBookingPage({
               serviceDurationMinutes={serviceDurationMinutes}
               weeklySchedule={weeklySchedule}
               existingBookings={existingBookings}
+              timeOffBlocks={timeOffBlocksProp}
               selectedTime={selectedTime}
               onSelectTime={setSelectedTime}
             />

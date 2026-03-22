@@ -1,3 +1,5 @@
+import type { TimeOffBlockStored } from './blockTime';
+
 /**
  * Availability feature types.
  * Used for weekly schedule and minimum notice (mock state).
@@ -54,6 +56,8 @@ export interface BusinessAvailabilityRow {
   minimum_notice: string;
   weekly_schedule: WeeklySchedule;
   selected_preset: string;
+  /** ISO dates + local HH:mm; see `TimeOffBlockStored` */
+  time_off_blocks?: TimeOffBlockStored[] | null;
   created_at: string;
   updated_at: string;
 }

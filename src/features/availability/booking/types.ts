@@ -32,6 +32,13 @@ export interface ExistingBooking {
   durationMinutes: number;
 }
 
+/** Calendar date + local wall times for owner time-off (slot + API overlap checks). */
+export interface TimeOffInterval {
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
 export interface AddOnDisplay {
   id: string;
   name: string;
@@ -54,6 +61,8 @@ export interface AvailabilityBookingPageProps {
   servicePriceCents?: number;
   /** Owner availability from DB. */
   weeklySchedule: WeeklySchedule;
+  /** Owner time-off blocks for that day range (from `time_off_blocks`). */
+  timeOffBlocks?: TimeOffInterval[];
   /** Fetched from API when businessSlug is set; omit to use [] or fetch internally. */
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */

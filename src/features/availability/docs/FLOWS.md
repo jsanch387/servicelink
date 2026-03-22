@@ -11,19 +11,20 @@ This doc describes how the **owner availability** settings and **V2 (availabilit
 ### Database
 
 - **Table:** `business_availability`
-- **Shape:** One row per business (`business_id` unique). Columns: `accept_bookings`, `minimum_notice`, `weekly_schedule` (JSONB), `selected_preset`, timestamps.
+- **Shape:** One row per business (`business_id` unique). Columns: `accept_bookings`, `minimum_notice`, `weekly_schedule` (JSONB), `selected_preset`, **`time_off_blocks`** (JSONB array), timestamps.
 - **`weekly_schedule`:** Keys are day names (`monday` … `sunday`). Each value: `{ "enabled": boolean, "start": "HH:mm", "end": "HH:mm" }` (24-hour).
+- **`time_off_blocks`:** Array of `{ id, date, start_time, end_time, title? }` — specific calendar dates when the owner is unavailable (see [DATABASE.md](./DATABASE.md)). Stored with the same row as working hours; **owner-local** wall times, same semantics as the weekly grid.
 - **`accept_bookings`:** When `true`, the public profile uses the V2 “Book” flow (calendar + exact slot). When `false`, the public profile uses the V1 “Request booking” flow.
 
 ### API
 
-- **GET /api/availability** – Loads the current user’s business availability (auth required). Resolves `business_id` via `business_profiles.profile_id = auth.uid()`.
-- **POST /api/availability** – Saves availability (upsert on `business_id`). Body: `accept_bookings`, `minimum_notice`, `weekly_schedule`, `selected_preset`.
+- **GET /api/availability** – Loads the current user’s business availability (auth required). Resolves `business_id` via `business_profiles.profile_id = auth.uid()`. Response includes `time_off_blocks` when present.
+- **POST /api/availability** – Saves availability (upsert on `business_id`). Body: `acceptBookings`, `minimumNotice`, `schedule`, `selectedPreset`, **`timeOffBlocks`** (camelCase array; validated server-side and stored as `time_off_blocks`).
 
 ### UI / data flow
 
-- Dashboard **Availability** page uses the availability feature store and components. It calls GET on load and POST on save.
-- The **Bookings** dashboard page uses `accept_bookings` (from store) to decide whether to show the V2 bookings list or the V1 booking-requests list. V2 list is loaded via GET /api/availability/bookings (see below).
+- Dashboard **Availability** page: working hours + **Time off** section (add/remove blocks in UI; persisted on **Save availability** with the rest of the row). Uses GET on load and POST on save.
+- The **Bookings** dashboard page uses `accept_bookings` (from store) to decide whether to show the V2 bookings list or the V1 booking-requests list. V2 list is loaded via GET /api/availability/bookings. The **Planner** layout reads `time_off_blocks` from the server-rendered bookings page and overlays blocks on the day timeline (no separate API).
 
 ---
 
@@ -36,19 +37,22 @@ This doc describes how the **owner availability** settings and **V2 (availabilit
 - **Route:** `/[business-slug]/book` (e.g. `/johns-plumbing/book`).
 - Server loads `business_profiles` by slug and `business_availability` by `business_id` (admin client so RLS doesn’t block).
 - If `business_availability.accept_bookings === true` → render **V2** (availability calendar + slot picker). Otherwise → render **V1** (request booking form).
-- For V2, the page passes `weeklySchedule`, `serviceDurationMinutes`, `serviceId`, `serviceName`, etc., to the client. Blocked slots are **not** fetched on the server; the client fetches them (see below).
+- For V2, the page passes `weeklySchedule`, **`timeOffBlocks`** (parsed from `time_off_blocks`), `serviceDurationMinutes`, `serviceId`, `serviceName`, etc., to the client. **Existing booking** blocked slots are fetched client-side (see below); **time off** is already on the props from SSR.
 
 ### Time slots: how they are generated
 
-- **Inputs:** Selected date, `weekly_schedule` (from `business_availability`), `serviceDurationMinutes` (from the service or default 60), and **existing bookings** for that business (blocked slots).
-- **Source of blocked slots:** **GET /api/public/bookings/blocked/[slug]** returns, for that business, all confirmed/completed bookings with `scheduled_date`, `start_time`, and `duration_minutes`. The client hook `usePublicBlockedSlots(businessSlug)` calls this API and passes the result into the slot generator.
+- **Inputs:** Selected date, `weekly_schedule`, **`time_off_blocks`** (as `timeOffBlocks` on the client), `serviceDurationMinutes` (from the service or default 60), and **existing bookings** for that business.
+- **Source of booking-occupied slots:** **GET /api/public/bookings/blocked/[slug]** returns confirmed/completed bookings with `scheduled_date`, `start_time`, and `duration_minutes`. The hook `usePublicBlockedSlots(businessSlug)` merges that into the slot generator.
+- **Source of owner time off:** Parsed on the **server** when rendering `/[slug]/book` (admin client loads `business_availability`). No extra public API for time off.
 - **Slot generator** (`booking/utils/slotGeneration.ts`):
   - Works in **minutes from midnight** for the selected date.
   - For the selected day, reads `weekly_schedule[day]` (start/end). Only considers times where `start <= slotStart` and `slotStart + serviceDurationMinutes <= end`.
   - Steps in **30-minute** increments. For each candidate slot `[slotStart, slotStart + serviceDurationMinutes]`:
     - Skips if the slot is in the past (when the selected date is today).
-    - **Overlap check:** For each existing booking with the same `scheduled_date`, booking range is `[bStart, bStart + b.durationMinutes]`. The slot is **blocked** if `slotStart < bEnd && slotEnd > bStart`. So we block the **full duration** of each existing booking (not just the start time).
-  - Returns an array of available start times as `"HH:mm"` strings.
+    - **Bookings overlap:** For each existing booking on that `scheduled_date`, range `[bStart, bStart + duration]`. Block if `slotStart < bEnd && slotEnd > bStart`.
+    - **Time-off overlap:** For each `time_off_blocks` entry on that calendar `date`, range `[offStart, offEnd)` (half-open). Block if the slot overlaps the same way (`slotStart < offEnd && slotEnd > offStart`).
+  - **`bookingOverlapsTimeOff`** is reused by **POST /api/public/bookings** to reject creates that fall inside a block (HTTP 409), even if the client is tampered with.
+  - Returns available start times as `"HH:mm"` strings.
 
 So: **time is handled in minutes** (storage and overlap logic). The UI can display duration in hours (e.g. “2 hr”) via a formatter; the underlying logic stays in minutes.
 
@@ -80,7 +84,8 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 ### Submitting a booking
 
 - **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, `durationMinutes`, `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).
-- API resolves business by **slug** (does not trust client `businessId` for authority), then calls `createBooking(adminClient, payload)` from the availability feature. One row is inserted into `bookings` with status `confirmed`. No duplicate-slot check is performed at submit time today; slot blocking is enforced by not showing already-booked times in the UI. (A future improvement could re-check overlap on submit.)
+- API resolves business by **slug**, loads **`time_off_blocks`** from `business_availability`, and **rejects** the request with **409** if the requested window overlaps any time-off block for that date.
+- Then calls `createBooking(adminClient, payload)`. One row is inserted into `bookings` with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
 
 ---
 
@@ -96,6 +101,7 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 ### UI / data flow
 
 - Dashboard **Bookings** page: if `accept_bookings` is on, it renders the V2 view (`AvailabilityBookingsView`), which uses `useAvailabilityBookings()`. The hook calls GET /api/availability/bookings on every visit to the tab so the list is always fresh. Mark complete / cancel update via PATCH and local state only (no refetch). List is grouped into Upcoming / Past / Cancelled.
+- **Planner** mode: the page server-loads **`time_off_blocks`** and passes them into `DayPlannerView`. Time-off windows render as non-interactive blocks on the day timeline (alongside appointment cards). Reload the page after editing time off on **Availability** to refresh planner data.
 - Mark as completed or Cancel calls PATCH with the booking id and new status; the hook updates local state (and cache) from the response so no refetch is needed.
 
 ---
@@ -104,14 +110,16 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 
 | What | Where |
 |------|--------|
-| Owner availability table | `business_availability` (see [DATABASE.md](./DATABASE.md)) |
+| Owner availability table | `business_availability` (see [DATABASE.md](./DATABASE.md)) — includes `time_off_blocks` |
 | V2 bookings table | `bookings` (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md)) |
-| Owner availability API | GET/POST `/api/availability` |
-| Public blocked slots (for calendar) | GET `/api/public/bookings/blocked/[slug]` |
-| Public create booking | POST `/api/public/bookings` |
+| Owner availability API | GET/POST `/api/availability` (body includes `timeOffBlocks`) |
+| Time-off parse/validate | `types/blockTime.ts`, `utils/timeOffBlocksPayload.ts` |
+| Public blocked slots (bookings only) | GET `/api/public/bookings/blocked/[slug]` |
+| Public create booking | POST `/api/public/bookings` (validates vs `time_off_blocks`) |
 | Dashboard list/update bookings | GET `/api/availability/bookings`, PATCH `/api/availability/bookings/[id]` |
-| Slot generation (time blocking) | `features/availability/booking/utils/slotGeneration.ts` |
+| Slot generation (schedule + bookings + time off) | `features/availability/booking/utils/slotGeneration.ts` |
 | Blocked slots hook | `features/availability/booking/hooks/usePublicBlockedSlots.ts` |
+| Planner time-off overlay | `features/availability/booking/dashboard/DayPlannerView.tsx` |
 | Create booking (server) | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`) |
 
 Keeping **time in minutes** everywhere (DB, APIs, slot logic) and converting to hours only in the UI keeps the data model simple and avoids timezone/format issues.

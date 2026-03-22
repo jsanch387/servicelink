@@ -16,6 +16,7 @@ import {
   BookServicePicker,
   type BookServicePickerItem,
 } from '@/features/availability/booking/components/BookServicePicker';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isProAccess } from '@/features/pricing';
@@ -196,6 +197,9 @@ export default async function BookingRequestPage({
   );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const weeklySchedule = availabilityRow?.weekly_schedule ?? null;
+  const timeOffBlocks = parseStoredTimeOffBlocks(
+    availabilityRow?.time_off_blocks
+  );
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
@@ -393,6 +397,7 @@ export default async function BookingRequestPage({
             servicePrice={serviceDetails?.price ?? undefined}
             serviceDurationMinutes={serviceDurationMinutes}
             weeklySchedule={weeklySchedule}
+            timeOffBlocks={timeOffBlocks}
             isOwnerManualBooking={isOwnerManualBooking}
           />
         )}
