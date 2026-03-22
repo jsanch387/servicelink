@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import { getBusinessBookDetailsPath } from '@/constants/routes';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -31,6 +32,11 @@ interface ServiceCardProps {
   isEditable?: boolean;
   isPublic?: boolean;
   businessSlug?: string;
+  /**
+   * Appends `for=owner` to the book/details link so the rest of the flow
+   * knows the business owner is booking on a customer's behalf.
+   */
+  manualBookingForCustomer?: boolean;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -40,6 +46,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   isEditable = false,
   isPublic = false,
   businessSlug = '',
+  manualBookingForCustomer = false,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
@@ -149,9 +156,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
         {isPublic && !isEditable && businessSlug && service.id && (
           <Link
-            href={`/${businessSlug}/book/details?serviceId=${encodeURIComponent(
-              service.id
-            )}`}
+            href={getBusinessBookDetailsPath(businessSlug, service.id, {
+              forOwner: manualBookingForCustomer,
+            })}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/20 bg-white/5 text-zinc-200 text-sm font-medium hover:bg-white/10 hover:border-white/30 hover:text-white transition-colors cursor-pointer"
           >
             Select

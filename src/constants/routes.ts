@@ -61,3 +61,56 @@ export const AUTH_ROUTES = Object.values(ROUTES.AUTH) as readonly string[];
 export const DASHBOARD_ROUTES = Object.values(
   ROUTES.DASHBOARD
 ) as readonly string[];
+
+/** Query flag: business owner booking on a customer's behalf (dashboard → book flow). */
+export const OWNER_MANUAL_BOOKING_FOR = 'owner' as const;
+
+/** Public booking flow (V1 request or V2 availability), same path customers use. */
+export function getBusinessBookPath(
+  businessSlug: string,
+  options?: { forOwner?: boolean }
+): string {
+  const s = businessSlug.trim();
+  if (!s) return ROUTES.DASHBOARD.BOOKINGS;
+  const base = `/${encodeURIComponent(s)}/book`;
+  if (options?.forOwner) {
+    return `${base}?for=${OWNER_MANUAL_BOOKING_FOR}`;
+  }
+  return base;
+}
+
+/**
+ * Service + optional add-ons step before the availability calendar.
+ * Use `getBusinessBookDetailsUrl` when add-on IDs must be preserved (e.g. back navigation).
+ */
+export function getBusinessBookDetailsPath(
+  businessSlug: string,
+  serviceId: string,
+  options?: { forOwner?: boolean }
+): string {
+  return getBusinessBookDetailsUrl(businessSlug, {
+    serviceId,
+    forOwner: options?.forOwner,
+  });
+}
+
+export function getBusinessBookDetailsUrl(
+  businessSlug: string,
+  params: {
+    serviceId: string;
+    addOnIds?: string;
+    forOwner?: boolean;
+  }
+): string {
+  const slug = businessSlug.trim();
+  const sid = params.serviceId.trim();
+  if (!slug || !sid) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams({ serviceId: sid });
+  if (params.addOnIds?.trim()) {
+    q.set('addOnIds', params.addOnIds.trim());
+  }
+  if (params.forOwner) {
+    q.set('for', OWNER_MANUAL_BOOKING_FOR);
+  }
+  return `/${encodeURIComponent(slug)}/book/details?${q.toString()}`;
+}

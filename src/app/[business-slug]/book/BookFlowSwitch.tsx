@@ -25,6 +25,7 @@ interface BookFlowSwitchProps {
   servicePrice?: number;
   serviceDurationMinutes?: number;
   weeklySchedule?: WeeklySchedule | null;
+  isOwnerManualBooking?: boolean;
 }
 
 /**
@@ -45,6 +46,7 @@ export function BookFlowSwitch({
   servicePrice,
   serviceDurationMinutes = 60,
   weeklySchedule,
+  isOwnerManualBooking = false,
 }: BookFlowSwitchProps) {
   if (useAvailabilityBooking) {
     const schedule = weeklySchedule ?? DEFAULT_SCHEDULE;
@@ -61,6 +63,7 @@ export function BookFlowSwitch({
         serviceDurationMinutes={serviceDurationMinutes}
         servicePriceCents={servicePrice}
         weeklySchedule={schedule}
+        isOwnerManualBooking={isOwnerManualBooking}
       />
     );
   }

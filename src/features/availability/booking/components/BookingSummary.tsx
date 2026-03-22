@@ -78,13 +78,19 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
         <div>
           <p className="text-xs text-gray-500 tracking-wider mb-1">Service</p>
-          <p className="text-white font-medium">{serviceName}</p>
-          <p className="text-sm text-gray-400">
-            {formatDurationMinutes(serviceDurationMinutes)}
+          <div className="flex justify-between gap-3 items-start">
+            <div className="min-w-0">
+              <p className="text-white font-medium">{serviceName}</p>
+              <p className="text-sm text-gray-400">
+                {formatDurationMinutes(serviceDurationMinutes)}
+              </p>
+            </div>
             {servicePriceCents != null && (
-              <> · {formatPrice(servicePriceCents)}</>
+              <span className="text-sm text-gray-400 shrink-0 tabular-nums text-right">
+                {formatPrice(servicePriceCents)}
+              </span>
             )}
-          </p>
+          </div>
         </div>
 
         {selectedAddOns.length > 0 && (
@@ -92,9 +98,12 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
             <p className="text-xs text-gray-500 tracking-wider mb-1">Add-ons</p>
             <ul className="space-y-1">
               {selectedAddOns.map(addOn => (
-                <li key={addOn.id} className="flex justify-between text-sm">
-                  <span className="text-white">{addOn.name}</span>
-                  <span className="text-gray-400">
+                <li
+                  key={addOn.id}
+                  className="flex justify-between gap-3 text-sm"
+                >
+                  <span className="text-white min-w-0">{addOn.name}</span>
+                  <span className="text-gray-400 shrink-0 tabular-nums text-right">
                     {formatPrice(addOn.priceCents)}
                   </span>
                 </li>
@@ -107,9 +116,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           totalPriceCents != null &&
           totalPriceCents > 0 && (
             <div className="pt-2 border-t border-white/10">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-3">
                 <span className="text-sm font-medium text-white">Total</span>
-                <span className="text-lg font-semibold text-white">
+                <span className="text-lg font-semibold text-white tabular-nums text-right">
                   {formatPrice(totalPriceCents)}
                 </span>
               </div>

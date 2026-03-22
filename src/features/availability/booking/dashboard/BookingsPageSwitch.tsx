@@ -16,6 +16,8 @@ import { AvailabilityBookingsView } from './AvailabilityBookingsView';
  */
 export interface BookingsPageSwitchProps {
   businessName: string;
+  /** Public page slug for `/{slug}/book`; when missing, New appointment is disabled in V2. */
+  businessSlug: string | null;
   /** V1 only: initial list of booking requests. V2 fetches its own data via API. */
   initialBookingRequests: BookingRequest[];
   /** When true, show V1 (request booking) when V2 is off. False when legacy user has set availability (no fallback). */
@@ -33,6 +35,7 @@ export interface BookingsPageSwitchProps {
  */
 export function BookingsPageSwitch({
   businessName,
+  businessSlug,
   initialBookingRequests,
   showRequestBookingFallback,
   useAvailabilityBooking,
@@ -51,6 +54,7 @@ export function BookingsPageSwitch({
   if (useAvailabilityBooking) {
     return (
       <AvailabilityBookingsView
+        businessSlug={businessSlug}
         freeBookingsUsed={freeBookingsUsed}
         showFreeBookingsTracker={showFreeBookingsTracker}
       />

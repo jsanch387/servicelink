@@ -42,6 +42,7 @@ export function AvailabilityBookingPage({
   servicePriceCents,
   weeklySchedule,
   existingBookings: existingBookingsProp,
+  isOwnerManualBooking = false,
 }: AvailabilityBookingPageProps) {
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
@@ -143,6 +144,7 @@ export function AvailabilityBookingPage({
         customer={submittedData.customer}
         date={submittedData.date}
         time={submittedData.time}
+        isOwnerManualBooking={isOwnerManualBooking}
       />
     );
   }

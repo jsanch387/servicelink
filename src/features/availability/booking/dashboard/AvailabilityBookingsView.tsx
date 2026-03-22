@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { getBusinessBookPath } from '@/constants/routes';
 import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useMemo, useState } from 'react';
@@ -95,6 +96,8 @@ function groupBookingsByDayForTab(
 }
 
 export interface AvailabilityBookingsViewProps {
+  /** Public page slug for customer booking URL; when missing, New appointment is disabled. */
+  businessSlug?: string | null;
   /** Free plan: bookings used this month (0–5). Shown in tracker. */
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
@@ -102,6 +105,7 @@ export interface AvailabilityBookingsViewProps {
 }
 
 export function AvailabilityBookingsView({
+  businessSlug = null,
   freeBookingsUsed = 0,
   showFreeBookingsTracker = true,
 }: AvailabilityBookingsViewProps = {}) {
@@ -116,6 +120,11 @@ export function AvailabilityBookingsView({
     useState<AvailabilityBookingDisplay | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const trimmedSlug = businessSlug?.trim() ?? '';
+  const newAppointmentHref = trimmedSlug
+    ? getBusinessBookPath(trimmedSlug, { forOwner: true })
+    : undefined;
 
   const { upcoming, past, cancelled } = useMemo(() => {
     const now = new Date();
@@ -204,14 +213,23 @@ export function AvailabilityBookingsView({
               Manage your appointments
             </p>
           </div>
-          {/* TODO: open owner flow to book on behalf of a customer */}
           <Button
-            type="button"
+            href={newAppointmentHref}
+            disabled={!newAppointmentHref}
             variant="inverse"
             size="sm"
             icon={<PlusIcon className="h-4 w-4" aria-hidden />}
             className="w-full shrink-0 sm:mt-0.5 sm:w-auto"
-            aria-label="New appointment for a customer"
+            title={
+              newAppointmentHref
+                ? undefined
+                : 'Set your public page URL under Business profile to create bookings from here.'
+            }
+            aria-label={
+              newAppointmentHref
+                ? 'New appointment for a customer'
+                : 'New appointment unavailable. Set your public page URL under Business profile first.'
+            }
           >
             New appointment
           </Button>

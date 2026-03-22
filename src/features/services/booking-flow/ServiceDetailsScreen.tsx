@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { OWNER_MANUAL_BOOKING_FOR } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type {
   AddOnForBooking,
@@ -21,6 +22,8 @@ interface ServiceDetailsScreenProps {
   addOns: AddOnForBooking[];
   /** Restore add-on selections when returning from calendar (from URL). */
   initialAddOnIds?: string[];
+  /** Preserves `for=owner` on the continue-to-calendar URL (dashboard manual booking). */
+  isOwnerManualBooking?: boolean;
 }
 
 function formatPrice(cents: number): string {
@@ -33,6 +36,7 @@ export function ServiceDetailsScreen({
   service,
   addOns,
   initialAddOnIds,
+  isOwnerManualBooking = false,
 }: ServiceDetailsScreenProps) {
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<Set<string>>(
     () => new Set(initialAddOnIds ?? [])
@@ -63,6 +67,9 @@ export function ServiceDetailsScreen({
   searchParams.set('serviceId', serviceId);
   if (selectedAddOnIds.size > 0) {
     searchParams.set('addOnIds', Array.from(selectedAddOnIds).join(','));
+  }
+  if (isOwnerManualBooking) {
+    searchParams.set('for', OWNER_MANUAL_BOOKING_FOR);
   }
   const calendarUrl = `/${businessSlug}/book?${searchParams.toString()}`;
 
