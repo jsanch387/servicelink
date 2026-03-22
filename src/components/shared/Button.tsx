@@ -25,6 +25,7 @@ interface ButtonProps {
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
   'aria-label'?: string;
+  title?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -42,6 +43,7 @@ export const Button: React.FC<ButtonProps> = ({
   iconPosition = 'left',
   fullWidth = false,
   'aria-label': ariaLabel,
+  title,
 }) => {
   // Modern rectangular rounded buttons — consistent across the app
   const baseClasses =
@@ -104,7 +106,12 @@ export const Button: React.FC<ButtonProps> = ({
 
   if (href && !isDisabled) {
     return (
-      <Link href={href} className={classes} aria-label={ariaLabel}>
+      <Link
+        href={href}
+        className={classes}
+        aria-label={ariaLabel}
+        title={title}
+      >
         {content}
       </Link>
     );
@@ -118,6 +125,7 @@ export const Button: React.FC<ButtonProps> = ({
       onClick={onClick}
       disabled={isDisabled}
       aria-label={ariaLabel}
+      title={title}
     >
       {content}
     </button>

@@ -11,6 +11,7 @@ export interface AddOnForEmail {
 export interface AvailabilityBookingNotificationPayload {
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   customerVehicleYear?: string;
   customerVehicleMake?: string;
   customerVehicleModel?: string;

@@ -56,6 +56,8 @@ export interface AvailabilityBookingPageProps {
   weeklySchedule: WeeklySchedule;
   /** Fetched from API when businessSlug is set; omit to use [] or fetch internally. */
   existingBookings?: ExistingBooking[];
+  /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */
+  isOwnerManualBooking?: boolean;
 }
 
 export interface BookingSubmission {

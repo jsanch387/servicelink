@@ -35,7 +35,7 @@ export default async function BookingsPage() {
   const { data: businessProfileRow, error: businessError } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_name, legacy_request_booking_enabled, free_bookings_month, free_bookings_count'
+      'id, business_name, business_slug, legacy_request_booking_enabled, free_bookings_month, free_bookings_count'
     )
     .eq('profile_id', user.id)
     .single();
@@ -43,6 +43,7 @@ export default async function BookingsPage() {
   const businessProfile = businessProfileRow as {
     id: string;
     business_name: string;
+    business_slug: string | null;
     legacy_request_booking_enabled: boolean | null;
     free_bookings_month: string | null;
     free_bookings_count: number | null;
@@ -97,6 +98,7 @@ export default async function BookingsPage() {
   return (
     <BookingsPageSwitch
       businessName={businessProfile.business_name}
+      businessSlug={businessProfile.business_slug}
       initialBookingRequests={bookingRequests ?? []}
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}

@@ -5,16 +5,26 @@
  * Displays the booking request form for a specific business
  */
 
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import {
+  OWNER_MANUAL_BOOKING_FOR,
+  ROUTES,
+  getBusinessBookDetailsUrl,
+  getBusinessBookPath,
+} from '@/constants/routes';
+import {
+  BookServicePicker,
+  type BookServicePickerItem,
+} from '@/features/availability/booking/components/BookServicePicker';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
-import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { isProAccess } from '@/features/pricing';
+import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound, redirect } from 'next/navigation';
 import { BookFlowSwitch } from './BookFlowSwitch';
 
 // Force dynamic rendering
@@ -28,6 +38,8 @@ interface BookingRequestPageProps {
     serviceId?: string;
     addOnIds?: string;
     skipDetails?: string;
+    /** `owner` = business owner booking on a customer's behalf (from dashboard). */
+    for?: string;
   }>;
 }
 
@@ -49,6 +61,26 @@ type PublicServiceForBooking = {
   hours_to_complete: number | null;
   duration_minutes: number | null;
 };
+
+type ServiceRowForPicker = {
+  id: string;
+  name: string;
+  description: string | null;
+  price_cents: number | null;
+  hours_to_complete: number | null;
+  duration_minutes: number | null;
+};
+
+function mapRowToPickerItem(row: ServiceRowForPicker): BookServicePickerItem {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    priceCents: row.price_cents ?? 0,
+    hours_to_complete: row.hours_to_complete ?? null,
+    duration_minutes: row.duration_minutes ?? null,
+  };
+}
 
 async function fetchBusinessProfileBySlug(slug: string) {
   try {
@@ -137,7 +169,14 @@ export default async function BookingRequestPage({
   searchParams,
 }: BookingRequestPageProps) {
   const { 'business-slug': slug } = await params;
-  const { serviceId, addOnIds, skipDetails } = await searchParams;
+  const {
+    serviceId,
+    addOnIds,
+    skipDetails,
+    for: bookingForParam,
+  } = await searchParams;
+  const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
+  const skipDetailsFlag = skipDetails === '1' || skipDetails === 'true';
 
   // Fetch the business profile by slug
   const businessProfile = await fetchBusinessProfileBySlug(slug);
@@ -146,6 +185,8 @@ export default async function BookingRequestPage({
   if (!businessProfile) {
     notFound();
   }
+
+  const slugForRoutes = businessProfile.business_slug || slug;
 
   // Fetch availability with admin client so RLS doesn't block (public page needs to read accept_bookings)
   const adminClient = createSupabaseAdminClient();
@@ -214,6 +255,45 @@ export default async function BookingRequestPage({
   const effectiveUseAvailabilityBooking =
     useAvailabilityBooking && !reachedFreeCap;
 
+  const showAvailabilityServicePicker =
+    effectiveUseAvailabilityBooking &&
+    !showNotAcceptingBookings &&
+    !(serviceId && serviceId.trim());
+
+  let availabilityPickerServices: BookServicePickerItem[] = [];
+  if (showAvailabilityServicePicker) {
+    const { data: serviceRows, error: pickerServicesError } = await adminClient
+      .from('business_services')
+      .select(
+        'id, name, description, price_cents, hours_to_complete, duration_minutes'
+      )
+      .eq('business_id', businessProfile.id)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true });
+
+    if (pickerServicesError) {
+      console.error(
+        'Error fetching services for book picker:',
+        pickerServicesError
+      );
+    }
+
+    availabilityPickerServices =
+      (serviceRows as ServiceRowForPicker[] | null)
+        ?.map(mapRowToPickerItem)
+        .filter(s => s.id && s.name) ?? [];
+
+    if (availabilityPickerServices.length === 1) {
+      redirect(
+        getBusinessBookDetailsUrl(slugForRoutes, {
+          serviceId: availabilityPickerServices[0].id,
+          forOwner: isOwnerManualBooking,
+        })
+      );
+    }
+  }
+
   // Fetch service by ID when present (validates business_id)
   const serviceDetails =
     serviceId && serviceId.trim()
@@ -244,46 +324,78 @@ export default async function BookingRequestPage({
     businessProfile.business_type
   );
 
+  let bookPageBackHref: string;
+  let bookPageBackLabel: string;
+  const profilePath = `/${slug}`;
+
+  if (isOwnerManualBooking) {
+    if (!serviceId?.trim()) {
+      bookPageBackHref = ROUTES.DASHBOARD.BOOKINGS;
+      bookPageBackLabel = 'Back to bookings';
+    } else if (skipDetailsFlag) {
+      bookPageBackHref = getBusinessBookPath(slugForRoutes, { forOwner: true });
+      bookPageBackLabel = 'Back to services';
+    } else {
+      bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
+        serviceId: serviceId.trim(),
+        addOnIds: addOnIds?.trim(),
+        forOwner: true,
+      });
+      bookPageBackLabel = 'Back to service';
+    }
+  } else if (serviceId?.trim() && !skipDetailsFlag) {
+    bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
+      serviceId: serviceId.trim(),
+      addOnIds: addOnIds?.trim(),
+    });
+    bookPageBackLabel = 'Back to service';
+  } else {
+    bookPageBackHref = profilePath;
+    bookPageBackLabel = 'Back to profile';
+  }
+
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
       {/* Header with Back Button */}
       <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <Link
-            href={
-              serviceId?.trim() && !skipDetails
-                ? `/${slug}/book/details?serviceId=${encodeURIComponent(serviceId.trim())}${addOnIds?.trim() ? `&addOnIds=${encodeURIComponent(addOnIds.trim())}` : ''}`
-                : `/${slug}`
-            }
+            href={bookPageBackHref}
             className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeftIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">
-              {serviceId?.trim() && !skipDetails
-                ? 'Back to service'
-                : 'Back to profile'}
-            </span>
+            <span className="text-sm font-medium">{bookPageBackLabel}</span>
           </Link>
         </div>
       </div>
 
       {/* Form Container – availability booking or request booking by flag */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pt-8 sm:pb-24">
-        <BookFlowSwitch
-          useAvailabilityBooking={effectiveUseAvailabilityBooking}
-          showNotAcceptingBookings={showNotAcceptingBookings}
-          businessName={businessProfile.business_name}
-          businessId={businessProfile.id}
-          businessSlug={businessProfile.business_slug || slug}
-          showVehicleFields={showVehicleFields}
-          serviceId={serviceId?.trim() ?? undefined}
-          addOnIds={addOnIds?.trim() || undefined}
-          selectedAddOns={selectedAddOns}
-          serviceName={serviceName}
-          servicePrice={serviceDetails?.price ?? undefined}
-          serviceDurationMinutes={serviceDurationMinutes}
-          weeklySchedule={weeklySchedule}
-        />
+        {showAvailabilityServicePicker ? (
+          <BookServicePicker
+            businessSlug={slugForRoutes}
+            businessName={businessProfile.business_name}
+            services={availabilityPickerServices}
+            isOwnerManualBooking={isOwnerManualBooking}
+          />
+        ) : (
+          <BookFlowSwitch
+            useAvailabilityBooking={effectiveUseAvailabilityBooking}
+            showNotAcceptingBookings={showNotAcceptingBookings}
+            businessName={businessProfile.business_name}
+            businessId={businessProfile.id}
+            businessSlug={slugForRoutes}
+            showVehicleFields={showVehicleFields}
+            serviceId={serviceId?.trim() ?? undefined}
+            addOnIds={addOnIds?.trim() || undefined}
+            selectedAddOns={selectedAddOns}
+            serviceName={serviceName}
+            servicePrice={serviceDetails?.price ?? undefined}
+            serviceDurationMinutes={serviceDurationMinutes}
+            weeklySchedule={weeklySchedule}
+            isOwnerManualBooking={isOwnerManualBooking}
+          />
+        )}
       </div>
     </div>
   );

@@ -7,6 +7,10 @@ import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvai
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
+import {
+  OWNER_MANUAL_BOOKING_FOR,
+  getBusinessBookPath,
+} from '@/constants/routes';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -17,7 +21,11 @@ export const dynamic = 'force-dynamic';
 
 interface ServiceDetailsPageProps {
   params: Promise<{ 'business-slug': string }>;
-  searchParams: Promise<{ serviceId?: string; addOnIds?: string }>;
+  searchParams: Promise<{
+    serviceId?: string;
+    addOnIds?: string;
+    for?: string;
+  }>;
 }
 
 async function fetchBusinessIdBySlug(slug: string): Promise<string | null> {
@@ -56,11 +64,16 @@ export default async function ServiceDetailsPage({
   searchParams,
 }: ServiceDetailsPageProps) {
   const { 'business-slug': slug } = await params;
-  const { serviceId, addOnIds } = await searchParams;
+  const { serviceId, addOnIds, for: bookingForParam } = await searchParams;
+  const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
 
   // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
   if (!serviceId?.trim()) {
-    redirect(`/${slug}/book`);
+    redirect(
+      isOwnerManualBooking
+        ? getBusinessBookPath(slug, { forOwner: true })
+        : `/${slug}/book`
+    );
   }
 
   const businessId = await fetchBusinessIdBySlug(slug);
@@ -100,9 +113,14 @@ export default async function ServiceDetailsPage({
 
   // No add-ons: skip details and go straight to date selection (skipDetails tells book page: back = profile)
   if (addOns.length === 0) {
-    redirect(
-      `/${slug}/book?serviceId=${encodeURIComponent(serviceId.trim())}&skipDetails=1`
-    );
+    const q = new URLSearchParams({
+      serviceId: serviceId.trim(),
+      skipDetails: '1',
+    });
+    if (isOwnerManualBooking) {
+      q.set('for', OWNER_MANUAL_BOOKING_FOR);
+    }
+    redirect(`/${slug}/book?${q.toString()}`);
   }
 
   const initialAddOnIds = addOnIds?.trim()
@@ -117,11 +135,17 @@ export default async function ServiceDetailsPage({
       <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <Link
-            href={`/${slug}`}
+            href={
+              isOwnerManualBooking
+                ? getBusinessBookPath(slug, { forOwner: true })
+                : `/${slug}`
+            }
             className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
           >
             <ArrowLeftIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">Back to profile</span>
+            <span className="text-sm font-medium">
+              {isOwnerManualBooking ? 'Back to services' : 'Back to profile'}
+            </span>
           </Link>
         </div>
       </div>
@@ -133,6 +157,7 @@ export default async function ServiceDetailsPage({
           service={service}
           addOns={addOns}
           initialAddOnIds={initialAddOnIds}
+          isOwnerManualBooking={isOwnerManualBooking}
         />
       </div>
     </div>

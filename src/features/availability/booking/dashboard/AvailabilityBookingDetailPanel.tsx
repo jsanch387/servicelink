@@ -65,6 +65,7 @@ export function AvailabilityBookingDetailPanel({
   const phoneFormatted = formatPhoneDisplay(booking.customerPhone);
   const telHref = `tel:${booking.customerPhone.replace(/\D/g, '')}`;
   const isConfirmed = booking.status === 'confirmed';
+  const isCancelled = booking.status === 'cancelled';
 
   const navigationUrl = (() => {
     const destination = fullAddress.trim();
@@ -132,6 +133,19 @@ export function AvailabilityBookingDetailPanel({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-6">
+          {isCancelled && (
+            <div
+              className="rounded-xl border border-rose-500/35 bg-rose-500/[0.09] px-4 py-3"
+              role="status"
+            >
+              <p className="text-sm font-semibold text-rose-400">Cancelled</p>
+              <p className="mt-1 text-sm leading-snug text-rose-100/85">
+                This appointment was cancelled. It stays on your schedule for
+                reference only.
+              </p>
+            </div>
+          )}
+
           {/* Schedule & service */}
           <section>
             <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3 flex items-center gap-2">
