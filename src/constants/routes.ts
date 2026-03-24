@@ -44,6 +44,7 @@ export const ROUTES = {
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
     AVAILABILITY: '/dashboard/availability',
+    CUSTOMERS: '/dashboard/customers',
     SETTINGS: '/dashboard/settings',
     UPGRADE: '/dashboard/upgrade',
   },

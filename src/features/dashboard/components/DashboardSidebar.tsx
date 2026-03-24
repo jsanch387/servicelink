@@ -11,6 +11,7 @@ import {
   CogIcon,
   HomeIcon,
   RectangleStackIcon,
+  UserGroupIcon,
   UserIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -42,6 +43,12 @@ const allNavigationItems = [
     name: 'Bookings',
     href: ROUTES.DASHBOARD.BOOKINGS,
     icon: CalendarIcon,
+    requiresOnboarding: true,
+  },
+  {
+    name: 'Customers',
+    href: ROUTES.DASHBOARD.CUSTOMERS,
+    icon: UserGroupIcon,
     requiresOnboarding: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED
