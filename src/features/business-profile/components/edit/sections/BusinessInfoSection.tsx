@@ -5,6 +5,26 @@ import { Input, Select, TextArea } from '@/components/shared';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
 import React from 'react';
 
+const parseServiceArea = (serviceArea: string): { city: string; state: string } => {
+  const [rawCity = '', rawState = ''] = serviceArea.split(',');
+  return {
+    city: rawCity.trim(),
+    state: rawState.trim().toUpperCase().slice(0, 2),
+  };
+};
+
+const sanitizeCity = (value: string): string =>
+  value
+    .replace(/[^A-Za-z\s'.-]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trimStart();
+
+const sanitizeState = (value: string): string =>
+  value
+    .replace(/[^A-Za-z]/g, '')
+    .toUpperCase()
+    .slice(0, 2);
+
 interface BusinessInfoSectionProps {
   formData: EditingFormData;
   // eslint-disable-next-line no-unused-vars
@@ -17,6 +37,33 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
   onInputChange,
   errors,
 }) => {
+  const { city, state } = parseServiceArea(formData.service_area);
+
+  const updateServiceArea = (nextCity: string, nextState: string) => {
+    const trimmedCity = nextCity.trim();
+    const trimmedState = nextState.trim();
+
+    if (!trimmedCity && !trimmedState) {
+      onInputChange('service_area', '');
+      return;
+    }
+
+    if (trimmedCity && trimmedState) {
+      onInputChange('service_area', `${trimmedCity}, ${trimmedState}`);
+      return;
+    }
+
+    onInputChange('service_area', trimmedCity || trimmedState);
+  };
+
+  const handleCityChange = (value: string) => {
+    updateServiceArea(sanitizeCity(value), state);
+  };
+
+  const handleStateChange = (value: string) => {
+    updateServiceArea(city, sanitizeState(value));
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Section Header */}
@@ -44,8 +91,8 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
         }
       />
 
-      {/* Business Type & Service Area (Grid Layout) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      {/* Business Type + Service Area (City/State) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Select
           label="Business Type"
           placeholder="Pick one"
@@ -61,10 +108,29 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
         />
 
         <Input
-          label="Service Area (Optional)"
-          placeholder="e.g., Austin, TX, or Remote"
-          value={formData.service_area}
-          onChange={value => onInputChange('service_area', value)}
+          label="City (Optional)"
+          placeholder="e.g., Austin"
+          value={city}
+          onChange={handleCityChange}
+          error={
+            errors.some(e => e.includes('Service area'))
+              ? 'Use city + 2-letter state code'
+              : undefined
+          }
+        />
+
+        <Input
+          label="State (Optional)"
+          placeholder="TX"
+          value={state}
+          onChange={handleStateChange}
+          maxLength={2}
+          inputMode="text"
+          error={
+            errors.some(e => e.includes('Service area'))
+              ? 'Use 2 letters only (example: TX)'
+              : undefined
+          }
         />
       </div>
 

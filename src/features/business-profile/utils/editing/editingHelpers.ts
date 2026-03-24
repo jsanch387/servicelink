@@ -36,6 +36,12 @@ export interface ValidationResult {
   errors: string[];
 }
 
+const SERVICE_AREA_CITY_STATE_REGEX = /^[A-Za-z]+(?:[ '.-][A-Za-z]+)*,\s?[A-Za-z]{2}$/;
+
+export function isValidCityStateServiceArea(serviceArea: string): boolean {
+  return SERVICE_AREA_CITY_STATE_REGEX.test(serviceArea.trim());
+}
+
 /**
  * Validates the complete editing form
  */
@@ -51,7 +57,13 @@ export function validateEditingForm(
   if (!formData.business_type.trim()) {
     errors.push('Business type is required');
   }
-  // Service area is optional
+  // Service area is optional, but must be City, ST when provided
+  if (
+    formData.service_area.trim() &&
+    !isValidCityStateServiceArea(formData.service_area)
+  ) {
+    errors.push('Service area must be in City, ST format');
+  }
 
   // Phone Validation (single number for customers to call - optional, but must be valid if provided)
   if (
