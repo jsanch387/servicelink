@@ -1,4 +1,4 @@
-import type { CustomerRecord } from './types';
+import type { CustomerRecord } from '@/features/customer-management/types';
 
 export const MOCK_CUSTOMERS: CustomerRecord[] = [
   {

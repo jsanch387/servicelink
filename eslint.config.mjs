@@ -18,10 +18,17 @@ const eslintConfig = [
     },
     rules: {
       'prettier/prettier': 'error',
-      'no-unused-vars': 'warn',
+      'no-unused-vars': 'off',
       'no-console': 'off', // Allow console statements in development
       '@typescript-eslint/no-explicit-any': 'warn', // Warn instead of error for any types
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       '@next/next/no-img-element': 'warn', // Warn instead of error for img elements
       'react/no-unescaped-entities': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',

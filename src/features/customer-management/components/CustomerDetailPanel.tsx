@@ -21,7 +21,7 @@ interface CustomerDetailPanelProps {
   onClose: () => void;
   onSendLink: () => void;
   onDeleteCustomer: () => void;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (_amount: number) => string;
 }
 
 export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({

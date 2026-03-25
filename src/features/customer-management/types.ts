@@ -15,3 +15,10 @@ export interface CustomerRecord {
   status: CustomerLifecycle;
   note: string;
 }
+
+/** Aggregates for the customer list header (from bookings + customer rows when wired to API). */
+export interface CustomerListStats {
+  totalCustomers: number;
+  returningCustomers: number;
+  totalRevenue: number;
+}
