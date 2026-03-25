@@ -18,6 +18,8 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
   onRowClick,
   onSendLink: _onSendLink,
 }) => {
+  const noPastVisits = (c: (typeof customers)[number]) => c.totalVisits === 0;
+
   return (
     <div className="hidden md:block overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
       <table className="min-w-full">
@@ -76,7 +78,8 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
                     }
                   >
                     <p className="text-sm text-gray-200">
-                      Next {formatLastBookedDate(customer.nextAppointmentDate)}
+                      Next appointment{' '}
+                      {formatLastBookedDate(customer.nextAppointmentDate)}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {formatNextInDays(customer.nextAppointmentDaysUntil ?? 0)}
@@ -87,12 +90,24 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
                   <p className="text-sm text-gray-500">—</p>
                 ) : null}
               </td>
-              <td className="px-4 py-3 text-sm text-gray-200 align-middle tabular-nums">
-                {customer.totalVisits}{' '}
-                {customer.totalVisits === 1 ? 'visit' : 'visits'}
+              <td className="px-4 py-3 text-sm align-middle tabular-nums">
+                {noPastVisits(customer) ? (
+                  <span className="text-gray-500">None yet</span>
+                ) : (
+                  <span className="text-gray-200">
+                    {customer.totalVisits}{' '}
+                    {customer.totalVisits === 1 ? 'visit' : 'visits'}
+                  </span>
+                )}
               </td>
-              <td className="px-4 py-3 text-sm text-gray-200 align-middle tabular-nums font-medium">
-                {formatCustomerCurrency(customer.totalSpent)}
+              <td className="px-4 py-3 text-sm align-middle tabular-nums font-medium">
+                {noPastVisits(customer) ? (
+                  <span className="text-gray-500">—</span>
+                ) : (
+                  <span className="text-gray-200">
+                    {formatCustomerCurrency(customer.totalSpent)}
+                  </span>
+                )}
               </td>
               <td className="px-4 py-3 align-middle">
                 <CustomerStatusBadge status={customer.status} />

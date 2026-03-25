@@ -21,6 +21,7 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
   onSendLink: _onSendLink,
 }) => {
   const statusUi = mobileListStatusStyle(customer.status);
+  const noPastVisits = customer.totalVisits === 0;
 
   return (
     <GlassCard rounded="rounded-2xl" className="p-4 border border-white/10">
@@ -37,14 +38,20 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
               <span className={statusUi.className}>{statusUi.label}</span>
               <span className="h-3 w-px shrink-0 bg-white/20" aria-hidden />
-              <span className="min-w-0">
-                {customer.totalVisits}{' '}
-                {customer.totalVisits === 1 ? 'visit' : 'visits'} completed
-              </span>
-              <span className="h-3 w-px shrink-0 bg-white/20" aria-hidden />
-              <span className="shrink-0 tabular-nums text-gray-500">
-                Spent {formatCustomerCurrency(customer.totalSpent)}
-              </span>
+              {noPastVisits ? (
+                <span className="min-w-0">No past visits yet</span>
+              ) : (
+                <>
+                  <span className="min-w-0">
+                    {customer.totalVisits}{' '}
+                    {customer.totalVisits === 1 ? 'visit' : 'visits'} completed
+                  </span>
+                  <span className="h-3 w-px shrink-0 bg-white/20" aria-hidden />
+                  <span className="shrink-0 tabular-nums text-gray-500">
+                    Spent {formatCustomerCurrency(customer.totalSpent)}
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <EllipsisHorizontalIcon
@@ -69,7 +76,7 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
           ) : null}
           {customer.nextAppointmentDate ? (
             <div className="flex items-start justify-between gap-3">
-              <span className="shrink-0 text-gray-500">Next</span>
+              <span className="shrink-0 text-gray-500">Next appointment</span>
               <div className="min-w-0 text-right">
                 <p className="font-medium text-gray-200">
                   {formatLastBookedDate(customer.nextAppointmentDate)}
