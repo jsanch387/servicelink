@@ -1,6 +1,10 @@
 import { Button } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
 import {
+  customerPhoneHref,
+  formatCustomerPhone,
+} from '@/features/customer-management/utils/customerFormatting';
+import {
   ClipboardDocumentIcon,
   PaperAirplaneIcon,
 } from '@heroicons/react/24/outline';
@@ -16,12 +20,24 @@ interface SendBookingLinkModalBodyProps {
 export const SendBookingLinkModalBody: React.FC<
   SendBookingLinkModalBodyProps
 > = ({ customer, templateMessage, onTemplateMessageChange, onClose }) => {
+  const phoneHref = customerPhoneHref(customer.phone);
+  const displayPhone = formatCustomerPhone(customer.phone);
+
   return (
     <div className="space-y-5">
       <div>
         <p className="text-xs text-gray-500">To</p>
         <p className="text-sm font-semibold text-white mt-1">{customer.name}</p>
-        <p className="text-xs text-gray-400 mt-1">{customer.phone}</p>
+        {phoneHref ? (
+          <a
+            href={phoneHref}
+            className="text-xs text-gray-400 mt-1 inline-flex hover:text-white transition-colors"
+          >
+            {displayPhone}
+          </a>
+        ) : (
+          <p className="text-xs text-gray-400 mt-1">{displayPhone}</p>
+        )}
       </div>
 
       <div>

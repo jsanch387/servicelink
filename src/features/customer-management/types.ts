@@ -1,13 +1,20 @@
 export type CustomerLifecycle = 'new' | 'returning';
 
+export interface CustomerBookingAddOn {
+  name: string;
+  price: number;
+}
+
 export interface CustomerRecord {
   id: string;
   name: string;
   phone: string;
   email: string;
   lastService: string;
+  lastServicePrice?: number;
   /** Add-ons for the most recent booking only; omit or empty when none. */
   lastBookingAddOns?: string[];
+  lastBookingAddOnDetails?: CustomerBookingAddOn[];
   lastBookingDate: string;
   lastBookingDaysAgo: number;
   totalVisits: number;

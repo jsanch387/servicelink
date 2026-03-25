@@ -34,9 +34,45 @@ Intended schema (create/migrate in Supabase SQL editor or migrations):
 - Unique partial: `(business_id, phone_normalized)` where `phone_normalized` is non-null/non-empty.
 - Unique partial: `(business_id, email_normalized)` where `email_normalized` is non-null/non-empty.
 
-**RLS:** Policies should allow the business owner (`business_profiles.profile_id = auth.uid()`) to `select/insert/update/delete` rows where `business_id` matches their profile. Public booking flows that create customers typically use the **service role** / server route, not anon inserts against RLS.
+**RLS:** Policies should allow the business owner (`business_profiles.profile_id = auth.uid()`) to `select/insert/update/delete` rows where `business_id` matches their profile. Public booking flows that create customers use the **service role** (admin client) inside **`createBooking`**, which bypasses RLS for `customers` insert/select.
 
-**Related (future):** Link **`bookings`** (or booking requests) to customers with `customer_id` → `customers(id)` so the UI can show real **last service**, **visits**, **revenue**, and **new vs returning**.
+**Related:** V2 **`bookings`** rows store **`customer_id`** → `customers(id)` (nullable FK, `ON DELETE SET NULL`). See **`docs/migrations/001_bookings_customer_id.sql`** — run that migration in Supabase before creating bookings in environments where the column is missing.
+
+---
+
+## Customer creation when a V2 booking is confirmed
+
+**Single code path:** There is only one server function that inserts a **`bookings`** row for the availability flow: **`createBooking`** in **`src/features/availability/services/bookingService.ts`**. It is called from **`POST /api/public/bookings`**.
+
+Both of these product flows hit that same endpoint and therefore share customer logic automatically:
+
+| Flow | How it reaches `createBooking` |
+|------|--------------------------------|
+| **Public profile** | Customer completes book flow → client `POST /api/public/bookings`. |
+| **Owner booking for someone** | Dashboard opens book flow with `?for=owner` → same submit → **`POST /api/public/bookings`**. |
+
+There is **no second insert path** for V2 bookings today; if you add another API that inserts into `bookings`, call **`upsertCustomerForBooking`** the same way (or always route through **`createBooking`**).
+
+### Server helpers (this feature)
+
+| File | Role |
+|------|------|
+| **`server/normalizeCustomerContact.ts`** | `normalizeEmailForLookup`, `normalizePhoneForLookup` (digits-only phone). |
+| **`server/upsertCustomerForBooking.ts`** | **`upsertCustomerForBooking(supabase, businessId, input)`** — find-or-create `customers` row. Uses a small internal cast for `.from('customers')` until the repo’s `Database` type matches Supabase client generics fully. |
+
+### Dedupe rules
+
+1. Scope: always **`business_id`** (tenant-safe).
+2. If **`phone_normalized`** is non-null: look up by `(business_id, phone_normalized)`. If found → return that **`id`**.
+3. Else look up by **`(business_id, email_normalized)`** (email is required on the booking form). If found → return **`id`**.
+4. Else **insert** a new customer: **`email`** and **`email_normalized`** both set to the normalized address; **`notes`** stays **`null`** (booking form “notes” are **only** on the **`bookings`** row, e.g. access instructions).
+5. On unique violation **`23505`** (rare race): re-select by phone then email and return **`id`** if found.
+
+**Note:** We do **not** merge/update an existing customer’s name on match. Profile **`customers.notes`** are for owner-entered customer notes only, not per-booking text.
+
+### Booking row
+
+After **`upsertCustomerForBooking`**, **`createBooking`** sets **`customer_id`** on the inserted **`bookings`** row alongside existing customer snapshot columns (`customer_name`, `customer_email`, etc.).
 
 ---
 
@@ -54,13 +90,15 @@ Defined in **`src/features/customer-management/types.ts`**. Used by list, detail
 
 | Field | Source today | Notes |
 |-------|----------------|-------|
-| `id`, `name`, `phone`, `email`, `note` | DB | `name` ← `full_name`, `note` ← `notes`. |
-| `lastService`, `lastBookingAddOns` | Stub | `lastService` is `—`; add-ons omitted until bookings are joined. |
-| `lastBookingDate`, `lastBookingDaysAgo` | Derived | Uses **`created_at`** date only until last booking exists. |
-| `totalVisits`, `totalSpent` | Stub | `0` until aggregated from bookings. |
-| `status` | Stub | Always `'new'` in mapper until derived from visit count. |
+| `id`, `name`, `phone`, `note` | DB | `name` ← `full_name`, `note` ← `customers.notes` (profile only). |
+| `email` | DB | Shown as **normalized** (`email_normalized` preferred) so the UI has a single canonical address. |
+| `lastService`, `lastBookingAddOns` | **`bookings`** | From the latest **confirmed/completed** row for this `customer_id` (add-on **names** from `addon_details`). |
+| `lastBookingDate`, `lastBookingDaysAgo` | **`bookings`** | From that same latest counting booking’s `scheduled_date`. |
+| `totalVisits`, `totalSpent` | **`bookings`** | Count and sum **service_price_cents + add-on `priceCents`** for **confirmed** + **completed** only. `totalSpent` is dollars in the JSON. |
+| `status` | **`bookings`** | `returning` if more than one counting visit, else `new`. |
+| Fallback (no counting bookings) | Customer row | e.g. legacy row with no linked bookings: visits/spent `0`, last service `—`, dates from `customers.created_at`. |
 
-**Stats row** (`CustomerListStats`): Computed in the client from the loaded `CustomerRecord[]` (totals, returning count, revenue sum)—so today revenue/returning match those stubs until real booking data is wired.
+**Stats row** (`CustomerListStats`): Computed in the client from the loaded `CustomerRecord[]` (totals, returning count, revenue sum).
 
 ---
 
@@ -70,7 +108,7 @@ Defined in **`src/features/customer-management/types.ts`**. Used by list, detail
 
 - **File:** `src/app/api/customers/route.ts`.
 - **Auth:** Session cookie via `createSupabaseServerClient()`.
-- **Steps:** `resolveCurrentBusinessId` → `select * from customers where business_id = … order by created_at desc`.
+- **Steps:** `resolveCurrentBusinessId` → load **`customers`** for the business → load **`bookings`** with **`customer_id` not null** → **`aggregateBookingsPerCustomer`** → **`mapCustomerRowToRecord(row, metrics)`**.
 - **Response (200):** `{ success: true, customers: CustomerRecord[] }` (records are **mapped** server-side).
 - **Errors:** `{ success: false, error: string }` with `401` / `404` / `500` as appropriate.
 
@@ -121,7 +159,7 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 | `components/` | Page sections, table, cards, drawer, modal body, skeletons, empty states |
 | `hooks/` | `useCustomerManagement` |
 | `api/` | Client fetch, response typing, DB row type, `mapCustomerRowToRecord` |
-| `server/` | `resolveCurrentBusinessId` (API route support) |
+| `server/` | `resolveCurrentBusinessId`, `normalizeCustomerContact`, `upsertCustomerForBooking`, `aggregateBookingsPerCustomer` |
 | `constants/` | `CUSTOMER_STATUS_FILTERS` |
 | `utils/` | Formatting, search match, date helpers |
 
@@ -131,10 +169,9 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 
 ## Future work (not implemented)
 
-1. **`customer_id` on `bookings`** (or equivalent) + upsert customer on public booking submit.
-2. **Server-side aggregates** or a view for last booking, visit count, spend, `new` vs `returning`.
-3. **`DELETE /api/customers/[id]`** (or PATCH) and wire **delete** in the hook to Supabase.
-4. **Optimistic UI / revalidation** after mutations (e.g. React Query or `router.refresh()`).
+1. **Server-side aggregates** or a view for last booking, visit count, spend, `new` vs `returning` (use **`bookings.customer_id`** + join).
+2. **`DELETE /api/customers/[id]`** (or PATCH) and wire **delete** in the hook to Supabase.
+3. **Optimistic UI / revalidation** after mutations (e.g. React Query or `router.refresh()`).
 
 ---
 

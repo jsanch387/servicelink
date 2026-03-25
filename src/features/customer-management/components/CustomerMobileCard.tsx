@@ -3,10 +3,7 @@ import type { CustomerRecord } from '@/features/customer-management/types';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import { mobileListStatusStyle } from '@/features/customer-management/utils/mobileListStatusStyle';
-import {
-  EllipsisHorizontalIcon,
-  PaperAirplaneIcon,
-} from '@heroicons/react/24/outline';
+import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
 type CustomerCardAction = (_customer: CustomerRecord) => void;
@@ -20,7 +17,7 @@ interface CustomerMobileCardProps {
 export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
   customer,
   onOpenDetail,
-  onSendLink,
+  onSendLink: _onSendLink,
 }) => {
   const statusUi = mobileListStatusStyle(customer.status);
 
@@ -68,16 +65,18 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
         </div>
       </button>
 
+      {/* Hidden for V2 rollout: restore send-link CTA when flow is ready.
       <div className="mt-3 border-t border-white/10 pt-3 flex justify-end">
         <button
           type="button"
-          onClick={() => onSendLink(customer)}
+          onClick={() => _onSendLink(customer)}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white transition-colors"
         >
           <PaperAirplaneIcon className="h-3.5 w-3.5 text-emerald-400" />
           <span>Send link</span>
         </button>
       </div>
+      */}
     </GlassCard>
   );
 };

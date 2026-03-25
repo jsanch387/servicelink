@@ -2,6 +2,10 @@
 
 import { Button } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
+import {
+  customerPhoneHref,
+  formatCustomerPhone,
+} from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import {
   ArrowLeftIcon,
@@ -32,7 +36,8 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   formatCurrency,
 }) => {
   const [emailCopied, setEmailCopied] = useState(false);
-  const phoneHref = `tel:${customer.phone.replace(/\D/g, '')}`;
+  const phoneHref = customerPhoneHref(customer.phone);
+  const displayPhone = formatCustomerPhone(customer.phone);
 
   useEffect(() => {
     const scrollY = window.scrollY;
@@ -121,13 +126,20 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                       </span>
                     )}
                   </div>
-                  <a
-                    href={phoneHref}
-                    className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
-                  >
-                    <PhoneIcon className="h-3.5 w-3.5" />
-                    {customer.phone}
-                  </a>
+                  {phoneHref ? (
+                    <a
+                      href={phoneHref}
+                      className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+                    >
+                      <PhoneIcon className="h-3.5 w-3.5" />
+                      {displayPhone}
+                    </a>
+                  ) : (
+                    <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                      <PhoneIcon className="h-3.5 w-3.5" />
+                      {displayPhone}
+                    </p>
+                  )}
                 </div>
               </div>
               <CustomerStatusBadge status={customer.status} />
@@ -139,57 +151,68 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               <CalendarDaysIcon className="h-4 w-4" />
               Booking activity
             </h3>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-3">
-              <div>
-                <p className="text-[11px] font-medium text-gray-500">Service</p>
-                <p className="text-sm text-white font-medium mt-1">
-                  {customer.lastService}
+            <div className="rounded-xl bg-[#111111] border border-white/[0.08] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-gray-500 font-medium">
+                  Last booking
                 </p>
-                {customer.lastBookingAddOns &&
-                  customer.lastBookingAddOns.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-[11px] font-medium text-gray-500">
-                        Add-ons
-                      </p>
-                      <ul className="mt-1.5 space-y-1">
-                        {customer.lastBookingAddOns.map(addon => (
-                          <li
-                            key={addon}
-                            className="text-sm text-gray-300 flex items-center gap-1.5"
-                          >
-                            <PlusIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                            {addon}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                <p className="text-xs text-gray-400">
+                  {formatLastBookedDate(customer.lastBookingDate)}
+                </p>
               </div>
-              <div className="border-t border-white/[0.06] pt-3">
-                <p className="text-[11px] font-medium text-gray-500">
-                  Last booked
-                </p>
-                <div className="mt-1 flex items-center justify-between gap-3">
-                  <p className="text-sm text-gray-200 font-medium">
-                    {formatLastBookedDate(customer.lastBookingDate)}
+
+              <div className="my-3 border-t border-dashed border-white/[0.12]" />
+
+              <div className="space-y-1.5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm text-white font-medium pr-2">
+                    {customer.lastService}
                   </p>
-                  <p className="text-xs text-gray-500 tabular-nums whitespace-nowrap">
-                    {customer.lastBookingDaysAgo} days ago
+                  <p className="text-sm text-gray-200 tabular-nums whitespace-nowrap">
+                    {typeof customer.lastServicePrice === 'number'
+                      ? formatCurrency(customer.lastServicePrice)
+                      : '—'}
                   </p>
                 </div>
+
+                {customer.lastBookingAddOns?.map((addon, index) => (
+                  <div
+                    key={`${addon}-${index}`}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <p className="text-sm text-gray-300 flex items-center gap-1.5 min-w-0">
+                      <PlusIcon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                      <span className="truncate">{addon}</span>
+                    </p>
+                    <p className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
+                      {customer.lastBookingAddOnDetails?.[index]
+                        ? formatCurrency(
+                            customer.lastBookingAddOnDetails[index].price
+                          )
+                        : '—'}
+                    </p>
+                  </div>
+                ))}
               </div>
-              <div className="pt-2 grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[11px] text-gray-500">Total visits</p>
-                  <p className="text-sm font-semibold text-white mt-1">
-                    {customer.totalVisits}
-                  </p>
+
+              <div className="my-3 border-t border-dashed border-white/[0.12]" />
+
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between gap-3 text-gray-400">
+                  <span>Last booked</span>
+                  <span>{customer.lastBookingDaysAgo} days ago</span>
                 </div>
-                <div>
-                  <p className="text-[11px] text-gray-500">Total spent</p>
-                  <p className="text-sm font-semibold text-white mt-1">
+                <div className="flex items-center justify-between gap-3 text-gray-400">
+                  <span>Total visits</span>
+                  <span className="tabular-nums">{customer.totalVisits}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-gray-200 pt-1">
+                  <span className="text-[11px] text-gray-400">
+                    Lifetime spent
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums">
                     {formatCurrency(customer.totalSpent)}
-                  </p>
+                  </span>
                 </div>
               </div>
             </div>

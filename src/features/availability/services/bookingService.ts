@@ -3,6 +3,8 @@
  * Used by API routes only. Do not import from client components.
  */
 
+import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
+import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   mapBookingRowToDisplay,
@@ -34,6 +36,7 @@ export interface CreateBookingPayload {
   customer_vehicle_make: string | null;
   customer_vehicle_model: string | null;
   customer_notes: string | null;
+  customer_id: string;
 }
 
 function mapCustomerToRow(
@@ -49,6 +52,7 @@ function mapCustomerToRow(
   | 'duration_minutes'
   | 'scheduled_date'
   | 'start_time'
+  | 'customer_id'
 > {
   return {
     customer_name: c.fullName.trim(),
@@ -71,7 +75,7 @@ function mapCustomerToRow(
  * Caller must validate slot and resolve business by slug before calling.
  */
 export async function createBooking(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   payload: {
     businessId: string;
     businessSlug: string;
@@ -90,6 +94,16 @@ export async function createBooking(
       ? payload.selectedAddOns
       : null;
 
+  const { id: customerId } = await upsertCustomerForBooking(
+    supabase,
+    payload.businessId,
+    {
+      fullName: payload.customer.fullName,
+      email: payload.customer.email,
+      phone: payload.customer.phone,
+    }
+  );
+
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
@@ -101,6 +115,7 @@ export async function createBooking(
     scheduled_date: payload.scheduledDate,
     start_time: payload.startTime,
     ...mapCustomerToRow(payload.customer),
+    customer_id: customerId,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,7 +137,7 @@ export async function createBooking(
  * client so RLS allows SELECT for their business_id.
  */
 export async function listBookingsForBusiness(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   businessId: string
 ): Promise<ReturnType<typeof mapBookingRowToDisplay>[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,7 +164,7 @@ export type BookingStatusUpdate = 'completed' | 'cancelled';
  * not found / not allowed.
  */
 export async function updateBookingStatus(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   bookingId: string,
   status: BookingStatusUpdate
 ): Promise<BookingRow | null> {

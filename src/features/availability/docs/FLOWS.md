@@ -85,7 +85,7 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 
 - **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, `durationMinutes`, `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).
 - API resolves business by **slug**, loads **`time_off_blocks`** from `business_availability`, and **rejects** the request with **409** if the requested window overlaps any time-off block for that date.
-- Then calls `createBooking(adminClient, payload)`. One row is inserted into `bookings` with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
+    - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
 
 ---
 

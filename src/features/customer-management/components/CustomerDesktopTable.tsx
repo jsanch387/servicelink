@@ -1,7 +1,6 @@
 import type { CustomerRecord } from '@/features/customer-management/types';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
-import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 
@@ -16,7 +15,7 @@ interface CustomerDesktopTableProps {
 export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
   customers,
   onRowClick,
-  onSendLink,
+  onSendLink: _onSendLink,
 }) => {
   return (
     <div className="hidden md:block overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
@@ -77,14 +76,16 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
                 className="px-4 py-3 align-middle"
                 onClick={e => e.stopPropagation()}
               >
+                {/* Hidden for V2 rollout: restore send-link CTA when flow is ready.
                 <button
                   type="button"
-                  onClick={() => onSendLink(customer)}
+                  onClick={() => _onSendLink(customer)}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white transition-colors"
                 >
                   <PaperAirplaneIcon className="h-3.5 w-3.5 text-emerald-400" />
                   <span>Send link</span>
                 </button>
+                */}
               </td>
             </tr>
           ))}
