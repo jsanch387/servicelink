@@ -1,7 +1,10 @@
-import type { CustomerRecord } from '@/features/customer-management/types';
-import { normalizeEmailForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
-import { daysSinceDateString } from '@/features/customer-management/utils/daysSinceDateString';
 import type { CustomerBookingMetrics } from '@/features/customer-management/server/aggregateBookingsPerCustomer';
+import { normalizeEmailForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
+import type { CustomerRecord } from '@/features/customer-management/types';
+import {
+  daysSinceDateString,
+  daysUntilDateString,
+} from '@/features/customer-management/utils/daysSinceDateString';
 import type { CustomerDbRow } from './customerDbRow';
 
 /**
@@ -12,29 +15,64 @@ export function mapCustomerRowToRecord(
   row: CustomerDbRow,
   metrics?: CustomerBookingMetrics | null
 ): CustomerRecord {
-  const createdDay = row.created_at.slice(0, 10);
   const emailRaw = row.email_normalized ?? row.email ?? '';
   const email = emailRaw ? normalizeEmailForLookup(emailRaw) : '';
 
-  if (metrics && metrics.totalVisits > 0) {
+  if (metrics) {
+    const lastVisitDate = metrics.lastVisitScheduledDate;
+    const nextAppointmentDate = metrics.nextAppointmentScheduledDate;
+
+    const nextAddOnDetails =
+      metrics.nextAppointmentAddOnDetails.length > 0
+        ? metrics.nextAppointmentAddOnDetails.map(addon => ({
+            name: addon.name,
+            price: addon.priceCents / 100,
+          }))
+        : undefined;
+
     return {
       id: row.id,
       name: row.full_name,
       phone: row.phone ?? '',
       email,
-      lastService: metrics.lastServiceName,
-      lastServicePrice: metrics.lastServicePriceCents / 100,
+      lastService: metrics.lastVisitServiceName,
+      lastServicePrice:
+        metrics.lastVisitScheduledDate !== null
+          ? metrics.lastVisitServicePriceCents / 100
+          : undefined,
       lastBookingAddOns:
-        metrics.lastAddonNames.length > 0 ? metrics.lastAddonNames : undefined,
+        metrics.lastVisitAddonNames.length > 0
+          ? metrics.lastVisitAddonNames
+          : undefined,
       lastBookingAddOnDetails:
-        metrics.lastAddOnDetails.length > 0
-          ? metrics.lastAddOnDetails.map(addon => ({
+        metrics.lastVisitAddOnDetails.length > 0
+          ? metrics.lastVisitAddOnDetails.map(addon => ({
               name: addon.name,
               price: addon.priceCents / 100,
             }))
           : undefined,
-      lastBookingDate: metrics.lastScheduledDate,
-      lastBookingDaysAgo: daysSinceDateString(metrics.lastScheduledDate),
+      lastVisitDate,
+      lastVisitDaysAgo: lastVisitDate
+        ? daysSinceDateString(lastVisitDate)
+        : null,
+      nextAppointmentDate,
+      nextAppointmentDaysUntil: nextAppointmentDate
+        ? daysUntilDateString(nextAppointmentDate)
+        : null,
+      nextAppointmentService:
+        nextAppointmentDate && metrics.nextAppointmentServiceName
+          ? metrics.nextAppointmentServiceName
+          : undefined,
+      nextAppointmentServicePrice:
+        nextAppointmentDate &&
+        typeof metrics.nextAppointmentServicePriceCents === 'number'
+          ? metrics.nextAppointmentServicePriceCents / 100
+          : undefined,
+      nextAppointmentAddOns:
+        metrics.nextAppointmentAddonNames.length > 0
+          ? metrics.nextAppointmentAddonNames
+          : undefined,
+      nextAppointmentAddOnDetails: nextAddOnDetails,
       totalVisits: metrics.totalVisits,
       totalSpent: metrics.totalSpentCents / 100,
       status: metrics.lifecycle,
@@ -48,8 +86,10 @@ export function mapCustomerRowToRecord(
     phone: row.phone ?? '',
     email,
     lastService: '—',
-    lastBookingDate: createdDay,
-    lastBookingDaysAgo: daysSinceDateString(createdDay),
+    lastVisitDate: null,
+    lastVisitDaysAgo: null,
+    nextAppointmentDate: null,
+    nextAppointmentDaysUntil: null,
     totalVisits: 0,
     totalSpent: 0,
     status: 'new',

@@ -1,5 +1,6 @@
 'use client';
 
+import { deleteCustomerById } from '@/features/customer-management/api/deleteCustomer';
 import { fetchCustomersList } from '@/features/customer-management/api/fetchCustomers';
 import type {
   CustomerLifecycle,
@@ -28,6 +29,13 @@ export function useCustomerManagement() {
   const [activeSendLinkCustomer, setActiveSendLinkCustomer] =
     useState<CustomerRecord | null>(null);
   const [templateMessage, setTemplateMessage] = useState(DEFAULT_SMS_TEMPLATE);
+
+  const [activeDeleteCustomer, setActiveDeleteCustomer] =
+    useState<CustomerRecord | null>(null);
+  const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+  const [deleteCustomerError, setDeleteCustomerError] = useState<string | null>(
+    null
+  );
 
   const loadCustomers = useCallback(async () => {
     setLoadStatus('loading');
@@ -68,17 +76,35 @@ export function useCustomerManagement() {
     return { totalCustomers, returningCustomers, totalRevenue };
   }, [customers]);
 
-  const deleteCustomer = (customer: CustomerRecord): void => {
-    const confirmed = window.confirm(
-      `Delete ${customer.name} from your customer list?`
-    );
-    if (!confirmed) {
-      return;
+  const openDeleteCustomerModal = useCallback((customer: CustomerRecord) => {
+    setDeleteCustomerError(null);
+    setActiveDeleteCustomer(customer);
+  }, []);
+
+  const confirmDeleteCustomer = useCallback(async () => {
+    if (!activeDeleteCustomer || isDeletingCustomer) return;
+
+    const customerToDelete = activeDeleteCustomer;
+    setIsDeletingCustomer(true);
+    setDeleteCustomerError(null);
+
+    const result = await deleteCustomerById(customerToDelete.id);
+
+    if (result.ok) {
+      setActiveDeleteCustomer(null);
+      setSelectedCustomer(prev =>
+        prev?.id === customerToDelete.id ? null : prev
+      );
+      setActiveSendLinkCustomer(prev =>
+        prev?.id === customerToDelete.id ? null : prev
+      );
+      await loadCustomers();
+    } else {
+      setDeleteCustomerError(result.error);
     }
-    setCustomers(prev => prev.filter(item => item.id !== customer.id));
-    setSelectedCustomer(null);
-    setActiveSendLinkCustomer(prev => (prev?.id === customer.id ? null : prev));
-  };
+
+    setIsDeletingCustomer(false);
+  }, [activeDeleteCustomer, isDeletingCustomer, loadCustomers]);
 
   return {
     loadStatus,
@@ -97,6 +123,11 @@ export function useCustomerManagement() {
     setActiveSendLinkCustomer,
     templateMessage,
     setTemplateMessage,
-    deleteCustomer,
+    activeDeleteCustomer,
+    setActiveDeleteCustomer,
+    isDeletingCustomer,
+    deleteCustomerError,
+    openDeleteCustomerModal,
+    confirmDeleteCustomer,
   };
 }

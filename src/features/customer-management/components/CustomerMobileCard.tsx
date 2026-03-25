@@ -2,6 +2,7 @@ import { GlassCard } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
+import { formatNextInDays } from '@/features/customer-management/utils/formatNextInDays';
 import { mobileListStatusStyle } from '@/features/customer-management/utils/mobileListStatusStyle';
 import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import React from 'react';
@@ -38,7 +39,7 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
               <span className="h-3 w-px shrink-0 bg-white/20" aria-hidden />
               <span className="min-w-0">
                 {customer.totalVisits}{' '}
-                {customer.totalVisits === 1 ? 'visit' : 'visits'} total
+                {customer.totalVisits === 1 ? 'visit' : 'visits'} completed
               </span>
               <span className="h-3 w-px shrink-0 bg-white/20" aria-hidden />
               <span className="shrink-0 tabular-nums text-gray-500">
@@ -52,16 +53,36 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
           />
         </div>
 
-        <div className="mt-6 flex items-center justify-between gap-4">
-          <div className="flex min-w-0 flex-1 items-center gap-3 text-xs">
-            <span className="shrink-0 text-gray-500">Last booked:</span>
-            <span className="min-w-0 truncate font-medium text-gray-200">
-              {formatLastBookedDate(customer.lastBookingDate)}
-            </span>
-          </div>
-          <span className="shrink-0 text-xs tabular-nums text-gray-500">
-            {customer.lastBookingDaysAgo}d ago
-          </span>
+        <div className="mt-6 space-y-2 text-xs">
+          {customer.lastVisitDate ? (
+            <div className="flex items-start justify-between gap-3">
+              <span className="shrink-0 text-gray-500">Last visit</span>
+              <div className="min-w-0 text-right">
+                <p className="font-medium text-gray-200">
+                  {formatLastBookedDate(customer.lastVisitDate)}
+                </p>
+                <p className="tabular-nums text-gray-500 mt-0.5">
+                  {customer.lastVisitDaysAgo}d ago
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {customer.nextAppointmentDate ? (
+            <div className="flex items-start justify-between gap-3">
+              <span className="shrink-0 text-gray-500">Next</span>
+              <div className="min-w-0 text-right">
+                <p className="font-medium text-gray-200">
+                  {formatLastBookedDate(customer.nextAppointmentDate)}
+                </p>
+                <p className="tabular-nums text-gray-500 mt-0.5">
+                  {formatNextInDays(customer.nextAppointmentDaysUntil ?? 0)}
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {!customer.lastVisitDate && !customer.nextAppointmentDate ? (
+            <p className="text-gray-500">No schedule yet</p>
+          ) : null}
         </div>
       </button>
 

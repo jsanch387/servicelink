@@ -13,6 +13,7 @@ import { CustomerPageHeader } from './CustomerPageHeader';
 import { CustomerSearchAndFilters } from './CustomerSearchAndFilters';
 import { CustomerStatsRow } from './CustomerStatsRow';
 import { CustomersInitialEmptyState } from './CustomersInitialEmptyState';
+import { DeleteCustomerModalBody } from './DeleteCustomerModalBody';
 import { SendBookingLinkModalBody } from './SendBookingLinkModalBody';
 
 export const CustomerManagementPage: React.FC = () => {
@@ -33,7 +34,12 @@ export const CustomerManagementPage: React.FC = () => {
     setActiveSendLinkCustomer,
     templateMessage,
     setTemplateMessage,
-    deleteCustomer,
+    activeDeleteCustomer,
+    setActiveDeleteCustomer,
+    isDeletingCustomer,
+    deleteCustomerError,
+    openDeleteCustomerModal,
+    confirmDeleteCustomer,
   } = useCustomerManagement();
 
   return (
@@ -105,7 +111,9 @@ export const CustomerManagementPage: React.FC = () => {
                   setSelectedCustomer(null);
                   setActiveSendLinkCustomer(selectedCustomer);
                 }}
-                onDeleteCustomer={() => deleteCustomer(selectedCustomer)}
+                onDeleteCustomer={() =>
+                  openDeleteCustomerModal(selectedCustomer)
+                }
                 formatCurrency={formatCustomerCurrency}
               />
             )}
@@ -122,6 +130,27 @@ export const CustomerManagementPage: React.FC = () => {
                   templateMessage={templateMessage}
                   onTemplateMessageChange={setTemplateMessage}
                   onClose={() => setActiveSendLinkCustomer(null)}
+                />
+              )}
+            </Modal>
+
+            <Modal
+              isOpen={Boolean(activeDeleteCustomer)}
+              onClose={() => {
+                if (!isDeletingCustomer) {
+                  setActiveDeleteCustomer(null);
+                }
+              }}
+              title="Delete customer"
+              maxWidth="sm"
+            >
+              {activeDeleteCustomer && (
+                <DeleteCustomerModalBody
+                  customer={activeDeleteCustomer}
+                  isDeleting={isDeletingCustomer}
+                  error={deleteCustomerError}
+                  onConfirm={() => void confirmDeleteCustomer()}
+                  onClose={() => setActiveDeleteCustomer(null)}
                 />
               )}
             </Modal>

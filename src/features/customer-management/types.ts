@@ -12,11 +12,19 @@ export interface CustomerRecord {
   email: string;
   lastService: string;
   lastServicePrice?: number;
-  /** Add-ons for the most recent booking only; omit or empty when none. */
+  /** Add-ons for the last completed visit; omit when none. */
   lastBookingAddOns?: string[];
   lastBookingAddOnDetails?: CustomerBookingAddOn[];
-  lastBookingDate: string;
-  lastBookingDaysAgo: number;
+  /** Most recent completed visit (calendar date). */
+  lastVisitDate: string | null;
+  lastVisitDaysAgo: number | null;
+  /** Earliest upcoming confirmed appointment (calendar date). */
+  nextAppointmentDate: string | null;
+  nextAppointmentDaysUntil: number | null;
+  nextAppointmentService?: string;
+  nextAppointmentServicePrice?: number;
+  nextAppointmentAddOns?: string[];
+  nextAppointmentAddOnDetails?: CustomerBookingAddOn[];
   totalVisits: number;
   totalSpent: number;
   status: CustomerLifecycle;

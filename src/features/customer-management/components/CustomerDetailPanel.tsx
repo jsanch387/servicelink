@@ -7,11 +7,11 @@ import {
   formatCustomerPhone,
 } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
+import { formatNextInDays } from '@/features/customer-management/utils/formatNextInDays';
 import {
   ArrowLeftIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
-  PaperAirplaneIcon,
   PhoneIcon,
   PlusIcon,
   TrashIcon,
@@ -31,13 +31,16 @@ interface CustomerDetailPanelProps {
 export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   customer,
   onClose,
-  onSendLink,
+  onSendLink: _onSendLink,
   onDeleteCustomer,
   formatCurrency,
 }) => {
   const [emailCopied, setEmailCopied] = useState(false);
   const phoneHref = customerPhoneHref(customer.phone);
   const displayPhone = formatCustomerPhone(customer.phone);
+  const hasCompletedVisits = customer.totalVisits > 0;
+  const upcomingOnly =
+    !hasCompletedVisits && Boolean(customer.nextAppointmentDate);
 
   useEffect(() => {
     const scrollY = window.scrollY;
@@ -152,69 +155,137 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               Booking activity
             </h3>
             <div className="rounded-xl bg-[#111111] border border-white/[0.08] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-gray-500 font-medium">
-                  Last booking
-                </p>
-                <p className="text-xs text-gray-400">
-                  {formatLastBookedDate(customer.lastBookingDate)}
-                </p>
-              </div>
-
-              <div className="my-3 border-t border-dashed border-white/[0.12]" />
-
-              <div className="space-y-1.5">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm text-white font-medium pr-2">
-                    {customer.lastService}
-                  </p>
-                  <p className="text-sm text-gray-200 tabular-nums whitespace-nowrap">
-                    {typeof customer.lastServicePrice === 'number'
-                      ? formatCurrency(customer.lastServicePrice)
-                      : '—'}
-                  </p>
-                </div>
-
-                {customer.lastBookingAddOns?.map((addon, index) => (
-                  <div
-                    key={`${addon}-${index}`}
-                    className="flex items-center justify-between gap-3"
-                  >
-                    <p className="text-sm text-gray-300 flex items-center gap-1.5 min-w-0">
-                      <PlusIcon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-                      <span className="truncate">{addon}</span>
+              {customer.lastVisitDate ? (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-500 font-medium">
+                      Last visit
                     </p>
-                    <p className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
-                      {customer.lastBookingAddOnDetails?.[index]
-                        ? formatCurrency(
-                            customer.lastBookingAddOnDetails[index].price
-                          )
-                        : '—'}
+                    <p className="text-xs text-gray-400">
+                      {formatLastBookedDate(customer.lastVisitDate)}
                     </p>
                   </div>
-                ))}
-              </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {customer.lastVisitDaysAgo}{' '}
+                    {customer.lastVisitDaysAgo === 1 ? 'day' : 'days'} ago
+                  </p>
 
-              <div className="my-3 border-t border-dashed border-white/[0.12]" />
+                  <div className="my-3 border-t border-dashed border-white/[0.12]" />
 
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center justify-between gap-3 text-gray-400">
-                  <span>Last booked</span>
-                  <span>{customer.lastBookingDaysAgo} days ago</span>
-                </div>
-                <div className="flex items-center justify-between gap-3 text-gray-400">
-                  <span>Total visits</span>
-                  <span className="tabular-nums">{customer.totalVisits}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3 text-gray-200 pt-1">
-                  <span className="text-[11px] text-gray-400">
-                    Lifetime spent
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums">
-                    {formatCurrency(customer.totalSpent)}
-                  </span>
-                </div>
-              </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm text-white font-medium pr-2">
+                        {customer.lastService}
+                      </p>
+                      <p className="text-sm text-gray-200 tabular-nums whitespace-nowrap">
+                        {typeof customer.lastServicePrice === 'number'
+                          ? formatCurrency(customer.lastServicePrice)
+                          : '—'}
+                      </p>
+                    </div>
+
+                    {customer.lastBookingAddOns?.map((addon, index) => (
+                      <div
+                        key={`${addon}-${index}`}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <p className="text-sm text-gray-300 flex items-center gap-1.5 min-w-0">
+                          <PlusIcon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                          <span className="truncate">{addon}</span>
+                        </p>
+                        <p className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
+                          {customer.lastBookingAddOnDetails?.[index]
+                            ? formatCurrency(
+                                customer.lastBookingAddOnDetails[index].price
+                              )
+                            : '—'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : !customer.nextAppointmentDate ? (
+                <p className="text-sm text-gray-500">Nothing scheduled yet.</p>
+              ) : null}
+
+              {customer.nextAppointmentDate ? (
+                <>
+                  {customer.lastVisitDate ? (
+                    <div className="my-3 border-t border-dashed border-white/[0.12]" />
+                  ) : null}
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-500 font-medium">
+                      {upcomingOnly
+                        ? 'Upcoming appointment'
+                        : 'Next appointment'}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {formatLastBookedDate(customer.nextAppointmentDate)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatNextInDays(customer.nextAppointmentDaysUntil ?? 0)}
+                  </p>
+
+                  <div className="my-3 border-t border-dashed border-white/[0.12]" />
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm text-white font-medium pr-2">
+                        {customer.nextAppointmentService ?? '—'}
+                      </p>
+                      <p className="text-sm text-gray-200 tabular-nums whitespace-nowrap">
+                        {typeof customer.nextAppointmentServicePrice ===
+                        'number'
+                          ? formatCurrency(customer.nextAppointmentServicePrice)
+                          : '—'}
+                      </p>
+                    </div>
+
+                    {customer.nextAppointmentAddOns?.map((addon, index) => (
+                      <div
+                        key={`next-${addon}-${index}`}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <p className="text-sm text-gray-300 flex items-center gap-1.5 min-w-0">
+                          <PlusIcon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                          <span className="truncate">{addon}</span>
+                        </p>
+                        <p className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
+                          {customer.nextAppointmentAddOnDetails?.[index]
+                            ? formatCurrency(
+                                customer.nextAppointmentAddOnDetails[index]
+                                  .price
+                              )
+                            : '—'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+
+              {hasCompletedVisits ? (
+                <>
+                  <div className="my-3 border-t border-dashed border-white/[0.12]" />
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between gap-3 text-gray-400">
+                      <span>Past visits</span>
+                      <span className="tabular-nums">
+                        {customer.totalVisits}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-gray-200 pt-1">
+                      <span className="text-[11px] text-gray-400">
+                        Total spent
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {formatCurrency(customer.totalSpent)}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           </section>
 
@@ -233,18 +304,18 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               Actions
             </h3>
             <div className="space-y-2.5">
+              {/* Hidden for V2 rollout: restore send-booking CTA when flow is ready.
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={onSendLink}
-                icon={
-                  <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
-                }
+                onClick={_onSendLink}
+                icon={null}
                 fullWidth={true}
                 className="text-sm font-semibold"
               >
                 Send booking link
               </Button>
+              */}
               <Button
                 variant="danger"
                 size="sm"

@@ -92,11 +92,12 @@ Defined in **`src/features/customer-management/types.ts`**. Used by list, detail
 |-------|----------------|-------|
 | `id`, `name`, `phone`, `note` | DB | `name` ← `full_name`, `note` ← `customers.notes` (profile only). |
 | `email` | DB | Shown as **normalized** (`email_normalized` preferred) so the UI has a single canonical address. |
-| `lastService`, `lastBookingAddOns` | **`bookings`** | From the latest **confirmed/completed** row for this `customer_id` (add-on **names** from `addon_details`). |
-| `lastBookingDate`, `lastBookingDaysAgo` | **`bookings`** | From that same latest counting booking’s `scheduled_date`. |
-| `totalVisits`, `totalSpent` | **`bookings`** | Count and sum **service_price_cents + add-on `priceCents`** for **confirmed** + **completed** only. `totalSpent` is dollars in the JSON. |
-| `status` | **`bookings`** | `returning` if more than one counting visit, else `new`. |
-| Fallback (no counting bookings) | Customer row | e.g. legacy row with no linked bookings: visits/spent `0`, last service `—`, dates from `customers.created_at`. |
+| `lastService`, `lastBookingAddOns` | **`bookings`** | From the **latest `completed`** booking for this `customer_id` (add-on **names** from `addon_details`). |
+| `lastVisitDate`, `lastVisitDaysAgo` | **`bookings`** | **Last completed** visit calendar date; “days ago” from local midnight. |
+| `nextAppointmentDate`, `nextAppointmentDaysUntil`, `nextAppointment*` | **`bookings`** | **Earliest upcoming `confirmed`** booking whose slot is still in the future (local date + time). |
+| `totalVisits`, `totalSpent` | **`bookings`** | **`completed` only:** visit count and sum of **service_price_cents + add-on `priceCents`**. `totalSpent` is dollars in the JSON. |
+| `status` | **`bookings`** | `returning` if more than one **completed** visit, else `new`. |
+| Fallback (no linked bookings) | Customer row | visits/spent `0`, schedule fields `null`, last service `—`. |
 
 **Stats row** (`CustomerListStats`): Computed in the client from the loaded `CustomerRecord[]` (totals, returning count, revenue sum).
 

@@ -1,10 +1,16 @@
 /**
  * Builds per-customer metrics from V2 `bookings` rows (linked by `customer_id`).
- * Used when listing customers for the dashboard.
  *
- * Only **confirmed** and **completed** bookings count toward visits, revenue, and
- * “last booking” service / add-ons. Cancelled rows are ignored for aggregates.
+ * - **Visits** and **lifetime spent** use **`completed`** bookings only.
+ * - **Last visit** line items = latest **`completed`** booking by scheduled slot.
+ * - **Next appointment** = earliest **`confirmed`** booking whose slot is still in the future.
+ * - **`cancelled`** rows are ignored.
  */
+
+import {
+  bookingSlotSortKey,
+  isBookingSlotAfterNow,
+} from '@/features/customer-management/utils/bookingSlotLocal';
 
 export interface BookingRowForCustomerMetrics {
   customer_id: string;
@@ -20,16 +26,19 @@ export interface BookingRowForCustomerMetrics {
 export interface CustomerBookingMetrics {
   totalVisits: number;
   totalSpentCents: number;
-  lastScheduledDate: string;
-  lastServiceName: string;
-  lastServicePriceCents: number;
-  lastAddonNames: string[];
-  lastAddOnDetails: { name: string; priceCents: number }[];
   lifecycle: 'new' | 'returning';
-}
 
-function countsTowardVisitsAndRevenue(status: string): boolean {
-  return status === 'confirmed' || status === 'completed';
+  lastVisitScheduledDate: string | null;
+  lastVisitServiceName: string;
+  lastVisitServicePriceCents: number;
+  lastVisitAddonNames: string[];
+  lastVisitAddOnDetails: { name: string; priceCents: number }[];
+
+  nextAppointmentScheduledDate: string | null;
+  nextAppointmentServiceName: string | null;
+  nextAppointmentServicePriceCents: number | null;
+  nextAppointmentAddonNames: string[];
+  nextAppointmentAddOnDetails: { name: string; priceCents: number }[];
 }
 
 function addonTotalCents(details: unknown): number {
@@ -106,15 +115,21 @@ function addonDetailsFromDetails(
     );
 }
 
-/** Sort key: latest scheduled slot first (date + time). */
 function sortKey(b: BookingRowForCustomerMetrics): string {
-  const time = (b.start_time ?? '00:00:00').trim().slice(0, 8);
-  return `${b.scheduled_date}T${time.padEnd(8, '0')}`;
+  return bookingSlotSortKey(b.scheduled_date, b.start_time);
+}
+
+function pickLatest(rows: BookingRowForCustomerMetrics[]) {
+  return rows.reduce((a, b) => (sortKey(b) > sortKey(a) ? b : a));
+}
+
+function pickEarliest(rows: BookingRowForCustomerMetrics[]) {
+  return rows.reduce((a, b) => (sortKey(b) < sortKey(a) ? b : a));
 }
 
 /**
- * Map: `customer_id` → metrics. Only customers with at least one
- * confirmed/completed booking appear in the map.
+ * Map: `customer_id` → metrics. Customers appear if they have at least one
+ * non-cancelled booking linked by `customer_id`.
  */
 export function aggregateBookingsPerCustomer(
   rows: BookingRowForCustomerMetrics[]
@@ -125,6 +140,9 @@ export function aggregateBookingsPerCustomer(
     if (!row.customer_id?.trim()) {
       continue;
     }
+    if (row.status === 'cancelled') {
+      continue;
+    }
     const id = row.customer_id.trim();
     const list = byCustomer.get(id) ?? [];
     list.push(row);
@@ -132,33 +150,68 @@ export function aggregateBookingsPerCustomer(
   }
 
   const out = new Map<string, CustomerBookingMetrics>();
+  const now = new Date();
 
   for (const [customerId, list] of byCustomer) {
-    const counting = list.filter(b => countsTowardVisitsAndRevenue(b.status));
-    if (counting.length === 0) {
-      continue;
-    }
+    const completed = list.filter(b => b.status === 'completed');
+    const confirmed = list.filter(b => b.status === 'confirmed');
 
     let totalSpentCents = 0;
-    for (const b of counting) {
+    for (const b of completed) {
       const base = b.service_price_cents ?? 0;
       totalSpentCents += base + addonTotalCents(b.addon_details);
     }
+    const totalVisits = completed.length;
 
-    const latest = counting.reduce((a, b) => (sortKey(b) > sortKey(a) ? b : a));
+    let lastVisitScheduledDate: string | null = null;
+    let lastVisitServiceName = '—';
+    let lastVisitServicePriceCents = 0;
+    let lastVisitAddonNames: string[] = [];
+    let lastVisitAddOnDetails: { name: string; priceCents: number }[] = [];
 
-    const lastAddonNames = addonNamesFromDetails(latest.addon_details);
-    const lastAddOnDetails = addonDetailsFromDetails(latest.addon_details);
+    if (completed.length > 0) {
+      const latest = pickLatest(completed);
+      lastVisitScheduledDate = latest.scheduled_date;
+      lastVisitServiceName = latest.service_name?.trim() || '—';
+      lastVisitServicePriceCents = latest.service_price_cents ?? 0;
+      lastVisitAddonNames = addonNamesFromDetails(latest.addon_details);
+      lastVisitAddOnDetails = addonDetailsFromDetails(latest.addon_details);
+    }
+
+    const upcomingConfirmed = confirmed.filter(b =>
+      isBookingSlotAfterNow(b.scheduled_date, b.start_time, now)
+    );
+
+    let nextAppointmentScheduledDate: string | null = null;
+    let nextAppointmentServiceName: string | null = null;
+    let nextAppointmentServicePriceCents: number | null = null;
+    let nextAppointmentAddonNames: string[] = [];
+    let nextAppointmentAddOnDetails: { name: string; priceCents: number }[] =
+      [];
+
+    if (upcomingConfirmed.length > 0) {
+      const next = pickEarliest(upcomingConfirmed);
+      nextAppointmentScheduledDate = next.scheduled_date;
+      nextAppointmentServiceName = next.service_name?.trim() || null;
+      nextAppointmentServicePriceCents = next.service_price_cents ?? null;
+      nextAppointmentAddonNames = addonNamesFromDetails(next.addon_details);
+      nextAppointmentAddOnDetails = addonDetailsFromDetails(next.addon_details);
+    }
 
     out.set(customerId, {
-      totalVisits: counting.length,
+      totalVisits,
       totalSpentCents,
-      lastScheduledDate: latest.scheduled_date,
-      lastServiceName: latest.service_name?.trim() || '—',
-      lastServicePriceCents: latest.service_price_cents ?? 0,
-      lastAddonNames,
-      lastAddOnDetails,
-      lifecycle: counting.length > 1 ? 'returning' : 'new',
+      lifecycle: totalVisits > 1 ? 'returning' : 'new',
+      lastVisitScheduledDate,
+      lastVisitServiceName,
+      lastVisitServicePriceCents,
+      lastVisitAddonNames,
+      lastVisitAddOnDetails,
+      nextAppointmentScheduledDate,
+      nextAppointmentServiceName,
+      nextAppointmentServicePriceCents,
+      nextAppointmentAddonNames,
+      nextAppointmentAddOnDetails,
     });
   }
 
