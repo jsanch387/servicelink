@@ -50,6 +50,10 @@ export const ROUTES = {
   },
 } as const;
 
+export const API_ROUTES = {
+  CUSTOMERS: '/api/customers',
+} as const;
+
 export const PUBLIC_ROUTES = [
   ROUTES.HOME,
   ROUTES.FEATURES,

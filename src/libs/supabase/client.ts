@@ -367,6 +367,44 @@ export type Database = {
           updated_at?: string;
         };
       };
+      customers: {
+        Row: {
+          id: string;
+          business_id: string;
+          full_name: string;
+          phone: string | null;
+          email: string | null;
+          phone_normalized: string | null;
+          email_normalized: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          full_name: string;
+          phone?: string | null;
+          email?: string | null;
+          phone_normalized?: string | null;
+          email_normalized?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          full_name?: string;
+          phone?: string | null;
+          email?: string | null;
+          phone_normalized?: string | null;
+          email_normalized?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       notifications: {
         Row: {
           id: string;
