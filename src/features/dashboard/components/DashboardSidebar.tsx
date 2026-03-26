@@ -50,6 +50,7 @@ const allNavigationItems = [
     href: ROUTES.DASHBOARD.CUSTOMERS,
     icon: UserGroupIcon,
     requiresOnboarding: true,
+    isNew: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [
@@ -61,12 +62,6 @@ const allNavigationItems = [
         },
       ]
     : []),
-  {
-    name: 'Settings',
-    href: ROUTES.DASHBOARD.SETTINGS,
-    icon: CogIcon,
-    requiresOnboarding: true,
-  },
 ];
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -81,6 +76,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const navigation = allNavigationItems.filter(
     item => !item.requiresOnboarding || isOnboardingCompleted
   );
+  const showSettings = isOnboardingCompleted;
 
   const handleLogout = async () => {
     try {
@@ -145,13 +141,38 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     }`}
                   />
                   <span className="flex-1">{item.name}</span>
+                  {item.isNew ? (
+                    <span className="ml-2 rounded-full border border-emerald-400/35 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                      New
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Logout - extra bottom padding keeps it above mobile browser UI */}
-          <div className="mt-auto p-4 flex-shrink-0">
+          {/* Secondary actions + logout */}
+          <div className="mt-auto p-4 flex-shrink-0 space-y-2">
+            {showSettings ? (
+              <Link
+                href={ROUTES.DASHBOARD.SETTINGS}
+                onClick={() => setOpen(false)}
+                className={`group flex w-full items-center px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
+                  pathname === ROUTES.DASHBOARD.SETTINGS
+                    ? 'bg-neutral-800 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-neutral-700'
+                }`}
+              >
+                <CogIcon
+                  className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
+                    pathname === ROUTES.DASHBOARD.SETTINGS
+                      ? 'text-gray-300'
+                      : 'text-gray-400 group-hover:text-white'
+                  }`}
+                />
+                Settings
+              </Link>
+            ) : null}
             <button
               type="button"
               onClick={handleLogout}
