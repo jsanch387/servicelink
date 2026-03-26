@@ -38,8 +38,12 @@ export const CustomerManagementPage: React.FC = () => {
     setActiveDeleteCustomer,
     isDeletingCustomer,
     deleteCustomerError,
+    isSavingNote,
+    saveNoteError,
+    setSaveNoteError,
     openDeleteCustomerModal,
     confirmDeleteCustomer,
+    saveCustomerNote,
   } = useCustomerManagement();
 
   return (
@@ -86,7 +90,6 @@ export const CustomerManagementPage: React.FC = () => {
                 <CustomerDesktopTable
                   customers={filteredCustomers}
                   onRowClick={setSelectedCustomer}
-                  onSendLink={setActiveSendLinkCustomer}
                 />
 
                 <CustomerMobileList
@@ -114,6 +117,10 @@ export const CustomerManagementPage: React.FC = () => {
                 onDeleteCustomer={() =>
                   openDeleteCustomerModal(selectedCustomer)
                 }
+                onSaveNote={note => saveCustomerNote(selectedCustomer.id, note)}
+                isSavingNote={isSavingNote}
+                saveNoteError={saveNoteError}
+                onDismissSaveNoteError={() => setSaveNoteError(null)}
                 formatCurrency={formatCustomerCurrency}
               />
             )}

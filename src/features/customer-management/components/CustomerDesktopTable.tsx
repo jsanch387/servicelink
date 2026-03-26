@@ -2,6 +2,7 @@ import type { CustomerRecord } from '@/features/customer-management/types';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
+import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 
@@ -10,18 +11,16 @@ type CustomerRowAction = (_customer: CustomerRecord) => void;
 interface CustomerDesktopTableProps {
   customers: CustomerRecord[];
   onRowClick: CustomerRowAction;
-  onSendLink: CustomerRowAction;
 }
 
 export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
   customers,
   onRowClick,
-  onSendLink: _onSendLink,
 }) => {
   const noPastVisits = (c: (typeof customers)[number]) => c.totalVisits === 0;
 
   return (
-    <div className="hidden md:block overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
+    <div className="hidden md:block overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02]">
       <table className="min-w-full">
         <thead>
           <tr className="border-b border-white/10">
@@ -40,9 +39,7 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
               Tag
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
-              Action
-            </th>
+            <th className="w-10 px-3 py-3" aria-hidden />
           </tr>
         </thead>
         <tbody>
@@ -107,20 +104,8 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
               <td className="px-4 py-3 align-middle">
                 <CustomerStatusBadge status={customer.status} />
               </td>
-              <td
-                className="px-4 py-3 align-middle"
-                onClick={e => e.stopPropagation()}
-              >
-                {/* Hidden for V2 rollout: restore send-link CTA when flow is ready.
-                <button
-                  type="button"
-                  onClick={() => _onSendLink(customer)}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white transition-colors"
-                >
-                  <PaperAirplaneIcon className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Send link</span>
-                </button>
-                */}
+              <td className="px-3 py-3 align-middle text-right">
+                <EllipsisHorizontalIcon className="h-4 w-4 text-gray-500" />
               </td>
             </tr>
           ))}

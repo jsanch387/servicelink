@@ -12,12 +12,14 @@ import {
   ArrowLeftIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
-  PhoneIcon,
+  PencilSquareIcon,
   TrashIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
+
+const CUSTOMER_NOTE_MAX_LENGTH = 280;
 
 function addOnsSummaryLine(count: number): string | null {
   if (count < 1) return null;
@@ -29,6 +31,12 @@ interface CustomerDetailPanelProps {
   onClose: () => void;
   onSendLink: () => void;
   onDeleteCustomer: () => void;
+  onSaveNote: (
+    _note: string
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
+  isSavingNote: boolean;
+  saveNoteError: string | null;
+  onDismissSaveNoteError: () => void;
   formatCurrency: (_amount: number) => string;
 }
 
@@ -37,9 +45,16 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   onClose,
   onSendLink: _onSendLink,
   onDeleteCustomer,
+  onSaveNote,
+  isSavingNote,
+  saveNoteError,
+  onDismissSaveNoteError,
   formatCurrency,
 }) => {
   const [emailCopied, setEmailCopied] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(customer.note);
+  const [noteSaved, setNoteSaved] = useState(false);
+  const [isEditingNote, setIsEditingNote] = useState(false);
   const phoneHref = customerPhoneHref(customer.phone);
   const displayPhone = formatCustomerPhone(customer.phone);
   const hasCompletedVisits = customer.totalVisits > 0;
@@ -74,6 +89,12 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    setNoteDraft(customer.note);
+    setNoteSaved(false);
+    setIsEditingNote(false);
+  }, [customer.id, customer.note]);
+
   const handleCopyEmail = async () => {
     try {
       await navigator.clipboard.writeText(customer.email);
@@ -83,6 +104,16 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
       // Ignore copy errors in UI flow
     }
   };
+
+  const handleSaveNote = async () => {
+    const result = await onSaveNote(noteDraft);
+    if (!result.ok) return;
+    setNoteSaved(true);
+    setIsEditingNote(false);
+    window.setTimeout(() => setNoteSaved(false), 1500);
+  };
+
+  const noteChanged = noteDraft.trim() !== customer.note.trim();
 
   return (
     <>
@@ -127,7 +158,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                     <button
                       type="button"
                       onClick={handleCopyEmail}
-                      className="inline-flex items-center justify-center rounded-md border border-white/10 p-1.5 text-gray-300 hover:text-white hover:border-white/25 transition-colors"
+                      className="inline-flex items-center justify-center p-0.5 text-gray-300 hover:text-white transition-colors md:cursor-pointer"
                       aria-label="Copy customer email"
                       title="Copy email"
                     >
@@ -142,16 +173,12 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   {phoneHref ? (
                     <a
                       href={phoneHref}
-                      className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+                      className="inline-flex items-center text-xs text-gray-300 underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white/80 transition-colors"
                     >
-                      <PhoneIcon className="h-3.5 w-3.5" />
                       {displayPhone}
                     </a>
                   ) : (
-                    <p className="inline-flex items-center gap-1.5 text-xs text-gray-500">
-                      <PhoneIcon className="h-3.5 w-3.5" />
-                      {displayPhone}
-                    </p>
+                    <p className="text-xs text-gray-500">{displayPhone}</p>
                   )}
                 </div>
               </div>
@@ -262,12 +289,88 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
           </section>
 
           <section>
-            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3 flex items-center gap-2">
-              <UserCircleIcon className="h-4 w-4" />
-              Notes
-            </h3>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-              <p className="text-sm text-gray-300">{customer.note}</p>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-xs font-semibold text-gray-500 tracking-wider flex items-center gap-2">
+                <UserCircleIcon className="h-4 w-4" />
+                Notes
+              </h3>
+              {!isEditingNote ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNoteDraft(customer.note);
+                    setIsEditingNote(true);
+                    if (saveNoteError) onDismissSaveNoteError();
+                    if (noteSaved) setNoteSaved(false);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white transition-colors md:cursor-pointer"
+                  aria-label="Edit customer notes"
+                  title="Edit notes"
+                >
+                  <PencilSquareIcon className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              ) : null}
+            </div>
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+              {isEditingNote ? (
+                <>
+                  <textarea
+                    value={noteDraft}
+                    onChange={e => {
+                      setNoteDraft(e.target.value);
+                      if (noteSaved) setNoteSaved(false);
+                      if (saveNoteError) onDismissSaveNoteError();
+                    }}
+                    maxLength={CUSTOMER_NOTE_MAX_LENGTH}
+                    placeholder="Add notes about this customer..."
+                    className="w-full min-h-[120px] bg-transparent px-0 py-1.5 text-sm leading-6 text-gray-200 placeholder:text-gray-500 border-0 border-b border-white/20 focus:outline-none focus:border-white/75 transition-colors resize-y"
+                  />
+                  <div className="mt-3">
+                    {saveNoteError ? (
+                      <p className="mb-2 text-xs text-red-300">
+                        {saveNoteError}
+                      </p>
+                    ) : null}
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-gray-500 tabular-nums">
+                        {noteDraft.length}/{CUSTOMER_NOTE_MAX_LENGTH}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => {
+                            setNoteDraft(customer.note);
+                            setIsEditingNote(false);
+                            onDismissSaveNoteError();
+                          }}
+                          disabled={isSavingNote}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="xs"
+                          onClick={() => void handleSaveNote()}
+                          loading={isSavingNote}
+                          disabled={!noteChanged || isSavingNote}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm leading-6 text-gray-300 whitespace-pre-wrap">
+                  {customer.note.trim() || 'No notes yet. Tap Edit to add one.'}
+                </p>
+              )}
+
+              {!isEditingNote && noteSaved ? (
+                <p className="text-xs text-emerald-300 mt-3">Saved</p>
+              ) : null}
             </div>
           </section>
 

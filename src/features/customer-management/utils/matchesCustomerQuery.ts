@@ -4,15 +4,6 @@ export function matchesCustomerQuery(
   customer: CustomerRecord,
   query: string
 ): boolean {
-  const searchable = [
-    customer.name,
-    customer.email,
-    customer.phone,
-    customer.lastService,
-    ...(customer.lastBookingAddOns ?? []),
-    customer.note,
-  ]
-    .join(' ')
-    .toLowerCase();
-  return searchable.includes(query.toLowerCase().trim());
+  const normalizedQuery = query.toLowerCase().trim();
+  return customer.name.toLowerCase().includes(normalizedQuery);
 }

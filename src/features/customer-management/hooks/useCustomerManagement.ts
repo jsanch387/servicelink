@@ -2,6 +2,7 @@
 
 import { deleteCustomerById } from '@/features/customer-management/api/deleteCustomer';
 import { fetchCustomersList } from '@/features/customer-management/api/fetchCustomers';
+import { updateCustomerNote } from '@/features/customer-management/api/updateCustomerNote';
 import type {
   CustomerLifecycle,
   CustomerListStats,
@@ -36,6 +37,8 @@ export function useCustomerManagement() {
   const [deleteCustomerError, setDeleteCustomerError] = useState<string | null>(
     null
   );
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [saveNoteError, setSaveNoteError] = useState<string | null>(null);
 
   const loadCustomers = useCallback(async () => {
     setLoadStatus('loading');
@@ -106,6 +109,44 @@ export function useCustomerManagement() {
     setIsDeletingCustomer(false);
   }, [activeDeleteCustomer, isDeletingCustomer, loadCustomers]);
 
+  const saveCustomerNote = useCallback(
+    async (customerId: string, note: string) => {
+      if (isSavingNote) {
+        return {
+          ok: false,
+          error: 'A note save is already in progress.',
+        } as const;
+      }
+
+      setIsSavingNote(true);
+      setSaveNoteError(null);
+
+      const result = await updateCustomerNote(customerId, note);
+
+      if (!result.ok) {
+        setSaveNoteError(result.error);
+        setIsSavingNote(false);
+        return result;
+      }
+
+      const nextNote = result.note;
+      setCustomers(prev =>
+        prev.map(customer =>
+          customer.id === customerId
+            ? { ...customer, note: nextNote }
+            : customer
+        )
+      );
+      setSelectedCustomer(prev =>
+        prev && prev.id === customerId ? { ...prev, note: nextNote } : prev
+      );
+      setSaveNoteError(null);
+      setIsSavingNote(false);
+      return { ok: true as const };
+    },
+    [isSavingNote]
+  );
+
   return {
     loadStatus,
     loadError,
@@ -127,7 +168,11 @@ export function useCustomerManagement() {
     setActiveDeleteCustomer,
     isDeletingCustomer,
     deleteCustomerError,
+    isSavingNote,
+    saveNoteError,
+    setSaveNoteError,
     openDeleteCustomerModal,
     confirmDeleteCustomer,
+    saveCustomerNote,
   };
 }

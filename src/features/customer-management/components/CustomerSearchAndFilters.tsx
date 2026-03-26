@@ -22,7 +22,7 @@ export const CustomerSearchAndFilters: React.FC<
         <Input
           value={query}
           onChange={onQueryChange}
-          placeholder="Search by name, service, phone, email..."
+          placeholder="Search by customer name..."
           className="w-full"
           leftIcon={<MagnifyingGlassIcon className="h-4 w-4" />}
           inputMode="search"
