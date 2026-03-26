@@ -61,7 +61,7 @@ export const Button: React.FC<ButtonProps> = ({
     inverse:
       'bg-white text-neutral-900 hover:bg-gray-100 shadow-sm focus:ring-neutral-400',
     danger:
-      'bg-red-600 hover:bg-red-700 text-white shadow-sm focus:ring-red-500',
+      'border border-red-400/30 bg-red-500/12 text-red-200 hover:bg-red-500/18 hover:border-red-400/45 focus:ring-red-400/40 backdrop-blur-sm',
     success:
       'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:ring-emerald-500',
     warning:

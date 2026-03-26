@@ -127,6 +127,7 @@ All customer fields except name/email can be nullable if we later make address o
 | customer_state | text | yes | – |
 | customer_zip | text | yes | – |
 | customer_notes | text | yes | – |
+| customer_id | uuid | yes | FK → `customers(id)` ON DELETE SET NULL; set when booking is created (deduped per business). See `customer-management/docs/migrations/001_bookings_customer_id.sql`. |
 | status | text | no | 'confirmed' |
 | created_at | timestamptz | no | now() |
 | updated_at | timestamptz | no | now() |
@@ -153,7 +154,7 @@ All customer fields except name/email can be nullable if we later make address o
 | Action | API / layer | Who |
 |--------|-------------|-----|
 | List blocked slots (public calendar) | GET `/api/public/bookings/blocked/[slug]` | Public; admin client. |
-| Create booking (customer submit) | POST `/api/public/bookings` | Public; resolves business by slug, then `createBooking` (admin). |
+| Create booking (customer or owner `?for=owner`) | POST `/api/public/bookings` | Public; resolves business by slug, then `createBooking` (admin), which **upserts `customers`** and sets `bookings.customer_id`. |
 | List bookings (dashboard) | GET `/api/availability/bookings` | Authenticated owner; RLS. |
 | Update status (complete/cancel) | PATCH `/api/availability/bookings/[id]` | Authenticated owner; RLS. |
 

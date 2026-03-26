@@ -44,9 +44,14 @@ export const ROUTES = {
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
     AVAILABILITY: '/dashboard/availability',
+    CUSTOMERS: '/dashboard/customers',
     SETTINGS: '/dashboard/settings',
     UPGRADE: '/dashboard/upgrade',
   },
+} as const;
+
+export const API_ROUTES = {
+  CUSTOMERS: '/api/customers',
 } as const;
 
 export const PUBLIC_ROUTES = [
