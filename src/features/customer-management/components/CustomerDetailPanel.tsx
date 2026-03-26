@@ -7,18 +7,22 @@ import {
   formatCustomerPhone,
 } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
-import { formatNextInDays } from '@/features/customer-management/utils/formatNextInDays';
+import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
 import {
   ArrowLeftIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
   PhoneIcon,
-  PlusIcon,
   TrashIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
+
+function addOnsSummaryLine(count: number): string | null {
+  if (count < 1) return null;
+  return count === 1 ? '1 add-on' : `${count} add-ons`;
+}
 
 interface CustomerDetailPanelProps {
   customer: CustomerRecord;
@@ -41,6 +45,12 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   const hasCompletedVisits = customer.totalVisits > 0;
   const upcomingOnly =
     !hasCompletedVisits && Boolean(customer.nextAppointmentDate);
+  const lastVisitAddOnSummary = addOnsSummaryLine(
+    customer.lastBookingAddOns?.length ?? 0
+  );
+  const nextApptAddOnSummary = addOnsSummaryLine(
+    customer.nextAppointmentAddOns?.length ?? 0
+  );
 
   useEffect(() => {
     const scrollY = window.scrollY;
@@ -155,7 +165,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               Booking activity
             </h3>
             <div className="rounded-xl bg-[#111111] border border-white/[0.08] p-4">
-              {customer.lastVisitDate ? (
+              {customer.lastVisitDate && !customer.nextAppointmentDate ? (
                 <>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-gray-500 font-medium">
@@ -172,47 +182,26 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
 
                   <div className="my-3 border-t border-dashed border-white/[0.12]" />
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm text-white font-medium pr-2">
-                        {customer.lastService}
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium mb-1">
+                      Service
+                    </p>
+                    <p className="text-sm text-white font-medium">
+                      {customer.lastService}
+                    </p>
+                    {lastVisitAddOnSummary ? (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {lastVisitAddOnSummary}
                       </p>
-                      <p className="text-sm text-gray-200 tabular-nums whitespace-nowrap">
-                        {typeof customer.lastServicePrice === 'number'
-                          ? formatCurrency(customer.lastServicePrice)
-                          : '—'}
-                      </p>
-                    </div>
-
-                    {customer.lastBookingAddOns?.map((addon, index) => (
-                      <div
-                        key={`${addon}-${index}`}
-                        className="flex items-center justify-between gap-3"
-                      >
-                        <p className="text-sm text-gray-300 flex items-center gap-1.5 min-w-0">
-                          <PlusIcon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-                          <span className="truncate">{addon}</span>
-                        </p>
-                        <p className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
-                          {customer.lastBookingAddOnDetails?.[index]
-                            ? formatCurrency(
-                                customer.lastBookingAddOnDetails[index].price
-                              )
-                            : '—'}
-                        </p>
-                      </div>
-                    ))}
+                    ) : null}
                   </div>
                 </>
-              ) : !customer.nextAppointmentDate ? (
+              ) : !customer.nextAppointmentDate && !customer.lastVisitDate ? (
                 <p className="text-sm text-gray-500">Nothing scheduled yet.</p>
               ) : null}
 
               {customer.nextAppointmentDate ? (
                 <>
-                  {customer.lastVisitDate ? (
-                    <div className="my-3 border-t border-dashed border-white/[0.12]" />
-                  ) : null}
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-gray-500 font-medium">
                       {upcomingOnly
@@ -224,43 +213,26 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {formatNextInDays(customer.nextAppointmentDaysUntil ?? 0)}
+                    {formatNextAppointmentRelativeDay(
+                      customer.nextAppointmentDate,
+                      customer.nextAppointmentDaysUntil
+                    )}
                   </p>
 
                   <div className="my-3 border-t border-dashed border-white/[0.12]" />
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm text-white font-medium pr-2">
-                        {customer.nextAppointmentService ?? '—'}
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium mb-1">
+                      Service
+                    </p>
+                    <p className="text-sm text-white font-medium">
+                      {customer.nextAppointmentService ?? '—'}
+                    </p>
+                    {nextApptAddOnSummary ? (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {nextApptAddOnSummary}
                       </p>
-                      <p className="text-sm text-gray-200 tabular-nums whitespace-nowrap">
-                        {typeof customer.nextAppointmentServicePrice ===
-                        'number'
-                          ? formatCurrency(customer.nextAppointmentServicePrice)
-                          : '—'}
-                      </p>
-                    </div>
-
-                    {customer.nextAppointmentAddOns?.map((addon, index) => (
-                      <div
-                        key={`next-${addon}-${index}`}
-                        className="flex items-center justify-between gap-3"
-                      >
-                        <p className="text-sm text-gray-300 flex items-center gap-1.5 min-w-0">
-                          <PlusIcon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
-                          <span className="truncate">{addon}</span>
-                        </p>
-                        <p className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
-                          {customer.nextAppointmentAddOnDetails?.[index]
-                            ? formatCurrency(
-                                customer.nextAppointmentAddOnDetails[index]
-                                  .price
-                              )
-                            : '—'}
-                        </p>
-                      </div>
-                    ))}
+                    ) : null}
                   </div>
                 </>
               ) : null}

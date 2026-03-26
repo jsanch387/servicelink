@@ -2,7 +2,7 @@ import { GlassCard } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
-import { formatNextInDays } from '@/features/customer-management/utils/formatNextInDays';
+import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
 import { mobileListStatusStyle } from '@/features/customer-management/utils/mobileListStatusStyle';
 import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import React from 'react';
@@ -61,7 +61,22 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
         </div>
 
         <div className="mt-6 space-y-2 text-xs">
-          {customer.lastVisitDate ? (
+          {customer.nextAppointmentDate ? (
+            <div className="flex items-start justify-between gap-3">
+              <span className="shrink-0 text-gray-500">Next appointment</span>
+              <div className="min-w-0 text-right">
+                <p className="font-medium text-gray-200">
+                  {formatLastBookedDate(customer.nextAppointmentDate)}
+                </p>
+                <p className="tabular-nums text-gray-500 mt-0.5">
+                  {formatNextAppointmentRelativeDay(
+                    customer.nextAppointmentDate,
+                    customer.nextAppointmentDaysUntil
+                  )}
+                </p>
+              </div>
+            </div>
+          ) : customer.lastVisitDate ? (
             <div className="flex items-start justify-between gap-3">
               <span className="shrink-0 text-gray-500">Last visit</span>
               <div className="min-w-0 text-right">
@@ -73,23 +88,9 @@ export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
                 </p>
               </div>
             </div>
-          ) : null}
-          {customer.nextAppointmentDate ? (
-            <div className="flex items-start justify-between gap-3">
-              <span className="shrink-0 text-gray-500">Next appointment</span>
-              <div className="min-w-0 text-right">
-                <p className="font-medium text-gray-200">
-                  {formatLastBookedDate(customer.nextAppointmentDate)}
-                </p>
-                <p className="tabular-nums text-gray-500 mt-0.5">
-                  {formatNextInDays(customer.nextAppointmentDaysUntil ?? 0)}
-                </p>
-              </div>
-            </div>
-          ) : null}
-          {!customer.lastVisitDate && !customer.nextAppointmentDate ? (
+          ) : (
             <p className="text-gray-500">No schedule yet</p>
-          ) : null}
+          )}
         </div>
       </button>
 

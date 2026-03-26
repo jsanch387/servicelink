@@ -1,7 +1,7 @@
 import type { CustomerRecord } from '@/features/customer-management/types';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
-import { formatNextInDays } from '@/features/customer-management/utils/formatNextInDays';
+import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
 import React from 'react';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 
@@ -58,7 +58,20 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
                 </p>
               </td>
               <td className="px-4 py-3 align-middle min-w-[12rem]">
-                {customer.lastVisitDate ? (
+                {customer.nextAppointmentDate ? (
+                  <div>
+                    <p className="text-sm text-gray-200">
+                      Next appointment{' '}
+                      {formatLastBookedDate(customer.nextAppointmentDate)}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {formatNextAppointmentRelativeDay(
+                        customer.nextAppointmentDate,
+                        customer.nextAppointmentDaysUntil
+                      )}
+                    </p>
+                  </div>
+                ) : customer.lastVisitDate ? (
                   <div>
                     <p className="text-sm text-gray-200">
                       Last visit {formatLastBookedDate(customer.lastVisitDate)}
@@ -68,27 +81,9 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
                       {customer.lastVisitDaysAgo === 1 ? 'day' : 'days'} ago
                     </p>
                   </div>
-                ) : null}
-                {customer.nextAppointmentDate ? (
-                  <div
-                    className={
-                      customer.lastVisitDate
-                        ? 'mt-2 pt-2 border-t border-white/10'
-                        : ''
-                    }
-                  >
-                    <p className="text-sm text-gray-200">
-                      Next appointment{' '}
-                      {formatLastBookedDate(customer.nextAppointmentDate)}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {formatNextInDays(customer.nextAppointmentDaysUntil ?? 0)}
-                    </p>
-                  </div>
-                ) : null}
-                {!customer.lastVisitDate && !customer.nextAppointmentDate ? (
+                ) : (
                   <p className="text-sm text-gray-500">—</p>
-                ) : null}
+                )}
               </td>
               <td className="px-4 py-3 text-sm align-middle tabular-nums">
                 {noPastVisits(customer) ? (
