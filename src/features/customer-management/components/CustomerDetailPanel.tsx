@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, Modal } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
 import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import {
@@ -13,12 +13,14 @@ import {
   ArrowLeftIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
+  LockClosedIcon,
   PaperAirplaneIcon,
   PencilSquareIcon,
   TrashIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
+import { CheckInProTeaserModalBody } from './CheckInProTeaserModalBody';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 
 const CUSTOMER_NOTE_MAX_LENGTH = 280;
@@ -31,6 +33,8 @@ function addOnsSummaryLine(count: number): string | null {
 
 interface CustomerDetailPanelProps {
   customer: CustomerRecord;
+  /** Pro: Check-in opens SMS with prefilled message. Free: opens upgrade teaser. */
+  hasProCheckInAccess: boolean;
   onClose: () => void;
   onMessageCustomer: (_mode: 'message' | 'win_back') => void;
   onDeleteCustomer: () => void;
@@ -45,6 +49,7 @@ interface CustomerDetailPanelProps {
 
 export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   customer,
+  hasProCheckInAccess,
   onClose,
   onMessageCustomer,
   onDeleteCustomer,
@@ -55,6 +60,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   formatCurrency,
 }) => {
   const [emailCopied, setEmailCopied] = useState(false);
+  const [checkInTeaserOpen, setCheckInTeaserOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(customer.note);
   const [noteSaved, setNoteSaved] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -97,6 +103,10 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
     setNoteSaved(false);
     setIsEditingNote(false);
   }, [customer.id, customer.note]);
+
+  useEffect(() => {
+    setCheckInTeaserOpen(false);
+  }, [customer.id]);
 
   const handleCopyEmail = async () => {
     try {
@@ -400,12 +410,30 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => onMessageCustomer('win_back')}
+                    onClick={() =>
+                      hasProCheckInAccess
+                        ? onMessageCustomer('win_back')
+                        : setCheckInTeaserOpen(true)
+                    }
                     icon={
-                      <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
+                      hasProCheckInAccess ? (
+                        <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <LockClosedIcon className="h-4 w-4 text-gray-400" />
+                      )
                     }
                     fullWidth={true}
-                    className="text-sm font-semibold"
+                    className={`text-sm font-semibold ${
+                      !hasProCheckInAccess
+                        ? 'border-white/15 bg-white/[0.04] hover:bg-white/[0.07]'
+                        : ''
+                    }`}
+                    aria-label={
+                      hasProCheckInAccess
+                        ? `${actionLabel} customer via SMS`
+                        : `${actionLabel}: Pro feature — learn more`
+                    }
+                    title={hasProCheckInAccess ? undefined : 'Pro feature'}
                   >
                     {actionLabel}
                   </Button>
@@ -427,6 +455,17 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
           </section>
         </div>
       </div>
+
+      <Modal
+        isOpen={checkInTeaserOpen}
+        onClose={() => setCheckInTeaserOpen(false)}
+        title="Check-in"
+        maxWidth="sm"
+      >
+        <CheckInProTeaserModalBody
+          onClose={() => setCheckInTeaserOpen(false)}
+        />
+      </Modal>
     </>
   );
 };

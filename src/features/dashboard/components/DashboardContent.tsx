@@ -15,22 +15,15 @@ import {
   UpcomingBookingsCard,
 } from '@/features/dashboard';
 import { ROUTES } from '@/constants/routes';
-import { Button, GlassCard, Switch, WarningCallout } from '@/components/shared';
+import {
+  Button,
+  CrownIcon,
+  GlassCard,
+  Switch,
+  WarningCallout,
+} from '@/components/shared';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import React from 'react';
-
-/** Small crown icon for Pro CTAs (Heroicons has no crown). */
-const CrownIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden
-  >
-    <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z" />
-  </svg>
-);
 
 interface DashboardData {
   businessProfile: {

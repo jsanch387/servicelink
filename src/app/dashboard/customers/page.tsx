@@ -1,5 +1,6 @@
 import { ROUTES } from '@/constants/routes';
 import { CustomerManagementPage } from '@/features/customer-management';
+import { hasProCheckInAccessFromTier } from '@/features/customer-management/utils/proCheckInAccess';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
@@ -23,5 +24,16 @@ export default async function CustomersPage() {
     redirect(ROUTES.DASHBOARD.MAIN);
   }
 
-  return <CustomerManagementPage />;
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const tier = (profileRow as { subscription_tier?: string | null } | null)
+    ?.subscription_tier;
+  const hasProCheckInAccess = hasProCheckInAccessFromTier(tier);
+
+  return (
+    <CustomerManagementPage hasProCheckInAccess={hasProCheckInAccess} />
+  );
 }

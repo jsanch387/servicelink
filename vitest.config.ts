@@ -3,8 +3,12 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: 'node',
-    include: ['src/features/**/testing/**/*.test.ts'],
+    /** jsdom supports RTL tests; pure logic tests run fine here too. */
+    environment: 'jsdom',
+    include: [
+      'src/features/**/testing/**/*.test.ts',
+      'src/features/**/testing/**/*.test.tsx',
+    ],
   },
   resolve: {
     alias: {

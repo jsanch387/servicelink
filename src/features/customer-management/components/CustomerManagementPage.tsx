@@ -17,7 +17,13 @@ import { CustomerStatsRow } from './CustomerStatsRow';
 import { CustomersInitialEmptyState } from './CustomersInitialEmptyState';
 import { DeleteCustomerModalBody } from './DeleteCustomerModalBody';
 
-export const CustomerManagementPage: React.FC = () => {
+interface CustomerManagementPageProps {
+  hasProCheckInAccess: boolean;
+}
+
+export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
+  hasProCheckInAccess,
+}) => {
   const {
     loadStatus,
     loadError,
@@ -129,6 +135,7 @@ export const CustomerManagementPage: React.FC = () => {
             {selectedCustomer && (
               <CustomerDetailPanel
                 customer={selectedCustomer}
+                hasProCheckInAccess={hasProCheckInAccess}
                 onClose={() => setSelectedCustomer(null)}
                 onMessageCustomer={mode => {
                   openCustomerSms(selectedCustomer, mode);
