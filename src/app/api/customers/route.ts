@@ -8,6 +8,13 @@ import { resolveCurrentBusinessId } from '@/features/customer-management/server/
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
 
+function withHttps(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
@@ -21,6 +28,37 @@ export async function GET() {
     }
 
     const businessId = resolved.businessId;
+    const {
+      data: businessProfile,
+      error: businessProfileError,
+    }: {
+      data: {
+        business_name: string | null;
+        business_slug: string | null;
+        business_link: string | null;
+      } | null;
+      error: unknown;
+    } = await supabase
+      .from('business_profiles')
+      .select('business_name, business_slug, business_link')
+      .eq('id', businessId)
+      .single();
+
+    if (businessProfileError) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to load business profile' },
+        { status: 500 }
+      );
+    }
+
+    const baseUrl = (
+      process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
+    ).replace(/\/$/, '');
+    const businessBookingLink = businessProfile?.business_link
+      ? withHttps(businessProfile.business_link)
+      : businessProfile?.business_slug
+        ? `${baseUrl}/${encodeURIComponent(businessProfile.business_slug)}`
+        : `${baseUrl}/businessname`;
 
     const { data: rows, error } = await supabase
       .from('customers')
@@ -66,7 +104,12 @@ export async function GET() {
       mapCustomerRowToRecord(row, metricsByCustomer.get(row.id) ?? null)
     );
 
-    return NextResponse.json({ success: true, customers });
+    return NextResponse.json({
+      success: true,
+      customers,
+      businessName: businessProfile?.business_name ?? null,
+      businessBookingLink,
+    });
   } catch (e) {
     console.error('customers GET:', e);
     return NextResponse.json(

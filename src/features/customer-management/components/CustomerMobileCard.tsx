@@ -1,5 +1,6 @@
 import { GlassCard } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
+import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
@@ -12,15 +13,15 @@ type CustomerCardAction = (_customer: CustomerRecord) => void;
 interface CustomerMobileCardProps {
   customer: CustomerRecord;
   onOpenDetail: CustomerCardAction;
-  onSendLink: CustomerCardAction;
 }
 
 export const CustomerMobileCard: React.FC<CustomerMobileCardProps> = ({
   customer,
   onOpenDetail,
-  onSendLink: _onSendLink,
 }) => {
-  const statusUi = mobileListStatusStyle(customer.status);
+  const statusUi = isCustomerNeedsAttention(customer)
+    ? { label: 'Due', className: 'text-amber-300 font-medium' }
+    : mobileListStatusStyle(customer.status);
   const noPastVisits = customer.totalVisits === 0;
 
   return (

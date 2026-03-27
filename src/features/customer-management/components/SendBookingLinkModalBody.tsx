@@ -4,6 +4,7 @@ import {
   customerPhoneHref,
   formatCustomerPhone,
 } from '@/features/customer-management/utils/customerFormatting';
+import { buildSmsHref } from '@/features/customer-management/utils/smsLink';
 import {
   ClipboardDocumentIcon,
   PaperAirplaneIcon,
@@ -22,6 +23,13 @@ export const SendBookingLinkModalBody: React.FC<
 > = ({ customer, templateMessage, onTemplateMessageChange, onClose }) => {
   const phoneHref = customerPhoneHref(customer.phone);
   const displayPhone = formatCustomerPhone(customer.phone);
+  const smsHref = buildSmsHref(customer.phone, templateMessage);
+
+  const handleSendSms = () => {
+    if (!smsHref) return;
+    window.location.href = smsHref;
+    onClose();
+  };
 
   return (
     <div className="space-y-5">
@@ -66,14 +74,15 @@ export const SendBookingLinkModalBody: React.FC<
       <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
         <Button
           variant="secondary"
-          onClick={onClose}
+          onClick={handleSendSms}
+          disabled={!smsHref}
           icon={<PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />}
           className="text-sm font-semibold"
         >
           Send SMS
         </Button>
         <Button variant="ghost" onClick={onClose}>
-          Close
+          Cancel
         </Button>
       </div>
     </div>

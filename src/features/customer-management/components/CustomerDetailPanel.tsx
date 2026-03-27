@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
+import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import {
   customerPhoneHref,
   formatCustomerPhone,
@@ -12,6 +13,7 @@ import {
   ArrowLeftIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
+  PaperAirplaneIcon,
   PencilSquareIcon,
   TrashIcon,
   UserCircleIcon,
@@ -20,6 +22,7 @@ import React, { useEffect, useState } from 'react';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 
 const CUSTOMER_NOTE_MAX_LENGTH = 280;
+const DEMO_CUSTOMER_ID_PREFIX = 'demo_';
 
 function addOnsSummaryLine(count: number): string | null {
   if (count < 1) return null;
@@ -29,7 +32,7 @@ function addOnsSummaryLine(count: number): string | null {
 interface CustomerDetailPanelProps {
   customer: CustomerRecord;
   onClose: () => void;
-  onSendLink: () => void;
+  onMessageCustomer: (_mode: 'message' | 'win_back') => void;
   onDeleteCustomer: () => void;
   onSaveNote: (
     _note: string
@@ -43,7 +46,7 @@ interface CustomerDetailPanelProps {
 export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   customer,
   onClose,
-  onSendLink: _onSendLink,
+  onMessageCustomer,
   onDeleteCustomer,
   onSaveNote,
   isSavingNote,
@@ -114,6 +117,9 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   };
 
   const noteChanged = noteDraft.trim() !== customer.note.trim();
+  const needsAttention = isCustomerNeedsAttention(customer);
+  const actionLabel = 'Check-in';
+  const isSampleCustomer = customer.id.startsWith(DEMO_CUSTOMER_ID_PREFIX);
 
   return (
     <>
@@ -182,7 +188,10 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   )}
                 </div>
               </div>
-              <CustomerStatusBadge status={customer.status} />
+              <CustomerStatusBadge
+                status={customer.status}
+                needsAttention={needsAttention}
+              />
             </div>
           </section>
 
@@ -294,7 +303,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                 <UserCircleIcon className="h-4 w-4" />
                 Notes
               </h3>
-              {!isEditingNote ? (
+              {!isEditingNote && !isSampleCustomer ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -313,7 +322,11 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               ) : null}
             </div>
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-              {isEditingNote ? (
+              {isSampleCustomer ? (
+                <p className="text-sm leading-6 text-gray-300 whitespace-pre-wrap">
+                  This is a sample customer only.
+                </p>
+              ) : isEditingNote ? (
                 <>
                   <textarea
                     value={noteDraft}
@@ -379,28 +392,37 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               Actions
             </h3>
             <div className="space-y-2.5">
-              {/* Hidden for V2 rollout: restore send-booking CTA when flow is ready.
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={_onSendLink}
-                icon={null}
-                fullWidth={true}
-                className="text-sm font-semibold"
-              >
-                Send booking link
-              </Button>
-              */}
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={onDeleteCustomer}
-                icon={<TrashIcon className="h-4 w-4" />}
-                fullWidth={true}
-                className="text-sm font-medium"
-              >
-                Delete customer
-              </Button>
+              {needsAttention ? (
+                <div className="relative">
+                  <span className="pointer-events-none absolute -top-2.5 right-3 z-20 inline-flex items-center rounded-full border border-emerald-400/35 bg-[#0f0f0f] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                    New
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onMessageCustomer('win_back')}
+                    icon={
+                      <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
+                    }
+                    fullWidth={true}
+                    className="text-sm font-semibold"
+                  >
+                    {actionLabel}
+                  </Button>
+                </div>
+              ) : null}
+              {!isSampleCustomer ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={onDeleteCustomer}
+                  icon={<TrashIcon className="h-4 w-4" />}
+                  fullWidth={true}
+                  className="text-sm font-medium"
+                >
+                  Delete customer
+                </Button>
+              ) : null}
             </div>
           </section>
         </div>

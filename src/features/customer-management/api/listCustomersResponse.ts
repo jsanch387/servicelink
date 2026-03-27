@@ -3,6 +3,8 @@ import type { CustomerRecord } from '@/features/customer-management/types';
 export type ListCustomersSuccess = {
   success: true;
   customers: CustomerRecord[];
+  businessName: string | null;
+  businessBookingLink: string;
 };
 
 export function isListCustomersSuccess(

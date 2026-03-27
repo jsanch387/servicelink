@@ -8,13 +8,36 @@ import type {
   CustomerListStats,
   CustomerRecord,
 } from '@/features/customer-management/types';
+import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import { matchesCustomerQuery } from '@/features/customer-management/utils/matchesCustomerQuery';
+import { buildSmsHref } from '@/features/customer-management/utils/smsLink';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const DEFAULT_SMS_TEMPLATE =
-  "Hey there, hope you're doing well!\nHere’s my booking link if you’d like to schedule your next appointment:\n\nmyservicelink.app/businessname";
+const BOOKING_LINK_PLACEHOLDER = 'myservicelink.app/businessname';
+const BUSINESS_NAME_PLACEHOLDER = '[Business Name]';
+
+function messageTemplateForCustomer(
+  customerName: string,
+  businessName: string,
+  bookingLink: string
+): string {
+  const firstName = customerName.trim().split(' ')[0] || 'there';
+  return `Hey ${firstName}! It's ${businessName}. If you need a refresh, here's my booking link:\n\n${bookingLink}`;
+}
+
+function winBackTemplateForCustomer(
+  customerName: string,
+  businessName: string,
+  bookingLink: string
+): string {
+  const firstName = customerName.trim().split(' ')[0] || 'there';
+  return `Hey ${firstName}! It's ${businessName}. Realized it's been a few months since your last detail and wanted to check in. If you need a refresh, here's my booking link:\n\n${bookingLink}`;
+}
 
 type LoadStatus = 'loading' | 'ready' | 'error';
+type StatusFilter = 'all' | CustomerLifecycle | 'needs_attention';
+type SmsMode = 'message' | 'win_back';
+const DEMO_CUSTOMER_ID_PREFIX = 'demo_';
 
 export function useCustomerManagement() {
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading');
@@ -22,14 +45,15 @@ export function useCustomerManagement() {
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
 
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | CustomerLifecycle>(
-    'all'
-  );
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedCustomer, setSelectedCustomer] =
     useState<CustomerRecord | null>(null);
-  const [activeSendLinkCustomer, setActiveSendLinkCustomer] =
-    useState<CustomerRecord | null>(null);
-  const [templateMessage, setTemplateMessage] = useState(DEFAULT_SMS_TEMPLATE);
+  const [smsBusinessName, setSmsBusinessName] = useState(
+    BUSINESS_NAME_PLACEHOLDER
+  );
+  const [smsBookingLink, setSmsBookingLink] = useState(
+    BOOKING_LINK_PLACEHOLDER
+  );
 
   const [activeDeleteCustomer, setActiveDeleteCustomer] =
     useState<CustomerRecord | null>(null);
@@ -46,6 +70,8 @@ export function useCustomerManagement() {
     const result = await fetchCustomersList();
     if (result.ok) {
       setCustomers(result.customers);
+      setSmsBusinessName(result.businessName ?? BUSINESS_NAME_PLACEHOLDER);
+      setSmsBookingLink(result.businessBookingLink || BOOKING_LINK_PLACEHOLDER);
       setLoadStatus('ready');
     } else {
       setLoadError(result.error);
@@ -60,7 +86,11 @@ export function useCustomerManagement() {
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
       const passesStatus =
-        statusFilter === 'all' || customer.status === statusFilter;
+        statusFilter === 'all'
+          ? true
+          : statusFilter === 'needs_attention'
+            ? isCustomerNeedsAttention(customer)
+            : customer.status === statusFilter;
       const passesSearch =
         !query.trim() || matchesCustomerQuery(customer, query);
       return passesStatus && passesSearch;
@@ -88,6 +118,14 @@ export function useCustomerManagement() {
     if (!activeDeleteCustomer || isDeletingCustomer) return;
 
     const customerToDelete = activeDeleteCustomer;
+    if (customerToDelete.id.startsWith(DEMO_CUSTOMER_ID_PREFIX)) {
+      setActiveDeleteCustomer(null);
+      setSelectedCustomer(prev =>
+        prev?.id === customerToDelete.id ? null : prev
+      );
+      return;
+    }
+
     setIsDeletingCustomer(true);
     setDeleteCustomerError(null);
 
@@ -96,9 +134,6 @@ export function useCustomerManagement() {
     if (result.ok) {
       setActiveDeleteCustomer(null);
       setSelectedCustomer(prev =>
-        prev?.id === customerToDelete.id ? null : prev
-      );
-      setActiveSendLinkCustomer(prev =>
         prev?.id === customerToDelete.id ? null : prev
       );
       await loadCustomers();
@@ -111,6 +146,14 @@ export function useCustomerManagement() {
 
   const saveCustomerNote = useCallback(
     async (customerId: string, note: string) => {
+      if (customerId.startsWith(DEMO_CUSTOMER_ID_PREFIX)) {
+        const nextNote = note.trim();
+        setSelectedCustomer(prev =>
+          prev && prev.id === customerId ? { ...prev, note: nextNote } : prev
+        );
+        return { ok: true as const };
+      }
+
       if (isSavingNote) {
         return {
           ok: false,
@@ -147,6 +190,29 @@ export function useCustomerManagement() {
     [isSavingNote]
   );
 
+  const openCustomerSms = useCallback(
+    (customer: CustomerRecord, mode: SmsMode) => {
+      const body =
+        mode === 'win_back'
+          ? winBackTemplateForCustomer(
+              customer.name,
+              smsBusinessName,
+              smsBookingLink
+            )
+          : messageTemplateForCustomer(
+              customer.name,
+              smsBusinessName,
+              smsBookingLink
+            );
+      const href = buildSmsHref(customer.phone, body);
+      if (!href || typeof window === 'undefined') {
+        return;
+      }
+      window.location.href = href;
+    },
+    [smsBookingLink, smsBusinessName]
+  );
+
   return {
     loadStatus,
     loadError,
@@ -160,10 +226,6 @@ export function useCustomerManagement() {
     stats,
     selectedCustomer,
     setSelectedCustomer,
-    activeSendLinkCustomer,
-    setActiveSendLinkCustomer,
-    templateMessage,
-    setTemplateMessage,
     activeDeleteCustomer,
     setActiveDeleteCustomer,
     isDeletingCustomer,
@@ -174,5 +236,6 @@ export function useCustomerManagement() {
     openDeleteCustomerModal,
     confirmDeleteCustomer,
     saveCustomerNote,
+    openCustomerSms,
   };
 }

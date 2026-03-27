@@ -19,6 +19,15 @@ Focused tests for core customer-management behavior (high value, low noise).
     - earliest upcoming confirmed appointment
     - ignores cancelled/unlinked rows
 
+- `smsLink.test.ts`
+  - Native SMS deep-link generation for iOS vs Android separators.
+  - Phone normalization and invalid-phone guardrails.
+
+- `customerAttention.test.ts`
+  - Rule for "Needs Attention" filter/tag:
+    - no upcoming appointment
+    - last visit is more than 90 days ago
+
 ## Why this scope
 
 We test core logic paths that directly affect customer list and detail accuracy, without over-testing purely visual details.
