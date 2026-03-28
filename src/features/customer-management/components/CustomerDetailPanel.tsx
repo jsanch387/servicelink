@@ -189,12 +189,14 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   {phoneHref ? (
                     <a
                       href={phoneHref}
-                      className="inline-flex items-center text-xs text-gray-300 underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white/80 transition-colors"
+                      className="inline-flex items-center text-xs text-gray-300 tabular-nums tracking-wide underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white/80 transition-colors"
                     >
                       {displayPhone}
                     </a>
                   ) : (
-                    <p className="text-xs text-gray-500">{displayPhone}</p>
+                    <p className="text-xs text-gray-500 tabular-nums tracking-wide">
+                      {displayPhone}
+                    </p>
                   )}
                 </div>
               </div>

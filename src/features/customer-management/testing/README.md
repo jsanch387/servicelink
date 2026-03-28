@@ -23,6 +23,9 @@ Focused tests for core customer-management behavior (high value, low noise).
   - Native SMS deep-link generation for iOS vs Android separators.
   - Phone normalization and invalid-phone guardrails.
 
+- `customerFormatting.test.ts`
+  - `formatCustomerPhone`: US 10/11, 7-digit local, loose grouping for longer numbers, extensions (`ext` / `x`), `tel:` excludes extension digits.
+
 - `customerAttention.test.ts`
   - Rule for "Needs Attention" filter/tag:
     - no upcoming appointment
