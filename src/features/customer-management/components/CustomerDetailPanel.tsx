@@ -1,7 +1,8 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, Modal } from '@/components/shared';
 import type { CustomerRecord } from '@/features/customer-management/types';
+import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import {
   customerPhoneHref,
   formatCustomerPhone,
@@ -12,14 +13,18 @@ import {
   ArrowLeftIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
+  LockClosedIcon,
+  PaperAirplaneIcon,
   PencilSquareIcon,
   TrashIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
+import { CheckInProTeaserModalBody } from './CheckInProTeaserModalBody';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 
 const CUSTOMER_NOTE_MAX_LENGTH = 280;
+const DEMO_CUSTOMER_ID_PREFIX = 'demo_';
 
 function addOnsSummaryLine(count: number): string | null {
   if (count < 1) return null;
@@ -28,8 +33,10 @@ function addOnsSummaryLine(count: number): string | null {
 
 interface CustomerDetailPanelProps {
   customer: CustomerRecord;
+  /** Pro: Check-in opens SMS with prefilled message. Free: opens upgrade teaser. */
+  hasProCheckInAccess: boolean;
   onClose: () => void;
-  onSendLink: () => void;
+  onMessageCustomer: (_mode: 'message' | 'win_back') => void;
   onDeleteCustomer: () => void;
   onSaveNote: (
     _note: string
@@ -42,8 +49,9 @@ interface CustomerDetailPanelProps {
 
 export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   customer,
+  hasProCheckInAccess,
   onClose,
-  onSendLink: _onSendLink,
+  onMessageCustomer,
   onDeleteCustomer,
   onSaveNote,
   isSavingNote,
@@ -52,6 +60,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   formatCurrency,
 }) => {
   const [emailCopied, setEmailCopied] = useState(false);
+  const [checkInTeaserOpen, setCheckInTeaserOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(customer.note);
   const [noteSaved, setNoteSaved] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -95,6 +104,10 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
     setIsEditingNote(false);
   }, [customer.id, customer.note]);
 
+  useEffect(() => {
+    setCheckInTeaserOpen(false);
+  }, [customer.id]);
+
   const handleCopyEmail = async () => {
     try {
       await navigator.clipboard.writeText(customer.email);
@@ -114,6 +127,9 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   };
 
   const noteChanged = noteDraft.trim() !== customer.note.trim();
+  const needsAttention = isCustomerNeedsAttention(customer);
+  const actionLabel = 'Check-in';
+  const isSampleCustomer = customer.id.startsWith(DEMO_CUSTOMER_ID_PREFIX);
 
   return (
     <>
@@ -173,16 +189,21 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   {phoneHref ? (
                     <a
                       href={phoneHref}
-                      className="inline-flex items-center text-xs text-gray-300 underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white/80 transition-colors"
+                      className="inline-flex items-center text-xs text-gray-300 tabular-nums tracking-wide underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white/80 transition-colors"
                     >
                       {displayPhone}
                     </a>
                   ) : (
-                    <p className="text-xs text-gray-500">{displayPhone}</p>
+                    <p className="text-xs text-gray-500 tabular-nums tracking-wide">
+                      {displayPhone}
+                    </p>
                   )}
                 </div>
               </div>
-              <CustomerStatusBadge status={customer.status} />
+              <CustomerStatusBadge
+                status={customer.status}
+                needsAttention={needsAttention}
+              />
             </div>
           </section>
 
@@ -294,7 +315,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                 <UserCircleIcon className="h-4 w-4" />
                 Notes
               </h3>
-              {!isEditingNote ? (
+              {!isEditingNote && !isSampleCustomer ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -313,7 +334,11 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               ) : null}
             </div>
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-              {isEditingNote ? (
+              {isSampleCustomer ? (
+                <p className="text-sm leading-6 text-gray-300 whitespace-pre-wrap">
+                  This is a sample customer only.
+                </p>
+              ) : isEditingNote ? (
                 <>
                   <textarea
                     value={noteDraft}
@@ -379,32 +404,70 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               Actions
             </h3>
             <div className="space-y-2.5">
-              {/* Hidden for V2 rollout: restore send-booking CTA when flow is ready.
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={_onSendLink}
-                icon={null}
-                fullWidth={true}
-                className="text-sm font-semibold"
-              >
-                Send booking link
-              </Button>
-              */}
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={onDeleteCustomer}
-                icon={<TrashIcon className="h-4 w-4" />}
-                fullWidth={true}
-                className="text-sm font-medium"
-              >
-                Delete customer
-              </Button>
+              {needsAttention ? (
+                <div className="relative">
+                  <span className="pointer-events-none absolute -top-2.5 right-3 z-20 inline-flex items-center rounded-full border border-emerald-400/35 bg-[#0f0f0f] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                    New
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      hasProCheckInAccess
+                        ? onMessageCustomer('win_back')
+                        : setCheckInTeaserOpen(true)
+                    }
+                    icon={
+                      hasProCheckInAccess ? (
+                        <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <LockClosedIcon className="h-4 w-4 text-gray-400" />
+                      )
+                    }
+                    fullWidth={true}
+                    className={`text-sm font-semibold ${
+                      !hasProCheckInAccess
+                        ? 'border-white/15 bg-white/[0.04] hover:bg-white/[0.07]'
+                        : ''
+                    }`}
+                    aria-label={
+                      hasProCheckInAccess
+                        ? `${actionLabel} customer via SMS`
+                        : `${actionLabel}: Pro feature — learn more`
+                    }
+                    title={hasProCheckInAccess ? undefined : 'Pro feature'}
+                  >
+                    {actionLabel}
+                  </Button>
+                </div>
+              ) : null}
+              {!isSampleCustomer ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={onDeleteCustomer}
+                  icon={<TrashIcon className="h-4 w-4" />}
+                  fullWidth={true}
+                  className="text-sm font-medium"
+                >
+                  Delete customer
+                </Button>
+              ) : null}
             </div>
           </section>
         </div>
       </div>
+
+      <Modal
+        isOpen={checkInTeaserOpen}
+        onClose={() => setCheckInTeaserOpen(false)}
+        title="Check-in"
+        maxWidth="sm"
+      >
+        <CheckInProTeaserModalBody
+          onClose={() => setCheckInTeaserOpen(false)}
+        />
+      </Modal>
     </>
   );
 };

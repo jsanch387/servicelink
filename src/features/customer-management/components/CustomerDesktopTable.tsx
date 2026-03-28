@@ -1,4 +1,5 @@
 import type { CustomerRecord } from '@/features/customer-management/types';
+import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
@@ -102,7 +103,10 @@ export const CustomerDesktopTable: React.FC<CustomerDesktopTableProps> = ({
                 )}
               </td>
               <td className="px-4 py-3 align-middle">
-                <CustomerStatusBadge status={customer.status} />
+                <CustomerStatusBadge
+                  status={customer.status}
+                  needsAttention={isCustomerNeedsAttention(customer)}
+                />
               </td>
               <td className="px-3 py-3 align-middle text-right">
                 <EllipsisHorizontalIcon className="h-4 w-4 text-gray-500" />

@@ -1,7 +1,9 @@
 'use client';
 
 import { Button, Modal } from '@/components/shared';
+import { DEMO_NEEDS_ATTENTION_CUSTOMER } from '@/features/customer-management/constants/demoNeedsAttentionCustomer';
 import { useCustomerManagement } from '@/features/customer-management/hooks/useCustomerManagement';
+import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
 import React from 'react';
 import { CustomerDesktopTable } from './CustomerDesktopTable';
@@ -14,9 +16,14 @@ import { CustomerSearchAndFilters } from './CustomerSearchAndFilters';
 import { CustomerStatsRow } from './CustomerStatsRow';
 import { CustomersInitialEmptyState } from './CustomersInitialEmptyState';
 import { DeleteCustomerModalBody } from './DeleteCustomerModalBody';
-import { SendBookingLinkModalBody } from './SendBookingLinkModalBody';
 
-export const CustomerManagementPage: React.FC = () => {
+interface CustomerManagementPageProps {
+  hasProCheckInAccess: boolean;
+}
+
+export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
+  hasProCheckInAccess,
+}) => {
   const {
     loadStatus,
     loadError,
@@ -30,10 +37,6 @@ export const CustomerManagementPage: React.FC = () => {
     stats,
     selectedCustomer,
     setSelectedCustomer,
-    activeSendLinkCustomer,
-    setActiveSendLinkCustomer,
-    templateMessage,
-    setTemplateMessage,
     activeDeleteCustomer,
     setActiveDeleteCustomer,
     isDeletingCustomer,
@@ -44,7 +47,17 @@ export const CustomerManagementPage: React.FC = () => {
     openDeleteCustomerModal,
     confirmDeleteCustomer,
     saveCustomerNote,
+    openCustomerSms,
   } = useCustomerManagement();
+  const hasAnyRealDueCustomers = customers.some(isCustomerNeedsAttention);
+  const shouldShowNeedsAttentionDemo =
+    statusFilter === 'needs_attention' &&
+    filteredCustomers.length === 0 &&
+    !hasAnyRealDueCustomers;
+  const customersForDisplay = shouldShowNeedsAttentionDemo
+    ? [DEMO_NEEDS_ATTENTION_CUSTOMER]
+    : filteredCustomers;
+  const shownCount = customersForDisplay.length;
 
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
@@ -82,37 +95,50 @@ export const CustomerManagementPage: React.FC = () => {
             />
 
             <p className="text-xs text-gray-400 mb-3">
-              Showing {filteredCustomers.length} of {customers.length} customers
+              Showing {shownCount} of {customers.length} customers
             </p>
+            {shouldShowNeedsAttentionDemo ? (
+              <p className="text-xs text-amber-300/90 mb-3">
+                No customers are currently due. Customers who haven&apos;t
+                booked in 90+ days will show here.
+              </p>
+            ) : null}
 
-            {customers.length > 0 && (
+            {customersForDisplay.length > 0 && (
               <>
                 <CustomerDesktopTable
-                  customers={filteredCustomers}
+                  customers={customersForDisplay}
                   onRowClick={setSelectedCustomer}
                 />
 
                 <CustomerMobileList
-                  customers={filteredCustomers}
+                  customers={customersForDisplay}
                   onOpenDetail={setSelectedCustomer}
-                  onSendLink={setActiveSendLinkCustomer}
                 />
               </>
             )}
 
-            {customers.length === 0 && <CustomersInitialEmptyState />}
+            {customers.length === 0 &&
+              !shouldShowNeedsAttentionDemo &&
+              (statusFilter === 'needs_attention' ? (
+                <CustomerListEmptyState statusFilter={statusFilter} />
+              ) : (
+                <CustomersInitialEmptyState />
+              ))}
 
-            {customers.length > 0 && filteredCustomers.length === 0 && (
-              <CustomerListEmptyState />
-            )}
+            {customers.length > 0 &&
+              filteredCustomers.length === 0 &&
+              !shouldShowNeedsAttentionDemo && (
+                <CustomerListEmptyState statusFilter={statusFilter} />
+              )}
 
             {selectedCustomer && (
               <CustomerDetailPanel
                 customer={selectedCustomer}
+                hasProCheckInAccess={hasProCheckInAccess}
                 onClose={() => setSelectedCustomer(null)}
-                onSendLink={() => {
-                  setSelectedCustomer(null);
-                  setActiveSendLinkCustomer(selectedCustomer);
+                onMessageCustomer={mode => {
+                  openCustomerSms(selectedCustomer, mode);
                 }}
                 onDeleteCustomer={() =>
                   openDeleteCustomerModal(selectedCustomer)
@@ -124,22 +150,6 @@ export const CustomerManagementPage: React.FC = () => {
                 formatCurrency={formatCustomerCurrency}
               />
             )}
-
-            <Modal
-              isOpen={Boolean(activeSendLinkCustomer)}
-              onClose={() => setActiveSendLinkCustomer(null)}
-              title="Send Booking Link"
-              maxWidth="lg"
-            >
-              {activeSendLinkCustomer && (
-                <SendBookingLinkModalBody
-                  customer={activeSendLinkCustomer}
-                  templateMessage={templateMessage}
-                  onTemplateMessageChange={setTemplateMessage}
-                  onClose={() => setActiveSendLinkCustomer(null)}
-                />
-              )}
-            </Modal>
 
             <Modal
               isOpen={Boolean(activeDeleteCustomer)}

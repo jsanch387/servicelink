@@ -71,7 +71,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
         You&apos;re booked
       </h2>
-      <p className="text-gray-400 text-sm mb-8 max-w-sm text-center">
+      <p className="self-center text-gray-400 text-sm mb-8 max-w-sm text-center">
         {isOwnerManualBooking ? (
           <>
             Your appointment has been created. Your customer will receive an

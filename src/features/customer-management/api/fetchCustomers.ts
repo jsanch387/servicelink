@@ -3,7 +3,12 @@ import type { CustomerRecord } from '@/features/customer-management/types';
 import { isListCustomersSuccess } from './listCustomersResponse';
 
 export type FetchCustomersResult =
-  | { ok: true; customers: CustomerRecord[] }
+  | {
+      ok: true;
+      customers: CustomerRecord[];
+      businessName: string | null;
+      businessBookingLink: string;
+    }
   | { ok: false; error: string };
 
 export async function fetchCustomersList(): Promise<FetchCustomersResult> {
@@ -31,7 +36,12 @@ export async function fetchCustomersList(): Promise<FetchCustomersResult> {
       return { ok: false, error: 'Invalid response from server' };
     }
 
-    return { ok: true, customers: data.customers };
+    return {
+      ok: true,
+      customers: data.customers,
+      businessName: data.businessName,
+      businessBookingLink: data.businessBookingLink,
+    };
   } catch {
     return { ok: false, error: 'Network error' };
   }

@@ -12,6 +12,7 @@ export { Calendar } from './Calendar';
 export { Card } from './Card';
 export { CompletionCelebration, SuccessMessage } from './CompletionCelebration';
 export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';
+export { CrownIcon } from './CrownIcon';
 export { GlassCard } from './GlassCard';
 export { GoogleIcon } from './GoogleIcon';
 export { IconButton } from './IconButton';
