@@ -104,10 +104,13 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
   const [generatedSlug, setGeneratedSlug] = useState(existingSlug || '');
 
   const currentSlug = linkGenerated ? generatedSlug : customSlugInput || '';
-  const fullLinkForCopy = linkGenerated
-    ? existingFullLink || `https://${APP_DOMAIN}/${currentSlug}`
-    : `https://${APP_DOMAIN}/${currentSlug}`;
-  const displayLink = fullLinkForCopy.replace(/^https?:\/\//, '');
+  const rawLinkForCopy = linkGenerated
+    ? existingFullLink || `${APP_DOMAIN}/${currentSlug}`
+    : `${APP_DOMAIN}/${currentSlug}`;
+  const fullLinkForCopy = /^https?:\/\//i.test(rawLinkForCopy)
+    ? rawLinkForCopy
+    : `https://${rawLinkForCopy.replace(/^\/+/, '')}`;
+  const displayLink = fullLinkForCopy.replace(/^https?:\/\//i, '');
 
   const handleCopyLink = useCallback(() => {
     if (!fullLinkForCopy) return;
@@ -274,7 +277,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                   <div className="flex-1 min-w-0 rounded-xl border border-white/10 bg-white/[0.04] py-3 px-4 overflow-hidden">
                     <p
                       className="font-mono text-sm text-gray-200 truncate"
-                      title={fullLinkForCopy}
+                      title={displayLink}
                     >
                       {displayLink}
                     </p>
