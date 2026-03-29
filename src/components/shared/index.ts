@@ -3,6 +3,7 @@ export { ImagePreview, ImageUpload } from './ImageUpload';
 export { Input } from './Input';
 export { PhoneInput } from './PhoneInput';
 export { PriceInput } from './PriceInput';
+export { MoneyInput } from './MoneyInput';
 export { Select } from './Select';
 export { TextArea } from './TextArea';
 

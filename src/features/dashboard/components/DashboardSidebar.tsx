@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
 import {
   ArrowRightOnRectangleIcon,
+  BanknotesIcon,
   CalendarIcon,
   ClockIcon,
   CogIcon,
@@ -51,6 +52,12 @@ const allNavigationItems = [
     icon: UserGroupIcon,
     requiresOnboarding: true,
     isNew: true,
+  },
+  {
+    name: 'Payments',
+    href: ROUTES.DASHBOARD.PAYMENTS,
+    icon: BanknotesIcon,
+    requiresOnboarding: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [

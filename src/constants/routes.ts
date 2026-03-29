@@ -45,6 +45,7 @@ export const ROUTES = {
     BOOKINGS: '/dashboard/bookings',
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
+    PAYMENTS: '/dashboard/payments',
     SETTINGS: '/dashboard/settings',
     UPGRADE: '/dashboard/upgrade',
   },
