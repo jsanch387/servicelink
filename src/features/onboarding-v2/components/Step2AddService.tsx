@@ -1,13 +1,11 @@
 'use client';
 
+import { Button, Input, PriceInput, TextArea } from '@/components/shared';
+import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import {
-  Button,
-  Input,
-  PriceInput,
-  SERVICE_DURATION_HOURS_OPTIONS,
-  Select,
-  TextArea,
-} from '@/components/shared';
+  isValidServiceDurationHHmm,
+  serviceDurationHHmmToMinutes,
+} from '@/features/availability/utils/timeOptions';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 import type { OnboardingV2Service } from '../types/flowState';
@@ -16,22 +14,10 @@ import { formatDurationMinutes } from '../utils/formatDuration';
 /** Short description for service cards; keeps cards from getting bloated. */
 const DESCRIPTION_MAX_LENGTH = 250;
 
-// Duration options: 30 min only half-hour; rest are full hours up to 10. Values in minutes.
-const DURATION_OPTIONS = [
-  { value: '30', label: '30 min' },
-  ...SERVICE_DURATION_HOURS_OPTIONS.map(opt => {
-    const hours = parseInt(opt.value, 10);
-    return {
-      value: String(hours * 60),
-      label: opt.label.replace('hour', 'hr').replace('hours', 'hrs'),
-    };
-  }),
-];
-
 interface Step2AddServiceProps {
   businessProfileId?: string;
   services: OnboardingV2Service[];
-  // eslint-disable-next-line no-unused-vars
+
   onUpdate: (services: OnboardingV2Service[]) => void;
   onNext: () => void;
   onBack: () => void;
@@ -46,16 +32,16 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('');
+  const [durationHHmm, setDurationHHmm] = useState('');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
   const addService = () => {
     const descTrim = description.trim();
-    if (!name.trim() || !price.trim() || !durationMinutes || !descTrim) return;
-    const minutes = parseInt(durationMinutes, 10);
-    if (Number.isNaN(minutes) || minutes < 1) return;
+    if (!name.trim() || !price.trim() || !durationHHmm || !descTrim) return;
+    if (!isValidServiceDurationHHmm(durationHHmm)) return;
+    const minutes = serviceDurationHHmmToMinutes(durationHHmm);
     const next: OnboardingV2Service = {
       id: `temp-${Date.now()}`,
       name: name.trim(),
@@ -66,7 +52,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
     onUpdate([...services, next]);
     setName('');
     setPrice('');
-    setDurationMinutes('');
+    setDurationHHmm('');
     setDescription('');
   };
 
@@ -77,8 +63,8 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
   const canAdd =
     name.trim().length > 0 &&
     price.trim().length > 0 &&
-    durationMinutes !== '' &&
-    parseInt(durationMinutes, 10) >= 30 &&
+    durationHHmm.trim().length > 0 &&
+    isValidServiceDurationHHmm(durationHHmm) &&
     description.trim().length > 0;
   const canContinue = services.length > 0;
 
@@ -120,7 +106,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           Add at least one service
         </h1>
         <p className="text-gray-400 text-sm sm:text-base mt-1">
-          Add name, price, and how long it takes. Required for booking.
+          Add one service to continue — you can add the rest after onboarding.
         </p>
       </div>
 
@@ -149,14 +135,17 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
               onChange={setPrice}
               required
             />
-            <Select
-              label="Duration"
-              placeholder="How long does it take?"
-              value={durationMinutes}
-              onChange={setDurationMinutes}
-              options={DURATION_OPTIONS}
-              required
-            />
+            <div className="min-w-0">
+              <span className="block text-sm font-medium text-gray-300 mb-2">
+                Duration
+              </span>
+              <TimeSelect
+                variant="duration"
+                value={durationHHmm}
+                onChange={setDurationHHmm}
+                durationPlaceholder="How long does it take?"
+              />
+            </div>
             <TextArea
               label="What's included? (required)"
               placeholder="e.g. Exterior wash, interior vacuum, window clean"

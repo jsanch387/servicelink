@@ -57,8 +57,8 @@ src/features/services/
 | `name`              | Service name |
 | `description`       | Optional text |
 | `price_cents`       | Nullable (e.g. “Contact for quote”) |
-| `duration_minutes`  | Nullable; used for display (e.g. “2 hours”) |
-| `hours_to_complete` | Legacy; prefer `duration_minutes` |
+| `duration_minutes`  | Nullable; **appointment length in minutes** for V2 booking (slot generation, `bookings.duration_minutes` when no add-on time). UI pickers use **30-minute steps** from 30m through 10h 30m (`TimeSelect` + `timeOptions.ts`). |
+| `hours_to_complete` | Legacy; prefer `duration_minutes` (still read as fallback on public book page) |
 | `is_active`         | If false, hidden on public profile |
 | `sort_order`       | Integer; display order. Null until user uses “Sort order” on dashboard |
 | `created_at`        | Set on insert |
@@ -152,8 +152,14 @@ All are defined in `types/services.ts` and re-exported from the feature `index.t
 
 ---
 
+## Booking (V2) and add-ons
+
+- Public **`/[slug]/book`** loads **`duration_minutes`** (or legacy `hours_to_complete` × 60) for the selected service, then **`AvailabilityBookingPage`** adds **Σ add-on `duration_minutes`** for selected extras (see **`features/services/add-ons/README.md`** and **`features/availability/docs/FLOWS.md`**). Total minutes drive slots and the row inserted into **`bookings`**.
+
+---
+
 ## Related Code (outside this feature)
 
-- **Onboarding:** New users can add services during onboarding; that flow writes to `business_services` via onboarding-specific APIs, not these actions. Order is not set until they use the dashboard Services page and “Sort order”.
+- **Onboarding:** New users add at least one service in **Onboarding V2 Step 2** (name, price, **duration**, description) via onboarding-specific APIs; duration uses the same **30-minute grid** as dashboard service edit. Order is not set until they use the dashboard Services page and “Sort order”.
 - **DB types:** `business_services` Row/Insert/Update are defined in `libs/supabase/client.ts` (Database type). This feature’s `ServiceRow` is the Row type for that table.
 - **Public profile ordering:** Any place that displays services to the public should use the same ordering: `sort_order ASC NULLS LAST`, then `created_at ASC`, and filter by `is_active = true` for public views.

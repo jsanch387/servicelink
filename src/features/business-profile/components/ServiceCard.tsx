@@ -2,6 +2,7 @@
 
 import { Button, GlassCard } from '@/components/shared';
 import { getBusinessBookDetailsPath } from '@/constants/routes';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -25,9 +26,9 @@ interface Service {
 
 interface ServiceCardProps {
   service: Service;
-  // eslint-disable-next-line no-unused-vars
+
   onEdit?: (_service: Service) => void;
-  // eslint-disable-next-line no-unused-vars
+
   onDelete?: (_serviceId: string) => void;
   isEditable?: boolean;
   isPublic?: boolean;
@@ -57,10 +58,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}...`
       : description;
 
-  const effectiveHours =
+  const effectiveDurationMinutes =
     service.duration_minutes != null && service.duration_minutes > 0
-      ? service.duration_minutes / 60
-      : (service.hours_to_complete ?? null);
+      ? service.duration_minutes
+      : service.hours_to_complete != null && service.hours_to_complete > 0
+        ? Math.round(service.hours_to_complete * 60)
+        : null;
 
   const formatPrice = (price: string | number) => {
     // If it's already a formatted string (starts with $), return as is
@@ -82,15 +85,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     }
 
     return 'Contact for quote';
-  };
-
-  const formatDuration = (hours: number | null | undefined) => {
-    if (!hours) return null;
-    if (hours < 24) {
-      return `${hours} ${hours === 1 ? 'Hour' : 'Hours'}`;
-    }
-    const days = Math.floor(hours / 24);
-    return `${days} ${days === 1 ? 'Day' : 'Days'}`;
   };
 
   return (
@@ -143,11 +137,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
       {/* Faint divider + footer: duration left, Book Now right */}
       <div className="flex items-center justify-between pt-4 border-t border-white/[0.03]">
-        {effectiveHours ? (
+        {effectiveDurationMinutes ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3 w-3 flex-shrink-0" />
             <span className="text-xs font-medium">
-              {formatDuration(effectiveHours)}
+              {formatDurationMinutes(effectiveDurationMinutes)}
             </span>
           </div>
         ) : (

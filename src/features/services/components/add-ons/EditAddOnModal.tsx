@@ -1,6 +1,12 @@
 'use client';
 
 import { Input, Modal, PriceInput } from '@/components/shared';
+import { TimeSelect } from '@/features/availability/components/TimeSelect';
+import {
+  addOnDurationPickerValue,
+  isValidOptionalAddOnDurationInput,
+  parseOptionalAddOnDurationForSave,
+} from '@/features/services/utils/addOnDurationForm';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { AddOnRow, EditAddOnFormData } from './addOnTypes';
 
@@ -10,12 +16,16 @@ export interface EditAddOnModalProps {
   showAddForm?: boolean;
   saveError?: string | null;
   onClose: () => void;
-  // eslint-disable-next-line no-unused-vars
+
   onSave: (addOnId: string | undefined, data: EditAddOnFormData) => void;
   isSaving?: boolean;
 }
 
-function addOnToForm(addOn: AddOnRow): { name: string; price: string } {
+function addOnToForm(addOn: AddOnRow): {
+  name: string;
+  price: string;
+  durationHHmm: string;
+} {
   const price =
     addOn.price_cents != null && addOn.price_cents > 0
       ? (addOn.price_cents / 100).toFixed(2)
@@ -23,6 +33,7 @@ function addOnToForm(addOn: AddOnRow): { name: string; price: string } {
   return {
     name: addOn.name ?? '',
     price,
+    durationHHmm: addOnDurationPickerValue(addOn.duration_minutes),
   };
 }
 
@@ -36,6 +47,7 @@ export const EditAddOnModal: React.FC<EditAddOnModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [durationHHmm, setDurationHHmm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const isAddMode = showAddForm && !addOn;
@@ -46,10 +58,12 @@ export const EditAddOnModal: React.FC<EditAddOnModalProps> = ({
       const form = addOnToForm(addOn);
       setName(form.name);
       setPrice(form.price);
+      setDurationHHmm(form.durationHHmm);
       setError(null);
     } else if (showAddForm) {
       setName('');
       setPrice('');
+      setDurationHHmm('');
       setError(null);
     }
   }, [addOn, showAddForm]);
@@ -69,14 +83,21 @@ export const EditAddOnModal: React.FC<EditAddOnModalProps> = ({
         return;
       }
 
+      const durationResult = parseOptionalAddOnDurationForSave(durationHHmm);
+      if (!durationResult.ok) {
+        setError(durationResult.error);
+        return;
+      }
+
       setError(null);
       const data: EditAddOnFormData = {
         name: nameTrim,
         price_cents: Math.round(priceNum * 100),
+        duration_minutes: durationResult.duration_minutes,
       };
       onSave(addOn?.id, data);
     },
-    [addOn, name, price, onSave]
+    [addOn, name, price, durationHHmm, onSave]
   );
 
   if (!isOpen) return null;
@@ -85,7 +106,8 @@ export const EditAddOnModal: React.FC<EditAddOnModalProps> = ({
     name.trim().length > 0 &&
     price.trim().length > 0 &&
     !Number.isNaN(parseFloat(price.replace(/,/g, ''))) &&
-    parseFloat(price.replace(/,/g, '')) >= 0;
+    parseFloat(price.replace(/,/g, '')) >= 0 &&
+    isValidOptionalAddOnDurationInput(durationHHmm);
 
   return (
     <Modal
@@ -116,6 +138,30 @@ export const EditAddOnModal: React.FC<EditAddOnModalProps> = ({
           onChange={setPrice}
           required
         />
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span className="block text-sm font-medium text-gray-300">
+              Extra time (optional)
+            </span>
+            {durationHHmm.trim().length > 0 && (
+              <button
+                type="button"
+                onClick={() => setDurationHHmm('')}
+                className="text-xs font-medium text-gray-500 hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <TimeSelect
+            variant="duration"
+            value={durationHHmm}
+            onChange={setDurationHHmm}
+            durationPlaceholder="No extra time"
+            aria-label="Optional add-on duration"
+          />
+        </div>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
           <button

@@ -7,9 +7,10 @@ export function formatDurationMinutes(minutes: number): string {
   if (minutes < 60) {
     return minutes === 1 ? '1 min' : `${minutes} mins`;
   }
-  const hours = minutes / 60;
-  if (hours % 1 === 0) {
-    return hours === 1 ? '1 hr' : `${hours} hrs`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (m === 0) {
+    return h === 1 ? '1 hr' : `${h} hrs`;
   }
-  return `${hours} hrs`;
+  return `${h} ${h === 1 ? 'hr' : 'hrs'} ${m} min`;
 }

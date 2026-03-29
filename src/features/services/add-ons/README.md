@@ -10,7 +10,7 @@ Add-ons are optional extras (e.g. wax, rush delivery) that customers can add whe
 
 | Table | Purpose |
 |-------|---------|
-| `service_addons` | **Pool** – add-on definitions (name, price). One row per add-on, scoped by `business_id`. No service link here. |
+| `service_addons` | **Pool** – add-on definitions (name, price, optional **duration**). One row per add-on, scoped by `business_id`. No service link here. |
 | `service_addon_assignments` | **Junction** – which add-ons each service offers. Links `service_id` ↔ `addon_id`. |
 
 ### Why two tables?
@@ -32,6 +32,7 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 | `business_id` | uuid | FK → business_profiles. Scopes add-ons to a business. |
 | `name` | text | Add-on name (e.g. "Extra polish") |
 | `price_cents` | integer | Price in cents |
+| `duration_minutes` | integer, nullable | **Optional** extra appointment time when this add-on is selected. Null/omit = price-only (no change to slot length). Same **30-minute grid** as services (see `addOnDurationForm.ts` + `timeOptions.ts`). |
 | `created_at` | timestamptz | Set on insert |
 | `updated_at` | timestamptz | Auto-updated via trigger |
 
@@ -52,7 +53,7 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 
 ## User flow
 
-1. **Add-ons tab** – User creates add-ons (name + price). Each insert goes into `service_addons` only.
+1. **Add-ons tab** – User creates add-ons (name, price, **optional duration**). Each insert goes into `service_addons` only.
 2. **Service edit** – When editing a service, user sees the full add-on pool and selects which to offer. On Save, service details and add-on assignments are persisted. Assignments are stored in `service_addon_assignments` (replace-all for that service).
 
 ---
@@ -63,8 +64,8 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 add-ons/
 ├── README.md           # This file
 ├── api/
-│   ├── createAddOn.ts  # Insert into service_addons (pool)
-│   ├── updateAddOn.ts  # Update name, price_cents (updated_at via trigger)
+│   ├── createAddOn.ts  # Insert into service_addons (pool; optional duration_minutes)
+│   ├── updateAddOn.ts  # Update name, price_cents, duration_minutes (updated_at via trigger)
 │   ├── deleteAddOn.ts  # Delete from service_addons (CASCADE clears assignments)
 │   └── getAddOns.ts    # Select from service_addons by business_id
 ├── actions/
@@ -86,6 +87,7 @@ add-ons/
 ## Related
 
 - **Services README:** `../README.md` – main services feature docs.
+- **V2 booking:** `getServiceWithAddOnsForBooking` / `getAddOnsByIdsForBooking` return `duration_minutes` for the public book flow; **`AvailabilityBookingPage`** sums base service + add-on minutes for slots and **`POST /api/public/bookings`**. See **`features/availability/docs/FLOWS.md`**.
 - **getAddOnCounts:** `../api/getAddOnCounts.ts` – counts add-ons per service (from `service_addon_assignments`), used on the services list to show badges.
 - **getServiceAddOnIds:** `../api/getServiceAddOnIds.ts` – returns addon_id[] for a service (for the edit screen).
 - **saveServiceAddOnAssignments:** `../api/saveServiceAddOnAssignments.ts` – replaces assignments for a service with the given addon IDs (called on Save).

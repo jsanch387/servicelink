@@ -12,6 +12,7 @@ import type { AddOnRow } from '../../components/add-ons/addOnTypes';
 export interface CreateAddOnPayload {
   name: string;
   price_cents: number;
+  duration_minutes?: number | null;
 }
 
 export interface CreateAddOnResult {
@@ -35,6 +36,7 @@ export async function createAddOn(
       business_id: businessId,
       name: payload.name.trim(),
       price_cents: payload.price_cents,
+      duration_minutes: payload.duration_minutes ?? null,
     };
 
     const { data, error } = await supabase
@@ -60,6 +62,7 @@ export async function createAddOn(
       id: row.id,
       name: row.name,
       price_cents: row.price_cents ?? 0,
+      duration_minutes: row.duration_minutes ?? null,
       sort_order: null,
     };
 

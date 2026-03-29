@@ -1,20 +1,14 @@
 'use client';
 
-import {
-  Input,
-  Modal,
-  PriceInput,
-  Select,
-  SERVICE_DURATION_HOURS_OPTIONS,
-  TextArea,
-} from '@/components/shared';
+import { Input, Modal, PriceInput, TextArea } from '@/components/shared';
+import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import type { ServiceRow } from '@/features/services/types/services';
+import {
+  isValidServiceEditDurationInput,
+  parseServiceEditDurationForSave,
+  serviceEditDurationPickerValue,
+} from '@/features/services/utils/serviceEditForm';
 import React, { useCallback, useEffect, useState } from 'react';
-
-const DURATION_OPTIONS = [
-  { value: '', label: 'Select duration' },
-  ...SERVICE_DURATION_HOURS_OPTIONS,
-];
 
 const MAX_DESCRIPTION_LENGTH = 280;
 
@@ -26,7 +20,7 @@ export interface EditServiceModalProps {
   saveError?: string | null;
   onClose: () => void;
   /** For edit: serviceId is set. For add: serviceId is undefined. */
-  // eslint-disable-next-line no-unused-vars -- callback type; params used by caller
+
   onSave: (serviceId: string | undefined, data: EditServiceFormData) => void;
   isSaving?: boolean;
 }
@@ -42,26 +36,17 @@ function serviceToForm(service: ServiceRow): {
   name: string;
   description: string;
   price: string;
-  durationHours: string;
+  durationHHmm: string;
 } {
   const price =
     service.price_cents != null && service.price_cents > 0
       ? (service.price_cents / 100).toFixed(2)
       : '';
-  const durationMinutes =
-    service.duration_minutes ??
-    (service.hours_to_complete != null
-      ? Math.round(service.hours_to_complete * 60)
-      : null);
-  const hoursForSelect =
-    durationMinutes != null && durationMinutes > 0
-      ? Math.min(10, Math.max(1, Math.round(durationMinutes / 60)))
-      : null;
   return {
     name: service.name ?? '',
     description: service.description ?? '',
     price,
-    durationHours: hoursForSelect != null ? String(hoursForSelect) : '',
+    durationHHmm: serviceEditDurationPickerValue(service),
   };
 }
 
@@ -76,7 +61,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [durationHours, setDurationHours] = useState('');
+  const [durationHHmm, setDurationHHmm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const isAddMode = showAddForm && !service;
@@ -88,13 +73,13 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setName(form.name);
       setDescription(form.description);
       setPrice(form.price);
-      setDurationHours(form.durationHours);
+      setDurationHHmm(form.durationHHmm);
       setError(null);
     } else if (showAddForm) {
       setName('');
       setDescription('');
       setPrice('');
-      setDurationHours('');
+      setDurationHHmm('');
       setError(null);
     }
   }, [service, showAddForm]);
@@ -118,9 +103,9 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         setError('Please enter a valid price.');
         return;
       }
-      const hours = durationHours ? parseInt(durationHours, 10) : null;
-      if (!hours || hours < 1 || hours > 10) {
-        setError('Please select a duration (1–10 hours).');
+      const durationResult = parseServiceEditDurationForSave(durationHHmm);
+      if (!durationResult.ok) {
+        setError(durationResult.error);
         return;
       }
 
@@ -129,7 +114,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         name: nameTrim,
         description: descriptionTrim,
         price_cents: Math.round(priceNum * 100),
-        duration_minutes: hours * 60,
+        duration_minutes: durationResult.durationMinutes,
       };
       if (service) {
         onSave(service.id, data);
@@ -137,7 +122,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         onSave(undefined, data);
       }
     },
-    [service, name, description, price, durationHours, onSave]
+    [service, name, description, price, durationHHmm, onSave]
   );
 
   if (!isOpen) return null;
@@ -148,8 +133,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
     price.trim().length > 0 &&
     !Number.isNaN(parseFloat(price.replace(/,/g, ''))) &&
     parseFloat(price.replace(/,/g, '')) >= 0 &&
-    durationHours &&
-    parseInt(durationHours, 10) >= 1;
+    isValidServiceEditDurationInput(durationHHmm);
 
   return (
     <Modal
@@ -204,14 +188,17 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             onChange={setPrice}
             required
           />
-          <Select
-            label="Duration"
-            placeholder="Select duration"
-            value={durationHours}
-            onChange={setDurationHours}
-            options={DURATION_OPTIONS}
-            required
-          />
+          <div className="min-w-0">
+            <span className="block text-sm font-medium text-gray-300 mb-2">
+              Duration
+            </span>
+            <TimeSelect
+              variant="duration"
+              value={durationHHmm}
+              onChange={setDurationHHmm}
+              durationPlaceholder="Select duration"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">

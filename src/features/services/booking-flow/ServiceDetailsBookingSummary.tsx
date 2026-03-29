@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { ServiceAddOn } from './types';
 
 interface ServiceDetailsBookingSummaryProps {
@@ -41,11 +42,18 @@ export function ServiceDetailsBookingSummary({
             {selectedAddOns.map(a => (
               <div
                 key={a.id}
-                className="flex justify-between items-baseline text-sm text-white"
+                className="flex justify-between items-baseline text-sm text-white gap-2"
               >
-                <span>{a.name}</span>
-                <span className="tabular-nums">
-                  +{formatPrice(a.priceCents)}
+                <span className="min-w-0">
+                  {a.name}
+                  {a.durationMinutes != null && a.durationMinutes > 0 ? (
+                    <span className="text-zinc-500 block text-xs mt-0.5 font-normal">
+                      + {formatDurationMinutes(a.durationMinutes)}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="tabular-nums shrink-0">
+                  + {formatPrice(a.priceCents)}
                 </span>
               </div>
             ))}

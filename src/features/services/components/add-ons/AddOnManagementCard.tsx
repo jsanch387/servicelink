@@ -1,9 +1,14 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
-import type { AddOnRow } from './addOnTypes';
-import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import {
+  ClockIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import React from 'react';
+import type { AddOnRow } from './addOnTypes';
 
 function formatPrice(priceCents: number | null): string {
   if (priceCents == null) return 'Contact for quote';
@@ -22,6 +27,11 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const durationLabel =
+    addOn.duration_minutes != null && addOn.duration_minutes > 0
+      ? formatDurationMinutes(addOn.duration_minutes)
+      : null;
+
   return (
     <GlassCard
       blurColor="bg-zinc-500"
@@ -40,6 +50,15 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
             {formatPrice(addOn.price_cents)}
           </span>
         </div>
+
+        {durationLabel ? (
+          <div className="flex items-center gap-1.5 text-zinc-500">
+            <ClockIcon className="h-3 w-3 flex-shrink-0" />
+            <span className="text-[10px] font-medium tracking-wide">
+              +{durationLabel}
+            </span>
+          </div>
+        ) : null}
 
         {/* Actions — outlined style (matches ServiceManagementCard) */}
         <div className="flex items-stretch gap-2 pt-4 sm:pt-5">

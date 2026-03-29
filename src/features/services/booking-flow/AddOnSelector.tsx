@@ -1,12 +1,13 @@
 'use client';
 
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import type { ServiceAddOn } from './types';
 
 interface AddOnSelectorProps {
   addOns: ServiceAddOn[];
   selectedIds: Set<string>;
-  // eslint-disable-next-line no-unused-vars
+
   onToggle: (id: string) => void;
 }
 
@@ -31,6 +32,10 @@ export function AddOnSelector({
     <div className="space-y-2" role="group" aria-label="Optional add-ons">
       {addOns.map(addOn => {
         const isSelected = selectedIds.has(addOn.id);
+        const extra =
+          addOn.durationMinutes != null && addOn.durationMinutes > 0
+            ? formatDurationMinutes(addOn.durationMinutes)
+            : null;
         return (
           <button
             key={addOn.id}
@@ -42,9 +47,16 @@ export function AddOnSelector({
                 : 'border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
             }`}
             aria-pressed={isSelected}
-            aria-label={`${addOn.name}, ${formatPrice(addOn.priceCents)}. ${isSelected ? 'Selected' : 'Not selected'}`}
+            aria-label={`${addOn.name}, ${formatPrice(addOn.priceCents)}${extra ? `, + ${extra}` : ''}. ${isSelected ? 'Selected' : 'Not selected'}`}
           >
-            <span className="font-medium">{addOn.name}</span>
+            <span className="font-medium min-w-0">
+              <span className="block">{addOn.name}</span>
+              {extra ? (
+                <span className="block text-xs font-normal text-zinc-500 mt-0.5">
+                  + {extra}
+                </span>
+              ) : null}
+            </span>
             <span className="flex items-center gap-2 shrink-0">
               <span className="text-sm text-zinc-400">
                 +{formatPrice(addOn.priceCents)}

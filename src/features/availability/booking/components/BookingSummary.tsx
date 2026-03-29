@@ -3,7 +3,7 @@
 import { formatPhoneUsDisplay } from '@/lib/formatPhoneUs';
 import React from 'react';
 import type { AddOnDisplay, CustomerFormData } from '../types';
-import { formatDurationMinutes } from '../utils/formatDuration';
+import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 
 function formatAddress(customer: CustomerFormData): string {
   const parts = [
@@ -27,6 +27,8 @@ function formatVehicle(customer: CustomerFormData): string | null {
 interface BookingSummaryProps {
   serviceName: string;
   serviceDurationMinutes: number;
+  /** When set (e.g. base service + add-on time), shown as appointment length. */
+  totalAppointmentMinutes?: number;
   servicePriceCents?: number;
   /** Add-ons selected on the service details page. */
   selectedAddOns?: AddOnDisplay[];
@@ -37,13 +39,10 @@ interface BookingSummaryProps {
   customer: CustomerFormData;
 }
 
-function formatPrice(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
   serviceName,
   serviceDurationMinutes,
+  totalAppointmentMinutes,
   servicePriceCents,
   selectedAddOns = [],
   totalPriceCents,
@@ -51,6 +50,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   time,
   customer,
 }) => {
+  const totalMinutes = totalAppointmentMinutes ?? serviceDurationMinutes;
   const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString(
     undefined,
     {
@@ -69,54 +69,15 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       </h2>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
-        <div>
-          <p className="text-xs text-gray-500 tracking-wider mb-1">Service</p>
-          <div className="flex justify-between gap-3 items-start">
-            <div className="min-w-0">
-              <p className="text-white font-medium">{serviceName}</p>
-              <p className="text-sm text-gray-400">
-                {formatDurationMinutes(serviceDurationMinutes)}
-              </p>
-            </div>
-            {servicePriceCents != null && (
-              <span className="text-sm text-gray-400 shrink-0 tabular-nums text-right">
-                {formatPrice(servicePriceCents)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {selectedAddOns.length > 0 && (
-          <div>
-            <p className="text-xs text-gray-500 tracking-wider mb-1">Add-ons</p>
-            <ul className="space-y-1">
-              {selectedAddOns.map(addOn => (
-                <li
-                  key={addOn.id}
-                  className="flex justify-between gap-3 text-sm"
-                >
-                  <span className="text-white min-w-0">{addOn.name}</span>
-                  <span className="text-gray-400 shrink-0 tabular-nums text-right">
-                    {formatPrice(addOn.priceCents)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {selectedAddOns.length > 0 &&
-          totalPriceCents != null &&
-          totalPriceCents > 0 && (
-            <div className="pt-2 border-t border-white/10">
-              <div className="flex justify-between items-center gap-3">
-                <span className="text-sm font-medium text-white">Total</span>
-                <span className="text-lg font-semibold text-white tabular-nums text-right">
-                  {formatPrice(totalPriceCents)}
-                </span>
-              </div>
-            </div>
-          )}
+        <BookingPriceBreakdown
+          serviceName={serviceName}
+          serviceDurationMinutes={serviceDurationMinutes}
+          servicePriceCents={servicePriceCents}
+          selectedAddOns={selectedAddOns}
+          totalBookingDurationMinutes={totalMinutes}
+          totalPriceCents={totalPriceCents}
+          serviceTitleTag="h3"
+        />
 
         <div>
           <p className="text-xs text-gray-500 tracking-wider mb-1">

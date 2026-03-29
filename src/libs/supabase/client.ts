@@ -146,6 +146,8 @@ export type Database = {
           business_id: string;
           name: string;
           price_cents: number;
+          /** Optional extra time (minutes); null = not specified. Use 30-step grid in app. */
+          duration_minutes: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -154,6 +156,7 @@ export type Database = {
           business_id: string;
           name: string;
           price_cents?: number;
+          duration_minutes?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -162,6 +165,7 @@ export type Database = {
           business_id?: string;
           name?: string;
           price_cents?: number;
+          duration_minutes?: number | null;
           created_at?: string;
           updated_at?: string;
         };

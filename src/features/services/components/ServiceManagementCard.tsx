@@ -1,6 +1,7 @@
 'use client';
 
 import { GlassCard, Switch } from '@/components/shared';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   Bars3Icon,
@@ -25,18 +26,12 @@ function formatPrice(priceCents: number | null): string {
 function formatDuration(service: ServiceRow): string | null {
   const minutes = service.duration_minutes;
   const hours = service.hours_to_complete;
-  if (minutes != null && minutes > 0) {
-    const h = minutes / 60;
-    if (h < 24) return `${h} ${h === 1 ? 'Hour' : 'Hours'}`;
-    const days = Math.floor(h / 24);
-    return `${days} ${days === 1 ? 'Day' : 'Days'}`;
-  }
-  if (hours != null && hours > 0) {
-    if (hours < 24) return `${hours} ${hours === 1 ? 'Hour' : 'Hours'}`;
-    const days = Math.floor(hours / 24);
-    return `${days} ${days === 1 ? 'Day' : 'Days'}`;
-  }
-  return null;
+  let totalMin: number | null = null;
+  if (minutes != null && minutes > 0) totalMin = minutes;
+  else if (hours != null && hours > 0) totalMin = Math.round(hours * 60);
+
+  if (totalMin == null || totalMin <= 0) return null;
+  return formatDurationMinutes(totalMin);
 }
 
 export interface ServiceManagementCardProps {
@@ -46,24 +41,24 @@ export interface ServiceManagementCardProps {
   /** When true, show drag handle and allow drag; hide Edit/Delete row. */
   isReorderMode: boolean;
   /** Toggle on/off. */
-  // eslint-disable-next-line no-unused-vars
+
   onToggleActive?: (serviceId: string, active: boolean) => void;
   /** Edit — deprecated; Edit button links to service edit page. */
-  // eslint-disable-next-line no-unused-vars
+
   onEdit?: (service: ServiceRow) => void;
   /** Delete — no-op for now. */
-  // eslint-disable-next-line no-unused-vars
+
   onDelete?: (serviceId: string) => void;
   /** Drag start: parent stores drag index. */
-  // eslint-disable-next-line no-unused-vars
+
   onDragStart?: (index: number) => void;
   /** Drag end: parent clears drag state. */
   onDragEnd?: () => void;
   /** Move item up (tap reorder — mobile friendly). */
-  // eslint-disable-next-line no-unused-vars
+
   onMoveUp?: (index: number) => void;
   /** Move item down (tap reorder — mobile friendly). */
-  // eslint-disable-next-line no-unused-vars
+
   onMoveDown?: (index: number) => void;
   /** Total number of services (to disable up on first, down on last). */
   totalCount?: number;

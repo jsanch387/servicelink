@@ -10,7 +10,15 @@ import React, {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { compareTime, from24h, to24h } from '../utils/timeOptions';
+import {
+  SERVICE_DURATION_MAX_MINUTES,
+  SERVICE_DURATION_MIN_MINUTES,
+  compareTime,
+  formatServiceDurationSelectLabel,
+  from24h,
+  normalizeServiceDurationHHmm,
+  to24h,
+} from '../utils/timeOptions';
 import { ScrollDial } from './ScrollDial';
 
 const HOUR_12_OPTIONS = Array.from({ length: 12 }, (_, i) => {
@@ -28,6 +36,11 @@ const AMPM_OPTIONS = [
   { value: 'PM', label: 'PM' },
 ];
 
+const DURATION_HOUR_OPTIONS = Array.from({ length: 11 }, (_, i) => ({
+  value: String(i),
+  label: String(i),
+}));
+
 function valueToLabel(value: string): string {
   const [h = '', m = '00'] = value.split(':');
   const hour24 = parseInt(h, 10) || 9;
@@ -38,10 +51,14 @@ function valueToLabel(value: string): string {
 
 interface TimeSelectProps {
   value: string;
-  // eslint-disable-next-line no-unused-vars -- callback type; param name required by TS
+
   onChange: (value: string) => void;
   disabled?: boolean;
   minTime?: string;
+  /** `duration` = service length (0–10 hr, :00 / :30), same dial UX as availability times. */
+  variant?: 'clock' | 'duration';
+  /** When `variant="duration"` and `value` is empty, shown on the closed trigger. */
+  durationPlaceholder?: string;
   'aria-label'?: string;
   className?: string;
 }
@@ -51,18 +68,37 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
   onChange,
   disabled = false,
   minTime,
-  'aria-label': ariaLabel = 'Select time',
+  variant = 'clock',
+  durationPlaceholder = 'Select duration',
+  'aria-label': ariaLabel,
   className = '',
 }) => {
+  const resolvedAriaLabel =
+    ariaLabel ??
+    (variant === 'duration' ? 'Select service duration' : 'Select time');
+
   const normalized = useMemo(() => {
+    if (variant === 'duration') {
+      const trimmed = value.trim();
+      if (!trimmed) return '01:00';
+      return normalizeServiceDurationHHmm(trimmed) || '01:00';
+    }
     const [h, m] = value.split(':');
     return `${h?.padStart(2, '0') ?? '09'}:${m === '30' ? '30' : '00'}`;
-  }, [value]);
+  }, [value, variant]);
 
   const { hour12, minute, ampm } = useMemo(
     () => from24h(normalized),
     [normalized]
   );
+
+  const durationParts = useMemo(() => {
+    if (variant !== 'duration') return { hour0to10: 1, minute: '00' as const };
+    const [hs = '01', ms = '00'] = normalized.split(':');
+    const h = Math.min(10, Math.max(0, parseInt(hs, 10) || 0));
+    const m: '00' | '30' = ms === '30' ? '30' : '00';
+    return { hour0to10: h, minute: m };
+  }, [normalized, variant]);
 
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -72,30 +108,73 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
   const [draftHour12, setDraftHour12] = useState(String(hour12));
   const [draftMinute, setDraftMinute] = useState<'00' | '30'>(minute);
   const [draftAmpm, setDraftAmpm] = useState<'AM' | 'PM'>(ampm);
+  const [draftHour0to10, setDraftHour0to10] = useState(
+    String(durationParts.hour0to10)
+  );
   // Only sync dial scroll from value when sheet just opened; avoids dial jumping when user scrolls
   const [syncDialFromValue, setSyncDialFromValue] = useState(false);
 
   // When picker opens (mobile or desktop), init draft from current value and allow dials to sync scroll once
   useEffect(() => {
     if (open) {
-      const p = from24h(normalized);
-      setDraftHour12(String(p.hour12));
-      setDraftMinute(p.minute);
-      setDraftAmpm(p.ampm);
+      if (variant === 'duration') {
+        const base =
+          value.trim() === ''
+            ? '01:00'
+            : normalizeServiceDurationHHmm(value) || '01:00';
+        const [hs = '01', ms = '00'] = base.split(':');
+        const hParsed = parseInt(hs, 10);
+        const hClamped = Number.isFinite(hParsed)
+          ? Math.min(10, Math.max(0, hParsed))
+          : 1;
+        setDraftHour0to10(String(hClamped));
+        setDraftMinute(ms === '30' ? '30' : '00');
+      } else {
+        const p = from24h(normalized);
+        setDraftHour12(String(p.hour12));
+        setDraftMinute(p.minute);
+        setDraftAmpm(p.ampm);
+      }
       setSyncDialFromValue(true);
       const t = setTimeout(() => setSyncDialFromValue(false), 250);
       return () => clearTimeout(t);
     } else {
       setSyncDialFromValue(false);
     }
-  }, [open, normalized]);
+  }, [open, normalized, variant, value]);
 
   const handleUpdateTime = useCallback(() => {
+    if (variant === 'duration') {
+      const h = Math.min(10, Math.max(0, parseInt(draftHour0to10, 10) || 0));
+      const mm = draftMinute;
+      let totalMins = h * 60 + (mm === '30' ? 30 : 0);
+      if (totalMins < SERVICE_DURATION_MIN_MINUTES) {
+        totalMins = SERVICE_DURATION_MIN_MINUTES;
+      }
+      if (totalMins > SERVICE_DURATION_MAX_MINUTES) {
+        totalMins = SERVICE_DURATION_MAX_MINUTES;
+      }
+      const nh = Math.floor(totalMins / 60);
+      const nrem = totalMins % 60;
+      onChange(
+        `${nh.toString().padStart(2, '0')}:${nrem === 30 ? '30' : '00'}`
+      );
+      setOpen(false);
+      return;
+    }
     let next = to24h(parseInt(draftHour12, 10) || 9, draftMinute, draftAmpm);
     if (minTime && compareTime(next, minTime) < 0) next = minTime;
     onChange(next);
     setOpen(false);
-  }, [draftHour12, draftMinute, draftAmpm, minTime, onChange]);
+  }, [
+    variant,
+    draftHour0to10,
+    draftMinute,
+    draftHour12,
+    draftAmpm,
+    minTime,
+    onChange,
+  ]);
 
   const handleOpen = useCallback(() => {
     if (disabled) return;
@@ -119,64 +198,114 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
     return () => document.removeEventListener('keydown', onKey);
   }, [open, handleClose]);
 
-  const displayLabel = valueToLabel(normalized);
+  const displayLabel =
+    variant === 'duration'
+      ? value.trim() === ''
+        ? durationPlaceholder
+        : formatServiceDurationSelectLabel(
+            normalizeServiceDurationHHmm(value) || value
+          )
+      : valueToLabel(normalized);
 
-  const timeDialContent = (
-    <>
-      <div className="flex items-stretch justify-center gap-1 py-4">
-        <div className="flex-1 max-w-[80px]" aria-label="Hour">
-          <ScrollDial
-            options={HOUR_12_OPTIONS}
-            value={draftHour12}
-            onChange={setDraftHour12}
-            syncFromValue={syncDialFromValue}
-            aria-label="Hour"
-          />
+  const timeDialContent =
+    variant === 'duration' ? (
+      <>
+        <div className="flex items-stretch justify-center gap-1 py-4">
+          <div className="flex-1 max-w-[80px]" aria-label="Hours">
+            <ScrollDial
+              options={DURATION_HOUR_OPTIONS}
+              value={draftHour0to10}
+              onChange={setDraftHour0to10}
+              syncFromValue={syncDialFromValue}
+              aria-label="Hours"
+            />
+          </div>
+          <span className="flex items-center justify-center text-gray-500 text-xl font-medium w-4 shrink-0">
+            :
+          </span>
+          <div className="flex-1 max-w-[72px]" aria-label="Minutes">
+            <ScrollDial
+              options={MINUTE_OPTIONS}
+              value={draftMinute}
+              onChange={m => setDraftMinute(m as '00' | '30')}
+              syncFromValue={syncDialFromValue}
+              aria-label="Minutes"
+            />
+          </div>
         </div>
-        <span className="flex items-center justify-center text-gray-500 text-xl font-medium w-4 shrink-0">
-          :
-        </span>
-        <div className="flex-1 max-w-[72px]" aria-label="Minute">
-          <ScrollDial
-            options={MINUTE_OPTIONS}
-            value={draftMinute}
-            onChange={m => setDraftMinute(m as '00' | '30')}
-            syncFromValue={syncDialFromValue}
-            aria-label="Minute"
-          />
-        </div>
-        <div className="flex-1 max-w-[64px]" aria-label="AM/PM">
-          <ScrollDial
-            options={AMPM_OPTIONS}
-            value={draftAmpm}
-            onChange={a => setDraftAmpm(a as 'AM' | 'PM')}
-            syncFromValue={syncDialFromValue}
-            aria-label="AM or PM"
-          />
-        </div>
-      </div>
-      <div
-        className="px-4 pb-4"
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-      >
-        <Button
-          type="button"
-          onClick={handleUpdateTime}
-          variant="inverse"
-          fullWidth
-          className="font-semibold"
+        <div
+          className="px-4 pb-4"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
         >
-          Update time
-        </Button>
-      </div>
-    </>
-  );
+          <Button
+            type="button"
+            onClick={handleUpdateTime}
+            variant="inverse"
+            fullWidth
+            className="font-semibold"
+          >
+            Set duration
+          </Button>
+        </div>
+      </>
+    ) : (
+      <>
+        <div className="flex items-stretch justify-center gap-1 py-4">
+          <div className="flex-1 max-w-[80px]" aria-label="Hour">
+            <ScrollDial
+              options={HOUR_12_OPTIONS}
+              value={draftHour12}
+              onChange={setDraftHour12}
+              syncFromValue={syncDialFromValue}
+              aria-label="Hour"
+            />
+          </div>
+          <span className="flex items-center justify-center text-gray-500 text-xl font-medium w-4 shrink-0">
+            :
+          </span>
+          <div className="flex-1 max-w-[72px]" aria-label="Minute">
+            <ScrollDial
+              options={MINUTE_OPTIONS}
+              value={draftMinute}
+              onChange={m => setDraftMinute(m as '00' | '30')}
+              syncFromValue={syncDialFromValue}
+              aria-label="Minute"
+            />
+          </div>
+          <div className="flex-1 max-w-[64px]" aria-label="AM/PM">
+            <ScrollDial
+              options={AMPM_OPTIONS}
+              value={draftAmpm}
+              onChange={a => setDraftAmpm(a as 'AM' | 'PM')}
+              syncFromValue={syncDialFromValue}
+              aria-label="AM or PM"
+            />
+          </div>
+        </div>
+        <div
+          className="px-4 pb-4"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        >
+          <Button
+            type="button"
+            onClick={handleUpdateTime}
+            variant="inverse"
+            fullWidth
+            className="font-semibold"
+          >
+            Update time
+          </Button>
+        </div>
+      </>
+    );
 
   const dialogHeader = (
     <div
       className={`flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#141414] shrink-0 ${isMobile ? 'rounded-t-2xl' : 'rounded-t-xl'}`}
     >
-      <span className="text-sm font-medium text-gray-400">Select time</span>
+      <span className="text-sm font-medium text-gray-400">
+        {variant === 'duration' ? 'Select duration' : 'Select time'}
+      </span>
       <button
         type="button"
         onClick={handleClose}
@@ -201,7 +330,7 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
               <div
                 className="fixed bottom-0 left-0 right-0 z-[101] rounded-t-2xl border-t border-white/10 bg-[#141414] shadow-2xl"
                 role="dialog"
-                aria-label={ariaLabel}
+                aria-label={resolvedAriaLabel}
                 aria-modal="true"
               >
                 {dialogHeader}
@@ -218,7 +347,7 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
               <div
                 className="fixed inset-0 z-[101] flex items-center justify-center p-4"
                 role="dialog"
-                aria-label={ariaLabel}
+                aria-label={resolvedAriaLabel}
                 aria-modal="true"
                 onClick={handleClose}
               >
@@ -244,14 +373,18 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
           type="button"
           onClick={handleOpen}
           disabled={disabled}
-          aria-label={ariaLabel}
+          aria-label={resolvedAriaLabel}
           aria-expanded={open}
           aria-haspopup="dialog"
           className={`
             w-full min-w-0 flex items-center justify-between gap-2
             h-12 px-4 rounded-xl
             border border-white/10 bg-white/5
-            text-left text-base font-medium text-white
+            text-left text-base font-medium ${
+              variant === 'duration' && value.trim() === ''
+                ? 'text-gray-500'
+                : 'text-white'
+            }
             transition-all duration-150
             focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40
             disabled:opacity-50 disabled:cursor-not-allowed

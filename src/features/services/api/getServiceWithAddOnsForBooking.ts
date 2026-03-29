@@ -18,6 +18,7 @@ export interface AddOnForBooking {
   id: string;
   name: string;
   priceCents: number;
+  durationMinutes?: number | null;
 }
 
 export interface ServiceWithAddOnsForBooking {
@@ -71,15 +72,21 @@ export async function getServiceWithAddOnsForBooking(
     if (addonIds.length > 0) {
       const { data: addonRows } = await supabase
         .from('service_addons')
-        .select('id, name, price_cents')
+        .select('id, name, price_cents, duration_minutes')
         .eq('business_id', businessId)
         .in('id', addonIds);
 
       addOns = (addonRows ?? []).map(
-        (r: { id: string; name: string; price_cents: number }) => ({
+        (r: {
+          id: string;
+          name: string;
+          price_cents: number;
+          duration_minutes?: number | null;
+        }) => ({
           id: r.id,
           name: r.name,
           priceCents: r.price_cents ?? 0,
+          durationMinutes: r.duration_minutes ?? null,
         })
       );
     }

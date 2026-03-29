@@ -4,27 +4,26 @@ import {
   Button,
   Input,
   PriceInput,
-  Select,
-  SERVICE_DURATION_HOURS_OPTIONS,
   Switch,
   TextArea,
 } from '@/components/shared';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';
 import { updateServiceAction } from '@/features/services/actions/updateService';
 import { createAddOnAction } from '@/features/services/add-ons';
 import type { ServiceRow } from '@/features/services/types/services';
+import {
+  parseServiceEditDurationForSave,
+  serviceEditDurationPickerValue,
+} from '@/features/services/utils/serviceEditForm';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
 import { EditAddOnModal } from './add-ons/EditAddOnModal';
-
-const DURATION_OPTIONS = [
-  { value: '', label: 'Select duration' },
-  ...SERVICE_DURATION_HOURS_OPTIONS,
-];
+import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
 
 const MAX_DESCRIPTION_LENGTH = 280;
 
@@ -37,26 +36,17 @@ function serviceToForm(service: ServiceRow): {
   name: string;
   description: string;
   price: string;
-  durationHours: string;
+  durationHHmm: string;
 } {
   const price =
     service.price_cents != null && service.price_cents > 0
       ? (service.price_cents / 100).toFixed(2)
       : '';
-  const durationMinutes =
-    service.duration_minutes ??
-    (service.hours_to_complete != null
-      ? Math.round(service.hours_to_complete * 60)
-      : null);
-  const hoursForSelect =
-    durationMinutes != null && durationMinutes > 0
-      ? Math.min(10, Math.max(1, Math.round(durationMinutes / 60)))
-      : null;
   return {
     name: service.name ?? '',
     description: service.description ?? '',
     price,
-    durationHours: hoursForSelect != null ? String(hoursForSelect) : '',
+    durationHHmm: serviceEditDurationPickerValue(service),
   };
 }
 
@@ -90,7 +80,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [durationHours, setDurationHours] = useState('');
+  const [durationHHmm, setDurationHHmm] = useState('');
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<Set<string>>(
     () => new Set(initialSelectedAddOnIds)
   );
@@ -109,7 +99,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     setName(form.name);
     setDescription(form.description);
     setPrice(form.price);
-    setDurationHours(form.durationHours);
+    setDurationHHmm(form.durationHHmm);
   }, [service]);
 
   // Sync when business type implies vehicle booking options (e.g. after profile edit).
@@ -151,6 +141,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       const createResult = await createAddOnAction({
         name: data.name,
         price_cents: data.price_cents ?? 0,
+        duration_minutes: data.duration_minutes,
       });
       if (!createResult.success || !createResult.data) {
         setIsSavingAddOn(false);
@@ -193,9 +184,12 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       !price.trim() || isNaN(priceNum) || priceNum < 0
         ? null
         : Math.round(priceNum * 100);
-    const durationMinutes = durationHours
-      ? parseInt(durationHours, 10) * 60
-      : null;
+    const durationResult = parseServiceEditDurationForSave(durationHHmm);
+    if (!durationResult.ok) {
+      setSaveError(durationResult.error);
+      return;
+    }
+    const durationMinutes = durationResult.durationMinutes;
 
     setIsSaving(true);
 
@@ -232,7 +226,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     name,
     description,
     price,
-    durationHours,
+    durationHHmm,
     selectedAddOnIds,
     addOnsPool,
     service.id,
@@ -290,13 +284,17 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
                   value={price}
                   onChange={setPrice}
                 />
-                <Select
-                  label="Duration"
-                  placeholder="Select duration"
-                  value={durationHours}
-                  onChange={setDurationHours}
-                  options={DURATION_OPTIONS}
-                />
+                <div className="min-w-0">
+                  <span className="block text-sm font-medium text-gray-300 mb-2">
+                    Duration
+                  </span>
+                  <TimeSelect
+                    variant="duration"
+                    value={durationHHmm}
+                    onChange={setDurationHHmm}
+                    durationPlaceholder="Select duration"
+                  />
+                </div>
               </div>
             </form>
           </section>
@@ -358,6 +356,10 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
               >
                 {addOnsPool.map(addOn => {
                   const isSelected = selectedAddOnIds.has(addOn.id);
+                  const addOnDuration =
+                    addOn.duration_minutes != null && addOn.duration_minutes > 0
+                      ? formatDurationMinutes(addOn.duration_minutes)
+                      : null;
                   return (
                     <button
                       key={addOn.id}
@@ -369,9 +371,18 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
                           : 'border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
                       }`}
                       aria-pressed={isSelected}
-                      aria-label={`${addOn.name}, ${formatPrice(addOn.price_cents)}. ${isSelected ? 'Selected' : 'Not selected'}`}
+                      aria-label={`${addOn.name}, ${formatPrice(addOn.price_cents)}${addOnDuration ? `, ${addOnDuration} extra` : ''}. ${isSelected ? 'Selected' : 'Not selected'}`}
                     >
-                      <span className="font-medium truncate">{addOn.name}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="font-medium truncate block">
+                          {addOn.name}
+                        </span>
+                        {addOnDuration ? (
+                          <span className="text-xs text-zinc-500 mt-0.5 block">
+                            +{addOnDuration}
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="flex items-center gap-2 shrink-0">
                         <span className="text-sm text-zinc-400">
                           {formatPrice(addOn.price_cents)}

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 'use client';
 
 import { Button } from '@/components/shared';
@@ -9,8 +8,8 @@ import type {
   AvailabilityBookingPageProps,
   CustomerFormData,
 } from '../types';
-import { formatDurationMinutes } from '../utils/formatDuration';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
+import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
 import { CustomerForm, isCustomerFormValid } from './CustomerForm';
@@ -57,6 +56,14 @@ export function AvailabilityBookingPage({
     const addOnTotal = selectedAddOns.reduce((sum, a) => sum + a.priceCents, 0);
     return base + addOnTotal;
   }, [servicePriceCents, selectedAddOns]);
+
+  const totalBookingDurationMinutes = useMemo(() => {
+    const addOnMins = selectedAddOns.reduce((sum, a) => {
+      const m = a.durationMinutes;
+      return sum + (m != null && m > 0 ? m : 0);
+    }, 0);
+    return serviceDurationMinutes + addOnMins;
+  }, [serviceDurationMinutes, selectedAddOns]);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -106,9 +113,10 @@ export function AvailabilityBookingPage({
                   id: a.id,
                   name: a.name,
                   priceCents: a.priceCents,
+                  durationMinutes: a.durationMinutes ?? undefined,
                 }))
               : undefined,
-          durationMinutes: serviceDurationMinutes,
+          durationMinutes: totalBookingDurationMinutes,
           scheduledDate,
           startTime: selectedTime,
           customer: customerData,
@@ -156,42 +164,19 @@ export function AvailabilityBookingPage({
         {/* Step 1 – Schedule */}
         {step === 1 && (
           <div className="space-y-6 pt-4">
-            <section>
-              <h2 className="text-lg font-semibold text-white mb-1">
-                {serviceName || 'Booking'}
-              </h2>
-              <p className="text-sm text-gray-400">
-                {formatDurationMinutes(serviceDurationMinutes)}
-                {servicePriceCents != null && (
-                  <> · ${(servicePriceCents / 100).toFixed(2)}</>
-                )}
-              </p>
-              {selectedAddOns.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <p className="text-xs text-gray-500 tracking-wider mb-1.5">
-                    Add-ons
-                  </p>
-                  <ul className="space-y-1">
-                    {selectedAddOns.map(addOn => (
-                      <li
-                        key={addOn.id}
-                        className="flex justify-between text-sm text-gray-300"
-                      >
-                        <span>{addOn.name}</span>
-                        <span>${(addOn.priceCents / 100).toFixed(2)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {totalPriceCents != null && totalPriceCents > 0 && (
-                    <p className="text-sm font-medium text-white mt-2">
-                      Total · ${(totalPriceCents / 100).toFixed(2)}
-                    </p>
-                  )}
-                </div>
-              )}
-            </section>
+            <BookingPriceBreakdown
+              serviceName={serviceName}
+              serviceDurationMinutes={serviceDurationMinutes}
+              servicePriceCents={servicePriceCents}
+              selectedAddOns={selectedAddOns}
+              totalBookingDurationMinutes={totalBookingDurationMinutes}
+              totalPriceCents={totalPriceCents}
+            />
             <DateSelector
               weeklySchedule={weeklySchedule}
+              serviceDurationMinutes={totalBookingDurationMinutes}
+              existingBookings={existingBookings}
+              timeOffBlocks={timeOffBlocksProp}
               selectedDate={selectedDate}
               onSelectDate={date => {
                 setSelectedDate(date);
@@ -200,7 +185,7 @@ export function AvailabilityBookingPage({
             />
             <TimeSlotGrid
               selectedDate={selectedDate}
-              serviceDurationMinutes={serviceDurationMinutes}
+              serviceDurationMinutes={totalBookingDurationMinutes}
               weeklySchedule={weeklySchedule}
               existingBookings={existingBookings}
               timeOffBlocks={timeOffBlocksProp}
@@ -236,6 +221,7 @@ export function AvailabilityBookingPage({
             <BookingSummary
               serviceName={serviceName}
               serviceDurationMinutes={serviceDurationMinutes}
+              totalAppointmentMinutes={totalBookingDurationMinutes}
               servicePriceCents={servicePriceCents}
               selectedAddOns={selectedAddOns}
               totalPriceCents={totalPriceCents}

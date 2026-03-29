@@ -43,6 +43,8 @@ export interface AddOnDisplay {
   id: string;
   name: string;
   priceCents: number;
+  /** Extra time this add-on adds; omit or null = none. */
+  durationMinutes?: number | null;
 }
 
 export interface AvailabilityBookingPageProps {
@@ -82,6 +84,7 @@ export interface AddOnAtBooking {
   id: string;
   name: string;
   priceCents: number;
+  durationMinutes?: number | null;
 }
 
 /** Payload for POST /api/public/bookings (client → API). */
