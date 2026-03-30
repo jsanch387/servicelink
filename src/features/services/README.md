@@ -68,6 +68,48 @@ src/features/services/
 `ORDER BY sort_order ASC NULLS LAST, created_at ASC`  
 So: explicit order first, then creation order for rows with no `sort_order`.
 
+### `service_price_options` (new)
+
+This table stores multiple price choices for one service (for example: Sedan, SUV, Truck).
+
+| Column | Purpose |
+|---|---|
+| `id` | UUID primary key |
+| `service_id` | FK to `business_services.id` (**ON DELETE CASCADE**) |
+| `business_id` | FK to `business_profiles.id` (used for ownership/RLS + fast filtering) |
+| `label` | Option name shown to customers (e.g. "Sedan") |
+| `price_cents` | Price in cents (>= 0) |
+| `duration_minutes` | Duration in minutes (> 0) |
+| `sort_order` | Display order within one service |
+| `is_active` | Soft visibility toggle for booking |
+| `created_at` | Set on insert |
+| `updated_at` | Updated by trigger |
+
+**Notes**
+
+- One service can have many options.
+- Deleting a service deletes its options via cascade.
+- `business_id` is auto-synced from parent `service_id` by trigger to prevent cross-business mismatches.
+- Duplicate-label protection is currently not enforced (by product decision for now).
+
+**Indexes**
+
+- `(service_id, sort_order)` for ordered option loading per service.
+- `(business_id)` for business-scoped reads.
+- Partial index on `(service_id)` where `is_active = true` for booking reads.
+
+**RLS ownership path**
+
+- `auth.users.id` -> `profiles.user_id` -> `business_profiles.profile_id`
+- Owner check used by policies:
+  - `business_profiles.id = service_price_options.business_id`
+  - `business_profiles.profile_id = auth.uid()`
+
+**Policy summary**
+
+- `authenticated` owners can select/insert/update/delete only their own option rows.
+- Optional `anon` select policy can be enabled for public booking reads (`is_active = true` and parent service active).
+
 ---
 
 ## How Data Is Loaded
@@ -83,6 +125,20 @@ So: explicit order first, then creation order for rows with no `sort_order`.
    - Selects all rows for that `business_id`, ordered by `sort_order` then `created_at`.
    - Returns `{ success, data: ServiceRow[] | null, error }`.
 3. **UI:** Passes `initialServices` and optional `fetchError` into `ServicesContent`, which keeps its own client state for list, add, edit, delete, reorder, and toggle.
+
+### Service Edit Page (`/dashboard/services/[serviceId]`)
+
+1. **Page (server):** `app/dashboard/services/[serviceId]/page.tsx`
+   - Ensures auth + completed onboarding.
+   - Loads in parallel:
+     - `getServices(businessProfile.id)` (base service row)
+     - `getAddOns(businessProfile.id)` (add-on pool)
+     - `getServiceAddOnIds(serviceId)` (selected add-ons)
+     - `getServicePriceOptions(serviceId, businessProfile.id)` (price options)
+2. **UI hydration:** `ServiceEditScreen` receives:
+   - `service.price_options_enabled` (toggle initial state)
+   - `initialPriceOptions` (`service_price_options` ordered by `sort_order`)
+3. **Rendering rule:** if `price_options_enabled` is false, the pricing options section stays in the "off" state and base service price/duration remain the active values.
 
 ### Public Profile & Business Profile View
 
@@ -111,7 +167,7 @@ All writes go through **Server Actions** in `actions/`. Each action:
 - **Action:** `updateServiceAction(serviceId, payload: UpdateServicePayload)`
 - **API:** `updateService(supabase, serviceId, businessId, payload)`  
   Updates `name`, `description`, `price_cents`, `duration_minutes`, `updated_at`. Does not touch `is_active` or `sort_order`.
-- **Payload:** Same shape as create (name, description, price_cents, duration_minutes).
+- **Payload:** Same shape as create plus `price_options_enabled` (optional).
 
 ### Delete service
 
@@ -133,6 +189,18 @@ All writes go through **Server Actions** in `actions/`. Each action:
   For each id in `orderedIds`, sets `sort_order` to its index (0, 1, 2, …) and updates `updated_at`.  
   **When:** User clicks “Finish sorting” on the dashboard after reordering (drag or up/down). Order is the current list order; no order is persisted until the user explicitly finishes sorting.
 
+### Save service price options
+
+- **Action:** `saveServicePriceOptionsAction(serviceId, options)`
+- **API:** `saveServicePriceOptions(supabase, serviceId, businessId, options)`
+  - Replaces options atomically at the service scope by:
+    1. deleting existing `service_price_options` for that `(service_id, business_id)`,
+    2. inserting the new ordered list with `sort_order`.
+- **Validation path (client):** `ServiceEditScreen` blocks save when:
+  - toggle is ON and no options exist,
+  - any option is missing name, price, or duration.
+- **Toggle OFF behavior:** options remain stored in DB; they are ignored by UI/booking logic while disabled.
+
 ---
 
 ## Types (summary)
@@ -149,6 +217,18 @@ All are defined in `types/services.ts` and re-exported from the feature `index.t
 
 - **Load:** Page passes `fetchError` into `ServicesContent`; the UI shows an error state and does not render the list.
 - **Mutations:** Each action returns `{ success, error? }` (and `data?` where relevant). `ServicesContent` (and modals) set local error state and optional rollback (e.g. toggle revert) when `success` is false.
+
+---
+
+## Testing
+
+- **Duration utils:** `testing/serviceEditDuration.test.ts` validates parse/format/save-grid rules used by service + option durations.
+- **Pricing options UI:** `testing/servicePriceOptionsSection.test.tsx` verifies pricing-options helper text behavior and toggle state UX.
+- **Add-on duration utils:** `testing/addOnDurationForm.test.ts` covers add-on duration parsing and picker conversion.
+
+Recommended command for this feature:
+
+- `npx vitest run src/features/services/testing`
 
 ---
 
