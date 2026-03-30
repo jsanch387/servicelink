@@ -1,12 +1,11 @@
 /**
- * Loading state for Book page (availability or request booking).
- * Skeleton reflects the availability booking flow: stepper, content area, sticky CTA.
+ * Loading state for Book page (availability calendar step).
+ * Mirrors step 1 layout: BookingPriceBreakdown-style header, Calendar card, Choose time grid.
  */
 
 export default function BookPageLoading() {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
-      {/* Header with Back Button Skeleton */}
       <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <div className="h-5 w-32 bg-neutral-800 rounded animate-pulse" />
@@ -14,58 +13,59 @@ export default function BookPageLoading() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-28">
-        {/* Stepper skeleton */}
-        <div className="flex items-center justify-center gap-4 py-4 border-b border-white/10">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-full bg-neutral-800 animate-pulse" />
-              {i < 3 && (
-                <div className="h-px w-6 bg-neutral-800 rounded animate-pulse" />
-              )}
+        <div className="space-y-6 pt-4">
+          {/* BookingPriceBreakdown-style row */}
+          <section>
+            <div className="flex justify-between gap-4 items-start">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-6 w-48 max-w-full bg-neutral-800 rounded animate-pulse" />
+                <div className="h-4 w-36 bg-neutral-800 rounded animate-pulse" />
+              </div>
+              <div className="h-5 w-16 bg-neutral-800 rounded animate-pulse shrink-0 mt-0.5" />
             </div>
-          ))}
-        </div>
+          </section>
 
-        {/* Content skeleton – step 1 style: title + calendar block + time grid */}
-        <div className="space-y-6 pt-6">
-          {/* Service / step title */}
-          <div className="space-y-2">
-            <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse" />
-            <div className="h-4 w-24 bg-neutral-800 rounded animate-pulse" />
-          </div>
-
-          {/* Calendar-style card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 animate-pulse">
-            <div className="flex justify-between mb-4">
-              <div className="h-6 w-28 bg-neutral-800 rounded" />
+          {/* Calendar card — matches shared Calendar: max-w-[360px], rounded-2xl border */}
+          <div className="w-full sm:max-w-[360px] rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-6 px-0.5">
+              <div className="space-y-2">
+                <div className="h-7 w-28 bg-neutral-800 rounded animate-pulse" />
+                <div className="h-3 w-12 bg-neutral-800 rounded animate-pulse" />
+              </div>
               <div className="flex gap-2">
-                <div className="h-9 w-9 rounded-full bg-neutral-800" />
-                <div className="h-9 w-9 rounded-full bg-neutral-800" />
+                <div className="h-10 w-10 rounded-full bg-neutral-800 animate-pulse" />
+                <div className="h-10 w-10 rounded-full bg-neutral-800 animate-pulse" />
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-7 gap-1 text-center mb-4">
               {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="h-3 bg-neutral-800 rounded" />
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 35 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-square rounded-xl bg-neutral-800"
+                  className="h-3 w-3 mx-auto rounded bg-neutral-800 animate-pulse"
+                />
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-y-2 gap-x-1">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={`e-${i}`} className="aspect-square min-h-[44px]" />
+              ))}
+              {Array.from({ length: 28 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-square min-h-[44px] rounded-2xl bg-neutral-800/80 animate-pulse"
                 />
               ))}
             </div>
           </div>
 
-          {/* Time slots / section label */}
+          {/* TimeSlotGrid-style */}
           <div className="space-y-3">
-            <div className="h-6 w-28 bg-neutral-800 rounded animate-pulse" />
+            <div className="h-7 w-36 bg-neutral-800 rounded animate-pulse" />
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-12 rounded-xl bg-neutral-800 animate-pulse"
+                  className="min-h-[48px] rounded-xl bg-neutral-800 animate-pulse"
                 />
               ))}
             </div>
@@ -73,7 +73,6 @@ export default function BookPageLoading() {
         </div>
       </div>
 
-      {/* Sticky bottom CTA skeleton */}
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4">
         <div className="max-w-2xl mx-auto">
           <div className="h-12 w-full rounded-xl bg-neutral-800 animate-pulse" />

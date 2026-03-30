@@ -9,6 +9,7 @@ import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import {
   OWNER_MANUAL_BOOKING_FOR,
   ROUTES,
+  type BookDetailsStepQuery,
   getBusinessBookDetailsUrl,
   getBusinessBookPath,
 } from '@/constants/routes';
@@ -21,6 +22,7 @@ import { getAvailabilityForBusiness } from '@/features/availability/services/ava
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isProAccess } from '@/features/pricing';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
+import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import type { Metadata } from 'next';
@@ -38,6 +40,9 @@ interface BookingRequestPageProps {
   searchParams: Promise<{
     serviceId?: string;
     addOnIds?: string;
+    priceOptionId?: string;
+    /** Matches last book/details sub-step before calendar (`price` | `addons`). */
+    detailsStep?: string;
     skipDetails?: string;
     /** `owner` = business owner booking on a customer's behalf (from dashboard). */
     for?: string;
@@ -56,18 +61,12 @@ type PublicBusinessProfileForBooking = {
   [key: string]: unknown;
 };
 
-type PublicServiceForBooking = {
-  name: string;
-  price_cents: number | null;
-  hours_to_complete: number | null;
-  duration_minutes: number | null;
-};
-
 type ServiceRowForPicker = {
   id: string;
   name: string;
   description: string | null;
   price_cents: number | null;
+  price_options_enabled: boolean | null;
   hours_to_complete: number | null;
   duration_minutes: number | null;
 };
@@ -78,6 +77,7 @@ function mapRowToPickerItem(row: ServiceRowForPicker): BookServicePickerItem {
     name: row.name,
     description: row.description,
     priceCents: row.price_cents ?? 0,
+    priceOptionsEnabled: row.price_options_enabled === true,
     hours_to_complete: row.hours_to_complete ?? null,
     duration_minutes: row.duration_minutes ?? null,
   };
@@ -102,44 +102,6 @@ async function fetchBusinessProfileBySlug(slug: string) {
     return profileData as PublicBusinessProfileForBooking;
   } catch (error) {
     console.error('Error fetching business profile:', error);
-    return null;
-  }
-}
-
-async function fetchServiceById(
-  businessId: string,
-  serviceId: string
-): Promise<{
-  name: string;
-  price: number;
-  hours_to_complete: number | null;
-  duration_minutes: number | null;
-} | null> {
-  try {
-    const supabase = createSupabaseAdminClient();
-
-    const { data: serviceData, error } = await supabase
-      .from('business_services')
-      .select('name, price_cents, hours_to_complete, duration_minutes')
-      .eq('id', serviceId)
-      .eq('business_id', businessId)
-      .eq('is_active', true)
-      .single();
-
-    if (error || !serviceData) {
-      return null;
-    }
-
-    const service = serviceData as PublicServiceForBooking;
-
-    return {
-      name: service.name,
-      price: service.price_cents || 0,
-      hours_to_complete: service.hours_to_complete ?? null,
-      duration_minutes: service.duration_minutes ?? null,
-    };
-  } catch (error) {
-    console.error('Error fetching service by id:', error);
     return null;
   }
 }
@@ -173,9 +135,25 @@ export default async function BookingRequestPage({
   const {
     serviceId,
     addOnIds,
+    priceOptionId,
+    detailsStep: detailsStepRaw,
     skipDetails,
     for: bookingForParam,
   } = await searchParams;
+
+  const detailsStepForBack: BookDetailsStepQuery | undefined =
+    detailsStepRaw === 'addons' || detailsStepRaw === 'price'
+      ? detailsStepRaw
+      : undefined;
+  const addonIdList = addOnIds?.trim()
+    ? addOnIds
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : [];
+  /** Prefer explicit param; infer add-ons step from legacy URLs that only had addOnIds. */
+  const effectiveDetailsStep: BookDetailsStepQuery | undefined =
+    detailsStepForBack ?? (addonIdList.length > 0 ? 'addons' : undefined);
   const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
   const skipDetailsFlag = skipDetails === '1' || skipDetails === 'true';
 
@@ -269,7 +247,7 @@ export default async function BookingRequestPage({
     const { data: serviceRows, error: pickerServicesError } = await adminClient
       .from('business_services')
       .select(
-        'id, name, description, price_cents, hours_to_complete, duration_minutes'
+        'id, name, description, price_cents, price_options_enabled, hours_to_complete, duration_minutes'
       )
       .eq('business_id', businessProfile.id)
       .eq('is_active', true)
@@ -298,27 +276,47 @@ export default async function BookingRequestPage({
     }
   }
 
-  // Fetch service by ID when present (validates business_id)
-  const serviceDetails =
-    serviceId && serviceId.trim()
-      ? await fetchServiceById(businessProfile.id, serviceId.trim())
-      : null;
-  const serviceName = serviceDetails?.name ?? '';
-  const serviceDurationMinutes =
-    serviceDetails?.duration_minutes != null
-      ? Math.max(15, serviceDetails.duration_minutes)
-      : serviceDetails?.hours_to_complete != null
-        ? Math.max(15, Math.round(serviceDetails.hours_to_complete * 60))
-        : 60;
+  const trimmedServiceId = serviceId?.trim() ?? '';
+
+  let serviceName = '';
+  let serviceDurationMinutes = 60;
+  let servicePriceForBooking: number | undefined;
+  let selectedPriceOptionLabel: string | undefined;
+
+  if (trimmedServiceId) {
+    const resolved = await resolvePublicBookingService(
+      adminClient,
+      businessProfile.id,
+      trimmedServiceId,
+      priceOptionId
+    );
+
+    if (!resolved.ok) {
+      if (
+        resolved.reason === 'price_option_required' ||
+        resolved.reason === 'invalid_price_option'
+      ) {
+        redirect(
+          getBusinessBookDetailsUrl(slugForRoutes, {
+            serviceId: trimmedServiceId,
+            addOnIds: addOnIds?.trim(),
+            priceOptionId: priceOptionId?.trim(),
+            detailsStep: effectiveDetailsStep,
+            forOwner: isOwnerManualBooking,
+          })
+        );
+      }
+      notFound();
+    }
+
+    const d = resolved.data;
+    serviceName = d.serviceName;
+    serviceDurationMinutes = d.serviceDurationMinutes;
+    servicePriceForBooking = d.servicePriceCents;
+    selectedPriceOptionLabel = d.selectedPriceOption?.label;
+  }
 
   // Fetch add-ons when addOnIds present (resolves IDs to full objects for display)
-  const addonIdList = addOnIds?.trim()
-    ? addOnIds
-
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
-    : [];
   const selectedAddOns =
     addonIdList.length > 0
       ? await getAddOnsByIdsForBooking(businessProfile.id, addonIdList)
@@ -343,38 +341,65 @@ export default async function BookingRequestPage({
       bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
         serviceId: serviceId.trim(),
         addOnIds: addOnIds?.trim(),
+        priceOptionId: priceOptionId?.trim(),
+        detailsStep: effectiveDetailsStep,
         forOwner: true,
       });
-      bookPageBackLabel = 'Back to service';
+      bookPageBackLabel =
+        effectiveDetailsStep === 'addons'
+          ? 'Back to add-ons'
+          : effectiveDetailsStep === 'price' && priceOptionId?.trim()
+            ? 'Back to options'
+            : effectiveDetailsStep === 'price'
+              ? 'Back to service'
+              : 'Back to service';
     }
   } else if (serviceId?.trim() && !skipDetailsFlag) {
     bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
       serviceId: serviceId.trim(),
       addOnIds: addOnIds?.trim(),
+      priceOptionId: priceOptionId?.trim(),
+      detailsStep: effectiveDetailsStep,
     });
-    bookPageBackLabel = 'Back to service';
+    bookPageBackLabel =
+      effectiveDetailsStep === 'addons'
+        ? 'Back to add-ons'
+        : effectiveDetailsStep === 'price' && priceOptionId?.trim()
+          ? 'Back to options'
+          : effectiveDetailsStep === 'price'
+            ? 'Back to service'
+            : 'Back to service';
   } else {
     bookPageBackHref = profilePath;
     bookPageBackLabel = 'Back to profile';
   }
 
+  /** V2 calendar + details + review render their own sticky back bar; avoid duplicate header. */
+  const calendarFlowOwnsHeader =
+    effectiveUseAvailabilityBooking &&
+    Boolean(trimmedServiceId) &&
+    !showAvailabilityServicePicker &&
+    !showNotAcceptingBookings;
+
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
-      {/* Header with Back Button */}
-      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
-          <Link
-            href={bookPageBackHref}
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">{bookPageBackLabel}</span>
-          </Link>
+      {!calendarFlowOwnsHeader && (
+        <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
+            <Link
+              href={bookPageBackHref}
+              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span className="text-sm font-medium">{bookPageBackLabel}</span>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Form Container – availability booking or request booking by flag */}
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pt-8 sm:pb-24">
+      <div
+        className={`max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 ${calendarFlowOwnsHeader ? 'pt-2 sm:pt-4' : 'pt-6 sm:pt-8'}`}
+      >
         {showAvailabilityServicePicker ? (
           <BookServicePicker
             businessSlug={slugForRoutes}
@@ -394,11 +419,14 @@ export default async function BookingRequestPage({
             addOnIds={addOnIds?.trim() || undefined}
             selectedAddOns={selectedAddOns}
             serviceName={serviceName}
-            servicePrice={serviceDetails?.price ?? undefined}
+            servicePrice={servicePriceForBooking}
             serviceDurationMinutes={serviceDurationMinutes}
+            selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             isOwnerManualBooking={isOwnerManualBooking}
+            exitCalendarFlowHref={bookPageBackHref}
+            exitCalendarFlowLabel={bookPageBackLabel}
           />
         )}
       </div>

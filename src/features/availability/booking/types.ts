@@ -61,6 +61,8 @@ export interface AvailabilityBookingPageProps {
   serviceName: string;
   serviceDurationMinutes?: number;
   servicePriceCents?: number;
+  /** Shown under the service name when customer chose a multi-price option. */
+  selectedPriceOptionLabel?: string;
   /** Owner availability from DB. */
   weeklySchedule: WeeklySchedule;
   /** Owner time-off blocks for that day range (from `time_off_blocks`). */
@@ -69,6 +71,12 @@ export interface AvailabilityBookingPageProps {
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */
   isOwnerManualBooking?: boolean;
+  /**
+   * Step 1 top back: leave `/book` toward service details / profile / dashboard
+   * (same target the book page header used before inline steps).
+   */
+  exitCalendarFlowHref: string;
+  exitCalendarFlowLabel: string;
 }
 
 export interface BookingSubmission {
@@ -93,6 +101,8 @@ export interface CreateBookingRequest {
   businessId: string;
   serviceId?: string;
   serviceName: string;
+  /** When set, appended to stored/display service name (multi-price option). */
+  servicePriceOptionLabel?: string;
   servicePriceCents?: number;
   /** Add-ons selected by customer (stored with booking, shown in emails/dashboard). */
   selectedAddOns?: AddOnAtBooking[];

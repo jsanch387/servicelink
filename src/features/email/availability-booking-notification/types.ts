@@ -16,6 +16,8 @@ export interface AvailabilityBookingNotificationPayload {
   customerVehicleMake?: string;
   customerVehicleModel?: string;
   serviceName: string;
+  /** Multi-price option selected by customer (e.g., Sedan, SUV). */
+  servicePriceOptionLabel?: string;
   scheduledDate: string;
   startTime: string;
   durationMinutes: number;

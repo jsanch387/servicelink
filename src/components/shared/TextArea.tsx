@@ -32,7 +32,7 @@ export const TextArea: React.FC<TextAreaProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-left text-sm font-semibold text-gray-200 mb-2.5">
+        <label className="block text-left text-sm font-medium text-gray-200 mb-1.5">
           {label}
           {required && <span className="text-red-400 ml-1">*</span>}
         </label>

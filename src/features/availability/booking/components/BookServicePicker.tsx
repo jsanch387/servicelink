@@ -5,6 +5,7 @@ export interface BookServicePickerItem {
   name: string;
   description: string | null;
   priceCents: number;
+  priceOptionsEnabled: boolean;
   hours_to_complete: number | null;
   duration_minutes: number | null;
 }
@@ -71,6 +72,7 @@ export function BookServicePicker({
                 name: s.name,
                 description: s.description ?? '',
                 price: s.priceCents,
+                priceOptionsEnabled: s.priceOptionsEnabled,
                 hours_to_complete: s.hours_to_complete,
                 duration_minutes: s.duration_minutes,
               }}

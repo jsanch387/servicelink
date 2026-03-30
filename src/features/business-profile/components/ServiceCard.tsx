@@ -10,10 +10,11 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-/** Max description length before collapsing. Keeps cards uniform height on mobile. */
-const DESCRIPTION_PREVIEW_LENGTH = 120;
+/** Mobile-first truncation; browser gets a longer preview before "See more". */
+const MOBILE_DESCRIPTION_PREVIEW_LENGTH = 120;
+const DESKTOP_DESCRIPTION_PREVIEW_LENGTH = 220;
 
 interface Service {
   id?: string;
@@ -22,6 +23,8 @@ interface Service {
   description: string;
   hours_to_complete?: number | null;
   duration_minutes?: number | null;
+  /** When true, base service price is the minimum shown before option selection. */
+  priceOptionsEnabled?: boolean;
 }
 
 interface ServiceCardProps {
@@ -50,12 +53,24 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   manualBookingForCustomer = false,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   const description = service.description || '';
-  const isLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
+  const previewLength = isDesktop
+    ? DESKTOP_DESCRIPTION_PREVIEW_LENGTH
+    : MOBILE_DESCRIPTION_PREVIEW_LENGTH;
+  const isLongDescription = description.length > previewLength;
   const previewText =
     isLongDescription && !isDescriptionExpanded
-      ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+      ? `${description.slice(0, previewLength).trim()}...`
       : description;
 
   const effectiveDurationMinutes =
@@ -87,6 +102,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     return 'Contact for quote';
   };
 
+  const showStartingAt =
+    service.priceOptionsEnabled === true &&
+    typeof service.price === 'number' &&
+    service.price > 0;
+
   return (
     <GlassCard
       blurColor="bg-zinc-500"
@@ -95,17 +115,26 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       padding="md"
     >
       {/* Header: service name + price (thick black weight) */}
-      <div className="flex justify-between items-start mb-2">
+      <div className="flex justify-between items-start mb-3">
         <h3 className="text-lg font-black text-white tracking-tight pr-4 flex-1">
           {service.name}
         </h3>
-        <span className="text-xl font-black text-white leading-none flex-shrink-0">
-          {formatPrice(service.price)}
+        <span className="text-right leading-none flex-shrink-0">
+          {showStartingAt ? (
+            <span className="block text-[11px] font-medium text-zinc-400 mb-1 leading-none">
+              Starting at
+            </span>
+          ) : null}
+          <span className="text-xl font-black text-white leading-none">
+            {formatPrice(service.price)}
+          </span>
         </span>
       </div>
 
+      <div className="border-t border-white/[0.04] mb-4" />
+
       {/* Description — fixed min-height so all cards align; long text is collapsible */}
-      <div className="mb-4 pr-4 min-h-[4.5rem]">
+      <div className="mb-0 min-h-[4.5rem]">
         <p
           className={`text-zinc-400 text-sm leading-relaxed ${
             isLongDescription && !isDescriptionExpanded ? 'line-clamp-3' : ''
@@ -136,7 +165,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       </div>
 
       {/* Faint divider + footer: duration left, Book Now right */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/[0.03]">
+      <div className="flex items-center justify-between pt-3">
         {effectiveDurationMinutes ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3 w-3 flex-shrink-0" />
@@ -153,7 +182,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             href={getBusinessBookDetailsPath(businessSlug, service.id, {
               forOwner: manualBookingForCustomer,
             })}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/20 bg-white/5 text-zinc-200 text-sm font-medium hover:bg-white/10 hover:border-white/30 hover:text-white transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-white text-sm font-semibold hover:text-zinc-200 transition-colors cursor-pointer"
           >
             Select
             <ChevronRightIcon className="h-3.5 w-3.5" />

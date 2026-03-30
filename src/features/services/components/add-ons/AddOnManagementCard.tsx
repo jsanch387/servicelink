@@ -2,11 +2,7 @@
 
 import { GlassCard } from '@/components/shared';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
-import {
-  ClockIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import type { AddOnRow } from './addOnTypes';
 
@@ -41,24 +37,22 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
     >
       {/* Mobile: compact single-column. Desktop: same, actions inline */}
       <div className="flex flex-col gap-3 sm:gap-4">
-        {/* Name + price — same row on all sizes, name truncates */}
-        <div className="flex items-center justify-between gap-3 min-w-0">
-          <h3 className="text-base sm:text-lg font-black text-white tracking-tight flex-1 min-w-0 truncate">
-            {addOn.name}
-          </h3>
+        {/* Name + price row, with optional extra duration under the name */}
+        <div className="flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
+              {addOn.name}
+            </h3>
+            {durationLabel ? (
+              <p className="mt-0.5 text-[10px] font-medium tracking-wide text-zinc-500">
+                +{durationLabel}
+              </p>
+            ) : null}
+          </div>
           <span className="text-lg sm:text-xl font-black text-white leading-none flex-shrink-0 tabular-nums">
             {formatPrice(addOn.price_cents)}
           </span>
         </div>
-
-        {durationLabel ? (
-          <div className="flex items-center gap-1.5 text-zinc-500">
-            <ClockIcon className="h-3 w-3 flex-shrink-0" />
-            <span className="text-[10px] font-medium tracking-wide">
-              +{durationLabel}
-            </span>
-          </div>
-        ) : null}
 
         {/* Actions — outlined style (matches ServiceManagementCard) */}
         <div className="flex items-stretch gap-2 pt-4 sm:pt-5">

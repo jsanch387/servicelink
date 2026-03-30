@@ -25,9 +25,14 @@ interface BookFlowSwitchProps {
   serviceName: string;
   servicePrice?: number;
   serviceDurationMinutes?: number;
+  /** Label for chosen multi-price option (shown in calendar step). */
+  selectedPriceOptionLabel?: string;
   weeklySchedule?: WeeklySchedule | null;
   timeOffBlocks?: TimeOffInterval[];
   isOwnerManualBooking?: boolean;
+  /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
+  exitCalendarFlowHref: string;
+  exitCalendarFlowLabel: string;
 }
 
 /**
@@ -47,9 +52,12 @@ export function BookFlowSwitch({
   serviceName,
   servicePrice,
   serviceDurationMinutes = 60,
+  selectedPriceOptionLabel,
   weeklySchedule,
   timeOffBlocks = [],
   isOwnerManualBooking = false,
+  exitCalendarFlowHref,
+  exitCalendarFlowLabel,
 }: BookFlowSwitchProps) {
   if (useAvailabilityBooking) {
     const schedule = weeklySchedule ?? DEFAULT_SCHEDULE;
@@ -65,9 +73,12 @@ export function BookFlowSwitch({
         serviceName={serviceName || 'Booking'}
         serviceDurationMinutes={serviceDurationMinutes}
         servicePriceCents={servicePrice}
+        selectedPriceOptionLabel={selectedPriceOptionLabel}
         weeklySchedule={schedule}
         timeOffBlocks={timeOffBlocks}
         isOwnerManualBooking={isOwnerManualBooking}
+        exitCalendarFlowHref={exitCalendarFlowHref}
+        exitCalendarFlowLabel={exitCalendarFlowLabel}
       />
     );
   }

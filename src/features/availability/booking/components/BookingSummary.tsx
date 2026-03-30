@@ -30,6 +30,7 @@ interface BookingSummaryProps {
   /** When set (e.g. base service + add-on time), shown as appointment length. */
   totalAppointmentMinutes?: number;
   servicePriceCents?: number;
+  serviceVariantLabel?: string;
   /** Add-ons selected on the service details page. */
   selectedAddOns?: AddOnDisplay[];
   /** Total price including base service + add-ons. */
@@ -44,6 +45,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   serviceDurationMinutes,
   totalAppointmentMinutes,
   servicePriceCents,
+  serviceVariantLabel,
   selectedAddOns = [],
   totalPriceCents,
   date,
@@ -73,6 +75,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           serviceName={serviceName}
           serviceDurationMinutes={serviceDurationMinutes}
           servicePriceCents={servicePriceCents}
+          serviceVariantLabel={serviceVariantLabel}
           selectedAddOns={selectedAddOns}
           totalBookingDurationMinutes={totalMinutes}
           totalPriceCents={totalPriceCents}
@@ -84,7 +87,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
             Date & time
           </p>
           <p className="text-white font-medium">{dateFormatted}</p>
-          <p className="text-sm text-gray-400">{time}</p>
+          <p className="text-sm text-gray-400 mt-0.5">{time}</p>
         </div>
 
         <div>

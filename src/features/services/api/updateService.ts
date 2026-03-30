@@ -29,6 +29,9 @@ export async function updateService(
       description: payload.description || null,
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes,
+      ...(payload.price_options_enabled != null
+        ? { price_options_enabled: payload.price_options_enabled }
+        : {}),
       updated_at: new Date().toISOString(),
     };
 

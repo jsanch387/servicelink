@@ -9,6 +9,10 @@ import type { Database } from '@/libs/supabase/client';
 export type ServiceRow =
   Database['public']['Tables']['business_services']['Row'];
 
+/** Database row for service_price_options table. */
+export type ServicePriceOptionRow =
+  Database['public']['Tables']['service_price_options']['Row'];
+
 /** Result of fetching services for a business. */
 export interface GetServicesResult {
   success: boolean;
@@ -22,6 +26,7 @@ export interface UpdateServicePayload {
   description: string;
   price_cents: number | null;
   duration_minutes: number | null;
+  price_options_enabled?: boolean;
 }
 
 /** Result of updating a single service. */
@@ -60,6 +65,20 @@ export interface UpdateServiceIsActiveResult {
 
 /** Result of saving services sort order. */
 export interface UpdateServicesOrderResult {
+  success: boolean;
+  error: string | null;
+}
+
+export interface ServicePriceOptionSaveInput {
+  label: string;
+  price_cents: number;
+  duration_minutes: number;
+  /** Omit to use the row index when saving (see `saveServicePriceOptions`). */
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface SaveServicePriceOptionsResult {
   success: boolean;
   error: string | null;
 }

@@ -187,6 +187,44 @@ export type Database = {
           created_at?: string;
         };
       };
+      service_price_options: {
+        Row: {
+          id: string;
+          service_id: string;
+          business_id: string;
+          label: string;
+          price_cents: number;
+          duration_minutes: number;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          service_id: string;
+          business_id?: string;
+          label: string;
+          price_cents?: number;
+          duration_minutes: number;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          service_id?: string;
+          business_id?: string;
+          label?: string;
+          price_cents?: number;
+          duration_minutes?: number;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       business_services: {
         Row: {
           id: string;
@@ -196,6 +234,7 @@ export type Database = {
           price_cents: number | null;
           hours_to_complete: number | null;
           duration_minutes: number | null;
+          price_options_enabled: boolean;
           is_active: boolean;
           sort_order: number | null;
           created_at: string;
@@ -209,6 +248,7 @@ export type Database = {
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
+          price_options_enabled?: boolean;
           is_active?: boolean;
           sort_order?: number | null;
           created_at?: string;
@@ -222,6 +262,7 @@ export type Database = {
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
+          price_options_enabled?: boolean;
           is_active?: boolean;
           sort_order?: number | null;
           created_at?: string;

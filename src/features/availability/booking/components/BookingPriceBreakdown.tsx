@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import type { AddOnDisplay } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
 
@@ -7,6 +8,8 @@ export interface BookingPriceBreakdownProps {
   serviceName: string;
   serviceDurationMinutes: number;
   servicePriceCents?: number;
+  /** Sub-line under service title (e.g. chosen vehicle size / price tier). */
+  serviceVariantLabel?: string;
   selectedAddOns: AddOnDisplay[];
   totalBookingDurationMinutes: number;
   totalPriceCents?: number;
@@ -18,6 +21,7 @@ export function BookingPriceBreakdown({
   serviceName,
   serviceDurationMinutes,
   servicePriceCents,
+  serviceVariantLabel,
   selectedAddOns,
   totalBookingDurationMinutes,
   totalPriceCents,
@@ -32,9 +36,24 @@ export function BookingPriceBreakdown({
           <TitleTag className="text-lg font-semibold text-white leading-snug">
             {serviceName || 'Booking'}
           </TitleTag>
-          <p className="text-sm text-gray-400 mt-0.5 tabular-nums italic">
-            {formatDurationMinutes(serviceDurationMinutes)}
-          </p>
+          <div className="mt-0.5 flex items-center gap-1 text-sm tabular-nums italic">
+            <p className="text-gray-400">
+              {formatDurationMinutes(serviceDurationMinutes)}
+            </p>
+            {serviceVariantLabel ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="text-gray-500 not-italic leading-none"
+                >
+                  &bull;
+                </span>
+                <p className="text-gray-500 not-italic">
+                  {serviceVariantLabel}
+                </p>
+              </>
+            ) : null}
+          </div>
         </div>
         {servicePriceCents != null && servicePriceCents > 0 ? (
           <span className="text-sm text-gray-300 tabular-nums shrink-0 text-right min-w-[4.5rem] pt-0.5">

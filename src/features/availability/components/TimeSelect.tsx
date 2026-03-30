@@ -390,6 +390,7 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
             disabled:opacity-50 disabled:cursor-not-allowed
             ${open ? 'border-emerald-500/40 ring-2 ring-emerald-500/20' : ''}
             ${!disabled && !open ? 'hover:border-white/15' : ''}
+            ${!disabled ? 'cursor-pointer' : ''}
           `}
         >
           <span className="min-w-0 flex-1 truncate">{displayLabel}</span>

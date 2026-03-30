@@ -17,6 +17,7 @@ function serviceRow(partial: Partial<ServiceRow>): ServiceRow {
     price_cents: null,
     hours_to_complete: null,
     duration_minutes: null,
+    price_options_enabled: false,
     is_active: true,
     sort_order: 0,
     created_at: '2026-01-01T00:00:00.000Z',

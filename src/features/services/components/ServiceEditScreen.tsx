@@ -1,29 +1,37 @@
 'use client';
 
-import {
-  Button,
-  Input,
-  PriceInput,
-  Switch,
-  TextArea,
-} from '@/components/shared';
+import { Button, Input, PriceInput, TextArea } from '@/components/shared';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';
+import { saveServicePriceOptionsAction } from '@/features/services/actions/saveServicePriceOptions';
 import { updateServiceAction } from '@/features/services/actions/updateService';
 import { createAddOnAction } from '@/features/services/add-ons';
-import type { ServiceRow } from '@/features/services/types/services';
+import type {
+  ServicePriceOptionSaveInput,
+  ServicePriceOptionRow,
+  ServiceRow,
+} from '@/features/services/types/services';
 import {
   parseServiceEditDurationForSave,
   serviceEditDurationPickerValue,
 } from '@/features/services/utils/serviceEditForm';
-import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PlusIcon,
+} from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 import { EditAddOnModal } from './add-ons/EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
+import {
+  ServicePriceOptionsSection,
+  type ServicePriceOptionDraft,
+} from './ServicePriceOptionsSection';
 
 const MAX_DESCRIPTION_LENGTH = 280;
 
@@ -52,17 +60,14 @@ function serviceToForm(service: ServiceRow): {
 
 export interface ServiceEditScreenProps {
   service: ServiceRow;
+  /** Service price options rows (read-only hydration for now). */
+  initialPriceOptions?: ServicePriceOptionRow[];
   /** Add-ons from the business pool (fetched on the page). */
   initialAddOns?: AddOnRow[];
   /** Add-on IDs currently assigned to this service (from service_addon_assignments). */
   initialSelectedAddOnIds?: string[];
   /** Back link URL (e.g. /dashboard/services). */
   backHref: string;
-  /**
-   * From business profile type (e.g. Auto & Detailing). When true, show booking
-   * options like "ask for year/make/model".
-   */
-  showVehicleBookingOptions?: boolean;
 }
 
 /**
@@ -71,10 +76,10 @@ export interface ServiceEditScreenProps {
  */
 export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   service,
+  initialPriceOptions = [],
   initialAddOns = [],
   initialSelectedAddOnIds = [],
   backHref,
-  showVehicleBookingOptions = false,
 }) => {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -85,14 +90,23 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     () => new Set(initialSelectedAddOnIds)
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [addOnsPool, setAddOnsPool] = useState<AddOnRow[]>(initialAddOns);
   const [isAddOnModalOpen, setIsAddOnModalOpen] = useState(false);
   const [isSavingAddOn, setIsSavingAddOn] = useState(false);
   const [addOnSaveError, setAddOnSaveError] = useState<string | null>(null);
-  const [askVehicleDetails, setAskVehicleDetails] = useState<boolean>(
-    showVehicleBookingOptions
+  const [priceOptionsSubmitError, setPriceOptionsSubmitError] = useState<
+    string | null
+  >(null);
+  const [priceOptionsEnabled, setPriceOptionsEnabled] = useState<boolean>(
+    service.price_options_enabled === true
   );
+  const [priceOptionsDraft, setPriceOptionsDraft] = useState<
+    ServicePriceOptionDraft[]
+  >([]);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [isServiceDetailsExpanded, setIsServiceDetailsExpanded] =
+    useState(false);
+  const [isAddOnsExpanded, setIsAddOnsExpanded] = useState(false);
 
   useEffect(() => {
     const form = serviceToForm(service);
@@ -100,16 +114,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     setDescription(form.description);
     setPrice(form.price);
     setDurationHHmm(form.durationHHmm);
+    setPriceOptionsEnabled(service.price_options_enabled === true);
   }, [service]);
-
-  // Sync when business type implies vehicle booking options (e.g. after profile edit).
-  useEffect(() => {
-    if (showVehicleBookingOptions) {
-      setAskVehicleDetails(true);
-    } else {
-      setAskVehicleDetails(false);
-    }
-  }, [showVehicleBookingOptions]);
 
   useEffect(() => {
     setSelectedAddOnIds(new Set(initialSelectedAddOnIds));
@@ -173,23 +179,59 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   );
 
   const handleSave = useCallback(async () => {
-    setSaveError(null);
+    setShowValidationErrors(true);
+    setPriceOptionsSubmitError(null);
     const nameTrim = name.trim();
     if (!nameTrim) {
-      setSaveError('Service name is required.');
+      return;
+    }
+    const descriptionTrim = description.trim();
+    if (!descriptionTrim) {
       return;
     }
     const priceNum = price.trim() ? parseFloat(price.replace(/,/g, '')) : NaN;
-    const priceCents =
-      !price.trim() || isNaN(priceNum) || priceNum < 0
-        ? null
-        : Math.round(priceNum * 100);
+    if (!price.trim() || isNaN(priceNum) || priceNum < 0) {
+      return;
+    }
+    const priceCents = Math.round(priceNum * 100);
     const durationResult = parseServiceEditDurationForSave(durationHHmm);
     if (!durationResult.ok) {
-      setSaveError(durationResult.error);
       return;
     }
     const durationMinutes = durationResult.durationMinutes;
+
+    let validatedPriceOptions: ServicePriceOptionSaveInput[] = [];
+    if (priceOptionsEnabled) {
+      if (priceOptionsDraft.length === 0) {
+        return;
+      }
+
+      const parsedOptions: ServicePriceOptionSaveInput[] = [];
+      for (let i = 0; i < priceOptionsDraft.length; i += 1) {
+        const opt = priceOptionsDraft[i];
+        const label = opt.label.trim();
+        if (!label) {
+          return;
+        }
+        const rawPrice = opt.price.trim().replace(/,/g, '');
+        const priceNum = rawPrice ? parseFloat(rawPrice) : NaN;
+        if (!rawPrice || Number.isNaN(priceNum) || priceNum < 0) {
+          return;
+        }
+        const optDuration = parseServiceEditDurationForSave(opt.durationHHmm);
+        if (!optDuration.ok) {
+          return;
+        }
+        parsedOptions.push({
+          label,
+          price_cents: Math.round(priceNum * 100),
+          duration_minutes: optDuration.durationMinutes,
+          sort_order: i,
+          is_active: true,
+        });
+      }
+      validatedPriceOptions = parsedOptions;
+    }
 
     setIsSaving(true);
 
@@ -197,30 +239,49 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       addOnsPool.some(a => a.id === id)
     );
 
-    const [updateResult, assignmentsResult] = await Promise.all([
+    const requests: Promise<
+      | Awaited<ReturnType<typeof updateServiceAction>>
+      | Awaited<ReturnType<typeof saveServiceAddOnAssignmentsAction>>
+      | Awaited<ReturnType<typeof saveServicePriceOptionsAction>>
+    >[] = [
       updateServiceAction(service.id, {
         name: nameTrim,
-        description: description.trim() || '',
+        description: descriptionTrim,
         price_cents: priceCents,
         duration_minutes: durationMinutes,
+        price_options_enabled: priceOptionsEnabled,
       }),
       saveServiceAddOnAssignmentsAction(service.id, validAddOnIds),
-    ]);
+    ];
+    if (priceOptionsEnabled) {
+      requests.push(
+        saveServicePriceOptionsAction(service.id, validatedPriceOptions)
+      );
+    }
+    const [updateResult, assignmentsResult, optionsResult] =
+      await Promise.all(requests);
 
     setIsSaving(false);
 
     if (!updateResult.success) {
-      setSaveError(updateResult.error ?? 'Failed to save service.');
+      setPriceOptionsSubmitError(
+        updateResult.error ?? 'Could not save changes.'
+      );
       return;
     }
     if (!assignmentsResult.success) {
-      setSaveError(
-        assignmentsResult.error ?? 'Failed to save add-on selection.'
+      setPriceOptionsSubmitError(
+        assignmentsResult.error ?? 'Could not save add-on selection.'
+      );
+      return;
+    }
+    if (priceOptionsEnabled && optionsResult && !optionsResult.success) {
+      setPriceOptionsSubmitError(
+        optionsResult.error ?? 'Could not save price options.'
       );
       return;
     }
 
-    router.push(backHref);
     router.refresh();
   }, [
     name,
@@ -229,10 +290,15 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     durationHHmm,
     selectedAddOnIds,
     addOnsPool,
+    priceOptionsEnabled,
+    priceOptionsDraft,
     service.id,
-    backHref,
     router,
   ]);
+
+  const serviceSummaryName = name.trim() || 'Unnamed service';
+
+  const selectedAddOnsCount = selectedAddOnIds.size;
 
   return (
     <main className="flex-1 flex flex-col min-h-screen bg-[var(--dashboard-bg)]">
@@ -252,169 +318,210 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
 
           {/* Service details */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6 sm:mb-8">
-            <h2 className="text-base font-semibold text-white mb-4">
-              Service details
-            </h2>
-            <form
-              className="space-y-4 sm:space-y-5"
-              onSubmit={e => e.preventDefault()}
+            <button
+              type="button"
+              onClick={() => setIsServiceDetailsExpanded(prev => !prev)}
+              className="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
+              aria-expanded={isServiceDetailsExpanded}
             >
-              <Input
-                label="Service name"
-                placeholder="e.g., House Cleaning, Logo Design"
-                value={name}
-                onChange={setName}
-              />
-              <div className="space-y-2">
-                <TextArea
-                  label="Description"
-                  placeholder="Tell customers what they get."
-                  value={description}
-                  onChange={setDescription}
-                  rows={3}
-                />
-                <div className="flex justify-end text-xs text-gray-500">
-                  {description.length}/{MAX_DESCRIPTION_LENGTH}
-                </div>
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-base font-bold text-white tracking-tight">
+                  Service details
+                </h2>
+                {!isServiceDetailsExpanded ? (
+                  <p className="text-xs text-gray-400 mt-1 leading-snug break-words">
+                    {serviceSummaryName}
+                  </p>
+                ) : null}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                <PriceInput
-                  label="Price"
-                  placeholder="0.00"
-                  value={price}
-                  onChange={setPrice}
+              {isServiceDetailsExpanded ? (
+                <ChevronUpIcon className="h-5 w-5 text-gray-400 shrink-0" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5 text-gray-400 shrink-0" />
+              )}
+            </button>
+
+            {isServiceDetailsExpanded && (
+              <form
+                className="space-y-4 sm:space-y-5 mt-4"
+                onSubmit={e => e.preventDefault()}
+              >
+                <Input
+                  label="Service name"
+                  placeholder="e.g., House Cleaning, Logo Design"
+                  value={name}
+                  onChange={setName}
+                  error={
+                    showValidationErrors && !name.trim()
+                      ? 'Service name is required.'
+                      : undefined
+                  }
                 />
-                <div className="min-w-0">
-                  <span className="block text-sm font-medium text-gray-300 mb-2">
-                    Duration
-                  </span>
-                  <TimeSelect
-                    variant="duration"
-                    value={durationHHmm}
-                    onChange={setDurationHHmm}
-                    durationPlaceholder="Select duration"
+                <div className="space-y-2">
+                  <TextArea
+                    label="Description"
+                    placeholder="Tell customers what they get."
+                    value={description}
+                    onChange={setDescription}
+                    rows={3}
+                    error={
+                      showValidationErrors && !description.trim()
+                        ? 'Description is required.'
+                        : undefined
+                    }
                   />
+                  <div className="flex justify-end text-xs text-gray-500">
+                    {description.length}/{MAX_DESCRIPTION_LENGTH}
+                  </div>
                 </div>
-              </div>
-            </form>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                  <PriceInput
+                    label="Price"
+                    placeholder="0.00"
+                    value={price}
+                    onChange={setPrice}
+                    error={
+                      showValidationErrors &&
+                      (!price.trim() || Number.isNaN(parseFloat(price)))
+                        ? 'Price is required.'
+                        : undefined
+                    }
+                  />
+                  <div className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-200 mb-1.5">
+                      Duration
+                    </span>
+                    <TimeSelect
+                      variant="duration"
+                      value={durationHHmm}
+                      onChange={setDurationHHmm}
+                      durationPlaceholder="Select duration"
+                    />
+                    {showValidationErrors &&
+                    !parseServiceEditDurationForSave(durationHHmm).ok ? (
+                      <p className="mt-1.5 text-sm text-red-400">
+                        Duration is required.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </form>
+            )}
           </section>
 
-          {/* Booking options – shown for vehicle-related services */}
-          {showVehicleBookingOptions && (
-            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6 sm:mb-8">
-              <h2 className="text-base font-semibold text-white mb-1">
-                Booking options
-              </h2>
-              <p className="text-sm text-gray-500 mb-4">
-                For vehicle services, you can ask customers for year, make, and
-                model when they book.
-              </p>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">
-                    Ask for vehicle details
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Customers will be asked for year, make, and model on the
-                    booking form.
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <Switch
-                    size="md"
-                    checked={askVehicleDetails}
-                    onCheckedChange={setAskVehicleDetails}
-                    aria-label="Ask customers for vehicle details (year, make, model)"
-                  />
-                </div>
-              </div>
-            </section>
-          )}
+          <ServicePriceOptionsSection
+            service={service}
+            initialEnabled={service.price_options_enabled === true}
+            initialOptions={initialPriceOptions}
+            onChange={(enabled, options) => {
+              setPriceOptionsEnabled(enabled);
+              setPriceOptionsDraft(options);
+              setPriceOptionsSubmitError(null);
+            }}
+            showValidationErrors={showValidationErrors && priceOptionsEnabled}
+            submitErrorMessage={priceOptionsSubmitError}
+          />
 
           {/* Add-ons section — pool from DB; user selects which to offer for this service */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6 sm:mb-8">
-            <h2 className="text-base font-semibold text-white mb-1">
-              Add-ons for this service
-            </h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Pick which add-ons to offer with this service.
-            </p>
-            {saveError && (
-              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
-                {saveError}
-              </p>
-            )}
-            {addOnsPool.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                No add-ons yet. Create some in the Add-ons tab first.
-              </p>
-            ) : (
-              <div
-                className="space-y-2"
-                role="group"
-                aria-label="Add-ons for this service"
-              >
-                {addOnsPool.map(addOn => {
-                  const isSelected = selectedAddOnIds.has(addOn.id);
-                  const addOnDuration =
-                    addOn.duration_minutes != null && addOn.duration_minutes > 0
-                      ? formatDurationMinutes(addOn.duration_minutes)
-                      : null;
-                  return (
-                    <button
-                      key={addOn.id}
-                      type="button"
-                      onClick={() => handleAddOnToggle(addOn.id)}
-                      className={`w-full flex items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors cursor-pointer touch-manipulation min-h-[52px] ${
-                        isSelected
-                          ? 'border-white/30 bg-white/10 text-white'
-                          : 'border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
-                      }`}
-                      aria-pressed={isSelected}
-                      aria-label={`${addOn.name}, ${formatPrice(addOn.price_cents)}${addOnDuration ? `, ${addOnDuration} extra` : ''}. ${isSelected ? 'Selected' : 'Not selected'}`}
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="font-medium truncate block">
-                          {addOn.name}
-                        </span>
-                        {addOnDuration ? (
-                          <span className="text-xs text-zinc-500 mt-0.5 block">
-                            +{addOnDuration}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm text-zinc-400">
-                          {formatPrice(addOn.price_cents)}
-                        </span>
-                        <span
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${
-                            isSelected
-                              ? 'border-white/40 bg-white/20'
-                              : 'border-white/20 bg-transparent'
-                          }`}
-                          aria-hidden
-                        >
-                          {isSelected ? (
-                            <CheckIcon className="h-3.5 w-3.5 text-white" />
-                          ) : null}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <Button
-              variant="outline"
-              onClick={handleAddNewAddOn}
-              icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
-              fullWidth
-              aria-label="Add new add-on"
-              className="!border-2 !border-dashed !border-white/20 !bg-white/[0.02] !text-emerald-500 hover:!border-emerald-500/40 hover:!bg-emerald-500/5 hover:!text-emerald-400 !rounded-xl min-h-[52px] py-3 mt-4"
+            <button
+              type="button"
+              onClick={() => setIsAddOnsExpanded(prev => !prev)}
+              className="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
+              aria-expanded={isAddOnsExpanded}
             >
-              Add new add-on
-            </Button>
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-base font-bold text-white tracking-tight">
+                  Add-ons
+                </h2>
+                {!isAddOnsExpanded ? (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedAddOnsCount} selected
+                  </p>
+                ) : null}
+              </div>
+              {isAddOnsExpanded ? (
+                <ChevronUpIcon className="h-5 w-5 text-gray-400 shrink-0" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5 text-gray-400 shrink-0" />
+              )}
+            </button>
+            {isAddOnsExpanded && (
+              <>
+                {addOnsPool.length === 0 ? (
+                  <p className="mt-4 text-sm text-gray-500">
+                    No add-ons yet. Create some in the Add-ons tab first.
+                  </p>
+                ) : (
+                  <div
+                    className="mt-4 space-y-2"
+                    role="group"
+                    aria-label="Add-ons for this service"
+                  >
+                    {addOnsPool.map(addOn => {
+                      const isSelected = selectedAddOnIds.has(addOn.id);
+                      const addOnDuration =
+                        addOn.duration_minutes != null &&
+                        addOn.duration_minutes > 0
+                          ? formatDurationMinutes(addOn.duration_minutes)
+                          : null;
+                      return (
+                        <button
+                          key={addOn.id}
+                          type="button"
+                          onClick={() => handleAddOnToggle(addOn.id)}
+                          className={`w-full flex items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors cursor-pointer touch-manipulation min-h-[52px] ${
+                            isSelected
+                              ? 'border-white/30 bg-white/10 text-white'
+                              : 'border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
+                          }`}
+                          aria-pressed={isSelected}
+                          aria-label={`${addOn.name}, ${formatPrice(addOn.price_cents)}${addOnDuration ? `, ${addOnDuration} extra` : ''}. ${isSelected ? 'Selected' : 'Not selected'}`}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="font-medium truncate block">
+                              {addOn.name}
+                            </span>
+                            {addOnDuration ? (
+                              <span className="text-xs text-zinc-500 mt-0.5 block">
+                                +{addOnDuration}
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className="flex items-center gap-2 shrink-0">
+                            <span className="text-sm text-zinc-400">
+                              {formatPrice(addOn.price_cents)}
+                            </span>
+                            <span
+                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${
+                                isSelected
+                                  ? 'border-white/40 bg-white/20'
+                                  : 'border-white/20 bg-transparent'
+                              }`}
+                              aria-hidden
+                            >
+                              {isSelected ? (
+                                <CheckIcon className="h-3.5 w-3.5 text-white" />
+                              ) : null}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={handleAddNewAddOn}
+                  icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
+                  fullWidth
+                  aria-label="Add new add-on"
+                  className="!border-2 !border-dashed !border-white/20 !bg-white/[0.02] !text-emerald-500 hover:!border-emerald-500/40 hover:!bg-emerald-500/5 hover:!text-emerald-400 !rounded-xl min-h-[52px] py-3 mt-4"
+                >
+                  Add new add-on
+                </Button>
+              </>
+            )}
           </section>
         </div>
       </div>

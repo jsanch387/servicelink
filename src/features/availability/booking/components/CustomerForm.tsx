@@ -193,6 +193,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               value={value.vehicleYear}
               onChange={v => update({ vehicleYear: v })}
               placeholder="2018"
+              error={errors.vehicleYear}
               required
             />
             <Input
@@ -200,6 +201,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               value={value.vehicleMake}
               onChange={v => update({ vehicleMake: v })}
               placeholder="Toyota"
+              error={errors.vehicleMake}
               required
             />
             <Input
@@ -207,6 +209,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               value={value.vehicleModel}
               onChange={v => update({ vehicleModel: v })}
               placeholder="Camry"
+              error={errors.vehicleModel}
               required
             />
           </div>

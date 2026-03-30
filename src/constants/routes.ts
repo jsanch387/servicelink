@@ -99,11 +99,17 @@ export function getBusinessBookDetailsPath(
   });
 }
 
+export type BookDetailsStepQuery = 'price' | 'addons';
+
 export function getBusinessBookDetailsUrl(
   businessSlug: string,
   params: {
     serviceId: string;
     addOnIds?: string;
+    /** Restores chosen multi-price option when linking back from the calendar step. */
+    priceOptionId?: string;
+    /** Which details sub-step to open (`price` = choose option, `addons` = add-ons). */
+    detailsStep?: BookDetailsStepQuery;
     forOwner?: boolean;
   }
 ): string {
@@ -113,6 +119,12 @@ export function getBusinessBookDetailsUrl(
   const q = new URLSearchParams({ serviceId: sid });
   if (params.addOnIds?.trim()) {
     q.set('addOnIds', params.addOnIds.trim());
+  }
+  if (params.priceOptionId?.trim()) {
+    q.set('priceOptionId', params.priceOptionId.trim());
+  }
+  if (params.detailsStep === 'addons' || params.detailsStep === 'price') {
+    q.set('detailsStep', params.detailsStep);
   }
   if (params.forOwner) {
     q.set('for', OWNER_MANUAL_BOOKING_FOR);

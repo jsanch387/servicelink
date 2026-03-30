@@ -12,10 +12,11 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-/** Max description length before collapsing; matches public ServiceCard. */
-const DESCRIPTION_PREVIEW_LENGTH = 120;
+/** Mobile-first truncation; browser gets a longer preview before "See more". */
+const MOBILE_DESCRIPTION_PREVIEW_LENGTH = 120;
+const DESKTOP_DESCRIPTION_PREVIEW_LENGTH = 220;
 
 function formatPrice(priceCents: number | null): string {
   if (priceCents == null) return 'Contact for quote';
@@ -83,12 +84,24 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   addOnCount,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   const description = service.description || '';
-  const isLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
+  const previewLength = isDesktop
+    ? DESKTOP_DESCRIPTION_PREVIEW_LENGTH
+    : MOBILE_DESCRIPTION_PREVIEW_LENGTH;
+  const isLongDescription = description.length > previewLength;
   const previewText =
     isLongDescription && !isDescriptionExpanded
-      ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}...`
+      ? `${description.slice(0, previewLength).trim()}...`
       : description;
 
   const duration = formatDuration(service);
@@ -142,11 +155,19 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
               {service.name}
             </h3>
             <div className="text-right flex-shrink-0">
+              {service.price_options_enabled === true &&
+              service.price_cents != null &&
+              service.price_cents > 0 ? (
+                <span className="block text-[11px] font-medium text-zinc-400 mb-1 leading-none">
+                  Starting at
+                </span>
+              ) : null}
               <span className="text-xl font-black text-white leading-none">
                 {formatPrice(service.price_cents)}
               </span>
             </div>
           </div>
+          <div className="border-t border-white/[0.04] mb-4" />
 
           {/* Duration + add-on count (only show add-ons when count > 0) */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
@@ -171,7 +192,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
           </div>
 
           {/* Description — collapsible like public ServiceCard for uniform card height */}
-          <div className="mb-4 pr-4 min-h-[4.5rem]">
+          <div className="mb-0 min-h-[4.5rem]">
             <p
               className={`text-zinc-500 text-sm leading-relaxed ${
                 isLongDescription && !isDescriptionExpanded
@@ -205,7 +226,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
 
           {/* Action row: Edit, Delete, Switch — outlined style */}
           {!isReorderMode && (
-            <div className="flex items-center justify-between pt-5 border-t border-white/[0.08]">
+            <div className="flex items-center justify-between pt-0">
               <div className="flex gap-2 w-auto sm:w-full sm:max-w-[240px]">
                 <Link
                   href={`/dashboard/services/${service.id}`}
