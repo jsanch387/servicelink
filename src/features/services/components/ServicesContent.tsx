@@ -276,23 +276,24 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                     Add service
                   </Button>
                 )}
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={handleSortOrderClick}
                   disabled={isSavingOrder}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[44px] px-4 py-3 rounded-xl text-sm font-medium transition-all border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed touch-manipulation ${
+                  icon={<ArrowsUpDownIcon className="h-4 w-4" />}
+                  className={`flex-1 sm:flex-none ${
                     isReorderMode
-                      ? 'bg-white/5 border-white/20 text-white hover:bg-white/10 active:bg-white/15'
-                      : 'bg-[var(--dashboard-bg)] border-white/10 text-gray-400 hover:text-white hover:border-white/20 active:text-white active:border-white/30'
+                      ? '!bg-white/10 !border-white/30 !text-white'
+                      : '!bg-[var(--dashboard-bg)] !border-white/10 !text-gray-400 hover:!text-white hover:!border-white/20'
                   }`}
                 >
-                  <ArrowsUpDownIcon className="h-4 w-4" />
                   {isSavingOrder
                     ? 'Saving…'
                     : isReorderMode
                       ? 'Finish sorting'
                       : 'Sort order'}
-                </button>
+                </Button>
               </div>
             </div>
 

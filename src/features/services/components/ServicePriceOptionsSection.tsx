@@ -181,7 +181,7 @@ export function ServicePriceOptionsSection({
         <button
           type="button"
           onClick={() => setIsSectionExpanded(prev => !prev)}
-          className="w-full flex items-center justify-between gap-3 text-left"
+          className="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
           aria-expanded={isSectionExpanded}
         >
           <div className="min-w-0">
@@ -285,7 +285,7 @@ export function ServicePriceOptionsSection({
                               <button
                                 type="button"
                                 onClick={() => toggleExpanded(opt.id)}
-                                className="flex-1 min-w-0 text-left rounded-lg px-1 py-1.5 hover:bg-white/[0.03] transition-colors"
+                                className="flex-1 min-w-0 text-left rounded-lg px-1 py-1.5 transition-colors cursor-pointer"
                                 aria-expanded={isExpanded}
                                 aria-label={`${isExpanded ? 'Collapse' : 'Expand'} option ${index + 1}`}
                               >
@@ -305,7 +305,7 @@ export function ServicePriceOptionsSection({
                                   type="button"
                                   onClick={() => removeOption(opt.id)}
                                   disabled={options.length <= 1}
-                                  className="inline-flex items-center gap-1.5 text-sm font-medium px-2 py-2 text-rose-400/90 hover:text-rose-300 disabled:opacity-30 disabled:pointer-events-none min-h-[44px] rounded-lg transition-colors sm:min-h-0"
+                                  className="inline-flex items-center gap-1.5 text-sm font-medium px-2 py-2 text-rose-400/90 hover:text-rose-300 disabled:opacity-30 disabled:pointer-events-none min-h-[44px] rounded-lg transition-colors sm:min-h-0 cursor-pointer"
                                   aria-label="Remove this option"
                                 >
                                   <TrashIcon className="h-4 w-4 shrink-0" />
@@ -316,7 +316,7 @@ export function ServicePriceOptionsSection({
                                 <button
                                   type="button"
                                   onClick={() => toggleExpanded(opt.id)}
-                                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-gray-300 hover:text-white hover:bg-white/[0.04] transition-colors sm:min-h-0 sm:min-w-0 sm:p-2"
+                                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-gray-300 hover:text-white transition-colors sm:min-h-0 sm:min-w-0 sm:p-2 cursor-pointer"
                                   aria-label={`${isExpanded ? 'Collapse' : 'Expand'} option ${index + 1}`}
                                 >
                                   {isExpanded ? (

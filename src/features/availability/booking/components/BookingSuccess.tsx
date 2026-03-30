@@ -12,6 +12,7 @@ interface BookingSuccessProps {
   businessName: string;
   businessSlug: string;
   serviceName: string;
+  serviceVariantLabel?: string;
   /** Base service price (in cents). */
   servicePriceCents?: number;
   /** Add-ons selected on the service details page. */
@@ -42,6 +43,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   businessName,
   businessSlug,
   serviceName,
+  serviceVariantLabel,
   servicePriceCents,
   selectedAddOns = [],
   totalPriceCents,
@@ -100,7 +102,12 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
           <div>
             <p className="text-xs text-gray-500 mb-0.5">Service</p>
             <div className="flex items-baseline justify-between gap-4">
-              <p className="text-white font-semibold">{serviceName}</p>
+              <div className="min-w-0">
+                <p className="text-white font-semibold">{serviceName}</p>
+                {serviceVariantLabel ? (
+                  <p className="text-xs text-gray-500 mt-1">{serviceVariantLabel}</p>
+                ) : null}
+              </div>
               {servicePriceCents != null && (
                 <p className="text-sm text-gray-400">
                   {formatPrice(servicePriceCents)}

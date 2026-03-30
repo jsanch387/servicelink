@@ -182,11 +182,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const optionLabel = body.servicePriceOptionLabel?.trim();
+    const storedServiceName = optionLabel
+      ? `${body.serviceName.trim()} — ${optionLabel}`
+      : body.serviceName.trim();
+
     const result = await createBooking(supabase, {
       businessId,
       businessSlug,
       serviceId: body.serviceId,
-      serviceName: body.serviceName.trim(),
+      serviceName: storedServiceName,
       servicePriceCents: body.servicePriceCents,
       selectedAddOns: body.selectedAddOns,
       durationMinutes: body.durationMinutes,
@@ -211,6 +216,7 @@ export async function POST(request: NextRequest) {
       customerVehicleMake: body.customer.vehicleMake?.trim(),
       customerVehicleModel: body.customer.vehicleModel?.trim(),
       serviceName: body.serviceName.trim(),
+      servicePriceOptionLabel: optionLabel || undefined,
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
       durationMinutes: body.durationMinutes,
@@ -223,8 +229,8 @@ export async function POST(request: NextRequest) {
     if (profileId && result?.id) {
       const customerName = body.customer?.fullName?.trim() ?? 'A customer';
       const title = `New appointment from ${customerName}`;
-      const bodyText = body.serviceName?.trim()
-        ? `Service: ${body.serviceName.trim()} · ${body.scheduledDate}`
+      const bodyText = storedServiceName
+        ? `Service: ${storedServiceName} · ${body.scheduledDate}`
         : null;
       try {
         await supabase.from('notifications').insert({

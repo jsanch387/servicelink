@@ -321,7 +321,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsServiceDetailsExpanded(prev => !prev)}
-              className="w-full flex items-center justify-between gap-3 text-left"
+              className="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
               aria-expanded={isServiceDetailsExpanded}
             >
               <div className="min-w-0">
@@ -388,7 +388,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
                     }
                   />
                   <div className="min-w-0">
-                    <span className="block text-sm font-medium text-gray-300 mb-2">
+                    <span className="block text-sm font-medium text-gray-200 mb-1.5">
                       Duration
                     </span>
                     <TimeSelect
@@ -427,7 +427,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsAddOnsExpanded(prev => !prev)}
-              className="w-full flex items-center justify-between gap-3 text-left"
+              className="w-full flex items-center justify-between gap-3 text-left cursor-pointer"
               aria-expanded={isAddOnsExpanded}
             >
               <div className="min-w-0">

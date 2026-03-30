@@ -1,6 +1,7 @@
 /**
- * Service Details page (add-ons step before calendar).
- * Fetches real service + assigned add-ons. If service has no add-ons, redirects to date selection.
+ * Service Details page (price options if enabled, then add-ons, then calendar).
+ * Fetches service, active price options, and assigned add-ons.
+ * Redirects straight to /book when there is nothing to configure here.
  */
 
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
@@ -12,8 +13,6 @@ import {
   getBusinessBookPath,
 } from '@/constants/routes';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -24,6 +23,9 @@ interface ServiceDetailsPageProps {
   searchParams: Promise<{
     serviceId?: string;
     addOnIds?: string;
+    priceOptionId?: string;
+    /** `price` | `addons` — restores sub-step when returning from calendar. */
+    detailsStep?: string;
     for?: string;
   }>;
 }
@@ -64,7 +66,13 @@ export default async function ServiceDetailsPage({
   searchParams,
 }: ServiceDetailsPageProps) {
   const { 'business-slug': slug } = await params;
-  const { serviceId, addOnIds, for: bookingForParam } = await searchParams;
+  const {
+    serviceId,
+    addOnIds,
+    priceOptionId,
+    detailsStep,
+    for: bookingForParam,
+  } = await searchParams;
   const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
 
   // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
@@ -109,10 +117,12 @@ export default async function ServiceDetailsPage({
 
   if (!result) notFound();
 
-  const { service, addOns } = result;
+  const { service, addOns, priceOptions } = result;
 
-  // No add-ons: skip details and go straight to date selection (skipDetails tells book page: back = profile)
-  if (addOns.length === 0) {
+  const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
+
+  // No add-ons and no price choice needed: skip details and go straight to date selection
+  if (!needsPriceStep && addOns.length === 0) {
     const q = new URLSearchParams({
       serviceId: serviceId.trim(),
       skipDetails: '1',
@@ -130,36 +140,24 @@ export default async function ServiceDetailsPage({
         .filter(Boolean)
     : undefined;
 
+  const initialDetailsStep =
+    detailsStep === 'addons' || detailsStep === 'price'
+      ? detailsStep
+      : undefined;
+
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
-      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
-          <Link
-            href={
-              isOwnerManualBooking
-                ? getBusinessBookPath(slug, { forOwner: true })
-                : `/${slug}`
-            }
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-            <span className="text-sm font-medium">
-              {isOwnerManualBooking ? 'Back to services' : 'Back to profile'}
-            </span>
-          </Link>
-        </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24">
-        <ServiceDetailsScreen
-          businessSlug={slug}
-          serviceId={serviceId.trim()}
-          service={service}
-          addOns={addOns}
-          initialAddOnIds={initialAddOnIds}
-          isOwnerManualBooking={isOwnerManualBooking}
-        />
-      </div>
+      <ServiceDetailsScreen
+        businessSlug={slug}
+        serviceId={serviceId.trim()}
+        service={service}
+        addOns={addOns}
+        priceOptions={priceOptions}
+        initialAddOnIds={initialAddOnIds}
+        initialPriceOptionId={priceOptionId?.trim()}
+        initialDetailsStep={initialDetailsStep}
+        isOwnerManualBooking={isOwnerManualBooking}
+      />
     </div>
   );
 }
