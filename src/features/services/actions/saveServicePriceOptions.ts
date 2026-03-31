@@ -7,6 +7,7 @@ import type {
   SaveServicePriceOptionsResult,
   ServicePriceOptionSaveInput,
 } from '../types/services';
+import { hasPriceOptionsAccess } from '../utils/priceOptionsAccess';
 
 export async function saveServicePriceOptionsAction(
   serviceId: string,
@@ -39,6 +40,20 @@ export async function saveServicePriceOptionsAction(
     return {
       success: false,
       error: 'Business profile is not set up.',
+    };
+  }
+
+  const canUsePriceOptions = await hasPriceOptionsAccess({
+    supabase,
+    userId: user.id,
+    businessId: businessProfile.id,
+  });
+
+  if (!canUsePriceOptions) {
+    return {
+      success: false,
+      error:
+        'Price options are available on Pro, unless your account already had them enabled.',
     };
   }
 

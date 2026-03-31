@@ -46,7 +46,7 @@ export const PRO_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings', highlight: true },
   { text: 'Verified profile badge' },
   { text: 'More images' },
-  { text: 'Early access to new features' },
+  { text: 'Multiple price options per service' },
   { text: 'Priority support' },
 ];
 

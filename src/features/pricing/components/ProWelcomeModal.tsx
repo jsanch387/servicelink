@@ -5,8 +5,8 @@ import { PRO_WELCOME_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import {
   CheckBadgeIcon,
   PhotoIcon,
-  SparklesIcon,
   Squares2X2Icon,
+  TagIcon,
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React from 'react';
@@ -28,8 +28,8 @@ const PRO_WELCOME_BULLETS = [
     accent: 'emerald' as const,
   },
   {
-    icon: SparklesIcon,
-    text: 'Early access to new features',
+    icon: TagIcon,
+    text: 'Multiple price options per service',
     accent: 'amber' as const,
   },
 ] as const;

@@ -13,6 +13,7 @@ import {
   getServices,
   ServiceEditScreen,
 } from '@/features/services';
+import { hasPriceOptionsAccess } from '@/features/services/utils/priceOptionsAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 
@@ -55,6 +56,12 @@ export default async function ServiceEditPage({
       getServicePriceOptions(serviceId, businessProfile.id),
     ]);
 
+  const canUsePriceOptions = await hasPriceOptionsAccess({
+    supabase,
+    userId: user.id,
+    businessId: businessProfile.id,
+  });
+
   if (!servicesResult.success || !servicesResult.data) {
     redirect('/dashboard/services');
   }
@@ -77,6 +84,7 @@ export default async function ServiceEditPage({
       initialAddOns={addOns}
       initialSelectedAddOnIds={initialSelectedAddOnIds}
       initialPriceOptions={initialPriceOptions}
+      canUsePriceOptions={canUsePriceOptions}
       backHref="/dashboard/services"
     />
   );
