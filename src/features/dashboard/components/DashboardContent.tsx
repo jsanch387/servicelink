@@ -14,6 +14,7 @@ import {
   QuickActionsCard,
   UpcomingBookingsCard,
 } from '@/features/dashboard';
+import { NewQuoteCard } from '@/features/quotes';
 import { ROUTES } from '@/constants/routes';
 import {
   Button,
@@ -160,7 +161,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           )}
 
           {/* Stats + actions grid: Profile views (if slug), V1 pending requests or V2 upcoming, Quick actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 min-w-0">
             {slugData?.hasSlug && (
               <PerformanceCard
                 profileViews={dashboardAnalytics?.profileViews ?? 0}
@@ -178,6 +179,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 pendingCount={dashboardData.pendingRequestsCount}
               />
             )}
+            <NewQuoteCard />
             <QuickActionsCard />
           </div>
         </div>

@@ -43,6 +43,7 @@ export const ROUTES = {
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
+    QUOTES_NEW: '/dashboard/quotes/new',
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
     SETTINGS: '/dashboard/settings',
