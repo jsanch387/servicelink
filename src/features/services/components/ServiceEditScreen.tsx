@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, Input, PriceInput, TextArea } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';
@@ -8,8 +9,8 @@ import { saveServicePriceOptionsAction } from '@/features/services/actions/saveS
 import { updateServiceAction } from '@/features/services/actions/updateService';
 import { createAddOnAction } from '@/features/services/add-ons';
 import type {
-  ServicePriceOptionSaveInput,
   ServicePriceOptionRow,
+  ServicePriceOptionSaveInput,
   ServiceRow,
 } from '@/features/services/types/services';
 import {
@@ -26,12 +27,12 @@ import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
-import { EditAddOnModal } from './add-ons/EditAddOnModal';
-import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
 import {
   ServicePriceOptionsSection,
   type ServicePriceOptionDraft,
 } from './ServicePriceOptionsSection';
+import { EditAddOnModal } from './add-ons/EditAddOnModal';
+import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
 
 const MAX_DESCRIPTION_LENGTH = 280;
 
@@ -68,6 +69,8 @@ export interface ServiceEditScreenProps {
   initialSelectedAddOnIds?: string[];
   /** Back link URL (e.g. /dashboard/services). */
   backHref: string;
+  /** Whether the user can use service price options (Pro or grandfathered). */
+  canUsePriceOptions?: boolean;
 }
 
 /**
@@ -80,6 +83,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   initialAddOns = [],
   initialSelectedAddOnIds = [],
   backHref,
+  canUsePriceOptions = false,
 }) => {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -200,8 +204,9 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     }
     const durationMinutes = durationResult.durationMinutes;
 
+    const canEditPriceOptions = canUsePriceOptions && priceOptionsEnabled;
     let validatedPriceOptions: ServicePriceOptionSaveInput[] = [];
-    if (priceOptionsEnabled) {
+    if (canEditPriceOptions) {
       if (priceOptionsDraft.length === 0) {
         return;
       }
@@ -249,11 +254,14 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
         description: descriptionTrim,
         price_cents: priceCents,
         duration_minutes: durationMinutes,
-        price_options_enabled: priceOptionsEnabled,
+        // Users without access can still edit service details, but cannot change this setting.
+        price_options_enabled: canUsePriceOptions
+          ? priceOptionsEnabled
+          : service.price_options_enabled === true,
       }),
       saveServiceAddOnAssignmentsAction(service.id, validAddOnIds),
     ];
-    if (priceOptionsEnabled) {
+    if (canEditPriceOptions) {
       requests.push(
         saveServicePriceOptionsAction(service.id, validatedPriceOptions)
       );
@@ -275,7 +283,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       );
       return;
     }
-    if (priceOptionsEnabled && optionsResult && !optionsResult.success) {
+    if (canEditPriceOptions && optionsResult && !optionsResult.success) {
       setPriceOptionsSubmitError(
         optionsResult.error ?? 'Could not save price options.'
       );
@@ -293,6 +301,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     priceOptionsEnabled,
     priceOptionsDraft,
     service.id,
+    service.price_options_enabled,
+    canUsePriceOptions,
     router,
   ]);
 
@@ -411,7 +421,9 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
 
           <ServicePriceOptionsSection
             service={service}
-            initialEnabled={service.price_options_enabled === true}
+            initialEnabled={
+              canUsePriceOptions ? service.price_options_enabled === true : true
+            }
             initialOptions={initialPriceOptions}
             onChange={(enabled, options) => {
               setPriceOptionsEnabled(enabled);
@@ -420,6 +432,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
             }}
             showValidationErrors={showValidationErrors && priceOptionsEnabled}
             submitErrorMessage={priceOptionsSubmitError}
+            isLocked={!canUsePriceOptions}
+            upgradeHref={ROUTES.DASHBOARD.UPGRADE}
           />
 
           {/* Add-ons section — pool from DB; user selects which to offer for this service */}

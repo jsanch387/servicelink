@@ -61,7 +61,7 @@ export const TryProPostOnboardingModal: React.FC<
           </div>
           <p className="text-gray-400 text-sm sm:text-base">
             Try Pro for unlimited bookings, a verified badge, more portfolio
-            images, and priority support.
+            images, multiple price options per service, and priority support.
           </p>
         </div>
         <ul className="space-y-2">

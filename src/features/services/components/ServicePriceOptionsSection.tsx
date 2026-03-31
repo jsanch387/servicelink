@@ -2,6 +2,7 @@
 
 import {
   Button,
+  CrownIcon,
   GlassCard,
   Input,
   PriceInput,
@@ -50,6 +51,8 @@ export interface ServicePriceOptionsSectionProps {
   onChange?: (enabled: boolean, options: ServicePriceOptionDraft[]) => void;
   showValidationErrors?: boolean;
   submitErrorMessage?: string | null;
+  isLocked?: boolean;
+  upgradeHref?: string;
 }
 
 /**
@@ -62,6 +65,8 @@ export function ServicePriceOptionsSection({
   onChange,
   showValidationErrors = false,
   submitErrorMessage = null,
+  isLocked = false,
+  upgradeHref,
 }: ServicePriceOptionsSectionProps) {
   const mappedInitialOptions = useMemo<PriceOptionDraft[]>(
     () =>
@@ -86,6 +91,25 @@ export function ServicePriceOptionsSection({
     () => new Set()
   );
   const [isSectionExpanded, setIsSectionExpanded] = useState(false);
+  const teaserOptions = useMemo<PriceOptionDraft[]>(
+    () => [
+      {
+        id: 'teaser-suv',
+        label: 'SUV detail',
+        price: '145',
+        durationHHmm: '02:00',
+      },
+      {
+        id: 'teaser-truck',
+        label: 'Truck detail',
+        price: '185',
+        durationHHmm: '02:30',
+      },
+    ],
+    []
+  );
+  const displayedEnabled = isLocked ? true : enabled;
+  const displayedOptions = isLocked ? teaserOptions : options;
 
   useEffect(() => {
     setEnabled(initialEnabled);
@@ -107,30 +131,40 @@ export function ServicePriceOptionsSection({
     setIsSectionExpanded(false);
   }, [service.id]);
 
-  const handleEnable = useCallback((on: boolean) => {
-    setEnabled(on);
-  }, []);
+  const handleEnable = useCallback(
+    (on: boolean) => {
+      if (isLocked) return;
+      setEnabled(on);
+    },
+    [isLocked]
+  );
 
   const updateOption = useCallback(
     (id: string, patch: Partial<PriceOptionDraft>) => {
+      if (isLocked) return;
       setOptions(prev => prev.map(o => (o.id === id ? { ...o, ...patch } : o)));
     },
-    []
+    [isLocked]
   );
 
-  const removeOption = useCallback((id: string) => {
-    setOptions(prev => {
-      if (prev.length <= 1) return prev;
-      return prev.filter(o => o.id !== id);
-    });
-    setExpandedOptionIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  }, []);
+  const removeOption = useCallback(
+    (id: string) => {
+      if (isLocked) return;
+      setOptions(prev => {
+        if (prev.length <= 1) return prev;
+        return prev.filter(o => o.id !== id);
+      });
+      setExpandedOptionIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    },
+    [isLocked]
+  );
 
   const addOption = useCallback(() => {
+    if (isLocked) return;
     const next = emptyOption();
     setOptions(prev => [...prev, next]);
     setExpandedOptionIds(prev => {
@@ -138,7 +172,7 @@ export function ServicePriceOptionsSection({
       nextSet.add(next.id);
       return nextSet;
     });
-  }, []);
+  }, [isLocked]);
 
   const toggleExpanded = useCallback((id: string) => {
     setExpandedOptionIds(prev => {
@@ -167,8 +201,9 @@ export function ServicePriceOptionsSection({
   }, [options, showValidationErrors]);
 
   useEffect(() => {
+    if (isLocked) return;
     onChange?.(enabled, options);
-  }, [enabled, onChange, options]);
+  }, [enabled, isLocked, onChange, options]);
 
   return (
     <section className="mb-6 sm:mb-8" aria-labelledby="price-options-heading">
@@ -185,16 +220,24 @@ export function ServicePriceOptionsSection({
           aria-expanded={isSectionExpanded}
         >
           <div className="min-w-0">
-            <h2
-              id="price-options-heading"
-              className="text-lg sm:text-base font-bold text-white tracking-tight"
-            >
-              Pricing options
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2
+                id="price-options-heading"
+                className="text-lg sm:text-base font-bold text-white tracking-tight"
+              >
+                Pricing options
+              </h2>
+              {isLocked ? (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold tracking-wide text-amber-300">
+                  <CrownIcon className="h-3 w-3" />
+                  Pro
+                </span>
+              ) : null}
+            </div>
             {!isSectionExpanded ? (
-              <p className="text-xs text-gray-500 mt-1">
-                {enabled
-                  ? `${options.length} option${options.length === 1 ? '' : 's'}`
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                {displayedEnabled
+                  ? `${displayedOptions.length} option${displayedOptions.length === 1 ? '' : 's'}`
                   : 'Off'}
               </p>
             ) : null}
@@ -207,28 +250,44 @@ export function ServicePriceOptionsSection({
         </button>
 
         {isSectionExpanded ? (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            {!enabled ? (
+          <div className="mt-4 pt-4 border-t border-white/10 relative">
+            {isLocked ? (
+              <p className="text-sm text-gray-400 mb-3 leading-snug max-w-prose">
+                Preview mode. Upgrade to Pro to edit and publish pricing
+                options.
+              </p>
+            ) : null}
+
+            {!displayedEnabled ? (
               <p className="text-sm text-gray-400 mb-3 leading-snug max-w-prose">
                 Use this when the same service costs different amounts for
                 different vehicles. They choose the right one at checkout.
               </p>
             ) : null}
 
-            <div className="flex items-center justify-between gap-4 min-h-[52px] w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 active:bg-white/[0.06]">
+            <div
+              className={`flex items-center justify-between gap-4 min-h-[52px] w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 active:bg-white/[0.06] ${
+                isLocked ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+              aria-disabled={isLocked}
+            >
               <span className="text-sm font-medium text-white leading-snug pr-2">
                 Offer multiple prices
               </span>
               <Switch
                 size="md"
-                checked={enabled}
+                checked={displayedEnabled}
                 onCheckedChange={handleEnable}
                 aria-label="Offer multiple prices for this service"
               />
             </div>
 
-            {enabled ? (
-              <div className="mt-5 sm:mt-6 pt-5 sm:pt-6 border-t border-white/10">
+            {displayedEnabled ? (
+              <div
+                className={`mt-5 sm:mt-6 pt-5 sm:pt-6 border-t border-white/10 ${
+                  isLocked ? 'opacity-70' : ''
+                }`}
+              >
                 {submitErrorMessage ? (
                   <p className="text-sm text-red-400 mb-3">
                     {submitErrorMessage}
@@ -245,13 +304,16 @@ export function ServicePriceOptionsSection({
                   variant="outline"
                   size="sm"
                   onClick={addOption}
+                  disabled={isLocked}
                   icon={<PlusIcon className="h-4 w-4 shrink-0 text-white" />}
-                  className="w-full sm:w-auto min-h-[48px] sm:min-h-0 justify-center mb-4 !border-white/30 !text-white !bg-transparent hover:!bg-white/10 hover:!border-white/45 hover:!text-white"
+                  className={`w-full sm:w-auto min-h-[48px] sm:min-h-0 justify-center mb-4 !border-white/30 !text-white !bg-transparent hover:!bg-white/10 hover:!border-white/45 hover:!text-white ${
+                    isLocked ? 'cursor-not-allowed' : ''
+                  }`}
                 >
                   Add option
                 </Button>
 
-                {options.length === 0 ? (
+                {displayedOptions.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-6 text-center">
                     <p className="text-sm text-gray-400 leading-snug">
                       Multiple prices are on, but no options were found for this
@@ -260,8 +322,10 @@ export function ServicePriceOptionsSection({
                   </div>
                 ) : (
                   <ul className="space-y-3 list-none p-0 m-0">
-                    {options.map((opt, index) => {
-                      const isExpanded = expandedOptionIds.has(opt.id);
+                    {displayedOptions.map((opt, index) => {
+                      const isExpanded = isLocked
+                        ? false
+                        : expandedOptionIds.has(opt.id);
                       const label = opt.label.trim();
                       const durationValid = parseServiceEditDurationForSave(
                         opt.durationHHmm
@@ -284,8 +348,13 @@ export function ServicePriceOptionsSection({
                             >
                               <button
                                 type="button"
-                                onClick={() => toggleExpanded(opt.id)}
-                                className="flex-1 min-w-0 text-left rounded-lg px-1 py-1.5 transition-colors cursor-pointer"
+                                onClick={() =>
+                                  !isLocked ? toggleExpanded(opt.id) : undefined
+                                }
+                                disabled={isLocked}
+                                className={`flex-1 min-w-0 text-left rounded-lg px-1 py-1.5 transition-colors ${
+                                  isLocked ? 'cursor-default' : 'cursor-pointer'
+                                }`}
                                 aria-expanded={isExpanded}
                                 aria-label={`${isExpanded ? 'Collapse' : 'Expand'} option ${index + 1}`}
                               >
@@ -304,8 +373,14 @@ export function ServicePriceOptionsSection({
                                 <button
                                   type="button"
                                   onClick={() => removeOption(opt.id)}
-                                  disabled={options.length <= 1}
-                                  className="inline-flex items-center gap-1.5 text-sm font-medium px-2 py-2 text-rose-400/90 hover:text-rose-300 disabled:opacity-30 disabled:pointer-events-none min-h-[44px] rounded-lg transition-colors sm:min-h-0 cursor-pointer"
+                                  disabled={
+                                    isLocked || displayedOptions.length <= 1
+                                  }
+                                  className={`inline-flex items-center gap-1.5 text-sm font-medium px-2 py-2 text-rose-400/90 hover:text-rose-300 disabled:opacity-30 disabled:pointer-events-none min-h-[44px] rounded-lg transition-colors sm:min-h-0 ${
+                                    isLocked
+                                      ? 'cursor-not-allowed'
+                                      : 'cursor-pointer'
+                                  }`}
                                   aria-label="Remove this option"
                                 >
                                   <TrashIcon className="h-4 w-4 shrink-0" />
@@ -315,8 +390,17 @@ export function ServicePriceOptionsSection({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => toggleExpanded(opt.id)}
-                                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-gray-300 hover:text-white transition-colors sm:min-h-0 sm:min-w-0 sm:p-2 cursor-pointer"
+                                  onClick={() =>
+                                    !isLocked
+                                      ? toggleExpanded(opt.id)
+                                      : undefined
+                                  }
+                                  disabled={isLocked}
+                                  className={`inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-gray-300 hover:text-white transition-colors sm:min-h-0 sm:min-w-0 sm:p-2 ${
+                                    isLocked
+                                      ? 'cursor-not-allowed'
+                                      : 'cursor-pointer'
+                                  }`}
                                   aria-label={`${isExpanded ? 'Collapse' : 'Expand'} option ${index + 1}`}
                                 >
                                   {isExpanded ? (
@@ -408,7 +492,7 @@ export function ServicePriceOptionsSection({
                 )}
               </div>
             ) : (
-              <div className="mt-4">
+              <div className={`mt-4 ${isLocked ? 'opacity-70' : ''}`}>
                 <GlassCard
                   blurColor="bg-zinc-500"
                   rounded="rounded-2xl"
@@ -421,6 +505,16 @@ export function ServicePriceOptionsSection({
                 </GlassCard>
               </div>
             )}
+            {isLocked && upgradeHref ? (
+              <Button
+                href={upgradeHref}
+                variant="inverse"
+                icon={<CrownIcon className="h-4 w-4" />}
+                className="w-full mt-4"
+              >
+                Upgrade to Pro
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </GlassCard>
