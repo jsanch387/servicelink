@@ -1,11 +1,11 @@
 /**
  * CreateLinkCard - Inline create-link form with same urgency as Settings
- * Shown on dashboard when user has no custom link (Required pill + amber callout)
+ * Shown on dashboard when user has no share link (Required pill + amber callout)
  */
 
 'use client';
 
-import { SLUG_MAX_LENGTH } from '@/constants/slug';
+import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
 import {
   Button,
   GlassCard,
@@ -38,7 +38,7 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessProfileId,
-          slugInput: customSlugInput.trim().toLowerCase(),
+          slugInput: sanitizeSlugInput(customSlugInput),
         }),
       });
       const result = await response.json();
@@ -63,13 +63,12 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
       className="text-left w-full min-w-0 p-4"
     >
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 min-w-0">
-        <h2 className="text-lg sm:text-xl font-bold text-white">Custom link</h2>
-        <RequiredLabel title="Create a link to share your profile" />
+        <h2 className="text-lg sm:text-xl font-bold text-white">Your Link</h2>
+        <RequiredLabel title="Add a link to share your profile" />
       </div>
       <div className="mt-3 mb-6 min-w-0">
         <WarningCallout>
-          You need a custom link so customers can find and book you. Create one
-          below.
+          You need a link so customers can find and book you. Create one below.
         </WarningCallout>
       </div>
       <div className="space-y-4 min-w-0">
@@ -80,12 +79,14 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
           <input
             type="text"
             value={customSlugInput}
-            onChange={e => setCustomSlugInput(e.target.value)}
+            onChange={e =>
+              setCustomSlugInput(sanitizeSlugInput(e.target.value))
+            }
             placeholder="my-business"
             disabled={isUpdating}
             maxLength={SLUG_MAX_LENGTH}
             className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
-            aria-label="Custom link slug"
+            aria-label="Your link slug"
           />
         </div>
         {slugError && <p className="text-sm text-red-400">{slugError}</p>}
@@ -93,7 +94,7 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
           onClick={handleSaveSlug}
           variant="inverse"
           loading={isUpdating}
-          disabled={isUpdating || !customSlugInput.trim()}
+          disabled={isUpdating || !sanitizeSlugInput(customSlugInput)}
           className="w-full sm:w-auto"
         >
           {isUpdating ? 'Creating…' : 'Create link'}
