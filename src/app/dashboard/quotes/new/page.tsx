@@ -23,5 +23,17 @@ export default async function NewQuotePage() {
     redirect(ROUTES.DASHBOARD.MAIN);
   }
 
-  return <CreateQuoteScreen />;
+  const { data: businessRow, error: businessError } = await supabase
+    .from('business_profiles')
+    .select('business_slug')
+    .eq('profile_id', user.id)
+    .maybeSingle();
+
+  if (businessError || !businessRow) {
+    redirect(ROUTES.DASHBOARD.MAIN);
+  }
+
+  const business = businessRow as { business_slug: string | null };
+
+  return <CreateQuoteScreen businessSlug={business.business_slug} />;
 }

@@ -29,6 +29,8 @@ interface DateSelectorProps {
 
   onSelectDate: (date: Date) => void;
   minDate?: Date;
+  /** Calendar without outer card chrome (nested inside another panel). */
+  plainCalendar?: boolean;
 }
 
 export const DateSelector: React.FC<DateSelectorProps> = ({
@@ -39,6 +41,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   selectedDate,
   onSelectDate,
   minDate = new Date(),
+  plainCalendar = false,
 }) => {
   const isDateDisabled = useCallback(
     (date: Date) => {
@@ -65,6 +68,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       minDate={minDate}
       isDateDisabled={isDateDisabled}
       showYear={true}
+      plain={plainCalendar}
     />
   );
 };

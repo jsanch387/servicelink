@@ -14,6 +14,8 @@ interface TimeSlotGridProps {
   selectedTime: string | null;
   // eslint-disable-next-line no-unused-vars
   onSelectTime: (time: string) => void;
+  /** When false, omit the “Choose time” heading (parent supplies section title). */
+  showHeading?: boolean;
 }
 
 export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
@@ -24,6 +26,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   timeOffBlocks,
   selectedTime,
   onSelectTime,
+  showHeading = true,
 }) => {
   const slots = selectedDate
     ? generateTimeSlots(
@@ -54,9 +57,11 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
 
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold text-white tracking-tight">
-        Choose time
-      </h2>
+      {showHeading ? (
+        <h2 className="text-xl font-semibold text-white tracking-tight">
+          Choose time
+        </h2>
+      ) : null}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {slots.map(time => (
           <button
