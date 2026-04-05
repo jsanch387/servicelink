@@ -1,6 +1,6 @@
 'use client';
 
-import { SLUG_MAX_LENGTH } from '@/constants/slug';
+import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
 import {
   Button,
   GlassCard,
@@ -11,13 +11,14 @@ import { CompleteBusinessProfile } from '@/features/business-profile/types/busin
 import { PlanSection, ProWelcomeModal } from '@/features/pricing';
 import type { PlanId } from '@/features/pricing';
 import { PRO_WELCOME_MODAL_SEEN_KEY } from '@/features/pricing/types';
+import { UpdateBusinessLinkModal } from './UpdateBusinessLinkModal';
 import {
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
   EnvelopeIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
 interface SettingsData {
@@ -57,8 +58,10 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
   const planId = settingsData.planId ?? 'free';
   const subscriptionStatus = settingsData.subscriptionStatus ?? null;
   const [showProWelcomeModal, setShowProWelcomeModal] = useState(false);
+  const [showUpdateLinkModal, setShowUpdateLinkModal] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const handleOpenPortal = useCallback(async () => {
     setPortalLoading(true);
@@ -102,6 +105,12 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
   const [copied, setCopied] = useState(false);
   const [linkGenerated, setLinkGenerated] = useState(hasSlug);
   const [generatedSlug, setGeneratedSlug] = useState(existingSlug || '');
+
+  useEffect(() => {
+    if (!hasSlug || !existingSlug) return;
+    setGeneratedSlug(existingSlug);
+    setLinkGenerated(true);
+  }, [hasSlug, existingSlug, settingsData.slugData?.fullLink]);
 
   const currentSlug = linkGenerated ? generatedSlug : customSlugInput || '';
   const rawLinkForCopy = linkGenerated
@@ -149,7 +158,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessProfileId: businessProfile.id,
-          slugInput: customSlugInput.trim().toLowerCase(),
+          slugInput: sanitizeSlugInput(customSlugInput),
         }),
       });
       const result = await response.json();
@@ -174,6 +183,17 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
       <ProWelcomeModal
         isOpen={showProWelcomeModal}
         onClose={() => setShowProWelcomeModal(false)}
+      />
+      <UpdateBusinessLinkModal
+        isOpen={showUpdateLinkModal}
+        onClose={() => setShowUpdateLinkModal(false)}
+        appDomain={APP_DOMAIN}
+        currentSlug={generatedSlug}
+        businessProfileId={businessProfile.id}
+        onSaved={({ slug }) => {
+          setGeneratedSlug(slug);
+          router.refresh();
+        }}
       />
       <div className="max-w-2xl mx-auto w-full min-w-0">
         <div className="mb-10">
@@ -211,7 +231,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
           {/* Subscription plan */}
           <PlanSection planId={planId} />
 
-          {/* Custom link */}
+          {/* Your link */}
           <GlassCard
             padding="none"
             rounded="rounded-2xl"
@@ -219,25 +239,37 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             showBlur={true}
             className="w-full min-w-0 p-4 text-left"
           >
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold text-white">
-                Custom link
-              </h2>
-              {!linkGenerated && (
-                <RequiredLabel title="Create a link to share your profile" />
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+                <h2 className="text-lg sm:text-xl font-bold text-white">
+                  Your Link
+                </h2>
+                {!linkGenerated && (
+                  <RequiredLabel title="Add a link to share your profile" />
+                )}
+              </div>
+              {linkGenerated && (
+                <button
+                  type="button"
+                  onClick={handleViewProfile}
+                  className="shrink-0 cursor-pointer rounded-lg p-2.5 text-gray-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+                  aria-label="Open live profile in a new tab"
+                >
+                  <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+                </button>
               )}
             </div>
             {!linkGenerated && (
               <div className="mt-3 mb-6 min-w-0">
                 <WarningCallout>
-                  You need a custom link so customers can find and book you.
-                  Create one below.
+                  You need a link so customers can find and book you. Add one
+                  below.
                 </WarningCallout>
               </div>
             )}
-            <p className="text-sm text-gray-400 mt-1 mb-6">
+            <p className="text-sm text-gray-400 mt-1 mb-4 leading-relaxed">
               {linkGenerated
-                ? 'This is your public link. Copy and share it so customers can find you and book.'
+                ? 'Share this URL or open your public page from the icon above.'
                 : 'The link you share with customers. Create one below.'}
             </p>
 
@@ -250,12 +282,14 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                   <input
                     type="text"
                     value={customSlugInput}
-                    onChange={e => setCustomSlugInput(e.target.value)}
+                    onChange={e =>
+                      setCustomSlugInput(sanitizeSlugInput(e.target.value))
+                    }
                     placeholder="my-business"
                     disabled={isUpdating}
                     maxLength={SLUG_MAX_LENGTH}
                     className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
-                    aria-label="Custom link slug"
+                    aria-label="Your link slug"
                   />
                 </div>
                 {slugError && (
@@ -265,47 +299,46 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                   onClick={handleSaveSlug}
                   variant="inverse"
                   loading={isUpdating}
-                  disabled={isUpdating || !customSlugInput.trim()}
+                  disabled={isUpdating || !sanitizeSlugInput(customSlugInput)}
                   className="w-full sm:w-auto"
                 >
                   {isUpdating ? 'Creating…' : 'Create link'}
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
-                  <div className="flex-1 min-w-0 rounded-xl border border-white/10 bg-white/[0.04] py-3 px-4 overflow-hidden">
+              <div className="min-w-0 space-y-2">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 min-w-0">
+                  <div className="min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <p
-                      className="font-mono text-sm text-gray-200 truncate"
-                      title={displayLink}
+                      className="font-mono text-[13px] leading-snug text-gray-200 whitespace-nowrap pr-1 sm:text-sm"
+                      title={fullLinkForCopy}
                     >
                       {displayLink}
                     </p>
                   </div>
-                  <Button
+                </div>
+
+                <div className="flex min-h-[44px] items-center justify-between gap-4 pt-0.5">
+                  <button
                     type="button"
                     onClick={handleCopyLink}
-                    variant="inverse"
-                    className="w-full sm:w-auto sm:flex-shrink-0"
-                    icon={
-                      copied ? (
-                        <CheckIcon className="h-4 w-4 text-emerald-600" />
-                      ) : (
-                        <ClipboardDocumentIcon className="h-4 w-4" />
-                      )
-                    }
+                    className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 py-2 text-sm text-gray-400 transition-colors hover:text-white"
                   >
-                    {copied ? 'Copied' : 'Copy'}
-                  </Button>
+                    {copied ? (
+                      <CheckIcon className="h-4 w-4 shrink-0 text-emerald-500" />
+                    ) : (
+                      <ClipboardDocumentIcon className="h-4 w-4 shrink-0 text-gray-500" />
+                    )}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowUpdateLinkModal(true)}
+                    className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center py-2 text-sm text-gray-400 transition-colors hover:text-white"
+                  >
+                    Change link
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleViewProfile}
-                  className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
-                >
-                  <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                  View my profile
-                </button>
               </div>
             )}
           </GlassCard>

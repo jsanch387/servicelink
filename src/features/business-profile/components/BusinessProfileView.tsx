@@ -179,14 +179,14 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
               >
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 min-w-0">
                   <h2 className="text-lg sm:text-xl font-bold text-white">
-                    Custom link
+                    Your Link
                   </h2>
-                  <RequiredLabel title="Create a link to share your profile" />
+                  <RequiredLabel title="Add a link to share your profile" />
                 </div>
                 <div className="mt-3 mb-4 min-w-0">
                   <WarningCallout>
-                    You need a custom link so customers can find and book you.
-                    Add one in Settings.
+                    You need a link so customers can find and book you. Add one
+                    in Settings.
                   </WarningCallout>
                 </div>
                 <Button

@@ -144,25 +144,33 @@ class SlugService {
   }
 
   /**
-   * Check if a slug is available (not already in use)
+   * Check if a slug is available (not already taken by another business).
+   * When `exceptBusinessProfileId` is set, that profile may keep its current slug
+   * (same slug re-save / update flow).
    */
-  async checkSlugAvailability(slug: string): Promise<SlugAvailabilityResult> {
+  async checkSlugAvailability(
+    slug: string,
+    exceptBusinessProfileId?: string
+  ): Promise<SlugAvailabilityResult> {
     try {
       const { data, error } = await this.supabase
         .from('business_profiles')
         .select('id, business_name')
         .eq('business_slug', slug)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 is "not found" which is what we want
+      if (error) {
         return {
           isAvailable: false,
           error: 'Unable to check if link name is available. Please try again.',
         };
       }
 
-      if (data) {
+      const row = data as { id: string } | null;
+      if (row?.id) {
+        if (exceptBusinessProfileId && row.id === exceptBusinessProfileId) {
+          return { isAvailable: true };
+        }
         return {
           isAvailable: false,
           error:
@@ -200,8 +208,11 @@ class SlugService {
     // Always store lowercase in DB (defensive; cleanSlug is already from generateSlugFromName)
     const cleanSlug = validation.cleanSlug!.toLowerCase();
 
-    // Step 2: Check availability
-    const availability = await this.checkSlugAvailability(cleanSlug);
+    // Step 2: Check availability (allow this profile to keep its existing slug)
+    const availability = await this.checkSlugAvailability(
+      cleanSlug,
+      businessProfileId
+    );
     if (!availability.isAvailable) {
       return {
         success: false,

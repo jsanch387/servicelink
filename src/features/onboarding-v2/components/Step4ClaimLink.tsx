@@ -1,24 +1,14 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { SLUG_MAX_LENGTH } from '@/constants/slug';
+import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
 import React, { useState } from 'react';
 
 const APP_DOMAIN = 'myservicelink.app';
 
-function sanitizeSlugInput(value: string): string {
-  // Normalize to lowercase and allow only letters, numbers, hyphens (stored lowercase in DB).
-  const lower = value.toLowerCase();
-  const withDashes = lower.replace(/[\s_]+/g, '-');
-  const cleaned = withDashes.replace(/[^a-z0-9-]/g, '');
-  const collapsed = cleaned.replace(/-+/g, '-');
-  return collapsed.slice(0, SLUG_MAX_LENGTH);
-}
-
 interface Step4ClaimLinkProps {
   businessProfileId: string | undefined;
   slug: string;
-  // eslint-disable-next-line no-unused-vars
   onUpdate: (slug: string) => void;
   onNext: () => void;
   onBack: () => void;
@@ -34,8 +24,9 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canContinue = slug.trim().length > 0;
-  const slugForDisplay = slug.trim() || 'my-business';
+  const slugClean = sanitizeSlugInput(slug);
+  const canContinue = slugClean.length >= 3;
+  const slugForDisplay = slugClean || 'my-business';
   const slugLength = slug.length;
 
   const handleClaim = async () => {
@@ -43,7 +34,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
       setError('Business profile is missing. Go back and complete step 1.');
       return;
     }
-    if (!slug.trim()) return;
+    if (sanitizeSlugInput(slug).length < 3) return;
     setError(null);
     setSaving(true);
     try {
@@ -52,7 +43,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessProfileId,
-          slugInput: slug.trim().toLowerCase(),
+          slugInput: sanitizeSlugInput(slug),
           advanceOnboardingStep: true,
         }),
       });
@@ -61,7 +52,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
         setError(result.error ?? 'Failed to claim link.');
         return;
       }
-      onUpdate(result.data?.slug ?? slug.trim());
+      onUpdate(result.data?.slug ?? sanitizeSlugInput(slug));
       onNext();
     } finally {
       setSaving(false);
@@ -72,7 +63,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
     <div className="w-full">
       <div className="mb-6 sm:mb-8">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
-          Claim your custom link
+          Choose your link
         </h1>
         <p className="text-gray-400 text-sm sm:text-base mt-1">
           This is the link you&apos;ll share with customers. Pick something
@@ -88,9 +79,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
             </p>
           )}
           <div className="space-y-1.5">
-            <p className="text-sm text-gray-200 font-medium">
-              Your public link
-            </p>
+            <p className="text-sm text-gray-200 font-medium">Your link</p>
             <div className="flex flex-col sm:flex-row rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-white/30 focus-within:ring-1 focus-within:ring-white/20">
               <span className="py-2.5 px-4 sm:py-3 text-gray-500 font-mono text-xs sm:text-sm border-b border-white/10 sm:border-b-0 sm:border-r flex-shrink-0">
                 {APP_DOMAIN}/
@@ -102,7 +91,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
                 placeholder="my-business"
                 disabled={saving}
                 className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
-                aria-label="Custom link slug"
+                aria-label="Your link slug"
                 maxLength={SLUG_MAX_LENGTH}
               />
             </div>
@@ -119,7 +108,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
               </span>
             </div>
           </div>
-          {slug.trim() && (
+          {slugClean.length > 0 && (
             <p className="text-xs text-gray-400 font-mono break-all">
               {APP_DOMAIN}/{slugForDisplay}
             </p>
