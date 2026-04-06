@@ -10,11 +10,8 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
-
-/** Mobile-first truncation; browser gets a longer preview before "See more". */
-const MOBILE_DESCRIPTION_PREVIEW_LENGTH = 120;
-const DESKTOP_DESCRIPTION_PREVIEW_LENGTH = 220;
+import React, { useState } from 'react';
+import { serviceDescriptionNeedsSeeMore } from '../utils/serviceDescriptionDisplay';
 
 interface Service {
   id?: string;
@@ -53,25 +50,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   manualBookingForCustomer = false,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 640px)');
-    const apply = () => setIsDesktop(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
-
   const description = service.description || '';
-  const previewLength = isDesktop
-    ? DESKTOP_DESCRIPTION_PREVIEW_LENGTH
-    : MOBILE_DESCRIPTION_PREVIEW_LENGTH;
-  const isLongDescription = description.length > previewLength;
-  const previewText =
-    isLongDescription && !isDescriptionExpanded
-      ? `${description.slice(0, previewLength).trim()}...`
-      : description;
+  const isLongDescription = serviceDescriptionNeedsSeeMore(description);
 
   const effectiveDurationMinutes =
     service.duration_minutes != null && service.duration_minutes > 0
@@ -114,33 +94,33 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       className="group"
       padding="md"
     >
-      {/* Header: service name + price (thick black weight) */}
-      <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-black text-white tracking-tight pr-4 flex-1">
+      {/* Header: mobile ~16px title / ~18px price; sm+ matches denser “poster” scale */}
+      <div className="flex justify-between items-start gap-2 mb-2.5 sm:gap-3 sm:mb-3">
+        <h3 className="text-base font-bold text-white tracking-tight flex-1 min-w-0 pr-1 sm:pr-2 sm:text-lg sm:font-black">
           {service.name}
         </h3>
         <span className="text-right leading-none flex-shrink-0">
           {showStartingAt ? (
-            <span className="block text-[11px] font-medium text-zinc-400 mb-1 leading-none">
+            <span className="block text-xs font-medium text-zinc-400 mb-0.5 leading-none sm:mb-1 sm:text-[11px]">
               Starting at
             </span>
           ) : null}
-          <span className="text-xl font-black text-white leading-none">
+          <span className="text-lg font-bold text-white leading-none tabular-nums sm:text-xl sm:font-black">
             {formatPrice(service.price)}
           </span>
         </span>
       </div>
 
-      <div className="border-t border-white/[0.04] mb-4" />
+      <div className="border-t border-white/[0.04] mb-3 sm:mb-4" />
 
       {/* Description — fixed min-height so all cards align; long text is collapsible */}
-      <div className="mb-0 min-h-[4.5rem]">
+      <div className="mb-0 min-h-[4rem] sm:min-h-[4.5rem]">
         <p
-          className={`text-zinc-400 text-sm leading-relaxed ${
-            isLongDescription && !isDescriptionExpanded ? 'line-clamp-3' : ''
+          className={`text-zinc-400 text-[15px] leading-relaxed whitespace-pre-line break-words sm:text-sm ${
+            isLongDescription && !isDescriptionExpanded ? 'line-clamp-5' : ''
           }`}
         >
-          {previewText}
+          {description}
         </p>
         {isLongDescription && (
           <button
@@ -165,11 +145,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       </div>
 
       {/* Faint divider + footer: duration left, Book Now right */}
-      <div className="flex items-center justify-between pt-3">
+      <div className="flex items-center justify-between pt-2.5 sm:pt-3">
         {effectiveDurationMinutes ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
-            <ClockIcon className="h-3 w-3 flex-shrink-0" />
-            <span className="text-xs font-medium">
+            <ClockIcon className="h-3.5 w-3.5 flex-shrink-0 sm:h-3 sm:w-3" />
+            <span className="text-[13px] font-medium sm:text-xs">
               {formatDurationMinutes(effectiveDurationMinutes)}
             </span>
           </div>
@@ -182,7 +162,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             href={getBusinessBookDetailsPath(businessSlug, service.id, {
               forOwner: manualBookingForCustomer,
             })}
-            className="inline-flex items-center gap-1 text-white text-sm font-semibold hover:text-zinc-200 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
           >
             Select
             <ChevronRightIcon className="h-3.5 w-3.5" />

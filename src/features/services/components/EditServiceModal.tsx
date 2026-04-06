@@ -1,6 +1,12 @@
 'use client';
 
-import { Input, Modal, PriceInput, TextArea } from '@/components/shared';
+import {
+  IconButton,
+  Input,
+  Modal,
+  PriceInput,
+  TextArea,
+} from '@/components/shared';
 import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
@@ -8,9 +14,12 @@ import {
   parseServiceEditDurationForSave,
   serviceEditDurationPickerValue,
 } from '@/features/services/utils/serviceEditForm';
-import React, { useCallback, useEffect, useState } from 'react';
-
-const MAX_DESCRIPTION_LENGTH = 280;
+import {
+  SERVICE_DESCRIPTION_MAX_LENGTH,
+  insertServiceDescriptionBullet,
+} from '@/features/business-profile/utils/serviceDescriptionDisplay';
+import { ListBulletIcon } from '@heroicons/react/24/outline';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface EditServiceModalProps {
   service: ServiceRow | null;
@@ -58,6 +67,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   onSave,
   isSaving = false,
 }) => {
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -83,6 +93,24 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setError(null);
     }
   }, [service, showAddForm]);
+
+  const handleInsertDescriptionBullet = useCallback(() => {
+    const el = descriptionTextareaRef.current;
+    const start = el?.selectionStart ?? description.length;
+    const end = el?.selectionEnd ?? description.length;
+    const { value: next, caret } = insertServiceDescriptionBullet(
+      description,
+      start,
+      end
+    );
+    setDescription(next);
+    setTimeout(() => {
+      const node = descriptionTextareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(caret, caret);
+    }, 0);
+  }, [description]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -157,28 +185,28 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           required
         />
 
-        <div className="space-y-2">
-          <TextArea
-            label="Description (Required)"
-            placeholder="Tell customers what they get. Keep it simple."
-            value={description}
-            onChange={setDescription}
-            rows={3}
-            required
-          />
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Required</span>
-            <span
-              className={
-                description.length > MAX_DESCRIPTION_LENGTH * 0.9
-                  ? 'text-gray-400'
-                  : ''
-              }
-            >
-              {description.length}/{MAX_DESCRIPTION_LENGTH}
-            </span>
-          </div>
-        </div>
+        <TextArea
+          ref={descriptionTextareaRef}
+          label="Description (Required)"
+          placeholder="Tell customers what they get."
+          footerStart={
+            <IconButton
+              variant="ghost"
+              size="sm"
+              className="rounded-lg text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-500/10 -mr-1"
+              title="Insert bullet"
+              aria-label="Insert bullet"
+              icon={<ListBulletIcon className="h-5 w-5" />}
+              onClick={handleInsertDescriptionBullet}
+            />
+          }
+          value={description}
+          onChange={setDescription}
+          rows={5}
+          maxLength={SERVICE_DESCRIPTION_MAX_LENGTH}
+          inputClassName="resize-y min-h-[7.5rem]"
+          required
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <PriceInput

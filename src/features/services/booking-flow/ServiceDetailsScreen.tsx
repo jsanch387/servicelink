@@ -234,7 +234,7 @@ export function ServiceDetailsScreen({
                 )}
               </div>
             </div>
-            <p className="text-sm text-zinc-500 leading-relaxed">
+            <p className="text-sm text-zinc-500 leading-relaxed whitespace-pre-line break-words">
               {service.description}
             </p>
           </section>
