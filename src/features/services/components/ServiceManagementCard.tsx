@@ -11,12 +11,9 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import { serviceDescriptionNeedsSeeMore } from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
-
-/** Mobile-first truncation; browser gets a longer preview before "See more". */
-const MOBILE_DESCRIPTION_PREVIEW_LENGTH = 120;
-const DESKTOP_DESCRIPTION_PREVIEW_LENGTH = 220;
+import React, { useState } from 'react';
 
 function formatPrice(priceCents: number | null): string {
   if (priceCents == null) return 'Contact for quote';
@@ -84,25 +81,9 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   addOnCount,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 640px)');
-    const apply = () => setIsDesktop(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
 
   const description = service.description || '';
-  const previewLength = isDesktop
-    ? DESKTOP_DESCRIPTION_PREVIEW_LENGTH
-    : MOBILE_DESCRIPTION_PREVIEW_LENGTH;
-  const isLongDescription = description.length > previewLength;
-  const previewText =
-    isLongDescription && !isDescriptionExpanded
-      ? `${description.slice(0, previewLength).trim()}...`
-      : description;
+  const isLongDescription = serviceDescriptionNeedsSeeMore(description);
 
   const duration = formatDuration(service);
   const isFirst = index === 0;
@@ -194,13 +175,13 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
           {/* Description — collapsible like public ServiceCard for uniform card height */}
           <div className="mb-0 min-h-[4.5rem]">
             <p
-              className={`text-zinc-500 text-sm leading-relaxed ${
+              className={`text-zinc-500 text-sm leading-relaxed whitespace-pre-line break-words ${
                 isLongDescription && !isDescriptionExpanded
-                  ? 'line-clamp-3'
+                  ? 'line-clamp-5'
                   : ''
               }`}
             >
-              {previewText}
+              {description}
             </p>
             {isLongDescription && (
               <button

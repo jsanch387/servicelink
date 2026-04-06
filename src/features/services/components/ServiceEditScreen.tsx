@@ -2,6 +2,7 @@
 
 import {
   Button,
+  IconButton,
   Input,
   PriceInput,
   TextArea,
@@ -26,20 +27,23 @@ import {
   ArrowLeftIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ListBulletIcon,
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ServicePriceOptionsSection,
   type ServicePriceOptionDraft,
 } from './ServicePriceOptionsSection';
+import {
+  SERVICE_DESCRIPTION_MAX_LENGTH,
+  insertServiceDescriptionBullet,
+} from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import { EditAddOnModal } from './add-ons/EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
-
-const MAX_DESCRIPTION_LENGTH = 280;
 
 function formatPrice(cents: number): string {
   if (cents == null || cents === 0) return 'Contact for quote';
@@ -91,6 +95,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   canUsePriceOptions = false,
 }) => {
   const router = useRouter();
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -142,6 +147,24 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       return next;
     });
   }, []);
+
+  const handleInsertDescriptionBullet = useCallback(() => {
+    const el = descriptionTextareaRef.current;
+    const start = el?.selectionStart ?? description.length;
+    const end = el?.selectionEnd ?? description.length;
+    const { value: next, caret } = insertServiceDescriptionBullet(
+      description,
+      start,
+      end
+    );
+    setDescription(next);
+    setTimeout(() => {
+      const node = descriptionTextareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(caret, caret);
+    }, 0);
+  }, [description]);
 
   const handleAddNewAddOn = useCallback(() => {
     setAddOnSaveError(null);
@@ -372,23 +395,32 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
                       : undefined
                   }
                 />
-                <div className="space-y-2">
-                  <TextArea
-                    label="Description"
-                    placeholder="Tell customers what they get."
-                    value={description}
-                    onChange={setDescription}
-                    rows={3}
-                    error={
-                      showValidationErrors && !description.trim()
-                        ? 'Description is required.'
-                        : undefined
-                    }
-                  />
-                  <div className="flex justify-end text-xs text-gray-500">
-                    {description.length}/{MAX_DESCRIPTION_LENGTH}
-                  </div>
-                </div>
+                <TextArea
+                  ref={descriptionTextareaRef}
+                  label="Description"
+                  placeholder="Tell customers what they get."
+                  footerStart={
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-lg text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-500/10 -mr-1"
+                      title="Insert bullet"
+                      aria-label="Insert bullet"
+                      icon={<ListBulletIcon className="h-5 w-5" />}
+                      onClick={handleInsertDescriptionBullet}
+                    />
+                  }
+                  value={description}
+                  onChange={setDescription}
+                  rows={5}
+                  maxLength={SERVICE_DESCRIPTION_MAX_LENGTH}
+                  inputClassName="resize-y min-h-[7.5rem]"
+                  error={
+                    showValidationErrors && !description.trim()
+                      ? 'Description is required.'
+                      : undefined
+                  }
+                />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   <PriceInput
                     label="Price"
