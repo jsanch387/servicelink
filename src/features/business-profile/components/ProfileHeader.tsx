@@ -1,5 +1,6 @@
 import { Button } from '@/components/shared';
-import { CheckBadgeIcon, PhoneIcon } from '@heroicons/react/24/solid';
+import { PhoneIcon } from '@heroicons/react/24/outline';
+import { CheckBadgeIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
 import {
@@ -11,7 +12,7 @@ import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 interface ProfileHeaderProps {
   businessProfile: CompleteBusinessProfile;
   editMode: EditMode;
-  // eslint-disable-next-line no-unused-vars
+
   onSave: (_data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isPublic?: boolean;
@@ -104,25 +105,28 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </span>
         </div>
 
-        {/* Professional Bio from profile */}
-        {(businessProfile.bio?.trim() ?? '') && (
-          <p className="text-gray-400 text-[15px] mt-6 leading-relaxed max-w-lg mx-auto font-medium">
-            {businessProfile.bio}
-          </p>
-        )}
-
-        {/* Call button - icon + phone number, only when business has a phone number */}
-        {isPublic && businessProfile.phone_number_call?.trim() && (
-          <Button
-            href={`tel:${businessProfile.phone_number_call.trim()}`}
-            variant="inverse"
-            icon={<PhoneIcon className="h-5 w-5" />}
-            iconPosition="left"
-            className="mt-6 font-medium"
-            aria-label="Call business"
-          >
-            Get In Touch
-          </Button>
+        {/* Public CTAs: Request Quote + compact call icon button */}
+        {isPublic && businessProfile.business_slug?.trim() && (
+          <div className="mt-6 flex w-full max-w-sm items-center justify-center gap-3">
+            <Button
+              href={`/${businessProfile.business_slug.trim()}/quote`}
+              variant="inverse"
+              className="w-[70%] font-semibold px-5"
+            >
+              Request Quote
+            </Button>
+            {businessProfile.phone_number_call?.trim() ? (
+              <Button
+                href={`tel:${businessProfile.phone_number_call.trim()}`}
+                variant="secondary"
+                size="sm"
+                aria-label="Call business"
+                className="w-[42px] shrink-0 px-0"
+              >
+                <PhoneIcon className="h-5 w-5 text-zinc-300" />
+              </Button>
+            ) : null}
+          </div>
         )}
       </div>
     </>

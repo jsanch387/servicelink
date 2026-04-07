@@ -10,17 +10,18 @@ import {
   WarningCallout,
 } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { DateSelector } from '@/features/availability/booking/components/DateSelector';
 import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
+import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
 import {
+  SERVICE_EDIT_DURATION_ERROR,
   isValidServiceEditDurationInput,
   parseServiceEditDurationForSave,
-  SERVICE_EDIT_DURATION_ERROR,
 } from '@/features/services/utils/serviceEditForm';
-import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -132,22 +133,12 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
       <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 pb-32 pt-6 sm:px-6 sm:pb-32 sm:pt-8 lg:px-8 lg:pt-10">
         {step === 'details' ? (
-          <header className="mb-6 sm:mb-8">
-            <Link
-              href={ROUTES.DASHBOARD.MAIN}
-              className="group -ml-1 mb-6 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-            >
-              <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
-              Dashboard
-            </Link>
-            <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-              New Quote
-            </h1>
-            <p className="mt-0.5 max-w-xl text-sm text-gray-500">
-              Add details, pick a time, and send your customer an approval link.
-            </p>
-            <div className="mt-4 h-px w-full bg-white/10" aria-hidden />
-          </header>
+          <QuoteFlowHeader
+            backHref={ROUTES.DASHBOARD.MAIN}
+            backLabel="Dashboard"
+            title="New Quote"
+            subtitle="Add details, pick a time, and send your customer an approval link."
+          />
         ) : null}
 
         {step === 'details' && (
@@ -343,7 +334,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <p className="mb-1 text-xs tracking-wider text-gray-500">
                     Customer
                   </p>
-                  <p className="font-medium text-white">{customerName.trim()}</p>
+                  <p className="font-medium text-white">
+                    {customerName.trim()}
+                  </p>
                   <p className="break-words text-sm text-gray-400">
                     {customerEmail.trim()}
                   </p>
@@ -391,7 +384,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               <div className="space-y-4 p-4 sm:p-6">
                 <div>
                   <p className="mb-0.5 text-xs text-gray-500">Service</p>
-                  <p className="font-semibold text-white">{serviceName.trim()}</p>
+                  <p className="font-semibold text-white">
+                    {serviceName.trim()}
+                  </p>
                   <p className="mt-1 text-sm text-gray-400">
                     {formatCurrencyFromDigits(priceDigits)} •{' '}
                     {formatDurationMinutes(durationMinutes)}
@@ -400,14 +395,18 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 <div className="h-px bg-white/10" />
                 <div>
                   <p className="mb-0.5 text-xs text-gray-500">Customer</p>
-                  <p className="font-medium text-white">{customerName.trim()}</p>
+                  <p className="font-medium text-white">
+                    {customerName.trim()}
+                  </p>
                   <p className="break-words text-sm text-gray-400">
                     {customerEmail.trim()}
                   </p>
                 </div>
                 <div className="h-px bg-white/10" />
                 <div>
-                  <p className="mb-0.5 text-xs text-gray-500">Date &amp; time</p>
+                  <p className="mb-0.5 text-xs text-gray-500">
+                    Date &amp; time
+                  </p>
                   <p className="font-medium text-white">
                     {formatReviewDate(selectedDate)}
                   </p>
@@ -440,71 +439,69 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
 
       {/* Match public booking flow: sticky bottom bar + inverse primary (see AvailabilityBookingPage) */}
       {step !== 'sent' ? (
-        <div
-          className="safe-area-pb fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4 backdrop-blur-sm lg:left-64"
-          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        <QuoteStickyBar
+          containerClassName="max-w-3xl min-w-0 px-0 sm:px-0"
+          withDesktopSidebarOffset
         >
-          <div className="mx-auto w-full max-w-3xl min-w-0 px-0 sm:px-0">
-            {step === 'details' && (
+          {step === 'details' && (
+            <Button
+              type="button"
+              variant="inverse"
+              fullWidth
+              className="font-semibold"
+              disabled={!canProceedDetails}
+              onClick={() => setStep('schedule')}
+            >
+              Choose date &amp; time
+            </Button>
+          )}
+          {step === 'schedule' && (
+            <div className="flex items-stretch gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0 self-auto px-5"
+                onClick={() => setStep('details')}
+              >
+                Back
+              </Button>
               <Button
                 type="button"
                 variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!canProceedDetails}
+                size="sm"
+                className="min-w-0 flex-1 font-semibold"
+                disabled={!canProceedSchedule}
+                onClick={() => setStep('review')}
+              >
+                Review quote
+              </Button>
+            </div>
+          )}
+          {step === 'review' && selectedDate && selectedTime && (
+            <div className="flex items-stretch gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0 self-auto px-5"
                 onClick={() => setStep('schedule')}
               >
-                Choose date &amp; time
+                Back
               </Button>
-            )}
-            {step === 'schedule' && (
-              <div className="flex items-stretch gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="shrink-0 self-auto px-5"
-                  onClick={() => setStep('details')}
-                >
-                  Back
-                </Button>
-                <Button
-                  type="button"
-                  variant="inverse"
-                  size="sm"
-                  className="min-w-0 flex-1 font-semibold"
-                  disabled={!canProceedSchedule}
-                  onClick={() => setStep('review')}
-                >
-                  Review quote
-                </Button>
-              </div>
-            )}
-            {step === 'review' && selectedDate && selectedTime && (
-              <div className="flex items-stretch gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="shrink-0 self-auto px-5"
-                  onClick={() => setStep('schedule')}
-                >
-                  Back
-                </Button>
-                <Button
-                  type="button"
-                  variant="inverse"
-                  size="sm"
-                  className="min-w-0 flex-1 font-semibold"
-                  disabled={!canSend}
-                  onClick={() => setStep('sent')}
-                >
-                  Send quote
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+              <Button
+                type="button"
+                variant="inverse"
+                size="sm"
+                className="min-w-0 flex-1 font-semibold"
+                disabled={!canSend}
+                onClick={() => setStep('sent')}
+              >
+                Send quote
+              </Button>
+            </div>
+          )}
+        </QuoteStickyBar>
       ) : null}
     </main>
   );
