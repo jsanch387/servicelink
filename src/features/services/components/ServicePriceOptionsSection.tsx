@@ -6,9 +6,9 @@ import {
   Input,
   PriceInput,
   Switch,
+  TimeSelect,
 } from '@/components/shared';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
-import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import type {
   ServicePriceOptionRow,
   ServiceRow,

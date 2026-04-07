@@ -1,9 +1,8 @@
 'use client';
 
-import { Switch } from '@/components/shared';
+import { Switch, TimeSelect } from '@/components/shared';
 import React from 'react';
 import type { DayKey, WeeklySchedule } from '../types/availability';
-import { TimeSelect } from './TimeSelect';
 
 const DAY_LABELS: Record<DayKey, string> = {
   monday: 'Monday',

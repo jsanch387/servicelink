@@ -1,7 +1,12 @@
 'use client';
 
-import { Button, Input, PriceInput, TextArea } from '@/components/shared';
-import { TimeSelect } from '@/features/availability/components/TimeSelect';
+import {
+  Button,
+  Input,
+  PriceInput,
+  TextArea,
+  TimeSelect,
+} from '@/components/shared';
 import {
   isValidServiceDurationHHmm,
   serviceDurationHHmmToMinutes,

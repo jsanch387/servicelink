@@ -5,6 +5,7 @@ export { PhoneInput } from './PhoneInput';
 export { PriceInput } from './PriceInput';
 export { Select } from './Select';
 export { TextArea } from './TextArea';
+export { TimeSelect } from './TimeSelect';
 
 // Shared Components
 export { Button } from './Button';

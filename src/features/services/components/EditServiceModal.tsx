@@ -1,7 +1,12 @@
 'use client';
 
-import { Input, Modal, PriceInput, TextArea } from '@/components/shared';
-import { TimeSelect } from '@/features/availability/components/TimeSelect';
+import {
+  Input,
+  Modal,
+  PriceInput,
+  TextArea,
+  TimeSelect,
+} from '@/components/shared';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   isValidServiceEditDurationInput,

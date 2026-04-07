@@ -1,7 +1,6 @@
 'use client';
 
-import { Input, Modal, PriceInput } from '@/components/shared';
-import { TimeSelect } from '@/features/availability/components/TimeSelect';
+import { Input, Modal, PriceInput, TimeSelect } from '@/components/shared';
 import {
   addOnDurationPickerValue,
   isValidOptionalAddOnDurationInput,
