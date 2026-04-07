@@ -8,16 +8,16 @@ import {
   TextArea,
   TimeSelect,
 } from '@/components/shared';
+import {
+  SERVICE_DESCRIPTION_MAX_LENGTH,
+  insertServiceDescriptionBullet,
+} from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   isValidServiceEditDurationInput,
   parseServiceEditDurationForSave,
   serviceEditDurationPickerValue,
 } from '@/features/services/utils/serviceEditForm';
-import {
-  SERVICE_DESCRIPTION_MAX_LENGTH,
-  insertServiceDescriptionBullet,
-} from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import { ListBulletIcon } from '@heroicons/react/24/outline';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
