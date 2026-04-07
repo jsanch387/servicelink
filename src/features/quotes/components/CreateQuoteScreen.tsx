@@ -238,66 +238,57 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
         )}
 
         {step === 'schedule' && (
-          <GlassCard
-            padding="md"
-            rounded="rounded-2xl"
-            blurColor="bg-zinc-500"
-            showBlur={true}
-            className="w-full"
-          >
-            <div className="space-y-6 pt-1">
-              {!hasSavedAvailability && (
-                <WarningCallout>
-                  We don&apos;t see a saved weekly schedule yet. Showing default
-                  hours for slot suggestions —{' '}
-                  <a
-                    href={ROUTES.DASHBOARD.AVAILABILITY}
-                    className="underline text-amber-200 hover:text-white"
-                  >
-                    set availability
-                  </a>{' '}
-                  for accurate open times.
-                </WarningCallout>
-              )}
+          <div className="space-y-6 pt-4">
+            {!hasSavedAvailability && (
+              <WarningCallout>
+                We don&apos;t see a saved weekly schedule yet. Showing default
+                hours for slot suggestions —{' '}
+                <a
+                  href={ROUTES.DASHBOARD.AVAILABILITY}
+                  className="underline text-amber-200 hover:text-white"
+                >
+                  set availability
+                </a>{' '}
+                for accurate open times.
+              </WarningCallout>
+            )}
 
-              {!businessSlug?.trim() && (
-                <WarningCallout>
-                  Add a public profile link to load your existing bookings into
-                  this picker and avoid double-booking.
-                </WarningCallout>
-              )}
+            {!businessSlug?.trim() && (
+              <WarningCallout>
+                Add a public profile link to load your existing bookings into
+                this picker and avoid double-booking.
+              </WarningCallout>
+            )}
 
-              {(scheduleDataLoading || blockedLoading) && (
-                <p className="text-sm text-gray-400">Loading schedule…</p>
-              )}
+            {(scheduleDataLoading || blockedLoading) && (
+              <p className="text-sm text-gray-400">Loading schedule…</p>
+            )}
 
-              <DateSelector
-                weeklySchedule={weeklySchedule}
-                serviceDurationMinutes={durationMinutes}
-                existingBookings={blockedSlots}
-                timeOffBlocks={timeOffBlocks}
-                selectedDate={selectedDate}
-                onSelectDate={handleSelectDate}
-                minDate={getTodayAtMidnight()}
-                plainCalendar
-              />
-              <TimeSlotGrid
-                selectedDate={selectedDate}
-                serviceDurationMinutes={durationMinutes}
-                weeklySchedule={weeklySchedule}
-                existingBookings={blockedSlots}
-                timeOffBlocks={timeOffBlocks}
-                selectedTime={selectedTime}
-                onSelectTime={setSelectedTime}
-              />
-            </div>
-          </GlassCard>
+            <DateSelector
+              weeklySchedule={weeklySchedule}
+              serviceDurationMinutes={durationMinutes}
+              existingBookings={blockedSlots}
+              timeOffBlocks={timeOffBlocks}
+              selectedDate={selectedDate}
+              onSelectDate={handleSelectDate}
+              minDate={getTodayAtMidnight()}
+            />
+            <TimeSlotGrid
+              selectedDate={selectedDate}
+              serviceDurationMinutes={durationMinutes}
+              weeklySchedule={weeklySchedule}
+              existingBookings={blockedSlots}
+              timeOffBlocks={timeOffBlocks}
+              selectedTime={selectedTime}
+              onSelectTime={setSelectedTime}
+            />
+          </div>
         )}
 
         {step === 'review' && selectedDate && selectedTime && (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold tracking-tight text-white">
+              <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
                 Review quote
               </h2>
               <button
@@ -326,6 +317,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     {formatDurationMinutes(durationMinutes)}
                   </p>
                 </div>
+                <div className="h-px bg-white/10" />
 
                 <div>
                   <p className="mb-1 text-xs tracking-wider text-gray-500">
@@ -338,6 +330,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     Starts {formatTime12(selectedTime)}
                   </p>
                 </div>
+                <div className="h-px bg-white/10" />
 
                 <div>
                   <p className="mb-1 text-xs tracking-wider text-gray-500">
@@ -350,14 +343,17 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 </div>
 
                 {note.trim().length > 0 && (
-                  <div>
-                    <p className="mb-1 text-xs tracking-wider text-gray-500">
-                      Note
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm text-gray-400">
-                      {note.trim()}
-                    </p>
-                  </div>
+                  <>
+                    <div className="h-px bg-white/10" />
+                    <div>
+                      <p className="mb-1 text-xs tracking-wider text-gray-500">
+                        Note
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm text-gray-400">
+                        {note.trim()}
+                      </p>
+                    </div>
+                  </>
                 )}
               </div>
             </GlassCard>
@@ -369,7 +365,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
             <div className="mb-7 flex h-20 w-20 self-center items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/25">
               <CheckIcon className="h-10 w-10 text-white" />
             </div>
-            <h2 className="mb-2 text-center text-2xl font-bold text-white">
+            <h2 className="mb-2 text-center text-xl font-bold text-white sm:text-2xl">
               Quote sent
             </h2>
             <p className="mx-auto mb-8 max-w-sm text-center text-sm text-gray-400">

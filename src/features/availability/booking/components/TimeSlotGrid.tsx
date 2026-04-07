@@ -58,7 +58,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   return (
     <div className="space-y-3">
       {showHeading ? (
-        <h2 className="text-xl font-semibold text-white tracking-tight">
+        <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
           Choose time
         </h2>
       ) : null}
@@ -69,7 +69,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
             type="button"
             onClick={() => onSelectTime(time)}
             className={`
-              min-h-[48px] rounded-xl text-sm font-medium transition-colors cursor-pointer
+              min-h-[44px] rounded-xl text-[13px] font-medium transition-colors cursor-pointer sm:min-h-[48px] sm:text-sm
               ${selectedTime === time ? 'bg-white text-black' : 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'}
             `}
           >
