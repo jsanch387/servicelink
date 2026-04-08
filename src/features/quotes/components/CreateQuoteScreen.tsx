@@ -78,12 +78,18 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [step, setStep] = useState<Step>('details');
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [vehicleYear, setVehicleYear] = useState('');
+  const [vehicleMake, setVehicleMake] = useState('');
+  const [vehicleModel, setVehicleModel] = useState('');
   const [serviceName, setServiceName] = useState('');
   const [priceDigits, setPriceDigits] = useState('');
   const [durationHHmm, setDurationHHmm] = useState('01:00');
   const [note, setNote] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [sendingQuote, setSendingQuote] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sentQuoteLink, setSentQuoteLink] = useState<string | null>(null);
 
   const durationMinutes = useMemo(() => {
     const r = parseServiceEditDurationForSave(durationHHmm);
@@ -127,6 +133,60 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const handleSelectDate = (d: Date) => {
     setSelectedDate(d);
     setSelectedTime(null);
+  };
+
+  const formatDateForApi = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const handleSendQuote = async () => {
+    if (!selectedDate || !selectedTime || !canSend || sendingQuote) return;
+    setSendError(null);
+    setSendingQuote(true);
+
+    try {
+      const parsedDollars = parseInt(priceDigits, 10);
+      const priceCents = Number.isFinite(parsedDollars)
+        ? parsedDollars * 100
+        : 0;
+      const res = await fetch('/api/quotes/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessSlug: businessSlug ?? '',
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.trim(),
+          vehicleYear: vehicleYear.trim() || undefined,
+          vehicleMake: vehicleMake.trim() || undefined,
+          vehicleModel: vehicleModel.trim() || undefined,
+          serviceName: serviceName.trim(),
+          priceCents,
+          durationMinutes,
+          note: note.trim() || undefined,
+          scheduledDate: formatDateForApi(selectedDate),
+          scheduledStartTime: selectedTime,
+        }),
+      });
+      const json = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        data?: { publicUrl?: string };
+      };
+      if (!res.ok || !json?.success) {
+        setSendError(json?.error || 'Failed to send quote. Please try again.');
+        return;
+      }
+
+      setSentQuoteLink(json.data?.publicUrl ?? null);
+      setStep('sent');
+    } catch {
+      setSendError('Failed to send quote. Please try again.');
+    } finally {
+      setSendingQuote(false);
+    }
   };
 
   return (
@@ -177,6 +237,28 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     : undefined
                 }
               />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Input
+                  label="Vehicle year (optional)"
+                  placeholder="e.g. 2020"
+                  value={vehicleYear}
+                  onChange={setVehicleYear}
+                  inputMode="numeric"
+                  maxLength={4}
+                />
+                <Input
+                  label="Vehicle make (optional)"
+                  placeholder="e.g. Toyota"
+                  value={vehicleMake}
+                  onChange={setVehicleMake}
+                />
+                <Input
+                  label="Vehicle model (optional)"
+                  placeholder="e.g. Camry"
+                  value={vehicleModel}
+                  onChange={setVehicleModel}
+                />
+              </div>
 
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 pt-2">
                 Service
@@ -229,60 +311,51 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
         )}
 
         {step === 'schedule' && (
-          <GlassCard
-            padding="md"
-            rounded="rounded-2xl"
-            blurColor="bg-zinc-500"
-            showBlur={true}
-            className="w-full"
-          >
-            <div className="space-y-6 pt-1">
-              {!hasSavedAvailability && (
-                <WarningCallout>
-                  We don&apos;t see a saved weekly schedule yet. Showing default
-                  hours for slot suggestions —{' '}
-                  <a
-                    href={ROUTES.DASHBOARD.AVAILABILITY}
-                    className="underline text-amber-200 hover:text-white"
-                  >
-                    set availability
-                  </a>{' '}
-                  for accurate open times.
-                </WarningCallout>
-              )}
+          <div className="space-y-6 pt-1">
+            {!hasSavedAvailability && (
+              <WarningCallout>
+                We don&apos;t see a saved weekly schedule yet. Showing default
+                hours for slot suggestions —{' '}
+                <a
+                  href={ROUTES.DASHBOARD.AVAILABILITY}
+                  className="underline text-amber-200 hover:text-white"
+                >
+                  set availability
+                </a>{' '}
+                for accurate open times.
+              </WarningCallout>
+            )}
 
-              {!businessSlug?.trim() && (
-                <WarningCallout>
-                  Add a public profile link to load your existing bookings into
-                  this picker and avoid double-booking.
-                </WarningCallout>
-              )}
+            {!businessSlug?.trim() && (
+              <WarningCallout>
+                Add a public profile link to load your existing bookings into
+                this picker and avoid double-booking.
+              </WarningCallout>
+            )}
 
-              {(scheduleDataLoading || blockedLoading) && (
-                <p className="text-sm text-gray-400">Loading schedule…</p>
-              )}
+            {(scheduleDataLoading || blockedLoading) && (
+              <p className="text-sm text-gray-400">Loading schedule…</p>
+            )}
 
-              <DateSelector
-                weeklySchedule={weeklySchedule}
-                serviceDurationMinutes={durationMinutes}
-                existingBookings={blockedSlots}
-                timeOffBlocks={timeOffBlocks}
-                selectedDate={selectedDate}
-                onSelectDate={handleSelectDate}
-                minDate={getTodayAtMidnight()}
-                plainCalendar
-              />
-              <TimeSlotGrid
-                selectedDate={selectedDate}
-                serviceDurationMinutes={durationMinutes}
-                weeklySchedule={weeklySchedule}
-                existingBookings={blockedSlots}
-                timeOffBlocks={timeOffBlocks}
-                selectedTime={selectedTime}
-                onSelectTime={setSelectedTime}
-              />
-            </div>
-          </GlassCard>
+            <DateSelector
+              weeklySchedule={weeklySchedule}
+              serviceDurationMinutes={durationMinutes}
+              existingBookings={blockedSlots}
+              timeOffBlocks={timeOffBlocks}
+              selectedDate={selectedDate}
+              onSelectDate={handleSelectDate}
+              minDate={getTodayAtMidnight()}
+            />
+            <TimeSlotGrid
+              selectedDate={selectedDate}
+              serviceDurationMinutes={durationMinutes}
+              weeklySchedule={weeklySchedule}
+              existingBookings={blockedSlots}
+              timeOffBlocks={timeOffBlocks}
+              selectedTime={selectedTime}
+              onSelectTime={setSelectedTime}
+            />
+          </div>
         )}
 
         {step === 'review' && selectedDate && selectedTime && (
@@ -317,6 +390,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     {formatDurationMinutes(durationMinutes)}
                   </p>
                 </div>
+                <div className="h-px bg-white/10" />
 
                 <div>
                   <p className="mb-1 text-xs tracking-wider text-gray-500">
@@ -329,6 +403,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     Starts {formatTime12(selectedTime)}
                   </p>
                 </div>
+                <div className="h-px bg-white/10" />
 
                 <div>
                   <p className="mb-1 text-xs tracking-wider text-gray-500">
@@ -341,16 +416,40 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     {customerEmail.trim()}
                   </p>
                 </div>
+                {vehicleYear.trim() ||
+                vehicleMake.trim() ||
+                vehicleModel.trim() ? (
+                  <>
+                    <div className="h-px bg-white/10" />
+                    <div>
+                      <p className="mb-1 text-xs tracking-wider text-gray-500">
+                        Vehicle
+                      </p>
+                      <p className="font-medium text-white">
+                        {[
+                          vehicleYear.trim(),
+                          vehicleMake.trim(),
+                          vehicleModel.trim(),
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      </p>
+                    </div>
+                  </>
+                ) : null}
 
                 {note.trim().length > 0 && (
-                  <div>
-                    <p className="mb-1 text-xs tracking-wider text-gray-500">
-                      Note
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm text-gray-400">
-                      {note.trim()}
-                    </p>
-                  </div>
+                  <>
+                    <div className="h-px bg-white/10" />
+                    <div>
+                      <p className="mb-1 text-xs tracking-wider text-gray-500">
+                        Note
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm text-gray-400">
+                        {note.trim()}
+                      </p>
+                    </div>
+                  </>
                 )}
               </div>
             </GlassCard>
@@ -369,6 +468,21 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               The quote has been emailed to your customer. They can review the
               details and accept or decline directly from the link.
             </p>
+            {sentQuoteLink ? (
+              <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="mb-1 text-xs uppercase tracking-wider text-gray-500">
+                  Share link
+                </p>
+                <a
+                  href={sentQuoteLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-sm font-medium text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
+                >
+                  {sentQuoteLink}
+                </a>
+              </div>
+            ) : null}
             <GlassCard
               padding="none"
               rounded="rounded-2xl"
@@ -402,6 +516,25 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     {customerEmail.trim()}
                   </p>
                 </div>
+                {vehicleYear.trim() ||
+                vehicleMake.trim() ||
+                vehicleModel.trim() ? (
+                  <>
+                    <div className="h-px bg-white/10" />
+                    <div>
+                      <p className="mb-0.5 text-xs text-gray-500">Vehicle</p>
+                      <p className="font-medium text-white">
+                        {[
+                          vehicleYear.trim(),
+                          vehicleMake.trim(),
+                          vehicleModel.trim(),
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      </p>
+                    </div>
+                  </>
+                ) : null}
                 <div className="h-px bg-white/10" />
                 <div>
                   <p className="mb-0.5 text-xs text-gray-500">
@@ -494,13 +627,16 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 variant="inverse"
                 size="sm"
                 className="min-w-0 flex-1 font-semibold"
-                disabled={!canSend}
-                onClick={() => setStep('sent')}
+                disabled={!canSend || sendingQuote}
+                onClick={handleSendQuote}
               >
-                Send quote
+                {sendingQuote ? 'Sending...' : 'Send quote'}
               </Button>
             </div>
           )}
+          {step === 'review' && sendError ? (
+            <p className="mt-2 text-sm text-red-400">{sendError}</p>
+          ) : null}
         </QuoteStickyBar>
       ) : null}
     </main>
