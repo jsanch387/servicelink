@@ -3,24 +3,18 @@
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { MOCK_DASHBOARD_QUOTES } from '../mockQuotes';
+import React, { useMemo, useState } from 'react';
+import { useDashboardQuotes } from '../hooks/useDashboardQuotes';
 import type { QuotesDashboardFilterId } from '../types';
-import { getMockDeletedQuoteIds } from '../utils/mockDeletedQuoteIds';
 import { quoteMatchesFilter } from '../utils/quoteStatusUi';
 import { QuoteListRow } from './QuoteListRow';
+import { QuotesDashboardSkeleton } from './QuotesDashboardSkeleton';
 import { QuotesFilterPills } from './QuotesFilterPills';
 import { QuotesListEmptyState } from './QuotesListEmptyState';
-import React, { useMemo, useState } from 'react';
 
 export const QuotesDashboardPage: React.FC = () => {
   const [filter, setFilter] = useState<QuotesDashboardFilterId>('all');
-
-  const deletedIds = useMemo(() => getMockDeletedQuoteIds(), []);
-
-  const quotes = useMemo(
-    () => MOCK_DASHBOARD_QUOTES.filter(q => !deletedIds.has(q.id)),
-    [deletedIds]
-  );
+  const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
 
   const filtered = useMemo(
     () => quotes.filter(q => quoteMatchesFilter(q.status, filter)),
@@ -61,7 +55,7 @@ export const QuotesDashboardPage: React.FC = () => {
           </Button>
         </header>
 
-        {hasAnyQuotes ? (
+        {loadStatus === 'ready' && hasAnyQuotes ? (
           <div className="mb-4">
             <QuotesFilterPills value={filter} onChange={setFilter} />
             <p className="mt-3 text-xs text-gray-500">
@@ -70,7 +64,23 @@ export const QuotesDashboardPage: React.FC = () => {
           </div>
         ) : null}
 
-        {!hasAnyQuotes ? (
+        {loadStatus === 'loading' ? (
+          <QuotesDashboardSkeleton />
+        ) : loadStatus === 'error' ? (
+          <div className="rounded-2xl border border-red-400/20 bg-red-400/10 p-4 sm:p-5">
+            <p className="text-sm text-red-200">
+              {loadError || 'Failed to load quotes.'}
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void reloadQuotes()}
+              className="mt-3"
+            >
+              Try again
+            </Button>
+          </div>
+        ) : !hasAnyQuotes ? (
           <QuotesListEmptyState filter={filter} hasAnyQuotes={false} />
         ) : sorted.length === 0 ? (
           <QuotesListEmptyState filter={filter} hasAnyQuotes />

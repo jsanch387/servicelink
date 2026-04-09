@@ -1,5 +1,5 @@
+import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 type Decision = 'approve' | 'decline';
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const tokenHash = resolveQuoteTokenHash(token);
     const admin = createSupabaseAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = admin as any;

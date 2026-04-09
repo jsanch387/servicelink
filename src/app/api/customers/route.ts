@@ -1,11 +1,11 @@
-import { mapCustomerRowToRecord } from '@/features/customer-management/api/mapCustomerRowToRecord';
 import type { CustomerDbRow } from '@/features/customer-management/api/customerDbRow';
+import { mapCustomerRowToRecord } from '@/features/customer-management/api/mapCustomerRowToRecord';
 import {
   aggregateBookingsPerCustomer,
   type BookingRowForCustomerMetrics,
 } from '@/features/customer-management/server/aggregateBookingsPerCustomer';
-import { resolveCurrentBusinessId } from '@/features/customer-management/server/resolveCurrentBusinessId';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 function withHttps(url: string): string {

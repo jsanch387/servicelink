@@ -1,7 +1,7 @@
 import type { DashboardQuote } from './types';
 import { getMockDeletedQuoteIds } from './utils/mockDeletedQuoteIds';
 
-/** Static mock quotes for UI development; replace with API data later. */
+/** Optional fixtures for local experiments; dashboard list/detail use `/api/quotes`. */
 export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
   {
     id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000001',

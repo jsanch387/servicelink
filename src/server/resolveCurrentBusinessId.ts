@@ -1,13 +1,13 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/libs/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-type Result =
+type ResolveBusinessIdResult =
   | { ok: true; businessId: string }
   | { ok: false; error: string; status: number };
 
 export async function resolveCurrentBusinessId(
   supabase: SupabaseClient<Database>
-): Promise<Result> {
+): Promise<ResolveBusinessIdResult> {
   const {
     data: { user },
     error: authError,

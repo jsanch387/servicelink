@@ -1,10 +1,10 @@
 import { GlassCard } from '@/components/shared';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
+import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { formatUsPhoneDigits } from '@/lib/formatUsPhone';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
-import crypto from 'crypto';
 import { notFound } from 'next/navigation';
 
 interface PublicQuoteViewPageProps {
@@ -44,10 +44,7 @@ export default async function PublicQuoteViewPage({
   const { token } = await params;
   if (!token?.trim()) notFound();
 
-  const tokenHash = crypto
-    .createHash('sha256')
-    .update(token.trim())
-    .digest('hex');
+  const tokenHash = resolveQuoteTokenHash(token);
   const supabase = createSupabaseAdminClient();
   // `quotes` / `quote_public_links` may not yet be in generated DB types.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
