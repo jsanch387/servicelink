@@ -1,5 +1,7 @@
 # Quote public links table
 
+For **API routes, token handling, and UI map**, see [README.md](./README.md) in this folder.
+
 This doc describes the **`quote_public_links`** table used for secure customer-facing quote URLs (view/approve/decline), including schema, indexes, RLS, and operational considerations.
 
 Scope here is the link table only (quote lifecycle itself is documented in `QUOTES_TABLE.md`).

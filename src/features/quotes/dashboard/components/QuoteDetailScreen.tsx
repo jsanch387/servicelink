@@ -16,6 +16,7 @@ import {
   getCustomerEmailDisplay,
   getCustomerPhoneLink,
 } from '../utils/customerContactDisplay';
+import { isDashboardQuoteEditableByOwner } from '../utils/isDashboardQuoteEditableByOwner';
 import { addMockDeletedQuoteId } from '../utils/mockDeletedQuoteIds';
 import {
   getPublicQuoteAbsoluteUrl,
@@ -158,6 +159,7 @@ function QuoteDetailContent({
   const phoneLink = getCustomerPhoneLink(quote.customerPhone);
   const hasPublicLink = Boolean(quote.publicToken.trim());
   const publicPath = getPublicQuotePath(quote.publicToken);
+  const canEdit = isDashboardQuoteEditableByOwner(quote.status);
 
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
@@ -349,10 +351,16 @@ function QuoteDetailContent({
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Button
-              href={ROUTES.DASHBOARD.QUOTE_EDIT(quote.id)}
+              href={canEdit ? ROUTES.DASHBOARD.QUOTE_EDIT(quote.id) : undefined}
               variant="inverse"
               size="md"
               className="w-full sm:w-auto"
+              disabled={!canEdit}
+              title={
+                canEdit
+                  ? undefined
+                  : 'Editing is only available before the customer accepts or declines.'
+              }
             >
               Edit quote
             </Button>

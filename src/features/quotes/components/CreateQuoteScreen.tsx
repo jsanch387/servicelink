@@ -16,6 +16,14 @@ import { DateSelector } from '@/features/availability/booking/components/DateSel
 import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { useDashboardQuoteDetail } from '@/features/quotes/dashboard/hooks/useDashboardQuoteDetail';
+import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
+import {
+  centsToWholeDollarDigits,
+  durationPickerValueFromQuote,
+  parseLocalDateFromYmd,
+  pickStartTimeHHmm,
+} from '@/features/quotes/dashboard/utils/quoteFormHydrationFromDashboard';
 import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
@@ -26,10 +34,18 @@ import {
 } from '@/features/services/utils/serviceEditForm';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 export type CreateQuoteScreenProps = {
   businessSlug: string | null;
+  mode?: 'create' | 'edit';
+  quoteId?: string;
 };
 
 type Step = 'details' | 'schedule' | 'review' | 'sent';
@@ -78,7 +94,23 @@ function isValidEmail(value: string): boolean {
 
 export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   businessSlug,
+  mode = 'create',
+  quoteId,
 }) => {
+  const isEdit = mode === 'edit' && Boolean(quoteId?.trim());
+  const editId = quoteId?.trim() ?? '';
+
+  const {
+    quote,
+    loadStatus: quoteLoadStatus,
+    loadError: quoteLoadError,
+    reloadQuote,
+  } = useDashboardQuoteDetail(editId, { enabled: isEdit });
+
+  const hydratedIdRef = useRef<string | null>(null);
+  const editHydratedRef = useRef(false);
+  const prevDurationRef = useRef<string | null>(null);
+
   const [step, setStep] = useState<Step>('details');
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -113,9 +145,56 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   );
 
   useEffect(() => {
-    setSelectedDate(null);
-    setSelectedTime(null);
-  }, [durationHHmm]);
+    hydratedIdRef.current = null;
+    editHydratedRef.current = false;
+    prevDurationRef.current = null;
+  }, [editId]);
+
+  useLayoutEffect(() => {
+    if (!isEdit || quoteLoadStatus !== 'ready' || !quote) return;
+    if (!isDashboardQuoteEditableByOwner(quote.status)) return;
+    if (hydratedIdRef.current === quote.id) return;
+    hydratedIdRef.current = quote.id;
+
+    setCustomerName(quote.customerName);
+    setCustomerEmail(quote.customerEmail);
+    setCustomerPhone(
+      (quote.customerPhone ?? '').replace(/\D/g, '').slice(0, 10)
+    );
+    setVehicleYear(quote.vehicleYear ?? '');
+    setVehicleMake(quote.vehicleMake ?? '');
+    setVehicleModel(quote.vehicleModel ?? '');
+    setServiceName(quote.serviceName);
+    setPriceDigits(centsToWholeDollarDigits(quote.totalCents));
+    const durPick = durationPickerValueFromQuote(quote);
+    setDurationHHmm(durPick);
+    setNote(quote.note ?? '');
+    setSelectedDate(parseLocalDateFromYmd(quote.scheduledDate));
+    setSelectedTime(pickStartTimeHHmm(quote.scheduledTime));
+    setStep('details');
+    setSendError(null);
+    setSentQuoteLink(null);
+
+    editHydratedRef.current = true;
+    prevDurationRef.current = durPick;
+  }, [isEdit, quote, quoteLoadStatus]);
+
+  useEffect(() => {
+    const gate = !isEdit || editHydratedRef.current;
+    if (!gate) {
+      prevDurationRef.current = durationHHmm;
+      return;
+    }
+    if (prevDurationRef.current === null) {
+      prevDurationRef.current = durationHHmm;
+      return;
+    }
+    if (prevDurationRef.current !== durationHHmm) {
+      setSelectedDate(null);
+      setSelectedTime(null);
+    }
+    prevDurationRef.current = durationHHmm;
+  }, [durationHHmm, isEdit]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -156,34 +235,58 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     return `${y}-${m}-${day}`;
   };
 
-  const handleSendQuote = async () => {
+  const buildQuoteRequestBody = () => {
+    const parsedDollars = parseInt(priceDigits, 10);
+    const priceCents = Number.isFinite(parsedDollars) ? parsedDollars * 100 : 0;
+    return {
+      customerName: customerName.trim(),
+      customerEmail: customerEmail.trim(),
+      customerPhone: customerPhone.length === 10 ? customerPhone : undefined,
+      vehicleYear: vehicleYear.trim() || undefined,
+      vehicleMake: vehicleMake.trim() || undefined,
+      vehicleModel: vehicleModel.trim() || undefined,
+      serviceName: serviceName.trim(),
+      priceCents,
+      durationMinutes,
+      note: note.trim() || undefined,
+      scheduledDate: formatDateForApi(selectedDate!),
+      scheduledStartTime: selectedTime!,
+    };
+  };
+
+  const handleSubmitQuote = async () => {
     if (!selectedDate || !selectedTime || !canSend || sendingQuote) return;
     setSendError(null);
     setSendingQuote(true);
 
     try {
-      const parsedDollars = parseInt(priceDigits, 10);
-      const priceCents = Number.isFinite(parsedDollars)
-        ? parsedDollars * 100
-        : 0;
+      if (isEdit) {
+        const res = await fetch(`/api/quotes/${encodeURIComponent(editId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildQuoteRequestBody()),
+        });
+        const json = (await res.json()) as {
+          success?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !json?.success) {
+          setSendError(
+            json?.error || 'Could not save changes. Please try again.'
+          );
+          return;
+        }
+        setSentQuoteLink(null);
+        setStep('sent');
+        return;
+      }
+
       const res = await fetch('/api/quotes/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessSlug: businessSlug ?? '',
-          customerName: customerName.trim(),
-          customerEmail: customerEmail.trim(),
-          customerPhone:
-            customerPhone.length === 10 ? customerPhone : undefined,
-          vehicleYear: vehicleYear.trim() || undefined,
-          vehicleMake: vehicleMake.trim() || undefined,
-          vehicleModel: vehicleModel.trim() || undefined,
-          serviceName: serviceName.trim(),
-          priceCents,
-          durationMinutes,
-          note: note.trim() || undefined,
-          scheduledDate: formatDateForApi(selectedDate),
-          scheduledStartTime: selectedTime,
+          ...buildQuoteRequestBody(),
         }),
       });
       const json = (await res.json()) as {
@@ -199,21 +302,99 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       setSentQuoteLink(json.data?.publicUrl ?? null);
       setStep('sent');
     } catch {
-      setSendError('Failed to send quote. Please try again.');
+      setSendError(
+        isEdit
+          ? 'Could not save changes. Please try again.'
+          : 'Failed to send quote. Please try again.'
+      );
     } finally {
       setSendingQuote(false);
     }
   };
+
+  if (isEdit && quoteLoadStatus === 'loading') {
+    return (
+      <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
+        <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+          <QuoteFlowHeader
+            backHref={ROUTES.DASHBOARD.QUOTE_DETAIL(editId)}
+            backLabel="Quote"
+            title="Edit quote"
+            subtitle="Loading quote details…"
+          />
+          <div className="space-y-4">
+            <div className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
+            <div className="h-28 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (isEdit && quoteLoadStatus === 'error') {
+    return (
+      <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
+        <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+          <QuoteFlowHeader
+            backHref={ROUTES.DASHBOARD.QUOTE_DETAIL(editId)}
+            backLabel="Quote"
+            title="Edit quote"
+            subtitle={quoteLoadError ?? 'Something went wrong.'}
+          />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              href={ROUTES.DASHBOARD.QUOTE_DETAIL(editId)}
+              variant="secondary"
+            >
+              Back to quote
+            </Button>
+            <Button variant="inverse" onClick={() => void reloadQuote()}>
+              Try again
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (isEdit && quote && !isDashboardQuoteEditableByOwner(quote.status)) {
+    return (
+      <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
+        <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+          <QuoteFlowHeader
+            backHref={ROUTES.DASHBOARD.QUOTE_DETAIL(editId)}
+            backLabel="Quote"
+            title="Editing unavailable"
+            subtitle="This quote cannot be edited after the customer has accepted or declined. Create a new quote if you need to change the offer."
+          />
+          <Button
+            href={ROUTES.DASHBOARD.QUOTE_DETAIL(editId)}
+            variant="inverse"
+          >
+            Back to quote
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
       <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 pb-32 pt-6 sm:px-6 sm:pb-32 sm:pt-8 lg:px-8 lg:pt-10">
         {step === 'details' ? (
           <QuoteFlowHeader
-            backHref={ROUTES.DASHBOARD.MAIN}
-            backLabel="Dashboard"
-            title="New Quote"
-            subtitle="Add details, pick a time, and send your customer an approval link."
+            backHref={
+              isEdit
+                ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
+                : ROUTES.DASHBOARD.MAIN
+            }
+            backLabel={isEdit ? 'Quote' : 'Dashboard'}
+            title={isEdit ? 'Edit quote' : 'New Quote'}
+            subtitle={
+              isEdit
+                ? 'Update details, schedule, and save. Your customer will see changes the next time they open the link.'
+                : 'Add details, pick a time, and send your customer an approval link.'
+            }
           />
         ) : null}
 
@@ -393,7 +574,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold tracking-tight text-white">
-                Review quote
+                {isEdit ? 'Review changes' : 'Review quote'}
               </h2>
               <button
                 type="button"
@@ -504,13 +685,14 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               <CheckIcon className="h-10 w-10 text-white" />
             </div>
             <h2 className="mb-2 text-center text-2xl font-bold text-white">
-              Quote sent
+              {isEdit ? 'Quote updated' : 'Quote sent'}
             </h2>
             <p className="mx-auto mb-8 max-w-sm text-center text-sm text-gray-400">
-              The quote has been emailed to your customer. They can review the
-              details and accept or decline directly from the link.
+              {isEdit
+                ? 'Your changes are saved. The customer will see the updated details the next time they open their link.'
+                : 'The quote has been emailed to your customer. They can review the details and accept or decline directly from the link.'}
             </p>
-            {sentQuoteLink ? (
+            {!isEdit && sentQuoteLink ? (
               <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <p className="mb-1 text-xs uppercase tracking-wider text-gray-500">
                   Share link
@@ -534,7 +716,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
             >
               <div className="border-b border-white/10 px-4 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                  Quote summary
+                  {isEdit ? 'Updated summary' : 'Quote summary'}
                 </p>
               </div>
               <div className="space-y-4 p-4 sm:p-6">
@@ -614,10 +796,14 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               </div>
             </GlassCard>
             <Link
-              href={ROUTES.DASHBOARD.MAIN}
+              href={
+                isEdit
+                  ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
+                  : ROUTES.DASHBOARD.MAIN
+              }
               className="inline-flex min-h-[48px] items-center justify-center self-center rounded-xl bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100"
             >
-              Back to dashboard
+              {isEdit ? 'Back to quote' : 'Back to dashboard'}
             </Link>
           </div>
         )}
@@ -681,9 +867,15 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 size="sm"
                 className="min-w-0 flex-1 font-semibold"
                 disabled={!canSend || sendingQuote}
-                onClick={handleSendQuote}
+                onClick={handleSubmitQuote}
               >
-                {sendingQuote ? 'Sending...' : 'Send quote'}
+                {sendingQuote
+                  ? isEdit
+                    ? 'Saving...'
+                    : 'Sending...'
+                  : isEdit
+                    ? 'Save changes'
+                    : 'Send quote'}
               </Button>
             </div>
           )}

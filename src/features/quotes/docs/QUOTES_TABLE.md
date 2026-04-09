@@ -1,5 +1,7 @@
 # Quotes table (owner + customer request flow)
 
+For **API routes, UI entry points, and file map**, see [README.md](./README.md) in this folder.
+
 This doc describes the current **`quotes`** table used for both:
 
 - owner-created quotes from dashboard (`New Quote`)

@@ -6,6 +6,11 @@ import type { DashboardQuote } from '../types';
 
 type LoadStatus = 'loading' | 'ready' | 'error';
 
+interface UseDashboardQuoteDetailOptions {
+  /** When false, skips fetch (e.g. create-quote screen that shares this hook shape). */
+  enabled?: boolean;
+}
+
 interface UseDashboardQuoteDetailResult {
   quote: DashboardQuote | null;
   loadStatus: LoadStatus;
@@ -14,13 +19,25 @@ interface UseDashboardQuoteDetailResult {
 }
 
 export function useDashboardQuoteDetail(
-  quoteId: string
+  quoteId: string,
+  options?: UseDashboardQuoteDetailOptions
 ): UseDashboardQuoteDetailResult {
+  const enabled = options?.enabled !== false;
+
   const [quote, setQuote] = useState<DashboardQuote | null>(null);
-  const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading');
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>(() =>
+    enabled ? 'loading' : 'ready'
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const reloadQuote = useCallback(async () => {
+    if (!enabled) {
+      setLoadStatus('ready');
+      setLoadError(null);
+      setQuote(null);
+      return;
+    }
+
     const id = quoteId.trim();
     if (!id) {
       setLoadStatus('error');
@@ -52,11 +69,17 @@ export function useDashboardQuoteDetail(
       setLoadStatus('error');
       setQuote(null);
     }
-  }, [quoteId]);
+  }, [quoteId, enabled]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoadStatus('ready');
+      setLoadError(null);
+      setQuote(null);
+      return;
+    }
     void reloadQuote();
-  }, [reloadQuote]);
+  }, [enabled, reloadQuote]);
 
   return { quote, loadStatus, loadError, reloadQuote };
 }

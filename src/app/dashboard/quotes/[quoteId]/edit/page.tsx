@@ -1,6 +1,6 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { QuoteEditPlaceholderScreen } from '@/features/quotes/dashboard';
+import { CreateQuoteScreen } from '@/features/quotes';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -34,7 +34,7 @@ export default async function DashboardQuoteEditPage({ params }: PageProps) {
 
   const { data: businessRow, error: businessError } = await supabase
     .from('business_profiles')
-    .select('id')
+    .select('business_slug')
     .eq('profile_id', user.id)
     .maybeSingle();
 
@@ -42,5 +42,13 @@ export default async function DashboardQuoteEditPage({ params }: PageProps) {
     redirect(ROUTES.DASHBOARD.MAIN);
   }
 
-  return <QuoteEditPlaceholderScreen quoteId={quoteId} />;
+  const business = businessRow as { business_slug: string | null };
+
+  return (
+    <CreateQuoteScreen
+      businessSlug={business.business_slug}
+      mode="edit"
+      quoteId={quoteId.trim()}
+    />
+  );
 }

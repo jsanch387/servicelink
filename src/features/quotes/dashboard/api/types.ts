@@ -21,6 +21,7 @@ export interface QuoteDbRow {
   customer_phone: string | null;
   service_name: string | null;
   price_cents: number | null;
+  duration_minutes: number | null;
   created_at: string;
   updated_at: string;
   scheduled_date: string | null;

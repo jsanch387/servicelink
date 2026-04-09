@@ -47,6 +47,11 @@ export function mapQuoteRowToDashboardQuote(
   row: QuoteDbRow,
   publicToken: string
 ): DashboardQuote {
+  const duration =
+    row.duration_minutes != null && row.duration_minutes > 0
+      ? row.duration_minutes
+      : 60;
+
   return {
     id: row.id,
     status: asDashboardStatus(row.status),
@@ -56,11 +61,15 @@ export function mapQuoteRowToDashboardQuote(
     customerPhone: row.customer_phone,
     serviceName: row.service_name?.trim() || 'Untitled service',
     totalCents: row.price_cents ?? 0,
+    durationMinutes: duration,
     activityAt: row.updated_at || row.created_at,
     createdAt: row.created_at,
     scheduledDate: row.scheduled_date,
     scheduledTime: row.scheduled_start_time,
     note: row.note,
+    vehicleYear: row.vehicle_year,
+    vehicleMake: row.vehicle_make,
+    vehicleModel: row.vehicle_model,
     vehicleLine: buildVehicleLine(row),
     /**
      * Token string used for `/q/[token]`.

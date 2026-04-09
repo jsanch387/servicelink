@@ -1,8 +1,6 @@
-import type {
-  QuoteDbRow,
-  QuotePublicLinkRow,
-} from '@/features/quotes/dashboard/api/types';
-import { mapQuoteRowToDashboardQuote } from '@/features/quotes/dashboard/server/mapQuoteRowToDashboardQuote';
+import { loadDashboardQuoteById } from '@/features/quotes/dashboard/server/loadDashboardQuoteById';
+import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
+import { validateUpdateQuoteBody } from '@/features/quotes/edit/validateUpdateQuoteBody';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
@@ -32,74 +30,125 @@ export async function GET(_req: Request, { params }: RouteContext) {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('quotes')
-      .select(
-        `
-          id,
-          status,
-          source,
-          customer_name,
-          customer_email,
-          customer_phone,
-          service_name,
-          price_cents,
-          created_at,
-          updated_at,
-          scheduled_date,
-          scheduled_start_time,
-          note,
-          vehicle_year,
-          vehicle_make,
-          vehicle_model
-        `
-      )
-      .eq('business_id', resolved.businessId)
-      .eq('id', quoteId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('quote detail error:', error);
+    const loaded = await loadDashboardQuoteById(
+      supabase,
+      resolved.businessId,
+      quoteId
+    );
+    if (!loaded.ok) {
       return NextResponse.json(
-        { success: false, error: error.message || 'Failed to load quote' },
+        { success: false, error: loaded.error },
+        { status: loaded.status }
+      );
+    }
+
+    return NextResponse.json({ success: true, quote: loaded.quote });
+  } catch (e) {
+    console.error('quote detail GET:', e);
+    return NextResponse.json(
+      { success: false, error: 'Unexpected server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: Request, { params }: RouteContext) {
+  try {
+    const { id } = await params;
+    const quoteId = id?.trim();
+    if (!quoteId) {
+      return NextResponse.json(
+        { success: false, error: 'Quote id is required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const resolved = await resolveCurrentBusinessId(supabase);
+
+    if (!resolved.ok) {
+      return NextResponse.json(
+        { success: false, error: resolved.error },
+        { status: resolved.status }
+      );
+    }
+
+    const existing = await loadDashboardQuoteById(
+      supabase,
+      resolved.businessId,
+      quoteId
+    );
+    if (!existing.ok) {
+      return NextResponse.json(
+        { success: false, error: existing.error },
+        { status: existing.status }
+      );
+    }
+
+    if (!isDashboardQuoteEditableByOwner(existing.quote.status)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'This quote can no longer be edited after the customer has responded.',
+        },
+        { status: 409 }
+      );
+    }
+
+    const parsed = validateUpdateQuoteBody(await request.json());
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { success: false, error: parsed.error },
+        { status: parsed.status }
+      );
+    }
+
+    const p = parsed.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
+      .from('quotes')
+      .update({
+        customer_name: p.customerName,
+        customer_email: p.customerEmail,
+        customer_phone: p.customerPhoneDigits,
+        vehicle_year: p.vehicleYear,
+        vehicle_make: p.vehicleMake,
+        vehicle_model: p.vehicleModel,
+        service_name: p.serviceName,
+        price_cents: p.priceCents,
+        duration_minutes: p.durationMinutes,
+        note: p.note,
+        scheduled_date: p.scheduledDate,
+        scheduled_start_time: p.scheduledStartTimeForDb,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('business_id', resolved.businessId)
+      .eq('id', quoteId);
+
+    if (updateError) {
+      console.error('quote PATCH:', updateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update quote' },
         { status: 500 }
       );
     }
 
-    if (!data) {
+    const refreshed = await loadDashboardQuoteById(
+      supabase,
+      resolved.businessId,
+      quoteId
+    );
+    if (!refreshed.ok) {
       return NextResponse.json(
-        { success: false, error: 'Quote not found' },
-        { status: 404 }
+        { success: false, error: refreshed.error },
+        { status: refreshed.status }
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: linkData, error: linkError } = await (supabase as any)
-      .from('quote_public_links')
-      .select(
-        'quote_id, token_hash, is_active, revoked_at, expires_at, created_at'
-      )
-      .eq('quote_id', quoteId)
-      .eq('is_active', true)
-      .is('revoked_at', null)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (linkError) {
-      console.error('quote detail link error:', linkError);
-    }
-
-    const link = (linkData as QuotePublicLinkRow | null) ?? null;
-    const quote = mapQuoteRowToDashboardQuote(
-      data as QuoteDbRow,
-      link?.token_hash ?? ''
-    );
-    return NextResponse.json({ success: true, quote });
+    return NextResponse.json({ success: true, quote: refreshed.quote });
   } catch (e) {
-    console.error('quote detail GET:', e);
+    console.error('quote PATCH:', e);
     return NextResponse.json(
       { success: false, error: 'Unexpected server error' },
       { status: 500 }

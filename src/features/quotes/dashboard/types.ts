@@ -22,6 +22,8 @@ export interface DashboardQuote {
   customerPhone: string | null;
   serviceName: string;
   totalCents: number;
+  /** Service duration from `quotes.duration_minutes` (for edit + display). */
+  durationMinutes: number;
   /** Best “activity” timestamp for list sorting (ISO). */
   activityAt: string;
   createdAt: string;
@@ -29,6 +31,9 @@ export interface DashboardQuote {
   scheduledTime: string | null;
   note: string | null;
   vehicleLine: string | null;
+  vehicleYear: string | null;
+  vehicleMake: string | null;
+  vehicleModel: string | null;
   /** Raw token for public URL `/q/[token]` (mock only). */
   publicToken: string;
 }

@@ -34,6 +34,7 @@ export async function GET() {
           customer_phone,
           service_name,
           price_cents,
+          duration_minutes,
           created_at,
           updated_at,
           scheduled_date,
