@@ -24,7 +24,9 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | `components/QuotesDashboardPage.tsx` | Re-export only; implementation lives in `dashboard/components/QuotesDashboardPage.tsx` (app imports from `@/features/quotes/components/...`). |
 | `dashboard/` | Owner list, detail, filters, hooks, dashboard types, `loadDashboardQuoteById`, `mapQuoteRowToDashboardQuote`. |
 | `dashboard/components/QuotesDashboardPage.tsx` | Quotes list UI (source for the re-export above). |
-| `dashboard/components/QuoteDetailScreen.tsx` | Single quote; copy link, view public, **Edit** (disabled when not editable). |
+| `dashboard/components/QuoteDetailScreen.tsx` | Single quote; copy link, view public, **Edit**, **Delete** (`DELETE /api/quotes/[id]`). |
+| `dashboard/components/DeleteQuoteModalBody.tsx` | Confirm-delete modal copy and actions. |
+| `dashboard/utils/parseDeleteQuoteApiResponse.ts` | Parses delete API JSON for the client (unit-tested). |
 | `dashboard/hooks/useDashboardQuotes.ts` | `GET /api/quotes`. |
 | `dashboard/hooks/useDashboardQuoteDetail.ts` | `GET /api/quotes/[id]`; supports `{ enabled: false }` for create-only screens sharing the hook shape. |
 | `dashboard/utils/isDashboardQuoteEditableByOwner.ts` | Owner may edit only `requested`, `draft`, `sent`, `viewed`. |
@@ -130,6 +132,24 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 ---
 
+### `DELETE /api/quotes/[id]`
+
+**Auth:** Session + business scope (same as GET/PATCH).
+
+**Purpose:** Permanently remove the quote row. Related `quote_public_links` rows are removed by DB `ON DELETE CASCADE` (see [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md)).
+
+**Body:** None.
+
+**Success:** `200` — `{ success: true }`.
+
+**Errors:** `400` missing id, `404` quote not found (or not in this business), `401/403` via `resolveCurrentBusinessId`, `500` delete failure.
+
+**UI:** Quote detail → **Delete quote** → modal (“Are you sure…”) → **Delete quote** / **Cancel** → on success, navigate to quotes list and `router.refresh()`.
+
+**Code:** `src/app/api/quotes/[id]/route.ts`
+
+---
+
 ### `POST /api/quotes/respond`
 
 **Auth:** None (token proves access). Uses **admin** Supabase client server-side.
@@ -198,6 +218,7 @@ Vitest includes `src/features/**/testing/**/*.test.ts` (see root `vitest.config.
 | `testing/quotePayloadValidation.test.ts` | Shared payload + send requires slug |
 | `testing/quoteRespondValidation.test.ts` | `validateQuoteRespondRequest` |
 | `testing/resolveQuoteTokenHash.test.ts` | Token vs hash resolution |
+| `testing/deleteQuoteApiResponse.test.ts` | `parseDeleteQuoteApiResponse` |
 
 Run: `npm test`
 

@@ -17,7 +17,7 @@ import {
   getCustomerPhoneLink,
 } from '../utils/customerContactDisplay';
 import { isDashboardQuoteEditableByOwner } from '../utils/isDashboardQuoteEditableByOwner';
-import { addMockDeletedQuoteId } from '../utils/mockDeletedQuoteIds';
+import { parseDeleteQuoteApiResponse } from '../utils/parseDeleteQuoteApiResponse';
 import {
   getPublicQuoteAbsoluteUrl,
   getPublicQuotePath,
@@ -47,6 +47,7 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
   const [copied, setCopied] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleCopyLink = useCallback(async () => {
     if (!quote || !quote.publicToken.trim()) return;
@@ -60,16 +61,34 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
     }
   }, [quote]);
 
-  const handleDelete = useCallback(() => {
-    if (!quote) return;
+  const handleDelete = useCallback(async () => {
+    if (!quote || deleting) return;
     setDeleting(true);
-    window.setTimeout(() => {
-      addMockDeletedQuoteId(quote.id);
-      setDeleting(false);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/quotes/${encodeURIComponent(quote.id)}`, {
+        method: 'DELETE',
+      });
+      const json: unknown = await res.json().catch(() => null);
+      const parsed = parseDeleteQuoteApiResponse(res.ok, res.status, json);
+      if (!parsed.ok) {
+        setDeleteError(parsed.error);
+        return;
+      }
       setDeleteOpen(false);
       router.push(ROUTES.DASHBOARD.QUOTES);
-    }, 450);
-  }, [quote, router]);
+      router.refresh();
+    } catch {
+      setDeleteError('Failed to delete quote. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  }, [quote, deleting, router]);
+
+  const openDeleteModal = useCallback(() => {
+    setDeleteError(null);
+    setDeleteOpen(true);
+  }, []);
 
   if (loadStatus === 'loading') {
     return (
@@ -121,13 +140,14 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
       quote={quote}
       copied={copied}
       onCopyLink={handleCopyLink}
-      onOpenDelete={() => setDeleteOpen(true)}
+      onOpenDelete={openDeleteModal}
       deleteOpen={deleteOpen}
       onCloseDelete={() => {
         if (!deleting) setDeleteOpen(false);
       }}
       deleting={deleting}
-      onConfirmDelete={handleDelete}
+      deleteError={deleteError}
+      onConfirmDelete={() => void handleDelete()}
     />
   );
 };
@@ -140,6 +160,7 @@ interface QuoteDetailContentProps {
   deleteOpen: boolean;
   onCloseDelete: () => void;
   deleting: boolean;
+  deleteError: string | null;
   onConfirmDelete: () => void;
 }
 
@@ -151,6 +172,7 @@ function QuoteDetailContent({
   deleteOpen,
   onCloseDelete,
   deleting,
+  deleteError,
   onConfirmDelete,
 }: QuoteDetailContentProps) {
   const blur = getQuoteStatusBlurClass(quote.status);
@@ -383,7 +405,7 @@ function QuoteDetailContent({
           <DeleteQuoteModalBody
             quote={quote}
             isDeleting={deleting}
-            error={null}
+            error={deleteError}
             onConfirm={onConfirmDelete}
             onClose={onCloseDelete}
           />

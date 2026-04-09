@@ -155,3 +155,59 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     );
   }
 }
+
+export async function DELETE(_req: Request, { params }: RouteContext) {
+  try {
+    const { id } = await params;
+    const quoteId = id?.trim();
+    if (!quoteId) {
+      return NextResponse.json(
+        { success: false, error: 'Quote id is required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const resolved = await resolveCurrentBusinessId(supabase);
+
+    if (!resolved.ok) {
+      return NextResponse.json(
+        { success: false, error: resolved.error },
+        { status: resolved.status }
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { data: deletedRows, error: deleteError } = await db
+      .from('quotes')
+      .delete()
+      .eq('id', quoteId)
+      .eq('business_id', resolved.businessId)
+      .select('id');
+
+    if (deleteError) {
+      console.error('quote DELETE:', deleteError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to delete quote' },
+        { status: 500 }
+      );
+    }
+
+    const removed = Array.isArray(deletedRows) ? deletedRows.length : 0;
+    if (removed === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Quote not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error('quote DELETE:', e);
+    return NextResponse.json(
+      { success: false, error: 'Unexpected server error' },
+      { status: 500 }
+    );
+  }
+}

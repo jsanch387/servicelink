@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import type { DashboardQuote } from '../types';
 import React from 'react';
+import type { DashboardQuote } from '../types';
 
 interface DeleteQuoteModalBodyProps {
   quote: DashboardQuote;
@@ -22,12 +22,12 @@ export const DeleteQuoteModalBody: React.FC<DeleteQuoteModalBodyProps> = ({
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-200">
-        Delete the quote for{' '}
+        Are you sure you want to delete the quote for{' '}
         <span className="font-semibold">{quote.customerName}</span>?
       </p>
       <p className="text-xs text-gray-500">
-        This is a demo action in the UI preview. When wired to your backend,
-        this will remove the quote and may invalidate the customer link.
+        This permanently removes the quote from your dashboard. The customer
+        link will stop working. This cannot be undone.
       </p>
 
       {error ? (
