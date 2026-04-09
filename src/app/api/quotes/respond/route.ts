@@ -1,42 +1,18 @@
+import { validateQuoteRespondRequest } from '@/features/quotes/public-view/validateQuoteRespondRequest';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
-type Decision = 'approve' | 'decline';
-
-function isDecision(v: unknown): v is Decision {
-  return v === 'approve' || v === 'decline';
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as {
-      token?: string;
-      decision?: string;
-      serviceAddress?: string;
-    };
-    const token = body.token?.trim();
-    const decision = body.decision;
-    const serviceAddress = body.serviceAddress?.trim();
-
-    if (!token || !isDecision(decision)) {
+    const parsed = validateQuoteRespondRequest(await request.json());
+    if (!parsed.ok) {
       return NextResponse.json(
-        { success: false, error: 'Invalid request' },
-        { status: 400 }
+        { success: false, error: parsed.error },
+        { status: parsed.status }
       );
     }
-    if (
-      decision === 'approve' &&
-      (!serviceAddress || serviceAddress.length < 6)
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Service address is required to accept quote',
-        },
-        { status: 400 }
-      );
-    }
+    const { token, decision, serviceAddress } = parsed.data;
 
     const tokenHash = resolveQuoteTokenHash(token);
     const admin = createSupabaseAdminClient();
