@@ -1,6 +1,9 @@
 import { GlassCard } from '@/components/shared';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
+import { formatUsPhoneDigits } from '@/lib/formatUsPhone';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
 import crypto from 'crypto';
 import { notFound } from 'next/navigation';
 
@@ -78,7 +81,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteRow } = await db
     .from('quotes')
     .select(
-      'id, customer_name, customer_email, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, scheduled_date, scheduled_start_time, status'
+      'id, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, scheduled_date, scheduled_start_time, status'
     )
     .eq('id', link.quote_id)
     .maybeSingle();
@@ -89,6 +92,7 @@ export default async function PublicQuoteViewPage({
     id: string;
     customer_name: string;
     customer_email: string;
+    customer_phone: string | null;
     vehicle_year: string | null;
     vehicle_make: string | null;
     vehicle_model: string | null;
@@ -118,14 +122,72 @@ export default async function PublicQuoteViewPage({
     })
     .eq('id', quote.id);
 
+  const { data: quoteFresh } = await db
+    .from('quotes')
+    .select(
+      'id, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, scheduled_date, scheduled_start_time, status'
+    )
+    .eq('id', quote.id)
+    .maybeSingle();
+
+  if (!quoteFresh) notFound();
+
+  const displayQuote = quoteFresh as typeof quote;
+  const isAccepted = displayQuote.status === 'approved';
+  const isDeclined = displayQuote.status === 'declined';
+  const customerPhoneDigits =
+    displayQuote.customer_phone?.replace(/\D/g, '') ?? '';
+  const customerPhoneDisplay =
+    customerPhoneDigits.length === 10
+      ? formatUsPhoneDigits(customerPhoneDigits)
+      : null;
+
   return (
     <main className="min-h-screen bg-[var(--dashboard-bg)] px-4 py-8 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-xl">
+        {isAccepted ? (
+          <div
+            className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3.5 sm:gap-3.5 sm:px-5"
+            role="status"
+          >
+            <CheckCircleIcon
+              className="h-8 w-8 shrink-0 text-emerald-400"
+              aria-hidden
+            />
+            <p className="text-sm font-semibold text-emerald-100">
+              Quote accepted — you&apos;re all set.
+            </p>
+          </div>
+        ) : null}
+
+        {isDeclined ? (
+          <div
+            className="mb-6 flex items-center gap-3 rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3.5 sm:gap-3.5 sm:px-5"
+            role="status"
+          >
+            <XCircleIcon
+              className="h-8 w-8 shrink-0 text-red-400"
+              aria-hidden
+            />
+            <p className="text-sm font-semibold text-red-100">
+              Quote declined.
+            </p>
+          </div>
+        ) : null}
+
         <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-          Review Quote
+          {isAccepted
+            ? 'Your quote'
+            : isDeclined
+              ? 'Quote details'
+              : 'Review Quote'}
         </h1>
         <p className="mt-0.5 max-w-xl text-sm text-gray-500">
-          Review the details below before choosing to accept or decline.
+          {isAccepted
+            ? 'Summary of what you agreed to.'
+            : isDeclined
+              ? 'What was offered on this link.'
+              : 'Review the details below before choosing to accept or decline.'}
         </p>
         <div className="mt-4 h-px w-full bg-white/10" aria-hidden />
 
@@ -141,10 +203,11 @@ export default async function PublicQuoteViewPage({
               <p className="mb-1 text-xs tracking-wider text-gray-500">
                 Service
               </p>
-              <p className="font-medium text-white">{quote.service_name}</p>
+              <p className="font-medium text-white">
+                {displayQuote.service_name}
+              </p>
               <p className="mt-0.5 text-sm text-gray-400">
-                {formatPrice(quote.price_cents)} •{' '}
-                {formatDurationMinutes(quote.duration_minutes)}
+                {formatDurationMinutes(displayQuote.duration_minutes)}
               </p>
             </div>
             <div className="h-px bg-white/10" />
@@ -153,10 +216,10 @@ export default async function PublicQuoteViewPage({
                 Date &amp; time
               </p>
               <p className="font-medium text-white">
-                {formatDateLong(quote.scheduled_date)}
+                {formatDateLong(displayQuote.scheduled_date)}
               </p>
               <p className="mt-0.5 text-sm text-gray-400">
-                Starts {formatTime12(quote.scheduled_start_time)}
+                Starts {formatTime12(displayQuote.scheduled_start_time)}
               </p>
             </div>
             <div className="h-px bg-white/10" />
@@ -164,12 +227,21 @@ export default async function PublicQuoteViewPage({
               <p className="mb-1 text-xs tracking-wider text-gray-500">
                 Customer
               </p>
-              <p className="font-medium text-white">{quote.customer_name}</p>
-              <p className="break-words text-sm text-gray-400">
-                {quote.customer_email}
+              <p className="font-medium text-white">
+                {displayQuote.customer_name}
               </p>
+              <p className="break-words text-sm text-gray-400">
+                {displayQuote.customer_email}
+              </p>
+              {customerPhoneDisplay ? (
+                <p className="mt-0.5 text-sm text-gray-400 tabular-nums">
+                  {customerPhoneDisplay}
+                </p>
+              ) : null}
             </div>
-            {quote.vehicle_year || quote.vehicle_make || quote.vehicle_model ? (
+            {displayQuote.vehicle_year ||
+            displayQuote.vehicle_make ||
+            displayQuote.vehicle_model ? (
               <>
                 <div className="h-px bg-white/10" />
                 <div>
@@ -178,9 +250,9 @@ export default async function PublicQuoteViewPage({
                   </p>
                   <p className="font-medium text-white">
                     {[
-                      quote.vehicle_year,
-                      quote.vehicle_make,
-                      quote.vehicle_model,
+                      displayQuote.vehicle_year,
+                      displayQuote.vehicle_make,
+                      displayQuote.vehicle_model,
                     ]
                       .filter(Boolean)
                       .join(' ')}
@@ -188,7 +260,7 @@ export default async function PublicQuoteViewPage({
                 </div>
               </>
             ) : null}
-            {quote.note?.trim() ? (
+            {displayQuote.note?.trim() ? (
               <>
                 <div className="h-px bg-white/10" />
                 <div>
@@ -196,13 +268,25 @@ export default async function PublicQuoteViewPage({
                     Note
                   </p>
                   <p className="whitespace-pre-wrap text-sm text-gray-400">
-                    {quote.note}
+                    {displayQuote.note}
                   </p>
                 </div>
               </>
             ) : null}
+            <div className="h-px bg-white/10" />
+            <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
+              <p className="text-sm font-medium text-gray-300">Total</p>
+              <p className="text-lg font-bold text-white">
+                {formatPrice(displayQuote.price_cents)}
+              </p>
+            </div>
           </div>
         </GlassCard>
+
+        <PublicQuoteRespondActions
+          token={token.trim()}
+          initialStatus={displayQuote.status}
+        />
       </div>
     </main>
   );

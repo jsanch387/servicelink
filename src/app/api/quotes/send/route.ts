@@ -7,6 +7,7 @@ interface SendQuoteRequestBody {
   businessSlug: string;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   vehicleYear?: string;
   vehicleMake?: string;
   vehicleModel?: string;
@@ -28,6 +29,14 @@ function toTimeWithSeconds(hhmm: string): string {
   const trimmed = hhmm.trim();
   if (!/^\d{2}:\d{2}$/.test(trimmed)) return trimmed;
   return `${trimmed}:00`;
+}
+
+function normalizeOptionalPhoneDigits(
+  value: string | undefined
+): string | null {
+  if (!value?.trim()) return null;
+  const digits = value.replace(/\D/g, '');
+  return digits.length === 10 ? digits : null;
 }
 
 export async function POST(request: NextRequest) {
@@ -61,6 +70,15 @@ export async function POST(request: NextRequest) {
     if (!isValidEmail(body.customerEmail ?? '')) {
       return NextResponse.json(
         { success: false, error: 'A valid customer email is required' },
+        { status: 400 }
+      );
+    }
+    const customerPhoneDigits = normalizeOptionalPhoneDigits(
+      body.customerPhone
+    );
+    if (body.customerPhone?.trim() && !customerPhoneDigits) {
+      return NextResponse.json(
+        { success: false, error: 'Phone must be 10 digits or omitted' },
         { status: 400 }
       );
     }
@@ -134,7 +152,7 @@ export async function POST(request: NextRequest) {
         created_by_user_id: user.id,
         customer_name: body.customerName.trim(),
         customer_email: body.customerEmail.trim(),
-        customer_phone: null,
+        customer_phone: customerPhoneDigits,
         vehicle_year: body.vehicleYear?.trim() || null,
         vehicle_make: body.vehicleMake?.trim() || null,
         vehicle_model: body.vehicleModel?.trim() || null,

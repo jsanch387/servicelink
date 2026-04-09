@@ -7,6 +7,7 @@ import {
   PhoneInput,
   Select,
   TextArea,
+  formatUsPhoneDigits,
 } from '@/components/shared';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
@@ -228,7 +229,9 @@ export const PublicQuoteRequestScreen: React.FC<
                   <p className="break-words text-sm text-gray-400">
                     {form.customerEmail}
                   </p>
-                  <p className="text-sm text-gray-400">{form.customerPhone}</p>
+                  <p className="mt-0.5 text-sm text-gray-400 tabular-nums">
+                    {formatUsPhoneDigits(form.customerPhone)}
+                  </p>
                 </div>
                 <div className="h-px bg-white/10" />
                 <div>

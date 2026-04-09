@@ -4,10 +4,12 @@ import {
   Button,
   GlassCard,
   Input,
+  PhoneInput,
   PriceInput,
   TextArea,
   TimeSelect,
   WarningCallout,
+  formatUsPhoneDigits,
 } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { DateSelector } from '@/features/availability/booking/components/DateSelector';
@@ -37,13 +39,15 @@ function getTodayAtMidnight() {
   return new Date(today.getFullYear(), today.getMonth(), today.getDate());
 }
 
-function formatCurrencyFromDigits(digits: string): string {
+/** Matches public `/q/[token]` total line (whole dollars, no cents). */
+function formatQuoteTotalFromDigits(digits: string): string {
   if (!digits) return '—';
   const n = parseInt(digits, 10);
   if (Number.isNaN(n)) return '—';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
+    maximumFractionDigits: 0,
   }).format(n);
 }
 
@@ -78,6 +82,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [step, setStep] = useState<Step>('details');
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [vehicleYear, setVehicleYear] = useState('');
   const [vehicleMake, setVehicleMake] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
@@ -117,14 +122,23 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   }, [step]);
 
   const canProceedDetails = useMemo(() => {
+    const phoneOk = customerPhone.length === 0 || customerPhone.length === 10;
     return (
       customerName.trim().length > 0 &&
       isValidEmail(customerEmail) &&
+      phoneOk &&
       serviceName.trim().length > 0 &&
       priceDigits.trim().length > 0 &&
       isValidServiceEditDurationInput(durationHHmm)
     );
-  }, [customerEmail, customerName, durationHHmm, priceDigits, serviceName]);
+  }, [
+    customerEmail,
+    customerName,
+    customerPhone.length,
+    durationHHmm,
+    priceDigits,
+    serviceName,
+  ]);
 
   const canProceedSchedule = selectedDate !== null && selectedTime !== null;
 
@@ -159,6 +173,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           businessSlug: businessSlug ?? '',
           customerName: customerName.trim(),
           customerEmail: customerEmail.trim(),
+          customerPhone:
+            customerPhone.length === 10 ? customerPhone : undefined,
           vehicleYear: vehicleYear.trim() || undefined,
           vehicleMake: vehicleMake.trim() || undefined,
           vehicleModel: vehicleModel.trim() || undefined,
@@ -237,26 +253,40 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     : undefined
                 }
               />
+              <PhoneInput
+                label="Phone"
+                value={customerPhone}
+                onChange={setCustomerPhone}
+                required={false}
+                error={
+                  customerPhone.length > 0 && customerPhone.length < 10
+                    ? 'Enter a full number or leave blank'
+                    : undefined
+                }
+              />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <Input
-                  label="Vehicle year (optional)"
+                  label="Vehicle year"
                   placeholder="e.g. 2020"
                   value={vehicleYear}
                   onChange={setVehicleYear}
                   inputMode="numeric"
                   maxLength={4}
+                  required={false}
                 />
                 <Input
-                  label="Vehicle make (optional)"
+                  label="Vehicle make"
                   placeholder="e.g. Toyota"
                   value={vehicleMake}
                   onChange={setVehicleMake}
+                  required={false}
                 />
                 <Input
-                  label="Vehicle model (optional)"
+                  label="Vehicle model"
                   placeholder="e.g. Camry"
                   value={vehicleModel}
                   onChange={setVehicleModel}
+                  required={false}
                 />
               </div>
 
@@ -299,12 +329,13 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               </div>
 
               <TextArea
-                label="Note (optional)"
+                label="Note"
                 placeholder='e.g. "Clay bar included"'
                 value={note}
                 onChange={setNote}
                 rows={3}
                 maxLength={500}
+                required={false}
               />
             </div>
           </GlassCard>
@@ -386,7 +417,6 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   </p>
                   <p className="font-medium text-white">{serviceName.trim()}</p>
                   <p className="mt-0.5 text-sm text-gray-400">
-                    {formatCurrencyFromDigits(priceDigits)} •{' '}
                     {formatDurationMinutes(durationMinutes)}
                   </p>
                 </div>
@@ -415,6 +445,11 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <p className="break-words text-sm text-gray-400">
                     {customerEmail.trim()}
                   </p>
+                  {customerPhone.length === 10 ? (
+                    <p className="mt-0.5 text-sm text-gray-400 tabular-nums">
+                      {formatUsPhoneDigits(customerPhone)}
+                    </p>
+                  ) : null}
                 </div>
                 {vehicleYear.trim() ||
                 vehicleMake.trim() ||
@@ -451,6 +486,13 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     </div>
                   </>
                 )}
+                <div className="h-px bg-white/10" />
+                <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
+                  <p className="text-sm font-medium text-gray-300">Total</p>
+                  <p className="text-lg font-bold text-white">
+                    {formatQuoteTotalFromDigits(priceDigits)}
+                  </p>
+                </div>
               </div>
             </GlassCard>
           </div>
@@ -502,7 +544,6 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     {serviceName.trim()}
                   </p>
                   <p className="mt-1 text-sm text-gray-400">
-                    {formatCurrencyFromDigits(priceDigits)} •{' '}
                     {formatDurationMinutes(durationMinutes)}
                   </p>
                 </div>
@@ -515,6 +556,11 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <p className="break-words text-sm text-gray-400">
                     {customerEmail.trim()}
                   </p>
+                  {customerPhone.length === 10 ? (
+                    <p className="mt-0.5 text-sm text-gray-400 tabular-nums">
+                      {formatUsPhoneDigits(customerPhone)}
+                    </p>
+                  ) : null}
                 </div>
                 {vehicleYear.trim() ||
                 vehicleMake.trim() ||
@@ -558,6 +604,13 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     </div>
                   </>
                 )}
+                <div className="h-px bg-white/10" />
+                <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
+                  <p className="text-sm font-medium text-gray-300">Total</p>
+                  <p className="text-lg font-bold text-white">
+                    {formatQuoteTotalFromDigits(priceDigits)}
+                  </p>
+                </div>
               </div>
             </GlassCard>
             <Link
