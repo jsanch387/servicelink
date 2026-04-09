@@ -2,11 +2,10 @@
 
 import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { useAuth } from '@/features/auth';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
 import {
-  ArrowRightOnRectangleIcon,
   CalendarIcon,
+  ClipboardDocumentListIcon,
   ClockIcon,
   CogIcon,
   HomeIcon,
@@ -16,7 +15,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import React from 'react';
 import type { DashboardSidebarProps } from '../types/dashboard';
 
@@ -46,6 +45,13 @@ const allNavigationItems = [
     requiresOnboarding: true,
   },
   {
+    name: 'Quotes',
+    href: ROUTES.DASHBOARD.QUOTES,
+    icon: ClipboardDocumentListIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/quotes',
+  },
+  {
     name: 'Customers',
     href: ROUTES.DASHBOARD.CUSTOMERS,
     icon: UserGroupIcon,
@@ -70,22 +76,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   isOnboardingCompleted = false,
 }) => {
   const pathname = usePathname();
-  const router = useRouter();
-  const { signOut } = useAuth();
 
   const navigation = allNavigationItems.filter(
     item => !item.requiresOnboarding || isOnboardingCompleted
   );
   const showSettings = isOnboardingCompleted;
-
-  const handleLogout = async () => {
-    try {
-      const result = await signOut();
-      if (result.success) router.push('/');
-    } catch {
-      // ignore
-    }
-  };
 
   return (
     <>
@@ -121,7 +116,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-4 py-6">
             {navigation.map(item => {
-              const isActive = pathname === item.href;
+              const isActive =
+                'activePathPrefix' in item && item.activePathPrefix
+                  ? pathname === item.href ||
+                    pathname.startsWith(`${item.activePathPrefix}/`)
+                  : pathname === item.href;
               return (
                 <Link
                   key={item.name}
@@ -151,8 +150,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             })}
           </nav>
 
-          {/* Secondary actions + logout */}
-          <div className="mt-auto p-4 flex-shrink-0 space-y-2">
+          {/* Settings */}
+          <div className="mt-auto p-4 flex-shrink-0">
             {showSettings ? (
               <Link
                 href={ROUTES.DASHBOARD.SETTINGS}
@@ -173,14 +172,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 Settings
               </Link>
             ) : null}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="group flex w-full items-center px-3 py-2 text-sm font-medium text-gray-300 rounded-xl hover:text-white hover:bg-neutral-700 transition-colors cursor-pointer"
-            >
-              <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
-              Logout
-            </button>
           </div>
         </div>
       </div>

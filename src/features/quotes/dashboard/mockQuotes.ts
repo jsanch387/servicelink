@@ -1,0 +1,122 @@
+import type { DashboardQuote } from './types';
+import { getMockDeletedQuoteIds } from './utils/mockDeletedQuoteIds';
+
+/** Static mock quotes for UI development; replace with API data later. */
+export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
+  {
+    id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000001',
+    status: 'viewed',
+    source: 'owner_created',
+    customerName: 'Jordan Lee',
+    customerEmail: 'jordan@example.com',
+    customerPhone: '4155550199',
+    serviceName: 'Full detail + ceramic coat',
+    totalCents: 45000,
+    activityAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 30).toISOString(),
+    scheduledDate: '2026-04-12',
+    scheduledTime: '10:00',
+    note: 'Customer asked about warranty on coating.',
+    vehicleLine: '2021 Tesla Model 3',
+    publicToken: 'demo-token-jordan-viewed',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000002',
+    status: 'sent',
+    source: 'owner_created',
+    customerName: 'Sam Rivera',
+    customerEmail: 'sam.r@example.com',
+    customerPhone: '5105550142',
+    serviceName: 'Interior deep clean',
+    totalCents: 18500,
+    activityAt: new Date(Date.now() - 3600000 * 26).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
+    scheduledDate: null,
+    scheduledTime: null,
+    note: null,
+    vehicleLine: '2018 Honda CR-V',
+    publicToken: 'demo-token-sam-sent',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000003',
+    status: 'draft',
+    source: 'owner_created',
+    customerName: 'Alex Kim',
+    customerEmail: 'alex.kim@example.com',
+    customerPhone: null,
+    serviceName: 'Paint correction (2-step)',
+    totalCents: 62000,
+    activityAt: new Date(Date.now() - 3600000 * 72).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 80).toISOString(),
+    scheduledDate: null,
+    scheduledTime: null,
+    note: 'Waiting on photos from customer.',
+    vehicleLine: null,
+    publicToken: 'demo-token-alex-draft',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000004',
+    status: 'requested',
+    source: 'customer_requested',
+    customerName: 'Morgan Blake',
+    customerEmail: 'morgan.blake@example.com',
+    customerPhone: '6505550100',
+    serviceName: 'Quote request — mobile detail',
+    totalCents: 0,
+    activityAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    scheduledDate: null,
+    scheduledTime: null,
+    note: 'Flexible on weekday mornings.',
+    vehicleLine: '2024 Ford F-150',
+    publicToken: 'demo-token-morgan-requested',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000005',
+    status: 'approved',
+    source: 'owner_created',
+    customerName: 'Casey Nguyen',
+    customerEmail: 'casey.n@example.com',
+    customerPhone: '4085550177',
+    serviceName: 'Weekly maintenance wash (4x)',
+    totalCents: 32000,
+    activityAt: new Date(Date.now() - 3600000 * 24 * 4).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 24 * 10).toISOString(),
+    scheduledDate: '2026-04-02',
+    scheduledTime: '14:30',
+    note: null,
+    vehicleLine: '2020 BMW 330i',
+    publicToken: 'demo-token-casey-approved',
+  },
+  {
+    id: 'a1b2c3d4-e5f6-4a5b-8c9d-000000000006',
+    status: 'declined',
+    source: 'owner_created',
+    customerName: 'Riley Chen',
+    customerEmail: 'riley.c@example.com',
+    customerPhone: '9255550166',
+    serviceName: 'Headlight restoration',
+    totalCents: 12000,
+    activityAt: new Date(Date.now() - 3600000 * 24 * 12).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 24 * 14).toISOString(),
+    scheduledDate: null,
+    scheduledTime: null,
+    note: null,
+    vehicleLine: '2015 Subaru Outback',
+    publicToken: 'demo-token-riley-declined',
+  },
+];
+
+export function getMockQuoteById(id: string): DashboardQuote | undefined {
+  const trimmed = id.trim();
+  return MOCK_DASHBOARD_QUOTES.find(q => q.id === trimmed);
+}
+
+/** Respects sessionStorage “deleted” ids (UI demo) so detail/list stay aligned. */
+export function getMockQuoteForDashboard(
+  id: string
+): DashboardQuote | undefined {
+  const trimmed = id.trim();
+  if (getMockDeletedQuoteIds().has(trimmed)) return undefined;
+  return getMockQuoteById(trimmed);
+}

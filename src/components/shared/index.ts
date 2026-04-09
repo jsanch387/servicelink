@@ -18,6 +18,8 @@ export { Card } from './Card';
 export { CompletionCelebration, SuccessMessage } from './CompletionCelebration';
 export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';
 export { CrownIcon } from './CrownIcon';
+export { FilterPills } from './FilterPills';
+export type { FilterPillOption } from './FilterPills';
 export { GlassCard } from './GlassCard';
 export { GoogleIcon } from './GoogleIcon';
 export { IconButton } from './IconButton';

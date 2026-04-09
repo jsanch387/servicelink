@@ -43,7 +43,13 @@ export const ROUTES = {
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
+    QUOTES: '/dashboard/quotes',
     QUOTES_NEW: '/dashboard/quotes/new',
+    /** Single quote (owner dashboard). Pass UUID from your data layer. */
+    QUOTE_DETAIL: (quoteId: string) =>
+      `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}`,
+    QUOTE_EDIT: (quoteId: string) =>
+      `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
     SETTINGS: '/dashboard/settings',
