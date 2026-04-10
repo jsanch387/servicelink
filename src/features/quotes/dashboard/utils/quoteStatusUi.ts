@@ -68,26 +68,21 @@ export function getQuoteOutcomeDotClass(
   return null;
 }
 
-export function formatQuoteListMeta(iso: string): string {
+/**
+ * Short absolute date for quote list cards (stable; not tied to `updated_at`).
+ */
+export function formatQuoteListCreatedAt(iso: string): string {
   try {
     const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
     const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const day = 86400000;
-    if (diffMs < 60000) return 'Just now';
-    if (diffMs < 3600000) {
-      const m = Math.floor(diffMs / 60000);
-      return `${m}m ago`;
-    }
-    if (diffMs < day) {
-      const h = Math.floor(diffMs / 3600000);
-      return `${h}h ago`;
-    }
-    if (diffMs < day * 7) {
-      const days = Math.floor(diffMs / day);
-      return `${days}d ago`;
-    }
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const sameYear = d.getFullYear() === now.getFullYear();
+    return d.toLocaleDateString(
+      'en-US',
+      sameYear
+        ? { month: 'short', day: 'numeric' }
+        : { month: 'short', day: 'numeric', year: 'numeric' }
+    );
   } catch {
     return '';
   }

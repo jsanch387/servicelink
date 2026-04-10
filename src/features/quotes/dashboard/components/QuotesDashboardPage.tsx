@@ -25,7 +25,7 @@ export const QuotesDashboardPage: React.FC = () => {
     () =>
       [...filtered].sort(
         (a, b) =>
-          new Date(b.activityAt).getTime() - new Date(a.activityAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ),
     [filtered]
   );

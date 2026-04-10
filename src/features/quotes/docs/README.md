@@ -24,6 +24,7 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | `components/QuotesDashboardPage.tsx` | Re-export only; implementation lives in `dashboard/components/QuotesDashboardPage.tsx` (app imports from `@/features/quotes/components/...`). |
 | `dashboard/` | Owner list, detail, filters, hooks, dashboard types, `loadDashboardQuoteById`, `mapQuoteRowToDashboardQuote`. |
 | `dashboard/components/QuotesDashboardPage.tsx` | Quotes list UI (source for the re-export above). |
+| `dashboard/components/QuoteListRow.tsx` | List card: customer, truncated **service** (with `title` for full text), **status**, **Created {date}** (`createdAt`), price. Sorted by `createdAt`. |
 | `dashboard/components/QuoteDetailScreen.tsx` | Single quote; copy link, view public, **Edit**, **Delete** (`DELETE /api/quotes/[id]`). |
 | `dashboard/components/DeleteQuoteModalBody.tsx` | Confirm-delete modal copy and actions. |
 | `dashboard/utils/parseDeleteQuoteApiResponse.ts` | Parses delete API JSON for the client (unit-tested). |

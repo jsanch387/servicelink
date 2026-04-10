@@ -2,17 +2,17 @@
 
 import { GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import React from 'react';
 import type { DashboardQuote } from '../types';
 import {
   formatQuoteCurrency,
-  formatQuoteListMeta,
+  formatQuoteListCreatedAt,
   getQuoteOutcomeDotClass,
   getQuoteStatusBlurClass,
   getQuoteStatusLabel,
 } from '../utils/quoteStatusUi';
-import { ChevronRightIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
-import React from 'react';
 
 interface QuoteListRowProps {
   quote: DashboardQuote;
@@ -21,10 +21,13 @@ interface QuoteListRowProps {
 export const QuoteListRow: React.FC<QuoteListRowProps> = ({ quote }) => {
   const blur = getQuoteStatusBlurClass(quote.status);
   const outcomeDot = getQuoteOutcomeDotClass(quote.status);
-  const vehicle = quote.vehicleLine?.trim() ?? '';
+  const service = quote.serviceName.trim();
+  const showService = service.length > 0 && service !== 'Untitled service';
 
   const priceLine =
     quote.totalCents > 0 ? formatQuoteCurrency(quote.totalCents) : 'Price TBD';
+
+  const createdLabel = formatQuoteListCreatedAt(quote.createdAt);
 
   return (
     <Link
@@ -50,17 +53,24 @@ export const QuoteListRow: React.FC<QuoteListRowProps> = ({ quote }) => {
                 />
               ) : null}
             </div>
-            {vehicle ? (
-              <p className="truncate text-xs font-medium text-zinc-500 sm:text-sm">
-                {vehicle}
+            {showService ? (
+              <p
+                className="truncate text-xs font-medium text-zinc-500 sm:text-sm"
+                title={service}
+              >
+                {service}
               </p>
             ) : null}
             <p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">
               <span className="text-zinc-400">
                 {getQuoteStatusLabel(quote.status)}
               </span>
-              <span className="mx-1.5 text-zinc-600">·</span>
-              <span>{formatQuoteListMeta(quote.activityAt)}</span>
+              {createdLabel ? (
+                <>
+                  <span className="mx-1.5 text-zinc-600">·</span>
+                  <span>Created {createdLabel}</span>
+                </>
+              ) : null}
               <span className="mx-1.5 text-zinc-600">·</span>
               <span>{priceLine}</span>
             </p>
