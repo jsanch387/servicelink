@@ -40,6 +40,7 @@ export async function GET() {
           scheduled_date,
           scheduled_start_time,
           note,
+          request_message,
           vehicle_year,
           vehicle_make,
           vehicle_model,

@@ -44,6 +44,11 @@ export const ROUTES = {
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
     QUOTES: '/dashboard/quotes',
+    /** Pending customer quote requests (not full quotes until you create one). */
+    QUOTES_REQUESTS: '/dashboard/quotes/requests',
+    /** Single open request (same row as quotes DB; `customer_requested` + `requested`). */
+    QUOTE_REQUEST_DETAIL: (requestId: string) =>
+      `/dashboard/quotes/requests/${encodeURIComponent(requestId.trim())}`,
     QUOTES_NEW: '/dashboard/quotes/new',
     /** Single quote (owner dashboard). Pass UUID from your data layer. */
     QUOTE_DETAIL: (quoteId: string) =>
@@ -59,6 +64,11 @@ export const ROUTES = {
 
 export const API_ROUTES = {
   CUSTOMERS: '/api/customers',
+  /** Public: customer submits “request quote” from profile. */
+  PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
+  /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */
+  QUOTE_SEND_EXISTING: (quoteId: string) =>
+    `/api/quotes/${encodeURIComponent(quoteId.trim())}/send`,
 } as const;
 
 export const PUBLIC_ROUTES = [

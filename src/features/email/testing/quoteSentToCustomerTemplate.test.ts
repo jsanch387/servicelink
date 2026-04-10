@@ -14,6 +14,7 @@ function basePayload() {
     scheduledStartTime: '09:30:00',
     durationMinutes: 120,
     note: null as string | null,
+    customerRequestMessage: null as string | null,
     vehicleLine: null as string | null,
     publicQuoteUrl: 'https://example.com/q/test-token',
   };

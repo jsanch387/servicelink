@@ -7,17 +7,16 @@ import {
   PhoneInput,
   Select,
   TextArea,
-  formatUsPhoneDigits,
 } from '@/components/shared';
+import { API_ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
-import { CheckIcon } from '@heroicons/react/24/solid';
-import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 import type {
   PublicQuoteRequestFormData,
   PublicQuoteRequestFormErrors,
 } from '../types';
+import { PublicQuoteRequestSuccess } from './PublicQuoteRequestSuccess';
 
 interface PublicQuoteRequestScreenProps {
   businessSlug: string;
@@ -59,6 +58,9 @@ export const PublicQuoteRequestScreen: React.FC<
   const [form, setForm] = useState<PublicQuoteRequestFormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<PublicQuoteRequestFormErrors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [step, setStep] = useState<QuoteRequestStep>('contact');
 
   const showVehicleFields = useMemo(() => {
@@ -176,12 +178,54 @@ export const PublicQuoteRequestScreen: React.FC<
     return !Object.values(filtered).some(Boolean);
   };
 
-  const handlePrimaryAction = () => {
+  const handlePrimaryAction = async () => {
+    setSubmitError(null);
     const idx = steps.indexOf(step);
     const isLast = idx === steps.length - 1;
     if (isLast) {
       if (!validate()) return;
-      setSubmitted(true);
+      setIsSubmitting(true);
+      try {
+        const res = await fetch(API_ROUTES.PUBLIC_QUOTE_REQUEST, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessSlug,
+            customerName: form.customerName,
+            customerEmail: form.customerEmail,
+            customerPhone: form.customerPhone,
+            serviceRequested: form.serviceRequested,
+            vehicleYear: showVehicleFields ? form.vehicleYear : '',
+            vehicleMake: showVehicleFields ? form.vehicleMake : '',
+            vehicleModel: showVehicleFields ? form.vehicleModel : '',
+            timeline: form.timeline,
+            details: form.details,
+          }),
+        });
+        const json = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          error?: string;
+          data?: { quoteId?: string };
+        } | null;
+        const quoteId =
+          typeof json?.data?.quoteId === 'string'
+            ? json.data.quoteId.trim()
+            : '';
+        if (!res.ok || !json?.success || !quoteId) {
+          setSubmitError(
+            typeof json?.error === 'string' && json.error.trim()
+              ? json.error
+              : 'Something went wrong. Please try again.'
+          );
+          return;
+        }
+        setSavedQuoteId(quoteId);
+        setSubmitted(true);
+      } catch {
+        setSubmitError('Something went wrong. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
     if (!canProceedCurrentStep && !validateCurrentStep()) return;
@@ -198,93 +242,13 @@ export const PublicQuoteRequestScreen: React.FC<
     return (
       <main className="min-h-screen bg-[var(--dashboard-bg)] px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-xl">
-          <div className="flex w-full flex-col py-4 pb-10">
-            <div className="mb-6 flex h-20 w-20 self-center items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/25">
-              <CheckIcon className="h-10 w-10 text-white" />
-            </div>
-            <h1 className="mb-2 text-center text-xl font-bold text-white sm:text-2xl">
-              Quote request sent
-            </h1>
-            <p className="mx-auto mb-7 max-w-sm text-center text-sm text-gray-400">
-              Thanks for reaching out to {businessName}. They should review your
-              request soon and follow up by email or phone.
-            </p>
-
-            <GlassCard
-              padding="none"
-              rounded="rounded-2xl"
-              blurColor="bg-emerald-500"
-              showBlur={true}
-              className="mb-7 w-full"
-            >
-              <div className="border-b border-white/10 px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                  Request summary
-                </p>
-              </div>
-              <div className="space-y-4 p-4 sm:p-6">
-                <div>
-                  <p className="mb-0.5 text-xs text-gray-500">Customer</p>
-                  <p className="font-medium text-white">{form.customerName}</p>
-                  <p className="break-words text-sm text-gray-400">
-                    {form.customerEmail}
-                  </p>
-                  <p className="mt-0.5 text-sm text-gray-400 tabular-nums">
-                    {formatUsPhoneDigits(form.customerPhone)}
-                  </p>
-                </div>
-                <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-0.5 text-xs text-gray-500">Service</p>
-                  <p className="font-medium text-white">
-                    {form.serviceRequested}
-                  </p>
-                </div>
-                {showVehicleFields ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-xs text-gray-500">Vehicle</p>
-                      <p className="font-medium text-white">
-                        {[
-                          form.vehicleYear.trim(),
-                          form.vehicleMake.trim(),
-                          form.vehicleModel.trim(),
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      </p>
-                    </div>
-                  </>
-                ) : null}
-                {form.timeline.trim() ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-xs text-gray-500">When?</p>
-                      <p className="font-medium text-white">{form.timeline}</p>
-                    </div>
-                  </>
-                ) : null}
-                <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-0.5 text-xs text-gray-500">
-                    What needs to be done
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm text-gray-400">
-                    {form.details}
-                  </p>
-                </div>
-              </div>
-            </GlassCard>
-
-            <Link
-              href={`/${businessSlug}`}
-              className="inline-flex min-h-[48px] items-center justify-center self-center rounded-xl bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100"
-            >
-              Back to profile
-            </Link>
-          </div>
+          <PublicQuoteRequestSuccess
+            businessName={businessName}
+            businessSlug={businessSlug}
+            form={form}
+            showVehicleFields={showVehicleFields}
+            quoteId={savedQuoteId}
+          />
         </div>
       </main>
     );
@@ -383,6 +347,11 @@ export const PublicQuoteRequestScreen: React.FC<
 
             {step === 'request' ? (
               <>
+                {submitError ? (
+                  <p className="text-sm text-red-400" role="alert">
+                    {submitError}
+                  </p>
+                ) : null}
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                   Quote details
                 </p>
@@ -444,10 +413,11 @@ export const PublicQuoteRequestScreen: React.FC<
               className="min-w-0 flex-1 font-semibold"
               disabled={
                 steps.indexOf(step) === steps.length - 1
-                  ? !canSubmit
+                  ? !canSubmit || isSubmitting
                   : !canProceedCurrentStep
               }
-              onClick={handlePrimaryAction}
+              loading={steps.indexOf(step) === steps.length - 1 && isSubmitting}
+              onClick={() => void handlePrimaryAction()}
             >
               {steps.indexOf(step) === steps.length - 1
                 ? 'Submit request'

@@ -29,7 +29,10 @@ export interface DashboardQuote {
   createdAt: string;
   scheduledDate: string | null;
   scheduledTime: string | null;
+  /** Owner-authored message on the sent quote. */
   note: string | null;
+  /** Customer request text (public “request quote”); not edited by owner flows. */
+  requestMessage: string | null;
   vehicleLine: string | null;
   vehicleYear: string | null;
   vehicleMake: string | null;

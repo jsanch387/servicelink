@@ -11,13 +11,14 @@ import {
   WarningCallout,
   formatUsPhoneDigits,
 } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { API_ROUTES, ROUTES } from '@/constants/routes';
 import { DateSelector } from '@/features/availability/booking/components/DateSelector';
 import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { useDashboardQuoteDetail } from '@/features/quotes/dashboard/hooks/useDashboardQuoteDetail';
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
+import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import {
   centsToWholeDollarDigits,
   durationPickerValueFromQuote,
@@ -27,6 +28,7 @@ import {
 import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
+import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import {
   SERVICE_EDIT_DURATION_ERROR,
   isValidServiceEditDurationInput,
@@ -110,6 +112,10 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const hydratedIdRef = useRef<string | null>(null);
   const editHydratedRef = useRef(false);
   const prevDurationRef = useRef<string | null>(null);
+  const [preferredTimingHint, setPreferredTimingHint] = useState<string | null>(
+    null
+  );
+  const [customerRequestDetails, setCustomerRequestDetails] = useState('');
 
   const [step, setStep] = useState<Step>('details');
   const [customerName, setCustomerName] = useState('');
@@ -132,6 +138,22 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     return r.ok ? r.durationMinutes : 60;
   }, [durationHHmm]);
 
+  const isFirstSendFromEdit = useMemo(
+    () =>
+      Boolean(
+        isEdit &&
+          quote &&
+          (quote.status === 'requested' || quote.status === 'draft')
+      ),
+    [isEdit, quote]
+  );
+
+  const isFinishingCustomerRequest = useMemo(
+    () =>
+      Boolean(isFirstSendFromEdit && quote?.source === 'customer_requested'),
+    [isFirstSendFromEdit, quote?.source]
+  );
+
   const {
     weeklySchedule,
     timeOffBlocks,
@@ -147,6 +169,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     hydratedIdRef.current = null;
     editHydratedRef.current = false;
     prevDurationRef.current = null;
+    setPreferredTimingHint(null);
+    setCustomerRequestDetails('');
   }, [editId]);
 
   useLayoutEffect(() => {
@@ -167,7 +191,20 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setPriceDigits(centsToWholeDollarDigits(quote.totalCents));
     const durPick = durationPickerValueFromQuote(quote);
     setDurationHHmm(durPick);
-    setNote(quote.note ?? '');
+    setPreferredTimingHint(null);
+    setCustomerRequestDetails('');
+    if (quote.source === 'customer_requested') {
+      const raw = resolveCustomerRequestRawText(quote);
+      const parsed = parsePublicQuoteRequestNote(raw);
+      setCustomerRequestDetails(parsed.detailsOnly);
+      setPreferredTimingHint(parsed.preferredTiming);
+      const legacyIntake =
+        !quote.requestMessage?.trim() &&
+        (quote.status === 'requested' || quote.status === 'draft');
+      setNote(legacyIntake ? '' : (quote.note?.trim() ?? ''));
+    } else {
+      setNote(quote.note ?? '');
+    }
     setSelectedDate(parseLocalDateFromYmd(quote.scheduledDate));
     setSelectedTime(pickStartTimeHHmm(quote.scheduledTime));
     setStep('details');
@@ -236,6 +273,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const buildQuoteRequestBody = () => {
     const parsedDollars = parseInt(priceDigits, 10);
     const priceCents = Number.isFinite(parsedDollars) ? parsedDollars * 100 : 0;
+    const noteTrimmed = note.trim();
     return {
       customerName: customerName.trim(),
       customerEmail: customerEmail.trim(),
@@ -246,7 +284,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       serviceName: serviceName.trim(),
       priceCents,
       durationMinutes,
-      note: note.trim() || undefined,
+      note: noteTrimmed || undefined,
       scheduledDate: formatDateForApi(selectedDate!),
       scheduledStartTime: selectedTime!,
     };
@@ -259,6 +297,36 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
 
     try {
       if (isEdit) {
+        if (isFirstSendFromEdit) {
+          const slug = businessSlug?.trim() ?? '';
+          if (!slug) {
+            setSendError(
+              'Add a public profile slug before sending this quote from your business settings.'
+            );
+            return;
+          }
+          const res = await fetch(API_ROUTES.QUOTE_SEND_EXISTING(editId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              businessSlug: slug,
+              ...buildQuoteRequestBody(),
+            }),
+          });
+          const json = (await res.json()) as {
+            success?: boolean;
+            error?: string;
+          };
+          if (!res.ok || !json?.success) {
+            setSendError(
+              json?.error || 'Failed to send quote. Please try again.'
+            );
+            return;
+          }
+          setStep('sent');
+          return;
+        }
+
         const res = await fetch(`/api/quotes/${encodeURIComponent(editId)}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -299,7 +367,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       setStep('sent');
     } catch {
       setSendError(
-        isEdit
+        isEdit && !isFirstSendFromEdit
           ? 'Could not save changes. Please try again.'
           : 'Failed to send quote. Please try again.'
       );
@@ -383,9 +451,15 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 : ROUTES.DASHBOARD.MAIN
             }
             backLabel={isEdit ? 'Quote' : 'Dashboard'}
-            title={isEdit ? 'Edit quote' : 'New Quote'}
+            title={
+              isFinishingCustomerRequest
+                ? 'Create quote'
+                : isEdit
+                  ? 'Edit quote'
+                  : 'New Quote'
+            }
             subtitle={
-              isEdit
+              isEdit && !isFinishingCustomerRequest
                 ? 'Update details, schedule, and save. Your customer will see changes the next time they open the link.'
                 : 'Add details, pick a time, and send your customer an approval link.'
             }
@@ -393,131 +467,177 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
         ) : null}
 
         {step === 'details' && (
-          <GlassCard
-            padding="md"
-            rounded="rounded-2xl"
-            blurColor="bg-zinc-500"
-            showBlur={true}
-            className="w-full"
-          >
-            <div className="space-y-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Customer
-              </p>
-              <Input
-                label="Name"
-                placeholder="e.g. Jordan Lee"
-                value={customerName}
-                onChange={setCustomerName}
-                required
-                autoComplete="name"
-              />
-              <Input
-                label="Email"
-                placeholder="customer@email.com"
-                value={customerEmail}
-                onChange={setCustomerEmail}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                required
-                error={
-                  customerEmail.trim().length > 0 &&
-                  !isValidEmail(customerEmail)
-                    ? 'Enter a valid email address'
-                    : undefined
-                }
-              />
-              <PhoneInput
-                label="Phone"
-                value={customerPhone}
-                onChange={setCustomerPhone}
-                required={false}
-                error={
-                  customerPhone.length > 0 && customerPhone.length < 10
-                    ? 'Enter a full number or leave blank'
-                    : undefined
-                }
-              />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Input
-                  label="Vehicle year"
-                  placeholder="e.g. 2020"
-                  value={vehicleYear}
-                  onChange={setVehicleYear}
-                  inputMode="numeric"
-                  maxLength={4}
-                  required={false}
-                />
-                <Input
-                  label="Vehicle make"
-                  placeholder="e.g. Toyota"
-                  value={vehicleMake}
-                  onChange={setVehicleMake}
-                  required={false}
-                />
-                <Input
-                  label="Vehicle model"
-                  placeholder="e.g. Camry"
-                  value={vehicleModel}
-                  onChange={setVehicleModel}
-                  required={false}
-                />
-              </div>
-
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 pt-2">
-                Service
-              </p>
-              <Input
-                label="Service name"
-                placeholder='e.g. "3 Muddy Razors"'
-                value={serviceName}
-                onChange={setServiceName}
-                required
-              />
-
-              <PriceInput
-                label="Price"
-                placeholder="e.g. $600"
-                value={priceDigits}
-                onChange={setPriceDigits}
-                required
-              />
-
-              <div className="min-w-0">
-                <span className="mb-1.5 block text-left text-sm font-medium text-gray-200">
-                  Duration
-                  <span className="ml-1 text-red-400">*</span>
-                </span>
-                <TimeSelect
-                  variant="duration"
-                  value={durationHHmm}
-                  onChange={setDurationHHmm}
-                  durationPlaceholder="Select duration"
-                />
-                {durationHHmm.trim().length > 0 &&
-                !parseServiceEditDurationForSave(durationHHmm).ok ? (
-                  <p className="mt-1.5 text-sm text-red-400">
-                    {SERVICE_EDIT_DURATION_ERROR}
+          <div className="w-full space-y-6">
+            {customerRequestDetails.trim() ? (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-200">
+                  Customer notes
+                </h3>
+                <GlassCard
+                  padding="md"
+                  rounded="rounded-2xl"
+                  blurColor="bg-zinc-500"
+                  showBlur={true}
+                  className="w-full"
+                >
+                  <p className="whitespace-pre-wrap text-sm text-gray-300">
+                    {customerRequestDetails.trim()}
                   </p>
-                ) : null}
+                </GlassCard>
               </div>
+            ) : null}
+            <GlassCard
+              padding="md"
+              rounded="rounded-2xl"
+              blurColor="bg-zinc-500"
+              showBlur={true}
+              className="w-full"
+            >
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-200">
+                      Customer
+                    </p>
+                    <div className="mt-2 h-px w-full bg-white/10" aria-hidden />
+                  </div>
+                  <div className="space-y-5">
+                    <Input
+                      label="Name"
+                      placeholder="e.g. Jordan Lee"
+                      value={customerName}
+                      onChange={setCustomerName}
+                      required
+                      autoComplete="name"
+                    />
+                    <Input
+                      label="Email"
+                      placeholder="customer@email.com"
+                      value={customerEmail}
+                      onChange={setCustomerEmail}
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      required
+                      error={
+                        customerEmail.trim().length > 0 &&
+                        !isValidEmail(customerEmail)
+                          ? 'Enter a valid email address'
+                          : undefined
+                      }
+                    />
+                    <PhoneInput
+                      label="Phone"
+                      value={customerPhone}
+                      onChange={setCustomerPhone}
+                      required={false}
+                      error={
+                        customerPhone.length > 0 && customerPhone.length < 10
+                          ? 'Enter a full number or leave blank'
+                          : undefined
+                      }
+                    />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <Input
+                        label="Vehicle year"
+                        placeholder="e.g. 2020"
+                        value={vehicleYear}
+                        onChange={setVehicleYear}
+                        inputMode="numeric"
+                        maxLength={4}
+                        required={false}
+                      />
+                      <Input
+                        label="Vehicle make"
+                        placeholder="e.g. Toyota"
+                        value={vehicleMake}
+                        onChange={setVehicleMake}
+                        required={false}
+                      />
+                      <Input
+                        label="Vehicle model"
+                        placeholder="e.g. Camry"
+                        value={vehicleModel}
+                        onChange={setVehicleModel}
+                        required={false}
+                      />
+                    </div>
+                  </div>
+                </div>
 
-              <TextArea
-                label="Note"
-                placeholder='e.g. "Clay bar included"'
-                value={note}
-                onChange={setNote}
-                rows={3}
-                maxLength={500}
-                required={false}
-              />
-            </div>
-          </GlassCard>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-200">
+                      Service
+                    </p>
+                    <div className="mt-2 h-px w-full bg-white/10" aria-hidden />
+                  </div>
+                  <div className="space-y-5">
+                    <Input
+                      label="Service name"
+                      placeholder='e.g. "3 Muddy Razors"'
+                      value={serviceName}
+                      onChange={setServiceName}
+                      required
+                    />
+
+                    <PriceInput
+                      label="Price"
+                      placeholder="e.g. $600"
+                      value={priceDigits}
+                      onChange={setPriceDigits}
+                      required
+                    />
+
+                    <div className="min-w-0">
+                      <span className="mb-1.5 block text-left text-sm font-medium text-gray-200">
+                        Duration
+                        <span className="ml-1 text-red-400">*</span>
+                      </span>
+                      <TimeSelect
+                        variant="duration"
+                        value={durationHHmm}
+                        onChange={setDurationHHmm}
+                        durationPlaceholder="Select duration"
+                      />
+                      {durationHHmm.trim().length > 0 &&
+                      !parseServiceEditDurationForSave(durationHHmm).ok ? (
+                        <p className="mt-1.5 text-sm text-red-400">
+                          {SERVICE_EDIT_DURATION_ERROR}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-gray-200">Notes</p>
+                  <TextArea
+                    placeholder="Add any notes here for your customer."
+                    value={note}
+                    onChange={setNote}
+                    rows={3}
+                    maxLength={500}
+                    required={false}
+                  />
+                </div>
+              </div>
+            </GlassCard>
+          </div>
         )}
 
         {step === 'schedule' && (
           <div className="space-y-6 pt-1">
+            {preferredTimingHint?.trim() ? (
+              <WarningCallout>
+                <span className="font-medium text-amber-100">
+                  Preferred timing ·{' '}
+                </span>
+                <span className="whitespace-pre-wrap">
+                  {preferredTimingHint.trim()}
+                </span>
+              </WarningCallout>
+            ) : null}
             {!hasSavedAvailability && (
               <WarningCallout>
                 We don&apos;t see a saved weekly schedule yet. Showing default
@@ -568,7 +688,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold tracking-tight text-white">
-                {isEdit ? 'Review changes' : 'Review quote'}
+                {isEdit && !isFirstSendFromEdit
+                  ? 'Review changes'
+                  : 'Review quote'}
               </h2>
               <button
                 type="button"
@@ -587,7 +709,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
             >
               <div className="space-y-4">
                 <div>
-                  <p className="mb-1 text-xs tracking-wider text-gray-500">
+                  <p className="mb-1 text-sm font-medium text-gray-500">
                     Service
                   </p>
                   <p className="font-medium text-white">{serviceName.trim()}</p>
@@ -598,7 +720,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 <div className="h-px bg-white/10" />
 
                 <div>
-                  <p className="mb-1 text-xs tracking-wider text-gray-500">
+                  <p className="mb-1 text-sm font-medium text-gray-500">
                     Date &amp; time
                   </p>
                   <p className="font-medium text-white">
@@ -611,7 +733,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 <div className="h-px bg-white/10" />
 
                 <div>
-                  <p className="mb-1 text-xs tracking-wider text-gray-500">
+                  <p className="mb-1 text-sm font-medium text-gray-500">
                     Customer
                   </p>
                   <p className="font-medium text-white">
@@ -632,7 +754,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <>
                     <div className="h-px bg-white/10" />
                     <div>
-                      <p className="mb-1 text-xs tracking-wider text-gray-500">
+                      <p className="mb-1 text-sm font-medium text-gray-500">
                         Vehicle
                       </p>
                       <p className="font-medium text-white">
@@ -648,12 +770,26 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   </>
                 ) : null}
 
+                {customerRequestDetails.trim() ? (
+                  <>
+                    <div className="h-px bg-white/10" />
+                    <div>
+                      <p className="mb-1 text-sm font-medium text-gray-500">
+                        Customer note
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm text-gray-400">
+                        {customerRequestDetails.trim()}
+                      </p>
+                    </div>
+                  </>
+                ) : null}
+
                 {note.trim().length > 0 && (
                   <>
                     <div className="h-px bg-white/10" />
                     <div>
-                      <p className="mb-1 text-xs tracking-wider text-gray-500">
-                        Note
+                      <p className="mb-1 text-sm font-medium text-gray-500">
+                        Your notes
                       </p>
                       <p className="whitespace-pre-wrap text-sm text-gray-400">
                         {note.trim()}
@@ -679,10 +815,10 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               <CheckIcon className="h-10 w-10 text-white" />
             </div>
             <h2 className="mb-2 text-center text-2xl font-bold text-white">
-              {isEdit ? 'Quote updated' : 'Quote sent'}
+              {isEdit && !isFirstSendFromEdit ? 'Quote updated' : 'Quote sent'}
             </h2>
             <p className="mx-auto mb-8 max-w-sm text-center text-sm text-gray-400">
-              {isEdit
+              {isEdit && !isFirstSendFromEdit
                 ? 'Your changes are saved. The customer will see the updated details the next time they open their link.'
                 : 'The quote has been emailed to your customer. They can review the details and accept or decline from that email.'}
             </p>
@@ -694,13 +830,17 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               className="mb-7 w-full"
             >
               <div className="border-b border-white/10 px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                  {isEdit ? 'Updated summary' : 'Quote summary'}
+                <p className="text-xs font-semibold text-gray-400">
+                  {isEdit && !isFirstSendFromEdit
+                    ? 'Updated summary'
+                    : 'Quote summary'}
                 </p>
               </div>
               <div className="space-y-4 p-4 sm:p-6">
                 <div>
-                  <p className="mb-0.5 text-xs text-gray-500">Service</p>
+                  <p className="mb-0.5 text-sm font-medium text-gray-500">
+                    Service
+                  </p>
                   <p className="font-semibold text-white">
                     {serviceName.trim()}
                   </p>
@@ -710,7 +850,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 </div>
                 <div className="h-px bg-white/10" />
                 <div>
-                  <p className="mb-0.5 text-xs text-gray-500">Customer</p>
+                  <p className="mb-0.5 text-sm font-medium text-gray-500">
+                    Customer
+                  </p>
                   <p className="font-medium text-white">
                     {customerName.trim()}
                   </p>
@@ -729,7 +871,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <>
                     <div className="h-px bg-white/10" />
                     <div>
-                      <p className="mb-0.5 text-xs text-gray-500">Vehicle</p>
+                      <p className="mb-0.5 text-sm font-medium text-gray-500">
+                        Vehicle
+                      </p>
                       <p className="font-medium text-white">
                         {[
                           vehicleYear.trim(),
@@ -744,7 +888,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 ) : null}
                 <div className="h-px bg-white/10" />
                 <div>
-                  <p className="mb-0.5 text-xs text-gray-500">
+                  <p className="mb-0.5 text-sm font-medium text-gray-500">
                     Date &amp; time
                   </p>
                   <p className="font-medium text-white">
@@ -754,11 +898,26 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     Starts {formatTime12(selectedTime)}
                   </p>
                 </div>
+                {customerRequestDetails.trim() ? (
+                  <>
+                    <div className="h-px bg-white/10" />
+                    <div>
+                      <p className="mb-0.5 text-sm font-medium text-gray-500">
+                        Customer note
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm text-gray-400">
+                        {customerRequestDetails.trim()}
+                      </p>
+                    </div>
+                  </>
+                ) : null}
                 {note.trim().length > 0 && (
                   <>
                     <div className="h-px bg-white/10" />
                     <div>
-                      <p className="mb-0.5 text-xs text-gray-500">Note</p>
+                      <p className="mb-0.5 text-sm font-medium text-gray-500">
+                        Your notes
+                      </p>
                       <p className="whitespace-pre-wrap text-sm text-gray-400">
                         {note.trim()}
                       </p>
@@ -849,10 +1008,10 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 onClick={handleSubmitQuote}
               >
                 {sendingQuote
-                  ? isEdit
+                  ? isEdit && !isFirstSendFromEdit
                     ? 'Saving...'
                     : 'Sending...'
-                  : isEdit
+                  : isEdit && !isFirstSendFromEdit
                     ? 'Save changes'
                     : 'Send quote'}
               </Button>

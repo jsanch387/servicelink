@@ -67,6 +67,7 @@ export function mapQuoteRowToDashboardQuote(
     scheduledDate: row.scheduled_date,
     scheduledTime: row.scheduled_start_time,
     note: row.note,
+    requestMessage: row.request_message ?? null,
     vehicleYear: row.vehicle_year,
     vehicleMake: row.vehicle_make,
     vehicleModel: row.vehicle_model,

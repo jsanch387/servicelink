@@ -60,6 +60,7 @@ function rowToQuotePayload(
     scheduled_date: (row.scheduled_date as string | null) ?? null,
     scheduled_start_time: (row.scheduled_start_time as string | null) ?? null,
     note: (row.note as string | null) ?? null,
+    request_message: (row.request_message as string | null) ?? null,
     vehicle_year: (row.vehicle_year as string | null) ?? null,
     vehicle_make: (row.vehicle_make as string | null) ?? null,
     vehicle_model: (row.vehicle_model as string | null) ?? null,

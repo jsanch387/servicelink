@@ -27,6 +27,7 @@ export interface QuoteDbRow {
   scheduled_date: string | null;
   scheduled_start_time: string | null;
   note: string | null;
+  request_message: string | null;
   vehicle_year: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;

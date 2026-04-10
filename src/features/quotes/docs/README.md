@@ -10,6 +10,8 @@ Single place to see **where code lives**, **which HTTP APIs exist**, and **how c
 |-----|----------|
 | [QUOTES_TABLE.md](./QUOTES_TABLE.md) | `quotes` columns, statuses, owner vs customer request |
 | [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md) | `quote_public_links`, token hash, expiry, RLS notes |
+| [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md) | **Public quote request** intake vs **availability booking**, data flow, approve → V2 `bookings` |
+| [BOOKINGS_CUSTOMER_ID.md](./BOOKINGS_CUSTOMER_ID.md) | Why `bookings.customer_id` must exist when creating bookings from quotes |
 
 Business scope: quotes belong to `business_profiles` via `quotes.business_id`. Owner APIs resolve the current business with `src/server/resolveCurrentBusinessId.ts`.
 
@@ -55,6 +57,7 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | `/dashboard/quotes/[quoteId]` | `src/app/dashboard/quotes/[quoteId]/page.tsx` | Detail |
 | `/dashboard/quotes/[quoteId]/edit` | `src/app/dashboard/quotes/[quoteId]/edit/page.tsx` | Edit (`CreateQuoteScreen` `mode="edit"`) |
 | `/q/[token]` | `src/app/q/[token]/page.tsx` | **Public** quote view (server, admin client); increments view metadata; shows `PublicQuoteRespondActions` |
+| `/[business-slug]/quote` | `src/app/[business-slug]/quote/page.tsx` | **Public** “request quote” wizard (`PublicQuoteRequestScreen`) → `POST /api/public/quote-request` |
 
 **Central route constants:** `src/constants/routes.ts` — `ROUTES.DASHBOARD.QUOTES`, `QUOTES_NEW`, `QUOTE_DETAIL(id)`, `QUOTE_EDIT(id)`.
 
@@ -97,6 +100,34 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 ---
 
+### `POST /api/public/quote-request`
+
+**Auth:** None (public). Uses **admin** Supabase client.
+
+**Purpose:** Customer submits **Request quote** from the business profile (`/[businessSlug]/quote`). Inserts a `quotes` row with `source: customer_requested`, `status: requested`, `request_message` (timeline + details), `note: null`. **No** `quote_public_links` row until the owner sends the quote.
+
+**Body:** Validated by `validatePublicQuoteRequestBody` (`public-request/validatePublicQuoteRequestBody.ts`).
+
+**Success:** `201` — `{ success: true, data: { quoteId } }`.
+
+**Code:** `src/app/api/public/quote-request/route.ts` → `insertCustomerQuoteRequest`
+
+**See:** [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md)
+
+---
+
+### `POST /api/quotes/[id]/send`
+
+**Auth:** Session; business must own the quote (slug + `resolveCurrentBusinessId`).
+
+**Purpose:** **First send** for an existing row in `requested` or `draft` (e.g. customer request the owner finishes in `CreateQuoteScreen`). Updates the quote to `sent`, creates/revokes links like `POST /api/quotes/send`, emails the customer. Same payload shape as send + `businessSlug`.
+
+**Code:** `src/app/api/quotes/[id]/send/route.ts` → `sendExistingQuoteAsSent`
+
+**See:** [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md)
+
+---
+
 ### `GET /api/quotes`
 
 **Auth:** Session + `resolveCurrentBusinessId`.
@@ -129,7 +160,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Body:** Same fields as send **except** `businessSlug` (validated by `validateUpdateQuoteBody` / `validateQuotePayloadFields`).
 
-**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `updated_at`. (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
+**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `updated_at`. **`request_message` is not updated** by PATCH (customer intake text). (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
 
 **Success:** `{ success: true, quote: DashboardQuote }` (reloaded after update).
 
@@ -208,8 +239,9 @@ Scheduling reuses availability data: `useOwnerQuoteScheduling`, `usePublicBlocke
 
 ## UI flows (customer)
 
-1. Open `/q/[token]` (server render reads link + quote, may set `viewed`).
-2. `PublicQuoteRespondActions` calls `POST /api/quotes/respond`.
+1. **Request quote (optional):** `/[businessSlug]/quote` → `PublicQuoteRequestScreen` → `POST /api/public/quote-request` (see [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md)).
+2. **Review sent quote:** Open `/q/[token]` (server render reads link + quote, may set `viewed`).
+3. `PublicQuoteRespondActions` calls `POST /api/quotes/respond`.
 
 ---
 
@@ -221,6 +253,7 @@ Scheduling reuses availability data: `useOwnerQuoteScheduling`, `usePublicBlocke
 | `send/validateSendQuoteBody.ts` | `POST /api/quotes/send` |
 | `edit/validateUpdateQuoteBody.ts` | `PATCH /api/quotes/[id]` |
 | `public-view/validateQuoteRespondRequest.ts` | `POST /api/quotes/respond` |
+| `public-request/validatePublicQuoteRequestBody.ts` | `POST /api/public/quote-request` |
 
 ---
 
@@ -246,5 +279,6 @@ Run: `npm test`
 When you change behavior, update:
 
 1. This `README.md` (API tables, flows, file paths).
-2. `QUOTES_TABLE.md` / `QUOTE_PUBLIC_LINKS_TABLE.md` if schema or lifecycle changes.
-3. Relevant tests under `src/features/quotes/testing/`.
+2. `PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md` if public request, send-existing, or approve→booking behavior changes.
+3. `QUOTES_TABLE.md` / `QUOTE_PUBLIC_LINKS_TABLE.md` if schema or lifecycle changes.
+4. Relevant tests under `src/features/quotes/testing/`.

@@ -1,5 +1,6 @@
 import { GlassCard } from '@/components/shared';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { formatUsPhoneDigits } from '@/lib/formatUsPhone';
@@ -27,6 +28,15 @@ function formatDateLong(dateStr: string): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function customerRequestRawFromRow(q: {
+  source: string;
+  note: string | null;
+  request_message: string | null;
+}): string {
+  if (q.source !== 'customer_requested') return '';
+  return q.request_message?.trim() || q.note?.trim() || '';
 }
 
 function formatTime12(hhmm: string): string {
@@ -78,7 +88,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteRow } = await db
     .from('quotes')
     .select(
-      'id, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, scheduled_date, scheduled_start_time, status'
+      'id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status'
     )
     .eq('id', link.quote_id)
     .maybeSingle();
@@ -87,6 +97,7 @@ export default async function PublicQuoteViewPage({
 
   const quote = quoteRow as {
     id: string;
+    source: string;
     customer_name: string;
     customer_email: string;
     customer_phone: string | null;
@@ -97,6 +108,7 @@ export default async function PublicQuoteViewPage({
     price_cents: number;
     duration_minutes: number;
     note: string | null;
+    request_message: string | null;
     scheduled_date: string;
     scheduled_start_time: string;
     status: string;
@@ -124,7 +136,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteFresh } = await db
     .from('quotes')
     .select(
-      'id, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, scheduled_date, scheduled_start_time, status'
+      'id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status'
     )
     .eq('id', quote.id)
     .maybeSingle();
@@ -140,6 +152,19 @@ export default async function PublicQuoteViewPage({
     customerPhoneDigits.length === 10
       ? formatUsPhoneDigits(customerPhoneDigits)
       : null;
+
+  const isCustomerRequested = displayQuote.source === 'customer_requested';
+  const requestRaw = customerRequestRawFromRow(displayQuote);
+  const parsedRequest = parsePublicQuoteRequestNote(requestRaw);
+  const yourRequestText =
+    isCustomerRequested && isAccepted
+      ? parsedRequest.detailsOnly.trim()
+      : isCustomerRequested
+        ? requestRaw.trim()
+        : '';
+  const ownerNoteText = displayQuote.note?.trim() ?? '';
+  const showYourRequestBlock = yourRequestText.length > 0;
+  const showOwnerNoteBlock = ownerNoteText.length > 0;
 
   return (
     <main className="min-h-screen bg-[var(--dashboard-bg)] px-4 py-8 sm:px-6 sm:py-10">
@@ -259,15 +284,28 @@ export default async function PublicQuoteViewPage({
                 </div>
               </>
             ) : null}
-            {displayQuote.note?.trim() ? (
+            {showYourRequestBlock ? (
               <>
                 <div className="h-px bg-white/10" />
                 <div>
                   <p className="mb-1 text-xs tracking-wider text-gray-500">
-                    Note
+                    Customer note
                   </p>
                   <p className="whitespace-pre-wrap text-sm text-gray-400">
-                    {displayQuote.note}
+                    {yourRequestText}
+                  </p>
+                </div>
+              </>
+            ) : null}
+            {showOwnerNoteBlock ? (
+              <>
+                <div className="h-px bg-white/10" />
+                <div>
+                  <p className="mb-1 text-xs tracking-wider text-gray-500">
+                    Notes from the business
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm text-gray-400">
+                    {ownerNoteText}
                   </p>
                 </div>
               </>

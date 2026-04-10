@@ -27,6 +27,7 @@ export type QuoteRowForApprovedBooking = {
   scheduled_date: string | null;
   scheduled_start_time: string | null;
   note: string | null;
+  request_message: string | null;
   vehicle_year: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
@@ -68,6 +69,13 @@ export async function createBookingFromApprovedQuote(
     throw new Error('Quote is missing a service street address');
   }
 
+  const bookingNoteParts: string[] = [];
+  const reqMsg = quote.request_message?.trim();
+  if (reqMsg) bookingNoteParts.push(`Customer note:\n${reqMsg}`);
+  const ownerMsg = quote.note?.trim();
+  if (ownerMsg) bookingNoteParts.push(`Your notes:\n${ownerMsg}`);
+  const bookingNotes = bookingNoteParts.join('\n\n');
+
   const customer = {
     fullName: quote.customer_name.trim(),
     email: quote.customer_email.trim(),
@@ -80,7 +88,7 @@ export async function createBookingFromApprovedQuote(
     vehicleYear: quote.vehicle_year?.trim() ?? '',
     vehicleMake: quote.vehicle_make?.trim() ?? '',
     vehicleModel: quote.vehicle_model?.trim() ?? '',
-    notes: quote.note?.trim() ?? '',
+    notes: bookingNotes,
   };
 
   const { id: bookingId } = await createBooking(supabase, {

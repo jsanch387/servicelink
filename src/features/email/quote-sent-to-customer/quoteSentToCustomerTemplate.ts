@@ -65,10 +65,18 @@ export function buildQuoteSentToCustomerHtml(
       </tr>`
     : '';
 
-  const noteBlock = payload.note?.trim()
+  const customerRequestBlock = payload.customerRequestMessage?.trim()
     ? `
           <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-            <div class="section-title">Message</div>
+            <div class="section-title">Customer note</div>
+            <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(payload.customerRequestMessage.trim())}</p>
+          </div>`
+    : '';
+
+  const ownerMessageBlock = payload.note?.trim()
+    ? `
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+            <div class="section-title">Notes from the business</div>
             <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(payload.note.trim())}</p>
           </div>`
     : '';
@@ -206,7 +214,8 @@ export function buildQuoteSentToCustomerHtml(
                 <td class="detail-value" style="padding: 0; vertical-align: top; color: #2563eb; font-weight: 700;">${escapeHtml(priceLabel)}</td>
               </tr>
             </table>
-            ${noteBlock}
+            ${customerRequestBlock}
+            ${ownerMessageBlock}
           </div>
 
           <p style="margin: 0 0 8px 0;">

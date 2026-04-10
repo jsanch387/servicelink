@@ -8,7 +8,10 @@ export interface QuoteSentToCustomerPayload {
   /** `HH:mm` (24h) as entered for the quote */
   scheduledStartTime: string;
   durationMinutes: number;
+  /** Owner-authored message on the quote. */
   note: string | null;
+  /** Customer’s original request text (reference), when quote came from a request. */
+  customerRequestMessage: string | null;
   vehicleLine: string | null;
   publicQuoteUrl: string;
 }

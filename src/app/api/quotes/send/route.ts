@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
         scheduledStartTime: body.scheduledStartTimeForDb,
         durationMinutes: body.durationMinutes,
         note: body.note,
+        customerRequestMessage: null,
         vehicleLine,
         publicQuoteUrl: publicUrl,
       };

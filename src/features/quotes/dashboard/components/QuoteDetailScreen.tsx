@@ -3,6 +3,7 @@
 import { Button, GlassCard, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import {
   ArrowTopRightOnSquareIcon,
   CheckIcon,
@@ -18,6 +19,7 @@ import {
 } from '../utils/customerContactDisplay';
 import { isDashboardQuoteEditableByOwner } from '../utils/isDashboardQuoteEditableByOwner';
 import { parseDeleteQuoteApiResponse } from '../utils/parseDeleteQuoteApiResponse';
+import { parsePublicQuoteRequestNote } from '../utils/parsePublicQuoteRequestNote';
 import {
   getPublicQuoteAbsoluteUrl,
   getPublicQuotePath,
@@ -150,7 +152,7 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
   );
 };
 
-interface QuoteDetailContentProps {
+export interface QuoteDetailContentProps {
   quote: DashboardQuote;
   copied: boolean;
   onCopyLink: () => void;
@@ -160,9 +162,24 @@ interface QuoteDetailContentProps {
   deleting: boolean;
   deleteError: string | null;
   onConfirmDelete: () => void;
+  backHref?: string;
+  backLabel?: string;
+  /** Replaces default subtitle under the customer name. */
+  headerSubtitle?: string;
+  /** Callout below the header (e.g. sample preview). */
+  infoBanner?: React.ReactNode;
+  /** When set and the row is editable, used instead of the edit URL (e.g. new quote with prefill for demos). */
+  primaryHrefOverride?: string;
+  showDeleteButton?: boolean;
+  /** Hide until a public link exists; off for mock rows with fake tokens. */
+  showQuoteLinkCard?: boolean;
+  /** When set, shows a “Service location” card. */
+  serviceLocationLine?: string | null;
+  /** When false, hides the Activity card (e.g. open quote request view). */
+  showActivityCard?: boolean;
 }
 
-function QuoteDetailContent({
+export function QuoteDetailContent({
   quote,
   copied,
   onCopyLink,
@@ -172,6 +189,15 @@ function QuoteDetailContent({
   deleting,
   deleteError,
   onConfirmDelete,
+  backHref = ROUTES.DASHBOARD.QUOTES,
+  backLabel = 'Quotes',
+  headerSubtitle,
+  infoBanner,
+  primaryHrefOverride,
+  showDeleteButton = true,
+  showQuoteLinkCard = true,
+  serviceLocationLine,
+  showActivityCard = true,
 }: QuoteDetailContentProps) {
   const blur = getQuoteStatusBlurClass(quote.status);
   const outcomeDot = getQuoteOutcomeDotClass(quote.status);
@@ -180,18 +206,42 @@ function QuoteDetailContent({
   const hasPublicLink = Boolean(quote.publicToken.trim());
   const publicPath = getPublicQuotePath(quote.publicToken);
   const canEdit = isDashboardQuoteEditableByOwner(quote.status);
+  const isPendingRequest =
+    quote.source === 'customer_requested' && quote.status === 'requested';
+
+  const primaryHref = canEdit
+    ? (primaryHrefOverride ?? ROUTES.DASHBOARD.QUOTE_EDIT(quote.id))
+    : undefined;
+
+  const customerRequestRaw = resolveCustomerRequestRawText(quote);
+  const parsedCustomerRequest = parsePublicQuoteRequestNote(customerRequestRaw);
+  const isCustomerRequestSource = quote.source === 'customer_requested';
+  const timingFromRequest = parsedCustomerRequest.preferredTiming?.trim() ?? '';
+  const preferredTimingTrimmed =
+    isCustomerRequestSource && timingFromRequest ? timingFromRequest : '';
+  const customerDetailsTrimmed = isCustomerRequestSource
+    ? parsedCustomerRequest.detailsOnly.trim()
+    : '';
+  const ownerNoteTrimmed = quote.note?.trim() ?? '';
+  const showOwnerNotesOnlyBlock =
+    !isCustomerRequestSource && ownerNoteTrimmed.length > 0;
 
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
       <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:max-w-4xl sm:px-6 sm:py-10">
         <QuoteFlowHeader
-          backHref={ROUTES.DASHBOARD.QUOTES}
-          backLabel="Quotes"
+          backHref={backHref}
+          backLabel={backLabel}
           title={quote.customerName}
           subtitle={
-            quote.vehicleLine?.trim() || quote.serviceName || 'Quote details'
+            headerSubtitle?.trim() ||
+            quote.vehicleLine?.trim() ||
+            quote.serviceName ||
+            'Quote details'
           }
         />
+
+        {infoBanner ? <div className="mb-4">{infoBanner}</div> : null}
 
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.08] px-3 py-1.5 text-sm font-medium text-gray-200 ring-1 ring-inset ring-white/10">
@@ -222,13 +272,46 @@ function QuoteDetailContent({
                 <p className="mb-1 text-xs text-gray-500">Service</p>
                 <p className="font-medium text-white">{quote.serviceName}</p>
               </div>
-              {quote.note?.trim() ? (
+              {preferredTimingTrimmed ? (
+                <>
+                  <div className="h-px bg-white/10" />
+                  <div>
+                    <p className="mb-1 text-xs text-gray-500">Preferred time</p>
+                    <p className="font-medium text-white">
+                      {preferredTimingTrimmed}
+                    </p>
+                  </div>
+                </>
+              ) : null}
+              {customerDetailsTrimmed ? (
+                <>
+                  <div className="h-px bg-white/10" />
+                  <div>
+                    <p className="mb-1 text-xs text-gray-500">Customer note</p>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
+                      {customerDetailsTrimmed}
+                    </p>
+                  </div>
+                </>
+              ) : null}
+              {isCustomerRequestSource && ownerNoteTrimmed ? (
+                <>
+                  <div className="h-px bg-white/10" />
+                  <div>
+                    <p className="mb-1 text-xs text-gray-500">Your notes</p>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
+                      {ownerNoteTrimmed}
+                    </p>
+                  </div>
+                </>
+              ) : null}
+              {showOwnerNotesOnlyBlock ? (
                 <>
                   <div className="h-px bg-white/10" />
                   <div>
                     <p className="mb-1 text-xs text-gray-500">Notes</p>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                      {quote.note}
+                      {ownerNoteTrimmed}
                     </p>
                   </div>
                 </>
@@ -289,89 +372,108 @@ function QuoteDetailContent({
             </GlassCard>
           ) : null}
 
-          <GlassCard
-            blurColor="bg-sky-600"
-            rounded="rounded-2xl"
-            className="border-white/[0.08] bg-white/[0.03]"
-          >
-            <h2 className="text-sm font-semibold text-white">Quote link</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              {hasPublicLink
-                ? 'Send this to your customer so they can review the quote and accept or decline.'
-                : 'A shareable link appears here after you send the quote.'}
-            </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={!hasPublicLink}
-                onClick={onCopyLink}
-                icon={
-                  copied ? (
-                    <CheckIcon className="h-4 w-4 text-emerald-400" />
-                  ) : (
-                    <ClipboardDocumentIcon className="h-4 w-4" />
-                  )
-                }
-              >
-                {copied ? 'Copied' : 'Copy link'}
-              </Button>
-              <Button
-                href={hasPublicLink ? publicPath : undefined}
-                variant="secondary"
-                size="sm"
-                disabled={!hasPublicLink}
-                icon={<ArrowTopRightOnSquareIcon className="h-4 w-4" />}
-              >
-                View quote
-              </Button>
-            </div>
-          </GlassCard>
+          {serviceLocationLine ? (
+            <GlassCard
+              blurColor="bg-emerald-900/40"
+              rounded="rounded-2xl"
+              className="border-white/[0.08] bg-white/[0.03]"
+            >
+              <h2 className="text-sm font-semibold text-white">
+                Service location
+              </h2>
+              <p className="mt-2 text-sm text-gray-300">
+                {serviceLocationLine}
+              </p>
+            </GlassCard>
+          ) : null}
 
-          <GlassCard
-            blurColor="bg-zinc-600"
-            rounded="rounded-2xl"
-            className="border-white/[0.08] bg-white/[0.03]"
-          >
-            <h2 className="text-sm font-semibold text-white">Activity</h2>
-            <dl className="mt-3 space-y-3 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-500">Created</dt>
-                <dd className="text-right text-gray-300">
-                  {formatQuoteDetailDateLong(quote.createdAt)}
-                </dd>
+          {showQuoteLinkCard ? (
+            <GlassCard
+              blurColor="bg-sky-600"
+              rounded="rounded-2xl"
+              className="border-white/[0.08] bg-white/[0.03]"
+            >
+              <h2 className="text-sm font-semibold text-white">Quote link</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {hasPublicLink
+                  ? 'Send this to your customer so they can review the quote and accept or decline.'
+                  : 'A shareable link appears here after you send the quote.'}
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={!hasPublicLink}
+                  onClick={onCopyLink}
+                  icon={
+                    copied ? (
+                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                    ) : (
+                      <ClipboardDocumentIcon className="h-4 w-4" />
+                    )
+                  }
+                >
+                  {copied ? 'Copied' : 'Copy link'}
+                </Button>
+                <Button
+                  href={hasPublicLink ? publicPath : undefined}
+                  variant="secondary"
+                  size="sm"
+                  disabled={!hasPublicLink}
+                  icon={<ArrowTopRightOnSquareIcon className="h-4 w-4" />}
+                >
+                  View quote
+                </Button>
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-500">Last activity</dt>
-                <dd className="text-right text-gray-300">
-                  {formatQuoteDetailDateLong(quote.activityAt)}
-                </dd>
-              </div>
-              {quote.scheduledDate ? (
+            </GlassCard>
+          ) : null}
+
+          {showActivityCard ? (
+            <GlassCard
+              blurColor="bg-zinc-600"
+              rounded="rounded-2xl"
+              className="border-white/[0.08] bg-white/[0.03]"
+            >
+              <h2 className="text-sm font-semibold text-white">Activity</h2>
+              <dl className="mt-3 space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-gray-500">Scheduled</dt>
+                  <dt className="text-gray-500">Created</dt>
                   <dd className="text-right text-gray-300">
-                    {formatQuoteDetailDateLong(
-                      `${quote.scheduledDate}T12:00:00`
-                    )}
-                    {quote.scheduledTime
-                      ? ` · ${formatQuoteDetailTime12(quote.scheduledTime)}`
-                      : ''}
+                    {formatQuoteDetailDateLong(quote.createdAt)}
                   </dd>
                 </div>
-              ) : (
                 <div className="flex justify-between gap-4">
-                  <dt className="text-gray-500">Scheduled</dt>
-                  <dd className="text-right text-gray-500">Not set</dd>
+                  <dt className="text-gray-500">Last activity</dt>
+                  <dd className="text-right text-gray-300">
+                    {formatQuoteDetailDateLong(quote.activityAt)}
+                  </dd>
                 </div>
-              )}
-            </dl>
-          </GlassCard>
+                {quote.scheduledDate ? (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-gray-500">Scheduled</dt>
+                    <dd className="text-right text-gray-300">
+                      {formatQuoteDetailDateLong(
+                        `${quote.scheduledDate}T12:00:00`
+                      )}
+                      {quote.scheduledTime
+                        ? ` · ${formatQuoteDetailTime12(quote.scheduledTime)}`
+                        : ''}
+                    </dd>
+                  </div>
+                ) : (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-gray-500">Scheduled</dt>
+                    <dd className="text-right text-gray-500">Not set</dd>
+                  </div>
+                )}
+              </dl>
+            </GlassCard>
+          ) : null}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Button
-              href={canEdit ? ROUTES.DASHBOARD.QUOTE_EDIT(quote.id) : undefined}
+              href={primaryHref}
               variant="inverse"
               size="md"
               className="w-full sm:w-auto"
@@ -382,32 +484,36 @@ function QuoteDetailContent({
                   : 'Editing is only available before the customer accepts or declines.'
               }
             >
-              Edit quote
+              {isPendingRequest ? 'Create quote' : 'Edit quote'}
             </Button>
-            <button
-              type="button"
-              onClick={onOpenDelete}
-              className="w-full cursor-pointer py-3 text-center text-sm font-semibold text-rose-400/90 transition-colors hover:text-rose-300 sm:w-auto sm:py-2"
-            >
-              Delete quote
-            </button>
+            {showDeleteButton ? (
+              <button
+                type="button"
+                onClick={onOpenDelete}
+                className="w-full cursor-pointer py-3 text-center text-sm font-semibold text-rose-400/90 transition-colors hover:text-rose-300 sm:w-auto sm:py-2"
+              >
+                Delete quote
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <Modal
-          isOpen={deleteOpen}
-          onClose={onCloseDelete}
-          title="Delete quote"
-          maxWidth="sm"
-        >
-          <DeleteQuoteModalBody
-            quote={quote}
-            isDeleting={deleting}
-            error={deleteError}
-            onConfirm={onConfirmDelete}
+        {showDeleteButton ? (
+          <Modal
+            isOpen={deleteOpen}
             onClose={onCloseDelete}
-          />
-        </Modal>
+            title="Delete quote"
+            maxWidth="sm"
+          >
+            <DeleteQuoteModalBody
+              quote={quote}
+              isDeleting={deleting}
+              error={deleteError}
+              onConfirm={onConfirmDelete}
+              onClose={onCloseDelete}
+            />
+          </Modal>
+        ) : null}
       </div>
     </main>
   );
