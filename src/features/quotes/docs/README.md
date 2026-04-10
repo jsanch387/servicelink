@@ -37,7 +37,9 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | `edit/validateUpdateQuoteBody.ts` | Re-exports shared payload validation (PATCH). |
 | `shared/validateQuotePayloadFields.ts` | **Shared** field rules for send + patch (customer, service, price, duration, schedule, phone). |
 | `shared/utils/resolveQuoteTokenHash.ts` | Raw URL token → SHA-256 hex; 64-char hex passthrough (dashboard uses stored hash). |
-| `public-view/validateQuoteRespondRequest.ts` | POST respond: `token`, `decision`, optional `serviceAddress` rules. |
+| `public-view/validateQuoteRespondRequest.ts` | POST respond: `token`, `decision`, `serviceAddress` required when approving. |
+| `server/createBookingFromApprovedQuote.ts` | Map approved quote → `createBooking` (V2 bookings + customer upsert). |
+| `server/quoteApprovalSideEffects.ts` | After approve: cap check, time-off, link `booking_id`, owner notify/email. |
 | `public-view/components/PublicQuoteRespondActions.tsx` | Customer UI; `POST /api/quotes/respond`. |
 | `public-request/components/PublicQuoteRequestScreen.tsx` | Public profile “request quote” flow (separate from dashboard create). |
 | `hooks/useOwnerQuoteScheduling.ts` | Weekly schedule + time off for quote date/time picker. |
@@ -66,7 +68,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Auth:** Session required (`createSupabaseServerClient` user).
 
-**Purpose:** Create a `quotes` row (`status: sent`), insert `quote_public_links` with hashed token, return customer URL.
+**Purpose:** Create a `quotes` row (`status: sent`), insert `quote_public_links` with hashed token, return customer URL. **Service address is not collected here** — the customer enters it when they accept the quote (`POST /api/quotes/respond`).
 
 **Body (validated by `validateSendQuoteBody`):**
 
@@ -127,7 +129,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Body:** Same fields as send **except** `businessSlug` (validated by `validateUpdateQuoteBody` / `validateQuotePayloadFields`).
 
-**DB columns updated:** `customer_*`, `vehicle_*`, `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `updated_at`.
+**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `updated_at`. (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
 
 **Success:** `{ success: true, quote: DashboardQuote }` (reloaded after update).
 
@@ -159,17 +161,28 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Purpose:** Customer approve/decline; updates `quotes` + `quote_public_links` response fields.
 
+**Approve side effects:** When the customer approves (`status` was `sent` or `viewed`), the route atomically sets `quotes.status` to `approved`, stores `service_address` (legacy DBs without that column fall back to appending the address on `note`), then:
+
+1. Creates a V2 **`bookings`** row via `createBooking` (`service_name` from free-text quote; `service_id` null). **`quotes.booking_id`** is set only if the row still had no booking (avoids duplicate bookings under concurrent requests).
+2. Upserts **`customers`** for that business through the same path as public availability bookings (`upsertCustomerForBooking`); `phone` is stored as digits-only when present.
+3. Applies the same **free-tier monthly booking cap** as `POST /api/public/bookings` (check before insert; counter increments only after the quote is successfully linked to the booking).
+4. Blocks approval if the slot overlaps the business’s **time-off** blocks (same check as public booking).
+5. Updates **`quote_public_links`** (`response_status`, `responded_at`) and notifies the owner with the **availability booking** email + in-app notification (`notifyOwnerForAvailabilityBookingCreated`), matching the public booking flow. No customer confirmation email is sent on approve.
+
+**Repair:** If a quote is already `approved` but `booking_id` is still null (e.g. partial failure), a later approve request can complete booking creation and linking.
+
 **Body (validated by `validateQuoteRespondRequest`):**
 
 | Field | Required | Notes |
 |-------|----------|--------|
 | `token` | yes | Raw token from URL **or** hash-compatible string; resolved via `resolveQuoteTokenHash`. |
 | `decision` | yes | `"approve"` \| `"decline"`. |
-| `serviceAddress` | required if approve | Trimmed length ≥ 6 (combined address from UI). |
+| `address` | preferred when approve | `{ street, unit?, city, state, zip }` — same shape as public UI (`quoteRespondAddress` rules). |
+| `serviceAddress` | legacy approve | Single line, trimmed length ≥ 6, used when `address` is omitted. |
 
-**Typical responses:** `200` `{ success, status, ... }` (includes `alreadyResponded` in some branches), `400` invalid body, `404` link/quote, `410` expired/revoked link, `409` conflicting state, `500`.
+**Typical responses:** `200` `{ success, status, ... }` (includes `alreadyResponded` in some branches), `400` invalid body, `403` free-tier cap, `404` link/quote, `409` conflicting state / time no longer available, `410` expired/revoked link, `500`.
 
-**Code:** `src/app/api/quotes/respond/route.ts`
+**Code:** `src/app/api/quotes/respond/route.ts` — booking helpers: `src/features/quotes/server/createBookingFromApprovedQuote.ts`, `src/features/quotes/server/quoteApprovalSideEffects.ts`.
 
 ---
 
@@ -221,6 +234,7 @@ Vitest includes `src/features/**/testing/**/*.test.ts` (see root `vitest.config.
 | `testing/quotePayloadValidation.test.ts` | Shared payload + send requires slug |
 | `testing/quoteRespondValidation.test.ts` | `validateQuoteRespondRequest` |
 | `testing/resolveQuoteTokenHash.test.ts` | Token vs hash resolution |
+| `testing/quoteStartTimeToHHmm.test.ts` | `quoteStartTimeToHHmm` (DB time → `HH:mm`) |
 | `testing/deleteQuoteApiResponse.test.ts` | `parseDeleteQuoteApiResponse` |
 
 Run: `npm test`

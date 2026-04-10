@@ -44,7 +44,13 @@ export async function loadDashboardQuoteById(
           note,
           vehicle_year,
           vehicle_make,
-          vehicle_model
+          vehicle_model,
+          customer_street_address,
+          customer_unit_apt,
+          customer_city,
+          customer_state,
+          customer_zip,
+          service_address
         `
     )
     .eq('business_id', businessId)

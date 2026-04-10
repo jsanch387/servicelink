@@ -1,6 +1,9 @@
 /**
  * Shared quote field validation (customer, service, price, schedule).
  * Used by POST /api/quotes/send and PATCH /api/quotes/[id].
+ *
+ * Service address is not collected on send/patch — the customer provides it when
+ * they accept the quote (`POST /api/quotes/respond`).
  */
 
 export interface QuotePayloadInput {

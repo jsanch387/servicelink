@@ -53,19 +53,38 @@ export const PublicQuoteRespondActions: React.FC<
     setError(null);
   };
 
-  const submit = async (decision: 'approve' | 'decline', address?: string) => {
+  const submit = async (
+    decision: 'approve' | 'decline',
+    address?: {
+      street: string;
+      unit: string | null;
+      city: string;
+      state: string;
+      zip: string;
+    }
+  ) => {
     if (!canRespond || loading) return;
     setError(null);
     setLoading(decision);
     try {
+      const body =
+        decision === 'approve' && address
+          ? {
+              token,
+              decision,
+              address: {
+                street: address.street,
+                unit: address.unit ?? '',
+                city: address.city,
+                state: address.state,
+                zip: address.zip,
+              },
+            }
+          : { token, decision };
       const res = await fetch('/api/quotes/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token,
-          decision,
-          serviceAddress: address?.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       });
       const json = (await res.json()) as {
         success?: boolean;
@@ -120,12 +139,13 @@ export const PublicQuoteRespondActions: React.FC<
     }
 
     setAddressErrors({});
-    const parts = [
-      streetVal,
-      unit.trim() ? `Unit ${unit.trim()}` : '',
-      `${cityVal}, ${stateVal} ${zipVal}`,
-    ].filter(Boolean);
-    await submit('approve', parts.join(', '));
+    await submit('approve', {
+      street: streetVal,
+      unit: unit.trim() ? unit.trim() : null,
+      city: cityVal,
+      state: stateVal,
+      zip: zipVal,
+    });
   };
 
   if (status === 'approved' || status === 'declined') {
@@ -211,7 +231,7 @@ export const PublicQuoteRespondActions: React.FC<
                 id="finalize-address-intro"
                 className="text-sm text-gray-400 sm:text-[15px]"
               >
-                Provide your address for this service.
+                Add the address where this service should be performed.
               </p>
 
               <section className="space-y-4">

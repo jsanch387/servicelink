@@ -8,8 +8,8 @@
  * type in this repo does not yet satisfy newer `@supabase/supabase-js` table generics.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/libs/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   normalizeEmailForLookup,
   normalizePhoneForLookup,
@@ -38,10 +38,8 @@ export async function upsertCustomerForBooking(
   const full_name = input.fullName.trim();
   const email_normalized = normalizeEmailForLookup(input.email);
   const phone_normalized = normalizePhoneForLookup(input.phone ?? null);
-  const phone =
-    input.phone?.trim() && input.phone.trim().length > 0
-      ? input.phone.trim()
-      : null;
+  /** Store digits-only in `phone` when present (canonical display + dedupe). */
+  const phone = phone_normalized;
   /** Single canonical email in DB (normalized). Booking form notes are not copied here. */
   const email = email_normalized;
 

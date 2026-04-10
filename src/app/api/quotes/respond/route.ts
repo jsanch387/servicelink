@@ -1,7 +1,26 @@
-import { validateQuoteRespondRequest } from '@/features/quotes/public-view/validateQuoteRespondRequest';
+import { quoteTableColumnsFromServiceLocation } from '@/features/quotes/public-view/quoteRespondAddress';
+import {
+  validateQuoteRespondRequest,
+  type ValidatedQuoteRespondRequest,
+} from '@/features/quotes/public-view/validateQuoteRespondRequest';
+import {
+  finalizeApprovedQuoteToBooking,
+  revertQuoteToRespondableState,
+  type BusinessProfileForQuoteApproval,
+} from '@/features/quotes/server/quoteApprovalSideEffects';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
+
+function mergeLegacyServiceAddressNote(
+  existingNote: string | null | undefined,
+  serviceAddress: string
+): string {
+  const n = existingNote?.trim() ?? '';
+  return n
+    ? `${n}\n\nService address: ${serviceAddress}`
+    : `Service address: ${serviceAddress}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +31,10 @@ export async function POST(request: NextRequest) {
         { status: parsed.status }
       );
     }
-    const { token, decision, serviceAddress } = parsed.data;
+    const { token, decision } = parsed.data as {
+      token: string;
+      decision: 'approve' | 'decline';
+    };
 
     const tokenHash = resolveQuoteTokenHash(token);
     const admin = createSupabaseAdminClient();
@@ -50,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     const { data: quoteRow, error: quoteError } = await db
       .from('quotes')
-      .select('id, status, note')
+      .select('*')
       .eq('id', link.quote_id)
       .maybeSingle();
 
@@ -61,103 +83,226 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const quote = quoteRow as {
-      id: string;
-      status: string;
-      note: string | null;
-    };
+    const q = quoteRow as Record<string, unknown>;
+    const quoteId = String(q.id);
+    const status = String(q.status ?? '');
+    const bookingIdExisting =
+      (q.booking_id as string | null | undefined) ?? null;
 
-    if (quote.status === 'approved') {
-      if (decision === 'approve') {
-        return NextResponse.json({
-          success: true,
-          status: 'approved',
-          alreadyResponded: true,
-        });
+    if (decision === 'decline') {
+      if (status === 'approved') {
+        return NextResponse.json(
+          { success: false, error: 'This quote was already accepted' },
+          { status: 409 }
+        );
       }
-      return NextResponse.json(
-        { success: false, error: 'This quote was already accepted' },
-        { status: 409 }
-      );
-    }
-
-    if (quote.status === 'declined') {
-      if (decision === 'decline') {
+      if (status === 'declined') {
         return NextResponse.json({
           success: true,
           status: 'declined',
           alreadyResponded: true,
         });
       }
+      if (!['sent', 'viewed'].includes(status)) {
+        return NextResponse.json(
+          { success: false, error: 'This quote cannot be responded to' },
+          { status: 400 }
+        );
+      }
+
+      const { error: updateQuoteError } = await db
+        .from('quotes')
+        .update({
+          status: 'declined',
+          declined_at: nowIso,
+        })
+        .eq('id', quoteId);
+
+      if (updateQuoteError) {
+        return NextResponse.json(
+          { success: false, error: 'Failed to update quote' },
+          { status: 500 }
+        );
+      }
+
+      const { error: updateLinkError } = await db
+        .from('quote_public_links')
+        .update({
+          response_status: 'declined',
+          responded_at: nowIso,
+        })
+        .eq('id', link.id);
+
+      if (updateLinkError) {
+        return NextResponse.json(
+          { success: false, error: 'Failed to record response' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, status: 'declined' });
+    }
+
+    const { address, displayLine } = parsed.data as Extract<
+      ValidatedQuoteRespondRequest,
+      { decision: 'approve' }
+    >;
+
+    // approve
+    if (status === 'approved' && bookingIdExisting) {
+      return NextResponse.json({
+        success: true,
+        status: 'approved',
+        alreadyResponded: true,
+      });
+    }
+
+    const { data: profileRaw, error: profileError } = await db
+      .from('business_profiles')
+      .select(
+        'id, profile_id, business_slug, business_name, free_bookings_month, free_bookings_count'
+      )
+      .eq('id', q.business_id)
+      .maybeSingle();
+
+    if (profileError || !profileRaw) {
+      return NextResponse.json(
+        { success: false, error: 'Business not found for this quote' },
+        { status: 500 }
+      );
+    }
+
+    const businessProfile = profileRaw as BusinessProfileForQuoteApproval;
+
+    if (status === 'approved' && !bookingIdExisting) {
+      const done = await finalizeApprovedQuoteToBooking(admin, {
+        quoteRow: q,
+        respondAddressFallback: address,
+        linkId: link.id,
+        nowIso,
+        businessProfile,
+      });
+      if (!done.ok) {
+        return NextResponse.json(
+          { success: false, error: done.message },
+          { status: done.httpStatus }
+        );
+      }
+      return NextResponse.json({ success: true, status: 'approved' });
+    }
+
+    if (status === 'declined') {
       return NextResponse.json(
         { success: false, error: 'This quote was already declined' },
         { status: 409 }
       );
     }
 
-    if (!['sent', 'viewed'].includes(quote.status)) {
+    if (!['sent', 'viewed'].includes(status)) {
       return NextResponse.json(
         { success: false, error: 'This quote cannot be responded to' },
         { status: 400 }
       );
     }
 
-    const newStatus = decision === 'approve' ? 'approved' : 'declined';
-    const quoteUpdate =
-      decision === 'approve'
-        ? {
-            status: newStatus,
-            approved_at: nowIso,
-            service_address: serviceAddress,
-          }
-        : {
-            status: newStatus,
-            declined_at: nowIso,
-          };
+    const previousStatus = status as 'sent' | 'viewed';
 
-    let { error: updateQuoteError } = await db
+    const primaryUpdate = {
+      status: 'approved',
+      approved_at: nowIso,
+      ...quoteTableColumnsFromServiceLocation(address),
+    };
+
+    let { data: won, error: approveErr } = await db
       .from('quotes')
-      .update(quoteUpdate)
-      .eq('id', quote.id);
+      .update(primaryUpdate)
+      .eq('id', quoteId)
+      .in('status', ['sent', 'viewed'])
+      .select('*')
+      .maybeSingle();
 
-    // Backward-safe fallback while DB column rolls out.
-    if (updateQuoteError && decision === 'approve') {
-      const { error: fallbackError } = await db
+    if (approveErr) {
+      const legacyNote = mergeLegacyServiceAddressNote(
+        q.note as string | null | undefined,
+        displayLine
+      );
+      const legacyRes = await db
         .from('quotes')
         .update({
-          status: newStatus,
+          status: 'approved',
           approved_at: nowIso,
-          note: quote.note?.trim()
-            ? `${quote.note.trim()}\n\nService address: ${serviceAddress}`
-            : `Service address: ${serviceAddress}`,
+          note: legacyNote,
         })
-        .eq('id', quote.id);
-      updateQuoteError = fallbackError ?? null;
+        .eq('id', quoteId)
+        .in('status', ['sent', 'viewed'])
+        .select('*')
+        .maybeSingle();
+      won = legacyRes.data;
+      approveErr = legacyRes.error ?? null;
     }
 
-    if (updateQuoteError) {
+    if (approveErr) {
       return NextResponse.json(
         { success: false, error: 'Failed to update quote' },
         { status: 500 }
       );
     }
 
-    const { error: updateLinkError } = await db
-      .from('quote_public_links')
-      .update({
-        response_status: newStatus === 'approved' ? 'approved' : 'declined',
-        responded_at: nowIso,
-      })
-      .eq('id', link.id);
-
-    if (updateLinkError) {
+    if (!won) {
+      const { data: again } = await db
+        .from('quotes')
+        .select('*')
+        .eq('id', quoteId)
+        .maybeSingle();
+      const ag = again as Record<string, unknown> | null;
+      const agBooking = (ag?.booking_id as string | null | undefined) ?? null;
+      if (agBooking) {
+        return NextResponse.json({
+          success: true,
+          status: 'approved',
+          alreadyResponded: true,
+        });
+      }
+      if (String(ag?.status ?? '') === 'approved' && !agBooking) {
+        const done = await finalizeApprovedQuoteToBooking(admin, {
+          quoteRow: ag!,
+          respondAddressFallback: address,
+          linkId: link.id,
+          nowIso,
+          businessProfile,
+        });
+        if (!done.ok) {
+          return NextResponse.json(
+            { success: false, error: done.message },
+            { status: done.httpStatus }
+          );
+        }
+        return NextResponse.json({ success: true, status: 'approved' });
+      }
       return NextResponse.json(
-        { success: false, error: 'Failed to record response' },
-        { status: 500 }
+        { success: false, error: 'Could not approve this quote' },
+        { status: 409 }
       );
     }
 
-    return NextResponse.json({ success: true, status: newStatus });
+    const wonRow = won as Record<string, unknown>;
+    const done = await finalizeApprovedQuoteToBooking(admin, {
+      quoteRow: wonRow,
+      respondAddressFallback: address,
+      linkId: link.id,
+      nowIso,
+      businessProfile,
+    });
+
+    if (!done.ok) {
+      await revertQuoteToRespondableState(admin, quoteId, previousStatus);
+      return NextResponse.json(
+        { success: false, error: done.message },
+        { status: done.httpStatus }
+      );
+    }
+
+    return NextResponse.json({ success: true, status: 'approved' });
   } catch (e) {
     console.error('[API] POST /api/quotes/respond', e);
     return NextResponse.json(

@@ -34,6 +34,14 @@ export interface DashboardQuote {
   vehicleYear: string | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
+  /** Where the service happens (optional at send; customer may add on approve). */
+  serviceStreet: string | null;
+  serviceUnit: string | null;
+  serviceCity: string | null;
+  serviceState: string | null;
+  serviceZip: string | null;
+  /** Legacy / display single line from DB. */
+  serviceAddressLine: string | null;
   /** Raw token for public URL `/q/[token]` (mock only). */
   publicToken: string;
 }

@@ -5,17 +5,17 @@
  * Resolves business by slug, then inserts one row into bookings via feature service.
  */
 
-import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createBooking } from '@/features/availability/services/bookingService';
+import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
+import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
-  sendAvailabilityBookingNotificationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
-import { isProAccess } from '@/features/pricing';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -103,59 +103,17 @@ export async function POST(request: NextRequest) {
     const businessDisplayName = p.business_name?.trim() || businessSlug;
     const profileId = p.profile_id ?? null;
 
-    // If this owner is on the free tier, enforce the 5-bookings-per-month cap
-    if (profileId) {
-      const { data: ownerProfileRaw } = await supabase
-        .from('profiles')
-        .select('subscription_tier, subscription_current_period_end')
-        .eq('user_id', profileId)
-        .maybeSingle();
-
-      const ownerProfile: {
-        subscription_tier?: string | null;
-        subscription_current_period_end?: string | null;
-      } | null = ownerProfileRaw as {
-        subscription_tier?: string | null;
-        subscription_current_period_end?: string | null;
-      } | null;
-
-      const isFreeTier = !isProAccess(
-        ownerProfile?.subscription_tier,
-        ownerProfile?.subscription_current_period_end
+    const cap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
+      id: businessId,
+      profile_id: profileId,
+      free_bookings_month: p.free_bookings_month,
+      free_bookings_count: p.free_bookings_count,
+    });
+    if (!cap.ok) {
+      return NextResponse.json(
+        { success: false, error: cap.message },
+        { status: 403 }
       );
-
-      if (isFreeTier) {
-        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-        let month = p.free_bookings_month;
-        let count = p.free_bookings_count ?? 0;
-
-        // If month is unset or from a previous month, reset window
-        if (!month || month !== currentMonth) {
-          month = currentMonth;
-          count = 0;
-        }
-
-        if (count >= 5) {
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                "This business isn't accepting new bookings right now. They've reached the limit for their current plan.",
-            },
-            { status: 403 }
-          );
-        }
-
-        // Persist updated month/count before creating the booking
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
-          .from('business_profiles')
-          .update({
-            free_bookings_month: month,
-            free_bookings_count: count + 1,
-          })
-          .eq('id', businessId);
-      }
     }
 
     const availabilityRow = await getAvailabilityForBusiness(
@@ -225,49 +183,14 @@ export async function POST(request: NextRequest) {
       totalPriceCents: totalPriceCentsForEmail,
     };
 
-    // In-app notification for the business owner (V2 availability booking)
-    if (profileId && result?.id) {
-      const customerName = body.customer?.fullName?.trim() ?? 'A customer';
-      const title = `New appointment from ${customerName}`;
-      const bodyText = storedServiceName
-        ? `Service: ${storedServiceName} · ${body.scheduledDate}`
-        : null;
-      try {
-        await supabase.from('notifications').insert({
-          user_id: profileId,
-          type: 'availability_booking',
-          reference_type: 'booking',
-          reference_id: result.id,
-          title,
-          body: bodyText,
-        } as never);
-      } catch {
-        // Do not fail the request; booking was already created
-      }
-    }
-
-    // Email notification for the business owner (V2 availability booking)
-    if (profileId) {
-      try {
-        let ownerEmail: string | null = null;
-        try {
-          const {
-            data: { user },
-          } = await supabase.auth.admin.getUserById(profileId);
-          ownerEmail = user?.email?.trim() ?? null;
-        } catch {
-          // Owner email unavailable from auth
-        }
-        if (ownerEmail) {
-          await sendAvailabilityBookingNotificationEmail(
-            ownerEmail,
-            availabilityEmailPayload
-          );
-        }
-      } catch {
-        // Do not fail the request; booking was already created
-      }
-    }
+    await notifyOwnerForAvailabilityBookingCreated(supabase, {
+      profileId,
+      bookingId: result.id,
+      customerName: body.customer?.fullName?.trim() ?? 'A customer',
+      serviceSummaryLine: storedServiceName,
+      scheduledDate: body.scheduledDate,
+      emailPayload: availabilityEmailPayload,
+    });
 
     try {
       await sendAvailabilityBookingCustomerConfirmationEmail(

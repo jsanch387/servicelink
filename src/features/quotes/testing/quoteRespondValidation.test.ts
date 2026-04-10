@@ -13,7 +13,7 @@ describe('validateQuoteRespondRequest', () => {
     expect(bad.error).toBe('Invalid request');
   });
 
-  it('requires service address when approving', () => {
+  it('rejects approve without structured address or legacy line', () => {
     const short = validateQuoteRespondRequest({
       token: 'tok',
       decision: 'approve',
@@ -21,7 +21,6 @@ describe('validateQuoteRespondRequest', () => {
     });
     expect(short.ok).toBe(false);
     if (short.ok) return;
-    expect(short.error).toBe('Service address is required to accept quote');
 
     const missing = validateQuoteRespondRequest({
       token: 'tok',
@@ -41,7 +40,28 @@ describe('validateQuoteRespondRequest', () => {
     expect(result.data.token).toBe('raw-token');
   });
 
-  it('accepts approve with a long enough trimmed address', () => {
+  it('accepts approve with structured address', () => {
+    const result = validateQuoteRespondRequest({
+      token: 'abc',
+      decision: 'approve',
+      address: {
+        street: '123 Main St',
+        unit: '',
+        city: 'Miami',
+        state: 'FL',
+        zip: '33101',
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.decision).toBe('approve');
+    if (result.data.decision !== 'approve') return;
+    expect(result.data.address.street).toBe('123 Main St');
+    expect(result.data.address.unit).toBe(null);
+    expect(result.data.displayLine).toContain('Miami');
+  });
+
+  it('accepts approve with legacy long enough trimmed serviceAddress', () => {
     const result = validateQuoteRespondRequest({
       token: 'abc',
       decision: 'approve',
@@ -50,6 +70,8 @@ describe('validateQuoteRespondRequest', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.data.decision).toBe('approve');
-    expect(result.data.serviceAddress).toBe('123 Main St, City');
+    if (result.data.decision !== 'approve') return;
+    expect(result.data.address.street).toBe('123 Main St, City');
+    expect(result.data.displayLine).toBe('123 Main St, City');
   });
 });

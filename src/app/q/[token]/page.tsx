@@ -111,13 +111,15 @@ export default async function PublicQuoteViewPage({
     })
     .eq('id', link.id);
 
+  // Atomic transition to avoid clobbering approved/declined with stale reads.
   await db
     .from('quotes')
     .update({
-      status: quote.status === 'sent' ? 'viewed' : quote.status,
+      status: 'viewed',
       viewed_at: nowIso,
     })
-    .eq('id', quote.id);
+    .eq('id', quote.id)
+    .eq('status', 'sent');
 
   const { data: quoteFresh } = await db
     .from('quotes')

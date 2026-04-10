@@ -97,7 +97,13 @@ Table: `public.quotes`
 | `approved_at`          | timestamptz           |      yes | Must exist if status=`approved`                                     |
 | `declined_at`          | timestamptz           |      yes | Must exist if status=`declined`                                     |
 | `expires_at`           | timestamptz           |      yes | Optional expiry control                                             |
-| `booking_id`           | uuid                  |      yes | Future conversion target                                            |
+| `booking_id`           | uuid                  |      yes | Set when customer approves and a V2 `bookings` row is created       |
+| `service_address`    | text                  |      yes | Legacy single-line summary; still written as display line on approve |
+| `customer_street_address` | text               |      yes | Service location street (mirrors `bookings.customer_street_address`) |
+| `customer_unit_apt`  | text                  |      yes | Unit / apt                                                          |
+| `customer_city`        | text                  |      yes | City                                                                |
+| `customer_state`       | text                  |      yes | State (e.g. 2-letter)                                               |
+| `customer_zip`         | text                  |      yes | Postal / ZIP                                                        |
 | `created_at`           | timestamptz           |       no | Default `now()`                                                     |
 | `updated_at`           | timestamptz           |       no | Default `now()`, trigger maintained                                 |
 

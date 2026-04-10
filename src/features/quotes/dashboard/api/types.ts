@@ -30,6 +30,12 @@ export interface QuoteDbRow {
   vehicle_year: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
+  customer_street_address: string | null;
+  customer_unit_apt: string | null;
+  customer_city: string | null;
+  customer_state: string | null;
+  customer_zip: string | null;
+  service_address: string | null;
 }
 
 export interface QuotePublicLinkRow {

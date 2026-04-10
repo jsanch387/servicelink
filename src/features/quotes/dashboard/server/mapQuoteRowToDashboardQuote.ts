@@ -70,6 +70,12 @@ export function mapQuoteRowToDashboardQuote(
     vehicleYear: row.vehicle_year,
     vehicleMake: row.vehicle_make,
     vehicleModel: row.vehicle_model,
+    serviceStreet: row.customer_street_address,
+    serviceUnit: row.customer_unit_apt,
+    serviceCity: row.customer_city,
+    serviceState: row.customer_state,
+    serviceZip: row.customer_zip,
+    serviceAddressLine: row.service_address,
     vehicleLine: buildVehicleLine(row),
     /**
      * Token string used for `/q/[token]`.
