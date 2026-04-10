@@ -7,8 +7,9 @@ import React from 'react';
 interface QuoteFlowHeaderProps {
   backHref: string;
   backLabel: string;
-  title: string;
-  subtitle: string;
+  /** Omit title (and usually subtitle) during loading so the skeleton carries the UI. */
+  title?: string;
+  subtitle?: string;
   className?: string;
 }
 
@@ -28,11 +29,20 @@ export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
         <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
         {backLabel}
       </Link>
-      <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-        {title}
-      </h1>
-      <p className="mt-0.5 max-w-xl text-sm text-gray-500">{subtitle}</p>
-      <div className="mt-4 h-px w-full bg-white/10" aria-hidden />
+      {title ? (
+        <>
+          <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+            {title}
+          </h1>
+          {subtitle ? (
+            <p className="mt-0.5 max-w-xl text-sm text-gray-500">{subtitle}</p>
+          ) : null}
+        </>
+      ) : null}
+      <div
+        className={`h-px w-full bg-white/10 ${title ? 'mt-4' : 'mt-2'}`}
+        aria-hidden
+      />
     </header>
   );
 };

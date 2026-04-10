@@ -126,7 +126,6 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [sendingQuote, setSendingQuote] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [sentQuoteLink, setSentQuoteLink] = useState<string | null>(null);
 
   const durationMinutes = useMemo(() => {
     const r = parseServiceEditDurationForSave(durationHHmm);
@@ -173,7 +172,6 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setSelectedTime(pickStartTimeHHmm(quote.scheduledTime));
     setStep('details');
     setSendError(null);
-    setSentQuoteLink(null);
 
     editHydratedRef.current = true;
     prevDurationRef.current = durPick;
@@ -276,7 +274,6 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           );
           return;
         }
-        setSentQuoteLink(null);
         setStep('sent');
         return;
       }
@@ -299,7 +296,6 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
         return;
       }
 
-      setSentQuoteLink(json.data?.publicUrl ?? null);
       setStep('sent');
     } catch {
       setSendError(
@@ -319,8 +315,6 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           <QuoteFlowHeader
             backHref={ROUTES.DASHBOARD.QUOTE_DETAIL(editId)}
             backLabel="Quote"
-            title="Edit quote"
-            subtitle="Loading quote details…"
           />
           <div className="space-y-4">
             <div className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
@@ -690,23 +684,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
             <p className="mx-auto mb-8 max-w-sm text-center text-sm text-gray-400">
               {isEdit
                 ? 'Your changes are saved. The customer will see the updated details the next time they open their link.'
-                : 'The quote has been emailed to your customer. They can review the details and accept or decline directly from the link.'}
+                : 'The quote has been emailed to your customer. They can review the details and accept or decline from that email.'}
             </p>
-            {!isEdit && sentQuoteLink ? (
-              <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                <p className="mb-1 text-xs uppercase tracking-wider text-gray-500">
-                  Share link
-                </p>
-                <a
-                  href={sentQuoteLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all text-sm font-medium text-emerald-300 underline underline-offset-4 hover:text-emerald-200"
-                >
-                  {sentQuoteLink}
-                </a>
-              </div>
-            ) : null}
             <GlassCard
               padding="none"
               rounded="rounded-2xl"
