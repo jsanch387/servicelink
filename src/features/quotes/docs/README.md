@@ -87,6 +87,8 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 **Success:** `201` — `{ success: true, data: { quoteId, publicUrl, expiresAt } }`  
 `publicUrl` is `${origin}/q/${rawToken}` (raw token is **not** stored; DB stores SHA-256 hex).
 
+**Email:** After the quote and link exist, the API **best-effort** sends **Resend** email to `customerEmail` (`sendQuoteSentToCustomerEmail` in `src/features/email/quote-sent-to-customer/`). HTML follows the same layout as the **customer appointment confirmation** (availability booking email): cards, typography, full-width **Review quote** button. If `RESEND_API_KEY` is missing or Resend fails, the response is still **201**; failures are logged with `console.warn`.
+
 **Typical errors:** `401` unauthorized, `400` validation, `404` business not found, `403` slug not owned by user, `500` insert/link failure.
 
 **Code:** `src/app/api/quotes/send/route.ts`

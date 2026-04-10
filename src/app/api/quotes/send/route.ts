@@ -1,3 +1,7 @@
+import {
+  sendQuoteSentToCustomerEmail,
+  type QuoteSentToCustomerPayload,
+} from '@/features/email';
 import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const { data: business, error: businessError } = await admin
       .from('business_profiles')
-      .select('id, business_slug, profile_id')
+      .select('id, business_slug, profile_id, business_name')
       .eq('business_slug', body.businessSlug)
       .maybeSingle();
 
@@ -47,7 +51,19 @@ export async function POST(request: NextRequest) {
       id: string;
       business_slug: string | null;
       profile_id: string | null;
+      business_name: string | null;
     };
+
+    const businessDisplayName =
+      businessRow.business_name?.trim() ||
+      businessRow.business_slug?.trim() ||
+      'Your service provider';
+
+    const vehicleLine =
+      [body.vehicleYear, body.vehicleMake, body.vehicleModel]
+        .map(v => (v ?? '').trim())
+        .filter(Boolean)
+        .join(' ') || null;
 
     if (!businessRow.profile_id || businessRow.profile_id !== user.id) {
       return NextResponse.json(
@@ -118,6 +134,36 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
       request.nextUrl.origin;
     const publicUrl = `${origin}/q/${rawToken}`;
+
+    try {
+      const emailPayload: QuoteSentToCustomerPayload = {
+        customerName: body.customerName,
+        serviceName: body.serviceName,
+        businessName: businessDisplayName,
+        priceCents: body.priceCents,
+        scheduledDate: body.scheduledDate,
+        scheduledStartTime: body.scheduledStartTimeForDb,
+        durationMinutes: body.durationMinutes,
+        note: body.note,
+        vehicleLine,
+        publicQuoteUrl: publicUrl,
+      };
+      const emailResult = await sendQuoteSentToCustomerEmail(
+        body.customerEmail,
+        emailPayload
+      );
+      if (!emailResult.sent) {
+        console.warn(
+          '[API] POST /api/quotes/send: customer email not sent:',
+          emailResult.error
+        );
+      }
+    } catch (emailErr) {
+      console.warn(
+        '[API] POST /api/quotes/send: customer email error',
+        emailErr
+      );
+    }
 
     return NextResponse.json(
       { success: true, data: { quoteId, publicUrl, expiresAt } },
