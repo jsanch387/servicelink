@@ -2,6 +2,7 @@
 
 import {
   Button,
+  IconButton,
   Input,
   PriceInput,
   TextArea,
@@ -11,13 +12,18 @@ import {
   isValidServiceDurationHHmm,
   serviceDurationHHmmToMinutes,
 } from '@/features/availability/utils/timeOptions';
-import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
-import React, { useState } from 'react';
+import {
+  SERVICE_DESCRIPTION_MAX_LENGTH,
+  insertServiceDescriptionBullet,
+} from '@/features/business-profile/utils/serviceDescriptionDisplay';
+import {
+  ListBulletIcon,
+  PlusIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
+import React, { useCallback, useRef, useState } from 'react';
 import type { OnboardingV2Service } from '../types/flowState';
 import { formatDurationMinutes } from '../utils/formatDuration';
-
-/** Short description for service cards; keeps cards from getting bloated. */
-const DESCRIPTION_MAX_LENGTH = 250;
 
 interface Step2AddServiceProps {
   businessProfileId?: string;
@@ -41,6 +47,25 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleInsertDescriptionBullet = useCallback(() => {
+    const el = descriptionTextareaRef.current;
+    const start = el?.selectionStart ?? description.length;
+    const end = el?.selectionEnd ?? description.length;
+    const { value: next, caret } = insertServiceDescriptionBullet(
+      description,
+      start,
+      end
+    );
+    setDescription(next);
+    setTimeout(() => {
+      const node = descriptionTextareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(caret, caret);
+    }, 0);
+  }, [description]);
 
   const addService = () => {
     const descTrim = description.trim();
@@ -133,6 +158,28 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
               onChange={setName}
               required
             />
+            <TextArea
+              ref={descriptionTextareaRef}
+              label="Description"
+              placeholder="Tell customers what they get."
+              footerStart={
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-lg text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-500/10 -mr-1"
+                  title="Insert bullet"
+                  aria-label="Insert bullet"
+                  icon={<ListBulletIcon className="h-5 w-5" />}
+                  onClick={handleInsertDescriptionBullet}
+                />
+              }
+              value={description}
+              onChange={setDescription}
+              rows={5}
+              maxLength={SERVICE_DESCRIPTION_MAX_LENGTH}
+              inputClassName="resize-y min-h-[7.5rem]"
+              required
+            />
             <PriceInput
               label="Price"
               placeholder="0"
@@ -151,15 +198,6 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
                 durationPlaceholder="How long does it take?"
               />
             </div>
-            <TextArea
-              label="What's included? (required)"
-              placeholder="e.g. Exterior wash, interior vacuum, window clean"
-              value={description}
-              onChange={setDescription}
-              rows={3}
-              maxLength={DESCRIPTION_MAX_LENGTH}
-              required
-            />
             <Button
               type="button"
               onClick={addService}
