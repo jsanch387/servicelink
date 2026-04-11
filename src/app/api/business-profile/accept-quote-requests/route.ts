@@ -53,6 +53,7 @@ export async function PATCH(request: NextRequest) {
         { status: 401 }
       );
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profileRow } = await (supabase as any)
       .from('profiles')
       .select('subscription_tier, subscription_current_period_end')
@@ -74,6 +75,7 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: updateError } = await (supabase as any)
     .from('business_profiles')
     .update({ accept_quote_req: acceptQuoteRequests })

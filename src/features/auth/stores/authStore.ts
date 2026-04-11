@@ -120,6 +120,7 @@ export const useAuthStore = create<AuthStore>()(
           }
 
           return {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           set({ isLoading: false });
           return { error: error.message || 'An error occurred during sign in' };
@@ -183,6 +184,7 @@ export const useAuthStore = create<AuthStore>()(
 
           set({ isLoading: false });
           return {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           set({ isLoading: false });
           return { error: error.message || 'An error occurred during sign up' };
@@ -220,6 +222,7 @@ export const useAuthStore = create<AuthStore>()(
 
           set({ isLoading: false });
           return { error: 'Could not start Google sign-in' };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           set({ isLoading: false });
           return { error: error.message || 'An error occurred during sign in' };
@@ -250,6 +253,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: false });
           if (error) return { error: error.message };
           return {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           set({ isLoading: false });
           return { error: error.message || 'Failed to send reset email' };
