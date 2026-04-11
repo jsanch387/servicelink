@@ -6,8 +6,8 @@ import {
   Input,
   PriceInput,
   TextArea,
+  TimeSelect,
 } from '@/components/shared';
-import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import { ROUTES } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';

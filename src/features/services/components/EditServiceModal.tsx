@@ -6,8 +6,8 @@ import {
   Modal,
   PriceInput,
   TextArea,
+  TimeSelect,
 } from '@/components/shared';
-import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import {
   SERVICE_DESCRIPTION_MAX_LENGTH,
   insertServiceDescriptionBullet,
