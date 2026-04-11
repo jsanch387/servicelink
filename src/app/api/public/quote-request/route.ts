@@ -8,10 +8,22 @@ import { insertCustomerQuoteRequest } from '@/features/quotes/public-request/ser
 import { publicQuoteRequestAllowedForSlug } from '@/features/quotes/public-request/server/publicQuoteRequestPageAllowed';
 import { validatePublicQuoteRequestBody } from '@/features/quotes/public-request/validatePublicQuoteRequestBody';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import {
+  assertPublicQuoteRequestRateLimits,
+  assertReasonableJsonBodySize,
+} from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
+
+const MAX_QUOTE_REQUEST_BODY_BYTES = 64 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
+    const tooLarge = assertReasonableJsonBodySize(
+      request,
+      MAX_QUOTE_REQUEST_BODY_BYTES
+    );
+    if (tooLarge) return tooLarge;
+
     let json: unknown;
     try {
       json = await request.json();
@@ -29,6 +41,12 @@ export async function POST(request: NextRequest) {
         { status: parsed.status }
       );
     }
+
+    const rateLimited = await assertPublicQuoteRequestRateLimits(
+      request,
+      parsed.data.businessSlug
+    );
+    if (rateLimited) return rateLimited;
 
     const admin = createSupabaseAdminClient();
 
