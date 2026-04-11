@@ -8,7 +8,10 @@ import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 import { useDashboardQuotes } from '../hooks/useDashboardQuotes';
 import type { QuotesDashboardFilterId } from '../types';
-import { countPendingCustomerQuoteRequests } from '../utils/pendingCustomerQuoteRequests';
+import {
+  countPendingCustomerQuoteRequests,
+  isPendingCustomerQuoteRequest,
+} from '../utils/pendingCustomerQuoteRequests';
 import { quoteMatchesFilter } from '../utils/quoteStatusUi';
 import { QuoteListRow } from './QuoteListRow';
 import { QuotesDashboardSkeleton } from './QuotesDashboardSkeleton';
@@ -26,9 +29,15 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
   const [filter, setFilter] = useState<QuotesDashboardFilterId>('all');
   const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
 
+  /** Open public “request quote” rows — those live under Quote requests only. */
+  const quotesForMainList = useMemo(
+    () => quotes.filter(q => !isPendingCustomerQuoteRequest(q)),
+    [quotes]
+  );
+
   const filtered = useMemo(
-    () => quotes.filter(q => quoteMatchesFilter(q.status, filter)),
-    [quotes, filter]
+    () => quotesForMainList.filter(q => quoteMatchesFilter(q.status, filter)),
+    [quotesForMainList, filter]
   );
 
   const sorted = useMemo(
@@ -40,7 +49,7 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
     [filtered]
   );
 
-  const hasAnyQuotes = quotes.length > 0;
+  const hasAnyQuotes = quotesForMainList.length > 0;
 
   const requestCount = useMemo(
     () => countPendingCustomerQuoteRequests(quotes),
@@ -139,7 +148,7 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
           <div className="mb-4">
             <QuotesFilterPills value={filter} onChange={setFilter} />
             <p className="mt-3 text-xs text-gray-500">
-              Showing {sorted.length} of {quotes.length} quotes
+              Showing {sorted.length} of {quotesForMainList.length} quotes
             </p>
           </div>
         ) : null}

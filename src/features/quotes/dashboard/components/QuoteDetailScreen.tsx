@@ -5,12 +5,16 @@ import { ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import {
+  copyTextToClipboard,
+  copyTextToClipboardSync,
+} from '@/lib/copyTextToClipboard';
+import {
   ArrowTopRightOnSquareIcon,
-  CheckIcon,
   ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
+import { CheckIcon as CheckIconSolid } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDashboardQuoteDetail } from '../hooks/useDashboardQuoteDetail';
 import type { DashboardQuote } from '../types';
 import {
@@ -47,20 +51,44 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
   const { quote, loadStatus, loadError, reloadQuote } =
     useDashboardQuoteDetail(quoteId);
   const [copied, setCopied] = useState(false);
+  const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+      }
+    };
+  }, []);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const handleCopyLink = useCallback(async () => {
+  const handleCopyLink = useCallback(() => {
     if (!quote || !quote.publicToken.trim()) return;
     const url = getPublicQuoteAbsoluteUrl(quote.publicToken);
-    try {
-      await navigator.clipboard.writeText(url);
+
+    const applyCopiedFeedback = () => {
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+        copyFeedbackTimerRef.current = null;
+      }
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
+      copyFeedbackTimerRef.current = setTimeout(() => {
+        setCopied(false);
+        copyFeedbackTimerRef.current = null;
+      }, 2200);
+    };
+
+    if (copyTextToClipboardSync(url)) {
+      applyCopiedFeedback();
+      return;
     }
+    void copyTextToClipboard(url).then(ok => {
+      if (ok) applyCopiedFeedback();
+    });
   }, [quote]);
 
   const handleDelete = useCallback(async () => {
@@ -216,9 +244,13 @@ export function QuoteDetailContent({
   const customerRequestRaw = resolveCustomerRequestRawText(quote);
   const parsedCustomerRequest = parsePublicQuoteRequestNote(customerRequestRaw);
   const isCustomerRequestSource = quote.source === 'customer_requested';
+  const hasScheduledDate = Boolean(quote.scheduledDate?.trim());
   const timingFromRequest = parsedCustomerRequest.preferredTiming?.trim() ?? '';
+  // Once the owner picks a slot, Activity shows it — don’t duplicate “Preferred time” here.
   const preferredTimingTrimmed =
-    isCustomerRequestSource && timingFromRequest ? timingFromRequest : '';
+    isCustomerRequestSource && timingFromRequest && !hasScheduledDate
+      ? timingFromRequest
+      : '';
   const customerDetailsTrimmed = isCustomerRequestSource
     ? parsedCustomerRequest.detailsOnly.trim()
     : '';
@@ -272,6 +304,24 @@ export function QuoteDetailContent({
                 <p className="mb-1 text-xs text-gray-500">Service</p>
                 <p className="font-medium text-white">{quote.serviceName}</p>
               </div>
+              {hasScheduledDate && !showActivityCard ? (
+                <>
+                  <div className="h-px bg-white/10" />
+                  <div>
+                    <p className="mb-1 text-xs text-gray-500">Scheduled</p>
+                    <p className="font-medium text-white">
+                      {formatQuoteDetailDateLong(
+                        `${quote.scheduledDate}T12:00:00`
+                      )}
+                    </p>
+                    {quote.scheduledTime ? (
+                      <p className="mt-0.5 text-sm text-gray-400">
+                        {formatQuoteDetailTime12(quote.scheduledTime)}
+                      </p>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
               {preferredTimingTrimmed ? (
                 <>
                   <div className="h-px bg-white/10" />
@@ -406,11 +456,19 @@ export function QuoteDetailContent({
                   size="sm"
                   disabled={!hasPublicLink}
                   onClick={onCopyLink}
+                  className={
+                    copied
+                      ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-50 ring-1 ring-inset ring-emerald-400/30'
+                      : ''
+                  }
                   icon={
                     copied ? (
-                      <CheckIcon className="h-4 w-4 text-emerald-400" />
+                      <CheckIconSolid
+                        className="h-4 w-4 text-emerald-400"
+                        aria-hidden
+                      />
                     ) : (
-                      <ClipboardDocumentIcon className="h-4 w-4" />
+                      <ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
                     )
                   }
                 >

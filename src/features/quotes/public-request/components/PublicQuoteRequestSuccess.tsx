@@ -11,8 +11,6 @@ interface PublicQuoteRequestSuccessProps {
   businessSlug: string;
   form: PublicQuoteRequestFormData;
   showVehicleFields: boolean;
-  /** Returned from API after insert — use to verify the row in Supabase. */
-  quoteId: string | null;
 }
 
 /**
@@ -21,7 +19,7 @@ interface PublicQuoteRequestSuccessProps {
  */
 export const PublicQuoteRequestSuccess: React.FC<
   PublicQuoteRequestSuccessProps
-> = ({ businessName, businessSlug, form, showVehicleFields, quoteId }) => {
+> = ({ businessName, businessSlug, form, showVehicleFields }) => {
   return (
     <div className="flex w-full flex-col py-10 pb-16">
       <div className="mb-8 flex h-20 w-20 self-center items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/25">
@@ -35,11 +33,6 @@ export const PublicQuoteRequestSuccess: React.FC<
         Thanks for reaching out to {businessName}. They should review your
         request soon and follow up by email or phone.
       </p>
-      {quoteId ? (
-        <p className="mx-auto mb-6 max-w-sm text-center text-xs text-zinc-500">
-          Reference: <span className="font-mono text-zinc-400">{quoteId}</span>
-        </p>
-      ) : null}
 
       <GlassCard
         padding="none"

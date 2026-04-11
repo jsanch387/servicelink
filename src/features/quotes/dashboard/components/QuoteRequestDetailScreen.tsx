@@ -3,6 +3,10 @@
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import {
+  copyTextToClipboard,
+  copyTextToClipboardSync,
+} from '@/lib/copyTextToClipboard';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDashboardQuoteDetail } from '../hooks/useDashboardQuoteDetail';
@@ -41,16 +45,22 @@ export const QuoteRequestDetailScreen: React.FC<
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const handleCopyLink = useCallback(async () => {
+  const handleCopyLink = useCallback(() => {
     if (!apiQuote || !apiQuote.publicToken.trim()) return;
     const url = getPublicQuoteAbsoluteUrl(apiQuote.publicToken);
-    try {
-      await navigator.clipboard.writeText(url);
+
+    const applyCopiedFeedback = () => {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
+    };
+
+    if (copyTextToClipboardSync(url)) {
+      applyCopiedFeedback();
+      return;
     }
+    void copyTextToClipboard(url).then(ok => {
+      if (ok) applyCopiedFeedback();
+    });
   }, [apiQuote]);
 
   const handleDelete = useCallback(async () => {

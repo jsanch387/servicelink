@@ -156,12 +156,10 @@ export default async function PublicQuoteViewPage({
   const isCustomerRequested = displayQuote.source === 'customer_requested';
   const requestRaw = customerRequestRawFromRow(displayQuote);
   const parsedRequest = parsePublicQuoteRequestNote(requestRaw);
-  const yourRequestText =
-    isCustomerRequested && isAccepted
-      ? parsedRequest.detailsOnly.trim()
-      : isCustomerRequested
-        ? requestRaw.trim()
-        : '';
+  // Omit "Preferred timing" from this card — scheduled date/time is shown above.
+  const yourRequestText = isCustomerRequested
+    ? parsedRequest.detailsOnly.trim()
+    : '';
   const ownerNoteText = displayQuote.note?.trim() ?? '';
   const showYourRequestBlock = yourRequestText.length > 0;
   const showOwnerNoteBlock = ownerNoteText.length > 0;

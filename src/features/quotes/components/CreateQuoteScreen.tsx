@@ -629,14 +629,15 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
         {step === 'schedule' && (
           <div className="space-y-6 pt-1">
             {preferredTimingHint?.trim() ? (
-              <WarningCallout>
-                <span className="font-medium text-amber-100">
-                  Preferred timing ·{' '}
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-gray-300">
+                <span className="font-medium text-gray-200">
+                  Preferred time
                 </span>
-                <span className="whitespace-pre-wrap">
+                <span className="mx-1.5 text-gray-500">—</span>
+                <span className="whitespace-pre-wrap text-gray-300">
                   {preferredTimingHint.trim()}
                 </span>
-              </WarningCallout>
+              </div>
             ) : null}
             {!hasSavedAvailability && (
               <WarningCallout>
@@ -1004,13 +1005,14 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 variant="inverse"
                 size="sm"
                 className="min-w-0 flex-1 font-semibold"
+                loading={sendingQuote}
                 disabled={!canSend || sendingQuote}
                 onClick={handleSubmitQuote}
               >
                 {sendingQuote
                   ? isEdit && !isFirstSendFromEdit
-                    ? 'Saving...'
-                    : 'Sending...'
+                    ? 'Saving'
+                    : 'Sending'
                   : isEdit && !isFirstSendFromEdit
                     ? 'Save changes'
                     : 'Send quote'}

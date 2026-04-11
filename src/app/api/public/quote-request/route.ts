@@ -80,19 +80,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.info(
-      '[quote-request] saved',
-      JSON.stringify({
-        quoteId: inserted.quoteId,
-        businessId,
-        slug: parsed.data.businessSlug,
-      })
-    );
-
-    return NextResponse.json(
-      { success: true, data: { quoteId: inserted.quoteId } },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true }, { status: 201 });
   } catch (e) {
     console.error('[API] POST /api/public/quote-request', e);
     return NextResponse.json(

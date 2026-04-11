@@ -60,7 +60,6 @@ export const PublicQuoteRequestScreen: React.FC<
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [step, setStep] = useState<QuoteRequestStep>('contact');
 
   const showVehicleFields = useMemo(() => {
@@ -205,13 +204,8 @@ export const PublicQuoteRequestScreen: React.FC<
         const json = (await res.json().catch(() => null)) as {
           success?: boolean;
           error?: string;
-          data?: { quoteId?: string };
         } | null;
-        const quoteId =
-          typeof json?.data?.quoteId === 'string'
-            ? json.data.quoteId.trim()
-            : '';
-        if (!res.ok || !json?.success || !quoteId) {
+        if (!res.ok || !json?.success) {
           setSubmitError(
             typeof json?.error === 'string' && json.error.trim()
               ? json.error
@@ -219,7 +213,6 @@ export const PublicQuoteRequestScreen: React.FC<
           );
           return;
         }
-        setSavedQuoteId(quoteId);
         setSubmitted(true);
       } catch {
         setSubmitError('Something went wrong. Please try again.');
@@ -247,7 +240,6 @@ export const PublicQuoteRequestScreen: React.FC<
             businessSlug={businessSlug}
             form={form}
             showVehicleFields={showVehicleFields}
-            quoteId={savedQuoteId}
           />
         </div>
       </main>
