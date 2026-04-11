@@ -1,8 +1,4 @@
-import {
-  AUTH_REQUIRED_PATH_PREFIXES,
-  getSafePostAuthDashboardPath,
-  ROUTES,
-} from '@/constants/routes';
+import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
 import { createSupabaseMiddlewareClient } from '@/libs/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -80,19 +76,12 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url));
   }
 
   // Redirect unauthenticated users to login from protected routes
   if (requiresAuth && !user) {
-    const login = new URL(ROUTES.AUTH.LOGIN, request.url);
-    const returnPath =
-      pathname + (request.nextUrl.search?.length ? request.nextUrl.search : '');
-    login.searchParams.set(
-      'returnUrl',
-      getSafePostAuthDashboardPath(returnPath)
-    );
-    return NextResponse.redirect(login);
+    return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
   }
 
   // Allow all public routes (home, auth, waitlist, profile, API routes, static files)
@@ -118,7 +107,7 @@ export const config = {
     /*
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
-     * - _next/image (image optimization files)
+     * - _next/image (image optimization)
      * - favicon.ico (favicon file)
      * - public folder
      */

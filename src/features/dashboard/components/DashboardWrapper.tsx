@@ -1,9 +1,7 @@
 'use client';
 
-import { getSafePostAuthDashboardPath, ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Dashboard } from './Dashboard';
 import { DashboardLoadingState } from './DashboardLoadingState';
@@ -15,21 +13,9 @@ interface DashboardWrapperProps {
 export const DashboardWrapper: React.FC<DashboardWrapperProps> = ({
   children,
 }) => {
-  const router = useRouter();
-  const pathname = usePathname();
   const { isAuthenticated, user, isInitialized } = useAuth();
   const [isOnboardingCompleted, setIsOnboardingCompleted] = useState(false);
   const [isLoadingOnboarding, setIsLoadingOnboarding] = useState(true);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-    if (!isAuthenticated) {
-      const safe = getSafePostAuthDashboardPath(pathname);
-      router.replace(
-        `${ROUTES.AUTH.LOGIN}?returnUrl=${encodeURIComponent(safe)}`
-      );
-    }
-  }, [isAuthenticated, isInitialized, pathname, router]);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -51,14 +37,6 @@ export const DashboardWrapper: React.FC<DashboardWrapperProps> = ({
 
     checkOnboarding();
   }, [isInitialized, isAuthenticated, user?.id]);
-
-  if (!isAuthenticated && isInitialized) {
-    return (
-      <div className="min-h-screen bg-[var(--dashboard-bg)]">
-        <DashboardLoadingState />
-      </div>
-    );
-  }
 
   if (isLoadingOnboarding) {
     return (

@@ -63,35 +63,11 @@ export const ROUTES = {
 } as const;
 
 /**
- * Path prefixes that require a signed-in session (middleware + server layout).
- * Align with authenticated app areas (e.g. dashboard sidebar).
+ * Path prefixes that require a signed-in session (see `middleware.ts`).
+ * - `/dashboard` covers every nested route (e.g. `/dashboard/quotes/requests/...`).
+ * - Add another prefix only if you add a new authenticated area **outside** `/dashboard`.
  */
 export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
-
-/**
- * Safe in-app path after login / OAuth (`returnUrl` or `next`). Blocks open redirects.
- */
-export function getSafePostAuthDashboardPath(
-  candidate: string | null | undefined
-): string {
-  if (candidate == null || candidate === '') {
-    return ROUTES.DASHBOARD.MAIN;
-  }
-  let raw = candidate.trim();
-  try {
-    raw = decodeURIComponent(raw);
-  } catch {
-    return ROUTES.DASHBOARD.MAIN;
-  }
-  const path = raw.trim();
-  if (!path.startsWith('/dashboard')) {
-    return ROUTES.DASHBOARD.MAIN;
-  }
-  if (path.startsWith('//') || path.includes('://') || path.includes('..')) {
-    return ROUTES.DASHBOARD.MAIN;
-  }
-  return path;
-}
 
 export const API_ROUTES = {
   CUSTOMERS: '/api/customers',

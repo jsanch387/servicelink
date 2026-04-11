@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, GoogleIcon, Input } from '@/components/shared';
-import { ROUTES, getSafePostAuthDashboardPath } from '@/constants/routes';
+import { ROUTES } from '@/constants/routes';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -16,9 +16,7 @@ const REDIRECT_ERROR_MESSAGES: Record<string, string> = {
 export const LoginForm: React.FC<{
   redirectError?: string;
   resetSuccess?: boolean;
-  /** Deep link after sign-in (must be under `/dashboard`). */
-  returnUrl?: string;
-}> = ({ redirectError, resetSuccess, returnUrl }) => {
+}> = ({ redirectError, resetSuccess }) => {
   const router = useRouter();
   const { signIn, signInWithGoogle, isLoading } = useAuth();
   const [formData, setFormData] = useState({
@@ -44,9 +42,7 @@ export const LoginForm: React.FC<{
     setAuthError('');
     setGoogleLoading(true);
     try {
-      const result = await signInWithGoogle(
-        getSafePostAuthDashboardPath(returnUrl)
-      );
+      const result = await signInWithGoogle();
       if (result?.error) {
         setAuthError(result.error);
       }
@@ -84,7 +80,7 @@ export const LoginForm: React.FC<{
       // Small delay to ensure cookies are set before navigation
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      router.push(getSafePostAuthDashboardPath(returnUrl));
+      router.push(ROUTES.DASHBOARD.MAIN);
     } catch (error) {
       console.error('Login failed:', error);
       setAuthError('An unexpected error occurred. Please try again.');

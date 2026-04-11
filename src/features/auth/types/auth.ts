@@ -18,9 +18,7 @@ export interface AuthActions {
   // Authentication
   signIn: (_email: string, _password: string) => Promise<{ error?: string }>;
   signUp: (_email: string, _password: string) => Promise<{ error?: string }>;
-  signInWithGoogle: (
-    _redirectAfterLogin?: string | null
-  ) => Promise<{ error?: string }>;
+  signInWithGoogle: () => Promise<{ error?: string }>;
   requestPasswordReset: (_email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<{ success?: boolean; error?: string }>;
 
