@@ -22,7 +22,7 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | Path | Role |
 |------|------|
 | `components/CreateQuoteScreen.tsx` | **Create + edit** wizard (details → schedule → review → success). `mode="edit"` + `quoteId` loads quote and calls `PATCH /api/quotes/[id]`. |
-| `components/NewQuoteCard.tsx` | Dashboard card linking to new quote. |
+| `components/QuoteRequestsSettingsCard.tsx` | Dashboard card: quote requests toggle + Pro upsell (public profile request button). |
 | `components/QuotesDashboardPage.tsx` | Re-export only; implementation lives in `dashboard/components/QuotesDashboardPage.tsx` (app imports from `@/features/quotes/components/...`). |
 | `dashboard/` | Owner list, detail, filters, hooks, dashboard types, `loadDashboardQuoteById`, `mapQuoteRowToDashboardQuote`. |
 | `dashboard/components/QuotesDashboardPage.tsx` | Quotes list UI (source for the re-export above). |

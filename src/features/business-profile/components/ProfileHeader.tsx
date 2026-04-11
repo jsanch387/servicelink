@@ -18,13 +18,23 @@ interface ProfileHeaderProps {
   isPublic?: boolean;
   /** When true, show verified badge on logo (derived from owner subscription_tier === 'pro'). */
   showVerifiedBadge?: boolean;
+  /** When true with `isPublic` + slug, show Request quote CTA (Pro + accept_quote_req). */
+  showRequestQuoteCta?: boolean;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   businessProfile,
   isPublic = false,
   showVerifiedBadge = false,
+  showRequestQuoteCta = false,
 }) => {
+  const slugTrimmed = businessProfile.business_slug?.trim();
+  const phoneTrimmed = businessProfile.phone_number_call?.trim();
+  const showCtaRow =
+    !!slugTrimmed &&
+    (isPublic || showRequestQuoteCta) &&
+    (showRequestQuoteCta || !!phoneTrimmed);
+
   return (
     <>
       {/* Cover Photo - High-end visual depth with gradient overlay */}
@@ -105,29 +115,46 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </span>
         </div>
 
-        {/* Public CTAs: Request Quote + compact call icon button */}
-        {isPublic && businessProfile.business_slug?.trim() && (
+        {/* Public CTAs: quote on → Request Quote + compact call; quote off → Contact (tel) */}
+        {showCtaRow ? (
           <div className="mt-6 flex w-full max-w-sm items-center justify-center gap-3">
-            <Button
-              href={`/${businessProfile.business_slug.trim()}/quote`}
-              variant="inverse"
-              className="w-[70%] font-semibold px-5"
-            >
-              Request Quote
-            </Button>
-            {businessProfile.phone_number_call?.trim() ? (
+            {showRequestQuoteCta ? (
+              <>
+                <Button
+                  href={`/${slugTrimmed}/quote`}
+                  variant="inverse"
+                  className={
+                    phoneTrimmed
+                      ? 'w-[70%] font-semibold px-5'
+                      : 'w-full max-w-xs font-semibold px-5'
+                  }
+                >
+                  Request Quote
+                </Button>
+                {phoneTrimmed ? (
+                  <Button
+                    href={`tel:${phoneTrimmed}`}
+                    variant="secondary"
+                    size="sm"
+                    aria-label="Call business"
+                    className="w-[42px] shrink-0 px-0"
+                  >
+                    <PhoneIcon className="h-5 w-5 text-zinc-300" />
+                  </Button>
+                ) : null}
+              </>
+            ) : phoneTrimmed ? (
               <Button
-                href={`tel:${businessProfile.phone_number_call.trim()}`}
+                href={`tel:${phoneTrimmed}`}
                 variant="secondary"
-                size="sm"
-                aria-label="Call business"
-                className="w-[42px] shrink-0 px-0"
+                className="w-auto shrink-0 font-semibold px-4"
+                icon={<PhoneIcon className="h-5 w-5" aria-hidden />}
               >
-                <PhoneIcon className="h-5 w-5 text-zinc-300" />
+                Contact
               </Button>
             ) : null}
           </div>
-        )}
+        ) : null}
       </div>
     </>
   );

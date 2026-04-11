@@ -1,16 +1,96 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, CrownIcon } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { ProFeatureLabel } from '@/features/dashboard';
 import { ArrowLeftIcon, InboxIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useMemo } from 'react';
 import { useDashboardQuotes } from '../hooks/useDashboardQuotes';
 import { listPendingCustomerQuoteRequestsNewestFirst } from '../utils/pendingCustomerQuoteRequests';
+import { AcceptQuoteRequestsTogglePanel } from './AcceptQuoteRequestsTogglePanel';
 import { QuoteListRow } from './QuoteListRow';
 import { QuotesDashboardSkeleton } from './QuotesDashboardSkeleton';
 
-export const QuoteRequestsDashboardPage: React.FC = () => {
+export interface QuoteRequestsDashboardPageProps {
+  /** Free-tier owners see Pro upsell instead of the request list (UI only for now). */
+  isFreeTier?: boolean;
+  /** From `business_profiles.accept_quote_req`. */
+  acceptQuoteRequests?: boolean;
+}
+
+function QuoteRequestsBackLink() {
+  return (
+    <Link
+      href={ROUTES.DASHBOARD.QUOTES}
+      className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+    >
+      <ArrowLeftIcon className="h-4 w-4" aria-hidden />
+      Quotes
+    </Link>
+  );
+}
+
+/** Free tier: no quote fetch; Pro label + upgrade CTA. */
+function QuoteRequestsFreeTierContent({
+  acceptQuoteRequests,
+}: {
+  acceptQuoteRequests: boolean;
+}) {
+  return (
+    <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
+      <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-10">
+        <div className="mb-6">
+          <QuoteRequestsBackLink />
+          <header>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                Quote requests
+              </h1>
+              <ProFeatureLabel />
+            </div>
+          </header>
+        </div>
+
+        <AcceptQuoteRequestsTogglePanel
+          initialAcceptQuoteRequests={acceptQuoteRequests}
+          disabled
+        />
+
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-10 text-center sm:px-8 sm:py-12">
+          <span className="mx-auto mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 ring-1 ring-amber-400/25">
+            <CrownIcon className="h-7 w-7 text-amber-300" aria-hidden />
+          </span>
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-gray-300">
+            On your booking page, they tap{' '}
+            <span className="text-gray-200">Request quote</span> if they want a
+            price first.
+          </p>
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-gray-400">
+            It shows up here. You read it, build your quote, send it.
+          </p>
+          <div className="mt-8 w-full">
+            <Button
+              href={ROUTES.DASHBOARD.UPGRADE}
+              variant="inverse"
+              size="md"
+              fullWidth
+              icon={<CrownIcon className="h-4 w-4" />}
+            >
+              Upgrade to Pro
+            </Button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function QuoteRequestsProContent({
+  acceptQuoteRequests,
+}: {
+  acceptQuoteRequests: boolean;
+}) {
   const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
 
   const requestRows = useMemo(
@@ -22,17 +102,11 @@ export const QuoteRequestsDashboardPage: React.FC = () => {
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
       <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-10">
         <div className="mb-6">
-          <Link
-            href={ROUTES.DASHBOARD.QUOTES}
-            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-          >
-            <ArrowLeftIcon className="h-4 w-4" aria-hidden />
-            Quotes
-          </Link>
+          <QuoteRequestsBackLink />
           <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                Requests
+                Quote requests
               </h1>
               <p className="mt-1 text-sm text-gray-500">
                 These are not quotes yet — open one, then create and send the
@@ -41,6 +115,10 @@ export const QuoteRequestsDashboardPage: React.FC = () => {
             </div>
           </header>
         </div>
+
+        <AcceptQuoteRequestsTogglePanel
+          initialAcceptQuoteRequests={acceptQuoteRequests}
+        />
 
         {loadStatus === 'loading' ? (
           <QuotesDashboardSkeleton />
@@ -83,4 +161,15 @@ export const QuoteRequestsDashboardPage: React.FC = () => {
       </div>
     </main>
   );
+}
+
+export const QuoteRequestsDashboardPage: React.FC<
+  QuoteRequestsDashboardPageProps
+> = ({ isFreeTier = false, acceptQuoteRequests = false }) => {
+  if (isFreeTier) {
+    return (
+      <QuoteRequestsFreeTierContent acceptQuoteRequests={acceptQuoteRequests} />
+    );
+  }
+  return <QuoteRequestsProContent acceptQuoteRequests={acceptQuoteRequests} />;
 };

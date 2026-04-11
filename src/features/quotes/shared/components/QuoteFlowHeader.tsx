@@ -11,6 +11,12 @@ interface QuoteFlowHeaderProps {
   title?: string;
   subtitle?: string;
   className?: string;
+  /**
+   * Full-viewport line directly under the back link (e.g. public quote request).
+   */
+  fullWidthDividerAfterBack?: boolean;
+  /** Hide the default rule below the title/subtitle block. */
+  hideDividerAfterTitle?: boolean;
 }
 
 export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
@@ -19,16 +25,26 @@ export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
   title,
   subtitle,
   className = '',
+  fullWidthDividerAfterBack = false,
+  hideDividerAfterTitle = false,
 }) => {
+  const backLinkMb = fullWidthDividerAfterBack ? 'mb-4' : 'mb-6';
+
   return (
     <header className={`mb-6 sm:mb-8 ${className}`}>
       <Link
         href={backHref}
-        className="group -ml-1 mb-6 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+        className={`group -ml-1 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white ${backLinkMb}`}
       >
         <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
         {backLabel}
       </Link>
+      {fullWidthDividerAfterBack ? (
+        <div
+          className="relative left-1/2 mb-6 h-px w-screen -translate-x-1/2 bg-white/10"
+          aria-hidden
+        />
+      ) : null}
       {title ? (
         <>
           <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
@@ -39,10 +55,12 @@ export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
           ) : null}
         </>
       ) : null}
-      <div
-        className={`h-px w-full bg-white/10 ${title ? 'mt-4' : 'mt-2'}`}
-        aria-hidden
-      />
+      {!hideDividerAfterTitle ? (
+        <div
+          className={`h-px w-full bg-white/10 ${title ? 'mt-4' : 'mt-2'}`}
+          aria-hidden
+        />
+      ) : null}
     </header>
   );
 };

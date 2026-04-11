@@ -262,6 +262,8 @@ export const PublicQuoteRequestScreen: React.FC<
           backLabel="Back to profile"
           title="Request Quote"
           subtitle={`Share a few details and ${businessName} will send back a quote.`}
+          fullWidthDividerAfterBack
+          hideDividerAfterTitle
         />
 
         <GlassCard
@@ -274,7 +276,7 @@ export const PublicQuoteRequestScreen: React.FC<
           <div className="space-y-4">
             {step === 'contact' ? (
               <>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <p className="text-sm font-semibold text-gray-300">
                   Your information
                 </p>
                 <Input
@@ -311,9 +313,7 @@ export const PublicQuoteRequestScreen: React.FC<
 
             {step === 'vehicle' && showVehicleFields ? (
               <>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Vehicle
-                </p>
+                <p className="text-sm font-semibold text-gray-300">Vehicle</p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <Input
                     label="Vehicle year"
@@ -352,7 +352,7 @@ export const PublicQuoteRequestScreen: React.FC<
                     {submitError}
                   </p>
                 ) : null}
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <p className="text-sm font-semibold text-gray-300">
                   Quote details
                 </p>
                 <Input

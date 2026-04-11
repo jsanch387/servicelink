@@ -49,9 +49,7 @@ export const PublicQuoteRequestSuccess: React.FC<
         className="mb-8 w-full"
       >
         <div className="border-b border-white/10 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-            Request summary
-          </p>
+          <p className="text-sm font-semibold text-gray-300">Request summary</p>
         </div>
         <div className="space-y-4 p-4 sm:p-6">
           <div>

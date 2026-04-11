@@ -62,8 +62,42 @@ export const ROUTES = {
   },
 } as const;
 
+/**
+ * Path prefixes that require a signed-in session (middleware + server layout).
+ * Align with authenticated app areas (e.g. dashboard sidebar).
+ */
+export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
+
+/**
+ * Safe in-app path after login / OAuth (`returnUrl` or `next`). Blocks open redirects.
+ */
+export function getSafePostAuthDashboardPath(
+  candidate: string | null | undefined
+): string {
+  if (candidate == null || candidate === '') {
+    return ROUTES.DASHBOARD.MAIN;
+  }
+  let raw = candidate.trim();
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {
+    return ROUTES.DASHBOARD.MAIN;
+  }
+  const path = raw.trim();
+  if (!path.startsWith('/dashboard')) {
+    return ROUTES.DASHBOARD.MAIN;
+  }
+  if (path.startsWith('//') || path.includes('://') || path.includes('..')) {
+    return ROUTES.DASHBOARD.MAIN;
+  }
+  return path;
+}
+
 export const API_ROUTES = {
   CUSTOMERS: '/api/customers',
+  /** Owner: toggle `accept_quote_req` on current business. */
+  BUSINESS_PROFILE_ACCEPT_QUOTE_REQUESTS:
+    '/api/business-profile/accept-quote-requests',
   /** Public: customer submits “request quote” from profile. */
   PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
   /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */

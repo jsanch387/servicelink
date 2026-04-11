@@ -1,4 +1,6 @@
 import { PublicQuoteRequestScreen } from '@/features/quotes/public-request/components/PublicQuoteRequestScreen';
+import { publicQuoteRequestAllowedForSlug } from '@/features/quotes/public-request/server/publicQuoteRequestPageAllowed';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { notFound } from 'next/navigation';
 
@@ -11,6 +13,13 @@ export default async function PublicQuotePage({
 }: PublicQuotePageProps) {
   const { 'business-slug': slug } = await params;
   const supabase = await createSupabaseServerClient();
+  const admin = createSupabaseAdminClient();
+
+  const allowed = await publicQuoteRequestAllowedForSlug(supabase, admin, slug);
+  if (!allowed.ok) {
+    notFound();
+  }
+
   const { data: profile } = await supabase
     .from('business_profiles')
     .select('business_name, business_type')

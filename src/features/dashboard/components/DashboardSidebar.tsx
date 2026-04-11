@@ -50,13 +50,13 @@ const allNavigationItems = [
     icon: ClipboardDocumentListIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/quotes',
+    isNew: true,
   },
   {
     name: 'Customers',
     href: ROUTES.DASHBOARD.CUSTOMERS,
     icon: UserGroupIcon,
     requiresOnboarding: true,
-    isNew: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [

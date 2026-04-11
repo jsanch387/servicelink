@@ -41,6 +41,8 @@ interface BusinessProfileViewProps {
   isFreeTier?: boolean;
   /** When true, user just landed from onboarding complete; may show one-time Try Pro modal (free only). */
   onboardingCompleteFromUrl?: boolean;
+  /** Pro + accept_quote_req: show Request quote on public / owner preview header. */
+  showRequestQuoteCta?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -51,6 +53,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   showVerifiedBadge = false,
   isFreeTier = false,
   onboardingCompleteFromUrl = false,
+  showRequestQuoteCta = false,
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
@@ -230,6 +233,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onCancel={handleCancel}
                 isPublic={isPublic}
                 showVerifiedBadge={showVerifiedBadge}
+                showRequestQuoteCta={showRequestQuoteCta}
               />
 
               {/* Tabs Navigation */}

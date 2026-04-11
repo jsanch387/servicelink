@@ -1,4 +1,4 @@
-import { ROUTES } from '@/constants/routes';
+import { getSafePostAuthDashboardPath, ROUTES } from '@/constants/routes';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
@@ -8,7 +8,9 @@ const EMAIL_EXISTS_ERROR = 'email_exists_use_password';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? ROUTES.DASHBOARD.MAIN;
+  const next = getSafePostAuthDashboardPath(
+    searchParams.get('next') ?? ROUTES.DASHBOARD.MAIN
+  );
 
   if (!code) {
     return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));

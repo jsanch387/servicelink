@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { ProFeatureLabel } from '@/features/dashboard';
 import { InboxIcon, PlusIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
@@ -14,7 +15,14 @@ import { QuotesDashboardSkeleton } from './QuotesDashboardSkeleton';
 import { QuotesFilterPills } from './QuotesFilterPills';
 import { QuotesListEmptyState } from './QuotesListEmptyState';
 
-export const QuotesDashboardPage: React.FC = () => {
+export interface QuotesDashboardPageProps {
+  /** When true, show Pro label on the quote-requests row (upgrade nudge). */
+  isFreeTier?: boolean;
+}
+
+export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
+  isFreeTier = false,
+}) => {
   const [filter, setFilter] = useState<QuotesDashboardFilterId>('all');
   const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
 
@@ -104,11 +112,16 @@ export const QuotesDashboardPage: React.FC = () => {
           href={ROUTES.DASHBOARD.QUOTES_REQUESTS}
           className="mb-6 flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-colors hover:border-white/[0.12] hover:bg-white/[0.03]"
         >
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04]">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
               <InboxIcon className="h-5 w-5 text-zinc-400" aria-hidden />
             </span>
-            <span className="text-sm font-semibold text-white">Requests</span>
+            <span className="flex min-w-0 flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-white">
+                Quote requests
+              </span>
+              {isFreeTier ? <ProFeatureLabel /> : null}
+            </span>
           </div>
           <span
             className="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs font-semibold text-gray-300 ring-1 ring-inset ring-white/10"

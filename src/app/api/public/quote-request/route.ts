@@ -5,6 +5,7 @@
  */
 
 import { insertCustomerQuoteRequest } from '@/features/quotes/public-request/server/insertCustomerQuoteRequest';
+import { publicQuoteRequestAllowedForSlug } from '@/features/quotes/public-request/server/publicQuoteRequestPageAllowed';
 import { validatePublicQuoteRequestBody } from '@/features/quotes/public-request/validatePublicQuoteRequestBody';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
@@ -31,20 +32,22 @@ export async function POST(request: NextRequest) {
 
     const admin = createSupabaseAdminClient();
 
-    const { data: profile, error: profileError } = await admin
-      .from('business_profiles')
-      .select('id')
-      .eq('business_slug', parsed.data.businessSlug)
-      .maybeSingle();
-
-    if (profileError || !profile) {
+    const allowed = await publicQuoteRequestAllowedForSlug(
+      admin,
+      admin,
+      parsed.data.businessSlug
+    );
+    if (!allowed.ok) {
       return NextResponse.json(
-        { success: false, error: 'Business not found' },
-        { status: 404 }
+        {
+          success: false,
+          error: 'Quote requests are not available for this business',
+        },
+        { status: 403 }
       );
     }
 
-    const businessId = (profile as { id: string }).id;
+    const businessId = allowed.businessId;
 
     const inserted = await insertCustomerQuoteRequest(
       admin,

@@ -5,6 +5,14 @@
 
 'use client';
 
+import {
+  Button,
+  CrownIcon,
+  GlassCard,
+  Switch,
+  WarningCallout,
+} from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { useAnalytics } from '@/features/analytics';
 import {
   CreateLinkCard,
@@ -14,15 +22,7 @@ import {
   QuickActionsCard,
   UpcomingBookingsCard,
 } from '@/features/dashboard';
-import { NewQuoteCard } from '@/features/quotes';
-import { ROUTES } from '@/constants/routes';
-import {
-  Button,
-  CrownIcon,
-  GlassCard,
-  Switch,
-  WarningCallout,
-} from '@/components/shared';
+import { QuoteRequestsSettingsCard } from '@/features/quotes';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 
@@ -62,6 +62,8 @@ interface DashboardData {
   freeBookingsUsed?: number;
   /** When true, show "Try Pro" CTA (post-onboarding invite for free users). */
   isFreeTier?: boolean;
+  /** From `business_profiles.accept_quote_req` (quote-requests card when free). */
+  acceptQuoteRequests?: boolean;
 }
 
 interface DashboardContentProps {
@@ -98,7 +100,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 href={ROUTES.DASHBOARD.UPGRADE}
                 variant="ghost"
                 size="xs"
-                className="text-gray-400 hover:text-white border border-white/10 hover:border-white/20 text-xs font-medium"
+                className="border border-white/10 hover:border-white/20 text-xs font-medium !text-amber-300 hover:!text-amber-200"
                 icon={<CrownIcon className="h-3.5 w-3.5" />}
               >
                 Try Pro
@@ -179,7 +181,12 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 pendingCount={dashboardData.pendingRequestsCount}
               />
             )}
-            <NewQuoteCard />
+            {dashboardData.isFreeTier ? (
+              <QuoteRequestsSettingsCard
+                isFreeTier
+                acceptQuoteRequests={dashboardData.acceptQuoteRequests ?? false}
+              />
+            ) : null}
             <QuickActionsCard />
           </div>
         </div>

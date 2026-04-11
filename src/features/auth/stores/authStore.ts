@@ -1,5 +1,6 @@
 'use client';
 
+import { getSafePostAuthDashboardPath, ROUTES } from '@/constants/routes';
 import { ProfileService } from '@/features/profiles';
 import { createClient } from '@/libs/supabase';
 import { create } from 'zustand';
@@ -189,7 +190,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Sign in with Google (OAuth redirect)
-      signInWithGoogle: async () => {
+      signInWithGoogle: async (redirectAfterLogin?: string | null) => {
         const supabase = createClient();
         set({ isLoading: true });
 
@@ -198,7 +199,10 @@ export const useAuthStore = create<AuthStore>()(
           const baseUrl =
             process.env.NEXT_PUBLIC_SITE_URL ||
             (typeof window !== 'undefined' ? window.location.origin : '');
-          const redirectTo = `${baseUrl}/auth/callback`;
+          const safeNext = getSafePostAuthDashboardPath(
+            redirectAfterLogin ?? ROUTES.DASHBOARD.MAIN
+          );
+          const redirectTo = `${baseUrl}/auth/callback?next=${encodeURIComponent(safeNext)}`;
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo },

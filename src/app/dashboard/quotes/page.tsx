@@ -1,5 +1,6 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { isProAccess } from '@/features/pricing';
 import { QuotesDashboardPage } from '@/features/quotes/components/QuotesDashboardPage';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
@@ -33,5 +34,17 @@ export default async function DashboardQuotesPage() {
     redirect(ROUTES.DASHBOARD.MAIN);
   }
 
-  return <QuotesDashboardPage />;
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('subscription_tier, subscription_current_period_end')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const tier = (profileRow as { subscription_tier?: string | null } | null)
+    ?.subscription_tier;
+  const periodEnd = (
+    profileRow as { subscription_current_period_end?: string | null } | null
+  )?.subscription_current_period_end;
+  const isFreeTier = !isProAccess(tier, periodEnd);
+
+  return <QuotesDashboardPage isFreeTier={isFreeTier} />;
 }

@@ -120,6 +120,8 @@ export default async function BusinessProfilePage({
   );
   const isFreeTier = !hasProAccess;
   const showVerifiedBadge = hasProAccess;
+  const showRequestQuoteCta =
+    hasProAccess && businessProfile.accept_quote_req === true;
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -130,6 +132,7 @@ export default async function BusinessProfilePage({
         isFreeTier={isFreeTier}
         showVerifiedBadge={showVerifiedBadge}
         onboardingCompleteFromUrl={onboardingComplete}
+        showRequestQuoteCta={showRequestQuoteCta}
       />
     </div>
   );
