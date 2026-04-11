@@ -122,11 +122,17 @@ export async function createBooking(
   const { data, error } = await (supabase as any)
     .from(TABLE)
     .insert(row)
-    .select('id')
+    .select('id, customer_id')
     .single();
 
   if (error) {
     throw error;
+  }
+
+  if (!data?.customer_id) {
+    throw new Error(
+      'Booking was created without customer_id. Add a nullable `customer_id` uuid column on `bookings` referencing `customers(id)` (or fix RLS) so each booking links to a customer row.'
+    );
   }
 
   return { id: data.id };

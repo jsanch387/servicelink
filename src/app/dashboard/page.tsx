@@ -19,6 +19,7 @@ type DashboardProfileRow = {
   business_slug: string | null;
   business_link: string | null;
   legacy_request_booking_enabled: boolean | null;
+  accept_quote_req: boolean | null;
   services: { count: number }[] | null;
   images: { count: number }[] | null;
 };
@@ -164,6 +165,7 @@ export default async function DashboardPage() {
           `
           id, business_name, business_type, service_area, bio, created_at, updated_at,
           business_slug, business_link, legacy_request_booking_enabled,
+          accept_quote_req,
           services:business_services(count),
           images:business_images(count)
         `
@@ -270,6 +272,7 @@ export default async function DashboardPage() {
         upcomingBookingsCount,
         freeBookingsUsed: 0, // TODO: from subscription/usage API when ready
         isFreeTier,
+        acceptQuoteRequests: profile.accept_quote_req === true,
       };
 
       return <DashboardContent dashboardData={dashboardData} />;

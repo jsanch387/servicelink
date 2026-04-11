@@ -1,5 +1,5 @@
-import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
 import { MetaCompleteRegistrationTracker } from '@/features/analytics';
+import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

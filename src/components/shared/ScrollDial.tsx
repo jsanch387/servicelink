@@ -10,7 +10,6 @@ const PADDING_Y = ITEM_HEIGHT * 2;
 interface ScrollDialProps {
   options: { value: string; label: string }[];
   value: string;
-  // eslint-disable-next-line no-unused-vars -- callback type; param name required by TS
   onChange: (value: string) => void;
   /** When false, do not sync scroll from value (avoids fighting user scroll when draft updates) */
   syncFromValue?: boolean;

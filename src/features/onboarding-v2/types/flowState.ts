@@ -2,8 +2,8 @@
  * Onboarding V2 – local flow state (UI only, no API yet).
  */
 
-import type { WeeklySchedule } from '@/features/availability/types/availability';
 import type { PresetKey } from '@/features/availability/components/QuickPresetsSection';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
 
 export interface OnboardingV2Service {
   id: string;
@@ -11,7 +11,7 @@ export interface OnboardingV2Service {
   price: string;
   /** Duration in minutes (for booking). Stored in DB as duration_minutes. */
   durationMinutes: number;
-  /** Short description of what's included (required). Max 250 chars for card display. */
+  /** Service description (required). Same max length as dashboard service editor. */
   description?: string;
 }
 

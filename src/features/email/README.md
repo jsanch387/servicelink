@@ -12,11 +12,16 @@ email/
 │   └── resendClient.ts       (Resend client, app base URL, from address)
 ├── utils/
 │   └── escapeHtml.ts         (safe HTML for email content)
-└── booking-notification/     (new booking request → owner email)
-    ├── README.md             (booking notification–specific docs)
+├── booking-notification/     (new booking request → owner email)
+│   ├── README.md
+│   ├── types.ts
+│   ├── bookingNotificationTemplate.ts
+│   └── sendBookingNotificationEmail.ts
+└── quote-sent-to-customer/   (owner sent quote → customer email)
+    ├── README.md
     ├── types.ts
-    ├── bookingNotificationTemplate.ts
-    └── sendBookingNotificationEmail.ts
+    ├── quoteSentToCustomerTemplate.ts
+    └── sendQuoteSentToCustomerEmail.ts
 ```
 
 - **`services/`** – shared Resend client and URL/from helpers used by all email types.

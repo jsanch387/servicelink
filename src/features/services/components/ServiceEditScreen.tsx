@@ -1,9 +1,15 @@
 'use client';
 
-import { Button, IconButton, Input, PriceInput, TextArea } from '@/components/shared';
+import {
+  Button,
+  IconButton,
+  Input,
+  PriceInput,
+  TextArea,
+  TimeSelect,
+} from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
-import { TimeSelect } from '@/features/availability/components/TimeSelect';
 import { saveServiceAddOnAssignmentsAction } from '@/features/services/actions/saveServiceAddOnAssignments';
 import { saveServicePriceOptionsAction } from '@/features/services/actions/saveServicePriceOptions';
 import { updateServiceAction } from '@/features/services/actions/updateService';

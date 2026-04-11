@@ -9,9 +9,9 @@ import { StructuredData } from '@/components/shared';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
+import { MediaService } from '@/features/media';
 import { isProAccess } from '@/features/pricing';
 import { FREE_MAX_PORTFOLIO_IMAGES } from '@/features/pricing/types';
-import { MediaService } from '@/features/media';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { notFound } from 'next/navigation';
@@ -158,6 +158,9 @@ export default async function PublicProfilePage({
           images: businessProfile.images.slice(0, FREE_MAX_PORTFOLIO_IMAGES),
         };
 
+  const showRequestQuoteCta =
+    ownerTier === 'pro' && displayProfile.accept_quote_req === true;
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
@@ -171,6 +174,7 @@ export default async function PublicProfilePage({
         initialMode="view"
         isPublic={true}
         showVerifiedBadge={showVerifiedBadge}
+        showRequestQuoteCta={showRequestQuoteCta}
       />
     </div>
   );

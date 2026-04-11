@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/components/shared';
 import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import React, {
   useCallback,
@@ -18,7 +17,8 @@ import {
   from24h,
   normalizeServiceDurationHHmm,
   to24h,
-} from '../utils/timeOptions';
+} from '@/features/availability/utils/timeOptions';
+import { Button } from './Button';
 import { ScrollDial } from './ScrollDial';
 
 const HOUR_12_OPTIONS = Array.from({ length: 12 }, (_, i) => {

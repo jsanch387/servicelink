@@ -32,6 +32,8 @@ export interface CalendarProps {
   className?: string;
   /** Show year under month in header. Default true. */
   showYear?: boolean;
+  /** No outer card frame (border, shadow, panel fill) — for embedding in a larger layout. */
+  plain?: boolean;
 }
 
 export const Calendar: React.FC<CalendarProps> = ({
@@ -44,6 +46,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   subtitle,
   className = '',
   showYear = true,
+  plain = false,
 }) => {
   const [viewDate, setViewDate] = useState(() => new Date());
 
@@ -96,10 +99,12 @@ export const Calendar: React.FC<CalendarProps> = ({
     month: 'long',
   });
 
+  const frameClass = plain
+    ? 'w-full sm:max-w-[360px] p-0 bg-transparent border-0 shadow-none rounded-none'
+    : 'w-full sm:max-w-[360px] rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 shadow-xl';
+
   return (
-    <div
-      className={`w-full sm:max-w-[360px] rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 shadow-xl transition-all duration-300 ${className}`}
-    >
+    <div className={`${frameClass} transition-all duration-300 ${className}`}>
       {(title || subtitle) && (
         <div className="mb-6 px-0.5">
           {title && (

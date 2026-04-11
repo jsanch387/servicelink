@@ -43,6 +43,18 @@ export const ROUTES = {
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
+    QUOTES: '/dashboard/quotes',
+    /** Pending customer quote requests (not full quotes until you create one). */
+    QUOTES_REQUESTS: '/dashboard/quotes/requests',
+    /** Single open request (same row as quotes DB; `customer_requested` + `requested`). */
+    QUOTE_REQUEST_DETAIL: (requestId: string) =>
+      `/dashboard/quotes/requests/${encodeURIComponent(requestId.trim())}`,
+    QUOTES_NEW: '/dashboard/quotes/new',
+    /** Single quote (owner dashboard). Pass UUID from your data layer. */
+    QUOTE_DETAIL: (quoteId: string) =>
+      `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}`,
+    QUOTE_EDIT: (quoteId: string) =>
+      `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
     SETTINGS: '/dashboard/settings',
@@ -50,8 +62,23 @@ export const ROUTES = {
   },
 } as const;
 
+/**
+ * Path prefixes that require a signed-in session (see `middleware.ts`).
+ * - `/dashboard` covers every nested route (e.g. `/dashboard/quotes/requests/...`).
+ * - Add another prefix only if you add a new authenticated area **outside** `/dashboard`.
+ */
+export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
+
 export const API_ROUTES = {
   CUSTOMERS: '/api/customers',
+  /** Owner: toggle `accept_quote_req` on current business. */
+  BUSINESS_PROFILE_ACCEPT_QUOTE_REQUESTS:
+    '/api/business-profile/accept-quote-requests',
+  /** Public: customer submits “request quote” from profile. */
+  PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
+  /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */
+  QUOTE_SEND_EXISTING: (quoteId: string) =>
+    `/api/quotes/${encodeURIComponent(quoteId.trim())}/send`,
 } as const;
 
 export const PUBLIC_ROUTES = [

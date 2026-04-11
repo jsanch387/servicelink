@@ -7,12 +7,14 @@ import {
   RequiredLabel,
   WarningCallout,
 } from '@/components/shared';
+import { useAuth } from '@/features/auth';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { PlanSection, ProWelcomeModal } from '@/features/pricing';
 import type { PlanId } from '@/features/pricing';
 import { PRO_WELCOME_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { UpdateBusinessLinkModal } from './UpdateBusinessLinkModal';
 import {
+  ArrowRightStartOnRectangleIcon,
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
   EnvelopeIcon,
@@ -62,6 +64,8 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
   const [portalLoading, setPortalLoading] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { signOut } = useAuth();
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   const handleOpenPortal = useCallback(async () => {
     setPortalLoading(true);
@@ -139,6 +143,18 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
       document.body.removeChild(textarea);
     }
   }, [fullLinkForCopy]);
+
+  const handleLogout = useCallback(async () => {
+    setLogoutLoading(true);
+    try {
+      const result = await signOut();
+      if (result.success) router.push('/');
+    } catch {
+      // ignore
+    } finally {
+      setLogoutLoading(false);
+    }
+  }, [signOut, router]);
 
   const handleViewProfile = useCallback(() => {
     if (!currentSlug) return;
@@ -363,6 +379,18 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
                 </p>
               </div>
             </a>
+          </div>
+
+          <div className="mt-10 pb-2">
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={logoutLoading}
+              className="group inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl px-1 py-2 text-sm font-medium text-gray-400 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowRightStartOnRectangleIcon className="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-white" />
+              {logoutLoading ? 'Signing out…' : 'Log out'}
+            </button>
           </div>
         </div>
       </div>

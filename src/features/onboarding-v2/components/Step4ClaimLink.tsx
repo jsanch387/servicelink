@@ -123,10 +123,11 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
             type="button"
             onClick={handleClaim}
             variant="inverse"
-            disabled={!canContinue || saving}
+            disabled={!canContinue}
+            loading={saving}
             className="sm:ml-auto"
           >
-            {saving ? 'Claiming…' : 'Claim this link'}
+            {saving ? 'Claiming' : 'Claim this link'}
           </Button>
         </div>
       </div>

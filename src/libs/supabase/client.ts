@@ -82,6 +82,8 @@ export type Database = {
           updated_at: string;
           free_bookings_month: string | null;
           free_bookings_count: number;
+          /** When true and owner is Pro, public profile shows Request quote. */
+          accept_quote_req: boolean;
         };
         Insert: {
           id?: string;
@@ -110,6 +112,7 @@ export type Database = {
           last_edited?: string;
           created_at?: string;
           updated_at?: string;
+          accept_quote_req?: boolean;
         };
         Update: {
           id?: string;
@@ -138,6 +141,7 @@ export type Database = {
           updated_at?: string;
           free_bookings_month?: string | null;
           free_bookings_count?: number;
+          accept_quote_req?: boolean;
         };
       };
       service_addons: {

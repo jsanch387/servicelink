@@ -1,10 +1,9 @@
 'use client';
 
-import { Button, Input, Modal } from '@/components/shared';
+import { Button, Input, Modal, TimeSelect } from '@/components/shared';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { BlockTimeEntry } from '../types/blockTime';
 import { compareTime } from '../utils/timeOptions';
-import { TimeSelect } from './TimeSelect';
 
 function todayIsoDate(): string {
   const d = new Date();

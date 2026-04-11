@@ -8,11 +8,14 @@ import type { Database } from './client';
  */
 export function createSupabaseAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secretKey = process.env.SUPABASE_SECRET_KEY;
+  /** Supabase “service role” secret (bypasses RLS). Support both env names. */
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!url || !secretKey) {
     throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SECRET_KEY'
+      'Missing NEXT_PUBLIC_SUPABASE_URL and a service key (set SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY)'
     );
   }
 
