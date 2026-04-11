@@ -212,10 +212,10 @@ export const AvailabilityContent: React.FC = () => {
           )}
 
           <div className="mb-6 sm:mb-8 md:mb-10 pr-16 sm:pr-20">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
               Availability
             </h1>
-            <p className="text-gray-400 text-sm sm:text-base mt-1">
+            <p className="mt-0.5 max-w-xl text-sm text-gray-500">
               Set when you’re available for bookings
             </p>
           </div>
