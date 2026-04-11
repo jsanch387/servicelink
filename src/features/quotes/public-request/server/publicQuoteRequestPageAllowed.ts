@@ -6,6 +6,14 @@ type MinimalBusiness = {
   profile_id: string | null;
 };
 
+export type PublicQuoteRequestAllowedForSlugResult =
+  | {
+      ok: true;
+      businessId: string;
+      profileId: string;
+    }
+  | { ok: false };
+
 /**
  * Public `/[slug]/quote` and POST quote-request: business must opt in and owner must be Pro.
  */
@@ -13,7 +21,7 @@ export async function publicQuoteRequestAllowedForSlug(
   supabase: SupabaseClient,
   adminForProfiles: SupabaseClient,
   slug: string
-): Promise<{ ok: true; businessId: string } | { ok: false }> {
+): Promise<PublicQuoteRequestAllowedForSlugResult> {
   const { data: row, error } = await supabase
     .from('business_profiles')
     .select('id, accept_quote_req, profile_id')
@@ -41,5 +49,9 @@ export async function publicQuoteRequestAllowedForSlug(
     return { ok: false };
   }
 
-  return { ok: true, businessId: (row as { id: string }).id };
+  return {
+    ok: true,
+    businessId: (row as { id: string }).id,
+    profileId: biz.profile_id,
+  };
 }

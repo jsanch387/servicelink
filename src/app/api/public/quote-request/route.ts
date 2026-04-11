@@ -5,6 +5,7 @@
  */
 
 import { insertCustomerQuoteRequest } from '@/features/quotes/public-request/server/insertCustomerQuoteRequest';
+import { notifyOwnerForPublicQuoteRequest } from '@/features/quotes/public-request/server/notifyOwnerForPublicQuoteRequest';
 import { publicQuoteRequestAllowedForSlug } from '@/features/quotes/public-request/server/publicQuoteRequestPageAllowed';
 import { validatePublicQuoteRequestBody } from '@/features/quotes/public-request/validatePublicQuoteRequestBody';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -78,6 +79,22 @@ export async function POST(request: NextRequest) {
         { success: false, error: inserted.error },
         { status: 500 }
       );
+    }
+
+    try {
+      await notifyOwnerForPublicQuoteRequest(admin, {
+        profileId: allowed.profileId,
+        quoteId: inserted.quoteId,
+        customerName: parsed.data.customerName,
+        serviceName: parsed.data.serviceName,
+        vehicleYear: parsed.data.vehicleYear,
+        vehicleMake: parsed.data.vehicleMake,
+        vehicleModel: parsed.data.vehicleModel,
+        timeline: parsed.data.timeline,
+        details: parsed.data.details,
+      });
+    } catch {
+      // Best-effort after successful insert
     }
 
     return NextResponse.json({ success: true }, { status: 201 });

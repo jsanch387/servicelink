@@ -24,3 +24,9 @@ export type {
   QuoteSentToCustomerPayload,
   SendQuoteSentToCustomerResult,
 } from './quote-sent-to-customer/types';
+
+export { sendQuoteRequestOwnerNotificationEmail } from './quote-request-owner-notification/sendQuoteRequestOwnerNotificationEmail';
+export type {
+  QuoteRequestOwnerNotificationPayload,
+  SendQuoteRequestOwnerNotificationResult,
+} from './quote-request-owner-notification/types';
