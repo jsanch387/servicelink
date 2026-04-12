@@ -6,7 +6,11 @@
 
 import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { EyeIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import {
+  ChartBarSquareIcon,
+  EyeIcon,
+  PencilSquareIcon,
+} from '@heroicons/react/24/outline';
 import React from 'react';
 
 export const QuickActionsCard: React.FC = () => {
@@ -43,6 +47,14 @@ export const QuickActionsCard: React.FC = () => {
           icon={<PencilSquareIcon className="h-4 w-4" />}
         >
           Edit Business Details
+        </Button>
+        <Button
+          variant="secondary"
+          fullWidth
+          href={ROUTES.DASHBOARD.ADMIN}
+          icon={<ChartBarSquareIcon className="h-4 w-4" />}
+        >
+          Admin Dashboard
         </Button>
       </div>
     </GlassCard>

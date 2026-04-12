@@ -5,6 +5,7 @@ import { ROUTES } from '@/constants/routes';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
 import {
   CalendarIcon,
+  ChartBarSquareIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
   CogIcon,
@@ -25,6 +26,12 @@ const allNavigationItems = [
     href: ROUTES.DASHBOARD.MAIN,
     icon: HomeIcon,
     requiresOnboarding: false,
+  },
+  {
+    name: 'Admin',
+    href: ROUTES.DASHBOARD.ADMIN,
+    icon: ChartBarSquareIcon,
+    requiresOnboarding: true,
   },
   {
     name: 'Business Profile',
