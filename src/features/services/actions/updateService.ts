@@ -12,6 +12,7 @@ import type {
   UpdateServicePayload,
   UpdateServiceResult,
 } from '../types/services';
+import { hasPriceOptionsAccess } from '../utils/priceOptionsAccess';
 
 export async function updateServiceAction(
   serviceId: string,
@@ -50,5 +51,23 @@ export async function updateServiceAction(
     };
   }
 
-  return updateServiceApi(supabase, serviceId, businessProfile.id, payload);
+  const canUsePriceOptions = await hasPriceOptionsAccess({
+    supabase,
+    userId: user.id,
+    businessId: businessProfile.id,
+  });
+
+  const normalizedPayload: UpdateServicePayload = {
+    ...payload,
+    ...(payload.price_options_enabled != null && !canUsePriceOptions
+      ? { price_options_enabled: false }
+      : {}),
+  };
+
+  return updateServiceApi(
+    supabase,
+    serviceId,
+    businessProfile.id,
+    normalizedPayload
+  );
 }

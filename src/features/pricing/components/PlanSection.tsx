@@ -2,6 +2,7 @@
 
 import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { CrownIcon } from '@/icons';
 import React, { useState } from 'react';
 import type { PlanId } from '../types';
 import { PLANS } from '../types';
@@ -47,19 +48,25 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
         <h2 className="text-lg sm:text-xl font-bold text-white">
           Subscription plan
         </h2>
-        {isPro && (
-          <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
-            Pro
-          </span>
-        )}
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 mt-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="font-semibold text-white">{plan.name}</p>
-          <p className="text-lg font-bold text-white tabular-nums">
+        <div className="flex min-h-[2.5rem] flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <p className="inline-flex items-center gap-1.5 font-semibold leading-none text-white">
+            {isPro ? (
+              <>
+                <span>{plan.name}</span>
+                <CrownIcon className="h-5 w-5 shrink-0 translate-y-[3px] text-amber-300" />
+              </>
+            ) : (
+              plan.name
+            )}
+          </p>
+          <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-white tabular-nums">
             {plan.price}
-            <span className="text-sm font-normal text-gray-400">/month</span>
+            <span className="text-sm font-normal leading-none text-gray-400">
+              /month
+            </span>
           </p>
         </div>
       </div>

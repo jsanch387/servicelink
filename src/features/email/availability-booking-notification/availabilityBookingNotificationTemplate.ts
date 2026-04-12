@@ -65,6 +65,10 @@ export function buildAvailabilityBookingEmailHtml(
   const vehicleLine = formatVehicleLine(payload);
   const addOns = payload.selectedAddOns ?? [];
   const addOnsNames = addOns.map(a => a.name).join(', ');
+  const optionLabel = payload.servicePriceOptionLabel?.trim();
+  const serviceDisplayName = optionLabel
+    ? `${payload.serviceName} — ${optionLabel}`
+    : payload.serviceName;
 
   const hasBasePrice =
     payload.servicePriceCents != null && payload.servicePriceCents > 0;
@@ -101,7 +105,7 @@ export function buildAvailabilityBookingEmailHtml(
         ? `
       <tr>
         <td class="detail-label" style="padding: 6px 0; color: #64748b;">
-          ${escapeHtml(payload.serviceName)}
+          ${escapeHtml(serviceDisplayName)}
         </td>
         <td class="detail-value" style="padding: 6px 0; color: #0f172a; text-align: right;">
           ${escapeHtml(basePriceLabel!)}
@@ -328,9 +332,17 @@ export function buildAvailabilityBookingEmailHtml(
             <table width="100%" cellspacing="0" cellpadding="0">
               ${vehicleRowInServiceDetails}
               <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Base Service</td>
+                <td class="detail-label" style="padding-bottom: 12px;">Service</td>
                 <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.serviceName)}</td>
               </tr>
+              ${
+                optionLabel
+                  ? `<tr>
+                      <td class="detail-label" style="padding-bottom: 12px;">Option</td>
+                      <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(optionLabel)}</td>
+                    </tr>`
+                  : ''
+              }
               ${
                 addOns.length > 0
                   ? `<tr>

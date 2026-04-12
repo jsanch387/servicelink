@@ -1,21 +1,13 @@
 'use client';
 
+import { US_PHONE_DIGIT_COUNT, formatUsPhoneDigits } from '@/lib/formatUsPhone';
 import { PhoneIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { Input } from './Input';
 
-/** US phone: 10 digits → (XXX) XXX-XXXX. Formatted length = 14. */
-const PHONE_DIGIT_LIMIT = 10;
 const PHONE_FORMATTED_MAX_LENGTH = 14;
 
-function formatPhoneDisplay(digits: string): string {
-  const cleaned = digits.replace(/\D/g, '');
-  if (cleaned.length === 0) return '';
-  if (cleaned.length <= 3) return `(${cleaned}`;
-  if (cleaned.length <= 6)
-    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-  return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, PHONE_DIGIT_LIMIT)}`;
-}
+export { US_PHONE_DIGIT_COUNT, formatUsPhoneDigits };
 
 interface PhoneInputProps {
   label?: string;
@@ -51,18 +43,18 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   showDigitHint = true,
   showIcon = false,
 }) => {
-  const digits = value.replace(/\D/g, '').slice(0, PHONE_DIGIT_LIMIT);
+  const digits = value.replace(/\D/g, '').slice(0, US_PHONE_DIGIT_COUNT);
   const [displayValue, setDisplayValue] = useState(() =>
-    formatPhoneDisplay(digits)
+    formatUsPhoneDigits(digits)
   );
 
   useEffect(() => {
-    setDisplayValue(formatPhoneDisplay(value.replace(/\D/g, '')));
+    setDisplayValue(formatUsPhoneDigits(value.replace(/\D/g, '')));
   }, [value]);
 
   const handleChange = (raw: string) => {
-    const cleaned = raw.replace(/\D/g, '').slice(0, PHONE_DIGIT_LIMIT);
-    setDisplayValue(formatPhoneDisplay(cleaned));
+    const cleaned = raw.replace(/\D/g, '').slice(0, US_PHONE_DIGIT_COUNT);
+    setDisplayValue(formatUsPhoneDigits(cleaned));
     onChange(cleaned);
   };
 
@@ -85,9 +77,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
         maxLength={PHONE_FORMATTED_MAX_LENGTH}
         leftIcon={showIcon ? <PhoneIcon className="h-5 w-5" /> : undefined}
       />
-      {showDigitHint && digitCount > 0 && digitCount < PHONE_DIGIT_LIMIT && (
+      {showDigitHint && digitCount > 0 && digitCount < US_PHONE_DIGIT_COUNT && (
         <p className="mt-1 text-sm text-gray-400">
-          {PHONE_DIGIT_LIMIT - digitCount} more digit
+          {US_PHONE_DIGIT_COUNT - digitCount} more digit
           {digitCount === 9 ? '' : 's'} needed
         </p>
       )}

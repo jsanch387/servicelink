@@ -1,7 +1,9 @@
-/* eslint-disable no-unused-vars */
 'use client';
 
 import { Button } from '@/components/shared';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
 import type {
@@ -9,8 +11,8 @@ import type {
   AvailabilityBookingPageProps,
   CustomerFormData,
 } from '../types';
-import { formatDurationMinutes } from '../utils/formatDuration';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
+import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
 import { CustomerForm, isCustomerFormValid } from './CustomerForm';
@@ -28,6 +30,9 @@ function formatTimeDisplay(hhmm: string): string {
 
 const CUSTOMER_FORM_ID = 'availability-booking-details-form';
 
+/** Sub-steps inside `/book` after service options/add-ons (calendar → form → review). */
+export type CalendarBookingStep = 'schedule' | 'details' | 'review';
+
 export function AvailabilityBookingPage({
   businessName,
   businessId,
@@ -40,10 +45,13 @@ export function AvailabilityBookingPage({
   serviceName,
   serviceDurationMinutes = 60,
   servicePriceCents,
+  selectedPriceOptionLabel,
   weeklySchedule,
   timeOffBlocks: timeOffBlocksProp = [],
   existingBookings: existingBookingsProp,
   isOwnerManualBooking = false,
+  exitCalendarFlowHref,
+  exitCalendarFlowLabel,
 }: AvailabilityBookingPageProps) {
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
@@ -58,7 +66,15 @@ export function AvailabilityBookingPage({
     return base + addOnTotal;
   }, [servicePriceCents, selectedAddOns]);
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const totalBookingDurationMinutes = useMemo(() => {
+    const addOnMins = selectedAddOns.reduce((sum, a) => {
+      const m = a.durationMinutes;
+      return sum + (m != null && m > 0 ? m : 0);
+    }, 0);
+    return serviceDurationMinutes + addOnMins;
+  }, [serviceDurationMinutes, selectedAddOns]);
+
+  const [step, setStep] = useState<CalendarBookingStep>('schedule');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [customerData, setCustomerData] = useState<CustomerFormData>(
@@ -99,6 +115,8 @@ export function AvailabilityBookingPage({
           businessId,
           serviceId,
           serviceName,
+          servicePriceOptionLabel:
+            selectedPriceOptionLabel?.trim() || undefined,
           servicePriceCents: servicePriceCents ?? undefined,
           selectedAddOns:
             selectedAddOns.length > 0
@@ -106,9 +124,10 @@ export function AvailabilityBookingPage({
                   id: a.id,
                   name: a.name,
                   priceCents: a.priceCents,
+                  durationMinutes: a.durationMinutes ?? undefined,
                 }))
               : undefined,
-          durationMinutes: serviceDurationMinutes,
+          durationMinutes: totalBookingDurationMinutes,
           scheduledDate,
           startTime: selectedTime,
           customer: customerData,
@@ -139,6 +158,7 @@ export function AvailabilityBookingPage({
         businessName={businessName}
         businessSlug={businessSlug}
         serviceName={serviceName}
+        serviceVariantLabel={selectedPriceOptionLabel}
         servicePriceCents={servicePriceCents}
         selectedAddOns={submittedData.selectedAddOns}
         totalPriceCents={totalPriceCents}
@@ -150,48 +170,62 @@ export function AvailabilityBookingPage({
     );
   }
 
+  const headerClassName =
+    'inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors';
+
   return (
     <div className="flex flex-col min-h-[60vh]">
+      <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 mb-2 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
+        <div className="max-w-2xl mx-auto">
+          {step === 'schedule' && (
+            <Link href={exitCalendarFlowHref} className={headerClassName}>
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span className="text-sm font-medium">
+                {exitCalendarFlowLabel}
+              </span>
+            </Link>
+          )}
+          {step === 'details' && (
+            <button
+              type="button"
+              onClick={() => setStep('schedule')}
+              className={headerClassName}
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span className="text-sm font-medium">Back to date & time</span>
+            </button>
+          )}
+          {step === 'review' && (
+            <button
+              type="button"
+              onClick={() => setStep('details')}
+              className={headerClassName}
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span className="text-sm font-medium">Back to details</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 pb-28">
         {/* Step 1 – Schedule */}
-        {step === 1 && (
+        {step === 'schedule' && (
           <div className="space-y-6 pt-4">
-            <section>
-              <h2 className="text-lg font-semibold text-white mb-1">
-                {serviceName || 'Booking'}
-              </h2>
-              <p className="text-sm text-gray-400">
-                {formatDurationMinutes(serviceDurationMinutes)}
-                {servicePriceCents != null && (
-                  <> · ${(servicePriceCents / 100).toFixed(2)}</>
-                )}
-              </p>
-              {selectedAddOns.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <p className="text-xs text-gray-500 tracking-wider mb-1.5">
-                    Add-ons
-                  </p>
-                  <ul className="space-y-1">
-                    {selectedAddOns.map(addOn => (
-                      <li
-                        key={addOn.id}
-                        className="flex justify-between text-sm text-gray-300"
-                      >
-                        <span>{addOn.name}</span>
-                        <span>${(addOn.priceCents / 100).toFixed(2)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {totalPriceCents != null && totalPriceCents > 0 && (
-                    <p className="text-sm font-medium text-white mt-2">
-                      Total · ${(totalPriceCents / 100).toFixed(2)}
-                    </p>
-                  )}
-                </div>
-              )}
-            </section>
+            <BookingPriceBreakdown
+              serviceName={serviceName}
+              serviceDurationMinutes={serviceDurationMinutes}
+              servicePriceCents={servicePriceCents}
+              serviceVariantLabel={selectedPriceOptionLabel}
+              selectedAddOns={selectedAddOns}
+              totalBookingDurationMinutes={totalBookingDurationMinutes}
+              totalPriceCents={totalPriceCents}
+            />
             <DateSelector
               weeklySchedule={weeklySchedule}
+              serviceDurationMinutes={totalBookingDurationMinutes}
+              existingBookings={existingBookings}
+              timeOffBlocks={timeOffBlocksProp}
               selectedDate={selectedDate}
               onSelectDate={date => {
                 setSelectedDate(date);
@@ -200,7 +234,7 @@ export function AvailabilityBookingPage({
             />
             <TimeSlotGrid
               selectedDate={selectedDate}
-              serviceDurationMinutes={serviceDurationMinutes}
+              serviceDurationMinutes={totalBookingDurationMinutes}
               weeklySchedule={weeklySchedule}
               existingBookings={existingBookings}
               timeOffBlocks={timeOffBlocksProp}
@@ -211,13 +245,13 @@ export function AvailabilityBookingPage({
         )}
 
         {/* Step 2 – Details */}
-        {step === 2 && (
+        {step === 'details' && (
           <div className="pt-4">
             <CustomerForm
               id={CUSTOMER_FORM_ID}
               value={customerData}
               onChange={setCustomerData}
-              onSubmit={() => setStep(3)}
+              onSubmit={() => setStep('review')}
               showVehicleFields={showVehicleFields}
               hideSubmitButton
               submitLabel="Review Booking"
@@ -226,7 +260,7 @@ export function AvailabilityBookingPage({
         )}
 
         {/* Step 3 – Confirm */}
-        {step === 3 && selectedDate && selectedTime && (
+        {step === 'review' && selectedDate && selectedTime && (
           <div className="pt-4 space-y-4">
             {submitError && (
               <p className="text-sm text-red-400" role="alert">
@@ -236,7 +270,9 @@ export function AvailabilityBookingPage({
             <BookingSummary
               serviceName={serviceName}
               serviceDurationMinutes={serviceDurationMinutes}
+              totalAppointmentMinutes={totalBookingDurationMinutes}
               servicePriceCents={servicePriceCents}
+              serviceVariantLabel={selectedPriceOptionLabel}
               selectedAddOns={selectedAddOns}
               totalPriceCents={totalPriceCents}
               date={selectedDate.toISOString().slice(0, 10)}
@@ -252,45 +288,37 @@ export function AvailabilityBookingPage({
         className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          {(step === 2 || step === 3) && (
-            <Button
-              type="button"
-              variant="secondary"
-              className="font-semibold shrink-0"
-              onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)}
-            >
-              Back
-            </Button>
-          )}
-          {step === 1 && (
+        <div className="max-w-2xl mx-auto">
+          {step === 'schedule' && (
             <Button
               type="button"
               variant="inverse"
               fullWidth
               className="font-semibold"
               disabled={!canContinueFromSchedule}
-              onClick={() => setStep(2)}
+              onClick={() => setStep('details')}
             >
               Continue
             </Button>
           )}
-          {step === 2 && (
+          {step === 'details' && (
             <Button
               type="submit"
               form={CUSTOMER_FORM_ID}
               variant="inverse"
-              className="flex-1 font-semibold"
+              fullWidth
+              className="font-semibold"
               disabled={!canContinueFromDetails}
             >
               Review Booking
             </Button>
           )}
-          {step === 3 && (
+          {step === 'review' && (
             <Button
               type="button"
               variant="inverse"
-              className="flex-1 font-semibold"
+              fullWidth
+              className="font-semibold"
               disabled={isSubmitting}
               onClick={handleConfirmBooking}
             >

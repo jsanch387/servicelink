@@ -18,3 +18,15 @@ export type {
 
 export { sendSubscriptionPaymentFailedEmail } from './subscription-payment-failed/sendSubscriptionPaymentFailedEmail';
 export type { SendSubscriptionPaymentFailedResult } from './subscription-payment-failed/types';
+
+export { sendQuoteSentToCustomerEmail } from './quote-sent-to-customer/sendQuoteSentToCustomerEmail';
+export type {
+  QuoteSentToCustomerPayload,
+  SendQuoteSentToCustomerResult,
+} from './quote-sent-to-customer/types';
+
+export { sendQuoteRequestOwnerNotificationEmail } from './quote-request-owner-notification/sendQuoteRequestOwnerNotificationEmail';
+export type {
+  QuoteRequestOwnerNotificationPayload,
+  SendQuoteRequestOwnerNotificationResult,
+} from './quote-request-owner-notification/types';

@@ -41,13 +41,14 @@ This doc describes how the **owner availability** settings and **V2 (availabilit
 
 ### Time slots: how they are generated
 
-- **Inputs:** Selected date, `weekly_schedule`, **`time_off_blocks`** (as `timeOffBlocks` on the client), `serviceDurationMinutes` (from the service or default 60), and **existing bookings** for that business.
+- **Inputs:** Selected date, `weekly_schedule`, **`time_off_blocks`** (as `timeOffBlocks` on the client), **`serviceDurationMinutes` = total appointment length in minutes**, and **existing bookings** for that business.
+  - **Important:** On `AvailabilityBookingPage`, the value passed into `DateSelector` / `TimeSlotGrid` is **`totalBookingDurationMinutes`**: base service duration (from `business_services`, with legacy fallback—see below) **plus** the sum of each selected add-on’s `duration_minutes` (only minutes &gt; 0 count). With no add-ons, that equals the base service duration only.
 - **Source of booking-occupied slots:** **GET /api/public/bookings/blocked/[slug]** returns confirmed/completed bookings with `scheduled_date`, `start_time`, and `duration_minutes`. The hook `usePublicBlockedSlots(businessSlug)` merges that into the slot generator.
 - **Source of owner time off:** Parsed on the **server** when rendering `/[slug]/book` (admin client loads `business_availability`). No extra public API for time off.
 - **Slot generator** (`booking/utils/slotGeneration.ts`):
   - Works in **minutes from midnight** for the selected date.
-  - For the selected day, reads `weekly_schedule[day]` (start/end). Only considers times where `start <= slotStart` and `slotStart + serviceDurationMinutes <= end`.
-  - Steps in **30-minute** increments. For each candidate slot `[slotStart, slotStart + serviceDurationMinutes]`:
+  - For the selected day, reads `weekly_schedule[day]` (start/end). Only considers times where `start <= slotStart` and `slotStart + duration <= end`, where **duration** is the **total** appointment minutes passed in (prop name in code is often `serviceDurationMinutes` but the value is **base + add-ons** when applicable).
+  - Steps in **30-minute** increments. For each candidate slot `[slotStart, slotStart + duration]`:
     - Skips if the slot is in the past (when the selected date is today).
     - **Bookings overlap:** For each existing booking on that `scheduled_date`, range `[bStart, bStart + duration]`. Block if `slotStart < bEnd && slotEnd > bStart`.
     - **Time-off overlap:** For each `time_off_blocks` entry on that calendar `date`, range `[offStart, offEnd)` (half-open). Block if the slot overlaps the same way (`slotStart < offEnd && slotEnd > offStart`).
@@ -81,9 +82,21 @@ So: **time is handled in minutes** (storage and overlap logic). The UI can displ
 
 In short: **we always prioritize `duration_minutes` when present**, but gracefully fall back to `hours_to_complete` so older services and bookings continue to behave correctly. All booking logic runs in minutes; hours are now only a presentation concern.
 
+#### Add-on optional duration (`service_addons.duration_minutes`)
+
+- **Database:** `service_addons` may include **`duration_minutes`** (nullable). Empty/null means the add-on does **not** extend the appointment length (price-only add-on).
+- **Public booking path:** Customer picks a service on **`/[slug]/book/details`** (`ServiceDetailsScreen`), optionally toggles add-ons, then continues to **`/[slug]/book?serviceId=…&addOnIds=…`**. The book page resolves add-on IDs with **`getAddOnsByIdsForBooking`** (scoped by `business_id`) and passes full add-on objects (including `duration_minutes`) into **`AvailabilityBookingPage`**.
+- **Totals on the client:** **`totalBookingDurationMinutes`** = base `serviceDurationMinutes` + Σ add-on minutes (ignore null/0). Same value drives the **price breakdown** (`BookingPriceBreakdown`), slot generation, and submit payload.
+- **Submit payload:** **`durationMinutes`** must be that **total** length. Optional **`selectedAddOns`**: `{ id, name, priceCents, durationMinutes? }[]` — stored on the booking as **`addon_details`** (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md)).
+- **Server note:** The API validates **`durationMinutes`** as a positive number and uses it for time-off overlap; it does **not** currently recompute duration from `serviceId` + add-on rows in the database (trust the client for normal UI flow).
+
+#### Service & add-on duration pickers (30-minute grid)
+
+- **Services** (dashboard edit, onboarding Step 2) and **add-ons** (optional extra time) use **`TimeSelect` `variant="duration"`** with validation from **`features/availability/utils/timeOptions.ts`**: **30 minutes through 10 hours 30 minutes**, **:00** or **:30** only (`isValidServiceDurationHHmm`, `serviceDurationHHmmToMinutes`). Add-on optional duration parsing: **`features/services/utils/addOnDurationForm.ts`** (empty = no extra time).
+
 ### Submitting a booking
 
-- **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, `durationMinutes`, `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).
+- **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, **`durationMinutes`** (total appointment minutes), **`selectedAddOns`** (optional), `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).
 - API resolves business by **slug**, loads **`time_off_blocks`** from `business_availability`, and **rejects** the request with **409** if the requested window overlaps any time-off block for that date.
     - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
 
@@ -118,8 +131,10 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 | Public create booking | POST `/api/public/bookings` (validates vs `time_off_blocks`) |
 | Dashboard list/update bookings | GET `/api/availability/bookings`, PATCH `/api/availability/bookings/[id]` |
 | Slot generation (schedule + bookings + time off) | `features/availability/booking/utils/slotGeneration.ts` |
+| Price/duration breakdown (calendar + review step) | `features/availability/booking/components/BookingPriceBreakdown.tsx` |
+| Service + add-ons for booking (server) | `features/services/api/getServiceWithAddOnsForBooking.ts`, `getAddOnsByIdsForBooking.ts` |
 | Blocked slots hook | `features/availability/booking/hooks/usePublicBlockedSlots.ts` |
 | Planner time-off overlay | `features/availability/booking/dashboard/DayPlannerView.tsx` |
 | Create booking (server) | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`) |
 
-Keeping **time in minutes** everywhere (DB, APIs, slot logic) and converting to hours only in the UI keeps the data model simple and avoids timezone/format issues.
+Keeping **time in minutes** everywhere (DB, APIs, slot logic) and converting to human-readable duration only in the UI (`formatDurationMinutes`, etc.) keeps the data model simple and avoids timezone/format issues. **Booked slot length** is always the **total** minutes (service + selected add-on time).

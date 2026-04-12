@@ -82,6 +82,8 @@ export type Database = {
           updated_at: string;
           free_bookings_month: string | null;
           free_bookings_count: number;
+          /** When true and owner is Pro, public profile shows Request quote. */
+          accept_quote_req: boolean;
         };
         Insert: {
           id?: string;
@@ -110,6 +112,7 @@ export type Database = {
           last_edited?: string;
           created_at?: string;
           updated_at?: string;
+          accept_quote_req?: boolean;
         };
         Update: {
           id?: string;
@@ -138,6 +141,7 @@ export type Database = {
           updated_at?: string;
           free_bookings_month?: string | null;
           free_bookings_count?: number;
+          accept_quote_req?: boolean;
         };
       };
       service_addons: {
@@ -146,6 +150,8 @@ export type Database = {
           business_id: string;
           name: string;
           price_cents: number;
+          /** Optional extra time (minutes); null = not specified. Use 30-step grid in app. */
+          duration_minutes: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -154,6 +160,7 @@ export type Database = {
           business_id: string;
           name: string;
           price_cents?: number;
+          duration_minutes?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -162,6 +169,7 @@ export type Database = {
           business_id?: string;
           name?: string;
           price_cents?: number;
+          duration_minutes?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -183,6 +191,44 @@ export type Database = {
           created_at?: string;
         };
       };
+      service_price_options: {
+        Row: {
+          id: string;
+          service_id: string;
+          business_id: string;
+          label: string;
+          price_cents: number;
+          duration_minutes: number;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          service_id: string;
+          business_id?: string;
+          label: string;
+          price_cents?: number;
+          duration_minutes: number;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          service_id?: string;
+          business_id?: string;
+          label?: string;
+          price_cents?: number;
+          duration_minutes?: number;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       business_services: {
         Row: {
           id: string;
@@ -192,6 +238,7 @@ export type Database = {
           price_cents: number | null;
           hours_to_complete: number | null;
           duration_minutes: number | null;
+          price_options_enabled: boolean;
           is_active: boolean;
           sort_order: number | null;
           created_at: string;
@@ -205,6 +252,7 @@ export type Database = {
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
+          price_options_enabled?: boolean;
           is_active?: boolean;
           sort_order?: number | null;
           created_at?: string;
@@ -218,6 +266,7 @@ export type Database = {
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
+          price_options_enabled?: boolean;
           is_active?: boolean;
           sort_order?: number | null;
           created_at?: string;

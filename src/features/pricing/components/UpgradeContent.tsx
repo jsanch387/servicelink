@@ -1,18 +1,31 @@
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
-import { CheckIcon, StarIcon } from '@heroicons/react/24/solid';
+import { Button } from '@/components/shared';
 import React, { useState } from 'react';
-import { PLANS, PRO_FEATURES } from '../types';
+import {
+  MARKETING_FREE_PLAN_FEATURES,
+  MARKETING_PRO_PLAN_FEATURES,
+} from '../marketingPlanFeatures';
+import { PLANS } from '../types';
+import { PricingPlanCard } from './PricingPlanCard';
 
-export const UpgradeContent: React.FC = () => {
-  const plan = PLANS.pro;
-  const [loading, setLoading] = useState(false);
+export interface UpgradeContentProps {
+  /** When true, user already has active Pro — show manage billing instead of checkout. */
+  isProSubscriber?: boolean;
+}
+
+export const UpgradeContent: React.FC<UpgradeContentProps> = ({
+  isProSubscriber = false,
+}) => {
+  const free = PLANS.free;
+  const pro = PLANS.pro;
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGetPro = async () => {
+  const handleUpgradeToPro = async () => {
     setError(null);
-    setLoading(true);
+    setCheckoutLoading(true);
     try {
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
@@ -26,88 +39,104 @@ export const UpgradeContent: React.FC = () => {
     } catch {
       setError('Something went wrong');
     } finally {
-      setLoading(false);
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setError(null);
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setError(data.error ?? 'Could not open billing portal');
+    } catch {
+      setError('Could not open billing portal');
+    } finally {
+      setPortalLoading(false);
     }
   };
 
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
-      <div className="max-w-2xl mx-auto w-full min-w-0">
-        <div className="mb-8">
+      <div className="max-w-5xl mx-auto w-full min-w-0">
+        <div className="mb-8 max-w-2xl">
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Upgrade your plan
+            {isProSubscriber ? 'Your plan' : 'Upgrade your plan'}
           </h1>
           <p className="text-gray-400 text-sm sm:text-base mt-1">
-            Get unlimited bookings and more with Pro.
+            {isProSubscriber
+              ? 'You are on Pro. Manage billing below or review how Free compares.'
+              : 'Compare Free and Pro, then upgrade to Pro when you are ready.'}
           </p>
         </div>
 
-        <GlassCard
-          padding="none"
-          rounded="rounded-2xl"
-          blurColor="bg-zinc-500"
-          showBlur={true}
-          className="w-full min-w-0 p-6 sm:p-8 text-left"
-        >
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h2 className="text-xl font-bold text-white">{plan.name}</h2>
-            <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs font-medium text-white">
-              Recommended
-            </span>
-          </div>
-          <p className="text-gray-400 text-sm mb-6">{plan.description}</p>
-
-          <div className="mb-6">
-            <span className="text-4xl font-extrabold text-white">
-              {plan.price}
-            </span>
-            <span className="text-gray-400 ml-1">/month</span>
-          </div>
-
-          <ul className="space-y-3 mb-8">
-            {PRO_FEATURES.map((item, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-3 text-gray-300 text-sm sm:text-base"
+        <div className="grid sm:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+          <PricingPlanCard
+            variant="free"
+            title={free.name}
+            description={free.description}
+            price={free.price}
+            features={MARKETING_FREE_PLAN_FEATURES}
+            emphasizeFeatureHighlights={false}
+            footer={
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled
               >
-                {item.highlight ? (
-                  <StarIcon
-                    className="h-5 w-5 shrink-0 text-amber-400"
-                    aria-hidden
-                  />
+                {isProSubscriber ? 'Included with Pro' : 'Current plan'}
+              </Button>
+            }
+          />
+          <PricingPlanCard
+            variant="pro"
+            title={pro.name}
+            description={pro.description}
+            price={pro.price}
+            features={MARKETING_PRO_PLAN_FEATURES}
+            badgeLabel="Most popular"
+            footer={
+              <div className="space-y-4">
+                {error ? (
+                  <p className="text-rose-400 text-sm" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+                {isProSubscriber ? (
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    className="w-full"
+                    onClick={handleManageSubscription}
+                    disabled={portalLoading}
+                    loading={portalLoading}
+                  >
+                    Manage subscription
+                  </Button>
                 ) : (
-                  <CheckIcon
-                    className="h-5 w-5 shrink-0 text-green-500"
-                    aria-hidden
-                  />
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    className="w-full"
+                    onClick={handleUpgradeToPro}
+                    disabled={checkoutLoading}
+                    loading={checkoutLoading}
+                  >
+                    Upgrade to Pro
+                  </Button>
                 )}
-                <span
-                  className={
-                    item.highlight ? 'font-semibold text-white' : undefined
-                  }
-                >
-                  {item.text}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          {error && (
-            <p className="text-rose-400 text-sm mb-4" role="alert">
-              {error}
-            </p>
-          )}
-          <Button
-            type="button"
-            variant="inverse"
-            className="w-full sm:w-auto"
-            onClick={handleGetPro}
-            disabled={loading}
-            loading={loading}
-          >
-            Get Pro
-          </Button>
-        </GlassCard>
+              </div>
+            }
+          />
+        </div>
       </div>
     </main>
   );

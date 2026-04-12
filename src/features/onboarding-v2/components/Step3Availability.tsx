@@ -29,7 +29,6 @@ interface Step3AvailabilityProps {
   businessProfileId: string | undefined;
   schedule: WeeklySchedule;
   selectedPreset: PresetKey | null;
-  // eslint-disable-next-line no-unused-vars
   onUpdate: (updates: {
     schedule?: WeeklySchedule;
     selectedPreset?: PresetKey | null;
@@ -131,9 +130,9 @@ export const Step3Availability: React.FC<Step3AvailabilityProps> = ({
           onClick={handleNext}
           variant="inverse"
           className="sm:ml-auto"
-          disabled={saving}
+          loading={saving}
         >
-          {saving ? 'Saving…' : 'Next'}
+          {saving ? 'Saving' : 'Next'}
         </Button>
       </div>
     </div>

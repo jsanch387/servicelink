@@ -6,6 +6,7 @@
  */
 
 import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { assertPublicTrackViewRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
 type AnalyticsProfileRow = {
@@ -25,6 +26,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const rateLimited = await assertPublicTrackViewRateLimits(
+      request,
+      String(businessSlug)
+    );
+    if (rateLimited) return rateLimited;
 
     // Get client IP from request headers (for future use)
     // const _clientIP =

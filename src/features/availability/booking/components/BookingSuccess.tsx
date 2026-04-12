@@ -2,6 +2,7 @@
 
 import { GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import React from 'react';
@@ -11,6 +12,7 @@ interface BookingSuccessProps {
   businessName: string;
   businessSlug: string;
   serviceName: string;
+  serviceVariantLabel?: string;
   /** Base service price (in cents). */
   servicePriceCents?: number;
   /** Add-ons selected on the service details page. */
@@ -41,6 +43,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   businessName,
   businessSlug,
   serviceName,
+  serviceVariantLabel,
   servicePriceCents,
   selectedAddOns = [],
   totalPriceCents,
@@ -99,7 +102,12 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
           <div>
             <p className="text-xs text-gray-500 mb-0.5">Service</p>
             <div className="flex items-baseline justify-between gap-4">
-              <p className="text-white font-semibold">{serviceName}</p>
+              <div className="min-w-0">
+                <p className="text-white font-semibold">{serviceName}</p>
+                {serviceVariantLabel ? (
+                  <p className="text-xs text-gray-500 mt-1">{serviceVariantLabel}</p>
+                ) : null}
+              </div>
               {servicePriceCents != null && (
                 <p className="text-sm text-gray-400">
                   {formatPrice(servicePriceCents)}
@@ -114,9 +122,20 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
                 <p className="text-xs text-gray-500 mb-1">Add-ons</p>
                 <ul className="space-y-1">
                   {selectedAddOns.map(addOn => (
-                    <li key={addOn.id} className="flex justify-between text-sm">
-                      <span className="text-white">{addOn.name}</span>
-                      <span className="text-gray-400">
+                    <li
+                      key={addOn.id}
+                      className="flex justify-between text-sm gap-2"
+                    >
+                      <span className="text-white min-w-0">
+                        {addOn.name}
+                        {addOn.durationMinutes != null &&
+                        addOn.durationMinutes > 0 ? (
+                          <span className="text-gray-500 block text-xs mt-0.5">
+                            +{formatDurationMinutes(addOn.durationMinutes)}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="text-gray-400 shrink-0">
                         {formatPrice(addOn.priceCents)}
                       </span>
                     </li>

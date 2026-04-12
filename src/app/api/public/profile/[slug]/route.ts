@@ -9,6 +9,7 @@
 
 import type { Database } from '@/libs/supabase/client';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { assertPublicProfileGetRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
 type PublicBusinessProfileRow =
@@ -21,6 +22,9 @@ export async function GET(
   const { slug } = await params;
 
   try {
+    const rateLimited = await assertPublicProfileGetRateLimits(request, slug);
+    if (rateLimited) return rateLimited;
+
     const supabase = await createSupabaseServerClient();
 
     // Get business profile by slug

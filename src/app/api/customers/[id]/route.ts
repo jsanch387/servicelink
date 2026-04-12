@@ -1,5 +1,5 @@
-import { resolveCurrentBusinessId } from '@/features/customer-management/server/resolveCurrentBusinessId';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 const CUSTOMER_NOTE_MAX_LENGTH = 280;

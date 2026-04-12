@@ -41,6 +41,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                 price: service.price_cents || 0,
                 hours_to_complete: service.hours_to_complete || null,
                 duration_minutes: service.duration_minutes ?? null,
+                priceOptionsEnabled: service.price_options_enabled === true,
               }}
               isEditable={false}
               isPublic={isPublic}

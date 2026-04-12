@@ -49,6 +49,7 @@ export async function GET(request: Request) {
   }
 
   // Ensure profile exists for OAuth users (new sign-ups won't have one)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existingProfile } = await (supabase as any)
     .from('profiles')
     .select('user_id')
@@ -63,6 +64,7 @@ export async function GET(request: Request) {
       user.user_metadata?.name ??
       user.user_metadata?.email ??
       null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('profiles').insert({
       user_id: user.id,
       full_name: name,

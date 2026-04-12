@@ -1,9 +1,10 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
-import type { AddOnRow } from './addOnTypes';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import type { AddOnRow } from './addOnTypes';
 
 function formatPrice(priceCents: number | null): string {
   if (priceCents == null) return 'Contact for quote';
@@ -22,6 +23,11 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const durationLabel =
+    addOn.duration_minutes != null && addOn.duration_minutes > 0
+      ? formatDurationMinutes(addOn.duration_minutes)
+      : null;
+
   return (
     <GlassCard
       blurColor="bg-zinc-500"
@@ -31,11 +37,18 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
     >
       {/* Mobile: compact single-column. Desktop: same, actions inline */}
       <div className="flex flex-col gap-3 sm:gap-4">
-        {/* Name + price — same row on all sizes, name truncates */}
-        <div className="flex items-center justify-between gap-3 min-w-0">
-          <h3 className="text-base sm:text-lg font-black text-white tracking-tight flex-1 min-w-0 truncate">
-            {addOn.name}
-          </h3>
+        {/* Name + price row, with optional extra duration under the name */}
+        <div className="flex items-start justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
+              {addOn.name}
+            </h3>
+            {durationLabel ? (
+              <p className="mt-0.5 text-[10px] font-medium tracking-wide text-zinc-500">
+                +{durationLabel}
+              </p>
+            ) : null}
+          </div>
           <span className="text-lg sm:text-xl font-black text-white leading-none flex-shrink-0 tabular-nums">
             {formatPrice(addOn.price_cents)}
           </span>

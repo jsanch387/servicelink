@@ -1,6 +1,7 @@
 'use client';
 
 import { GlassCard, Switch } from '@/components/shared';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   Bars3Icon,
@@ -10,11 +11,9 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import { serviceDescriptionNeedsSeeMore } from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import Link from 'next/link';
 import React, { useState } from 'react';
-
-/** Max description length before collapsing; matches public ServiceCard. */
-const DESCRIPTION_PREVIEW_LENGTH = 120;
 
 function formatPrice(priceCents: number | null): string {
   if (priceCents == null) return 'Contact for quote';
@@ -25,18 +24,12 @@ function formatPrice(priceCents: number | null): string {
 function formatDuration(service: ServiceRow): string | null {
   const minutes = service.duration_minutes;
   const hours = service.hours_to_complete;
-  if (minutes != null && minutes > 0) {
-    const h = minutes / 60;
-    if (h < 24) return `${h} ${h === 1 ? 'Hour' : 'Hours'}`;
-    const days = Math.floor(h / 24);
-    return `${days} ${days === 1 ? 'Day' : 'Days'}`;
-  }
-  if (hours != null && hours > 0) {
-    if (hours < 24) return `${hours} ${hours === 1 ? 'Hour' : 'Hours'}`;
-    const days = Math.floor(hours / 24);
-    return `${days} ${days === 1 ? 'Day' : 'Days'}`;
-  }
-  return null;
+  let totalMin: number | null = null;
+  if (minutes != null && minutes > 0) totalMin = minutes;
+  else if (hours != null && hours > 0) totalMin = Math.round(hours * 60);
+
+  if (totalMin == null || totalMin <= 0) return null;
+  return formatDurationMinutes(totalMin);
 }
 
 export interface ServiceManagementCardProps {
@@ -46,24 +39,24 @@ export interface ServiceManagementCardProps {
   /** When true, show drag handle and allow drag; hide Edit/Delete row. */
   isReorderMode: boolean;
   /** Toggle on/off. */
-  // eslint-disable-next-line no-unused-vars
+
   onToggleActive?: (serviceId: string, active: boolean) => void;
   /** Edit — deprecated; Edit button links to service edit page. */
-  // eslint-disable-next-line no-unused-vars
+
   onEdit?: (service: ServiceRow) => void;
   /** Delete — no-op for now. */
-  // eslint-disable-next-line no-unused-vars
+
   onDelete?: (serviceId: string) => void;
   /** Drag start: parent stores drag index. */
-  // eslint-disable-next-line no-unused-vars
+
   onDragStart?: (index: number) => void;
   /** Drag end: parent clears drag state. */
   onDragEnd?: () => void;
   /** Move item up (tap reorder — mobile friendly). */
-  // eslint-disable-next-line no-unused-vars
+
   onMoveUp?: (index: number) => void;
   /** Move item down (tap reorder — mobile friendly). */
-  // eslint-disable-next-line no-unused-vars
+
   onMoveDown?: (index: number) => void;
   /** Total number of services (to disable up on first, down on last). */
   totalCount?: number;
@@ -90,11 +83,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const description = service.description || '';
-  const isLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
-  const previewText =
-    isLongDescription && !isDescriptionExpanded
-      ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-      : description;
+  const isLongDescription = serviceDescriptionNeedsSeeMore(description);
 
   const duration = formatDuration(service);
   const isFirst = index === 0;
@@ -147,11 +136,19 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
               {service.name}
             </h3>
             <div className="text-right flex-shrink-0">
+              {service.price_options_enabled === true &&
+              service.price_cents != null &&
+              service.price_cents > 0 ? (
+                <span className="block text-[11px] font-medium text-zinc-400 mb-1 leading-none">
+                  Starting at
+                </span>
+              ) : null}
               <span className="text-xl font-black text-white leading-none">
                 {formatPrice(service.price_cents)}
               </span>
             </div>
           </div>
+          <div className="border-t border-white/[0.04] mb-4" />
 
           {/* Duration + add-on count (only show add-ons when count > 0) */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
@@ -176,15 +173,15 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
           </div>
 
           {/* Description — collapsible like public ServiceCard for uniform card height */}
-          <div className="mb-4 pr-4 min-h-[4.5rem]">
+          <div className="mb-0 min-h-[4.5rem]">
             <p
-              className={`text-zinc-500 text-sm leading-relaxed ${
+              className={`text-zinc-500 text-sm leading-relaxed whitespace-pre-line break-words ${
                 isLongDescription && !isDescriptionExpanded
-                  ? 'line-clamp-3'
+                  ? 'line-clamp-5'
                   : ''
               }`}
             >
-              {previewText}
+              {description}
             </p>
             {isLongDescription && (
               <button
@@ -210,7 +207,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
 
           {/* Action row: Edit, Delete, Switch — outlined style */}
           {!isReorderMode && (
-            <div className="flex items-center justify-between pt-5 border-t border-white/[0.08]">
+            <div className="flex items-center justify-between pt-0">
               <div className="flex gap-2 w-auto sm:w-full sm:max-w-[240px]">
                 <Link
                   href={`/dashboard/services/${service.id}`}

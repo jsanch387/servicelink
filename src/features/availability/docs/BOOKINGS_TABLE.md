@@ -23,7 +23,7 @@ This doc describes the **`bookings`** table used by the V2 (availability) bookin
 | `service_id` | uuid, FK → business_services(id), nullable | Which service was booked. Nullable in case the service is deleted later; we still keep the booking. |
 | `service_name` | text | Name at time of booking (display, emails, history). Denormalized so we don’t depend on service row. |
 | `service_price_cents` | integer, nullable | Price at time of booking (receipts, reporting). |
-| `duration_minutes` | integer, not null | Length of the slot. Needed to block time, show in dashboard, and for any “end time” logic. |
+| `duration_minutes` | integer, not null | **Total** length of the booked slot in minutes: **base service time + sum of selected add-on extra minutes** (same value the calendar used when the customer picked the slot). Needed to block time, show in dashboard, emails, and any “end time” logic. Not “service only” when add-ons carried extra duration. |
 
 ### 2. The slot (date & time)
 
@@ -114,7 +114,7 @@ All customer fields except name/email can be nullable if we later make address o
 | service_id | uuid | yes | – |
 | service_name | text | no | – |
 | service_price_cents | integer | yes | – |
-| addon_details | jsonb | yes | – |
+| addon_details | jsonb | yes | Selected add-ons snapshot; see bullet below |
 | duration_minutes | integer | no | – |
 | scheduled_date | date | no | – |
 | start_time | time | no | – |
@@ -132,6 +132,7 @@ All customer fields except name/email can be nullable if we later make address o
 | created_at | timestamptz | no | now() |
 | updated_at | timestamptz | no | now() |
 
+- **`addon_details`:** JSON array of objects shaped like **`AddOnAtBooking`** (`features/availability/booking/types.ts`): `id`, `name`, `priceCents`, optional **`durationMinutes`** (extra minutes that were included in `duration_minutes` for that add-on, or omitted/null for price-only add-ons). Used for receipts, emails, and customer metrics (e.g. last add-on names). Persisted by **`createBooking`** from **`POST /api/public/bookings`** `selectedAddOns`.
 - **Status:** `confirmed` (default when submitted), `completed`, `cancelled`. Owner can change to completed or cancelled.
 - **Cascade:** `business_id` → business_profiles(id) ON DELETE CASCADE (when a business/user data is deleted, their bookings are removed). `service_id` → business_services(id) ON DELETE SET NULL (if service is deleted, booking remains with service_id null).
 - Trigger to keep `updated_at` in sync on update.
@@ -147,7 +148,7 @@ All customer fields except name/email can be nullable if we later make address o
 ### Slot blocking (avoiding double-booking)
 
 - **Source of blocked slots:** **GET /api/public/bookings/blocked/[slug]** returns, for that business, all rows in `bookings` with `status` in `('confirmed', 'completed')`, with fields `scheduled_date`, `start_time`, `duration_minutes`.
-- **Overlap rule:** Each existing booking blocks the range **`[start_time, start_time + duration_minutes]`**. When generating available slots for a date, we treat any candidate slot as **blocked** if it overlaps that range (i.e. candidate start &lt; booking end and candidate end &gt; booking start). Implemented in `booking/utils/slotGeneration.ts`. So we block for the **full duration** of the service that was booked.
+- **Overlap rule:** Each existing booking blocks the range **`[start_time, start_time + duration_minutes]`**. When generating available slots for a date, we treat any candidate slot as **blocked** if it overlaps that range (i.e. candidate start &lt; booking end and candidate end &gt; booking start). Implemented in `booking/utils/slotGeneration.ts`. So we block for the **full stored appointment length** (service + add-ons at time of booking), not just the base service length.
 
 ### APIs and who writes/reads
 

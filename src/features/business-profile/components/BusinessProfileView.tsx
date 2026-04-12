@@ -15,14 +15,14 @@ import {
   WarningCallout,
 } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { TryProPostOnboardingModal } from '@/features/pricing';
+import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { StoryPostShareButton } from '@/features/story-post';
 import { ArrowRightIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
-type TabType = 'services' | 'portfolio';
+type TabType = 'services' | 'gallery' | 'bio';
 
 interface SlugData {
   hasSlug: boolean;
@@ -41,6 +41,8 @@ interface BusinessProfileViewProps {
   isFreeTier?: boolean;
   /** When true, user just landed from onboarding complete; may show one-time Try Pro modal (free only). */
   onboardingCompleteFromUrl?: boolean;
+  /** Pro + accept_quote_req: show Request quote on public / owner preview header. */
+  showRequestQuoteCta?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -51,6 +53,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   showVerifiedBadge = false,
   isFreeTier = false,
   onboardingCompleteFromUrl = false,
+  showRequestQuoteCta = false,
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
@@ -179,14 +182,14 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
               >
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 min-w-0">
                   <h2 className="text-lg sm:text-xl font-bold text-white">
-                    Custom link
+                    Your Link
                   </h2>
-                  <RequiredLabel title="Create a link to share your profile" />
+                  <RequiredLabel title="Add a link to share your profile" />
                 </div>
                 <div className="mt-3 mb-4 min-w-0">
                   <WarningCallout>
-                    You need a custom link so customers can find and book you.
-                    Add one in Settings.
+                    You need a link so customers can find and book you. Add one
+                    in Settings.
                   </WarningCallout>
                 </div>
                 <Button
@@ -230,6 +233,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onCancel={handleCancel}
                 isPublic={isPublic}
                 showVerifiedBadge={showVerifiedBadge}
+                showRequestQuoteCta={showRequestQuoteCta}
               />
 
               {/* Tabs Navigation */}
@@ -249,15 +253,28 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                     )}
                   </button>
                   <button
-                    onClick={() => setActiveTab('portfolio')}
+                    onClick={() => setActiveTab('gallery')}
                     className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
-                      activeTab === 'portfolio'
+                      activeTab === 'gallery'
                         ? 'text-white'
                         : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
-                    Our work
-                    {activeTab === 'portfolio' && (
+                    Gallery
+                    {activeTab === 'gallery' && (
+                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('bio')}
+                    className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
+                      activeTab === 'bio'
+                        ? 'text-white'
+                        : 'text-zinc-500 hover:text-zinc-400'
+                    }`}
+                  >
+                    Bio
+                    {activeTab === 'bio' && (
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
                   </button>
@@ -273,13 +290,23 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   onCancel={handleCancel}
                   isPublic={isPublic}
                 />
-              ) : (
+              ) : activeTab === 'gallery' ? (
                 <WorkShowcase
                   businessProfile={businessProfile}
                   editMode={editMode}
                   onSave={handleSave}
                   onCancel={handleCancel}
                 />
+              ) : (
+                <section className="px-4 py-6 sm:px-8 sm:py-8">
+                  {(businessProfile.bio?.trim() ?? '') ? (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-400 sm:text-[15px]">
+                      {businessProfile.bio}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-zinc-500">No bio added yet.</p>
+                  )}
+                </section>
               )}
 
               {/* Sticky Edit Profile button - view mode, authenticated users only */}

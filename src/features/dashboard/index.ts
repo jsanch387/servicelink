@@ -11,6 +11,7 @@ export { OnboardingCompleteCard } from './components/OnboardingCompleteCard';
 export { PendingRequestsCard } from './components/PendingRequestsCard';
 export { UpcomingBookingsCard } from './components/UpcomingBookingsCard';
 export { PerformanceCard } from './components/PerformanceCard';
+export { ProFeatureLabel } from './components/ProFeatureLabel';
 export { QuickActionsCard } from './components/QuickActionsCard';
 export { SettingsContent } from './components/SettingsContent';
 export { ShareProfileCard } from './components/ShareProfileCard';

@@ -3,6 +3,8 @@
 import { Calendar } from '@/components/shared';
 import React, { useCallback } from 'react';
 import type { DayKey, WeeklySchedule } from '../../types/availability';
+import type { ExistingBooking, TimeOffInterval } from '../types';
+import { generateTimeSlots } from '../utils/slotGeneration';
 
 const DAY_KEYS: DayKey[] = [
   'sunday',
@@ -20,24 +22,43 @@ function getDayKey(date: Date): DayKey {
 
 interface DateSelectorProps {
   weeklySchedule: WeeklySchedule;
+  serviceDurationMinutes: number;
+  existingBookings: ExistingBooking[];
+  timeOffBlocks: TimeOffInterval[];
   selectedDate: Date | null;
-  // eslint-disable-next-line no-unused-vars
+
   onSelectDate: (date: Date) => void;
   minDate?: Date;
+  /** Calendar without outer card chrome (nested inside another panel). */
+  plainCalendar?: boolean;
 }
 
 export const DateSelector: React.FC<DateSelectorProps> = ({
   weeklySchedule,
+  serviceDurationMinutes,
+  existingBookings,
+  timeOffBlocks,
   selectedDate,
   onSelectDate,
   minDate = new Date(),
+  plainCalendar = false,
 }) => {
   const isDateDisabled = useCallback(
     (date: Date) => {
       const dayKey = getDayKey(date);
-      return !weeklySchedule[dayKey].enabled;
+      if (!weeklySchedule[dayKey].enabled) return true;
+
+      const slots = generateTimeSlots(
+        date,
+        weeklySchedule,
+        serviceDurationMinutes,
+        existingBookings,
+        30,
+        timeOffBlocks
+      );
+      return slots.length === 0;
     },
-    [weeklySchedule]
+    [weeklySchedule, serviceDurationMinutes, existingBookings, timeOffBlocks]
   );
 
   return (
@@ -47,6 +68,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       minDate={minDate}
       isDateDisabled={isDateDisabled}
       showYear={true}
+      plain={plainCalendar}
     />
   );
 };

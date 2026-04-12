@@ -11,6 +11,7 @@ import type { AddOnRow } from '../../components/add-ons/addOnTypes';
 export interface UpdateAddOnPayload {
   name: string;
   price_cents: number;
+  duration_minutes: number | null;
 }
 
 export interface UpdateAddOnResult {
@@ -34,6 +35,7 @@ export async function updateAddOn(
     const updatePayload: TableUpdate = {
       name: payload.name.trim(),
       price_cents: payload.price_cents,
+      duration_minutes: payload.duration_minutes,
     };
 
     const { data, error } = await supabase
@@ -68,6 +70,7 @@ export async function updateAddOn(
       id: row.id,
       name: row.name,
       price_cents: row.price_cents ?? 0,
+      duration_minutes: row.duration_minutes ?? null,
       sort_order: null,
     };
 

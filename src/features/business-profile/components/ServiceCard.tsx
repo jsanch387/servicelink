@@ -2,6 +2,7 @@
 
 import { Button, GlassCard } from '@/components/shared';
 import { getBusinessBookDetailsPath } from '@/constants/routes';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -10,9 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useState } from 'react';
-
-/** Max description length before collapsing. Keeps cards uniform height on mobile. */
-const DESCRIPTION_PREVIEW_LENGTH = 120;
+import { serviceDescriptionNeedsSeeMore } from '../utils/serviceDescriptionDisplay';
 
 interface Service {
   id?: string;
@@ -21,13 +20,15 @@ interface Service {
   description: string;
   hours_to_complete?: number | null;
   duration_minutes?: number | null;
+  /** When true, base service price is the minimum shown before option selection. */
+  priceOptionsEnabled?: boolean;
 }
 
 interface ServiceCardProps {
   service: Service;
-  // eslint-disable-next-line no-unused-vars
+
   onEdit?: (_service: Service) => void;
-  // eslint-disable-next-line no-unused-vars
+
   onDelete?: (_serviceId: string) => void;
   isEditable?: boolean;
   isPublic?: boolean;
@@ -49,18 +50,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   manualBookingForCustomer = false,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
   const description = service.description || '';
-  const isLongDescription = description.length > DESCRIPTION_PREVIEW_LENGTH;
-  const previewText =
-    isLongDescription && !isDescriptionExpanded
-      ? `${description.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}...`
-      : description;
+  const isLongDescription = serviceDescriptionNeedsSeeMore(description);
 
-  const effectiveHours =
+  const effectiveDurationMinutes =
     service.duration_minutes != null && service.duration_minutes > 0
-      ? service.duration_minutes / 60
-      : (service.hours_to_complete ?? null);
+      ? service.duration_minutes
+      : service.hours_to_complete != null && service.hours_to_complete > 0
+        ? Math.round(service.hours_to_complete * 60)
+        : null;
 
   const formatPrice = (price: string | number) => {
     // If it's already a formatted string (starts with $), return as is
@@ -84,14 +82,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     return 'Contact for quote';
   };
 
-  const formatDuration = (hours: number | null | undefined) => {
-    if (!hours) return null;
-    if (hours < 24) {
-      return `${hours} ${hours === 1 ? 'Hour' : 'Hours'}`;
-    }
-    const days = Math.floor(hours / 24);
-    return `${days} ${days === 1 ? 'Day' : 'Days'}`;
-  };
+  const showStartingAt =
+    service.priceOptionsEnabled === true &&
+    typeof service.price === 'number' &&
+    service.price > 0;
 
   return (
     <GlassCard
@@ -100,24 +94,33 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       className="group"
       padding="md"
     >
-      {/* Header: service name + price (thick black weight) */}
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-lg font-black text-white tracking-tight pr-4 flex-1">
+      {/* Header: mobile ~16px title / ~18px price; sm+ matches denser “poster” scale */}
+      <div className="flex justify-between items-start gap-2 mb-2.5 sm:gap-3 sm:mb-3">
+        <h3 className="text-base font-bold text-white tracking-tight flex-1 min-w-0 pr-1 sm:pr-2 sm:text-lg sm:font-black">
           {service.name}
         </h3>
-        <span className="text-xl font-black text-white leading-none flex-shrink-0">
-          {formatPrice(service.price)}
+        <span className="text-right leading-none flex-shrink-0">
+          {showStartingAt ? (
+            <span className="block text-xs font-medium text-zinc-400 mb-0.5 leading-none sm:mb-1 sm:text-[11px]">
+              Starting at
+            </span>
+          ) : null}
+          <span className="text-lg font-bold text-white leading-none tabular-nums sm:text-xl sm:font-black">
+            {formatPrice(service.price)}
+          </span>
         </span>
       </div>
 
+      <div className="border-t border-white/[0.04] mb-3 sm:mb-4" />
+
       {/* Description — fixed min-height so all cards align; long text is collapsible */}
-      <div className="mb-4 pr-4 min-h-[4.5rem]">
+      <div className="mb-0 min-h-[4rem] sm:min-h-[4.5rem]">
         <p
-          className={`text-zinc-400 text-sm leading-relaxed ${
-            isLongDescription && !isDescriptionExpanded ? 'line-clamp-3' : ''
+          className={`text-zinc-400 text-[15px] leading-relaxed whitespace-pre-line break-words sm:text-sm ${
+            isLongDescription && !isDescriptionExpanded ? 'line-clamp-5' : ''
           }`}
         >
-          {previewText}
+          {description}
         </p>
         {isLongDescription && (
           <button
@@ -142,12 +145,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       </div>
 
       {/* Faint divider + footer: duration left, Book Now right */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/[0.03]">
-        {effectiveHours ? (
+      <div className="flex items-center justify-between pt-2.5 sm:pt-3">
+        {effectiveDurationMinutes ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
-            <ClockIcon className="h-3 w-3 flex-shrink-0" />
-            <span className="text-xs font-medium">
-              {formatDuration(effectiveHours)}
+            <ClockIcon className="h-3.5 w-3.5 flex-shrink-0 sm:h-3 sm:w-3" />
+            <span className="text-[13px] font-medium sm:text-xs">
+              {formatDurationMinutes(effectiveDurationMinutes)}
             </span>
           </div>
         ) : (
@@ -159,7 +162,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             href={getBusinessBookDetailsPath(businessSlug, service.id, {
               forOwner: manualBookingForCustomer,
             })}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-white/20 bg-white/5 text-zinc-200 text-sm font-medium hover:bg-white/10 hover:border-white/30 hover:text-white transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
           >
             Select
             <ChevronRightIcon className="h-3.5 w-3.5" />

@@ -1,10 +1,13 @@
 'use client';
 
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { ServiceAddOn } from './types';
 
 interface ServiceDetailsBookingSummaryProps {
   serviceName: string;
   servicePriceCents: number;
+  /** Shown under the service name (e.g. selected vehicle / tier). */
+  selectedVariantLabel?: string;
   selectedAddOns: ServiceAddOn[];
   totalCents: number;
 }
@@ -16,6 +19,7 @@ function formatPrice(cents: number): string {
 export function ServiceDetailsBookingSummary({
   serviceName,
   servicePriceCents,
+  selectedVariantLabel,
   selectedAddOns,
   totalCents,
 }: ServiceDetailsBookingSummaryProps) {
@@ -25,9 +29,16 @@ export function ServiceDetailsBookingSummary({
         <p className="text-zinc-400 text-xs font-medium uppercase tracking-wider mb-1">
           Service
         </p>
-        <div className="flex justify-between items-baseline text-sm">
-          <span className="text-white font-semibold">{serviceName}</span>
-          <span className="text-white font-semibold tabular-nums">
+        <div className="flex justify-between items-baseline text-sm gap-3">
+          <span className="text-white font-semibold min-w-0">
+            {serviceName}
+            {selectedVariantLabel ? (
+              <span className="block text-zinc-400 font-normal text-xs mt-1">
+                {selectedVariantLabel}
+              </span>
+            ) : null}
+          </span>
+          <span className="text-white font-semibold tabular-nums shrink-0">
             {formatPrice(servicePriceCents)}
           </span>
         </div>
@@ -41,11 +52,18 @@ export function ServiceDetailsBookingSummary({
             {selectedAddOns.map(a => (
               <div
                 key={a.id}
-                className="flex justify-between items-baseline text-sm text-white"
+                className="flex justify-between items-baseline text-sm text-white gap-2"
               >
-                <span>{a.name}</span>
-                <span className="tabular-nums">
-                  +{formatPrice(a.priceCents)}
+                <span className="min-w-0">
+                  {a.name}
+                  {a.durationMinutes != null && a.durationMinutes > 0 ? (
+                    <span className="text-zinc-500 block text-xs mt-0.5 font-normal">
+                      + {formatDurationMinutes(a.durationMinutes)}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="tabular-nums shrink-0">
+                  + {formatPrice(a.priceCents)}
                 </span>
               </div>
             ))}

@@ -54,6 +54,12 @@ Pro users see a **Manage subscription** button on Settings. It calls `POST /api/
 
 Enable the Customer Portal in Stripe: [Dashboard → Settings → Billing → Customer portal](https://dashboard.stripe.com/settings/billing/portal). Configure what customers can do (e.g. cancel subscription).
 
+### Local development vs production Stripe data
+
+`STRIPE_SECRET_KEY` in `.env.local` is almost always a **test** key (`sk_test_...`), while your Supabase `profiles` row may still hold **live** Stripe IDs (`cus_...`, `sub_...`) from a real production subscription. Stripe will then respond with errors such as **No such customer** when you open the Customer Portal locally. That is expected: test-mode API keys only see test-mode customers.
+
+To exercise billing locally, use a **test** checkout (same Stripe account’s test mode) so webhook writes test IDs into `profiles`, or temporarily point local env at the **live** secret key only on a trusted machine (not recommended). Production deployments that use the matching live key continue to work with production customer IDs.
+
 ## Subscription end (cancel flow)
 
 When a user cancels in the Customer Portal, Stripe keeps the subscription active until the end of the current billing period, then sends `customer.subscription.deleted`. The webhook handles this event:

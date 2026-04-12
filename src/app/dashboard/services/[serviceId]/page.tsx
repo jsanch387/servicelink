@@ -6,13 +6,14 @@
  */
 
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import {
   getAddOns,
   getServiceAddOnIds,
+  getServicePriceOptions,
   getServices,
   ServiceEditScreen,
 } from '@/features/services';
+import { hasPriceOptionsAccess } from '@/features/services/utils/priceOptionsAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { notFound, redirect } from 'next/navigation';
 
@@ -47,11 +48,19 @@ export default async function ServiceEditPage({
     redirect('/dashboard');
   }
 
-  const [servicesResult, addOnsResult, assignedResult] = await Promise.all([
-    getServices(businessProfile.id),
-    getAddOns(businessProfile.id),
-    getServiceAddOnIds(serviceId),
-  ]);
+  const [servicesResult, addOnsResult, assignedResult, optionsResult] =
+    await Promise.all([
+      getServices(businessProfile.id),
+      getAddOns(businessProfile.id),
+      getServiceAddOnIds(serviceId),
+      getServicePriceOptions(serviceId, businessProfile.id),
+    ]);
+
+  const canUsePriceOptions = await hasPriceOptionsAccess({
+    supabase,
+    userId: user.id,
+    businessId: businessProfile.id,
+  });
 
   if (!servicesResult.success || !servicesResult.data) {
     redirect('/dashboard/services');
@@ -66,18 +75,17 @@ export default async function ServiceEditPage({
     addOnsResult.success && addOnsResult.data ? addOnsResult.data : [];
   const initialSelectedAddOnIds =
     assignedResult.success && assignedResult.data ? assignedResult.data : [];
-
-  const showVehicleBookingOptions = isVehicleRelatedBusinessType(
-    businessProfile.business_type
-  );
+  const initialPriceOptions =
+    optionsResult.success && optionsResult.data ? optionsResult.data : [];
 
   return (
     <ServiceEditScreen
       service={service}
       initialAddOns={addOns}
       initialSelectedAddOnIds={initialSelectedAddOnIds}
+      initialPriceOptions={initialPriceOptions}
+      canUsePriceOptions={canUsePriceOptions}
       backHref="/dashboard/services"
-      showVehicleBookingOptions={showVehicleBookingOptions}
     />
   );
 }

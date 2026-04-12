@@ -23,6 +23,7 @@ function mapToAddOnRow(row: ServiceAddOnRow): AddOnRow {
     id: row.id,
     name: row.name,
     price_cents: row.price_cents ?? 0,
+    duration_minutes: row.duration_minutes ?? null,
     sort_order: null,
   };
 }

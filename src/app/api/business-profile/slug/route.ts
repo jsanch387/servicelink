@@ -3,7 +3,7 @@
  * API Route: Business Profile Slug Management
  *
  * Endpoints:
- * POST /api/business-profile/slug - Create/update business slug
+ * POST /api/business-profile/slug - Set or update business_slug + business_link
  * GET /api/business-profile/slug/[businessId] - Get existing slug
  * GET /api/business-profile/slug/check/[slug] - Check slug availability
  */

@@ -7,6 +7,7 @@ export interface ServiceAddOn {
   id: string;
   name: string;
   priceCents: number;
+  durationMinutes?: number | null;
 }
 
 export interface ServiceDetailView {

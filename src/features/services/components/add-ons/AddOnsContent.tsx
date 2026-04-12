@@ -68,6 +68,7 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
         const result = await updateAddOnAction(addOnId, {
           name: data.name,
           price_cents: data.price_cents ?? 0,
+          duration_minutes: data.duration_minutes,
         });
         setIsSaving(false);
 
@@ -87,6 +88,7 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
       const result = await createAddOnAction({
         name: data.name,
         price_cents: data.price_cents ?? 0,
+        duration_minutes: data.duration_minutes,
       });
       setIsSaving(false);
 

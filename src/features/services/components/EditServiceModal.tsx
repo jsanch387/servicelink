@@ -1,22 +1,25 @@
 'use client';
 
 import {
+  IconButton,
   Input,
   Modal,
   PriceInput,
-  Select,
-  SERVICE_DURATION_HOURS_OPTIONS,
   TextArea,
+  TimeSelect,
 } from '@/components/shared';
+import {
+  SERVICE_DESCRIPTION_MAX_LENGTH,
+  insertServiceDescriptionBullet,
+} from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import type { ServiceRow } from '@/features/services/types/services';
-import React, { useCallback, useEffect, useState } from 'react';
-
-const DURATION_OPTIONS = [
-  { value: '', label: 'Select duration' },
-  ...SERVICE_DURATION_HOURS_OPTIONS,
-];
-
-const MAX_DESCRIPTION_LENGTH = 280;
+import {
+  isValidServiceEditDurationInput,
+  parseServiceEditDurationForSave,
+  serviceEditDurationPickerValue,
+} from '@/features/services/utils/serviceEditForm';
+import { ListBulletIcon } from '@heroicons/react/24/outline';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface EditServiceModalProps {
   service: ServiceRow | null;
@@ -26,7 +29,7 @@ export interface EditServiceModalProps {
   saveError?: string | null;
   onClose: () => void;
   /** For edit: serviceId is set. For add: serviceId is undefined. */
-  // eslint-disable-next-line no-unused-vars -- callback type; params used by caller
+
   onSave: (serviceId: string | undefined, data: EditServiceFormData) => void;
   isSaving?: boolean;
 }
@@ -42,26 +45,17 @@ function serviceToForm(service: ServiceRow): {
   name: string;
   description: string;
   price: string;
-  durationHours: string;
+  durationHHmm: string;
 } {
   const price =
     service.price_cents != null && service.price_cents > 0
       ? (service.price_cents / 100).toFixed(2)
       : '';
-  const durationMinutes =
-    service.duration_minutes ??
-    (service.hours_to_complete != null
-      ? Math.round(service.hours_to_complete * 60)
-      : null);
-  const hoursForSelect =
-    durationMinutes != null && durationMinutes > 0
-      ? Math.min(10, Math.max(1, Math.round(durationMinutes / 60)))
-      : null;
   return {
     name: service.name ?? '',
     description: service.description ?? '',
     price,
-    durationHours: hoursForSelect != null ? String(hoursForSelect) : '',
+    durationHHmm: serviceEditDurationPickerValue(service),
   };
 }
 
@@ -73,10 +67,11 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   onSave,
   isSaving = false,
 }) => {
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [durationHours, setDurationHours] = useState('');
+  const [durationHHmm, setDurationHHmm] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const isAddMode = showAddForm && !service;
@@ -88,16 +83,34 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setName(form.name);
       setDescription(form.description);
       setPrice(form.price);
-      setDurationHours(form.durationHours);
+      setDurationHHmm(form.durationHHmm);
       setError(null);
     } else if (showAddForm) {
       setName('');
       setDescription('');
       setPrice('');
-      setDurationHours('');
+      setDurationHHmm('');
       setError(null);
     }
   }, [service, showAddForm]);
+
+  const handleInsertDescriptionBullet = useCallback(() => {
+    const el = descriptionTextareaRef.current;
+    const start = el?.selectionStart ?? description.length;
+    const end = el?.selectionEnd ?? description.length;
+    const { value: next, caret } = insertServiceDescriptionBullet(
+      description,
+      start,
+      end
+    );
+    setDescription(next);
+    setTimeout(() => {
+      const node = descriptionTextareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(caret, caret);
+    }, 0);
+  }, [description]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -118,9 +131,9 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         setError('Please enter a valid price.');
         return;
       }
-      const hours = durationHours ? parseInt(durationHours, 10) : null;
-      if (!hours || hours < 1 || hours > 10) {
-        setError('Please select a duration (1–10 hours).');
+      const durationResult = parseServiceEditDurationForSave(durationHHmm);
+      if (!durationResult.ok) {
+        setError(durationResult.error);
         return;
       }
 
@@ -129,7 +142,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         name: nameTrim,
         description: descriptionTrim,
         price_cents: Math.round(priceNum * 100),
-        duration_minutes: hours * 60,
+        duration_minutes: durationResult.durationMinutes,
       };
       if (service) {
         onSave(service.id, data);
@@ -137,7 +150,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         onSave(undefined, data);
       }
     },
-    [service, name, description, price, durationHours, onSave]
+    [service, name, description, price, durationHHmm, onSave]
   );
 
   if (!isOpen) return null;
@@ -148,8 +161,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
     price.trim().length > 0 &&
     !Number.isNaN(parseFloat(price.replace(/,/g, ''))) &&
     parseFloat(price.replace(/,/g, '')) >= 0 &&
-    durationHours &&
-    parseInt(durationHours, 10) >= 1;
+    isValidServiceEditDurationInput(durationHHmm);
 
   return (
     <Modal
@@ -173,28 +185,28 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           required
         />
 
-        <div className="space-y-2">
-          <TextArea
-            label="Description (Required)"
-            placeholder="Tell customers what they get. Keep it simple."
-            value={description}
-            onChange={setDescription}
-            rows={3}
-            required
-          />
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Required</span>
-            <span
-              className={
-                description.length > MAX_DESCRIPTION_LENGTH * 0.9
-                  ? 'text-gray-400'
-                  : ''
-              }
-            >
-              {description.length}/{MAX_DESCRIPTION_LENGTH}
-            </span>
-          </div>
-        </div>
+        <TextArea
+          ref={descriptionTextareaRef}
+          label="Description (Required)"
+          placeholder="Tell customers what they get."
+          footerStart={
+            <IconButton
+              variant="ghost"
+              size="sm"
+              className="rounded-lg text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-500/10 -mr-1"
+              title="Insert bullet"
+              aria-label="Insert bullet"
+              icon={<ListBulletIcon className="h-5 w-5" />}
+              onClick={handleInsertDescriptionBullet}
+            />
+          }
+          value={description}
+          onChange={setDescription}
+          rows={5}
+          maxLength={SERVICE_DESCRIPTION_MAX_LENGTH}
+          inputClassName="resize-y min-h-[7.5rem]"
+          required
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <PriceInput
@@ -204,14 +216,17 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
             onChange={setPrice}
             required
           />
-          <Select
-            label="Duration"
-            placeholder="Select duration"
-            value={durationHours}
-            onChange={setDurationHours}
-            options={DURATION_OPTIONS}
-            required
-          />
+          <div className="min-w-0">
+            <span className="block text-sm font-medium text-gray-300 mb-2">
+              Duration
+            </span>
+            <TimeSelect
+              variant="duration"
+              value={durationHHmm}
+              onChange={setDurationHHmm}
+              durationPlaceholder="Select duration"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">

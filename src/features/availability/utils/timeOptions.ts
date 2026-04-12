@@ -118,3 +118,66 @@ export function to24h(
   else hour24 = hour12 === 12 ? 12 : hour12 + 12;
   return `${hour24.toString().padStart(2, '0')}:${minute}`;
 }
+
+/** Service duration picker: 30 min … 10 hr 30 min, 30-minute steps only. */
+export const SERVICE_DURATION_MIN_MINUTES = 30;
+export const SERVICE_DURATION_MAX_MINUTES = 10 * 60 + 30;
+
+export function serviceDurationHHmmToMinutes(hhmm: string): number {
+  const [h = '0', m = '00'] = hhmm.split(':');
+  const hours = Math.min(10, Math.max(0, parseInt(h, 10) || 0));
+  const minute = m === '30' ? 30 : 0;
+  return hours * 60 + minute;
+}
+
+/** Map stored minutes → "HH:mm" for {@link TimeSelect} `variant="duration"` (empty if unset). */
+export function minutesToServiceDurationHHmm(
+  total: number | null | undefined
+): string {
+  if (total == null || total <= 0) return '';
+  const rounded = Math.round(total / 30) * 30;
+  const clamped = Math.min(
+    SERVICE_DURATION_MAX_MINUTES,
+    Math.max(SERVICE_DURATION_MIN_MINUTES, rounded)
+  );
+  const h = Math.floor(clamped / 60);
+  const rem = clamped % 60;
+  return `${h.toString().padStart(2, '0')}:${rem === 30 ? '30' : '00'}`;
+}
+
+/** Clamp arbitrary "H:mm" / stored values to the service duration grid. */
+export function normalizeServiceDurationHHmm(input: string): string {
+  if (!input.trim()) return '';
+  let mins = serviceDurationHHmmToMinutes(input);
+  if (mins <= 0) mins = SERVICE_DURATION_MIN_MINUTES;
+  mins = Math.min(
+    SERVICE_DURATION_MAX_MINUTES,
+    Math.max(SERVICE_DURATION_MIN_MINUTES, Math.round(mins / 30) * 30)
+  );
+  return minutesToServiceDurationHHmm(mins);
+}
+
+export function isValidServiceDurationHHmm(hhmm: string): boolean {
+  const trimmed = hhmm.trim();
+  if (!/^\d{1,2}:\d{2}$/.test(trimmed)) return false;
+  const [hRaw, minRaw] = trimmed.split(':');
+  const h = parseInt(hRaw ?? '', 10);
+  if (!Number.isFinite(h) || h < 0 || h > 10) return false;
+  const mm = (minRaw ?? '').padStart(2, '0');
+  if (mm !== '00' && mm !== '30') return false;
+  const total = h * 60 + (mm === '30' ? 30 : 0);
+  return (
+    total >= SERVICE_DURATION_MIN_MINUTES &&
+    total <= SERVICE_DURATION_MAX_MINUTES
+  );
+}
+
+/** Trigger label for duration picker (not clock time). */
+export function formatServiceDurationSelectLabel(hhmm: string): string {
+  const [hs, ms] = hhmm.split(':');
+  const h = Math.min(10, Math.max(0, parseInt(hs, 10) || 0));
+  const minuteHalf = ms === '30';
+  if (h === 0 && minuteHalf) return '30 min';
+  if (!minuteHalf) return h === 1 ? '1 hr' : `${h} hrs`;
+  return h === 1 ? '1 hr 30 min' : `${h} hrs 30 min`;
+}

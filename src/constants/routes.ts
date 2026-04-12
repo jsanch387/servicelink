@@ -43,6 +43,18 @@ export const ROUTES = {
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
+    QUOTES: '/dashboard/quotes',
+    /** Pending customer quote requests (not full quotes until you create one). */
+    QUOTES_REQUESTS: '/dashboard/quotes/requests',
+    /** Single open request (same row as quotes DB; `customer_requested` + `requested`). */
+    QUOTE_REQUEST_DETAIL: (requestId: string) =>
+      `/dashboard/quotes/requests/${encodeURIComponent(requestId.trim())}`,
+    QUOTES_NEW: '/dashboard/quotes/new',
+    /** Single quote (owner dashboard). Pass UUID from your data layer. */
+    QUOTE_DETAIL: (quoteId: string) =>
+      `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}`,
+    QUOTE_EDIT: (quoteId: string) =>
+      `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
     PAYMENTS: '/dashboard/payments',
@@ -51,8 +63,23 @@ export const ROUTES = {
   },
 } as const;
 
+/**
+ * Path prefixes that require a signed-in session (see `middleware.ts`).
+ * - `/dashboard` covers every nested route (e.g. `/dashboard/quotes/requests/...`).
+ * - Add another prefix only if you add a new authenticated area **outside** `/dashboard`.
+ */
+export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
+
 export const API_ROUTES = {
   CUSTOMERS: '/api/customers',
+  /** Owner: toggle `accept_quote_req` on current business. */
+  BUSINESS_PROFILE_ACCEPT_QUOTE_REQUESTS:
+    '/api/business-profile/accept-quote-requests',
+  /** Public: customer submits “request quote” from profile. */
+  PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
+  /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */
+  QUOTE_SEND_EXISTING: (quoteId: string) =>
+    `/api/quotes/${encodeURIComponent(quoteId.trim())}/send`,
 } as const;
 
 export const PUBLIC_ROUTES = [
@@ -100,11 +127,17 @@ export function getBusinessBookDetailsPath(
   });
 }
 
+export type BookDetailsStepQuery = 'price' | 'addons';
+
 export function getBusinessBookDetailsUrl(
   businessSlug: string,
   params: {
     serviceId: string;
     addOnIds?: string;
+    /** Restores chosen multi-price option when linking back from the calendar step. */
+    priceOptionId?: string;
+    /** Which details sub-step to open (`price` = choose option, `addons` = add-ons). */
+    detailsStep?: BookDetailsStepQuery;
     forOwner?: boolean;
   }
 ): string {
@@ -114,6 +147,12 @@ export function getBusinessBookDetailsUrl(
   const q = new URLSearchParams({ serviceId: sid });
   if (params.addOnIds?.trim()) {
     q.set('addOnIds', params.addOnIds.trim());
+  }
+  if (params.priceOptionId?.trim()) {
+    q.set('priceOptionId', params.priceOptionId.trim());
+  }
+  if (params.detailsStep === 'addons' || params.detailsStep === 'price') {
+    q.set('detailsStep', params.detailsStep);
   }
   if (params.forOwner) {
     q.set('for', OWNER_MANUAL_BOOKING_FOR);
