@@ -9,7 +9,7 @@ export type MockPaymentTransaction = {
   status: MockPaymentTransactionStatus;
 };
 
-/** Mock available balance in cents (UI preview only). */
+/** Placeholder balance in cents until wired to Stripe. */
 export const MOCK_AVAILABLE_BALANCE_CENTS = 124_750;
 
 export const MOCK_RECENT_TRANSACTIONS: MockPaymentTransaction[] = [

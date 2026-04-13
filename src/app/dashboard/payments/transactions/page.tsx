@@ -1,13 +1,13 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { PaymentsPage } from '@/features/payments';
+import { PaymentsTransactionsPage } from '@/features/payments';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPaymentsPage() {
+export default async function DashboardPaymentsTransactionsPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -26,5 +26,5 @@ export default async function DashboardPaymentsPage() {
 
   const hasProAccess = await getHasProAccessForPayments(supabase, user.id);
 
-  return <PaymentsPage hasProAccess={hasProAccess} />;
+  return <PaymentsTransactionsPage hasProAccess={hasProAccess} />;
 }

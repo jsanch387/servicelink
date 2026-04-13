@@ -64,6 +64,7 @@ const allNavigationItems = [
     href: ROUTES.DASHBOARD.PAYMENTS,
     icon: BanknotesIcon,
     requiresOnboarding: true,
+    activePathPrefix: '/dashboard/payments',
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [
@@ -126,6 +127,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               const isActive =
                 'activePathPrefix' in item && item.activePathPrefix
                   ? pathname === item.href ||
+                    pathname === item.activePathPrefix ||
                     pathname.startsWith(`${item.activePathPrefix}/`)
                   : pathname === item.href;
               return (

@@ -31,12 +31,27 @@ function statusLabel(status: MockPaymentTransactionStatus): string {
   }
 }
 
-export const PaymentsRecentTransactions: React.FC = () => {
+export interface PaymentsRecentTransactionsProps {
+  /** Omit default top margin when the parent page already sets spacing (e.g. transactions sub-page). */
+  noSectionTopMargin?: boolean;
+  /** Hide the section heading (e.g. when the page title is already “Recent transactions”). */
+  hideHeading?: boolean;
+}
+
+export const PaymentsRecentTransactions: React.FC<
+  PaymentsRecentTransactionsProps
+> = ({ noSectionTopMargin = false, hideHeading = false }) => {
   return (
-    <section className="mt-8 sm:mt-10">
-      <h2 className="text-lg font-semibold text-white mb-4">
-        Recent transactions
-      </h2>
+    <section
+      className={
+        noSectionTopMargin ? '' : 'mt-8 sm:mt-10'
+      }
+    >
+      {hideHeading ? null : (
+        <h2 className="text-lg font-semibold text-white mb-4">
+          Recent transactions
+        </h2>
+      )}
       <div className="hidden md:block overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02]">
         <table className="min-w-full">
           <thead>

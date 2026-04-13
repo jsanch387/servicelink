@@ -58,6 +58,7 @@ export const ROUTES = {
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
     PAYMENTS: '/dashboard/payments',
+    PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
     SETTINGS: '/dashboard/settings',
     UPGRADE: '/dashboard/upgrade',
   },

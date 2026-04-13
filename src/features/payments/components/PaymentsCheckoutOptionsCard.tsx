@@ -14,19 +14,19 @@ const OPTIONS: {
     id: 'in_person',
     title: 'In person only',
     description:
-      'Cash, Cash App, Zelle, or whatever you use. Customers pay you outside the app—nothing is charged at checkout online.',
+      'Checkout only offers in-person payment. No card payment in the app.',
   },
   {
     id: 'in_app',
     title: 'In the app only',
     description:
-      'Card payments through checkout only. Everything runs through Stripe in the app.',
+      'Checkout only offers card payment in the app. No in-person option.',
   },
   {
     id: 'customer_choice',
     title: 'Customer chooses at checkout',
     description:
-      'Offer both: they can pay in the app or select in-person payment when they book.',
+      'At checkout they can choose to pay in the app or in person.',
   },
 ];
 
@@ -40,7 +40,6 @@ export const PaymentsCheckoutOptionsCard: React.FC = () => {
   const isDirty = selectedMode !== savedMode;
 
   const handleSave = () => {
-    // TODO: persist checkout payment mode (API).
     setSavedMode(selectedMode);
   };
 
@@ -51,8 +50,7 @@ export const PaymentsCheckoutOptionsCard: React.FC = () => {
           How customers pay
         </h2>
         <p className="mt-1 text-sm text-gray-400">
-          Decide whether checkout collects money in the app, you handle payment
-          in person, or the customer picks when they book (preview UI).
+          In the app, in person only, or both at checkout.
         </p>
 
         <div
@@ -108,9 +106,7 @@ export const PaymentsCheckoutOptionsCard: React.FC = () => {
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-gray-500 sm:max-w-xs">
-            {isDirty
-              ? 'You have unsaved changes.'
-              : 'Your checkout payment preference is up to date.'}
+            {isDirty ? 'Save to keep your changes.' : 'Nothing new to save.'}
           </p>
           <Button
             type="button"
