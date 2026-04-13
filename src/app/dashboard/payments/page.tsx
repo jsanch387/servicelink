@@ -26,5 +26,7 @@ export default async function DashboardPaymentsPage() {
 
   const hasProAccess = await getHasProAccessForPayments(supabase, user.id);
 
-  return <PaymentsPage hasProAccess={hasProAccess} />;
+  return (
+    <PaymentsPage hasProAccess={hasProAccess} paymentsSetupComplete={false} />
+  );
 }
