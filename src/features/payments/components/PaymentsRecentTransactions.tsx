@@ -42,11 +42,7 @@ export const PaymentsRecentTransactions: React.FC<
   PaymentsRecentTransactionsProps
 > = ({ noSectionTopMargin = false, hideHeading = false }) => {
   return (
-    <section
-      className={
-        noSectionTopMargin ? '' : 'mt-8 sm:mt-10'
-      }
-    >
+    <section className={noSectionTopMargin ? '' : 'mt-8 sm:mt-10'}>
       {hideHeading ? null : (
         <h2 className="text-lg font-semibold text-white mb-4">
           Recent transactions

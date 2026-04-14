@@ -204,9 +204,7 @@ export const PaymentsDepositSettingsCard: React.FC = () => {
             className="h-4 w-4 shrink-0 text-gray-500 mt-0.5"
             aria-hidden
           />
-          <span>
-            Deposits up front often mean fewer no-shows.
-          </span>
+          <span>Deposits up front often mean fewer no-shows.</span>
         </p>
       </footer>
     </GlassCard>

@@ -1,7 +1,8 @@
 import React from 'react';
 import { LANDING_FAQS } from '../data/faqs';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 
 export const LandingPageStructuredData: React.FC = () => {
   const organizationSchema = {
@@ -33,7 +34,7 @@ export const LandingPageStructuredData: React.FC = () => {
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: LANDING_FAQS.map((faq) => ({
+    mainEntity: LANDING_FAQS.map(faq => ({
       '@type': 'Question',
       name: faq.question,
       acceptedAnswer: {
@@ -48,7 +49,10 @@ export const LandingPageStructuredData: React.FC = () => {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({ ...organizationSchema, '@id': `${SITE_URL}#organization` }),
+          __html: JSON.stringify({
+            ...organizationSchema,
+            '@id': `${SITE_URL}#organization`,
+          }),
         }}
       />
       <script

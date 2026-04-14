@@ -1,6 +1,5 @@
 import { Logo } from '@/components/shared';
 import Link from 'next/link';
-import React from 'react';
 
 export default function TermsPage() {
   return (
@@ -54,9 +53,7 @@ export default function TermsPage() {
                 Business owners create and manage service profiles, pricing, and
                 availability.
               </li>
-              <li>
-                Customers can submit booking forms and request services.
-              </li>
+              <li>Customers can submit booking forms and request services.</li>
               <li>
                 ServiceLink may send booking-related and account-related email
                 notifications.

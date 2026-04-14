@@ -8,7 +8,8 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
   const robotsTxt = `User-agent: *
 Allow: /
 Allow: /signup

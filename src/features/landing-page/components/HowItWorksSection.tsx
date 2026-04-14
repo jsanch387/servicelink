@@ -20,7 +20,7 @@ const steps = [
   {
     title: 'Pick a time and book.',
     description:
-      'They pick a date and time from your calendar and confirm. The booking is done in seconds—you get the request and they\'re on your schedule.',
+      "They pick a date and time from your calendar and confirm. The booking is done in seconds—you get the request and they're on your schedule.",
     image: '/calendar-landing.png',
     imageAlt: 'Calendar and time selection when booking a service',
   },
@@ -28,10 +28,7 @@ const steps = [
 
 export const HowItWorksSection: React.FC = () => {
   return (
-    <section
-      id="how-it-works"
-      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6"
-    >
+    <section id="how-it-works" className="py-16 sm:py-20 md:py-24 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-14 sm:mb-16">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
@@ -51,9 +48,7 @@ export const HowItWorksSection: React.FC = () => {
               }`}
             >
               {/* Content - order alternates on large screens */}
-              <div
-                className={index % 2 === 1 ? 'lg:order-2' : 'lg:order-1'}
-              >
+              <div className={index % 2 === 1 ? 'lg:order-2' : 'lg:order-1'}>
                 <div className="flex items-center mb-4">
                   <span className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/90 border border-white/20 text-black font-black text-lg">
                     {index + 1}
@@ -68,9 +63,7 @@ export const HowItWorksSection: React.FC = () => {
               </div>
 
               {/* Visual - link display for step 1, bare image for step 2, container for step 3 */}
-              <div
-                className={index % 2 === 1 ? 'lg:order-1' : 'lg:order-2'}
-              >
+              <div className={index % 2 === 1 ? 'lg:order-1' : 'lg:order-2'}>
                 {index === 0 ? (
                   <ShareableLinkDisplay businessSlug="blacklabelauto" />
                 ) : index === 1 ? (

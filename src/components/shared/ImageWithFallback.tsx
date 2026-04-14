@@ -58,7 +58,8 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   };
 
   // External URLs (e.g. Supabase): load directly to avoid Vercel Image Optimization (402).
-  const isExternal = imageSrc.startsWith('http://') || imageSrc.startsWith('https://');
+  const isExternal =
+    imageSrc.startsWith('http://') || imageSrc.startsWith('https://');
 
   // If src is empty or null, use fallback immediately
   if (!src || src.trim() === '') {

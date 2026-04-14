@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import React from 'react';
 
 const sectionClasses = 'mb-10';
 const h2Classes = 'text-xl sm:text-2xl font-bold text-white mt-10 mb-4';
@@ -21,8 +20,8 @@ export function HowMobileDetailersGetClientsInstagramContent() {
         videos.
       </p>
       <p className={pClasses}>
-        The good news? You don’t need a big following. You just need to post
-        the right kind of content and make it easy for people to book you.
+        The good news? You don’t need a big following. You just need to post the
+        the t kind of content and make it easy for people to book you.
       </p>
       <p className={pClasses}>In this guide you will learn:</p>
       <ul className={listClasses}>
@@ -39,8 +38,8 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           big transformations. A dirty car turning into a clean car grabs
           attention fast.
         </p>
-      <p className={pClasses}>
-        That’s why car detailing videos do very well on Instagram and TikTok.
+        <p className={pClasses}>
+          That’s why car detailing videos do very well on Instagram and TikTok.
         </p>
         <p className={pClasses}>Common videos that get views:</p>
         <ul className={listClasses}>
@@ -114,15 +113,20 @@ export function HowMobileDetailersGetClientsInstagramContent() {
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Always Mention Your City</h2>
-        <p className={pClasses}>This is very important. You want local customers to find you.</p>
+        <p className={pClasses}>
+          This is very important. You want local customers to find you.
+        </p>
         <p className={pClasses}>
           In your video say something like: “Today we are detailing a car in
           Austin Texas.”
-        </p>
+        </p>{' '}
         <p className={pClasses}>
-          Also include your city in the caption. <strong className="text-gray-300">Example caption:</strong>
+          Also include your city in the caption.{' '}
+          <strong className="text-gray-300">Example caption:</strong>
         </p>
-        <p className={`${pClasses} bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 text-gray-300`}>
+        <p
+          className={`${pClasses} bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 text-gray-300`}
+        >
           Mobile car detailing in Austin Texas
           <br />
           Interior detail transformation

@@ -65,7 +65,9 @@ const quoteIpRl: { current: Ratelimit | null | undefined } = {
 const quoteIpSlugRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
-const trackIpRl: { current: Ratelimit | null | undefined } = { current: undefined };
+const trackIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
 const trackIpSlugRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
@@ -162,12 +164,7 @@ export async function assertPublicTrackViewRateLimits(
     120,
     '15 m'
   );
-  const r2 = await consume(
-    slugLimiter,
-    `ip:${ip}:slug:${slug}`,
-    120,
-    MS_15M
-  );
+  const r2 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 120, MS_15M);
   if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;
@@ -181,7 +178,12 @@ export async function assertPublicProfileGetRateLimits(
   const ip = getClientIp(request);
   const s = safeSlugSegment(slug);
 
-  const ipLimiter = createLimiter(profileIpRl, 'public_api:profile:ip', 360, '1 h');
+  const ipLimiter = createLimiter(
+    profileIpRl,
+    'public_api:profile:ip',
+    360,
+    '1 h'
+  );
   const r1 = await consume(ipLimiter, `ip:${ip}`, 360, MS_HOUR);
   if (!r1.ok) return tooManyRequests(r1.reset);
 

@@ -33,9 +33,7 @@ export const PaymentsBalanceAndStripeSection: React.FC<
         <p className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
           {formatPaymentCents(MOCK_AVAILABLE_BALANCE_CENTS)}
         </p>
-        <p className="mt-3 text-xs text-gray-500">
-          From your Stripe balance.
-        </p>
+        <p className="mt-3 text-xs text-gray-500">From your Stripe balance.</p>
       </GlassCard>
 
       {showStripeDashboardCard ? (

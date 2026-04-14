@@ -33,7 +33,5 @@ export default async function CustomersPage() {
     ?.subscription_tier;
   const hasProCheckInAccess = hasProCheckInAccessFromTier(tier);
 
-  return (
-    <CustomerManagementPage hasProCheckInAccess={hasProCheckInAccess} />
-  );
+  return <CustomerManagementPage hasProCheckInAccess={hasProCheckInAccess} />;
 }

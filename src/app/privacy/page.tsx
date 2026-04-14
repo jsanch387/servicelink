@@ -1,6 +1,5 @@
 import { Logo } from '@/components/shared';
 import Link from 'next/link';
-import React from 'react';
 
 export default function PrivacyPage() {
   return (
@@ -81,11 +80,13 @@ export default function PrivacyPage() {
                 Detect abuse, fraud, unauthorized activity, and policy
                 violations
               </li>
-              <li>Send product updates and promotional emails where permitted</li>
+              <li>
+                Send product updates and promotional emails where permitted
+              </li>
             </ul>
             <p className="text-base leading-relaxed mt-4">
-              You can opt out of marketing emails using the unsubscribe link.
-              We may still send transactional or service-related communications.
+              You can opt out of marketing emails using the unsubscribe link. We
+              may still send transactional or service-related communications.
             </p>
           </section>
 
@@ -167,8 +168,8 @@ export default function PrivacyPage() {
               8. Your Privacy Rights
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              Depending on your location, you may have rights to access, correct,
-              delete, or object to certain processing of your personal
+              Depending on your location, you may have rights to access,
+              correct, delete, or object to certain processing of your personal
               information.
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">

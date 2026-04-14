@@ -7,15 +7,23 @@ import { FreePaymentPreviewLockedDashboard } from '../free-payment-preview';
 import {
   PAYMENTS_SETUP_BENEFITS,
   PAYMENTS_SETUP_CTA_CONNECT_STRIPE,
+  PAYMENTS_SETUP_CTA_CONTINUE_STRIPE,
   PAYMENTS_SETUP_HERO_TITLE,
   PAYMENTS_SETUP_LEAD,
   PAYMENTS_SETUP_TEASE_OVERLINE,
 } from './paymentsSetupCopy';
 
+export type ProPaymentsSetupExperienceProps = {
+  /** Saved Connect account exists; show “Continue” instead of first-time “Connect”. */
+  resumeConnect?: boolean;
+};
+
 /**
- * Pro-only “Connect Stripe” screen: opens Stripe-hosted Connect onboarding (no app DB yet).
+ * Pro-only Connect Stripe screen: persists `payment_accounts` via onboard API; resume supported.
  */
-export const ProPaymentsSetupExperience: React.FC = () => {
+export const ProPaymentsSetupExperience: React.FC<
+  ProPaymentsSetupExperienceProps
+> = ({ resumeConnect = false }) => {
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
 
@@ -23,6 +31,9 @@ export const ProPaymentsSetupExperience: React.FC = () => {
     setConnectError(null);
     setConnectLoading(true);
     try {
+      console.info('[payments:connect]', 'client.onboard_fetch_start', {
+        resumeConnect,
+      });
       const res = await fetch('/api/stripe/connect/onboard', {
         method: 'POST',
       });
@@ -31,6 +42,13 @@ export const ProPaymentsSetupExperience: React.FC = () => {
         url?: string;
         error?: string;
       };
+
+      console.info('[payments:connect]', 'client.onboard_fetch_done', {
+        httpStatus: res.status,
+        success: data.success === true,
+        hasUrl: typeof data.url === 'string' && data.url.length > 0,
+        error: typeof data.error === 'string' ? data.error : undefined,
+      });
 
       if (!res.ok || data.success === false) {
         setConnectError(
@@ -48,15 +66,17 @@ export const ProPaymentsSetupExperience: React.FC = () => {
         return;
       }
 
+      console.info('[payments:connect]', 'client.redirect_to_stripe_hosted');
       window.location.assign(data.url);
     } catch {
+      console.info('[payments:connect]', 'client.onboard_fetch_threw');
       setConnectError(
         'Something went wrong. Check your connection and try again.'
       );
     } finally {
       setConnectLoading(false);
     }
-  }, []);
+  }, [resumeConnect]);
 
   return (
     <div className="mt-6 flex flex-col items-start sm:mt-8">
@@ -82,7 +102,9 @@ export const ProPaymentsSetupExperience: React.FC = () => {
             disabled={connectLoading}
             onClick={() => void startStripeConnect()}
           >
-            {PAYMENTS_SETUP_CTA_CONNECT_STRIPE}
+            {resumeConnect
+              ? PAYMENTS_SETUP_CTA_CONTINUE_STRIPE
+              : PAYMENTS_SETUP_CTA_CONNECT_STRIPE}
           </Button>
         </div>
         {connectError ? (

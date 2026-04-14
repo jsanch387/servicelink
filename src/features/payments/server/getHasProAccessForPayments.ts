@@ -17,5 +17,8 @@ export async function getHasProAccessForPayments(
     subscription_current_period_end?: string | null;
   } | null;
 
-  return isProAccess(row?.subscription_tier, row?.subscription_current_period_end);
+  return isProAccess(
+    row?.subscription_tier,
+    row?.subscription_current_period_end
+  );
 }

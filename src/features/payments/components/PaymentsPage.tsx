@@ -20,14 +20,19 @@ export interface PaymentsPageProps {
   hasProAccess: boolean;
   /**
    * When true, Pro users see the full payments dashboard. When false, Pro users
-   * see Connect onboarding UI (Stripe persistence wired later).
+   * see Connect onboarding UI.
    */
   paymentsSetupComplete?: boolean;
+  /**
+   * When true, primary CTA should read “continue” (saved `acct_…`, onboarding incomplete).
+   */
+  stripeConnectResume?: boolean;
 }
 
 export const PaymentsPage: React.FC<PaymentsPageProps> = ({
   hasProAccess,
   paymentsSetupComplete = false,
+  stripeConnectResume = false,
 }) => {
   const showProPaymentsDashboard = hasProAccess && paymentsSetupComplete;
 
@@ -52,7 +57,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
             <PaymentsViewTransactionsLink />
           </>
         ) : hasProAccess ? (
-          <ProPaymentsSetupExperience />
+          <ProPaymentsSetupExperience resumeConnect={stripeConnectResume} />
         ) : (
           <FreePaymentPreview
             upsellTitle={FREE_PAYMENTS_UPSELL_TITLE}

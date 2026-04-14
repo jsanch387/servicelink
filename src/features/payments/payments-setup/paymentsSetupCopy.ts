@@ -9,6 +9,9 @@ export const PAYMENTS_SETUP_LEAD =
 
 export const PAYMENTS_SETUP_CTA_CONNECT_STRIPE = 'Connect with Stripe';
 
+/** Shown when a Connect account exists but onboarding is not finished yet. */
+export const PAYMENTS_SETUP_CTA_CONTINUE_STRIPE = 'Continue Stripe setup';
+
 /** One short sentence each. */
 export const PAYMENTS_SETUP_BENEFITS = [
   {
