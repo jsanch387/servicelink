@@ -2,6 +2,16 @@ export { PaymentsPage } from './components/PaymentsPage';
 export { PaymentsTransactionsPage } from './components/PaymentsTransactionsPage';
 
 export {
+  getDefaultConnectAccountCountry,
+  startExpressConnectOnboarding,
+} from './stripe';
+export type {
+  ConnectOnboardingUserContext,
+  StartExpressConnectOnboardingParams,
+  StartExpressConnectOnboardingResult,
+} from './stripe';
+
+export {
   FREE_PAYMENTS_UPSELL_DESCRIPTION_MAIN,
   FREE_PAYMENTS_UPSELL_DESCRIPTION_TRANSACTIONS,
   FREE_PAYMENTS_UPSELL_TITLE,

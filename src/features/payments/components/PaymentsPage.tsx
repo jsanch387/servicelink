@@ -19,8 +19,8 @@ import { PaymentsViewTransactionsLink } from './PaymentsViewTransactionsLink';
 export interface PaymentsPageProps {
   hasProAccess: boolean;
   /**
-   * When the user has finished Stripe onboarding (future: from DB).
-   * Until then, Pro users see the setup UI only.
+   * When true, Pro users see the full payments dashboard. When false, Pro users
+   * see Connect onboarding UI (Stripe persistence wired later).
    */
   paymentsSetupComplete?: boolean;
 }

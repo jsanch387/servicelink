@@ -12,16 +12,11 @@ import { sendSubscriptionPaymentFailedEmail } from '@/features/email';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
+import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-
-function getStripe(): Stripe {
-  const secret = process.env.STRIPE_SECRET_KEY;
-  if (!secret) throw new Error('STRIPE_SECRET_KEY is not set');
-  return new Stripe(secret);
-}
 
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -52,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    const stripe = getStripe();
+    const stripe = getStripePlatform();
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -105,7 +100,7 @@ export async function POST(request: NextRequest) {
     let currentPeriodEnd: string | null = null;
     if (stripeSubscriptionId) {
       try {
-        const stripe = getStripe();
+        const stripe = getStripePlatform();
         const subscription =
           await stripe.subscriptions.retrieve(stripeSubscriptionId);
         const periodEnd = (subscription as { current_period_end?: number })
