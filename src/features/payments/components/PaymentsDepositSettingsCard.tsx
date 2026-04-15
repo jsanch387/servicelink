@@ -1,9 +1,15 @@
 'use client';
 
 import { Button, GlassCard, MoneyInput, Switch } from '@/components/shared';
+import { API_ROUTES } from '@/constants/routes';
 import type { DepositAmountMode } from '@/features/payments/types/depositAmountMode';
+import {
+  centsToMoneyInputString,
+  dollarsStringToCents,
+} from '@/features/payments/utils/paymentSettingsMaps';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
-import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 
 function sanitizePercentageDeposit(raw: string): string {
   const s = raw.replace(/[^0-9.]/g, '');
@@ -43,15 +49,60 @@ function clampPercentageAt100(value: string): string {
   return value;
 }
 
-export const PaymentsDepositSettingsCard: React.FC = () => {
-  const [savedRequireDeposit, setSavedRequireDeposit] = useState(true);
-  const [savedDepositAmount, setSavedDepositAmount] = useState('50');
-  const [savedDepositMode, setSavedDepositMode] =
-    useState<DepositAmountMode>('fixed');
+function dbDepositTypeToUi(t: 'fixed' | 'percent'): DepositAmountMode {
+  return t === 'percent' ? 'percentage' : 'fixed';
+}
 
-  const [requireDeposit, setRequireDeposit] = useState(true);
-  const [depositAmount, setDepositAmount] = useState('50');
-  const [depositMode, setDepositMode] = useState<DepositAmountMode>('fixed');
+function uiDepositModeToDb(mode: DepositAmountMode): 'fixed' | 'percent' {
+  return mode === 'percentage' ? 'percent' : 'fixed';
+}
+
+export interface PaymentsDepositSettingsCardProps {
+  initialDepositsEnabled: boolean;
+  initialDepositType: 'fixed' | 'percent';
+  /** Cents for fixed, whole percent for percent. */
+  initialDepositValue: number;
+}
+
+export const PaymentsDepositSettingsCard: React.FC<
+  PaymentsDepositSettingsCardProps
+> = ({ initialDepositsEnabled, initialDepositType, initialDepositValue }) => {
+  const router = useRouter();
+
+  const initialMode = dbDepositTypeToUi(initialDepositType);
+  const initialAmountStr =
+    initialDepositType === 'fixed'
+      ? centsToMoneyInputString(initialDepositValue)
+      : String(Number.isFinite(initialDepositValue) ? initialDepositValue : 0);
+
+  const [savedRequireDeposit, setSavedRequireDeposit] = useState(
+    initialDepositsEnabled
+  );
+  const [savedDepositAmount, setSavedDepositAmount] =
+    useState(initialAmountStr);
+  const [savedDepositMode, setSavedDepositMode] = useState(initialMode);
+
+  const [requireDeposit, setRequireDeposit] = useState(initialDepositsEnabled);
+  const [depositAmount, setDepositAmount] = useState(initialAmountStr);
+  const [depositMode, setDepositMode] = useState(initialMode);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const mode = dbDepositTypeToUi(initialDepositType);
+    const amountStr =
+      initialDepositType === 'fixed'
+        ? centsToMoneyInputString(initialDepositValue)
+        : String(
+            Number.isFinite(initialDepositValue) ? initialDepositValue : 0
+          );
+    setSavedRequireDeposit(initialDepositsEnabled);
+    setSavedDepositAmount(amountStr);
+    setSavedDepositMode(mode);
+    setRequireDeposit(initialDepositsEnabled);
+    setDepositAmount(amountStr);
+    setDepositMode(mode);
+  }, [initialDepositsEnabled, initialDepositType, initialDepositValue]);
 
   const isDirty =
     requireDeposit !== savedRequireDeposit ||
@@ -68,7 +119,9 @@ export const PaymentsDepositSettingsCard: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!isDirty || saving) return;
+    setError(null);
     const amount =
       depositMode === 'percentage'
         ? clampPercentageAt100(depositAmount)
@@ -76,9 +129,48 @@ export const PaymentsDepositSettingsCard: React.FC = () => {
     if (amount !== depositAmount) {
       setDepositAmount(amount);
     }
-    setSavedRequireDeposit(requireDeposit);
-    setSavedDepositAmount(amount);
-    setSavedDepositMode(depositMode);
+
+    const dbType = uiDepositModeToDb(depositMode);
+    let depositValue: number;
+    if (depositMode === 'percentage') {
+      depositValue = Math.round(parseFloat(amount) || 0);
+      depositValue = Math.min(100, Math.max(0, depositValue));
+    } else {
+      depositValue = dollarsStringToCents(amount);
+    }
+
+    setSaving(true);
+    try {
+      const res = await fetch(API_ROUTES.PAYMENTS_SERVICELINK_SETTINGS, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          depositsEnabled: requireDeposit,
+          depositType: dbType,
+          depositValue,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+      if (!res.ok || data.success === false) {
+        setError(
+          typeof data.error === 'string' && data.error.trim()
+            ? data.error
+            : 'Could not save. Try again.'
+        );
+        return;
+      }
+      setSavedRequireDeposit(requireDeposit);
+      setSavedDepositAmount(amount);
+      setSavedDepositMode(depositMode);
+      router.refresh();
+    } catch {
+      setError('Something went wrong. Check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -183,14 +275,21 @@ export const PaymentsDepositSettingsCard: React.FC = () => {
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-gray-500 sm:max-w-xs">
-            {isDirty ? 'Save to keep your changes.' : 'Nothing new to save.'}
+            {error ? (
+              <span className="text-red-300">{error}</span>
+            ) : isDirty ? (
+              'Save to keep your changes.'
+            ) : (
+              'Nothing new to save.'
+            )}
           </p>
           <Button
             type="button"
             variant="inverse"
             size="sm"
-            disabled={!isDirty}
-            onClick={handleSave}
+            disabled={!isDirty || saving}
+            loading={saving}
+            onClick={() => void handleSave()}
             className="w-full sm:w-auto shrink-0"
           >
             Save changes

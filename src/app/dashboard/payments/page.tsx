@@ -4,7 +4,10 @@ import { PaymentsPage } from '@/features/payments';
 import { logConnect } from '@/features/payments/server/connectOnboardingLog';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
+import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { syncConnectPaymentAccountForBusiness } from '@/features/payments/server/syncConnectPaymentAccount';
+import type { PaymentSettingsDashboardInitial } from '@/features/payments/types/paymentSettingsDashboard';
+import { paymentSettingsRowToDashboardInitial } from '@/features/payments/utils/paymentSettingsMaps';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -87,13 +90,42 @@ export default async function DashboardPaymentsPage({
     .eq('business_id', businessId)
     .maybeSingle();
 
-  const paymentsSetupComplete =
+  const stripeConnectReady =
     paymentAccount?.onboarding_status === 'complete' &&
     paymentAccount?.charges_enabled === true;
 
+  const { data: paymentSettingsRow } = await paymentSettingsOf(supabase)
+    .select(
+      'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+    )
+    .eq('business_id', businessId)
+    .maybeSingle();
+
+  const servicelinkPaymentsEnabled =
+    paymentSettingsRow?.payments_enabled === true;
+
+  const hasPaymentSettingsRow = Boolean(paymentSettingsRow);
+
+  let paymentSettingsForDashboard: PaymentSettingsDashboardInitial | null =
+    null;
+  if (
+    stripeConnectReady &&
+    (servicelinkPaymentsEnabled || hasPaymentSettingsRow)
+  ) {
+    paymentSettingsForDashboard = paymentSettingsRow
+      ? paymentSettingsRowToDashboardInitial(paymentSettingsRow)
+      : {
+          checkoutMode: null,
+          depositsEnabled: false,
+          depositType: 'percent',
+          depositValue: 0,
+          currency: 'usd',
+        };
+  }
+
   const stripeConnectResume =
     hasProAccess &&
-    !paymentsSetupComplete &&
+    !stripeConnectReady &&
     !!paymentAccount?.stripe_account_id &&
     (paymentAccount.onboarding_status === 'in_progress' ||
       paymentAccount.onboarding_status === 'restricted');
@@ -101,8 +133,10 @@ export default async function DashboardPaymentsPage({
   return (
     <PaymentsPage
       hasProAccess={hasProAccess}
-      paymentsSetupComplete={paymentsSetupComplete}
+      stripeConnectReady={stripeConnectReady}
+      servicelinkPaymentsEnabled={servicelinkPaymentsEnabled}
       stripeConnectResume={stripeConnectResume}
+      paymentSettings={paymentSettingsForDashboard}
     />
   );
 }

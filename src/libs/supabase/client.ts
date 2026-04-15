@@ -545,6 +545,55 @@ export type Database = {
           updated_at?: string;
         };
       };
+      payment_settings: {
+        /** Column order matches Supabase `payment_settings` (see `src/features/payments/docs/DATABASE.md`). */
+        Row: {
+          id: string;
+          business_id: string;
+          payment_account_id: string | null;
+          checkout_mode: string | null;
+          deposits_enabled: boolean;
+          deposit_type: string;
+          deposit_value: number;
+          collect_remaining_balance: boolean;
+          currency: string;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+          /** When false, ServiceLink checkout is off; Stripe may still be connected. */
+          payments_enabled: boolean;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          payment_account_id?: string | null;
+          checkout_mode?: string | null;
+          deposits_enabled?: boolean;
+          deposit_type?: string;
+          deposit_value?: number;
+          collect_remaining_balance?: boolean;
+          currency?: string;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          payments_enabled?: boolean;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          payment_account_id?: string | null;
+          checkout_mode?: string | null;
+          deposits_enabled?: boolean;
+          deposit_type?: string;
+          deposit_value?: number;
+          collect_remaining_balance?: boolean;
+          currency?: string;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          payments_enabled?: boolean;
+        };
+      };
     };
   };
 };

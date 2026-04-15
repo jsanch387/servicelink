@@ -72,6 +72,10 @@ export const ROUTES = {
 export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
 
 export const API_ROUTES = {
+  /** Pro + Stripe connected: create/update `payment_settings` and turn on ServiceLink payments. */
+  PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
+  /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */
+  PAYMENTS_SERVICELINK_SETTINGS: '/api/payments/servicelink/settings',
   CUSTOMERS: '/api/customers',
   /** Owner: toggle `accept_quote_req` on current business. */
   BUSINESS_PROFILE_ACCEPT_QUOTE_REQUESTS:

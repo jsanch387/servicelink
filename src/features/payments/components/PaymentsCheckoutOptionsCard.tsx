@@ -1,9 +1,11 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import { API_ROUTES } from '@/constants/routes';
 import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import React, { useId, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useId, useState } from 'react';
 
 const OPTIONS: {
   id: CheckoutPaymentMode;
@@ -14,33 +16,78 @@ const OPTIONS: {
     id: 'in_person',
     title: 'In person only',
     description:
-      'Checkout only offers in-person payment. No card payment in the app.',
+      'You get paid when you meet them. No card is charged through the app.',
   },
   {
     id: 'in_app',
     title: 'In the app only',
     description:
-      'Checkout only offers card payment in the app. No in-person option.',
+      'They pay in full by card when they book. There is no in-person option.',
   },
   {
     id: 'customer_choice',
     title: 'Customer chooses at checkout',
     description:
-      'At checkout they can choose to pay in the app or in person.',
+      'They choose when they book: card in the app or paying you in person.',
   },
 ];
 
-export const PaymentsCheckoutOptionsCard: React.FC = () => {
-  const [savedMode, setSavedMode] =
-    useState<CheckoutPaymentMode>('customer_choice');
-  const [selectedMode, setSelectedMode] =
-    useState<CheckoutPaymentMode>('customer_choice');
+export interface PaymentsCheckoutOptionsCardProps {
+  /** From `payment_settings.checkout_mode`; null means nothing saved yet. */
+  initialCheckoutMode: CheckoutPaymentMode | null;
+}
+
+export const PaymentsCheckoutOptionsCard: React.FC<
+  PaymentsCheckoutOptionsCardProps
+> = ({ initialCheckoutMode }) => {
+  const router = useRouter();
+  const [savedMode, setSavedMode] = useState<CheckoutPaymentMode | null>(
+    initialCheckoutMode
+  );
+  const [selectedMode, setSelectedMode] = useState<CheckoutPaymentMode | null>(
+    initialCheckoutMode
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const groupLabelId = useId();
+  const groupDescriptionId = useId();
+
+  useEffect(() => {
+    setSavedMode(initialCheckoutMode);
+    setSelectedMode(initialCheckoutMode);
+  }, [initialCheckoutMode]);
 
   const isDirty = selectedMode !== savedMode;
 
-  const handleSave = () => {
-    setSavedMode(selectedMode);
+  const handleSave = async () => {
+    if (selectedMode === null || saving) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch(API_ROUTES.PAYMENTS_SERVICELINK_SETTINGS, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkoutMode: selectedMode }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+      if (!res.ok || data.success === false) {
+        setError(
+          typeof data.error === 'string' && data.error.trim()
+            ? data.error
+            : 'Could not save. Try again.'
+        );
+        return;
+      }
+      setSavedMode(selectedMode);
+      router.refresh();
+    } catch {
+      setError('Something went wrong. Check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -49,14 +96,15 @@ export const PaymentsCheckoutOptionsCard: React.FC = () => {
         <h2 className="text-lg font-semibold text-white" id={groupLabelId}>
           How customers pay
         </h2>
-        <p className="mt-1 text-sm text-gray-400">
-          In the app, in person only, or both at checkout.
+        <p id={groupDescriptionId} className="mt-1 text-sm text-gray-400">
+          Choose how customers pay when they book a service with you.
         </p>
 
         <div
           className="mt-6 flex flex-col gap-3"
           role="radiogroup"
           aria-labelledby={groupLabelId}
+          aria-describedby={groupDescriptionId}
         >
           {OPTIONS.map(option => {
             const selected = selectedMode === option.id;
@@ -106,14 +154,23 @@ export const PaymentsCheckoutOptionsCard: React.FC = () => {
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-gray-500 sm:max-w-xs">
-            {isDirty ? 'Save to keep your changes.' : 'Nothing new to save.'}
+            {error ? (
+              <span className="text-red-300">{error}</span>
+            ) : selectedMode === null ? (
+              'Choose an option, then save.'
+            ) : isDirty ? (
+              'Save to keep your changes.'
+            ) : (
+              'Nothing new to save.'
+            )}
           </p>
           <Button
             type="button"
             variant="inverse"
             size="sm"
-            disabled={!isDirty}
-            onClick={handleSave}
+            disabled={!isDirty || selectedMode === null || saving}
+            loading={saving}
+            onClick={() => void handleSave()}
             className="w-full sm:w-auto shrink-0"
           >
             Save changes

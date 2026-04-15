@@ -3,7 +3,6 @@
 import { PaymentsBalanceAndStripeSection } from '@/features/payments/components/PaymentsBalanceAndStripeSection';
 import { PaymentsCheckoutOptionsCard } from '@/features/payments/components/PaymentsCheckoutOptionsCard';
 import { PaymentsDepositSettingsCard } from '@/features/payments/components/PaymentsDepositSettingsCard';
-import { PaymentsViewTransactionsLink } from '@/features/payments/components/PaymentsViewTransactionsLink';
 import React from 'react';
 import { LockedPaymentPreviewSection } from './LockedPaymentPreviewSection';
 
@@ -24,17 +23,18 @@ const FREE_PAYMENTS_PREVIEW_SECTIONS: PreviewSectionConfig[] = [
   {
     id: 'checkout',
     lockedLabel: 'Checkout options (preview, locked)',
-    content: <PaymentsCheckoutOptionsCard />,
+    content: <PaymentsCheckoutOptionsCard initialCheckoutMode={null} />,
   },
   {
     id: 'deposits',
     lockedLabel: 'Deposit settings (preview, locked)',
-    content: <PaymentsDepositSettingsCard />,
-  },
-  {
-    id: 'activity',
-    lockedLabel: 'Transaction activity (preview, locked)',
-    content: <PaymentsViewTransactionsLink noTopMargin />,
+    content: (
+      <PaymentsDepositSettingsCard
+        initialDepositsEnabled={false}
+        initialDepositType="percent"
+        initialDepositValue={0}
+      />
+    ),
   },
 ];
 

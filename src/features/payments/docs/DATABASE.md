@@ -1,99 +1,128 @@
 # Payments feature – database
 
-This document describes the **Supabase tables** used by the payments feature (Stripe Connect, checkout/deposit settings). Use it when changing schema, writing migrations, or wiring RLS.
+This document is the **reference for `payment_accounts` and `payment_settings`** in Supabase. Use it when wiring the app, writing migrations, or reviewing RLS.
 
-Related planning (Connect flow, partial onboarding, when rows update): **`CONNECT_ONBOARDING.md`**.
+**Keeping it current:** When you change the schema in Supabase, update this file and the hand-maintained `Database` types in `src/libs/supabase/client.ts` so the app and docs stay aligned. Column order below matches the **Table Editor** layout (nullable = hollow diamond, required = solid).
+
+Related flow notes: **`CONNECT_ONBOARDING.md`**.
 
 ---
 
 ## Overview
 
-| Table               | Cardinality        | Purpose |
-|---------------------|--------------------|---------|
-| `payment_accounts`  | One row per business | Stripe Connect account id + onboarding / capability flags. Drives “show setup vs show dashboard”. |
-| `payment_settings`  | One row per business | Owner preferences: checkout mode, deposits, amounts, currency. |
+| Table               | Cardinality         | Purpose |
+|---------------------|---------------------|---------|
+| `payment_accounts`  | One row per business | Stripe Connect account id (`acct_…`) and capability / onboarding flags. |
+| `payment_settings`  | One row per business | ServiceLink checkout: **payments on/off**, **checkout mode** (how customers pay), **deposits**, currency. |
 
-Both reference `business_profiles(id)`. The app treats **`business_profiles`** as the tenant root; `profile_id` on that row links to the Supabase Auth user (owner).
+Both tables reference **`business_profiles(id)`** (tenant root). The owner is `business_profiles.profile_id` → `auth.users`.
 
 ---
 
 ## Table: `payment_accounts`
 
-**Purpose:** Store the connected Stripe account id (`acct_…`) and enough state to know whether the business can accept charges and whether onboarding is complete or blocked.
+**Purpose:** Know whether Stripe Connect is linked, onboarding is complete, and whether charges/payouts are enabled. Drives Payments UI (setup vs dashboard).
 
-**Used by (planned / future):**
+**Used by:** Connect onboarding, return URL / sync, dashboard Payments, webhooks (when implemented).
 
-- Dashboard **Payments** (gate: setup UI vs real payments UI)
-- Connect onboarding API + return URL handler + Stripe webhooks (sync)
+### Columns (Supabase order)
 
-### Columns
-
-| Column                 | Type        | Description |
-|------------------------|------------|-------------|
-| `id`                   | uuid       | Primary key. |
-| `business_id`          | uuid       | FK → `business_profiles(id)`, **unique**, ON DELETE CASCADE. |
-| `provider`             | text       | e.g. `'stripe'`. Constrained in SQL. |
-| `stripe_account_id`    | text       | Stripe Connect account id (`acct_…`). **Unique**. |
-| `onboarding_status`    | text       | One of: `not_started`, `in_progress`, `complete`, `restricted`. |
-| `charges_enabled`      | boolean    | From Stripe account; can accept card payments when true (subject to product rules). |
-| `payouts_enabled`      | boolean    | From Stripe account. |
-| `details_submitted`    | boolean    | From Stripe account. |
-| `requirements_status`  | text (nullable) | Optional snapshot for UX / support (e.g. outstanding requirements). |
-| `connected_at`         | timestamptz (nullable) | First time we considered the account “linked” (product-defined). |
-| `last_synced_at`       | timestamptz (nullable) | Last successful sync from Stripe (return handler or webhook). |
-| `created_at` / `updated_at` | timestamptz | Audit; `updated_at` maintained by trigger where configured. |
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| `id` | `uuid` | no | Primary key. |
+| `business_id` | `uuid` | no | FK → `business_profiles(id)`. **Unique** per business. |
+| `provider` | `text` | no | e.g. `stripe`. |
+| `stripe_account_id` | `text` | no | Stripe Connect account id (`acct_…`). **Unique** globally. |
+| `onboarding_status` | `text` | no | App enums include `not_started`, `in_progress`, `complete`, `restricted` (align with your CHECK). |
+| `charges_enabled` | `bool` | no | From Stripe; card payments when true (subject to product rules). |
+| `payouts_enabled` | `bool` | no | From Stripe. |
+| `details_submitted` | `bool` | no | From Stripe. |
+| `requirements_status` | `text` | yes | Optional snapshot (e.g. outstanding requirements). |
+| `connected_at` | `timestamptz` | yes | When the account was first considered linked (product-defined). |
+| `last_synced_at` | `timestamptz` | yes | Last successful sync from Stripe (return handler / webhook). |
+| `created_at` | `timestamptz` | no | Created at. |
+| `updated_at` | `timestamptz` | no | Updated at (trigger-maintained if configured). |
 
 ### Constraints (intent)
 
-- One payment account per business (`business_id` unique).
-- One Stripe account id globally (`stripe_account_id` unique).
+- One Connect account row per business (`business_id` unique).
+- One Stripe account id per deployment (`stripe_account_id` unique).
 
 ### Row Level Security (RLS)
 
-Policies should allow **`authenticated`** users to **select / insert / update** only rows whose `business_id` belongs to a `business_profiles` row where `profile_id = auth.uid()`**. Deletes are typically denied for client roles (`using (false)` on delete).
+**Authenticated** users: **select / insert / update** only where `business_id` belongs to a `business_profiles` row with `profile_id = auth.uid()`. Deletes usually denied for client roles.
 
-**Service role** bypasses RLS for server-side webhooks and admin jobs.
+**Service role:** bypasses RLS (webhooks, server jobs).
 
 ---
 
 ## Table: `payment_settings`
 
-**Purpose:** Persist how the business wants checkout to behave (deposits vs full pay, amounts, etc.). Separate from Stripe account state so UI and defaults can evolve without mixing into `payment_accounts`.
+**Purpose:** Owner-controlled ServiceLink behavior: global **payments** toggle, **how customers pay** (`checkout_mode`), **deposit** rules, **currency**. Separate from live Stripe flags in `payment_accounts`.
 
-**Used by (planned / future):**
+**Used by:** Dashboard Payments (toggle, “How customers pay”, deposits), public booking checkout (future).
 
-- Dashboard **Payments** checkout / deposit cards
-- Public booking checkout (when implemented)
+### Columns (Supabase order)
 
-### Columns
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| `id` | `uuid` | no | Primary key. |
+| `business_id` | `uuid` | no | FK → `business_profiles(id)`. **Unique** per business. |
+| `payment_account_id` | `uuid` | yes | Optional FK → `payment_accounts(id)` (link row to the Connect account used when payments were enabled). |
+| `checkout_mode` | `text` | yes | **Checkout mode** — how the customer pays; see next section. `NULL` until the owner saves a choice. |
+| `deposits_enabled` | `bool` | no | Whether deposits are used for bookings. |
+| `deposit_type` | `text` | no | `fixed` (amount in cents) or `percent` (0–100). |
+| `deposit_value` | `int4` | no | Interpretation depends on `deposit_type`. |
+| `collect_remaining_balance` | `bool` | no | Whether remaining balance is collected later in the flow. |
+| `currency` | `text` | no | Lowercase ISO currency (e.g. `usd`). |
+| `updated_by` | `uuid` | yes | Optional `auth.users` id for audit. |
+| `created_at` | `timestamptz` | no | Created at. |
+| `updated_at` | `timestamptz` | no | Updated at. |
+| `payments_enabled` | `bool` | no | When **true**, ServiceLink checkout is active on the booking experience; Stripe can stay connected while this is **false**. |
 
-| Column                      | Type        | Description |
-|-----------------------------|------------|-------------|
-| `id`                        | uuid       | Primary key. |
-| `business_id`               | uuid       | FK → `business_profiles(id)`, **unique**, ON DELETE CASCADE. |
-| `payment_account_id`      | uuid (nullable, unique) | Optional FK → `payment_accounts(id)` for strict linkage. |
-| `checkout_mode`             | text       | e.g. `deposit_or_full`, `full_only`, `deposit_only` (exact enum from migration). |
-| `deposits_enabled`          | boolean    | Master toggle for deposits. |
-| `deposit_type`              | text       | `fixed` (amount in cents) or `percent` (0–100). |
-| `deposit_value`             | integer    | Meaning depends on `deposit_type`. |
-| `collect_remaining_balance` | boolean    | Whether balance is collected later in the flow. |
-| `currency`                  | text       | Lowercase ISO currency (e.g. `usd`). |
-| `updated_by`                | uuid (nullable) | Optional `auth.users` id for audit. |
-| `created_at` / `updated_at` | timestamptz | Audit. |
+### Deposits: `deposit_type` + `deposit_value` (one amount, two shapes)
+
+The row stores **one** deposit amount; `deposit_type` says how to read `deposit_value`:
+
+| `deposit_type` | `deposit_value` means |
+|------------------|------------------------|
+| `fixed` | Amount in **cents** (e.g. `5000` = $50.00). |
+| `percent` | Whole **percent** of the service price (e.g. `10` = 10%). |
+
+**Why not separate `deposit_dollars` and `deposit_percentage` columns?** You can, but you then need a rule in SQL (e.g. CHECK) that **only one** is used when deposits are on, and you still carry a “mode” or infer from nullability. The **type + single integer** pattern is common, avoids two live numbers disagreeing, and keeps the row small. **Conflicts** only appear if code writes `deposit_value` for the wrong unit; prevent that by **always updating `deposit_type` and `deposit_value` together** on save (as the app API does). Optional hardening: a Postgres CHECK that `deposit_type = 'percent'` implies `deposit_value` between 0 and 100, and `fixed` implies non-negative.
+
+### `checkout_mode` (CHECK)
+
+**Allowed values:** `NULL` **or** exactly one of:
+
+| Value | Meaning |
+|-------|---------|
+| `in_person` | **In person only** — owner collects when they meet the customer; no card checkout in the app for that path. |
+| `in_app` | **In the app only** — customer pays **in full by card in the app** when booking online. |
+| `customer_choice` | **Customer chooses at checkout** — card in app or pay owner in person. |
+
+Canonical SQL: **`src/features/payments/docs/sql/payment_settings_checkout_mode_constraint.sql`**
+
+Inspect constraints:
+
+```sql
+SELECT conname, pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'payment_settings'::regclass
+  AND contype = 'c';
+```
 
 ### Row Level Security (RLS)
 
-Same ownership model as `payment_accounts`: only the business owner (`business_profiles.profile_id = auth.uid()`) may read/write their row; client deletes typically denied.
+Same ownership model as `payment_accounts`: owner-only read/write on their business row; client deletes typically denied.
 
 ### When a row exists (v1)
 
-We **do not** insert a `payment_settings` row when a `business_profiles` row is created. Many profiles never go Pro or use payments; empty rows would be noise.
-
-Create the row when the business is **past Connect onboarding** and is ready to configure checkout/deposits in the app—for example right after we detect **onboarding complete** (same request as syncing `payment_accounts`), or on the **first** load of the post-connect Payments screen if you prefer lazy creation. See **`CONNECT_ONBOARDING.md`**.
+`payment_settings` is **not** created at business signup. A row appears when the owner first enables ServiceLink payments after Stripe Connect is ready (see **`CONNECT_ONBOARDING.md`**).
 
 ---
 
-## Relationships (diagram)
+## Relationships
 
 ```text
 auth.users
@@ -103,20 +132,21 @@ auth.users
               ┌───────────────┴───────────────┐
               ▼                               ▼
       payment_accounts                 payment_settings
-      (Stripe acct + flags)            (checkout / deposit prefs)
+      (Stripe Connect)                 (checkout + deposits + payments_enabled)
+              ▲                               │
+              └──── payment_account_id (optional FK) ────┘
 ```
 
 ---
 
-## Migrations
+## Migrations & types
 
-Schema is applied via Supabase SQL migrations (or SQL editor). When you add columns or policies:
-
-1. Run migration in Supabase.
-2. Update generated / hand-maintained TypeScript types (`Database` in `libs/supabase/client.ts` or generated types) so the app matches the DB.
+1. Apply SQL in Supabase (migrations or SQL editor).
+2. Update **`src/features/payments/docs/DATABASE.md`** (this file) if columns, nullability, or semantics change.
+3. Update **`src/libs/supabase/client.ts`** `Database['public']['Tables']` entries for `payment_accounts` and `payment_settings` so TypeScript matches PostgREST.
 
 ---
 
 ## v1 scope note
 
-**In-app transaction history** is intentionally deferred for v1; owners can use **Stripe Dashboard** (Express) for charges/refunds/payouts until a `payment_transactions` (or similar) table is added.
+**In-app transaction history** is deferred for v1; owners use **Stripe Dashboard** (Express) for charges/refunds/payouts until a transactions table exists.

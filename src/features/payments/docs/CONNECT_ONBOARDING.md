@@ -95,7 +95,7 @@ When Stripe says the onboarding session expired, user lands on `refresh_url`. Pl
 
 **Decision:** Do **not** create a `payment_settings` row when a business profile is created. Many users never go Pro or use payments; that would add useless rows.
 
-**When to create it:** After Connect onboarding is **successfully complete** (or the first time they hit the post-connect Payments UI—pick one implementation, same product outcome). Until then, the app only needs **`payment_accounts`** (and the “Connect / continue setup” UI). Once they’re connected, they land in ServiceLink and see **payment preferences** (deposits, full pay, etc.) backed by that new row.
+**When to create it:** The first row is created when the owner taps **Turn on ServiceLink payments** (POST `/api/payments/servicelink/enable`) after Stripe Connect is **complete**. Defaults fill checkout/deposit columns; `payments_enabled` is set **true**. Until then, only **`payment_accounts`** is required (Connect UI → then the ServiceLink gate UI).
 
 ---
 
@@ -125,6 +125,6 @@ Update the same `payment_accounts` columns and `last_synced_at`. Use **idempoten
 2. On return: `accounts.retrieve` → update `payment_accounts` → drive UI.
 3. Add `refresh_url` handler path (same as resume link).
 4. Add Connect webhooks + idempotency.
-5. After onboarding is **complete**, create default **`payment_settings`** (not at business creation).
+5. **`payment_settings`** row is created when the owner enables ServiceLink payments (not at business creation).
 
 This keeps each step small and reviewable.

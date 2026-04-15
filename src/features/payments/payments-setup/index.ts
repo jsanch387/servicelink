@@ -1,4 +1,12 @@
 export { ProPaymentsSetupExperience } from './ProPaymentsSetupExperience';
+export { ProServicelinkPaymentsGate } from './ProServicelinkPaymentsGate';
+export {
+  PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY,
+  SERVICELINK_GATE_CTA,
+  SERVICELINK_GATE_LEAD,
+  SERVICELINK_GATE_REASSURANCE,
+  SERVICELINK_GATE_TITLE,
+} from './servicelinkGateCopy';
 export {
   PAYMENTS_PAGE_DESCRIPTION_SETUP_PENDING,
   PAYMENTS_SETUP_BENEFITS,
