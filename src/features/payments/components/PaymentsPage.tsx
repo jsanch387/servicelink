@@ -31,6 +31,8 @@ export interface PaymentsPageProps {
   stripeConnectResume?: boolean;
   /** Loaded from `payment_settings` when the Pro payments dashboard is shown. */
   paymentSettings?: PaymentSettingsDashboardInitial | null;
+  /** Connected Stripe account id (`acct_…`) for Express Dashboard login link. */
+  stripeExpressAccountId?: string | null;
 }
 
 export const PaymentsPage: React.FC<PaymentsPageProps> = ({
@@ -39,6 +41,7 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
   servicelinkPaymentsEnabled = false,
   stripeConnectResume = false,
   paymentSettings = null,
+  stripeExpressAccountId = null,
 }) => {
   const showProPaymentsDashboard =
     hasProAccess && stripeConnectReady && paymentSettings != null;
@@ -74,9 +77,23 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
               <PaymentsAcceptPaymentsCard
                 paymentsEnabled={servicelinkPaymentsEnabled}
               />
-              <PaymentsBalanceAndStripeSection />
+              <PaymentsBalanceAndStripeSection
+                stripeExpressAccountId={stripeExpressAccountId}
+              />
             </div>
-            <div className="mt-8 sm:mt-10 space-y-8 sm:space-y-10">
+            <div
+              className={`mt-8 sm:mt-10 space-y-8 sm:space-y-10 transition-opacity duration-200 ${
+                servicelinkPaymentsEnabled
+                  ? 'opacity-100'
+                  : 'opacity-40 sm:opacity-[0.44]'
+              }`}
+            >
+              {!servicelinkPaymentsEnabled ? (
+                <p className="text-xs text-gray-500 mb-4 max-w-xl">
+                  Card checkout is off on your booking page. You can still edit
+                  below; changes apply when payments are on.
+                </p>
+              ) : null}
               <PaymentsCheckoutOptionsCard
                 initialCheckoutMode={dashboardSettings.checkoutMode}
               />

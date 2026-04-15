@@ -178,7 +178,8 @@ export const PaymentsDepositSettingsCard: React.FC<
       <div className="p-4 sm:px-8 sm:pt-8 sm:pb-6">
         <h2 className="text-lg font-semibold text-white">Deposits</h2>
         <p className="mt-1 text-sm text-gray-400">
-          Collect part of the price when someone books.
+          Collect part of the price when someone books. Amounts are in US
+          dollars (USD).
         </p>
 
         <div className="mt-6 space-y-6">

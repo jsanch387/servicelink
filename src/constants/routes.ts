@@ -72,6 +72,8 @@ export const ROUTES = {
 export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
 
 export const API_ROUTES = {
+  /** Pro: one-time URL to the connected account’s Stripe Express Dashboard. */
+  STRIPE_CONNECT_EXPRESS_DASHBOARD: '/api/stripe/connect/express-dashboard',
   /** Pro + Stripe connected: create/update `payment_settings` and turn on ServiceLink payments. */
   PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
   /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */

@@ -1,6 +1,5 @@
 'use client';
 
-import { PaymentsBalanceAndStripeSection } from '@/features/payments/components/PaymentsBalanceAndStripeSection';
 import { PaymentsCheckoutOptionsCard } from '@/features/payments/components/PaymentsCheckoutOptionsCard';
 import { PaymentsDepositSettingsCard } from '@/features/payments/components/PaymentsDepositSettingsCard';
 import React from 'react';
@@ -13,13 +12,6 @@ type PreviewSectionConfig = {
 };
 
 const FREE_PAYMENTS_PREVIEW_SECTIONS: PreviewSectionConfig[] = [
-  {
-    id: 'balance',
-    lockedLabel: 'Available balance (preview, locked)',
-    content: (
-      <PaymentsBalanceAndStripeSection showStripeDashboardCard={false} />
-    ),
-  },
   {
     id: 'checkout',
     lockedLabel: 'Checkout options (preview, locked)',

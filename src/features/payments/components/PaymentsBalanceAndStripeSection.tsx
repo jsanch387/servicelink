@@ -1,70 +1,110 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
-import { MOCK_AVAILABLE_BALANCE_CENTS } from '@/features/payments/data/mockPayments';
-import { formatPaymentCents } from '@/features/payments/utils/formatPaymentMoney';
-import {
-  ArrowTopRightOnSquareIcon,
-  CogIcon,
-} from '@heroicons/react/24/outline';
-import React from 'react';
+import { API_ROUTES } from '@/constants/routes';
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import React, { useCallback, useState } from 'react';
 
-const STRIPE_DASHBOARD_URL = 'https://dashboard.stripe.com';
+const STRIPE_MARKETING_FALLBACK = 'https://dashboard.stripe.com';
 
 export interface PaymentsBalanceAndStripeSectionProps {
-  /** When false, hides the Stripe dashboard card (e.g. free-tier preview). Default true. */
-  showStripeDashboardCard?: boolean;
+  /**
+   * Connected account id (`acct_…`). When set, “Open Stripe Dashboard” mints
+   * an Express Dashboard login link for that account.
+   */
+  stripeExpressAccountId?: string | null;
 }
 
+/**
+ * Stripe Express dashboard entry (v1). In-app balance was removed for v1;
+ * owners see balance in Stripe until a live balance API is wired.
+ */
 export const PaymentsBalanceAndStripeSection: React.FC<
   PaymentsBalanceAndStripeSectionProps
-> = ({ showStripeDashboardCard = true }) => {
-  return (
-    <div
-      className={
-        showStripeDashboardCard
-          ? 'grid gap-4 sm:gap-6 lg:grid-cols-2'
-          : 'grid gap-4 sm:gap-6'
-      }
-    >
-      <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-8">
-        <p className="text-sm font-medium text-gray-400">Available balance</p>
-        <p className="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-white tabular-nums">
-          {formatPaymentCents(MOCK_AVAILABLE_BALANCE_CENTS)}
-        </p>
-        <p className="mt-3 text-xs text-gray-500">From your Stripe balance.</p>
-      </GlassCard>
+> = ({ stripeExpressAccountId = null }) => {
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
 
-      {showStripeDashboardCard ? (
-        <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-8">
-          <p className="text-sm font-semibold text-white">Stripe</p>
-          <p className="mt-1 text-sm text-gray-400 leading-relaxed">
-            See charges, payouts, and tax forms. Bank info stays in Settings.
-          </p>
-          <div className="mt-5 flex flex-col sm:flex-row gap-3">
+  const openExpressDashboard = useCallback(async () => {
+    if (!stripeExpressAccountId?.trim() || opening) return;
+    setOpenError(null);
+    setOpening(true);
+    try {
+      const res = await fetch(API_ROUTES.STRIPE_CONNECT_EXPRESS_DASHBOARD, {
+        method: 'POST',
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        url?: string;
+        error?: string;
+      };
+
+      if (!res.ok || data.success === false || typeof data.url !== 'string') {
+        setOpenError(
+          typeof data.error === 'string' && data.error.trim()
+            ? data.error
+            : 'Could not open Stripe. Try again.'
+        );
+        return;
+      }
+
+      const opened = window.open(data.url, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        window.location.assign(data.url);
+      }
+    } catch {
+      setOpenError(
+        'Something went wrong. Check your connection and try again.'
+      );
+    } finally {
+      setOpening(false);
+    }
+  }, [opening, stripeExpressAccountId]);
+
+  const canUseExpressLink = Boolean(stripeExpressAccountId?.trim());
+
+  return (
+    <div className="min-w-0 w-full">
+      <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-8">
+        <p className="text-sm font-semibold text-white">Stripe</p>
+        <p className="mt-1 text-sm text-gray-400 leading-relaxed">
+          View balance, charges, payouts, and tax forms in your Stripe
+          dashboard. Bank and payout details are managed in Stripe.
+        </p>
+        <div className="mt-5">
+          {canUseExpressLink ? (
             <Button
-              href={STRIPE_DASHBOARD_URL}
+              type="button"
               variant="secondary"
               size="sm"
               icon={<ArrowTopRightOnSquareIcon className="h-4 w-4" />}
               iconPosition="right"
-              className="sm:flex-1"
+              className="w-full sm:w-auto"
+              loading={opening}
+              disabled={opening}
+              onClick={() => void openExpressDashboard()}
             >
               Open Stripe Dashboard
             </Button>
+          ) : (
             <Button
-              href={ROUTES.DASHBOARD.SETTINGS}
-              variant="ghost"
+              href={STRIPE_MARKETING_FALLBACK}
+              variant="secondary"
               size="sm"
-              icon={<CogIcon className="h-4 w-4" />}
-              className="sm:shrink-0"
+              icon={<ArrowTopRightOnSquareIcon className="h-4 w-4" />}
+              iconPosition="right"
+              className="w-full sm:w-auto"
             >
-              Settings
+              Open Stripe Dashboard
             </Button>
-          </div>
-        </GlassCard>
-      ) : null}
+          )}
+        </div>
+        {openError ? (
+          <p className="mt-3 text-sm text-red-300" role="alert">
+            {openError}
+          </p>
+        ) : null}
+      </GlassCard>
     </div>
   );
 };

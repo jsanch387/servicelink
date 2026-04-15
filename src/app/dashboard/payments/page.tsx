@@ -137,6 +137,7 @@ export default async function DashboardPaymentsPage({
       servicelinkPaymentsEnabled={servicelinkPaymentsEnabled}
       stripeConnectResume={stripeConnectResume}
       paymentSettings={paymentSettingsForDashboard}
+      stripeExpressAccountId={paymentAccount?.stripe_account_id?.trim() ?? null}
     />
   );
 }

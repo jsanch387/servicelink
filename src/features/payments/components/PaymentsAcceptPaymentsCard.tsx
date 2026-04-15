@@ -29,6 +29,12 @@ export const PaymentsAcceptPaymentsCard: React.FC<
   const handleCheckedChange = useCallback(
     async (next: boolean) => {
       if (next === optimisticOn || busy) return;
+      if (next === false) {
+        const ok = window.confirm(
+          'Turn off ServiceLink payments?\n\nCustomers will not be able to pay by card on your booking page.'
+        );
+        if (!ok) return;
+      }
       setError(null);
       setBusy(true);
       setOptimisticOn(next);
@@ -67,7 +73,11 @@ export const PaymentsAcceptPaymentsCard: React.FC<
     : 'Turn on to accept payments at checkout.';
 
   return (
-    <GlassCard padding="none" rounded="rounded-2xl" className="overflow-hidden">
+    <GlassCard
+      padding="none"
+      rounded="rounded-2xl"
+      className="w-full overflow-hidden"
+    >
       <div className="p-4 sm:px-8 sm:py-6">
         <Switch
           checked={optimisticOn}
