@@ -1,12 +1,14 @@
 'use client';
 
-import { BookingRequestPageClient } from './BookingRequestPageClient';
 import { AvailabilityBookingPage } from '@/features/availability/booking';
-import type { AddOnDisplay } from '@/features/availability/booking/types';
-import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
-import type { TimeOffInterval } from '@/features/availability/booking/types';
+import type {
+  AddOnDisplay,
+  PublicBookingPaymentSettings,
+  TimeOffInterval,
+} from '@/features/availability/booking/types';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
-import React from 'react';
+import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
+import { BookingRequestPageClient } from './BookingRequestPageClient';
 
 interface BookFlowSwitchProps {
   useAvailabilityBooking: boolean;
@@ -30,6 +32,7 @@ interface BookFlowSwitchProps {
   weeklySchedule?: WeeklySchedule | null;
   timeOffBlocks?: TimeOffInterval[];
   isOwnerManualBooking?: boolean;
+  paymentSettings?: PublicBookingPaymentSettings | null;
   /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
@@ -56,6 +59,7 @@ export function BookFlowSwitch({
   weeklySchedule,
   timeOffBlocks = [],
   isOwnerManualBooking = false,
+  paymentSettings = null,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
 }: BookFlowSwitchProps) {
@@ -77,6 +81,7 @@ export function BookFlowSwitch({
         weeklySchedule={schedule}
         timeOffBlocks={timeOffBlocks}
         isOwnerManualBooking={isOwnerManualBooking}
+        paymentSettings={paymentSettings}
         exitCalendarFlowHref={exitCalendarFlowHref}
         exitCalendarFlowLabel={exitCalendarFlowLabel}
       />

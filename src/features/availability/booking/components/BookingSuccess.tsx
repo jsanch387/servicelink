@@ -105,7 +105,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
               <div className="min-w-0">
                 <p className="text-white font-semibold">{serviceName}</p>
                 {serviceVariantLabel ? (
-                  <p className="text-xs text-gray-500 mt-1">{serviceVariantLabel}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {serviceVariantLabel}
+                  </p>
                 ) : null}
               </div>
               {servicePriceCents != null && (
@@ -179,15 +181,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
 
       <p className="self-center text-xs text-gray-500 text-center mb-6 max-w-sm">
         {isOwnerManualBooking ? (
-          <>
-            Payment works like your other bookings—usually when the customer
-            arrives, unless you agreed on something else.
-          </>
+          <>Payment details are saved with this appointment.</>
         ) : (
-          <>
-            Payment is collected in person. The provider will let you know their
-            accepted payment methods.
-          </>
+          <>Payment details will be shared in your booking confirmation.</>
         )}
       </p>
 

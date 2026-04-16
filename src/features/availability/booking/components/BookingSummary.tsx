@@ -118,11 +118,6 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           </div>
         )}
       </div>
-
-      <p className="text-xs text-gray-500 text-center">
-        Payment is collected in person. The provider will let you know their
-        accepted payment methods.
-      </p>
     </div>
   );
 };

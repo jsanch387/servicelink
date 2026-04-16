@@ -9,17 +9,19 @@ import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import {
   OWNER_MANUAL_BOOKING_FOR,
   ROUTES,
-  type BookDetailsStepQuery,
   getBusinessBookDetailsUrl,
   getBusinessBookPath,
+  type BookDetailsStepQuery,
 } from '@/constants/routes';
 import {
   BookServicePicker,
   type BookServicePickerItem,
 } from '@/features/availability/booking/components/BookServicePicker';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import type { PublicBookingPaymentSettings } from '@/features/availability/booking/types';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { isProAccess } from '@/features/pricing';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
@@ -70,6 +72,33 @@ type ServiceRowForPicker = {
   hours_to_complete: number | null;
   duration_minutes: number | null;
 };
+
+type PaymentSettingsRowForBooking = {
+  payments_enabled: boolean;
+  checkout_mode: string | null;
+  deposits_enabled: boolean;
+  deposit_type: string;
+  deposit_value: number;
+  currency: string;
+};
+
+function mapPaymentSettingsForBooking(
+  row: PaymentSettingsRowForBooking | null
+): PublicBookingPaymentSettings | null {
+  if (!row) return null;
+  const depositType =
+    row.deposit_type === 'fixed' || row.deposit_type === 'percent'
+      ? row.deposit_type
+      : 'percent';
+  return {
+    paymentsEnabled: row.payments_enabled === true,
+    checkoutMode: checkoutModeFromDb(row.checkout_mode),
+    depositsEnabled: row.deposits_enabled === true,
+    depositType,
+    depositValue: Number.isFinite(row.deposit_value) ? row.deposit_value : 0,
+    currency: row.currency?.trim() || 'usd',
+  };
+}
 
 function mapRowToPickerItem(row: ServiceRowForPicker): BookServicePickerItem {
   return {
@@ -326,6 +355,26 @@ export default async function BookingRequestPage({
     businessProfile.business_type
   );
 
+  const { data: paymentSettingsRow, error: paymentSettingsError } =
+    await adminClient
+      .from('payment_settings')
+      .select(
+        'payments_enabled, checkout_mode, deposits_enabled, deposit_type, deposit_value, currency'
+      )
+      .eq('business_id', businessProfile.id)
+      .maybeSingle();
+
+  if (paymentSettingsError) {
+    console.error(
+      'Error fetching payment settings for public booking:',
+      paymentSettingsError
+    );
+  }
+
+  const paymentSettings = mapPaymentSettingsForBooking(
+    (paymentSettingsRow as PaymentSettingsRowForBooking | null) ?? null
+  );
+
   let bookPageBackHref: string;
   let bookPageBackLabel: string;
   const profilePath = `/${slug}`;
@@ -424,6 +473,7 @@ export default async function BookingRequestPage({
             selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
+            paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
