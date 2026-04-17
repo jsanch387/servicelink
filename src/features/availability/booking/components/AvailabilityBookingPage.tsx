@@ -20,6 +20,7 @@ import {
   saveBookingCheckoutResumeDraft,
 } from '../utils/bookingCheckoutResumeStorage';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
+import { BookingPaymentSuccess } from './BookingPaymentSuccess';
 import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
@@ -183,6 +184,7 @@ export function AvailabilityBookingPage({
   paymentSettings = null,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
+  stripeCheckoutSessionId = null,
 }: AvailabilityBookingPageProps) {
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
@@ -225,6 +227,22 @@ export function AvailabilityBookingPage({
   } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentSuccessData, setPaymentSuccessData] = useState<{
+    paymentStatus: string;
+    currency: string;
+    paidOnlineAmountCents: number;
+    remainingAmountCents: number;
+    totalAmountCents: number;
+    serviceName: string;
+    scheduledDate: string;
+    startTime: string;
+    durationMinutes: number | null;
+    servicePriceCents: number | null;
+    selectedAddOns: AddOnDisplay[];
+    customerVehicleYear: string | null;
+    customerVehicleMake: string | null;
+    customerVehicleModel: string | null;
+  } | null>(null);
   const [customerPaymentChoice, setCustomerPaymentChoice] =
     useState<PaymentChoice | null>(null);
 
@@ -232,6 +250,12 @@ export function AvailabilityBookingPage({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchKey = searchParams.toString();
+  const stripeReturnSessionId = useMemo(
+    () =>
+      searchParams.get('session_id')?.trim() ||
+      (stripeCheckoutSessionId?.trim() ?? ''),
+    [searchParams, stripeCheckoutSessionId]
+  );
   const resumeQueryForCheckout = useMemo(() => {
     const qp = new URLSearchParams(searchKey);
     qp.delete('checkout');
@@ -349,8 +373,73 @@ export function AvailabilityBookingPage({
     };
 
     if (checkout === 'success') {
-      clearBookingCheckoutResumeDraft(businessSlug, serviceId);
-      stripCheckoutParamsFromUrl();
+      const sessionId =
+        searchParams.get('session_id')?.trim() ||
+        stripeCheckoutSessionId?.trim() ||
+        '';
+      if (!sessionId) {
+        clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+        stripCheckoutParamsFromUrl();
+        return;
+      }
+      const loadSummary = async () => {
+        try {
+          const url = new URL(
+            API_ROUTES.PUBLIC_BOOKING_CHECKOUT_SUMMARY,
+            typeof window !== 'undefined'
+              ? window.location.origin
+              : 'http://localhost:3000'
+          );
+          url.searchParams.set('session_id', sessionId);
+          url.searchParams.set('businessSlug', businessSlug);
+          const res = await fetch(url.toString(), { method: 'GET' });
+          const json = (await res.json()) as {
+            success?: boolean;
+            data?: {
+              paymentStatus: string;
+              currency: string;
+              paidOnlineAmountCents: number;
+              remainingAmountCents: number;
+              totalAmountCents: number;
+              booking: {
+                serviceName: string;
+                scheduledDate: string;
+                startTime: string;
+                durationMinutes: number | null;
+                servicePriceCents: number | null;
+                selectedAddOns: AddOnDisplay[];
+                customerVehicleYear: string | null;
+                customerVehicleMake: string | null;
+                customerVehicleModel: string | null;
+              };
+            };
+          };
+          if (res.ok && json.success && json.data?.booking) {
+            setPaymentSuccessData({
+              paymentStatus: json.data.paymentStatus,
+              currency: json.data.currency,
+              paidOnlineAmountCents: json.data.paidOnlineAmountCents,
+              remainingAmountCents: json.data.remainingAmountCents,
+              totalAmountCents: json.data.totalAmountCents,
+              serviceName: json.data.booking.serviceName,
+              scheduledDate: json.data.booking.scheduledDate,
+              startTime: json.data.booking.startTime,
+              durationMinutes: json.data.booking.durationMinutes,
+              servicePriceCents: json.data.booking.servicePriceCents,
+              selectedAddOns: json.data.booking.selectedAddOns ?? [],
+              customerVehicleYear: json.data.booking.customerVehicleYear,
+              customerVehicleMake: json.data.booking.customerVehicleMake,
+              customerVehicleModel: json.data.booking.customerVehicleModel,
+            });
+          }
+        } catch {
+          // keep flow resilient if summary endpoint is temporarily unavailable
+        } finally {
+          clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+          stripCheckoutParamsFromUrl();
+        }
+      };
+      void loadSummary();
       return;
     }
 
@@ -397,6 +486,7 @@ export function AvailabilityBookingPage({
     router,
     searchParams,
     paymentSettingsEnabled,
+    stripeCheckoutSessionId,
   ]);
 
   // Scroll to top when step changes so user sees the top of the form (especially on mobile)
@@ -443,6 +533,42 @@ export function AvailabilityBookingPage({
       businessSlug,
       amountCents: Math.round(amountToChargeCents),
       serviceName: serviceName?.trim() || 'Service',
+      bookingPayload: selectedDate
+        ? {
+            businessSlug,
+            businessId,
+            serviceId,
+            serviceName: serviceName?.trim() || 'Service',
+            servicePriceOptionLabel:
+              selectedPriceOptionLabel?.trim() || undefined,
+            servicePriceCents:
+              servicePriceCents != null ? Math.max(0, servicePriceCents) : 0,
+            selectedAddOns:
+              selectedAddOns.length > 0
+                ? selectedAddOns.map(a => ({
+                    id: a.id,
+                    name: a.name,
+                    priceCents: a.priceCents,
+                    durationMinutes: a.durationMinutes ?? undefined,
+                  }))
+                : [],
+            durationMinutes: totalBookingDurationMinutes,
+            scheduledDate: selectedDate.toISOString().slice(0, 10),
+            startTime: selectedTime ?? '',
+            customer: {
+              ...customerData,
+            },
+            totalPriceCents,
+            requiredOnlineAmountCents: Math.round(amountToChargeCents),
+            paymentMethodSelected: customerPaymentChoice ?? 'none',
+            depositType: requiresDepositNow
+              ? (paymentSettings?.depositType ?? null)
+              : null,
+            depositValue: requiresDepositNow
+              ? (paymentSettings?.depositValue ?? null)
+              : null,
+          }
+        : null,
       ...(resumeQueryForCheckout
         ? { resumeQuery: resumeQueryForCheckout }
         : {}),
@@ -573,6 +699,50 @@ export function AvailabilityBookingPage({
         date={submittedData.date}
         time={submittedData.time}
         isOwnerManualBooking={isOwnerManualBooking}
+      />
+    );
+  }
+
+  const checkoutQ = searchParams.get('checkout');
+  const isAwaitingStripeCheckoutSummary =
+    !paymentSuccessData &&
+    Boolean(stripeReturnSessionId) &&
+    (checkoutQ === 'success' || Boolean(stripeCheckoutSessionId?.trim()));
+
+  if (isAwaitingStripeCheckoutSummary) {
+    return (
+      <div className="flex flex-col w-full min-h-[55vh] items-center justify-center py-16 px-4">
+        <div
+          className="h-10 w-10 rounded-full border-2 border-white/15 border-t-emerald-400 animate-spin"
+          role="status"
+          aria-label="Confirming payment"
+        />
+        <p className="mt-6 text-sm text-gray-400 text-center max-w-xs">
+          Confirming your payment…
+        </p>
+      </div>
+    );
+  }
+
+  if (paymentSuccessData) {
+    return (
+      <BookingPaymentSuccess
+        businessName={businessName}
+        businessSlug={businessSlug}
+        serviceName={paymentSuccessData.serviceName}
+        scheduledDate={paymentSuccessData.scheduledDate}
+        startTime={paymentSuccessData.startTime}
+        currency={paymentSuccessData.currency}
+        paidOnlineAmountCents={paymentSuccessData.paidOnlineAmountCents}
+        remainingAmountCents={paymentSuccessData.remainingAmountCents}
+        paymentStatus={paymentSuccessData.paymentStatus}
+        totalAmountCents={paymentSuccessData.totalAmountCents}
+        durationMinutes={paymentSuccessData.durationMinutes}
+        servicePriceCents={paymentSuccessData.servicePriceCents}
+        selectedAddOns={paymentSuccessData.selectedAddOns}
+        customerVehicleYear={paymentSuccessData.customerVehicleYear}
+        customerVehicleMake={paymentSuccessData.customerVehicleMake}
+        customerVehicleModel={paymentSuccessData.customerVehicleModel}
       />
     );
   }

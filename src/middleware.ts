@@ -1,5 +1,6 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
 import { createSupabaseMiddlewareClient } from '@/libs/supabase/server';
+import type { User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
@@ -56,10 +57,18 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Get user session
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Session refresh hits Supabase over the network; in the Edge sandbox this can
+  // fail intermittently (DNS, IPv6, offline dev). Avoid throwing — Next would
+  // print long AuthRetryableFetchError / "fetch failed" stacks for every request.
+  let user: User | null = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data.user) {
+      user = data.user;
+    }
+  } catch {
+    // Treat as logged out; protected routes still redirect to login when needed.
+  }
 
   // Define protected and public routes
   const isAuthRoute =

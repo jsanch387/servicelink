@@ -36,9 +36,13 @@ export function buildBookPageCheckoutReturnUrl(options: {
     }
   }
 
+  const built = url.toString();
   if (options.checkout === 'success') {
-    url.searchParams.set('session_id', '{CHECKOUT_SESSION_ID}');
+    // Stripe replaces `{CHECKOUT_SESSION_ID}` only when those characters appear
+    // literally in the URL. URLSearchParams encodes `{` as `%7B`, which breaks it.
+    const sep = built.includes('?') ? '&' : '?';
+    return `${built}${sep}session_id={CHECKOUT_SESSION_ID}`;
   }
 
-  return url.toString();
+  return built;
 }

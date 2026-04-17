@@ -8,6 +8,21 @@ export interface AddOnForEmail {
   priceCents: number;
 }
 
+/** Optional payment summary for customer + owner emails (same HTML template). */
+export interface AvailabilityBookingPaymentSummary {
+  /** Section heading in the email card (default: "Payment"). */
+  title?: string;
+  /** Label/value rows shown in the payment card. */
+  rows: Array<{ label: string; value: string }>;
+  /** Small note under the table (non–card flows, or extra copy). */
+  note?: string;
+  /**
+   * Card was charged through Stripe (booking checkout). Template shows a
+   * Stripe receipt disclaimer with different wording for customer vs owner.
+   */
+  stripeCardPayment?: boolean;
+}
+
 export interface AvailabilityBookingNotificationPayload {
   customerName: string;
   customerEmail: string;
@@ -26,6 +41,8 @@ export interface AvailabilityBookingNotificationPayload {
   selectedAddOns?: AddOnForEmail[];
   /** Total price (base + add-ons). */
   totalPriceCents?: number;
+  /** Shown in both customer confirmation and owner notification when set. */
+  paymentSummary?: AvailabilityBookingPaymentSummary;
 }
 
 export interface SendAvailabilityBookingNotificationResult {

@@ -15,9 +15,64 @@ import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTim
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
+  type AvailabilityBookingPaymentSummary,
 } from '@/features/email';
+import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
+
+function buildPaymentSummaryForPublicBooking(params: {
+  paymentsEnabled: boolean;
+  checkoutMode: string | null | undefined;
+  currency: string;
+  totalPriceCents: number;
+  /** Email shows a Price details card with this total when true — avoid duplicating the row here. */
+  hasPriceLineItems: boolean;
+}): AvailabilityBookingPaymentSummary {
+  const code = /^[a-z]{3}$/.test(params.currency.trim().toLowerCase())
+    ? params.currency.trim().toLowerCase()
+    : 'usd';
+  const fmt = (cents: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: code.toUpperCase(),
+    }).format(cents / 100);
+
+  const rows: Array<{ label: string; value: string }> = [];
+
+  if (!params.paymentsEnabled) {
+    rows.push({
+      label: 'Online payment',
+      value: 'Not required for this booking',
+    });
+  } else if (params.checkoutMode === 'in_person') {
+    rows.push({
+      label: 'How you pay',
+      value: 'Pay your provider when you meet',
+    });
+    rows.push({
+      label: 'ServiceLink card charge',
+      value: 'None',
+    });
+  } else {
+    rows.push({
+      label: 'ServiceLink card charge',
+      value: 'None for this booking',
+    });
+  }
+
+  if (params.totalPriceCents > 0 && !params.hasPriceLineItems) {
+    rows.push({
+      label: 'Appointment total',
+      value: fmt(params.totalPriceCents),
+    });
+  }
+
+  return {
+    title: 'Payment',
+    rows,
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -166,6 +221,38 @@ export async function POST(request: NextRequest) {
     );
     const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
 
+    const { data: paymentSettingsRow, error: paymentSettingsError } =
+      await paymentSettingsOf(supabase)
+        .select('payments_enabled, checkout_mode, currency')
+        .eq('business_id', businessId)
+        .maybeSingle();
+
+    if (paymentSettingsError) {
+      console.error(
+        '[API] POST /api/public/bookings payment_settings',
+        paymentSettingsError
+      );
+    }
+
+    const paySettings = paymentSettingsRow as {
+      payments_enabled?: boolean;
+      checkout_mode?: string | null;
+      currency?: string | null;
+    } | null;
+
+    const hasPriceLineItems =
+      (typeof body.servicePriceCents === 'number' &&
+        body.servicePriceCents > 0) ||
+      selectedAddOnsForEmail.length > 0;
+
+    const paymentSummary = buildPaymentSummaryForPublicBooking({
+      paymentsEnabled: paySettings?.payments_enabled === true,
+      checkoutMode: paySettings?.checkout_mode,
+      currency: paySettings?.currency?.trim() || 'usd',
+      totalPriceCents: totalPriceCentsForEmail,
+      hasPriceLineItems,
+    });
+
     const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
       customerName: body.customer.fullName.trim(),
       customerEmail: body.customer.email.trim(),
@@ -181,6 +268,7 @@ export async function POST(request: NextRequest) {
       servicePriceCents: body.servicePriceCents,
       selectedAddOns: selectedAddOnsForEmail,
       totalPriceCents: totalPriceCentsForEmail,
+      paymentSummary,
     };
 
     await notifyOwnerForAvailabilityBookingCreated(supabase, {

@@ -10,6 +10,7 @@
  * Env: STRIPE_SECRET_KEY
  */
 
+import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
@@ -47,6 +48,137 @@ function normalizeCurrency(raw: string | null | undefined): string {
   return /^[a-z]{3}$/.test(c) ? c : 'usd';
 }
 
+type BookingCheckoutDraftPayload = CreateBookingRequest & {
+  totalPriceCents: number;
+  requiredOnlineAmountCents: number;
+  paymentMethodSelected: 'pay_now' | 'pay_in_person' | 'none';
+  depositType?: 'fixed' | 'percent' | null;
+  depositValue?: number | null;
+};
+
+function parseBookingCheckoutDraftPayload(
+  raw: unknown
+): BookingCheckoutDraftPayload | null {
+  if (raw == null || typeof raw !== 'object') return null;
+  const payload = raw as Record<string, unknown>;
+  const customer = payload.customer as Record<string, unknown> | undefined;
+  const serviceName =
+    typeof payload.serviceName === 'string' ? payload.serviceName.trim() : '';
+  const businessSlug =
+    typeof payload.businessSlug === 'string' ? payload.businessSlug.trim() : '';
+  const businessId =
+    typeof payload.businessId === 'string' ? payload.businessId.trim() : '';
+  const scheduledDate =
+    typeof payload.scheduledDate === 'string'
+      ? payload.scheduledDate.trim()
+      : '';
+  const startTime =
+    typeof payload.startTime === 'string' ? payload.startTime.trim() : '';
+  const durationMinutesRaw = payload.durationMinutes;
+  const durationMinutes =
+    typeof durationMinutesRaw === 'number' &&
+    Number.isFinite(durationMinutesRaw)
+      ? Math.round(durationMinutesRaw)
+      : NaN;
+  const fullName =
+    typeof customer?.fullName === 'string' ? customer.fullName.trim() : '';
+  const email =
+    typeof customer?.email === 'string' ? customer.email.trim() : '';
+  const totalPriceRaw = payload.totalPriceCents;
+  const totalPriceCents =
+    typeof totalPriceRaw === 'number' && Number.isFinite(totalPriceRaw)
+      ? Math.max(0, Math.round(totalPriceRaw))
+      : NaN;
+  const requiredOnlineRaw = payload.requiredOnlineAmountCents;
+  const requiredOnlineAmountCents =
+    typeof requiredOnlineRaw === 'number' && Number.isFinite(requiredOnlineRaw)
+      ? Math.max(0, Math.round(requiredOnlineRaw))
+      : NaN;
+  const paymentMethodSelected = payload.paymentMethodSelected;
+  const paymentMethod =
+    paymentMethodSelected === 'pay_now' ||
+    paymentMethodSelected === 'pay_in_person' ||
+    paymentMethodSelected === 'none'
+      ? paymentMethodSelected
+      : 'none';
+  const depositTypeRaw = payload.depositType;
+  const depositType =
+    depositTypeRaw === 'fixed' || depositTypeRaw === 'percent'
+      ? depositTypeRaw
+      : null;
+  const depositValueRaw = payload.depositValue;
+  const depositValue =
+    typeof depositValueRaw === 'number' && Number.isFinite(depositValueRaw)
+      ? Math.max(0, Math.round(depositValueRaw))
+      : null;
+
+  if (
+    !businessSlug ||
+    !businessId ||
+    !serviceName ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) ||
+    !/^\d{1,2}:\d{2}$/.test(startTime) ||
+    !Number.isFinite(durationMinutes) ||
+    durationMinutes < 1 ||
+    !fullName ||
+    !email ||
+    !Number.isFinite(totalPriceCents) ||
+    !Number.isFinite(requiredOnlineAmountCents)
+  ) {
+    return null;
+  }
+
+  return {
+    businessSlug,
+    businessId,
+    serviceId:
+      typeof payload.serviceId === 'string'
+        ? payload.serviceId.trim()
+        : undefined,
+    serviceName,
+    servicePriceOptionLabel:
+      typeof payload.servicePriceOptionLabel === 'string'
+        ? payload.servicePriceOptionLabel.trim()
+        : undefined,
+    servicePriceCents:
+      typeof payload.servicePriceCents === 'number' &&
+      Number.isFinite(payload.servicePriceCents)
+        ? Math.max(0, Math.round(payload.servicePriceCents))
+        : undefined,
+    selectedAddOns: Array.isArray(payload.selectedAddOns)
+      ? (payload.selectedAddOns as CreateBookingRequest['selectedAddOns'])
+      : undefined,
+    durationMinutes,
+    scheduledDate,
+    startTime,
+    customer: {
+      fullName,
+      email,
+      phone: typeof customer?.phone === 'string' ? customer.phone : '',
+      streetAddress:
+        typeof customer?.streetAddress === 'string'
+          ? customer.streetAddress
+          : '',
+      unitApt: typeof customer?.unitApt === 'string' ? customer.unitApt : '',
+      city: typeof customer?.city === 'string' ? customer.city : '',
+      state: typeof customer?.state === 'string' ? customer.state : '',
+      zip: typeof customer?.zip === 'string' ? customer.zip : '',
+      vehicleYear:
+        typeof customer?.vehicleYear === 'string' ? customer.vehicleYear : '',
+      vehicleMake:
+        typeof customer?.vehicleMake === 'string' ? customer.vehicleMake : '',
+      vehicleModel:
+        typeof customer?.vehicleModel === 'string' ? customer.vehicleModel : '',
+      notes: typeof customer?.notes === 'string' ? customer.notes : '',
+    },
+    totalPriceCents,
+    requiredOnlineAmountCents,
+    paymentMethodSelected: paymentMethod,
+    depositType,
+    depositValue,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     logCheckoutDev('POST received');
@@ -63,6 +195,9 @@ export async function POST(request: NextRequest) {
       typeof body.businessSlug === 'string' ? body.businessSlug.trim() : '';
     const resumeQuery =
       typeof body.resumeQuery === 'string' ? body.resumeQuery.trim() : '';
+    const bookingPayload = parseBookingCheckoutDraftPayload(
+      body.bookingPayload
+    );
     const amountCentsRaw = body.amountCents;
     const amountCents =
       typeof amountCentsRaw === 'number' && Number.isInteger(amountCentsRaw)
@@ -78,6 +213,23 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!bookingPayload) {
+      logCheckoutDev('reject: missing or invalid bookingPayload');
+      return NextResponse.json(
+        { success: false, error: 'Missing booking details.' },
+        { status: 400 }
+      );
+    }
+    if (bookingPayload.businessSlug !== businessSlug) {
+      logCheckoutDev('reject: bookingPayload slug mismatch', {
+        bodySlug: businessSlug,
+        payloadSlug: bookingPayload.businessSlug,
+      });
+      return NextResponse.json(
+        { success: false, error: 'Invalid booking context.' },
+        { status: 400 }
+      );
+    }
     if (
       !Number.isFinite(amountCents) ||
       amountCents < MIN_AMOUNT_CENTS ||
@@ -88,6 +240,16 @@ export async function POST(request: NextRequest) {
         parsed: amountCents,
         min: MIN_AMOUNT_CENTS,
         max: MAX_AMOUNT_CENTS,
+      });
+      return NextResponse.json(
+        { success: false, error: 'Invalid payment amount.' },
+        { status: 400 }
+      );
+    }
+    if (amountCents !== bookingPayload.requiredOnlineAmountCents) {
+      logCheckoutDev('reject: amount mismatch with bookingPayload', {
+        amountCents,
+        requiredOnlineAmountCents: bookingPayload.requiredOnlineAmountCents,
       });
       return NextResponse.json(
         { success: false, error: 'Invalid payment amount.' },
@@ -199,49 +361,96 @@ export async function POST(request: NextRequest) {
     const baseUrl = getAppBaseUrl(request);
     const lineName = sanitizeLineItemName(body.serviceName);
     const stripe = getStripePlatform();
+    const paymentKind =
+      bookingPayload.totalPriceCents > amountCents ? 'deposit' : 'full';
+    const { data: checkoutSessionRow, error: checkoutSessionInsertError } =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('booking_checkout_sessions')
+        .insert({
+          business_id: businessId,
+          business_slug: slugForUrl,
+          status: 'created',
+          payment_kind: paymentKind,
+          selected_payment_method: bookingPayload.paymentMethodSelected,
+          currency,
+          expected_amount_cents: amountCents,
+          booking_payload: bookingPayload,
+        })
+        .select('id')
+        .single();
+    if (checkoutSessionInsertError || !checkoutSessionRow?.id) {
+      console.error(
+        '[booking-checkout:api] booking_checkout_sessions insert failed',
+        checkoutSessionInsertError
+      );
+      return NextResponse.json(
+        { success: false, error: 'Could not start checkout.' },
+        { status: 500 }
+      );
+    }
+    const checkoutSessionRowId = checkoutSessionRow.id as string;
 
     logCheckoutDev('creating Stripe Checkout Session', {
       currency,
       unit_amount: amountCents,
       stripeAccountPrefix: `${stripeAccountId.slice(0, 12)}…`,
+      checkoutSessionRowId,
+      paymentKind,
     });
 
-    const session = await stripe.checkout.sessions.create(
-      {
-        mode: 'payment',
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency,
-              unit_amount: amountCents,
-              product_data: {
-                name: lineName,
-                description: `Payment to ${businessDisplayName}`,
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(
+        {
+          mode: 'payment',
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency,
+                unit_amount: amountCents,
+                product_data: {
+                  name: lineName,
+                  description: `Payment to ${businessDisplayName}`,
+                },
               },
             },
+          ],
+          success_url: buildBookPageCheckoutReturnUrl({
+            baseUrl,
+            businessSlug: slugForUrl,
+            checkout: 'success',
+            resumeQuery: resumeQuery || undefined,
+          }),
+          cancel_url: buildBookPageCheckoutReturnUrl({
+            baseUrl,
+            businessSlug: slugForUrl,
+            checkout: 'cancel',
+            resumeQuery: resumeQuery || undefined,
+          }),
+          metadata: {
+            businessId,
+            businessSlug: slugForUrl,
+            kind: 'booking_checkout',
+            bookingCheckoutSessionId: checkoutSessionRowId,
           },
-        ],
-        success_url: buildBookPageCheckoutReturnUrl({
-          baseUrl,
-          businessSlug: slugForUrl,
-          checkout: 'success',
-          resumeQuery: resumeQuery || undefined,
-        }),
-        cancel_url: buildBookPageCheckoutReturnUrl({
-          baseUrl,
-          businessSlug: slugForUrl,
-          checkout: 'cancel',
-          resumeQuery: resumeQuery || undefined,
-        }),
-        metadata: {
-          businessId,
-          businessSlug: slugForUrl,
-          kind: 'booking_checkout',
         },
-      },
-      { stripeAccount: stripeAccountId }
-    );
+        { stripeAccount: stripeAccountId }
+      );
+    } catch (stripeError) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('booking_checkout_sessions')
+        .update({ status: 'failed' })
+        .eq('id', checkoutSessionRowId);
+      throw stripeError;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('booking_checkout_sessions')
+      .update({ stripe_checkout_session_id: session.id })
+      .eq('id', checkoutSessionRowId);
 
     if (!session.url) {
       logCheckoutDev('reject: session created but no url', {

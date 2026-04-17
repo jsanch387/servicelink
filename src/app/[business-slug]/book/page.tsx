@@ -48,6 +48,9 @@ interface BookingRequestPageProps {
     skipDetails?: string;
     /** `owner` = business owner booking on a customer's behalf (from dashboard). */
     for?: string;
+    /** Stripe Checkout return markers (set on success/cancel URLs). */
+    checkout?: string;
+    session_id?: string;
   }>;
 }
 
@@ -161,6 +164,7 @@ export default async function BookingRequestPage({
   searchParams,
 }: BookingRequestPageProps) {
   const { 'business-slug': slug } = await params;
+  const sp = await searchParams;
   const {
     serviceId,
     addOnIds,
@@ -168,7 +172,14 @@ export default async function BookingRequestPage({
     detailsStep: detailsStepRaw,
     skipDetails,
     for: bookingForParam,
-  } = await searchParams;
+    checkout: checkoutParam,
+    session_id: sessionIdParam,
+  } = sp;
+
+  const stripeCheckoutSessionId =
+    checkoutParam === 'success' && sessionIdParam?.trim()
+      ? sessionIdParam.trim()
+      : null;
 
   const detailsStepForBack: BookDetailsStepQuery | undefined =
     detailsStepRaw === 'addons' || detailsStepRaw === 'price'
@@ -477,6 +488,7 @@ export default async function BookingRequestPage({
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
+            stripeCheckoutSessionId={stripeCheckoutSessionId}
           />
         )}
       </div>

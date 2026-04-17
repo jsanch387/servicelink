@@ -36,6 +36,8 @@ interface BookFlowSwitchProps {
   /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
+  /** From server when URL has `checkout=success&session_id=…` after Stripe. */
+  stripeCheckoutSessionId?: string | null;
 }
 
 /**
@@ -62,6 +64,7 @@ export function BookFlowSwitch({
   paymentSettings = null,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
+  stripeCheckoutSessionId = null,
 }: BookFlowSwitchProps) {
   if (useAvailabilityBooking) {
     const schedule = weeklySchedule ?? DEFAULT_SCHEDULE;
@@ -84,6 +87,7 @@ export function BookFlowSwitch({
         paymentSettings={paymentSettings}
         exitCalendarFlowHref={exitCalendarFlowHref}
         exitCalendarFlowLabel={exitCalendarFlowLabel}
+        stripeCheckoutSessionId={stripeCheckoutSessionId}
       />
     );
   }
