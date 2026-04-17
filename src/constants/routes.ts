@@ -84,6 +84,8 @@ export const API_ROUTES = {
     '/api/business-profile/accept-quote-requests',
   /** Public: customer submits “request quote” from profile. */
   PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
+  /** Public: start Stripe Checkout for a booking payment (deposit or full). */
+  PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */
   QUOTE_SEND_EXISTING: (quoteId: string) =>
     `/api/quotes/${encodeURIComponent(quoteId.trim())}/send`,

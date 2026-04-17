@@ -1,10 +1,12 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { API_ROUTES } from '@/constants/routes';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
 import type {
   AddOnDisplay,
@@ -12,6 +14,11 @@ import type {
   CustomerFormData,
   PublicBookingPaymentSettings,
 } from '../types';
+import {
+  clearBookingCheckoutResumeDraft,
+  loadBookingCheckoutResumeDraft,
+  saveBookingCheckoutResumeDraft,
+} from '../utils/bookingCheckoutResumeStorage';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
 import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 import { BookingSuccess } from './BookingSuccess';
@@ -30,6 +37,8 @@ function formatTimeDisplay(hhmm: string): string {
 }
 
 const CUSTOMER_FORM_ID = 'availability-booking-details-form';
+
+const BOOKING_CHECKOUT_RESUME_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 /** Sub-steps inside `/book` after service options/add-ons (calendar → form → review). */
 export type CalendarBookingStep = 'schedule' | 'details' | 'review' | 'payment';
@@ -55,6 +64,49 @@ function getDepositDueNowCents(
   }
   const percent = Math.min(100, Math.max(0, paymentSettings.depositValue));
   return Math.round((totalPriceCents * percent) / 100);
+}
+
+/** Card amount due now (full pay path vs deposit path). Single source for CTA + checkout. */
+function computeOnlineAmountDueNowCents(
+  paymentSettings: PublicBookingPaymentSettings | null | undefined,
+  paymentSettingsEnabled: boolean,
+  customerPaymentChoice: PaymentChoice | null,
+  totalPriceCents: number
+): number {
+  if (!paymentSettingsEnabled || !paymentSettings) return 0;
+  const safeTotal = Number.isFinite(totalPriceCents)
+    ? Math.max(0, totalPriceCents)
+    : 0;
+  const configuredDeposit = getDepositDueNowCents(paymentSettings, safeTotal);
+  const requiresDepositNow =
+    paymentSettings.depositsEnabled === true && configuredDeposit > 0;
+  const requiresPayNow =
+    paymentSettings.checkoutMode === 'in_app' ||
+    (paymentSettings.checkoutMode === 'customer_choice' &&
+      customerPaymentChoice === 'pay_now');
+  if (requiresPayNow) return safeTotal;
+  if (requiresDepositNow) return configuredDeposit;
+  return 0;
+}
+
+/** Set `NEXT_PUBLIC_DEBUG_BOOKING_CHECKOUT=true` to log in non-dev builds (e.g. staging). */
+function isBookingCheckoutDebugEnabled(): boolean {
+  return (
+    process.env.NODE_ENV === 'development' ||
+    process.env.NEXT_PUBLIC_DEBUG_BOOKING_CHECKOUT === 'true'
+  );
+}
+
+function logBookingCheckoutDev(
+  message: string,
+  payload?: Record<string, unknown>
+): void {
+  if (!isBookingCheckoutDebugEnabled()) return;
+  if (payload != null) {
+    console.log('[booking-checkout]', message, payload);
+  } else {
+    console.log('[booking-checkout]', message);
+  }
 }
 
 /** Same check-circle pattern as `PaymentsCheckoutOptionsCard` (owner dashboard). */
@@ -140,9 +192,14 @@ export function AvailabilityBookingPage({
   const selectedAddOns: AddOnDisplay[] = selectedAddOnsProp ?? [];
 
   const totalPriceCents = useMemo(() => {
-    const base = servicePriceCents ?? 0;
-    const addOnTotal = selectedAddOns.reduce((sum, a) => sum + a.priceCents, 0);
-    return base + addOnTotal;
+    const base = Number(servicePriceCents);
+    const safeBase = Number.isFinite(base) ? Math.max(0, base) : 0;
+    const addOnTotal = selectedAddOns.reduce((sum, a) => {
+      const p = Number(a.priceCents);
+      return sum + (Number.isFinite(p) ? p : 0);
+    }, 0);
+    const t = safeBase + addOnTotal;
+    return Number.isFinite(t) ? t : 0;
   }, [servicePriceCents, selectedAddOns]);
 
   const totalBookingDurationMinutes = useMemo(() => {
@@ -171,6 +228,20 @@ export function AvailabilityBookingPage({
   const [customerPaymentChoice, setCustomerPaymentChoice] =
     useState<PaymentChoice | null>(null);
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
+  const resumeQueryForCheckout = useMemo(() => {
+    const qp = new URLSearchParams(searchKey);
+    qp.delete('checkout');
+    qp.delete('session_id');
+    return qp.toString();
+  }, [searchKey]);
+
+  /** Skip one scroll-to-top after Stripe return so the fixed pay bar stays tappable on mobile. */
+  const skipNextStepScrollRef = useRef(false);
+
   const paymentSettingsEnabled =
     paymentSettings?.paymentsEnabled === true && !isOwnerManualBooking;
   const shouldShowPaymentStep = paymentSettingsEnabled;
@@ -191,11 +262,12 @@ export function AvailabilityBookingPage({
     paymentSettings?.checkoutMode === 'in_app' ||
     (paymentSettings?.checkoutMode === 'customer_choice' &&
       customerPaymentChoice === 'pay_now');
-  const amountDueNowCents = requiresPayNow
-    ? totalPriceCents
-    : requiresDepositNow
-      ? configuredDepositCents
-      : 0;
+  const amountDueNowCents = computeOnlineAmountDueNowCents(
+    paymentSettings,
+    paymentSettingsEnabled,
+    customerPaymentChoice,
+    totalPriceCents
+  );
   const amountDueLaterCents = Math.max(0, totalPriceCents - amountDueNowCents);
 
   const paymentCurrency = paymentSettings?.currency ?? 'usd';
@@ -229,6 +301,14 @@ export function AvailabilityBookingPage({
     customerPaymentChoice,
   ]);
 
+  /** Shown with the spinner while the payment CTA is working (no ellipsis). */
+  const paymentPrimaryBusyLabel = useMemo(() => {
+    if (amountDueNowCents > 0) {
+      return 'Going to checkout';
+    }
+    return 'Confirming booking';
+  }, [amountDueNowCents]);
+
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
   const canContinueFromDetails = isCustomerFormValid(
     customerData,
@@ -255,10 +335,178 @@ export function AvailabilityBookingPage({
     setCustomerPaymentChoice(null);
   }, [paymentSettings?.checkoutMode, paymentSettingsEnabled]);
 
+  // After Stripe (browser back, cancel link, or success): restore context / clean URL.
+  useEffect(() => {
+    const checkout = searchParams.get('checkout');
+
+    const stripCheckoutParamsFromUrl = () => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (!next.has('checkout') && !next.has('session_id')) return;
+      next.delete('checkout');
+      next.delete('session_id');
+      const qs = next.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    };
+
+    if (checkout === 'success') {
+      clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+      stripCheckoutParamsFromUrl();
+      return;
+    }
+
+    const draft = loadBookingCheckoutResumeDraft(businessSlug, serviceId);
+    const shouldTryRestore =
+      checkout === 'cancel' || draft?.awaitingStripeReturn === true;
+
+    if (!shouldTryRestore) return;
+
+    if (!draft) {
+      if (checkout === 'cancel') stripCheckoutParamsFromUrl();
+      return;
+    }
+
+    if (Date.now() - draft.savedAt > BOOKING_CHECKOUT_RESUME_MAX_AGE_MS) {
+      clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+      if (checkout === 'cancel') stripCheckoutParamsFromUrl();
+      return;
+    }
+
+    const parsedDate = new Date(draft.selectedDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+      if (checkout === 'cancel') stripCheckoutParamsFromUrl();
+      return;
+    }
+
+    setSelectedDate(parsedDate);
+    setSelectedTime(draft.selectedTime);
+    setCustomerData({ ...INITIAL_CUSTOMER_FORM_DATA, ...draft.customerData });
+    setCustomerPaymentChoice(draft.customerPaymentChoice);
+    skipNextStepScrollRef.current = true;
+    setStep(paymentSettingsEnabled ? 'payment' : 'review');
+    setSubmitError(null);
+    setIsSubmitting(false);
+
+    clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+    stripCheckoutParamsFromUrl();
+  }, [
+    businessSlug,
+    serviceId,
+    searchKey,
+    pathname,
+    router,
+    searchParams,
+    paymentSettingsEnabled,
+  ]);
+
   // Scroll to top when step changes so user sees the top of the form (especially on mobile)
   useEffect(() => {
+    if (skipNextStepScrollRef.current) {
+      skipNextStepScrollRef.current = false;
+      return;
+    }
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [step]);
+
+  const handleStartCheckout = async (amountToChargeCents: number) => {
+    logBookingCheckoutDev('handleStartCheckout called', {
+      amountToChargeCents,
+      paymentSettingsEnabled,
+      businessSlug,
+      checkoutMode: paymentSettings?.checkoutMode ?? null,
+      customerPaymentChoice,
+      totalPriceCents,
+    });
+    if (!paymentSettingsEnabled) {
+      logBookingCheckoutDev(
+        'checkout aborted: payments not enabled for this session'
+      );
+      setSubmitError('Online payment is not available for this booking.');
+      return;
+    }
+    if (!Number.isFinite(amountToChargeCents) || amountToChargeCents < 50) {
+      logBookingCheckoutDev('checkout aborted: invalid amount', {
+        amountToChargeCents,
+      });
+      setSubmitError('Invalid payment amount. Please refresh and try again.');
+      return;
+    }
+    setSubmitError(null);
+    setIsSubmitting(true);
+    const checkoutUrl = new URL(
+      API_ROUTES.PUBLIC_BOOKING_CHECKOUT,
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'http://localhost:3000'
+    ).toString();
+    const payload = {
+      businessSlug,
+      amountCents: Math.round(amountToChargeCents),
+      serviceName: serviceName?.trim() || 'Service',
+      ...(resumeQueryForCheckout
+        ? { resumeQuery: resumeQueryForCheckout }
+        : {}),
+    };
+    logBookingCheckoutDev('POST booking-checkout', { checkoutUrl, payload });
+    try {
+      const res = await fetch(checkoutUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = (await res.json()) as {
+        success?: boolean;
+        url?: string;
+        error?: string;
+      };
+      logBookingCheckoutDev('booking-checkout response', {
+        httpStatus: res.status,
+        ok: res.ok,
+        success: json.success,
+        hasUrl: Boolean(json.url?.trim()),
+        error: json.error ?? null,
+      });
+      if (!res.ok || json.success === false || !json.url?.trim()) {
+        setSubmitError(
+          typeof json.error === 'string' && json.error.trim()
+            ? json.error
+            : 'Could not start checkout.'
+        );
+        setIsSubmitting(false);
+        return;
+      }
+      logBookingCheckoutDev('redirecting to Stripe Checkout', {
+        urlOrigin: (() => {
+          try {
+            return new URL(json.url!).origin;
+          } catch {
+            return 'invalid-url';
+          }
+        })(),
+      });
+      if (selectedDate && selectedTime) {
+        saveBookingCheckoutResumeDraft({
+          v: 1,
+          savedAt: Date.now(),
+          businessSlug,
+          serviceId,
+          awaitingStripeReturn: true,
+          selectedDate: selectedDate.toISOString(),
+          selectedTime,
+          customerData: { ...INITIAL_CUSTOMER_FORM_DATA, ...customerData },
+          customerPaymentChoice,
+        });
+      }
+      window.location.assign(json.url);
+      // Intentionally do not setIsSubmitting(false) — we are leaving for Stripe.
+    } catch (err) {
+      logBookingCheckoutDev('booking-checkout fetch threw', {
+        message: err instanceof Error ? err.message : String(err),
+      });
+      setSubmitError('Something went wrong. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
@@ -456,6 +704,11 @@ export function AvailabilityBookingPage({
             <h2 className="text-xl font-semibold text-white tracking-tight">
               Payment
             </h2>
+            {submitError && (
+              <p className="text-sm text-red-400" role="alert">
+                {submitError}
+              </p>
+            )}
 
             {paymentSettingsEnabled && (
               <>
@@ -649,18 +902,20 @@ export function AvailabilityBookingPage({
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-500 text-center px-1">
-                  Preview: checkout is not live yet—no charge will run.
-                </p>
+                {amountDueNowCents > 0 && (
+                  <p className="text-xs text-gray-400 text-center px-1">
+                    You will leave this page to pay securely with Stripe.
+                  </p>
+                )}
               </>
             )}
           </div>
         )}
       </div>
 
-      {/* Sticky bottom CTA */}
+      {/* Sticky bottom CTA — high z-index + touch-manipulation avoid taps being eaten on mobile */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb"
+        className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-2xl mx-auto">
@@ -711,15 +966,33 @@ export function AvailabilityBookingPage({
               type="button"
               variant="inverse"
               fullWidth
-              className="font-semibold"
+              className="font-semibold touch-manipulation min-h-[52px]"
               disabled={!canContinueFromPayment}
-              onClick={handleConfirmBooking}
+              loading={isSubmitting}
+              onClick={() => {
+                const cents = computeOnlineAmountDueNowCents(
+                  paymentSettings,
+                  paymentSettingsEnabled,
+                  customerPaymentChoice,
+                  totalPriceCents
+                );
+                logBookingCheckoutDev('payment primary CTA clicked', {
+                  cents,
+                  action:
+                    cents > 0 ? 'stripe_checkout' : 'confirm_booking_only',
+                  ctaLabel: paymentStepCtaLabel,
+                });
+                if (cents > 0) void handleStartCheckout(cents);
+                else {
+                  logBookingCheckoutDev(
+                    'payment CTA: no online amount due — creating booking without checkout',
+                    { cents }
+                  );
+                  void handleConfirmBooking();
+                }
+              }}
             >
-              {isSubmitting
-                ? amountDueNowCents > 0
-                  ? 'Processing payment…'
-                  : 'Saving…'
-                : paymentStepCtaLabel}
+              {isSubmitting ? paymentPrimaryBusyLabel : paymentStepCtaLabel}
             </Button>
           )}
         </div>

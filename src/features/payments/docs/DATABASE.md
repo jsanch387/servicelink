@@ -5,6 +5,7 @@ This document is the **reference for `payment_accounts` and `payment_settings`**
 **Keeping it current:** When you change the schema in Supabase, update this file and the hand-maintained `Database` types in `src/libs/supabase/client.ts` so the app and docs stay aligned. Column order below matches the **Table Editor** layout (nullable = hollow diamond, required = solid).
 
 Related flow notes: **`CONNECT_ONBOARDING.md`**.
+Broader schema context snapshot: **`SUPABASE_SCHEMA_CONTEXT.md`**.
 
 ---
 

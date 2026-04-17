@@ -5,6 +5,18 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+const mockReplace = vi.fn();
+
+const testBookSearchParams = new URLSearchParams(
+  'serviceId=svc-1&skipDetails=1'
+);
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: mockReplace }),
+  usePathname: () => '/acme-auto/book',
+  useSearchParams: () => testBookSearchParams,
+}));
+
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
@@ -12,6 +24,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  mockReplace.mockClear();
 });
 
 vi.mock('next/link', () => ({
