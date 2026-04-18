@@ -4,8 +4,8 @@
  * Creates a Stripe Checkout Session (payment mode) on the business’s
  * **connected Express account** so the customer can pay deposit or full amount.
  *
- * v1: does not persist booking or session metadata beyond Stripe; used to verify
- * the hosted checkout flow. Amount is validated for sane bounds only.
+ * v1: persists `booking_checkout_sessions` (draft payload + expected amount) before
+ * redirect; the booking row is created in the Stripe webhook after payment succeeds.
  *
  * Env: STRIPE_SECRET_KEY
  */

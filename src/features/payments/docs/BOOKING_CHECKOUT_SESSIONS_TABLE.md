@@ -1,8 +1,8 @@
-# Table: `booking_checkout_sessions` (planned)
+# Table: `booking_checkout_sessions`
 
-This document defines the planned `booking_checkout_sessions` table for Stripe Checkout orchestration.
+This document defines the `booking_checkout_sessions` table for Stripe Checkout orchestration.
 
-- Status: planning / reference
+- Status: implemented (v1) — see **`BOOKING_CHECKOUT_FLOW.md`** for the full flow
 - Purpose: track checkout attempts and provide webhook reconciliation context
 - Relationship: many checkout sessions over time; optional link to final `bookings` row
 

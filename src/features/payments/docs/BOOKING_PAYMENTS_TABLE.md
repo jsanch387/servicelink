@@ -1,8 +1,8 @@
-# Table: `booking_payments` (planned)
+# Table: `booking_payments`
 
-This document defines the planned `booking_payments` table for availability bookings with payments.
+This document defines the `booking_payments` table for availability bookings with payments.
 
-- Status: planning / reference
+- Status: implemented (v1) — see **`BOOKING_CHECKOUT_FLOW.md`** for when rows are written
 - Purpose: one payment summary row per booking
 - Relationship: **1:1** with `bookings` via `booking_id UNIQUE`
 

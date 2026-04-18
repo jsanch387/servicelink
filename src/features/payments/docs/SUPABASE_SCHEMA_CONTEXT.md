@@ -12,8 +12,8 @@ Tables included in the provided snapshot:
 
 - `booking_requests`
 - `bookings`
-- `booking_payments` (planned)
-- `booking_checkout_sessions` (planned)
+- `booking_payments`
+- `booking_checkout_sessions`
 - `business_availability`
 - `business_images`
 - `business_profiles`
@@ -152,6 +152,7 @@ Recommended approach for this product:
 
 Detailed docs:
 
+- **`src/features/payments/docs/BOOKING_CHECKOUT_FLOW.md`** — full checkout + webhook + UI flow (start here for AI/engineer context)
 - `src/features/payments/docs/BOOKING_PAYMENTS_TABLE.md`
 - `src/features/payments/docs/BOOKING_CHECKOUT_SESSIONS_TABLE.md`
 
