@@ -6,8 +6,8 @@
  */
 
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -29,7 +29,9 @@ export default async function BookingsPage() {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('subscription_tier, subscription_current_period_end')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -87,10 +89,16 @@ export default async function BookingsPage() {
   const profile = profileRow as {
     subscription_tier?: string | null;
     subscription_current_period_end?: string | null;
+    subscription_status?: string | null;
+    stripe_subscription_id?: string | null;
+    stripe_customer_id?: string | null;
   } | null;
   const isFreeTier = !isProAccess(
     profile?.subscription_tier ?? 'free',
-    profile?.subscription_current_period_end ?? null
+    profile?.subscription_current_period_end ?? null,
+    profile?.subscription_status,
+    profile?.stripe_subscription_id,
+    profile?.stripe_customer_id
   );
   if (isFreeTier) {
     const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM

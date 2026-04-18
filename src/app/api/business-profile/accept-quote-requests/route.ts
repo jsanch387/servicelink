@@ -56,7 +56,9 @@ export async function PATCH(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profileRow } = await (supabase as any)
       .from('profiles')
-      .select('subscription_tier, subscription_current_period_end')
+      .select(
+        'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      )
       .eq('user_id', user.id)
       .maybeSingle();
     const tier = profileRow?.subscription_tier as string | null | undefined;
@@ -64,7 +66,27 @@ export async function PATCH(request: NextRequest) {
       | string
       | null
       | undefined;
-    if (!isProAccess(tier, periodEnd)) {
+    const subscriptionStatus = profileRow?.subscription_status as
+      | string
+      | null
+      | undefined;
+    const stripeSubscriptionId = profileRow?.stripe_subscription_id as
+      | string
+      | null
+      | undefined;
+    const stripeCustomerId = profileRow?.stripe_customer_id as
+      | string
+      | null
+      | undefined;
+    if (
+      !isProAccess(
+        tier,
+        periodEnd,
+        subscriptionStatus,
+        stripeSubscriptionId,
+        stripeCustomerId
+      )
+    ) {
       return NextResponse.json(
         {
           success: false,

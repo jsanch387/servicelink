@@ -61,7 +61,7 @@ export default async function SettingsPage({
       supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_current_period_end, subscription_status'
+          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end'
         )
         .eq('user_id', user.id)
         .maybeSingle(),
@@ -82,10 +82,16 @@ export default async function SettingsPage({
       subscription_tier?: string | null;
       subscription_current_period_end?: string | null;
       subscription_status?: string | null;
+      stripe_subscription_id?: string | null;
+      stripe_customer_id?: string | null;
+      subscription_cancel_at_period_end?: boolean | null;
     } | null;
     const hasProAccess = isProAccess(
       profileRow?.subscription_tier,
-      profileRow?.subscription_current_period_end
+      profileRow?.subscription_current_period_end,
+      profileRow?.subscription_status,
+      profileRow?.stripe_subscription_id,
+      profileRow?.stripe_customer_id
     );
     const planId = hasProAccess ? ('pro' as const) : ('free' as const);
 
@@ -110,6 +116,10 @@ export default async function SettingsPage({
           },
       planId,
       subscriptionStatus: profileRow?.subscription_status ?? null,
+      subscriptionCurrentPeriodEnd:
+        profileRow?.subscription_current_period_end ?? null,
+      subscriptionCancelAtPeriodEnd:
+        profileRow?.subscription_cancel_at_period_end === true,
     };
 
     return (

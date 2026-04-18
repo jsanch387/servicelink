@@ -1,18 +1,17 @@
 'use client';
 
-import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
 import {
   Button,
   GlassCard,
   RequiredLabel,
   WarningCallout,
 } from '@/components/shared';
+import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
 import { useAuth } from '@/features/auth';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
-import { PlanSection, ProWelcomeModal } from '@/features/pricing';
 import type { PlanId } from '@/features/pricing';
+import { PlanSection, ProWelcomeModal } from '@/features/pricing';
 import { PRO_WELCOME_MODAL_SEEN_KEY } from '@/features/pricing/types';
-import { UpdateBusinessLinkModal } from './UpdateBusinessLinkModal';
 import {
   ArrowRightStartOnRectangleIcon,
   ArrowTopRightOnSquareIcon,
@@ -22,6 +21,7 @@ import {
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
+import { UpdateBusinessLinkModal } from './UpdateBusinessLinkModal';
 
 interface SettingsData {
   businessProfile: {
@@ -42,6 +42,10 @@ interface SettingsData {
   planId?: PlanId;
   /** Stripe subscription status (active, past_due, unpaid, etc.) for Pro users. */
   subscriptionStatus?: string | null;
+  /** ISO timestamp for next billing period end (paying Pro); shown as “Renews on …” or “Access until …”. */
+  subscriptionCurrentPeriodEnd?: string | null;
+  /** True when Stripe has scheduled cancel at period end (no further renewals). */
+  subscriptionCancelAtPeriodEnd?: boolean;
 }
 
 interface SettingsContentProps {
@@ -222,30 +226,37 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         </div>
 
         <div className="space-y-8 w-full min-w-0">
-          {/* Payment failed banner for Pro users */}
-          {planId === 'pro' &&
-            (subscriptionStatus === 'past_due' ||
-              subscriptionStatus === 'unpaid') && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-                <p className="text-amber-200 text-sm font-medium mb-3">
-                  We couldn&apos;t charge your card. Please update your payment
-                  method to keep your Pro access.
-                </p>
-                <Button
-                  type="button"
-                  variant="inverse"
-                  onClick={handleOpenPortal}
-                  loading={portalLoading}
-                  disabled={portalLoading}
-                  className="w-full sm:w-auto"
-                >
-                  Update payment method
-                </Button>
-              </div>
-            )}
+          {/* Payment failed — subscription still exists in Stripe but access is paused */}
+          {(subscriptionStatus === 'past_due' ||
+            subscriptionStatus === 'unpaid') && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <p className="text-amber-200 text-sm font-medium mb-3">
+                We couldn&apos;t charge your card. Please update your payment
+                method to restore Pro access.
+              </p>
+              <Button
+                type="button"
+                variant="inverse"
+                onClick={handleOpenPortal}
+                loading={portalLoading}
+                disabled={portalLoading}
+                className="w-full sm:w-auto"
+              >
+                Update payment method
+              </Button>
+            </div>
+          )}
 
           {/* Subscription plan */}
-          <PlanSection planId={planId} />
+          <PlanSection
+            planId={planId}
+            subscriptionCurrentPeriodEnd={
+              settingsData.subscriptionCurrentPeriodEnd ?? null
+            }
+            subscriptionCancelAtPeriodEnd={
+              settingsData.subscriptionCancelAtPeriodEnd === true
+            }
+          />
 
           {/* Your link */}
           <GlassCard

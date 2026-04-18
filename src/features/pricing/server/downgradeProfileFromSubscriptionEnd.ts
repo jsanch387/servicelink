@@ -24,6 +24,7 @@ export async function downgradeProfileFromSubscriptionEnd(
     subscription_status: null,
     stripe_subscription_id: null,
     subscription_current_period_end: null,
+    subscription_cancel_at_period_end: false,
     updated_at: new Date().toISOString(),
   };
 

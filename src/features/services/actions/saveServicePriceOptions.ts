@@ -46,14 +46,13 @@ export async function saveServicePriceOptionsAction(
   const canUsePriceOptions = await hasPriceOptionsAccess({
     supabase,
     userId: user.id,
-    businessId: businessProfile.id,
   });
 
   if (!canUsePriceOptions) {
     return {
       success: false,
       error:
-        'Price options are available on Pro, unless your account already had them enabled.',
+        'Price options are a Pro feature. Upgrade to add multiple prices per service.',
     };
   }
 

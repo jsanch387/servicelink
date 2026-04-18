@@ -54,7 +54,6 @@ export async function updateServiceAction(
   const canUsePriceOptions = await hasPriceOptionsAccess({
     supabase,
     userId: user.id,
-    businessId: businessProfile.id,
   });
 
   const normalizedPayload: UpdateServicePayload = {

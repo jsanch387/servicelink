@@ -45,7 +45,7 @@ export default async function BusinessProfilePage({
   const { data: userProfileData, error: profileError } = await supabase
     .from('profiles')
     .select(
-      'onboarding_status, user_id, subscription_tier, subscription_current_period_end'
+      'onboarding_status, user_id, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
     )
     .eq('user_id', user.id)
     .single();
@@ -55,6 +55,9 @@ export default async function BusinessProfilePage({
     user_id: string;
     subscription_tier?: string | null;
     subscription_current_period_end?: string | null;
+    subscription_status?: string | null;
+    stripe_subscription_id?: string | null;
+    stripe_customer_id?: string | null;
   } | null;
 
   if (profileError || !userProfile) {
@@ -116,7 +119,10 @@ export default async function BusinessProfilePage({
 
   const hasProAccess = isProAccess(
     userProfile?.subscription_tier,
-    userProfile?.subscription_current_period_end
+    userProfile?.subscription_current_period_end,
+    userProfile?.subscription_status,
+    userProfile?.stripe_subscription_id,
+    userProfile?.stripe_customer_id
   );
   const isFreeTier = !hasProAccess;
   const showVerifiedBadge = hasProAccess;

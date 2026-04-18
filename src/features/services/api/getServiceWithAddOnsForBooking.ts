@@ -4,7 +4,9 @@
  * does not block unauthenticated (signed-out) visitors.
  */
 
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export interface ServiceForBooking {
   id: string;
@@ -45,6 +47,7 @@ export async function getServiceWithAddOnsForBooking(
   businessId: string,
   serviceId: string
 ): Promise<ServiceWithAddOnsForBooking | null> {
+  noStore();
   try {
     const supabase = createSupabaseAdminClient();
 
@@ -78,9 +81,12 @@ export async function getServiceWithAddOnsForBooking(
       (r: { addon_id: string }) => r.addon_id
     );
 
-    const priceOptionsEnabled =
+    const storedPriceOptionsOn =
       (serviceRow as { price_options_enabled?: boolean })
         .price_options_enabled === true;
+
+    const ownerPro = await ownerHasProAccessForBusiness(supabase, businessId);
+    const priceOptionsEnabled = storedPriceOptionsOn && ownerPro;
 
     let priceOptions: PriceOptionForBooking[] = [];
     if (priceOptionsEnabled) {
