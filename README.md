@@ -62,6 +62,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
+## 📄 Subscription & Pro features
+
+Billing behavior, Stripe webhooks, and the full **Free vs Pro** feature matrix (paywall) live in **[`docs/subscription-and-pro-features.md`](docs/subscription-and-pro-features.md)**. Technical Stripe API setup is in [`src/app/api/stripe/README.md`](src/app/api/stripe/README.md).
+
 ## 📜 Available Scripts
 
 - `npm run dev` - Start development server

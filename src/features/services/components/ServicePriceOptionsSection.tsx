@@ -108,8 +108,13 @@ export function ServicePriceOptionsSection({
     ],
     []
   );
+  const lockedHasSavedOptions = isLocked && mappedInitialOptions.length > 0;
   const displayedEnabled = isLocked ? true : enabled;
-  const displayedOptions = isLocked ? teaserOptions : options;
+  const displayedOptions = isLocked
+    ? lockedHasSavedOptions
+      ? mappedInitialOptions
+      : teaserOptions
+    : options;
 
   useEffect(() => {
     setEnabled(initialEnabled);
@@ -253,8 +258,9 @@ export function ServicePriceOptionsSection({
           <div className="mt-4 pt-4 border-t border-white/10 relative">
             {isLocked ? (
               <p className="text-sm text-gray-400 mb-3 leading-snug max-w-prose">
-                Preview mode. Upgrade to Pro to edit and publish pricing
-                options.
+                {lockedHasSavedOptions
+                  ? 'Your saved pricing options are not shown to customers until you upgrade to Pro. Edit and publish them after upgrading.'
+                  : 'Preview mode. Upgrade to Pro to edit and publish pricing options.'}
               </p>
             ) : null}
 

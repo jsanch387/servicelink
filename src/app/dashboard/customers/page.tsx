@@ -1,7 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { CustomerManagementPage } from '@/features/customer-management';
-import { hasProCheckInAccessFromTier } from '@/features/customer-management/utils/proCheckInAccess';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -26,14 +26,25 @@ export default async function CustomersPage() {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('subscription_tier')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
     .eq('user_id', user.id)
     .maybeSingle();
-  const tier = (profileRow as { subscription_tier?: string | null } | null)
-    ?.subscription_tier;
-  const hasProCheckInAccess = hasProCheckInAccessFromTier(tier);
-
-  return (
-    <CustomerManagementPage hasProCheckInAccess={hasProCheckInAccess} />
+  const row = profileRow as {
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
+    subscription_status?: string | null;
+    stripe_subscription_id?: string | null;
+    stripe_customer_id?: string | null;
+  } | null;
+  const hasProCheckInAccess = isProAccess(
+    row?.subscription_tier,
+    row?.subscription_current_period_end,
+    row?.subscription_status,
+    row?.stripe_subscription_id,
+    row?.stripe_customer_id
   );
+
+  return <CustomerManagementPage hasProCheckInAccess={hasProCheckInAccess} />;
 }

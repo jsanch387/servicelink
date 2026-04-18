@@ -26,6 +26,7 @@ export type Database = {
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
           subscription_current_period_end: string | null;
+          subscription_cancel_at_period_end: boolean;
         };
         Insert: {
           user_id: string;
@@ -39,6 +40,7 @@ export type Database = {
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           subscription_current_period_end?: string | null;
+          subscription_cancel_at_period_end?: boolean;
         };
         Update: {
           user_id?: string;
@@ -52,6 +54,7 @@ export type Database = {
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           subscription_current_period_end?: string | null;
+          subscription_cancel_at_period_end?: boolean;
         };
       };
       business_profiles: {

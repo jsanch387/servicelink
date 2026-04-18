@@ -36,7 +36,9 @@ export default async function DashboardQuotesPage() {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('subscription_tier, subscription_current_period_end')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
     .eq('user_id', user.id)
     .maybeSingle();
   const tier = (profileRow as { subscription_tier?: string | null } | null)
@@ -44,7 +46,22 @@ export default async function DashboardQuotesPage() {
   const periodEnd = (
     profileRow as { subscription_current_period_end?: string | null } | null
   )?.subscription_current_period_end;
-  const isFreeTier = !isProAccess(tier, periodEnd);
+  const subscriptionStatus = (
+    profileRow as { subscription_status?: string | null } | null
+  )?.subscription_status;
+  const stripeSubscriptionId = (
+    profileRow as { stripe_subscription_id?: string | null } | null
+  )?.stripe_subscription_id;
+  const stripeCustomerId = (
+    profileRow as { stripe_customer_id?: string | null } | null
+  )?.stripe_customer_id;
+  const isFreeTier = !isProAccess(
+    tier,
+    periodEnd,
+    subscriptionStatus,
+    stripeSubscriptionId,
+    stripeCustomerId
+  );
 
   return <QuotesDashboardPage isFreeTier={isFreeTier} />;
 }

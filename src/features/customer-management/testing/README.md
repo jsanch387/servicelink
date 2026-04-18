@@ -31,8 +31,7 @@ Focused tests for core customer-management behavior (high value, low noise).
     - no upcoming appointment
     - last visit is more than 90 days ago
 
-- `proCheckInAccess.test.ts`
-  - Pro Check-in gate uses **tier-only** `subscription_tier === 'pro'` (not period end).
+- Pro access gating is covered by `features/pricing/testing/isProAccess.test.ts` (tier, billing period, and Stripe `subscription_status`).
 
 - `checkInProGate.test.tsx`
   - **Due** customers: Pro triggers `win_back` (SMS path); Free opens teaser with **Upgrade to Pro** link (crown icon) to `ROUTES.DASHBOARD.UPGRADE`.
