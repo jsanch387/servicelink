@@ -14,6 +14,7 @@ import type { CreateBookingRequest } from '@/features/availability/booking/types
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import { getAppBaseUrl } from '@/libs/stripe/appBaseUrl';
 import { getStripePlatform } from '@/libs/stripe/platformClient';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -22,7 +23,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const MIN_AMOUNT_CENTS = 50; // Stripe USD minimum
 const MAX_AMOUNT_CENTS = 1_000_000; // $10,000 cap (sanity)
 
-/** Same as client: `NEXT_PUBLIC_DEBUG_BOOKING_CHECKOUT=true` for staging logs. */
+/** Debug-only server log (intentionally avoids payload contents). */
 function logCheckoutDev(message: string, payload?: Record<string, unknown>) {
   if (
     process.env.NODE_ENV !== 'development' &&
@@ -30,11 +31,8 @@ function logCheckoutDev(message: string, payload?: Record<string, unknown>) {
   ) {
     return;
   }
-  if (payload != null) {
-    console.log('[booking-checkout:api]', message, payload);
-  } else {
-    console.log('[booking-checkout:api]', message);
-  }
+  void payload;
+  console.log('[booking-checkout:api]', message);
 }
 
 function sanitizeLineItemName(raw: unknown): string {
@@ -285,6 +283,24 @@ export async function POST(request: NextRequest) {
     const businessDisplayName =
       (profile as { business_name: string | null }).business_name?.trim() ||
       slugForUrl;
+
+    const ownerHasPro = await ownerHasProAccessForBusiness(
+      supabase,
+      businessId
+    );
+    if (!ownerHasPro) {
+      logCheckoutDev('reject: owner has no pro access', {
+        businessId,
+        slugForUrl,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Online payments are not available for this business.',
+        },
+        { status: 403 }
+      );
+    }
 
     const { data: settingsRow, error: settingsError } = await paymentSettingsOf(
       supabase

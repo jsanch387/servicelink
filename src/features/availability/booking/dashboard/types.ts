@@ -19,6 +19,14 @@ export interface AddOnAtBookingDisplay {
   priceCents: number;
 }
 
+export interface BookingPaymentSummaryDisplay {
+  paymentStatus: string;
+  currency: string;
+  totalAmountCents: number;
+  paidOnlineAmountCents: number;
+  remainingAmountCents: number;
+}
+
 export interface AvailabilityBookingDisplay {
   id: string;
   customerName: string;
@@ -38,4 +46,6 @@ export interface AvailabilityBookingDisplay {
   address: AvailabilityBookingAddress;
   notes: string;
   createdAt: string;
+  /** Present when booking has payment summary data. */
+  payment?: BookingPaymentSummaryDisplay | null;
 }

@@ -979,7 +979,7 @@ export function AvailabilityBookingPage({
                       description={
                         requiresDepositNow
                           ? 'Pay the full total now by card (your deposit is included).'
-                          : 'Pay the full total by card in ServiceLink.'
+                          : 'Pay the full total now by card.'
                       }
                     />
                     <BookingPaymentOptionButton
@@ -988,8 +988,8 @@ export function AvailabilityBookingPage({
                       title="Pay in person"
                       description={
                         requiresDepositNow
-                          ? 'Pay the deposit by card now to book. Pay the rest when you meet your provider.'
-                          : 'Pay when you meet your provider—nothing charged here today.'
+                          ? 'Pay the deposit now to book. Pay the rest in person at your appointment.'
+                          : 'Pay in person at your appointment.'
                       }
                     />
                   </div>

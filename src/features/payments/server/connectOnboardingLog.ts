@@ -1,13 +1,8 @@
-const PREFIX = '[payments:connect]';
-
-/** Server-side trace logs for Stripe Connect onboard + DB sync (grep: `payments:connect`). */
+/**
+ * No-op by default to avoid logging account identifiers in production logs.
+ * Keep call sites so lightweight tracing can be re-enabled from one place later.
+ */
 export function logConnect(
-  message: string,
-  details?: Record<string, unknown>
-): void {
-  if (details && Object.keys(details).length > 0) {
-    console.info(PREFIX, message, details);
-  } else {
-    console.info(PREFIX, message);
-  }
-}
+  _message: string,
+  _details?: Record<string, unknown>
+): void {}

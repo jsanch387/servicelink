@@ -398,9 +398,13 @@ export default async function BookingRequestPage({
     );
   }
 
-  const paymentSettings = mapPaymentSettingsForBooking(
-    (paymentSettingsRow as PaymentSettingsRowForBooking | null) ?? null
-  );
+  // Payment checkout is a Pro-only capability. Keep stored settings intact in DB,
+  // but suppress public payment behavior while owner lacks effective Pro access.
+  const paymentSettings = ownerHasPro
+    ? mapPaymentSettingsForBooking(
+        (paymentSettingsRow as PaymentSettingsRowForBooking | null) ?? null
+      )
+    : null;
 
   let bookPageBackHref: string;
   let bookPageBackLabel: string;

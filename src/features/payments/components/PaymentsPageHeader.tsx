@@ -3,7 +3,7 @@
 import { ProFeatureLabel } from '@/features/dashboard';
 import React from 'react';
 
-const DEFAULT_PAGE_DESCRIPTION = 'Manage balances, deposits, and payouts.';
+const DEFAULT_PAGE_DESCRIPTION = 'Manage your payments in one place.';
 
 export interface PaymentsPageHeaderProps {
   /** When true, show the Pro pill beside the page title (free-tier payments). */

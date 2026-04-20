@@ -14,7 +14,6 @@ import type {
 } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ArrowLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { AddOnSelector } from './AddOnSelector';
 import { PriceOptionSelector } from './PriceOptionSelector';
@@ -296,17 +295,33 @@ export function ServiceDetailsScreen({
               </Button>
             )}
 
-            {phase === 'price' && showPrimaryAsLink && (
-              <Button
-                href={primaryButtonHref}
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                icon={<ChevronRightIcon className="h-5 w-5" />}
-                iconPosition="right"
-              >
-                Date & time
-              </Button>
+            {phase === 'price' && !showAddOnSection && (
+              <>
+                {showPrimaryAsLink ? (
+                  <Button
+                    href={primaryButtonHref}
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    icon={<ChevronRightIcon className="h-5 w-5" />}
+                    iconPosition="right"
+                  >
+                    Date & time
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled
+                    icon={<ChevronRightIcon className="h-5 w-5" />}
+                    iconPosition="right"
+                  >
+                    Date & time
+                  </Button>
+                )}
+              </>
             )}
 
             {phase === 'addons' && (

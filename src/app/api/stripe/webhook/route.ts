@@ -46,11 +46,8 @@ function logBookingWebhook(message: string, payload?: Record<string, unknown>) {
   ) {
     return;
   }
-  if (payload != null) {
-    console.log('[booking-checkout:webhook]', message, payload);
-  } else {
-    console.log('[booking-checkout:webhook]', message);
-  }
+  void payload;
+  console.log('[booking-checkout:webhook]', message);
 }
 
 type StoredBookingCheckoutPayload = {

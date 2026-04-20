@@ -112,12 +112,8 @@ export async function POST(request: NextRequest) {
           stripeAccountId: result.stripeAccountId,
           message: upsertError.message,
         });
-        console.error(
-          'POST /api/stripe/connect/onboard payment_accounts upsert',
-          upsertError
-        );
         return NextResponse.json(
-          { success: false, error: upsertError.message },
+          { success: false, error: 'Failed to save payment account' },
           { status: 500 }
         );
       }
@@ -141,7 +137,7 @@ export async function POST(request: NextRequest) {
     logConnect('onboard.error', { message });
     console.error('POST /api/stripe/connect/onboard', e);
     return NextResponse.json(
-      { success: false, error: message },
+      { success: false, error: 'Failed to start Stripe onboarding' },
       { status: 500 }
     );
   }
