@@ -35,6 +35,7 @@ export async function updateProfileFromCheckout(
   const updates: Record<string, unknown> = {
     subscription_tier: 'pro',
     subscription_status: 'active',
+    subscription_cancel_at_period_end: false,
     updated_at: new Date().toISOString(),
   };
 

@@ -3,8 +3,10 @@
  * When multi-price is on and options exist, requires a valid `priceOptionId`.
  */
 
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export type ResolvePublicBookingServiceFailure =
   | 'not_found'
@@ -48,6 +50,7 @@ export async function resolvePublicBookingService(
   | { ok: true; data: ResolvedPublicBookingService }
   | { ok: false; reason: ResolvePublicBookingServiceFailure }
 > {
+  noStore();
   const { data: serviceRow, error: serviceError } = await supabase
     .from('business_services')
     .select(
@@ -62,6 +65,8 @@ export async function resolvePublicBookingService(
     return { ok: false, reason: 'not_found' };
   }
 
+  const ownerPro = await ownerHasProAccessForBusiness(supabase, businessId);
+
   const row = serviceRow as {
     name: string;
     price_cents: number | null;
@@ -73,7 +78,7 @@ export async function resolvePublicBookingService(
   const baseDuration = durationFromServiceRow(row);
   const basePrice = row.price_cents ?? 0;
   const name = row.name;
-  const enabled = row.price_options_enabled === true;
+  const enabled = row.price_options_enabled === true && ownerPro;
 
   const { count, error: countError } = await supabase
     .from('service_price_options')

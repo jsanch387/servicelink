@@ -43,6 +43,11 @@ interface BusinessProfileViewProps {
   onboardingCompleteFromUrl?: boolean;
   /** Pro + accept_quote_req: show Request quote on public / owner preview header. */
   showRequestQuoteCta?: boolean;
+  /**
+   * Public profile only: owner still has Pro — show “starting at” for services with price options.
+   * When false, public services list hides multi-price presentation (data may still exist in DB).
+   */
+  publicOwnerHasProForPriceOptions?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -54,6 +59,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   isFreeTier = false,
   onboardingCompleteFromUrl = false,
   showRequestQuoteCta = false,
+  publicOwnerHasProForPriceOptions = false,
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
@@ -289,6 +295,9 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   onSave={handleSave}
                   onCancel={handleCancel}
                   isPublic={isPublic}
+                  publicOwnerHasProForPriceOptions={
+                    publicOwnerHasProForPriceOptions
+                  }
                 />
               ) : activeTab === 'gallery' ? (
                 <WorkShowcase

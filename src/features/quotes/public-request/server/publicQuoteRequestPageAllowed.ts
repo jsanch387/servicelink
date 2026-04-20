@@ -39,13 +39,26 @@ export async function publicQuoteRequestAllowedForSlug(
 
   const { data: ownerProfile } = await adminForProfiles
     .from('profiles')
-    .select('subscription_tier, subscription_current_period_end')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
     .eq('user_id', biz.profile_id)
     .maybeSingle();
 
   const tier = ownerProfile?.subscription_tier;
   const periodEnd = ownerProfile?.subscription_current_period_end;
-  if (!isProAccess(tier, periodEnd)) {
+  const subscriptionStatus = ownerProfile?.subscription_status;
+  const stripeSubscriptionId = ownerProfile?.stripe_subscription_id;
+  const stripeCustomerId = ownerProfile?.stripe_customer_id;
+  if (
+    !isProAccess(
+      tier,
+      periodEnd,
+      subscriptionStatus,
+      stripeSubscriptionId,
+      stripeCustomerId
+    )
+  ) {
     return { ok: false };
   }
 

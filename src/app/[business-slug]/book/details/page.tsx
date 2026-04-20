@@ -4,17 +4,18 @@
  * Redirects straight to /book when there is nothing to configure here.
  */
 
-import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
-import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
-import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
-import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import {
   OWNER_MANUAL_BOOKING_FOR,
   getBusinessBookPath,
 } from '@/constants/routes';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
+import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { redirect, notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { unstable_noStore as noStore } from 'next/cache';
+import { notFound, redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,7 @@ export default async function ServiceDetailsPage({
   params,
   searchParams,
 }: ServiceDetailsPageProps) {
+  noStore();
   const { 'business-slug': slug } = await params;
   const {
     serviceId,

@@ -134,16 +134,24 @@ export default async function PublicProfilePage({
     const admin = createSupabaseAdminClient();
     const { data: ownerProfile } = await admin
       .from('profiles')
-      .select('subscription_tier, subscription_current_period_end')
+      .select(
+        'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      )
       .eq('user_id', profileId)
       .maybeSingle();
     const row = ownerProfile as {
       subscription_tier?: string | null;
       subscription_current_period_end?: string | null;
+      subscription_status?: string | null;
+      stripe_subscription_id?: string | null;
+      stripe_customer_id?: string | null;
     } | null;
     const hasPro = isProAccess(
       row?.subscription_tier,
-      row?.subscription_current_period_end
+      row?.subscription_current_period_end,
+      row?.subscription_status,
+      row?.stripe_subscription_id,
+      row?.stripe_customer_id
     );
     ownerTier = hasPro ? 'pro' : 'free';
     showVerifiedBadge = hasPro;
@@ -175,6 +183,7 @@ export default async function PublicProfilePage({
         isPublic={true}
         showVerifiedBadge={showVerifiedBadge}
         showRequestQuoteCta={showRequestQuoteCta}
+        publicOwnerHasProForPriceOptions={ownerTier === 'pro'}
       />
     </div>
   );

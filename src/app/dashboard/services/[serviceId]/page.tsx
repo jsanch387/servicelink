@@ -59,7 +59,6 @@ export default async function ServiceEditPage({
   const canUsePriceOptions = await hasPriceOptionsAccess({
     supabase,
     userId: user.id,
-    businessId: businessProfile.id,
   });
 
   if (!servicesResult.success || !servicesResult.data) {

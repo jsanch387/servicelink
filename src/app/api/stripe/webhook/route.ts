@@ -6,6 +6,19 @@
  *
  * Env: STRIPE_WEBHOOK_SECRET (whsec_... from Stripe Dashboard → Webhooks).
  * Requires stripe_webhook_events table for idempotency (see README).
+ *
+ * ---
+ * **Logging & privacy**
+ *
+ * `console.error` / `console.warn` here run **only on the server** (terminal, Vercel
+ * logs, your log drain). They are **not** sent to visitors’ browsers. The **Stripe
+ * webhook is called by Stripe’s servers**, not by your customers, so it does not show
+ * up in a normal user’s Network tab when they use your app.
+ *
+ * Prefer logging **Stripe `event.id` (`evt_…`)** for support correlation. Avoid logging
+ * secrets (signing keys, raw webhook body, payment method details). Keep **HTTP
+ * responses** generic (`{ error: '…' }`) so any 4xx/5xx body that Stripe (or a proxy)
+ * might record does not leak internal DB messages.
  */
 
 import type { CustomerFormData } from '@/features/availability/booking/types';
@@ -19,6 +32,7 @@ import {
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
+import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
@@ -205,6 +219,51 @@ function parseStoredBookingCheckoutPayload(
         ? Math.max(0, Math.round(p.depositValue))
         : null,
   };
+}
+
+/**
+ * Current billing period end (unix seconds). Basil API stores period bounds on
+ * subscription items; fall back to legacy subscription-level field if present.
+ */
+function subscriptionCurrentPeriodEndUnix(
+  subscription: Stripe.Subscription
+): number | null {
+  const items = subscription.items?.data;
+  if (items && items.length > 0) {
+    return Math.max(...items.map(i => i.current_period_end));
+  }
+  const legacy = subscription as Stripe.Subscription & {
+    current_period_end?: number;
+  };
+  return legacy.current_period_end ?? null;
+}
+
+/** Best-effort: subscription can lag right after checkout — retry once before writing null period end. */
+async function retrieveSubscriptionCurrentPeriodEndIso(
+  stripe: Stripe,
+  subscriptionId: string
+): Promise<string | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
+      if (periodEnd != null) {
+        return new Date(periodEnd * 1000).toISOString();
+      }
+    } catch (e) {
+      console.error(
+        `Stripe webhook: subscriptions.retrieve attempt ${attempt + 1} failed`,
+        e
+      );
+    }
+    if (attempt === 0) {
+      await new Promise(r => setTimeout(r, 750));
+    }
+  }
+  console.warn(
+    'Stripe webhook: subscription period end still null after checkout retrieve (will rely on customer.subscription.updated)'
+  );
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -514,17 +573,11 @@ export async function POST(request: NextRequest) {
 
     let currentPeriodEnd: string | null = null;
     if (stripeSubscriptionId) {
-      try {
-        const stripe = getStripePlatform();
-        const subscription =
-          await stripe.subscriptions.retrieve(stripeSubscriptionId);
-        const periodEnd = (subscription as { current_period_end?: number })
-          .current_period_end;
-        currentPeriodEnd =
-          periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null;
-      } catch (e) {
-        console.error('Stripe webhook: failed to retrieve subscription', e);
-      }
+      const stripe = getStripePlatform();
+      currentPeriodEnd = await retrieveSubscriptionCurrentPeriodEndIso(
+        stripe,
+        stripeSubscriptionId
+      );
     }
 
     const result = await updateProfileFromCheckout(supabase, {
@@ -568,18 +621,50 @@ export async function POST(request: NextRequest) {
     }
     const subscription = event.data.object as Stripe.Subscription;
     const subId = typeof subscription.id === 'string' ? subscription.id : null;
-    const periodEnd = (subscription as { current_period_end?: number })
-      .current_period_end;
-    const status = (subscription as { status?: string }).status ?? 'active';
     if (!subId) {
+      console.warn(
+        '[Stripe webhook] customer.subscription.updated missing subscription id',
+        { eventId: event.id }
+      );
       return NextResponse.json({ received: true }, { status: 200 });
     }
+
+    /** Event payload can lag; use retrieve for authoritative fields + scheduled cancel detection. */
+    let periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
+    let status = subscription.status ?? 'active';
+    let cancelAtPeriodEnd =
+      subscriptionIsScheduledCancelWithoutRenewal(subscription);
+    try {
+      const stripe = getStripePlatform();
+      const fresh = await stripe.subscriptions.retrieve(subId);
+      periodEnd = subscriptionCurrentPeriodEndUnix(fresh);
+      status = fresh.status;
+      cancelAtPeriodEnd = subscriptionIsScheduledCancelWithoutRenewal(fresh);
+    } catch (retrieveErr) {
+      console.warn(
+        '[Stripe webhook] subscriptions.retrieve failed; using event payload',
+        { eventId: event.id, stripeSubscriptionId: subId, retrieveErr }
+      );
+      periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
+      status = subscription.status ?? 'active';
+      cancelAtPeriodEnd =
+        subscriptionIsScheduledCancelWithoutRenewal(subscription);
+    }
+
     const result = await syncProfileFromSubscriptionUpdated(supabase, {
       stripeSubscriptionId: subId,
       subscriptionStatus: status,
       currentPeriodEndUnix: periodEnd ?? null,
+      cancelAtPeriodEnd,
     });
     if (!result.success) {
+      if (result.noMatchingProfile) {
+        console.warn(
+          '[Stripe webhook] customer.subscription.updated: no profile row for subscription (skip)',
+          { eventId: event.id, stripeSubscriptionId: subId }
+        );
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
       console.error(
         'Stripe webhook: syncProfileFromSubscriptionUpdated failed',
         result.error
@@ -615,8 +700,13 @@ export async function POST(request: NextRequest) {
     const subscriptionId =
       typeof subscription.id === 'string' ? subscription.id : null;
     if (!subscriptionId) {
+      console.warn(
+        '[Stripe webhook] customer.subscription.deleted missing subscription id',
+        { eventId: event.id }
+      );
       return NextResponse.json({ received: true }, { status: 200 });
     }
+
     const result = await downgradeProfileFromSubscriptionEnd(
       supabase,
       subscriptionId
@@ -654,6 +744,48 @@ export async function POST(request: NextRequest) {
       );
     }
     const invoice = event.data.object as Stripe.Invoice;
+    const subscriptionRef = (
+      invoice as Stripe.Invoice & {
+        subscription?: string | Stripe.Subscription | null;
+      }
+    ).subscription;
+    const subscriptionId =
+      typeof subscriptionRef === 'string'
+        ? subscriptionRef
+        : subscriptionRef && typeof subscriptionRef === 'object'
+          ? (subscriptionRef as Stripe.Subscription).id
+          : null;
+    if (subscriptionId) {
+      try {
+        const stripe = getStripePlatform();
+        const retrieved = await stripe.subscriptions.retrieve(subscriptionId);
+        const subscription = retrieved;
+        const periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
+        const syncResult = await syncProfileFromSubscriptionUpdated(supabase, {
+          stripeSubscriptionId: subscriptionId,
+          subscriptionStatus: subscription.status,
+          currentPeriodEndUnix: periodEnd ?? null,
+          cancelAtPeriodEnd:
+            subscriptionIsScheduledCancelWithoutRenewal(subscription),
+        });
+        if (!syncResult.success) {
+          console.error(
+            'Stripe webhook: sync after invoice.payment_failed failed',
+            syncResult.error
+          );
+        }
+      } catch (e) {
+        console.error(
+          'Stripe webhook: retrieve subscription after payment_failed failed',
+          e
+        );
+      }
+    } else {
+      console.warn(
+        '[Stripe webhook] invoice.payment_failed no subscription on invoice',
+        { eventId: event.id }
+      );
+    }
     const customerEmail = (invoice as { customer_email?: string | null })
       .customer_email;
     if (customerEmail?.trim()) {
@@ -667,6 +799,11 @@ export async function POST(request: NextRequest) {
         );
         // Don't return 500 – we've recorded idempotency; Stripe would retry and we'd skip. Log is enough.
       }
+    } else {
+      console.warn(
+        '[Stripe webhook] invoice.payment_failed no customer_email on invoice',
+        { eventId: event.id }
+      );
     }
   }
 

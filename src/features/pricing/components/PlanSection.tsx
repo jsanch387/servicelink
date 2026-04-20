@@ -7,16 +7,34 @@ import React, { useState } from 'react';
 import type { PlanId } from '../types';
 import { PLANS } from '../types';
 
+function formatRenewalDate(iso: string | null | undefined): string | null {
+  if (!iso?.trim()) return null;
+  const d = new Date(iso.trim());
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 interface PlanSectionProps {
   /** Current plan to display. Defaults to 'free' when no subscription data exists. */
   planId?: PlanId;
+  /** From `profiles.subscription_current_period_end` (paying subscribers). */
+  subscriptionCurrentPeriodEnd?: string | null;
+  /** From `profiles.subscription_cancel_at_period_end` (Stripe cancel at period end). */
+  subscriptionCancelAtPeriodEnd?: boolean;
 }
 
 export const PlanSection: React.FC<PlanSectionProps> = ({
   planId = 'free',
+  subscriptionCurrentPeriodEnd = null,
+  subscriptionCancelAtPeriodEnd = false,
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
+  const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageSubscription = async () => {
@@ -44,10 +62,15 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
       showBlur={true}
       className="w-full min-w-0 p-4 text-left"
     >
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
         <h2 className="text-lg sm:text-xl font-bold text-white">
           Subscription plan
         </h2>
+        {isPro && subscriptionCancelAtPeriodEnd ? (
+          <span className="inline-flex shrink-0 items-center rounded-md border border-zinc-600/40 bg-zinc-800/40 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
+            Canceled
+          </span>
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 mt-4">
@@ -70,6 +93,21 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
           </p>
         </div>
       </div>
+
+      {isPro && renewalDateLabel ? (
+        <p className="mt-2 text-left text-xs text-zinc-500 leading-relaxed">
+          {subscriptionCancelAtPeriodEnd ? (
+            <>
+              Pro access until{' '}
+              <span className="text-zinc-400 tabular-nums">
+                {renewalDateLabel}
+              </span>
+            </>
+          ) : (
+            <>Renews on {renewalDateLabel}</>
+          )}
+        </p>
+      ) : null}
 
       {isPro ? (
         <div className="mt-4">

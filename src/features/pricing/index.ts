@@ -17,4 +17,7 @@ export {
 } from './marketingPlanFeatures';
 export { FREE_BOOKINGS_LIMIT, PLANS, PRO_FEATURES } from './types';
 export type { PlanId, PlanInfo, ProFeatureItem } from './types';
-export { isProAccess } from './utils/isProAccess';
+export {
+  isProAccess,
+  STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO,
+} from './utils/isProAccess';

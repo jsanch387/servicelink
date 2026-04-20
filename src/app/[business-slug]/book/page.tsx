@@ -103,13 +103,16 @@ function mapPaymentSettingsForBooking(
   };
 }
 
-function mapRowToPickerItem(row: ServiceRowForPicker): BookServicePickerItem {
+function mapRowToPickerItem(
+  row: ServiceRowForPicker,
+  ownerPro: boolean
+): BookServicePickerItem {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
     priceCents: row.price_cents ?? 0,
-    priceOptionsEnabled: row.price_options_enabled === true,
+    priceOptionsEnabled: row.price_options_enabled === true && ownerPro,
     hours_to_complete: row.hours_to_complete ?? null,
     duration_minutes: row.duration_minutes ?? null,
   };
@@ -226,25 +229,38 @@ export default async function BookingRequestPage({
   // all 5 bookings for the current month, treat as not accepting bookings
   // so we don't show the calendar/form at all.
   let reachedFreeCap = false;
+  let ownerHasPro = false;
   if (businessProfile.profile_id) {
     const { data: ownerProfileRaw } = await adminClient
       .from('profiles')
-      .select('subscription_tier, subscription_current_period_end')
+      .select(
+        'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      )
       .eq('user_id', businessProfile.profile_id)
       .maybeSingle();
 
     const ownerProfile: {
       subscription_tier?: string | null;
       subscription_current_period_end?: string | null;
+      subscription_status?: string | null;
+      stripe_subscription_id?: string | null;
+      stripe_customer_id?: string | null;
     } | null = ownerProfileRaw as {
       subscription_tier?: string | null;
       subscription_current_period_end?: string | null;
+      subscription_status?: string | null;
+      stripe_subscription_id?: string | null;
+      stripe_customer_id?: string | null;
     } | null;
 
     const hasPro = isProAccess(
       ownerProfile?.subscription_tier,
-      ownerProfile?.subscription_current_period_end
+      ownerProfile?.subscription_current_period_end,
+      ownerProfile?.subscription_status,
+      ownerProfile?.stripe_subscription_id,
+      ownerProfile?.stripe_customer_id
     );
+    ownerHasPro = hasPro;
     const isFreeTier = !hasPro;
     if (isFreeTier) {
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -303,7 +319,7 @@ export default async function BookingRequestPage({
 
     availabilityPickerServices =
       (serviceRows as ServiceRowForPicker[] | null)
-        ?.map(mapRowToPickerItem)
+        ?.map(row => mapRowToPickerItem(row, ownerHasPro))
         .filter(s => s.id && s.name) ?? [];
 
     if (availabilityPickerServices.length === 1) {

@@ -2,6 +2,8 @@
 
 Checkout for the Pro plan is handled by creating a Stripe Checkout Session and redirecting the user to Stripe. When payment succeeds, the webhook updates the user's profile to Pro.
 
+**Product summary (who gets Pro, what features are paywalled):** see [`docs/subscription-and-pro-features.md`](../../../../docs/subscription-and-pro-features.md) at the repo root.
+
 ## Environment variables
 
 | Variable | Required | Description |
@@ -67,7 +69,7 @@ When a user cancels in the Customer Portal, Stripe keeps the subscription active
 - Finds the profile by `stripe_subscription_id`.
 - Sets `subscription_tier = 'free'`, `subscription_status = null`, clears `stripe_subscription_id` and `subscription_current_period_end`. Keeps `stripe_customer_id` so they can resubscribe.
 
-Pro access everywhere is gated by **effective** Pro: `subscription_tier === 'pro'` and (no `subscription_current_period_end` or period end is in the future). So if the webhook is delayed, the app still stops showing Pro once the period has passed.
+Pro access is computed in code (`isProAccess`): **manual / comped Pro** = `subscription_tier === 'pro'` and **no** `stripe_subscription_id` (always Pro — early adopters). **Paying customers** = row has a `stripe_subscription_id`; then Pro requires Stripe `subscription_status` in `active` or `trialing` (or null/empty status temporarily during sync gaps). Bad statuses (`past_due`, `unpaid`, `canceled`, …) revoke Pro. Access does **not** depend on `subscription_current_period_end` for billed users — Stripe status is the gate (cancel-at-period-end keeps `active` until the subscription actually ends).
 
 ## Subscription updated (renewals & status)
 
@@ -75,6 +77,7 @@ When Stripe sends `customer.subscription.updated` (e.g. on renewal, or when stat
 
 - Finds the profile by `stripe_subscription_id`.
 - Updates `subscription_status` (e.g. `active`, `past_due`, `unpaid`) and `subscription_current_period_end`.
+- Sets `subscription_tier` to `pro` when status is `active` or `trialing`, and `free` otherwise—so the database tier matches Stripe even when the subscription still exists (e.g. `past_due`).
 
 This keeps “Pro until …” correct after each billing cycle and lets the app show a “payment failed” banner when status is `past_due` or `unpaid`.
 
@@ -83,6 +86,7 @@ This keeps “Pro until …” correct after each billing cycle and lets the app
 When a recurring payment fails (card declined, expired, etc.), Stripe sends `invoice.payment_failed`. The webhook:
 
 - Records the event for idempotency.
+- Retrieves the subscription from Stripe and updates `subscription_status` and `subscription_current_period_end` on the profile (same as `customer.subscription.updated`), so failed payments are reflected in the database even if the update event is missed or ordered differently.
 - Sends a **subscription payment failed** email to the invoice’s `customer_email` (via Resend), asking the user to update their payment method in Settings.
 
 Stripe will retry automatically. The app also shows an in-app banner on Settings when `subscription_status` is `past_due` or `unpaid`, with an “Update payment method” button that opens the Customer Portal.
