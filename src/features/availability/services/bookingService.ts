@@ -159,7 +159,62 @@ export async function listBookingsForBusiness(
   }
 
   const rows = (data ?? []) as BookingRow[];
-  return rows.map(mapBookingRowToDisplay);
+  const bookingIds = rows.map(r => r.id);
+  const paymentByBookingId = new Map<
+    string,
+    {
+      payment_status: string | null;
+      currency: string | null;
+      total_amount_cents: number | null;
+      paid_online_amount_cents: number | null;
+      remaining_amount_cents: number | null;
+    }
+  >();
+
+  if (bookingIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: paymentRows } = await (supabase as any)
+      .from('booking_payments')
+      .select(
+        'booking_id, payment_status, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
+      )
+      .in('booking_id', bookingIds);
+
+    const normalized = (paymentRows ?? []) as Array<{
+      booking_id: string;
+      payment_status: string | null;
+      currency: string | null;
+      total_amount_cents: number | null;
+      paid_online_amount_cents: number | null;
+      remaining_amount_cents: number | null;
+    }>;
+
+    for (const p of normalized) {
+      if (!p.booking_id) continue;
+      paymentByBookingId.set(p.booking_id, p);
+    }
+  }
+
+  return rows.map(row => {
+    const display = mapBookingRowToDisplay(row);
+    const payment = paymentByBookingId.get(row.id);
+    if (!payment) {
+      return display;
+    }
+    return {
+      ...display,
+      payment: {
+        paymentStatus: payment.payment_status ?? 'not_required',
+        currency: (payment.currency ?? 'usd').toLowerCase(),
+        totalAmountCents: Math.max(0, payment.total_amount_cents ?? 0),
+        paidOnlineAmountCents: Math.max(
+          0,
+          payment.paid_online_amount_cents ?? 0
+        ),
+        remainingAmountCents: Math.max(0, payment.remaining_amount_cents ?? 0),
+      },
+    };
+  });
 }
 
 export type BookingStatusUpdate = 'completed' | 'cancelled';

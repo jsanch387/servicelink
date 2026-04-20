@@ -7,6 +7,7 @@ export {
   formatUsPhoneDigits,
 } from './PhoneInput';
 export { PriceInput } from './PriceInput';
+export { MoneyInput } from './MoneyInput';
 export { Select } from './Select';
 export { TextArea } from './TextArea';
 export { TimeSelect } from './TimeSelect';

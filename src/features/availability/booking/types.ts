@@ -3,6 +3,7 @@
  * POC: UI and mock data only.
  */
 
+import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
 import type { WeeklySchedule } from '../types/availability';
 
 export interface ServiceSummary {
@@ -47,6 +48,15 @@ export interface AddOnDisplay {
   durationMinutes?: number | null;
 }
 
+export interface PublicBookingPaymentSettings {
+  paymentsEnabled: boolean;
+  checkoutMode: CheckoutPaymentMode | null;
+  depositsEnabled: boolean;
+  depositType: 'fixed' | 'percent';
+  depositValue: number;
+  currency: string;
+}
+
 export interface AvailabilityBookingPageProps {
   businessName: string;
   businessId: string;
@@ -71,12 +81,20 @@ export interface AvailabilityBookingPageProps {
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */
   isOwnerManualBooking?: boolean;
+  /** Public payment behavior configured by business owner. */
+  paymentSettings?: PublicBookingPaymentSettings | null;
   /**
    * Step 1 top back: leave `/book` toward service details / profile / dashboard
    * (same target the book page header used before inline steps).
    */
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
+  /**
+   * When Stripe redirects with `?checkout=success&session_id=…`, the server passes
+   * the session id so the client can show a confirmation placeholder immediately
+   * instead of flashing the calendar before `useSearchParams` + fetch settle.
+   */
+  stripeCheckoutSessionId?: string | null;
 }
 
 export interface BookingSubmission {

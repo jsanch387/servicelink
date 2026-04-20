@@ -14,7 +14,11 @@ export class SlidingMemoryLimiter {
   /**
    * @returns success and reset time (ms) when window refills or next allowed attempt.
    */
-  allow(key: string, max: number, windowMs: number): { success: boolean; reset: number } {
+  allow(
+    key: string,
+    max: number,
+    windowMs: number
+  ): { success: boolean; reset: number } {
     const now = Date.now();
     const prev = this.hits.get(key) ?? [];
     const pruned = prev.filter(t => now - t < windowMs);

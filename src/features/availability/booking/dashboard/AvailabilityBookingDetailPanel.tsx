@@ -1,14 +1,13 @@
-/* eslint-disable no-unused-vars */
 'use client';
 
 import { Button } from '@/components/shared';
 import {
   ArrowLeftIcon,
+  ArrowTopRightOnSquareIcon,
   CalendarIcon,
   EnvelopeIcon,
-  PhoneIcon,
-  ArrowTopRightOnSquareIcon,
   MapPinIcon,
+  PhoneIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
@@ -51,6 +50,14 @@ function formatVehicle(booking: AvailabilityBookingDisplay): string | null {
   return parts.join(' ');
 }
 
+function formatCurrencyAmount(cents: number, currency: string): string {
+  const normalized = (currency || 'usd').toUpperCase();
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: normalized,
+  }).format(Math.max(0, cents) / 100);
+}
+
 export function AvailabilityBookingDetailPanel({
   booking,
   onClose,
@@ -66,6 +73,8 @@ export function AvailabilityBookingDetailPanel({
   const telHref = `tel:${booking.customerPhone.replace(/\D/g, '')}`;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
+  const payment = booking.payment ?? null;
+  const showPaymentSection = (payment?.paidOnlineAmountCents ?? 0) > 0;
 
   const navigationUrl = (() => {
     const destination = fullAddress.trim();
@@ -225,6 +234,45 @@ export function AvailabilityBookingDetailPanel({
               )}
             </div>
           </section>
+
+          {/* Customer */}
+          {showPaymentSection && payment && (
+            <section>
+              <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
+                Payment
+              </h3>
+              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-gray-300">Paid online</span>
+                  <span className="font-semibold text-emerald-300 tabular-nums">
+                    {formatCurrencyAmount(
+                      payment.paidOnlineAmountCents,
+                      payment.currency
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-gray-300">Remaining</span>
+                  <span className="font-semibold text-white tabular-nums">
+                    {formatCurrencyAmount(
+                      payment.remainingAmountCents,
+                      payment.currency
+                    )}
+                  </span>
+                </div>
+                {payment.remainingAmountCents <= 0 ? (
+                  <p className="text-xs text-emerald-300/90">
+                    This booking is paid in full.
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400">
+                    Customer paid a deposit. Collect the remaining balance in
+                    person.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
 
           {/* Customer */}
           <section>

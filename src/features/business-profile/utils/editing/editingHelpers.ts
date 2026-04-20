@@ -36,7 +36,8 @@ export interface ValidationResult {
   errors: string[];
 }
 
-const SERVICE_AREA_CITY_STATE_REGEX = /^[A-Za-z]+(?:[ '.-][A-Za-z]+)*,\s?[A-Za-z]{2}$/;
+const SERVICE_AREA_CITY_STATE_REGEX =
+  /^[A-Za-z]+(?:[ '.-][A-Za-z]+)*,\s?[A-Za-z]{2}$/;
 
 export function isValidCityStateServiceArea(serviceArea: string): boolean {
   return SERVICE_AREA_CITY_STATE_REGEX.test(serviceArea.trim());

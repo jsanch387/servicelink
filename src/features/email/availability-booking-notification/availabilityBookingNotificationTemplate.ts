@@ -41,6 +41,63 @@ function formatPriceCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function paymentSummaryFootnoteHtml(
+  block: NonNullable<AvailabilityBookingNotificationPayload['paymentSummary']>,
+  options: AvailabilityBookingEmailOptions
+): string {
+  if (block.stripeCardPayment) {
+    if (options.audience === 'owner') {
+      const text =
+        'The customer paid by card through ServiceLink. They may receive a receipt from Stripe—that email is for this payment only, not a duplicate charge. Collect any remaining balance according to your agreement with the customer.';
+      return `<p style="font-size:13px;color:#64748b;margin-top:14px;line-height:1.55;">${escapeHtml(text)}</p>`;
+    }
+    const provider =
+      options.audience === 'customer'
+        ? options.businessName.trim()
+        : 'your provider';
+    const text = `You may receive a receipt from Stripe for the card payment above. That email is for this charge only—you were not charged twice. Any remaining balance is paid to ${provider} as you agreed.`;
+    return `<p style="font-size:13px;color:#64748b;margin-top:14px;line-height:1.55;">${escapeHtml(text)}</p>`;
+  }
+  if (block.note?.trim()) {
+    return `<p style="font-size:13px;color:#64748b;margin-top:14px;line-height:1.55;">${escapeHtml(block.note.trim())}</p>`;
+  }
+  return '';
+}
+
+function buildPaymentSummaryCard(
+  payload: AvailabilityBookingNotificationPayload,
+  options: AvailabilityBookingEmailOptions
+): string {
+  const block = payload.paymentSummary;
+  if (!block?.rows?.length) return '';
+  const title = (block.title ?? 'Payment').trim();
+  const rowsHtml = block.rows
+    .map(
+      r => `
+              <tr>
+                <td class="detail-label" style="padding: 6px 0; color: #64748b;">
+                  ${escapeHtml(r.label)}
+                </td>
+                <td class="detail-value" style="padding: 6px 0; color: #0f172a; text-align: right;">
+                  ${escapeHtml(r.value)}
+                </td>
+              </tr>
+            `
+    )
+    .join('');
+  const noteHtml = paymentSummaryFootnoteHtml(block, options);
+
+  return `
+          <div class="card">
+            <div class="section-title">${escapeHtml(title)}</div>
+            <table width="100%" cellspacing="0" cellpadding="0">
+              ${rowsHtml}
+            </table>
+            ${noteHtml}
+          </div>
+        `;
+}
+
 function formatVehicleLine(
   payload: AvailabilityBookingNotificationPayload
 ): string | null {
@@ -117,7 +174,7 @@ export function buildAvailabilityBookingEmailHtml(
     ${addOnsListRows}
   `.trim();
 
-  const vehicleRowInServiceDetails = vehicleLine
+  const vehicleRowHtml = vehicleLine
     ? `
       <tr>
         <td class="detail-label" style="padding-bottom: 12px;">Vehicle</td>
@@ -126,7 +183,34 @@ export function buildAvailabilityBookingEmailHtml(
     `
     : '';
 
-  const showPricingCard = Boolean(hasBasePrice) || (addOns?.length ?? 0) > 0;
+  const showPriceDetailsCard =
+    Boolean(hasBasePrice) || (addOns?.length ?? 0) > 0;
+
+  const priceDetailsCardHtml = showPriceDetailsCard
+    ? `
+          <div class="card" style="background-color:#ffffff;">
+            <div class="section-title">Price details</div>
+            <table width="100%" cellspacing="0" cellpadding="0">
+              ${pricingRows}
+            </table>
+            ${
+              totalLabel
+                ? `
+            <table style="width: 100%; border-collapse: collapse; margin-top: 12px; border-top: 1px solid #e2e8f0;">
+              <tr>
+                <td style="font-size: 15px; font-weight: 700; padding-top: 12px; color: #1e293b;">Appointment total</td>
+                <td style="font-size: 15px; font-weight: 700; padding-top: 12px; text-align: right; color: #1e293b;">
+                  ${escapeHtml(totalLabel)}
+                </td>
+              </tr>
+            </table>`
+                : ''
+            }
+          </div>
+        `
+    : '';
+
+  const paymentSummaryCardHtml = buildPaymentSummaryCard(payload, options);
 
   const phoneRow = payload.customerPhone?.trim()
     ? `
@@ -163,6 +247,7 @@ export function buildAvailabilityBookingEmailHtml(
                 <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerEmail)}</td>
               </tr>
               ${phoneRow}
+              ${vehicleRowHtml}
               <tr>
                 <td class="detail-label" style="padding-bottom: 12px;">Date</td>
                 <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(dateLabel)}</td>
@@ -208,6 +293,7 @@ export function buildAvailabilityBookingEmailHtml(
                 <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerEmail)}</td>
               </tr>
               ${phoneRow}
+              ${vehicleRowHtml}
             </table>
           </div>
         `;
@@ -328,9 +414,8 @@ export function buildAvailabilityBookingEmailHtml(
           ${firstCardHtml}
 
           <div class="card" style="background-color:#ffffff;">
-            <div class="section-title">Service Details</div>
+            <div class="section-title">Service details</div>
             <table width="100%" cellspacing="0" cellpadding="0">
-              ${vehicleRowInServiceDetails}
               <tr>
                 <td class="detail-label" style="padding-bottom: 12px;">Service</td>
                 <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.serviceName)}</td>
@@ -354,24 +439,9 @@ export function buildAvailabilityBookingEmailHtml(
             </table>
           </div>
 
-          ${
-            showPricingCard
-              ? `<div class="card">
-                  <div class="section-title">Estimated Cost Breakdown</div>
-                  <table width="100%" cellspacing="0" cellpadding="0">
-                    ${pricingRows}
-                  </table>
-                  <table style="width: 100%; border-collapse: collapse; margin-top: 12px; border-top: 1px solid #e2e8f0;">
-                    <tr>
-                      <td style="font-size: 16px; font-weight: 700; padding-top: 12px; color: #1e293b;">Estimated Total</td>
-                      <td style="font-size: 16px; font-weight: 700; padding-top: 12px; text-align: right; color: #2563eb;">
-                        ${totalLabel ? escapeHtml(totalLabel) : ''}
-                      </td>
-                    </tr>
-                  </table>
-                </div>`
-              : ''
-          }
+          ${priceDetailsCardHtml}
+
+          ${paymentSummaryCardHtml}
 
           ${ctaHtml}
         </td>

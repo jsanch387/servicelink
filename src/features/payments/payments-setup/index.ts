@@ -1,0 +1,18 @@
+export { ProPaymentsSetupExperience } from './ProPaymentsSetupExperience';
+export { ProServicelinkPaymentsGate } from './ProServicelinkPaymentsGate';
+export {
+  PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY,
+  SERVICELINK_GATE_CTA,
+  SERVICELINK_GATE_LEAD,
+  SERVICELINK_GATE_REASSURANCE,
+  SERVICELINK_GATE_TITLE,
+} from './servicelinkGateCopy';
+export {
+  PAYMENTS_PAGE_DESCRIPTION_SETUP_PENDING,
+  PAYMENTS_SETUP_BENEFITS,
+  PAYMENTS_SETUP_CTA_CONNECT_STRIPE,
+  PAYMENTS_SETUP_CTA_CONTINUE_STRIPE,
+  PAYMENTS_SETUP_HERO_TITLE,
+  PAYMENTS_SETUP_LEAD,
+  PAYMENTS_SETUP_TEASE_OVERLINE,
+} from './paymentsSetupCopy';

@@ -1,11 +1,13 @@
 'use client';
 
-import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import { Input, Select, TextArea } from '@/components/shared';
+import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
 import React from 'react';
 
-const parseServiceArea = (serviceArea: string): { city: string; state: string } => {
+const parseServiceArea = (
+  serviceArea: string
+): { city: string; state: string } => {
   const [rawCity = '', rawState = ''] = serviceArea.split(',');
   return {
     city: rawCity.trim(),
@@ -27,7 +29,7 @@ const sanitizeState = (value: string): string =>
 
 interface BusinessInfoSectionProps {
   formData: EditingFormData;
-  // eslint-disable-next-line no-unused-vars
+
   onInputChange: (field: string, value: string) => void;
   errors: string[];
 }

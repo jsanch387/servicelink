@@ -1,11 +1,11 @@
+import { GlassCard } from '@/components/shared';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import React from 'react';
-import { GlassCard } from '@/components/shared';
 
 const frictionItems = [
   '"DM me for prices" — confusing for customers',
   'Sending price lists manually, over and over',
-  'Customers don\'t know your location or services',
+  "Customers don't know your location or services",
   'Missed DMs and texts mean lost bookings',
 ];
 
@@ -50,7 +50,10 @@ export const ProblemSolutionSection: React.FC = () => {
             </div>
             <ul className="space-y-3 sm:space-y-4">
               {frictionItems.map((item, i) => (
-                <li key={i} className="flex gap-3 text-gray-400 text-sm sm:text-base leading-relaxed">
+                <li
+                  key={i}
+                  className="flex gap-3 text-gray-400 text-sm sm:text-base leading-relaxed"
+                >
                   <span className="text-gray-500 mt-1">•</span>
                   <span>{item}</span>
                 </li>
@@ -75,7 +78,10 @@ export const ProblemSolutionSection: React.FC = () => {
             </div>
             <ul className="space-y-3 sm:space-y-4">
               {solutionItems.map((item, i) => (
-                <li key={i} className="flex gap-3 text-gray-300 text-sm sm:text-base leading-relaxed">
+                <li
+                  key={i}
+                  className="flex gap-3 text-gray-300 text-sm sm:text-base leading-relaxed"
+                >
                   <CheckCircleIcon className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
                   <span>{item}</span>
                 </li>

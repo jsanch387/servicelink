@@ -32,7 +32,9 @@ describe('[Core] next appointment day helper', () => {
 
     expect(formatNextAppointmentRelativeDay('2026-03-25', 10)).toBe('Today');
     expect(formatNextAppointmentRelativeDay('2026-03-26', 10)).toBe('Tomorrow');
-    expect(formatNextAppointmentRelativeDay('2026-03-30', 10)).toBe('in 5 days');
+    expect(formatNextAppointmentRelativeDay('2026-03-30', 10)).toBe(
+      'in 5 days'
+    );
   });
 
   it('falls back to server daysUntil when date is invalid/missing', () => {

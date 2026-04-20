@@ -1,4 +1,4 @@
-import React, { forwardRef, type ReactNode } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 
 export interface TextAreaProps {
   label?: string;
@@ -76,7 +76,9 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
             }`}
           >
             {footerStart != null ? (
-              <div className="flex items-center min-w-0 -ml-1">{footerStart}</div>
+              <div className="flex items-center min-w-0 -ml-1">
+                {footerStart}
+              </div>
             ) : null}
             {maxLength != null ? (
               <p className="text-xs text-gray-400 shrink-0 tabular-nums">

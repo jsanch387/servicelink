@@ -84,9 +84,9 @@ export const Switch: React.FC<SwitchProps> = ({
   if (label != null || description != null) {
     return (
       <div
-        className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 ${className}`}
+        className={`flex flex-row items-center justify-between gap-3 sm:gap-4 ${className}`}
       >
-        <div className="space-y-1 min-w-0">
+        <div className="space-y-1 min-w-0 flex-1 pr-1">
           {label != null && (
             <span className="block text-base font-semibold text-white">
               {label}
@@ -96,7 +96,7 @@ export const Switch: React.FC<SwitchProps> = ({
             <p className="block text-sm text-gray-400">{description}</p>
           )}
         </div>
-        {button}
+        <span className="shrink-0">{button}</span>
       </div>
     );
   }

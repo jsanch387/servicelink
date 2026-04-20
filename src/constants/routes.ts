@@ -57,6 +57,8 @@ export const ROUTES = {
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
+    PAYMENTS: '/dashboard/payments',
+    PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
     SETTINGS: '/dashboard/settings',
     UPGRADE: '/dashboard/upgrade',
   },
@@ -70,12 +72,22 @@ export const ROUTES = {
 export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
 
 export const API_ROUTES = {
+  /** Pro: one-time URL to the connected account’s Stripe Express Dashboard. */
+  STRIPE_CONNECT_EXPRESS_DASHBOARD: '/api/stripe/connect/express-dashboard',
+  /** Pro + Stripe connected: create/update `payment_settings` and turn on ServiceLink payments. */
+  PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
+  /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */
+  PAYMENTS_SERVICELINK_SETTINGS: '/api/payments/servicelink/settings',
   CUSTOMERS: '/api/customers',
   /** Owner: toggle `accept_quote_req` on current business. */
   BUSINESS_PROFILE_ACCEPT_QUOTE_REQUESTS:
     '/api/business-profile/accept-quote-requests',
   /** Public: customer submits “request quote” from profile. */
   PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
+  /** Public: start Stripe Checkout for a booking payment (deposit or full). */
+  PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
+  /** Public: fetch booking payment summary after successful checkout return. */
+  PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
   /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */
   QUOTE_SEND_EXISTING: (quoteId: string) =>
     `/api/quotes/${encodeURIComponent(quoteId.trim())}/send`,

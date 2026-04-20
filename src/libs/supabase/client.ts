@@ -9,6 +9,12 @@ export const createClient = () => {
   );
 };
 
+export type PaymentAccountOnboardingStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'complete'
+  | 'restricted';
+
 // Types for our database (we'll expand this as we build out our schema)
 export type Database = {
   public: {
@@ -493,6 +499,102 @@ export type Database = {
           read?: boolean;
           read_at?: string | null;
           created_at?: string;
+        };
+      };
+      payment_accounts: {
+        Row: {
+          id: string;
+          business_id: string;
+          provider: string;
+          stripe_account_id: string;
+          onboarding_status: PaymentAccountOnboardingStatus;
+          charges_enabled: boolean;
+          payouts_enabled: boolean;
+          details_submitted: boolean;
+          requirements_status: string | null;
+          connected_at: string | null;
+          last_synced_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          provider?: string;
+          stripe_account_id: string;
+          onboarding_status?: PaymentAccountOnboardingStatus;
+          charges_enabled?: boolean;
+          payouts_enabled?: boolean;
+          details_submitted?: boolean;
+          requirements_status?: string | null;
+          connected_at?: string | null;
+          last_synced_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          provider?: string;
+          stripe_account_id?: string;
+          onboarding_status?: PaymentAccountOnboardingStatus;
+          charges_enabled?: boolean;
+          payouts_enabled?: boolean;
+          details_submitted?: boolean;
+          requirements_status?: string | null;
+          connected_at?: string | null;
+          last_synced_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      payment_settings: {
+        /** Column order matches Supabase `payment_settings` (see `src/features/payments/docs/DATABASE.md`). */
+        Row: {
+          id: string;
+          business_id: string;
+          payment_account_id: string | null;
+          checkout_mode: string | null;
+          deposits_enabled: boolean;
+          deposit_type: string;
+          deposit_value: number;
+          collect_remaining_balance: boolean;
+          currency: string;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+          /** When false, ServiceLink checkout is off; Stripe may still be connected. */
+          payments_enabled: boolean;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          payment_account_id?: string | null;
+          checkout_mode?: string | null;
+          deposits_enabled?: boolean;
+          deposit_type?: string;
+          deposit_value?: number;
+          collect_remaining_balance?: boolean;
+          currency?: string;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          payments_enabled?: boolean;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          payment_account_id?: string | null;
+          checkout_mode?: string | null;
+          deposits_enabled?: boolean;
+          deposit_type?: string;
+          deposit_value?: number;
+          collect_remaining_balance?: boolean;
+          currency?: string;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          payments_enabled?: boolean;
         };
       };
     };

@@ -29,6 +29,6 @@ export function sanitizeDbError(
   const msg = (rawMessage ?? '').trim();
   if (!msg) return fallback;
 
-  const looksTechnical = TECHNICAL_PATTERNS.some((re) => re.test(msg));
+  const looksTechnical = TECHNICAL_PATTERNS.some(re => re.test(msg));
   return looksTechnical ? fallback : msg;
 }

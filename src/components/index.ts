@@ -14,6 +14,7 @@ export {
   ImageUpload,
   ImagePreview,
   PriceInput,
+  MoneyInput,
   PhoneInput,
 } from './shared';
 

@@ -29,5 +29,5 @@ export const GUIDES: GuideMeta[] = [
 ];
 
 export function getGuideBySlug(slug: string): GuideMeta | undefined {
-  return GUIDES.find((g) => g.slug === slug);
+  return GUIDES.find(g => g.slug === slug);
 }

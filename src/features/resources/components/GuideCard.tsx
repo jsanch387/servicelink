@@ -20,7 +20,9 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide }) => {
         <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">
           {guide.title}
         </h2>
-        <p className="text-sm text-gray-400 leading-relaxed">{guide.subheading}</p>
+        <p className="text-sm text-gray-400 leading-relaxed">
+          {guide.subheading}
+        </p>
         <span className="inline-block mt-3 text-sm font-medium text-gray-400 group-hover:text-white transition-colors">
           Read guide →
         </span>

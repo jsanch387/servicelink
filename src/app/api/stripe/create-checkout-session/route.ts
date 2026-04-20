@@ -8,34 +8,9 @@
  *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs.
  */
 
+import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-
-function getStripe(): Stripe {
-  const secret = process.env.STRIPE_SECRET_KEY;
-  if (!secret) {
-    throw new Error('STRIPE_SECRET_KEY is not set');
-  }
-  return new Stripe(secret);
-}
-
-function getBaseUrl(request: NextRequest): string {
-  const host =
-    request.headers.get('x-forwarded-host') || request.headers.get('host');
-  const proto =
-    request.headers.get('x-forwarded-proto') ||
-    (process.env.NODE_ENV === 'development' ? 'http' : 'https');
-  if (host) {
-    return `${proto}://${host}`;
-  }
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    (typeof process.env.VERCEL_URL === 'string'
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000')
-  );
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,8 +36,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseUrl = getBaseUrl(request);
-    const stripe = getStripe();
+    const baseUrl = getAppBaseUrl(request);
+    const stripe = getStripePlatform();
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

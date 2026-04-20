@@ -27,9 +27,7 @@ export const ShareableLinkDisplay: React.FC<ShareableLinkDisplayProps> = ({
           </p>
 
           {/* Link - one line, font scales so full URL fits on all screens */}
-          <div
-            className="flex items-center gap-3 w-full bg-white/[0.06] border border-white/[0.12] rounded-xl px-4 py-3.5 sm:px-5 sm:py-4 min-w-0 shadow-[0_0_20px_rgba(255,255,255,0.06),0_0_40px_rgba(255,255,255,0.04)]"
-          >
+          <div className="flex items-center gap-3 w-full bg-white/[0.06] border border-white/[0.12] rounded-xl px-4 py-3.5 sm:px-5 sm:py-4 min-w-0 shadow-[0_0_20px_rgba(255,255,255,0.06),0_0_40px_rgba(255,255,255,0.04)]">
             <LinkIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
             <p
               className="font-mono text-xs sm:text-sm md:text-base min-w-0 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
