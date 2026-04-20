@@ -281,9 +281,24 @@ async function retrieveSubscriptionCurrentPeriodEndIso(
 }
 
 export async function POST(request: NextRequest) {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set');
+  const isConnectWebhookPath = request.nextUrl.pathname.endsWith(
+    '/api/stripe/webhook-connect'
+  );
+  const primarySecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  const connectSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET?.trim();
+  const candidateSecrets = isConnectWebhookPath
+    ? [connectSecret, primarySecret].filter(
+        (s): s is string => typeof s === 'string' && s.length > 0
+      )
+    : [primarySecret].filter(
+        (s): s is string => typeof s === 'string' && s.length > 0
+      );
+  if (candidateSecrets.length === 0) {
+    console.error(
+      isConnectWebhookPath
+        ? 'Stripe connect webhook secret is not set (STRIPE_CONNECT_WEBHOOK_SECRET)'
+        : 'STRIPE_WEBHOOK_SECRET is not set'
+    );
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 500 }
@@ -310,7 +325,20 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
   try {
     const stripe = getStripePlatform();
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    let parsedEvent: Stripe.Event | null = null;
+    let lastErr: unknown = null;
+    for (const secret of candidateSecrets) {
+      try {
+        parsedEvent = stripe.webhooks.constructEvent(body, signature, secret);
+        break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    if (!parsedEvent) {
+      throw lastErr ?? new Error('Webhook signature verification failed');
+    }
+    event = parsedEvent;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Stripe webhook signature verification failed:', message);
