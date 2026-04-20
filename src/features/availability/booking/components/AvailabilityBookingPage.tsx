@@ -90,24 +90,12 @@ function computeOnlineAmountDueNowCents(
   return 0;
 }
 
-/** Set `NEXT_PUBLIC_DEBUG_BOOKING_CHECKOUT=true` to log in non-dev builds (e.g. staging). */
-function isBookingCheckoutDebugEnabled(): boolean {
-  return (
-    process.env.NODE_ENV === 'development' ||
-    process.env.NEXT_PUBLIC_DEBUG_BOOKING_CHECKOUT === 'true'
-  );
-}
-
+/** Frontend checkout debug logs disabled in production/local builds (server logs only). */
 function logBookingCheckoutDev(
-  message: string,
-  payload?: Record<string, unknown>
+  _message: string,
+  _payload?: Record<string, unknown>
 ): void {
-  if (!isBookingCheckoutDebugEnabled()) return;
-  if (payload != null) {
-    console.log('[booking-checkout]', message, payload);
-  } else {
-    console.log('[booking-checkout]', message);
-  }
+  // no-op intentionally
 }
 
 /** Same check-circle pattern as `PaymentsCheckoutOptionsCard` (owner dashboard). */

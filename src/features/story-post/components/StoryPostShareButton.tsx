@@ -128,23 +128,16 @@ export const StoryPostShareButton: React.FC<StoryPostShareButtonProps> = ({
 
   return (
     <>
-      <div className="relative inline-flex">
-        {/* Soft pulsing glow to draw attention */}
-        <span className="pointer-events-none absolute inset-0 rounded-lg bg-emerald-500/20 blur-md animate-pulse-slow" />
-        <Button
-          type="button"
-          onClick={handlePrimaryClick}
-          variant="ghost"
-          className="relative h-8 px-2.5 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white"
-          icon={<ShareIcon className="h-3.5 w-3.5" />}
-          iconPosition="left"
-        >
-          <span>Share</span>
-          <span className="ml-0.5 inline-flex items-center rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-black">
-            New
-          </span>
-        </Button>
-      </div>
+      <Button
+        type="button"
+        onClick={handlePrimaryClick}
+        variant="ghost"
+        className="h-8 px-2.5 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white"
+        icon={<ShareIcon className="h-3.5 w-3.5" />}
+        iconPosition="left"
+      >
+        Share
+      </Button>
 
       <Modal
         isOpen={isOpen}

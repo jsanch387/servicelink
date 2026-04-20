@@ -11,6 +11,7 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 | `STRIPE_SECRET_KEY` | Yes | Stripe secret key (starts with `sk_`). From [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys). |
 | `STRIPE_PRO_PRICE_ID` | Yes | Stripe Price ID for the Pro monthly plan (e.g. `price_xxx`). Create a Product in [Stripe Dashboard → Products](https://dashboard.stripe.com/products), then add a recurring price. |
 | `STRIPE_WEBHOOK_SECRET` | Yes (for webhook) | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret. |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | Yes (for Connect webhook) | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments). |
 | `NEXT_PUBLIC_SITE_URL` | No | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`. |
 
 ## Flow
@@ -43,12 +44,27 @@ ALTER TABLE stripe_webhook_events
   ADD COLUMN IF NOT EXISTS event_type text;
 ```
 
-## Configuring the webhook in Stripe
+## Configuring webhooks in Stripe
 
-1. Stripe Dashboard → Developers → Webhooks → Add endpoint.
-2. URL: `https://your-domain.com/api/stripe/webhook` (or for local testing use a tunnel like ngrok).
-3. Events to send: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. See sections below for what each does.
-4. Copy the **Signing secret** (`whsec_...`) into your env as `STRIPE_WEBHOOK_SECRET`.
+We use **two** webhook destinations with different account scopes:
+
+1. **Platform billing webhook** (`/api/stripe/webhook`)  
+   Scope: **Your account**  
+   Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
+
+2. **Connect booking checkout webhook** (`/api/stripe/webhook-connect`)  
+   Scope: **Connected and v2 accounts**  
+   Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` (and optionally `account.updated`).
+
+Why this split: production booking payments are created on connected accounts. Without a connected-account destination, live customer charges can succeed while booking finalization webhook logic never runs.
+
+1. Stripe Dashboard → Developers → Webhooks → Add destination.
+2. Create destination #1: URL `https://your-domain.com/api/stripe/webhook`, scope **Your account**, select platform billing events.
+3. Create destination #2: URL `https://your-domain.com/api/stripe/webhook-connect`, scope **Connected and v2 accounts**, select connect checkout events.
+4. Copy signing secrets:
+   - destination #1 → `STRIPE_WEBHOOK_SECRET`
+   - destination #2 → `STRIPE_CONNECT_WEBHOOK_SECRET`
+5. Redeploy after env updates.
 
 ## Customer portal (cancel / manage subscription)
 

@@ -51,7 +51,6 @@ const allNavigationItems = [
     icon: ClipboardDocumentListIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/quotes',
-    isNew: true,
   },
   {
     name: 'Customers',
@@ -65,6 +64,7 @@ const allNavigationItems = [
     icon: BanknotesIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/payments',
+    isNew: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [
