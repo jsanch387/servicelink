@@ -268,7 +268,16 @@ export function AvailabilityBookingPage({
 
   const paymentSettingsEnabled =
     paymentSettings?.paymentsEnabled === true && !isOwnerManualBooking;
-  const shouldShowPaymentStep = paymentSettingsEnabled;
+  const hasCheckoutModeConfigured = paymentSettings?.checkoutMode != null;
+  const hasDepositsConfigured = paymentSettings?.depositsEnabled === true;
+  /**
+   * Fallback behavior: if owner didn't finish payment setup (no checkout mode
+   * or deposits disabled), skip payment step and use normal confirm-booking flow.
+   */
+  const shouldShowPaymentStep =
+    paymentSettingsEnabled &&
+    hasCheckoutModeConfigured &&
+    hasDepositsConfigured;
   const configuredDepositCents = paymentSettings
     ? getDepositDueNowCents(paymentSettings, totalPriceCents)
     : 0;
@@ -344,7 +353,7 @@ export function AvailabilityBookingPage({
       customerPaymentChoice !== null);
 
   useEffect(() => {
-    if (!paymentSettingsEnabled) {
+    if (!shouldShowPaymentStep) {
       setCustomerPaymentChoice(null);
       return;
     }
@@ -357,7 +366,7 @@ export function AvailabilityBookingPage({
       return;
     }
     setCustomerPaymentChoice(null);
-  }, [paymentSettings?.checkoutMode, paymentSettingsEnabled]);
+  }, [paymentSettings?.checkoutMode, shouldShowPaymentStep]);
 
   // After Stripe (browser back, cancel link, or success): restore context / clean URL.
   useEffect(() => {
@@ -472,7 +481,7 @@ export function AvailabilityBookingPage({
     setCustomerData({ ...INITIAL_CUSTOMER_FORM_DATA, ...draft.customerData });
     setCustomerPaymentChoice(draft.customerPaymentChoice);
     skipNextStepScrollRef.current = true;
-    setStep(paymentSettingsEnabled ? 'payment' : 'review');
+    setStep(shouldShowPaymentStep ? 'payment' : 'review');
     setSubmitError(null);
     setIsSubmitting(false);
 
@@ -485,7 +494,7 @@ export function AvailabilityBookingPage({
     pathname,
     router,
     searchParams,
-    paymentSettingsEnabled,
+    shouldShowPaymentStep,
     stripeCheckoutSessionId,
   ]);
 
@@ -1142,7 +1151,7 @@ export function AvailabilityBookingPage({
               onClick={() => {
                 const cents = computeOnlineAmountDueNowCents(
                   paymentSettings,
-                  paymentSettingsEnabled,
+                  shouldShowPaymentStep,
                   customerPaymentChoice,
                   totalPriceCents
                 );
