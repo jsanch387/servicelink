@@ -269,15 +269,13 @@ export function AvailabilityBookingPage({
   const paymentSettingsEnabled =
     paymentSettings?.paymentsEnabled === true && !isOwnerManualBooking;
   const hasCheckoutModeConfigured = paymentSettings?.checkoutMode != null;
-  const hasDepositsConfigured = paymentSettings?.depositsEnabled === true;
   /**
    * Fallback behavior: if owner didn't finish payment setup (no checkout mode
-   * or deposits disabled), skip payment step and use normal confirm-booking flow.
+   * selected), skip payment step and use normal confirm-booking flow.
+   * Deposits can be off while checkout is still fully valid.
    */
   const shouldShowPaymentStep =
-    paymentSettingsEnabled &&
-    hasCheckoutModeConfigured &&
-    hasDepositsConfigured;
+    paymentSettingsEnabled && hasCheckoutModeConfigured;
   const configuredDepositCents = paymentSettings
     ? getDepositDueNowCents(paymentSettings, totalPriceCents)
     : 0;
