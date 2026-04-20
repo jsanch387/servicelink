@@ -399,52 +399,70 @@ export function AvailabilityBookingPage({
           );
           url.searchParams.set('session_id', sessionId);
           url.searchParams.set('businessSlug', businessSlug);
-          const res = await fetch(url.toString(), { method: 'GET' });
-          const json = (await res.json()) as {
-            success?: boolean;
-            data?: {
-              paymentStatus: string;
-              currency: string;
-              paidOnlineAmountCents: number;
-              remainingAmountCents: number;
-              totalAmountCents: number;
-              booking: {
-                serviceName: string;
-                scheduledDate: string;
-                startTime: string;
-                durationMinutes: number | null;
-                servicePriceCents: number | null;
-                selectedAddOns: AddOnDisplay[];
-                customerVehicleYear: string | null;
-                customerVehicleMake: string | null;
-                customerVehicleModel: string | null;
+
+          for (let attempt = 0; attempt < 8; attempt++) {
+            const res = await fetch(url.toString(), { method: 'GET' });
+            const json = (await res.json().catch(() => ({}))) as {
+              success?: boolean;
+              pending?: boolean;
+              error?: string;
+              data?: {
+                paymentStatus: string;
+                currency: string;
+                paidOnlineAmountCents: number;
+                remainingAmountCents: number;
+                totalAmountCents: number;
+                booking: {
+                  serviceName: string;
+                  scheduledDate: string;
+                  startTime: string;
+                  durationMinutes: number | null;
+                  servicePriceCents: number | null;
+                  selectedAddOns: AddOnDisplay[];
+                  customerVehicleYear: string | null;
+                  customerVehicleMake: string | null;
+                  customerVehicleModel: string | null;
+                };
               };
             };
-          };
-          if (res.ok && json.success && json.data?.booking) {
-            setPaymentSuccessData({
-              paymentStatus: json.data.paymentStatus,
-              currency: json.data.currency,
-              paidOnlineAmountCents: json.data.paidOnlineAmountCents,
-              remainingAmountCents: json.data.remainingAmountCents,
-              totalAmountCents: json.data.totalAmountCents,
-              serviceName: json.data.booking.serviceName,
-              scheduledDate: json.data.booking.scheduledDate,
-              startTime: json.data.booking.startTime,
-              durationMinutes: json.data.booking.durationMinutes,
-              servicePriceCents: json.data.booking.servicePriceCents,
-              selectedAddOns: json.data.booking.selectedAddOns ?? [],
-              customerVehicleYear: json.data.booking.customerVehicleYear,
-              customerVehicleMake: json.data.booking.customerVehicleMake,
-              customerVehicleModel: json.data.booking.customerVehicleModel,
-            });
+
+            if (res.ok && json.success && json.data?.booking) {
+              setPaymentSuccessData({
+                paymentStatus: json.data.paymentStatus,
+                currency: json.data.currency,
+                paidOnlineAmountCents: json.data.paidOnlineAmountCents,
+                remainingAmountCents: json.data.remainingAmountCents,
+                totalAmountCents: json.data.totalAmountCents,
+                serviceName: json.data.booking.serviceName,
+                scheduledDate: json.data.booking.scheduledDate,
+                startTime: json.data.booking.startTime,
+                durationMinutes: json.data.booking.durationMinutes,
+                servicePriceCents: json.data.booking.servicePriceCents,
+                selectedAddOns: json.data.booking.selectedAddOns ?? [],
+                customerVehicleYear: json.data.booking.customerVehicleYear,
+                customerVehicleMake: json.data.booking.customerVehicleMake,
+                customerVehicleModel: json.data.booking.customerVehicleModel,
+              });
+              clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+              stripCheckoutParamsFromUrl();
+              return;
+            }
+
+            const isProcessing =
+              res.status === 202 ||
+              (res.status === 404 && attempt < 7) ||
+              json.pending === true;
+            if (!isProcessing) {
+              break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 700));
           }
         } catch {
           // keep flow resilient if summary endpoint is temporarily unavailable
-        } finally {
-          clearBookingCheckoutResumeDraft(businessSlug, serviceId);
-          stripCheckoutParamsFromUrl();
         }
+        setSubmitError(
+          'Payment received, but we are still finalizing your booking. Please refresh in a moment.'
+        );
       };
       void loadSummary();
       return;

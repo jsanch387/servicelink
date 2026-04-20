@@ -79,6 +79,41 @@ export async function GET(request: NextRequest) {
       );
     }
     if (!row || !row.booking) {
+      // Fallback: webhook may still be processing right after Stripe redirect.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: checkoutRow, error: checkoutLookupError } = await (supabase as any)
+        .from('booking_checkout_sessions')
+        .select('status, booking_id')
+        .eq('stripe_checkout_session_id', sessionId)
+        .maybeSingle();
+
+      if (checkoutLookupError) {
+        console.error(
+          '[booking-checkout-summary] checkout session lookup failed',
+          checkoutLookupError
+        );
+        return NextResponse.json(
+          { success: false, error: 'Could not load checkout summary.' },
+          { status: 500 }
+        );
+      }
+
+      const checkoutStatus = (
+        checkoutRow as { status?: string | null } | null
+      )?.status;
+      if (checkoutStatus === 'created' || checkoutStatus === 'completed') {
+        return NextResponse.json(
+          { success: false, pending: true, error: 'Checkout is processing.' },
+          { status: 202 }
+        );
+      }
+      if (checkoutStatus === 'failed') {
+        return NextResponse.json(
+          { success: false, error: 'Payment could not be finalized.' },
+          { status: 409 }
+        );
+      }
+
       return NextResponse.json(
         { success: false, error: 'Checkout summary not found.' },
         { status: 404 }

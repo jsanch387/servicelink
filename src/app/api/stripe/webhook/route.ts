@@ -50,6 +50,23 @@ function logBookingWebhook(message: string, payload?: Record<string, unknown>) {
   console.log('[booking-checkout:webhook]', message);
 }
 
+/**
+ * Minimal server-side trace logs for Stripe booking checkout flow.
+ * Logs only operational IDs/status (no customer PII, no payment method details).
+ */
+function logBookingCheckoutStage(
+  stage: string,
+  details?: {
+    eventId?: string;
+    sessionId?: string;
+    checkoutSessionRowId?: string;
+    bookingId?: string;
+    paymentStatus?: string;
+  }
+) {
+  console.info('[booking-checkout:stage]', stage, details ?? {});
+}
+
 type StoredBookingCheckoutPayload = {
   businessId: string;
   businessSlug: string;
@@ -327,6 +344,10 @@ export async function POST(request: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
     const isBookingCheckout = session.metadata?.kind === 'booking_checkout';
     if (isBookingCheckout) {
+      logBookingCheckoutStage('checkout.session.completed.received', {
+        eventId: event.id,
+        sessionId: session.id,
+      });
       logBookingWebhook('checkout.session.completed received', {
         eventId: event.id,
         sessionId: session.id,
@@ -353,6 +374,10 @@ export async function POST(request: NextRequest) {
         checkoutSessionRow = (data as Record<string, unknown> | null) ?? null;
       }
       if (!checkoutSessionRow) {
+        logBookingCheckoutStage('checkout_session_row.missing', {
+          eventId: event.id,
+          sessionId: session.id,
+        });
         logBookingWebhook('missing booking_checkout_sessions row', {
           sessionId: session.id,
           checkoutSessionRowId,
@@ -363,6 +388,11 @@ export async function POST(request: NextRequest) {
         checkoutSessionRow.booking_payload
       );
       if (!bookingPayload) {
+        logBookingCheckoutStage('booking_payload.invalid', {
+          eventId: event.id,
+          sessionId: session.id,
+          checkoutSessionRowId: String(checkoutSessionRow.id),
+        });
         console.error(
           '[booking-checkout:webhook] invalid booking_payload for row',
           checkoutSessionRow.id
@@ -381,6 +411,11 @@ export async function POST(request: NextRequest) {
           ? checkoutSessionRow.expected_amount_cents
           : bookingPayload.requiredOnlineAmountCents;
       if (amountPaidCents !== expectedAmountCents) {
+        logBookingCheckoutStage('amount_mismatch', {
+          eventId: event.id,
+          sessionId: session.id,
+          checkoutSessionRowId: String(checkoutSessionRow.id),
+        });
         logBookingWebhook('amount mismatch', {
           rowId: checkoutSessionRow.id,
           sessionId: session.id,
@@ -417,6 +452,12 @@ export async function POST(request: NextRequest) {
         scheduledDate: bookingPayload.scheduledDate,
         startTime: bookingPayload.startTime,
         customer: customerFormFromCheckoutStored(bookingPayload.customer),
+      });
+      logBookingCheckoutStage('booking.created', {
+        eventId: event.id,
+        sessionId: session.id,
+        checkoutSessionRowId: String(checkoutSessionRow.id),
+        bookingId: createdBooking.id,
       });
       const remainingCents = Math.max(
         bookingPayload.totalPriceCents - amountPaidCents,
@@ -509,6 +550,12 @@ export async function POST(request: NextRequest) {
         last_checkout_session_id: session.id,
         paid_at: new Date().toISOString(),
       });
+      logBookingCheckoutStage('booking_payment.inserted', {
+        eventId: event.id,
+        sessionId: session.id,
+        bookingId: createdBooking.id,
+        paymentStatus,
+      });
       await notifyOwnerForAvailabilityBookingCreated(supabase, {
         profileId,
         bookingId: createdBooking.id,
@@ -517,14 +564,29 @@ export async function POST(request: NextRequest) {
         scheduledDate: bookingPayload.scheduledDate,
         emailPayload: availabilityEmailPayload,
       });
+      logBookingCheckoutStage('owner_notified', {
+        eventId: event.id,
+        sessionId: session.id,
+        bookingId: createdBooking.id,
+      });
       try {
         await sendAvailabilityBookingCustomerConfirmationEmail(
           bookingPayload.customer.email.trim(),
           businessDisplayName,
           availabilityEmailPayload
         );
+        logBookingCheckoutStage('customer_email.sent', {
+          eventId: event.id,
+          sessionId: session.id,
+          bookingId: createdBooking.id,
+        });
       } catch {
         // best-effort customer confirmation email
+        logBookingCheckoutStage('customer_email.failed', {
+          eventId: event.id,
+          sessionId: session.id,
+          bookingId: createdBooking.id,
+        });
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
@@ -541,6 +603,13 @@ export async function POST(request: NextRequest) {
           completed_at: new Date().toISOString(),
         })
         .eq('id', checkoutSessionRow.id);
+      logBookingCheckoutStage('checkout_session.completed', {
+        eventId: event.id,
+        sessionId: session.id,
+        checkoutSessionRowId: String(checkoutSessionRow.id),
+        bookingId: createdBooking.id,
+        paymentStatus,
+      });
       logBookingWebhook('booking created from webhook success', {
         eventId: event.id,
         sessionId: session.id,
