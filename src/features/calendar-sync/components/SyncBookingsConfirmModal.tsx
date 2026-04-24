@@ -1,0 +1,176 @@
+'use client';
+
+import { Button, Modal } from '@/components/shared';
+import { API_ROUTES } from '@/constants/routes';
+import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { useEffect, useState } from 'react';
+
+export interface SyncBookingsConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Called after the calendar handoff URL is fetched successfully. */
+  onConfirm?: () => void;
+}
+
+type Step = 'intro' | 'loading' | 'error';
+
+export function SyncBookingsConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+}: SyncBookingsConfirmModalProps) {
+  const [step, setStep] = useState<Step>('intro');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setStep('intro');
+      setErrorMessage(null);
+    }
+  }, [isOpen]);
+
+  const handleConfirm = async () => {
+    setStep('loading');
+    setErrorMessage(null);
+    try {
+      const res = await fetch(API_ROUTES.CALENDAR_FEED_LINK, {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+      let json: {
+        success?: boolean;
+        data?: { httpsUrl?: string; webcalUrl?: string };
+        error?: string;
+      } = {};
+      try {
+        json = await res.json();
+      } catch {
+        json = {};
+      }
+      if (!res.ok || !json.success || !json.data?.httpsUrl) {
+        setErrorMessage(json.error ?? 'Something went wrong. Try again.');
+        setStep('error');
+        return;
+      }
+
+      const httpsUrl = json.data.httpsUrl;
+      const target = json.data.webcalUrl?.trim() || httpsUrl;
+
+      onConfirm?.();
+
+      // Hand off to the device/calendar app. `await fetch` breaks the strict
+      // “user gesture” chain, so `window.open` may return null; we fall back to
+      // `location.assign`. Either way we must close the modal — the old branch
+      // returned early without `onClose()`, which left the spinner up when users
+      // came back to this tab.
+      const opened = window.open(target, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        window.location.assign(target);
+      }
+
+      queueMicrotask(() => {
+        onClose();
+      });
+    } catch {
+      setErrorMessage('Could not connect. Check your network and try again.');
+      setStep('error');
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth="sm">
+      <div className="-mt-2 space-y-6 text-left">
+        <header className="flex items-center gap-3 border-b border-white/10 pb-5 sm:gap-4">
+          <CalendarDaysIcon
+            className="h-6 w-6 shrink-0 text-gray-300 sm:h-7 sm:w-7"
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <h2
+              id="sync-calendar-modal-title"
+              className="text-lg font-semibold tracking-tight text-white sm:text-xl"
+            >
+              Add to calendar
+            </h2>
+          </div>
+        </header>
+
+        {step === 'intro' && (
+          <>
+            <div className="space-y-3 text-sm leading-relaxed text-gray-300">
+              <p>
+                This will sync your confirmed appointments to the calendar on
+                your phone.
+              </p>
+              <p className="text-gray-400">
+                Set it up once, and future confirmed bookings can show up there
+                automatically.
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-5 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onClose}
+                fullWidth
+                className="sm:w-auto sm:min-w-[100px]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="inverse"
+                onClick={() => void handleConfirm()}
+                fullWidth
+                className="font-semibold sm:w-auto sm:min-w-[140px]"
+              >
+                Confirm
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === 'loading' && (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div
+              className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-white/80"
+              aria-hidden
+            />
+            <p className="text-sm text-gray-400">Opening your calendar…</p>
+          </div>
+        )}
+
+        {step === 'error' && (
+          <>
+            <p className="text-sm text-rose-300" role="alert">
+              {errorMessage}
+            </p>
+            <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-5 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onClose}
+                fullWidth
+                className="sm:w-auto sm:min-w-[100px]"
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                variant="inverse"
+                onClick={() => {
+                  setStep('intro');
+                  setErrorMessage(null);
+                }}
+                fullWidth
+                className="font-semibold sm:w-auto sm:min-w-[120px]"
+              >
+                Try again
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
