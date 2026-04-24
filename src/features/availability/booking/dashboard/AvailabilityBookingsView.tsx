@@ -364,6 +364,7 @@ export function AvailabilityBookingsView({
       <SyncBookingsConfirmModal
         isOpen={syncCalendarModalOpen}
         onClose={() => setSyncCalendarModalOpen(false)}
+        isProSubscriber={!showFreeBookingsTracker}
       />
     </main>
   );

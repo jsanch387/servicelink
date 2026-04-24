@@ -1,8 +1,7 @@
 'use client';
 
-import { Button, Modal } from '@/components/shared';
-import { API_ROUTES } from '@/constants/routes';
-import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { Button, CrownIcon, Modal } from '@/components/shared';
+import { API_ROUTES, ROUTES } from '@/constants/routes';
 import { useEffect, useState } from 'react';
 
 export interface SyncBookingsConfirmModalProps {
@@ -10,6 +9,11 @@ export interface SyncBookingsConfirmModalProps {
   onClose: () => void;
   /** Called after the calendar handoff URL is fetched successfully. */
   onConfirm?: () => void;
+  /**
+   * When false (free tier), show the same copy but gate the flow with Upgrade to Pro.
+   * @default true
+   */
+  isProSubscriber?: boolean;
 }
 
 type Step = 'intro' | 'loading' | 'error';
@@ -18,6 +22,7 @@ export function SyncBookingsConfirmModal({
   isOpen,
   onClose,
   onConfirm,
+  isProSubscriber = true,
 }: SyncBookingsConfirmModalProps) {
   const [step, setStep] = useState<Step>('intro');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -80,18 +85,20 @@ export function SyncBookingsConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth="sm">
       <div className="-mt-2 space-y-6 text-left">
-        <header className="flex items-center gap-3 border-b border-white/10 pb-5 sm:gap-4">
-          <CalendarDaysIcon
-            className="h-6 w-6 shrink-0 text-gray-300 sm:h-7 sm:w-7"
-            aria-hidden
-          />
-          <div className="min-w-0 flex-1">
+        <header className="border-b border-white/10 pb-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <h2
               id="sync-calendar-modal-title"
-              className="text-lg font-semibold tracking-tight text-white sm:text-xl"
+              className="text-lg font-black leading-none tracking-tight text-white sm:text-xl"
             >
               Add to calendar
             </h2>
+            {!isProSubscriber ? (
+              <CrownIcon
+                className="h-5 w-5 shrink-0 translate-y-0.5 text-amber-300 sm:h-6 sm:w-6 sm:translate-y-1"
+                aria-hidden
+              />
+            ) : null}
           </div>
         </header>
 
@@ -117,15 +124,33 @@ export function SyncBookingsConfirmModal({
               >
                 Cancel
               </Button>
-              <Button
-                type="button"
-                variant="inverse"
-                onClick={() => void handleConfirm()}
-                fullWidth
-                className="font-semibold sm:w-auto sm:min-w-[140px]"
-              >
-                Confirm
-              </Button>
+              {isProSubscriber ? (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  onClick={() => void handleConfirm()}
+                  fullWidth
+                  className="font-semibold sm:w-auto sm:min-w-[140px]"
+                >
+                  Confirm
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  href={ROUTES.DASHBOARD.UPGRADE}
+                  fullWidth
+                  className="font-semibold sm:w-auto sm:min-w-[160px]"
+                  icon={
+                    <CrownIcon
+                      className="h-4 w-4 shrink-0 text-neutral-900"
+                      aria-hidden
+                    />
+                  }
+                >
+                  Upgrade to Pro
+                </Button>
+              )}
             </div>
           </>
         )}

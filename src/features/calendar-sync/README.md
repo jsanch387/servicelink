@@ -33,7 +33,7 @@ So: **nothing pushes from our app to your phone.** Your phone **pulls** the link
 | `server/buildBookingsIcs.ts` | Builds RFC 5545 ICS text (`VEVENT`, `UID`, `DTSTART`/`DTEND`, etc.). |
 | `services/listBookingsForCalendarFeed.ts` | Loads `confirmed` + `cancelled` rows for a business (service role on feed route). |
 | `components/SyncBookingsCtaCard.tsx` | Bookings header CTA. |
-| `components/SyncBookingsConfirmModal.tsx` | Explain → confirm → open subscribe URL / close. |
+| `components/SyncBookingsConfirmModal.tsx` | Explain → confirm (Pro) or Upgrade to Pro (free) → open subscribe URL / close. |
 | `testing/*.test.ts` | Token + ICS helpers. |
 
 ---
