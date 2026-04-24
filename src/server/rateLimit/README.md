@@ -1,6 +1,6 @@
 # Public API rate limiting
 
-This folder contains **abuse throttling** for unauthenticated HTTP handlers tied to the **public business profile** experience: quote requests, profile view analytics, and the optional JSON profile API.
+This folder contains **abuse throttling** for unauthenticated HTTP handlers tied to the **public business profile** experience: quote requests, profile view analytics, the optional JSON profile API, and the **public ICS calendar feed** (plus the authenticated “build my subscribe link” endpoint).
 
 Rate limits are **not** used for authentication or identity—they only reduce automated spam, scraping, and accidental stampedes.
 
@@ -13,6 +13,8 @@ Rate limits are **not** used for authentication or identity—they only reduce a
 1. **Quote intake (`POST /api/public/quote-request`)** — Highest risk: writes to the database and triggers owner workflows. Limits are **strict** per client IP and per **IP + business slug** so one actor cannot flood a single business or spray many businesses from one host.
 2. **View tracking (`POST /api/analytics/track-view`)** — Called when a public profile is viewed. Limits are **looser per IP** (many legitimate refreshes / navigations) but **tighter per IP + slug** over a short window to cap hammering one profile.
 3. **Profile JSON API (`GET /api/public/profile/[slug]`)** — Read-heavy; limits discourage bulk scraping while allowing normal client or integration usage.
+4. **Calendar ICS feed (`GET /api/calendar/feed/[token]`)** — Public signed URL; calendar apps poll periodically. Limits cap per-IP volume and per-(IP + token) hammering of one feed.
+5. **Calendar link helper (`GET /api/calendar/feed/link`)** — Authenticated; a **probe** limit per IP runs before auth work, then per-user and per-IP limits after a valid session.
 
 ### Two-tier keys
 
@@ -56,6 +58,11 @@ Defined in `publicApiRateLimit.ts` (tune there if product needs change).
 | `POST /api/analytics/track-view` | Per IP + slug | 120 | 15 minutes |
 | `GET /api/public/profile/[slug]` | Per IP | 360 | 1 hour |
 | `GET /api/public/profile/[slug]` | Per IP + slug | 150 | 15 minutes |
+| `GET /api/calendar/feed/[token]` | Per IP | 300 | 1 hour |
+| `GET /api/calendar/feed/[token]` | Per IP + token (prefix) | 120 | 15 minutes |
+| `GET /api/calendar/feed/link` | Per IP (probe, all requests) | 180 | 1 hour |
+| `GET /api/calendar/feed/link` | Per user (after auth) | 45 | 1 hour |
+| `GET /api/calendar/feed/link` | Per IP (after auth) | 120 | 1 hour |
 
 ### Additional hardening (quote POST)
 
@@ -99,6 +106,8 @@ Create a Redis database in the [Upstash console](https://console.upstash.com/), 
 | `app/api/public/quote-request/route.ts` | Body size (if `Content-Length` present) → parse/validate → `assertPublicQuoteRequestRateLimits` → business rules → insert. |
 | `app/api/analytics/track-view/route.ts` | Slug validation → `assertPublicTrackViewRateLimits` → DB update. |
 | `app/api/public/profile/[slug]/route.ts` | `assertPublicProfileGetRateLimits` → Supabase reads. |
+| `app/api/calendar/feed/[token]/route.ts` | `assertCalendarFeedIcsRateLimits` → verify token → DB → ICS. |
+| `app/api/calendar/feed/link/route.ts` | `assertCalendarFeedLinkProbeRateLimits` → Supabase auth → `assertCalendarFeedLinkRateLimits` → JSON. |
 
 ---
 

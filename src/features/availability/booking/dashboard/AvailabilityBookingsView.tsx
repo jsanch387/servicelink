@@ -2,6 +2,11 @@
 
 import { Button } from '@/components/shared';
 import { getBusinessBookPath } from '@/constants/routes';
+import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
+import {
+  SyncBookingsConfirmModal,
+  SyncBookingsCtaCard,
+} from '@/features/calendar-sync';
 import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useMemo, useState } from 'react';
@@ -12,7 +17,6 @@ import { BookingsStatusFilter } from './BookingsStatusFilter';
 import { BookingsViewModeToggle } from './BookingsViewModeToggle';
 import { DayPlannerView } from './DayPlannerView';
 import { localDateKey } from './dayPlannerUtils';
-import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
 import { useAvailabilityBookings } from './hooks/useAvailabilityBookings';
 import type { AvailabilityBookingDisplay } from './types';
 
@@ -124,6 +128,7 @@ export function AvailabilityBookingsView({
     useState<AvailabilityBookingDisplay | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
 
   const trimmedSlug = businessSlug?.trim() ?? '';
   const newAppointmentHref = trimmedSlug
@@ -211,24 +216,124 @@ export function AvailabilityBookingsView({
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white w-full overflow-x-hidden">
-      <header className="sticky top-0 z-10 bg-[#0f0f0f]/80 backdrop-blur-xl border-b border-white/[0.05] px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-3 sm:pb-4 w-full">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0 text-left">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              Bookings
-            </h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              Manage your appointments
-            </p>
+    <main className="relative flex min-h-screen flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-36">
+        <header className="sticky top-0 z-10 w-full border-b border-white/[0.05] bg-[#0f0f0f]/80 px-3 pt-4 pb-3 backdrop-blur-xl sm:px-4 sm:pt-6 sm:pb-4 md:px-6 md:pt-8 lg:px-8">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 text-left">
+              <h1 className="text-xl font-black tracking-tight sm:text-2xl">
+                Bookings
+              </h1>
+              <p className="mt-0.5 text-sm text-gray-500">
+                Manage your appointments
+              </p>
+            </div>
+            <SyncBookingsCtaCard
+              variant="header"
+              onSyncClick={() => setSyncCalendarModalOpen(true)}
+            />
           </div>
+        </header>
+
+        <div className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4 sm:py-5 md:px-6 lg:max-w-3xl lg:px-8 lg:py-6">
+          {(error || updateError) && (
+            <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
+              {error ?? updateError}
+            </div>
+          )}
+          {showFreeBookingsTracker && (
+            <FreeBookingsTracker
+              bookingsUsed={freeBookingsUsed}
+              className="mb-4"
+            />
+          )}
+          <div className="mb-4 flex w-full flex-row items-center justify-between gap-2">
+            <BookingsViewModeToggle
+              value={layoutMode}
+              onChange={setLayoutMode}
+              className="flex min-w-0 shrink justify-start"
+            />
+            {layoutMode === 'list' ? (
+              <BookingsStatusFilter
+                value={activeTab}
+                onChange={setActiveTab}
+                className="shrink-0"
+              />
+            ) : null}
+          </div>
+          {isLoading ? (
+            <AvailabilityBookingsViewSkeleton />
+          ) : layoutMode === 'planner' ? (
+            <DayPlannerView
+              dateKey={plannerDateKey}
+              onDateKeyChange={setPlannerDateKey}
+              dayBookings={plannerDayBookings}
+              dayTimeOffBlocks={plannerDayTimeOff}
+              onSelectBooking={booking => {
+                setUpdateError(null);
+                setSelectedBooking(booking);
+              }}
+            />
+          ) : filteredList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.05]">
+                <CalendarIcon className="h-8 w-8 text-gray-600" />
+              </div>
+              <h3 className="font-bold text-gray-400">No bookings</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {activeTab === 'upcoming'
+                  ? 'No upcoming appointments.'
+                  : activeTab === 'past'
+                    ? 'No past appointments.'
+                    : 'No cancelled bookings.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6 sm:space-y-7">
+              {groupedByDay.map(group => (
+                <section
+                  key={group.dateKey}
+                  aria-labelledby={`bookings-day-${group.dateKey}`}
+                >
+                  <h2
+                    id={`bookings-day-${group.dateKey}`}
+                    className="mb-3 text-sm font-bold tracking-tight text-gray-400 sm:text-base"
+                  >
+                    {group.label}
+                  </h2>
+                  <div className="space-y-3">
+                    {group.bookings.map(booking => (
+                      <AvailabilityBookingCard
+                        key={booking.id}
+                        booking={booking}
+                        onClick={() => {
+                          setUpdateError(null);
+                          setSelectedBooking(booking);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-4 backdrop-blur-md sm:px-4 md:px-6 lg:left-64 lg:px-8 safe-area-pb"
+        style={{
+          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="mx-auto w-full max-w-xl lg:max-w-3xl">
           <Button
             href={newAppointmentHref}
             disabled={!newAppointmentHref}
             variant="inverse"
-            size="sm"
+            fullWidth
+            className="font-semibold"
             icon={<PlusIcon className="h-4 w-4" aria-hidden />}
-            className="w-full shrink-0 sm:mt-0.5 sm:w-auto"
             title={
               newAppointmentHref
                 ? undefined
@@ -243,91 +348,7 @@ export function AvailabilityBookingsView({
             New appointment
           </Button>
         </div>
-      </header>
-
-      <main className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-5 lg:py-6 max-w-xl lg:max-w-3xl mx-auto w-full">
-        {(error || updateError) && (
-          <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 text-sm mb-4">
-            {error ?? updateError}
-          </div>
-        )}
-        {showFreeBookingsTracker && (
-          <FreeBookingsTracker
-            bookingsUsed={freeBookingsUsed}
-            className="mb-4"
-          />
-        )}
-        <div className="mb-4 flex w-full flex-row items-center justify-between gap-2">
-          <BookingsViewModeToggle
-            value={layoutMode}
-            onChange={setLayoutMode}
-            className="flex min-w-0 shrink justify-start"
-          />
-          {layoutMode === 'list' ? (
-            <BookingsStatusFilter
-              value={activeTab}
-              onChange={setActiveTab}
-              className="shrink-0"
-            />
-          ) : null}
-        </div>
-        {isLoading ? (
-          <AvailabilityBookingsViewSkeleton />
-        ) : layoutMode === 'planner' ? (
-          <DayPlannerView
-            dateKey={plannerDateKey}
-            onDateKeyChange={setPlannerDateKey}
-            dayBookings={plannerDayBookings}
-            dayTimeOffBlocks={plannerDayTimeOff}
-            onSelectBooking={booking => {
-              setUpdateError(null);
-              setSelectedBooking(booking);
-            }}
-          />
-        ) : filteredList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-white/[0.05] flex items-center justify-center mb-4">
-              <CalendarIcon className="w-8 h-8 text-gray-600" />
-            </div>
-            <h3 className="text-gray-400 font-bold">No bookings</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              {activeTab === 'upcoming'
-                ? 'No upcoming appointments.'
-                : activeTab === 'past'
-                  ? 'No past appointments.'
-                  : 'No cancelled bookings.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6 sm:space-y-7 pb-20 sm:pb-24">
-            {groupedByDay.map(group => (
-              <section
-                key={group.dateKey}
-                aria-labelledby={`bookings-day-${group.dateKey}`}
-              >
-                <h2
-                  id={`bookings-day-${group.dateKey}`}
-                  className="text-gray-400 font-bold text-sm sm:text-base tracking-tight mb-3"
-                >
-                  {group.label}
-                </h2>
-                <div className="space-y-3">
-                  {group.bookings.map(booking => (
-                    <AvailabilityBookingCard
-                      key={booking.id}
-                      booking={booking}
-                      onClick={() => {
-                        setUpdateError(null);
-                        setSelectedBooking(booking);
-                      }}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-      </main>
+      </div>
 
       {selectedBooking && (
         <AvailabilityBookingDetailPanel
@@ -339,6 +360,12 @@ export function AvailabilityBookingsView({
           updateError={updateError}
         />
       )}
-    </div>
+
+      <SyncBookingsConfirmModal
+        isOpen={syncCalendarModalOpen}
+        onClose={() => setSyncCalendarModalOpen(false)}
+        isProSubscriber={!showFreeBookingsTracker}
+      />
+    </main>
   );
 }

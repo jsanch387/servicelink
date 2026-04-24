@@ -77,6 +77,21 @@ const profileIpRl: { current: Ratelimit | null | undefined } = {
 const profileIpSlugRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
+const calendarFeedIcsIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const calendarFeedIcsIpTokenRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const calendarFeedLinkProbeIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const calendarFeedLinkUserRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const calendarFeedLinkIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
 
 async function flushPending(result: { pending?: Promise<unknown> }) {
   try {
@@ -120,6 +135,14 @@ function tooManyRequests(resetMs: number): NextResponse {
 
 function safeSlugSegment(slug: string): string {
   return slug.trim().slice(0, 128) || 'invalid';
+}
+
+function safeFeedTokenSegment(token: string): string {
+  return token.trim().slice(0, 128) || 'invalid';
+}
+
+function safeUserIdSegment(userId: string): string {
+  return userId.trim().slice(0, 128) || 'invalid';
 }
 
 /** POST /api/public/quote-request — strict (bots, spam to one business). */
@@ -194,6 +217,87 @@ export async function assertPublicProfileGetRateLimits(
     '15 m'
   );
   const r2 = await consume(slugLimiter, `ip:${ip}:slug:${s}`, 150, MS_15M);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+/**
+ * GET /api/calendar/feed/[token] — public ICS; calendar apps poll on their own schedule.
+ * Per IP + per (IP + token) to cap scraping and hammering one feed URL.
+ */
+export async function assertCalendarFeedIcsRateLimits(
+  request: NextRequest,
+  feedToken: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const t = safeFeedTokenSegment(feedToken);
+
+  const ipLimiter = createLimiter(
+    calendarFeedIcsIpRl,
+    'public_api:cal_feed_ics:ip',
+    300,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 300, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const comboLimiter = createLimiter(
+    calendarFeedIcsIpTokenRl,
+    'public_api:cal_feed_ics:iptoken',
+    120,
+    '15 m'
+  );
+  const r2 = await consume(comboLimiter, `ip:${ip}:t:${t}`, 120, MS_15M);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+/**
+ * GET /api/calendar/feed/link — caps anonymous traffic before Supabase auth (shared NAT caveat).
+ */
+export async function assertCalendarFeedLinkProbeRateLimits(
+  request: NextRequest
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const probeLimiter = createLimiter(
+    calendarFeedLinkProbeIpRl,
+    'public_api:cal_feed_link:probe_ip',
+    180,
+    '1 h'
+  );
+  const r = await consume(probeLimiter, `ip:${ip}`, 180, MS_HOUR);
+  if (!r.ok) return tooManyRequests(r.reset);
+  return null;
+}
+
+/**
+ * GET /api/calendar/feed/link — after session is valid; limits token regeneration / DB reads.
+ */
+export async function assertCalendarFeedLinkRateLimits(
+  request: NextRequest,
+  userId: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const uid = safeUserIdSegment(userId);
+
+  const userLimiter = createLimiter(
+    calendarFeedLinkUserRl,
+    'public_api:cal_feed_link:user',
+    45,
+    '1 h'
+  );
+  const r1 = await consume(userLimiter, `user:${uid}`, 45, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const ipLimiter = createLimiter(
+    calendarFeedLinkIpRl,
+    'public_api:cal_feed_link:ip',
+    120,
+    '1 h'
+  );
+  const r2 = await consume(ipLimiter, `ip:${ip}`, 120, MS_HOUR);
   if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;

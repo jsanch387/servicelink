@@ -88,6 +88,10 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Public: fetch booking payment summary after successful checkout return. */
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
+  /** Public: subscribed ICS feed for a business (path includes signed token). */
+  CALENDAR_FEED: (token: string) => `/api/calendar/feed/${token}`,
+  /** Owner session: JSON with `httpsUrl` + `webcalUrl` for the ICS feed. */
+  CALENDAR_FEED_LINK: '/api/calendar/feed/link',
   /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */
   QUOTE_SEND_EXISTING: (quoteId: string) =>
     `/api/quotes/${encodeURIComponent(quoteId.trim())}/send`,
