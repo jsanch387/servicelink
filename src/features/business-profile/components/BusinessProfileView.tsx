@@ -142,6 +142,45 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
               barClass: 'from-red-500 to-red-600',
               textClass: 'text-red-300',
             };
+  const profileCompletionTracker = !isPublic ? (
+    <div className="px-4 pt-4 pb-2 sm:px-8 sm:pt-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm sm:text-base font-medium text-gray-200">
+          Profile completion
+        </h2>
+        <span
+          className={`shrink-0 text-xs sm:text-sm font-medium tabular-nums ${completionTone.textClass}`}
+        >
+          {profileCompletionPercent}%
+        </span>
+      </div>
+
+      <div className="mt-2 h-2 rounded-full bg-white/10 ring-1 ring-white/10 overflow-hidden">
+        <div
+          className={`relative h-full rounded-full bg-gradient-to-r transition-all duration-500 ${completionTone.barClass}`}
+          style={{
+            width: `${profileCompletionPercent}%`,
+          }}
+        >
+          <span
+            className="pointer-events-none absolute inset-0 opacity-40"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0))',
+            }}
+          />
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowProfileChecklistModal(true)}
+        className="mt-2 text-xs sm:text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+      >
+        View checklist
+      </button>
+    </div>
+  ) : null;
 
   // Debug logging for public profiles
   useEffect(() => {
@@ -397,45 +436,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
           {editMode === 'view' ? (
             // Preview Mode - Show customer view
             <>
-              {!isPublic && (
-                <div className="px-4 pt-4 pb-2 sm:px-8 sm:pt-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-sm sm:text-base font-medium text-gray-200">
-                      Profile completion
-                    </h2>
-                    <span
-                      className={`shrink-0 text-xs sm:text-sm font-medium tabular-nums ${completionTone.textClass}`}
-                    >
-                      {profileCompletionPercent}%
-                    </span>
-                  </div>
-
-                  <div className="mt-2 h-2 rounded-full bg-white/10 ring-1 ring-white/10 overflow-hidden">
-                    <div
-                      className={`relative h-full rounded-full bg-gradient-to-r transition-all duration-500 ${completionTone.barClass}`}
-                      style={{
-                        width: `${profileCompletionPercent}%`,
-                      }}
-                    >
-                      <span
-                        className="pointer-events-none absolute inset-0 opacity-40"
-                        style={{
-                          background:
-                            'linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0))',
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowProfileChecklistModal(true)}
-                    className="mt-2 text-xs sm:text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    View checklist
-                  </button>
-                </div>
-              )}
+              {profileCompletionTracker}
               <ProfileHeader
                 businessProfile={businessProfile}
                 editMode={editMode}
@@ -579,6 +580,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
           ) : (
             // Edit Mode - Show unified edit form
             <div>
+              {profileCompletionTracker}
               <EditBusinessProfile
                 businessProfile={businessProfile}
                 onSave={handleSave}

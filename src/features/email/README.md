@@ -17,6 +17,12 @@ email/
 │   ├── types.ts
 │   ├── bookingNotificationTemplate.ts
 │   └── sendBookingNotificationEmail.ts
+├── subscription-payment-failed/ (billing failure reminder)
+│   ├── types.ts
+│   └── sendSubscriptionPaymentFailedEmail.ts
+├── trial-ending-soon/        (trial reminder before first charge)
+│   ├── types.ts
+│   └── sendTrialEndingSoonEmail.ts
 └── quote-sent-to-customer/   (owner sent quote → customer email)
     ├── README.md
     ├── types.ts
@@ -27,6 +33,39 @@ email/
 - **`services/`** – shared Resend client and URL/from helpers used by all email types.
 - **`utils/`** – shared helpers (e.g. escaping for HTML).
 - **`booking-notification/`** – one subfolder per “email use case”; each can have its own README, types, template, and send function.
+- **`subscription-payment-failed/`** – sends a payment update reminder when account first transitions into a delinquent/ended billing state.
+- **`trial-ending-soon/`** – sends a pre-charge reminder (triggered from Stripe trial ending webhook flow).
+
+## Billing/trial email flow
+
+These emails are orchestrated from `src/app/api/stripe/webhook/route.ts`:
+
+- **`customer.subscription.trial_will_end`**
+  - Triggers `sendTrialEndingSoonEmail(to, { trialEndsAtIso })`.
+  - Current implementation uses Stripe event timing (simple/reliable baseline).
+  - Email CTA goes to Dashboard Settings (`/dashboard/settings`) so users can manage billing details.
+
+- **`invoice.payment_failed`**
+  - Triggers `sendSubscriptionPaymentFailedEmail(to)` **only on first transition**
+    into a delinquent/ended state.
+  - Anti-spam rule: do not send on every retry attempt if user is already
+    `past_due` / `unpaid` / `canceled` / `incomplete` / `incomplete_expired`.
+
+### Why this design
+
+- Keeps reminder timing reliable with low complexity.
+- Prevents repeated "payment failed" email spam during Stripe retry cycles.
+- Maintains a single source of truth in webhook handlers for billing lifecycle messaging.
+
+## Stripe events required in production
+
+To keep billing/trial emails and access gating working, configure these events on your prod webhook endpoint:
+
+- `checkout.session.completed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `customer.subscription.trial_will_end`
+- `invoice.payment_failed`
 
 ## Adding a new email type
 

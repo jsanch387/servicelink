@@ -1,5 +1,6 @@
 import { MetaCompleteRegistrationTracker } from '@/features/analytics';
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -13,13 +14,31 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let isOnboardingCompleted = false;
+  if (user?.id) {
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('onboarding_status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    isOnboardingCompleted =
+      (profileRow as { onboarding_status?: string | null } | null)
+        ?.onboarding_status === 'completed';
+  }
+
   return (
-    <DashboardWrapper>
+    <DashboardWrapper isOnboardingCompleted={isOnboardingCompleted}>
       <MetaCompleteRegistrationTracker />
       {children}
     </DashboardWrapper>

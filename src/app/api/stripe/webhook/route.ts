@@ -27,6 +27,7 @@ import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availabilit
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   sendSubscriptionPaymentFailedEmail,
+  sendTrialEndingSoonEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
 import { completeOnboardingV2 } from '@/features/onboarding-v2/server/completeOnboarding';
@@ -39,6 +40,14 @@ import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+
+const DELINQUENT_OR_ENDED_STATUSES = new Set([
+  'past_due',
+  'unpaid',
+  'canceled',
+  'incomplete',
+  'incomplete_expired',
+]);
 
 function logBookingWebhook(message: string, payload?: Record<string, unknown>) {
   if (
@@ -881,6 +890,20 @@ export async function POST(request: NextRequest) {
         : subscriptionRef && typeof subscriptionRef === 'object'
           ? (subscriptionRef as Stripe.Subscription).id
           : null;
+    let priorSubscriptionStatus: string | null = null;
+    if (subscriptionId) {
+      // Capture previous DB status before sync so we only send one failure email
+      // when the account first enters a delinquent state.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: priorProfile } = await (supabase as any)
+        .from('profiles')
+        .select('subscription_status')
+        .eq('stripe_subscription_id', subscriptionId)
+        .maybeSingle();
+      priorSubscriptionStatus =
+        (priorProfile as { subscription_status?: string | null } | null)
+          ?.subscription_status ?? null;
+    }
     if (subscriptionId) {
       try {
         const stripe = getStripePlatform();
@@ -914,21 +937,90 @@ export async function POST(request: NextRequest) {
     }
     const customerEmail = (invoice as { customer_email?: string | null })
       .customer_email;
+    const priorStatusNormalized = priorSubscriptionStatus?.trim() || '';
+    const shouldSendFailedEmail =
+      !priorStatusNormalized ||
+      !DELINQUENT_OR_ENDED_STATUSES.has(priorStatusNormalized);
     if (customerEmail?.trim()) {
-      const emailResult = await sendSubscriptionPaymentFailedEmail(
-        customerEmail.trim()
-      );
-      if (!emailResult.sent) {
-        console.error(
-          'Stripe webhook: sendSubscriptionPaymentFailedEmail failed',
-          emailResult.error
+      if (shouldSendFailedEmail) {
+        const emailResult = await sendSubscriptionPaymentFailedEmail(
+          customerEmail.trim()
         );
-        // Don't return 500 – we've recorded idempotency; Stripe would retry and we'd skip. Log is enough.
+        if (!emailResult.sent) {
+          console.error(
+            'Stripe webhook: sendSubscriptionPaymentFailedEmail failed',
+            emailResult.error
+          );
+          // Don't return 500 – we've recorded idempotency; Stripe would retry and we'd skip. Log is enough.
+        }
       }
     } else {
       console.warn(
         '[Stripe webhook] invoice.payment_failed no customer_email on invoice',
         { eventId: event.id }
+      );
+    }
+  }
+
+  // Trial reminder before the first charge (Stripe emits this before trial end).
+  if (event.type === 'customer.subscription.trial_will_end') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+
+    const subscription = event.data.object as Stripe.Subscription;
+    const trialEndIso =
+      typeof subscription.trial_end === 'number'
+        ? new Date(subscription.trial_end * 1000).toISOString()
+        : null;
+    let customerEmail: string | null = null;
+    try {
+      const stripe = getStripePlatform();
+      const customerRef = subscription.customer;
+      const customerId =
+        typeof customerRef === 'string' ? customerRef : customerRef?.id;
+      if (customerId) {
+        const customer = await stripe.customers.retrieve(customerId);
+        if (!('deleted' in customer) || customer.deleted !== true) {
+          customerEmail = customer.email ?? null;
+        }
+      }
+    } catch (err) {
+      console.error(
+        '[Stripe webhook] trial_will_end: failed to resolve customer email',
+        err
+      );
+    }
+
+    if (customerEmail?.trim()) {
+      const emailResult = await sendTrialEndingSoonEmail(customerEmail.trim(), {
+        trialEndsAtIso: trialEndIso,
+      });
+      if (!emailResult.sent) {
+        console.error(
+          '[Stripe webhook] trial_will_end: sendTrialEndingSoonEmail failed',
+          emailResult.error
+        );
+      }
+    } else {
+      console.warn(
+        '[Stripe webhook] trial_will_end: no customer email resolved',
+        { eventId: event.id, subscriptionId: subscription.id }
       );
     }
   }

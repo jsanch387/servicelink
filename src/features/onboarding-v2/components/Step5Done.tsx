@@ -76,7 +76,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
 
         <div className="mb-6 space-y-2.5 text-sm text-gray-300">
           <p>Includes unlimited bookings and in-app payments.</p>
-          <p>Your link goes live right after checkout.</p>
         </div>
         <Button
           onClick={handleStartTrial}

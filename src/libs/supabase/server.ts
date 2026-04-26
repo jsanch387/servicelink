@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import type { Database } from './client';
 
 // Server-side Supabase client (for use in server components and route handlers)
@@ -17,9 +17,14 @@ export const createSupabaseServerClient =
             return cookieStore.getAll();
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              try {
+                cookieStore.set(name, value, options);
+              } catch {
+                // In Server Components, Next.js can disallow cookie writes.
+                // Route handlers and middleware still handle writable cookie flows.
+              }
+            });
           },
         },
       }
