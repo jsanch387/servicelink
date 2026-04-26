@@ -55,8 +55,12 @@ const defaultProps = {
 describe('BookingPaymentSuccess', () => {
   it('shows deposit copy and ServiceLink payment amounts', () => {
     render(<BookingPaymentSuccess {...defaultProps} />);
-    expect(screen.getByRole('heading', { name: /Deposit received/i })).toBeTruthy();
-    expect(screen.getByText(/deposit was received through ServiceLink/i)).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: /Deposit received/i })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/deposit was received through ServiceLink/i)
+    ).toBeTruthy();
     expect(screen.getByText(/Paid now/i)).toBeTruthy();
     expect(screen.getAllByText(/\$50\.00/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Remaining/i)).toBeTruthy();

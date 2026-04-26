@@ -133,7 +133,9 @@ export async function middleware(request: NextRequest) {
 
     if (!onboardingComplete) {
       if (pathname !== ROUTES.DASHBOARD.MAIN) {
-        return NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url));
+        return NextResponse.redirect(
+          new URL(ROUTES.DASHBOARD.MAIN, request.url)
+        );
       }
       return response;
     }

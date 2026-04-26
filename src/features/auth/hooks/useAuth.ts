@@ -16,7 +16,9 @@ export const useAuth = () => {
   const signIn = useAuthStore(state => state.signIn);
   const signUp = useAuthStore(state => state.signUp);
   const signInWithGoogle = useAuthStore(state => state.signInWithGoogle);
-  const requestPasswordReset = useAuthStore(state => state.requestPasswordReset);
+  const requestPasswordReset = useAuthStore(
+    state => state.requestPasswordReset
+  );
   const signOut = useAuthStore(state => state.signOut);
   const updateUser = useAuthStore(state => state.updateUser);
   const resetAuth = useAuthStore(state => state.resetAuth);

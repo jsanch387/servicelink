@@ -80,12 +80,14 @@ export async function GET(request: NextRequest) {
     }
     if (!row || !row.booking) {
       // Fallback: webhook may still be processing right after Stripe redirect.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: checkoutRow, error: checkoutLookupError } = await (supabase as any)
-        .from('booking_checkout_sessions')
-        .select('status, booking_id')
-        .eq('stripe_checkout_session_id', sessionId)
-        .maybeSingle();
+
+      const { data: checkoutRow, error: checkoutLookupError } =
+        await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from('booking_checkout_sessions')
+          .select('status, booking_id')
+          .eq('stripe_checkout_session_id', sessionId)
+          .maybeSingle();
 
       if (checkoutLookupError) {
         console.error(
@@ -98,9 +100,8 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const checkoutStatus = (
-        checkoutRow as { status?: string | null } | null
-      )?.status;
+      const checkoutStatus = (checkoutRow as { status?: string | null } | null)
+        ?.status;
       if (checkoutStatus === 'created' || checkoutStatus === 'completed') {
         return NextResponse.json(
           { success: false, pending: true, error: 'Checkout is processing.' },

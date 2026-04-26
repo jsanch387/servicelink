@@ -5,12 +5,7 @@
 
 'use client';
 
-import {
-  Button,
-  GlassCard,
-  Switch,
-  WarningCallout,
-} from '@/components/shared';
+import { Button, GlassCard, Switch, WarningCallout } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAnalytics } from '@/features/analytics';
 import {

@@ -117,7 +117,9 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
                     disabled={checkoutLoading}
                     loading={checkoutLoading}
                   >
-                    {isBillingLocked ? 'Reactivate Pro and go live' : 'Upgrade to Pro'}
+                    {isBillingLocked
+                      ? 'Reactivate Pro and go live'
+                      : 'Upgrade to Pro'}
                   </Button>
                 )}
               </div>
