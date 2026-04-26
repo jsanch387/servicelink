@@ -21,12 +21,13 @@ export default async function DashboardUpgradePage() {
   const { data: profileRow } = await supabase
     .from('profiles')
     .select(
-      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
     )
     .eq('user_id', user.id)
     .maybeSingle();
 
   const row = profileRow as {
+    onboarding_status?: string | null;
     subscription_tier?: string | null;
     subscription_current_period_end?: string | null;
     subscription_status?: string | null;
@@ -41,6 +42,25 @@ export default async function DashboardUpgradePage() {
     row?.stripe_subscription_id,
     row?.stripe_customer_id
   );
+  const onboardingComplete = row?.onboarding_status === 'completed';
+  const hasStripeBillingHistory = Boolean(
+    row?.stripe_customer_id?.trim() ||
+      row?.stripe_subscription_id?.trim() ||
+      row?.subscription_status?.trim()
+  );
+  const isBillingLocked =
+    onboardingComplete && hasStripeBillingHistory && !isProSubscriber;
 
-  return <UpgradeContent isProSubscriber={isProSubscriber} />;
+  // Keep upgrade as a billing-lock/reactivation surface only.
+  // Legacy free users (grandfathered) should not browse this page.
+  if (!isBillingLocked && !isProSubscriber) {
+    redirect('/dashboard');
+  }
+
+  return (
+    <UpgradeContent
+      isProSubscriber={isProSubscriber}
+      isBillingLocked={isBillingLocked}
+    />
+  );
 }

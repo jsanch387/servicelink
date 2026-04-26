@@ -45,7 +45,7 @@ export default async function BusinessProfilePage({
   const { data: userProfileData, error: profileError } = await supabase
     .from('profiles')
     .select(
-      'onboarding_status, user_id, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      'onboarding_status, user_id, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, profile_welcome_modal_seen'
     )
     .eq('user_id', user.id)
     .single();
@@ -58,6 +58,7 @@ export default async function BusinessProfilePage({
     subscription_status?: string | null;
     stripe_subscription_id?: string | null;
     stripe_customer_id?: string | null;
+    profile_welcome_modal_seen?: boolean | null;
   } | null;
 
   if (profileError || !userProfile) {
@@ -128,6 +129,10 @@ export default async function BusinessProfilePage({
   const showVerifiedBadge = hasProAccess;
   const showRequestQuoteCta =
     hasProAccess && businessProfile.accept_quote_req === true;
+  const showProfileWelcomeModalOnLoad =
+    onboardingComplete &&
+    hasProAccess &&
+    userProfile?.profile_welcome_modal_seen !== true;
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -138,6 +143,7 @@ export default async function BusinessProfilePage({
         isFreeTier={isFreeTier}
         showVerifiedBadge={showVerifiedBadge}
         onboardingCompleteFromUrl={onboardingComplete}
+        showProfileWelcomeModalOnLoad={showProfileWelcomeModalOnLoad}
         showRequestQuoteCta={showRequestQuoteCta}
       />
     </div>

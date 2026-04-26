@@ -25,16 +25,20 @@ interface PlanSectionProps {
   subscriptionCurrentPeriodEnd?: string | null;
   /** From `profiles.subscription_cancel_at_period_end` (Stripe cancel at period end). */
   subscriptionCancelAtPeriodEnd?: boolean;
+  /** From `profiles.subscription_status` (e.g. trialing, active). */
+  subscriptionStatus?: string | null;
 }
 
 export const PlanSection: React.FC<PlanSectionProps> = ({
   planId = 'free',
   subscriptionCurrentPeriodEnd = null,
   subscriptionCancelAtPeriodEnd = false,
+  subscriptionStatus = null,
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
   const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
+  const isTrialing = subscriptionStatus === 'trialing';
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageSubscription = async () => {
@@ -96,7 +100,14 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
 
       {isPro && renewalDateLabel ? (
         <p className="mt-2 text-left text-xs text-zinc-500 leading-relaxed">
-          {subscriptionCancelAtPeriodEnd ? (
+          {isTrialing ? (
+            <>
+              Trial ends on{' '}
+              <span className="text-zinc-400 tabular-nums">
+                {renewalDateLabel}
+              </span>
+            </>
+          ) : subscriptionCancelAtPeriodEnd ? (
             <>
               Pro access until{' '}
               <span className="text-zinc-400 tabular-nums">

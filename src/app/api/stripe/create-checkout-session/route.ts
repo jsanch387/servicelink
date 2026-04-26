@@ -38,6 +38,15 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = getAppBaseUrl(request);
     const stripe = getStripePlatform();
+    const body = await request.json().catch(() => ({}));
+    const fromOnboarding =
+      body &&
+      typeof body === 'object' &&
+      (body as { source?: unknown }).source === 'onboarding_trial_bridge';
+    const successPath = fromOnboarding
+      ? '/dashboard/business-profile?onboarding=complete'
+      : '/dashboard/settings?checkout=success';
+    const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -47,11 +56,15 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/dashboard/settings?checkout=success`,
-      cancel_url: `${baseUrl}/dashboard/upgrade`,
+      ...(fromOnboarding
+        ? { subscription_data: { trial_period_days: 7 } }
+        : {}),
+      success_url: `${baseUrl}${successPath}`,
+      cancel_url: `${baseUrl}${cancelPath}`,
       customer_email: user.email ?? undefined,
       metadata: {
         userId: user.id,
+        source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
       },
     });
 

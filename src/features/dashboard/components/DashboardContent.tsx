@@ -7,7 +7,6 @@
 
 import {
   Button,
-  CrownIcon,
   GlassCard,
   Switch,
   WarningCallout,
@@ -94,19 +93,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               ? 'Manage your link, views, and bookings in one place.'
               : 'Create your public link to start sharing with customers.'}
           </p>
-          {dashboardData.isFreeTier && (
-            <div className="mt-3">
-              <Button
-                href={ROUTES.DASHBOARD.UPGRADE}
-                variant="ghost"
-                size="xs"
-                className="border border-white/10 hover:border-white/20 text-xs font-medium !text-amber-300 hover:!text-amber-200"
-                icon={<CrownIcon className="h-3.5 w-3.5" />}
-              >
-                Try Pro
-              </Button>
-            </div>
-          )}
         </div>
 
         <div className="space-y-6 sm:space-y-8 w-full min-w-0">

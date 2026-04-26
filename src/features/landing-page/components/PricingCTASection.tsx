@@ -17,19 +17,19 @@ export const PricingCTASection: React.FC = () => {
         ></div>
 
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 sm:mb-6 md:mb-8 tracking-tighter uppercase leading-none">
-          Claim Your Link <br />
+          Run Your Business <br />
           <span
             className="bg-clip-text text-transparent"
             style={{
               backgroundImage: 'linear-gradient(to right, #fb923c, #f97316)',
             }}
           >
-            Before It&apos;s Gone.
+            From One Link.
           </span>
         </h2>
         <p className="text-gray-400 mb-6 sm:mb-8 md:mb-12 text-base sm:text-lg font-medium px-2">
-          Join 2,000+ service businesses using Service Link to look professional
-          and book more jobs. It takes less than 2 minutes to set up.
+          Let customers book and schedule from one page, then manage your
+          appointments, quotes, and customers in one app.
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:gap-5 md:gap-6">
@@ -50,7 +50,7 @@ export const PricingCTASection: React.FC = () => {
               variant="primary"
               className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-black"
             >
-              Check
+              Start
             </Button>
           </div>
 
@@ -60,7 +60,7 @@ export const PricingCTASection: React.FC = () => {
             variant="primary"
             className="w-full max-w-sm py-3 sm:py-4 md:py-5 bg-white text-black rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl hover:scale-105 transition-all shadow-2xl"
           >
-            Create My Profile
+            Get Started
           </Button>
 
           {/* Trust Badge */}
@@ -77,7 +77,7 @@ export const PricingCTASection: React.FC = () => {
                 clipRule="evenodd"
               />
             </svg>
-            No Credit Card Required
+            7-Day Free Trial
           </div>
         </div>
       </div>

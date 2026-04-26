@@ -2,22 +2,21 @@
 
 import { Button } from '@/components/shared';
 import React, { useState } from 'react';
-import {
-  MARKETING_FREE_PLAN_FEATURES,
-  MARKETING_PRO_PLAN_FEATURES,
-} from '../marketingPlanFeatures';
+import { PUBLIC_PRICING_PRO_PLAN_FEATURES } from '../marketingPlanFeatures';
 import { PLANS } from '../types';
 import { PricingPlanCard } from './PricingPlanCard';
 
 export interface UpgradeContentProps {
   /** When true, user already has active Pro — show manage billing instead of checkout. */
   isProSubscriber?: boolean;
+  /** When true, user is locked out after trial/subscription and must reactivate. */
+  isBillingLocked?: boolean;
 }
 
 export const UpgradeContent: React.FC<UpgradeContentProps> = ({
   isProSubscriber = false,
+  isBillingLocked = false,
 }) => {
-  const free = PLANS.free;
   const pro = PLANS.pro;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -66,43 +65,31 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
       <div className="max-w-5xl mx-auto w-full min-w-0">
-        <div className="mb-8 max-w-2xl">
+        <div className="mb-8 max-w-3xl">
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            {isProSubscriber ? 'Your plan' : 'Upgrade your plan'}
-          </h1>
-          <p className="text-gray-400 text-sm sm:text-base mt-1">
             {isProSubscriber
-              ? 'You are on Pro. Manage billing below or review how Free compares.'
-              : 'Compare Free and Pro, then upgrade to Pro when you are ready.'}
+              ? 'Your plan'
+              : isBillingLocked
+                ? 'Your trial has ended'
+                : 'Upgrade your plan'}
+          </h1>
+          <p className="text-gray-400 text-sm sm:text-base mt-2">
+            {isProSubscriber
+              ? 'You are on Pro. Manage your billing below.'
+              : isBillingLocked
+                ? 'Your ServiceLink page is no longer live. Upgrade to Pro to restore access and continue getting bookings.'
+                : 'Choose Pro to unlock payments, unlimited bookings, and full business tools.'}
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-          <PricingPlanCard
-            variant="free"
-            title={free.name}
-            description={free.description}
-            price={free.price}
-            features={MARKETING_FREE_PLAN_FEATURES}
-            emphasizeFeatureHighlights={false}
-            footer={
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                disabled
-              >
-                {isProSubscriber ? 'Included with Pro' : 'Current plan'}
-              </Button>
-            }
-          />
+        <div className="max-w-xl">
           <PricingPlanCard
             variant="pro"
             title={pro.name}
             description={pro.description}
             price={pro.price}
-            features={MARKETING_PRO_PLAN_FEATURES}
-            badgeLabel="Most popular"
+            features={PUBLIC_PRICING_PRO_PLAN_FEATURES}
+            badgeLabel={isBillingLocked ? 'Reactivate access' : 'Pro plan'}
             footer={
               <div className="space-y-4">
                 {error ? (
@@ -130,7 +117,7 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
                     disabled={checkoutLoading}
                     loading={checkoutLoading}
                   >
-                    Upgrade to Pro
+                    {isBillingLocked ? 'Reactivate Pro and go live' : 'Upgrade to Pro'}
                   </Button>
                 )}
               </div>

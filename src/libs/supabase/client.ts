@@ -33,6 +33,7 @@ export type Database = {
           stripe_subscription_id: string | null;
           subscription_current_period_end: string | null;
           subscription_cancel_at_period_end: boolean;
+          profile_welcome_modal_seen: boolean;
         };
         Insert: {
           user_id: string;
@@ -47,6 +48,7 @@ export type Database = {
           stripe_subscription_id?: string | null;
           subscription_current_period_end?: string | null;
           subscription_cancel_at_period_end?: boolean;
+          profile_welcome_modal_seen?: boolean;
         };
         Update: {
           user_id?: string;
@@ -61,6 +63,7 @@ export type Database = {
           stripe_subscription_id?: string | null;
           subscription_current_period_end?: string | null;
           subscription_cancel_at_period_end?: boolean;
+          profile_welcome_modal_seen?: boolean;
         };
       };
       business_profiles: {

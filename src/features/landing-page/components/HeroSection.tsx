@@ -2,15 +2,13 @@
 
 import { ROUTES } from '@/constants/routes';
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '../../../components/shared/Button';
 
 export const HeroSection: React.FC = () => {
-  const [slugInput, setSlugInput] = useState('');
-
   return (
     <section
-      className="relative pt-32 sm:pt-40 pb-16 sm:pb-20 px-4 sm:px-6"
+      className="relative pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6"
       aria-labelledby="hero-heading"
     >
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
@@ -18,71 +16,31 @@ export const HeroSection: React.FC = () => {
         <div className="text-left">
           <h1
             id="hero-heading"
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 md:mb-8 tracking-tight leading-[1.05] text-white uppercase"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4 sm:mb-6 tracking-tight leading-[1.08] text-white uppercase"
           >
-            Your business, ready to book.
+            MORE BOOKINGS. <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+              LESS BACK-AND-FORTH.
+            </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-gray-400 mb-6 sm:mb-8 md:mb-10 leading-relaxed font-medium max-w-xl">
-            Create a clean booking link where customers can see your services
-            and book instantly.
+          <p className="text-base sm:text-lg text-gray-400 mb-6 sm:mb-8 md:mb-10 leading-relaxed font-medium max-w-xl">
+            Give customers one clean booking link to view services, request
+            quotes, and pay online. Run bookings, deposits, and customer
+            follow-up from one dashboard.
           </p>
 
-          {/* Slug Input in Hero */}
+          {/* Hero CTA Buttons */}
           <div className="mb-6 sm:mb-8 md:mb-10 max-w-lg">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">
-              Claim your custom link
-            </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center bg-white/5 backdrop-blur-xl p-2 rounded-2xl border border-white/10 shadow-2xl gap-2">
-              <span className="pl-4 text-gray-500 font-bold hidden sm:inline">
-                myservicelink.app/
-              </span>
-              <input
-                type="text"
-                placeholder="yourbusiness"
-                value={slugInput}
-                onChange={e => setSlugInput(e.target.value)}
-                className="bg-transparent border-none outline-none text-white font-bold w-full px-2 sm:px-2 py-3 text-sm sm:text-base"
-              />
+            <div className="flex">
               <Button
                 href={ROUTES.AUTH.SIGNUP}
-                variant="secondary"
-                className="px-6 sm:px-8 py-3 rounded-lg font-black whitespace-nowrap text-sm w-full sm:w-auto !border-0 !bg-orange-500 hover:!bg-orange-600 !text-white focus:!ring-orange-500"
+                variant="inverse"
+                className="px-8 sm:px-10 py-3.5 sm:py-4 rounded-xl font-black whitespace-nowrap text-base sm:text-lg w-full sm:w-auto"
               >
-                Get My Link
+                Get Started
               </Button>
             </div>
-          </div>
-
-          <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500 font-bold uppercase tracking-tighter">
-            <span className="flex items-center gap-2">
-              <svg
-                className="w-4 h-4 text-green-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              No code required
-            </span>
-            <span className="flex items-center gap-2">
-              <svg
-                className="w-4 h-4 text-gray-400"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              2-Min Setup
-            </span>
           </div>
         </div>
 

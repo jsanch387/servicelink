@@ -256,6 +256,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             subscriptionCancelAtPeriodEnd={
               settingsData.subscriptionCancelAtPeriodEnd === true
             }
+            subscriptionStatus={subscriptionStatus}
           />
 
           {/* Your link */}

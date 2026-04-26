@@ -29,6 +29,7 @@ import {
   sendSubscriptionPaymentFailedEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { completeOnboardingV2 } from '@/features/onboarding-v2/server/completeOnboarding';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
@@ -666,8 +667,19 @@ export async function POST(request: NextRequest) {
         : (session.subscription?.id ?? null);
 
     let currentPeriodEnd: string | null = null;
+    let subscriptionStatus: string | null = null;
     if (stripeSubscriptionId) {
       const stripe = getStripePlatform();
+      try {
+        const subscription =
+          await stripe.subscriptions.retrieve(stripeSubscriptionId);
+        subscriptionStatus = subscription.status ?? null;
+      } catch (retrieveErr) {
+        console.warn(
+          '[Stripe webhook] subscriptions.retrieve status fetch failed after checkout',
+          { eventId: event.id, stripeSubscriptionId, retrieveErr }
+        );
+      }
       currentPeriodEnd = await retrieveSubscriptionCurrentPeriodEndIso(
         stripe,
         stripeSubscriptionId
@@ -679,6 +691,7 @@ export async function POST(request: NextRequest) {
       stripeCustomerId,
       stripeSubscriptionId,
       currentPeriodEnd,
+      subscriptionStatus,
     });
 
     if (!result.success) {
@@ -690,6 +703,25 @@ export async function POST(request: NextRequest) {
         { error: 'Profile update failed' },
         { status: 500 }
       );
+    }
+
+    // Onboarding monetization bridge:
+    // only mark onboarding complete after successful checkout event.
+    if (session.metadata?.source === 'onboarding_trial_bridge') {
+      const completeResult = await completeOnboardingV2(
+        supabase,
+        userId.trim()
+      );
+      if (!completeResult.success) {
+        console.error(
+          'Stripe webhook: completeOnboardingV2 failed for onboarding bridge',
+          completeResult.error
+        );
+        return NextResponse.json(
+          { error: 'Onboarding completion failed' },
+          { status: 500 }
+        );
+      }
     }
   }
 
