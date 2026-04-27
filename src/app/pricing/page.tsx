@@ -3,8 +3,8 @@ import { ROUTES } from '@/constants/routes';
 import { Navigation } from '@/features/landing-page/components/Navigation';
 import {
   PLANS,
-  PricingPlanCard,
   PUBLIC_PRICING_PRO_PLAN_FEATURES,
+  PricingPlanCard,
   type ProFeatureItem,
 } from '@/features/pricing';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ export default function PricingPage() {
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold t Startext-white mb-4 tracking-tight text-center">
-          pricing
+          Pricing
         </h1>
         <p className="text-gray-400 text-center mb-12 sm:mb-16 max-w-2xl mx-auto text-sm sm:text-base">
           Grow faster with one simple plan built for service businesses. Start
