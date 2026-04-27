@@ -1,7 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import {
   Geist,
   Geist_Mono,
@@ -12,6 +12,7 @@ import {
   Poppins,
   Space_Grotesk,
 } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const geistSans = Geist({

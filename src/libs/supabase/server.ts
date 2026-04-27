@@ -37,7 +37,9 @@ export const createSupabaseMiddlewareClient = (
   supabaseAnonKey: string,
   cookieOptions: {
     get: (name: string) => string | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     set: (name: string, value: string, options: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     remove: (name: string, options: any) => void;
   }
 ) => {
