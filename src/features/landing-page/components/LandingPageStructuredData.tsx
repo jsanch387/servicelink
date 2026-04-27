@@ -12,7 +12,6 @@ export const LandingPageStructuredData: React.FC = () => {
     url: SITE_URL,
     description:
       'One link for your service business. Share it anywhere—customers see your services and book instantly.',
-    sameAs: [],
   };
 
   const webSiteSchema = {
@@ -24,11 +23,6 @@ export const LandingPageStructuredData: React.FC = () => {
     description:
       'One link for your service business. Share it anywhere—customers see your services and book instantly. Built for detailers, pressure washers, lawn care, and service pros.',
     publisher: { '@id': `${SITE_URL}#organization` },
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: { '@type': 'EntryPoint', url: `${SITE_URL}/signup` },
-      'query-input': 'required name=slug',
-    },
   };
 
   const faqSchema = {

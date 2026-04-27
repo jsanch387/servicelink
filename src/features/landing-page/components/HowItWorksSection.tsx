@@ -1,5 +1,7 @@
+import { ROUTES } from '@/constants/routes';
 import Image from 'next/image';
 import React from 'react';
+import { FramedCtaButton } from '../../../components/shared/FramedCtaButton';
 import { ShareableLinkDisplay } from './ShareableLinkDisplay';
 
 const steps = [
@@ -11,18 +13,18 @@ const steps = [
     imageAlt: '',
   },
   {
-    title: 'Services and Book now.',
+    title: 'List your services.',
     description:
-      'Customers see your services and prices in one place. A clear "Book now" button takes them straight to choosing a time—no back-and-forth.',
+      'Customers can clearly see what you offer and choose the service they need. From there, they move straight into booking on your schedule.',
     image: '/services-landing-mock.png',
     imageAlt: 'Services list with prices and Book now button',
   },
   {
-    title: 'Pick a time and book.',
+    title: 'Handle payments in the app.',
     description:
-      "They pick a date and time from your calendar and confirm. The booking is done in seconds—you get the request and they're on your schedule.",
-    image: '/calendar-landing.png',
-    imageAlt: 'Calendar and time selection when booking a service',
+      'Customers can pay directly in the app, and you can require a deposit to lock in serious bookings.',
+    image: '/payment-landing.png',
+    imageAlt: 'Payment screen with deposit and pay-in-app options',
   },
 ];
 
@@ -34,7 +36,7 @@ export const HowItWorksSection: React.FC = () => {
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
             How it works
           </p>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight uppercase">
             One link. Your page. They book.
           </h2>
         </header>
@@ -54,7 +56,7 @@ export const HowItWorksSection: React.FC = () => {
                     {index + 1}
                   </span>
                 </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white mb-3 sm:mb-4 tracking-tight">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 sm:mb-4 tracking-tight">
                   {step.title}
                 </h3>
                 <p className="text-gray-400 text-base sm:text-lg leading-relaxed">
@@ -94,6 +96,12 @@ export const HowItWorksSection: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-12 sm:mt-14 flex justify-center">
+          <FramedCtaButton href={ROUTES.AUTH.SIGNUP}>
+            Start Booking Smarter
+          </FramedCtaButton>
         </div>
       </div>
     </section>

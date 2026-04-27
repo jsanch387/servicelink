@@ -1,4 +1,5 @@
 import React from 'react';
+import { DetailerFeaturesSection } from './DetailerFeaturesSection';
 import { FAQSection } from './FAQSection';
 import { Footer } from './Footer';
 import { HeroSection } from './HeroSection';
@@ -7,6 +8,7 @@ import { LandingPageStructuredData } from './LandingPageStructuredData';
 import { Navigation } from './Navigation';
 import { ProblemSolutionSection } from './ProblemSolutionSection';
 import { TestimonialsSection } from './TestimonialsSection';
+import { TrustedByStripSection } from './TrustedByStripSection';
 
 export const LandingPage: React.FC = () => {
   return (
@@ -59,8 +61,10 @@ export const LandingPage: React.FC = () => {
         <Navigation />
         <main id="main-content" aria-label="Main content">
           <HeroSection />
-          <TestimonialsSection />
+          <TrustedByStripSection />
+          <DetailerFeaturesSection />
           <HowItWorksSection />
+          <TestimonialsSection />
           <ProblemSolutionSection />
           <FAQSection />
         </main>

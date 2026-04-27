@@ -37,10 +37,12 @@ describe('isProAccess', () => {
     expect(isProAccess('pro', futureEnd, 'past_due', BILLED, CUS)).toBe(false);
     expect(isProAccess('pro', futureEnd, 'unpaid', BILLED, CUS)).toBe(false);
     expect(isProAccess('pro', futureEnd, 'canceled', BILLED, CUS)).toBe(false);
-    expect(isProAccess('pro', futureEnd, 'incomplete', BILLED, CUS)).toBe(false);
-    expect(isProAccess('pro', futureEnd, 'incomplete_expired', BILLED, CUS)).toBe(
+    expect(isProAccess('pro', futureEnd, 'incomplete', BILLED, CUS)).toBe(
       false
     );
+    expect(
+      isProAccess('pro', futureEnd, 'incomplete_expired', BILLED, CUS)
+    ).toBe(false);
     expect(isProAccess('pro', futureEnd, 'paused', BILLED, CUS)).toBe(false);
   });
 

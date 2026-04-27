@@ -24,6 +24,16 @@ export const MARKETING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Priority support' },
 ];
 
+/** Canonical Pro bullets shown on public `/pricing` and dashboard reactivation paywall. */
+export const PUBLIC_PRICING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
+  { text: 'Unlimited bookings', highlight: true },
+  { text: 'Take payments through the app' },
+  { text: 'Client CRM, notes, and visit history' },
+  { text: 'Quote requests on your public profile' },
+  { text: 'Multiple price options per service' },
+  { text: 'More gallery photos and verified badge' },
+];
+
 /**
  * Post-onboarding soft CTA: same practical benefits as marketing Pro, without
  * the support line (keeps the nudge about the product, not service tiers).

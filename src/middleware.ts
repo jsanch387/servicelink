@@ -1,4 +1,5 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
+import { isProAccess } from '@/features/pricing/utils/isProAccess';
 import { createSupabaseMiddlewareClient } from '@/libs/supabase/server';
 import type { User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
@@ -79,6 +80,10 @@ export async function middleware(request: NextRequest) {
   const requiresAuth = AUTH_REQUIRED_PATH_PREFIXES.some(
     prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
+  const isDashboardRoute =
+    pathname === ROUTES.DASHBOARD.MAIN ||
+    pathname.startsWith(`${ROUTES.DASHBOARD.MAIN}/`);
+  const isUpgradeRoute = pathname === ROUTES.DASHBOARD.UPGRADE;
   const isPublicProfileRoute = request.nextUrl.pathname.startsWith('/profile');
   const isWaitlistRoute = request.nextUrl.pathname.startsWith('/waitlist');
   const isHomeRoute = request.nextUrl.pathname === '/';
@@ -91,6 +96,71 @@ export async function middleware(request: NextRequest) {
   // Redirect unauthenticated users to login from protected routes
   if (requiresAuth && !user) {
     return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
+  }
+
+  // Centralized app access gate:
+  // - While onboarding is not complete, keep users on /dashboard (onboarding flow).
+  // - After onboarding is complete:
+  //   - Legacy free users (no Stripe billing history) keep access.
+  //   - Trial/subscription users (have Stripe billing history) require active/trialing
+  //     Pro access. Otherwise route to /dashboard/upgrade until they resubscribe.
+  if (requiresAuth && user && isDashboardRoute) {
+    type ProfileAccessRow = {
+      onboarding_status?: string | null;
+      subscription_tier?: string | null;
+      subscription_current_period_end?: string | null;
+      subscription_status?: string | null;
+      stripe_subscription_id?: string | null;
+      stripe_customer_id?: string | null;
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profileRow } = await (supabase as any)
+      .from('profiles')
+      .select(
+        'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      )
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const profile = (profileRow as ProfileAccessRow | null) ?? null;
+    const onboardingComplete = profile?.onboarding_status === 'completed';
+    const hasStripeBillingHistory = Boolean(
+      profile?.stripe_customer_id?.trim() ||
+        profile?.stripe_subscription_id?.trim() ||
+        profile?.subscription_status?.trim()
+    );
+
+    if (!onboardingComplete) {
+      if (pathname !== ROUTES.DASHBOARD.MAIN) {
+        return NextResponse.redirect(
+          new URL(ROUTES.DASHBOARD.MAIN, request.url)
+        );
+      }
+      return response;
+    }
+
+    if (hasStripeBillingHistory) {
+      const hasAppAccess = isProAccess(
+        profile?.subscription_tier,
+        profile?.subscription_current_period_end,
+        profile?.subscription_status,
+        profile?.stripe_subscription_id,
+        profile?.stripe_customer_id
+      );
+
+      if (!hasAppAccess && !isUpgradeRoute) {
+        return NextResponse.redirect(
+          new URL(ROUTES.DASHBOARD.UPGRADE, request.url)
+        );
+      }
+
+      if (hasAppAccess && isUpgradeRoute) {
+        return NextResponse.redirect(
+          new URL(ROUTES.DASHBOARD.MAIN, request.url)
+        );
+      }
+    }
   }
 
   // Allow all public routes (home, auth, waitlist, profile, API routes, static files)

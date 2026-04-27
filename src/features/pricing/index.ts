@@ -14,6 +14,7 @@ export {
   MARKETING_FREE_PLAN_FEATURES,
   MARKETING_PRO_PLAN_FEATURES,
   POST_ONBOARDING_PRO_NUDGE_FEATURES,
+  PUBLIC_PRICING_PRO_PLAN_FEATURES,
 } from './marketingPlanFeatures';
 export { FREE_BOOKINGS_LIMIT, PLANS, PRO_FEATURES } from './types';
 export type { PlanId, PlanInfo, ProFeatureItem } from './types';

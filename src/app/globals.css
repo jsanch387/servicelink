@@ -4,16 +4,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  /* Dashboard: single source for background and divider (change once to update everywhere) */
-  --dashboard-bg: #0f0f0f;
-  --dashboard-border: #2a2a2a;
-}
-
-@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-primary);
-  --font-mono: var(--font-mono);
+  /* Dashboard: single source for background and divider (change once to update everywhere) */
+  --dashboard-bg: #0f0f0f;
+  --dashboard-border: #2a2a2a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -67,6 +63,45 @@ body {
 
 .animate-subtle-float {
   animation: subtle-float 3s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 24s linear infinite;
+}
+
+.animate-marquee-premium {
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+
+@keyframes strip-sheen {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+.animate-strip-sheen {
+  animation: strip-sheen 6.5s ease-in-out infinite;
 }
 
 /* ServiceLink Logo Text Font - Plus Jakarta Sans (Modern, Clean SaaS Font) */

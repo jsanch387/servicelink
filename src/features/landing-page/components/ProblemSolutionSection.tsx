@@ -1,19 +1,21 @@
 import { GlassCard } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { FramedCtaButton } from '../../../components/shared/FramedCtaButton';
 
 const frictionItems = [
-  '"DM me for prices" — confusing for customers',
-  'Sending price lists manually, over and over',
-  "Customers don't know your location or services",
-  'Missed DMs and texts mean lost bookings',
+  'Leads stuck in DMs asking for pricing and availability',
+  'No deposit flow means no-shows and last-minute cancellations',
+  'Quotes, bookings, and customer details are scattered everywhere',
+  'Manual follow-up takes time and costs you repeat business',
 ];
 
 const solutionItems = [
-  'One professional link — your storefront',
-  'Services and prices clear at a glance',
-  'Service area and contact visible',
-  'Book instantly — no back-and-forth',
+  'One professional booking link for services, pricing, and availability',
+  'Accept payments in-app and require deposits to lock in appointments',
+  'Capture quotes and bookings in one place',
+  'Automatically build a customer list for easier follow-up',
 ];
 
 export const ProblemSolutionSection: React.FC = () => {
@@ -25,9 +27,9 @@ export const ProblemSolutionSection: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-12 sm:mb-14">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
-            Built for service pros
+            Built for detailers
           </p>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight uppercase">
             Less friction. More bookings.
           </h2>
         </header>
@@ -88,6 +90,12 @@ export const ProblemSolutionSection: React.FC = () => {
               ))}
             </ul>
           </GlassCard>
+        </div>
+
+        <div className="mt-10 sm:mt-12 flex justify-center">
+          <FramedCtaButton href={ROUTES.AUTH.SIGNUP}>
+            Get Started
+          </FramedCtaButton>
         </div>
       </div>
     </section>

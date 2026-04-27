@@ -20,6 +20,11 @@ export const useAuthStore = create<AuthStore>()(
 
       // Initialize auth state
       initialize: async () => {
+        const { isLoading, isInitialized } = get();
+        if (isLoading || isInitialized) {
+          return;
+        }
+
         const supabase = createClient();
 
         try {

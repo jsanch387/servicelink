@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'Sign Up - ServiceLink',
   description:
     'Create your ServiceLink account and start building your professional business profile.',
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function SignupPage() {

@@ -15,11 +15,9 @@ export interface PaymentsProTeaserBannerProps {
  * Payments-only upgrade strip: copy + primary action (shared `Button`).
  * Shown above the locked preview on free tier.
  */
-export const PaymentsProTeaserBanner: React.FC<PaymentsProTeaserBannerProps> = ({
-  title,
-  description,
-  className = '',
-}) => {
+export const PaymentsProTeaserBanner: React.FC<
+  PaymentsProTeaserBannerProps
+> = ({ title, description, className = '' }) => {
   const rootClass = [PAYMENTS_UPGRADE_BANNER_CARD_CLASSES, className]
     .filter(Boolean)
     .join(' ');

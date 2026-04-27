@@ -1,7 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import {
   Geist,
   Geist_Mono,
@@ -12,6 +12,7 @@ import {
   Poppins,
   Space_Grotesk,
 } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const geistSans = Geist({
@@ -73,10 +74,11 @@ export const metadata: Metadata = {
     'Create a professional booking link for your service business. Share one link—myservicelink.app/yourbusiness—and let customers see your services and book instantly. Built for detailers, pressure washers, lawn care, and service pros.',
   icons: {
     icon: [
+      { url: '/favicon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon.png', sizes: '512x512', type: 'image/png' },
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
     ],
+    shortcut: [{ url: '/favicon.png', type: 'image/png' }],
     apple: [{ url: '/favicon.png', sizes: '180x180', type: 'image/png' }],
   },
   keywords: [

@@ -87,7 +87,7 @@ export const Navigation: React.FC = () => {
                 Login
               </Button>
               <Button href={ROUTES.AUTH.SIGNUP} variant="inverse">
-                Sign Up
+                Get Started
               </Button>
             </>
           )}
@@ -186,7 +186,7 @@ export const Navigation: React.FC = () => {
                     fullWidth
                     onClick={closeMobileMenu}
                   >
-                    Sign Up
+                    Get Started
                   </Button>
                 </>
               )}

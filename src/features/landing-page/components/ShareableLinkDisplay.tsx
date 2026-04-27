@@ -20,9 +20,9 @@ export const ShareableLinkDisplay: React.FC<ShareableLinkDisplayProps> = ({
       className={`flex items-center justify-center w-full max-w-xl mx-auto p-0 sm:p-5 md:p-6 font-sans ${className}`}
     >
       <div className="relative w-full">
-        <div className="relative bg-neutral-900 border border-white/[0.08] rounded-2xl p-6 sm:p-8 overflow-hidden backdrop-blur-xl">
+        <div className="relative bg-neutral-900 border border-white/[0.08] rounded-2xl p-4 overflow-hidden backdrop-blur-xl">
           {/* Label */}
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">
+          <p className="text-sm font-medium text-gray-500 tracking-wide mb-4">
             Your custom link
           </p>
 
@@ -30,10 +30,10 @@ export const ShareableLinkDisplay: React.FC<ShareableLinkDisplayProps> = ({
           <div className="flex items-center gap-3 w-full bg-white/[0.06] border border-white/[0.12] rounded-xl px-4 py-3.5 sm:px-5 sm:py-4 min-w-0 shadow-[0_0_20px_rgba(255,255,255,0.06),0_0_40px_rgba(255,255,255,0.04)]">
             <LinkIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
             <p
-              className="font-mono text-xs sm:text-sm md:text-base min-w-0 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="font-mono text-base sm:text-sm md:text-base min-w-0 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               title={fullLink}
             >
-              <span className="text-gray-500">{DOMAIN}/</span>
+              <span className="text-gray-500">{DOMAIN}/ </span>
               <span className="text-white font-semibold">{businessSlug}</span>
             </p>
           </div>

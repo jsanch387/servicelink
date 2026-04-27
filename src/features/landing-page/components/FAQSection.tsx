@@ -17,7 +17,7 @@ export const FAQSection: React.FC = () => {
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
             FAQ
           </p>
-          <h2 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">
             Common questions
           </h2>
         </header>

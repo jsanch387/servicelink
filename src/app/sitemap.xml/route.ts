@@ -64,18 +64,6 @@ ${GUIDES.map(
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${baseUrl}/login</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/signup</loc>
-    <lastmod>${currentDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
     <loc>${baseUrl}/terms</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
