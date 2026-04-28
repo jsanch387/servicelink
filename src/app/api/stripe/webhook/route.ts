@@ -28,6 +28,7 @@ import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   sendSubscriptionPaymentFailedEmail,
   sendTrialEndingSoonEmail,
+  sendWelcomeLiveEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
 import { completeOnboardingV2 } from '@/features/onboarding-v2/server/completeOnboarding';
@@ -717,6 +718,15 @@ export async function POST(request: NextRequest) {
     // Onboarding monetization bridge:
     // only mark onboarding complete after successful checkout event.
     if (session.metadata?.source === 'onboarding_trial_bridge') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profileBeforeComplete } = await (supabase as any)
+        .from('profiles')
+        .select('onboarding_status')
+        .eq('user_id', userId.trim())
+        .single();
+      const wasAlreadyCompleted =
+        profileBeforeComplete?.onboarding_status === 'completed';
+
       const completeResult = await completeOnboardingV2(
         supabase,
         userId.trim()
@@ -730,6 +740,34 @@ export async function POST(request: NextRequest) {
           { error: 'Onboarding completion failed' },
           { status: 500 }
         );
+      }
+
+      if (!wasAlreadyCompleted) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: businessProfile } = await (supabase as any)
+          .from('business_profiles')
+          .select('business_slug')
+          .eq('profile_id', userId.trim())
+          .single();
+        const businessSlug = businessProfile?.business_slug?.trim();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const authResult = await (supabase as any).auth.admin.getUserById(
+          userId.trim()
+        );
+        const userEmail = authResult?.data?.user?.email?.trim();
+
+        if (businessSlug && userEmail) {
+          const emailResult = await sendWelcomeLiveEmail(userEmail, {
+            businessSlug,
+          });
+          if (!emailResult.sent) {
+            console.error(
+              'Stripe webhook: failed to send onboarding welcome live email',
+              emailResult.error
+            );
+          }
+        }
       }
     }
   }

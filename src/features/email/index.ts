@@ -36,3 +36,9 @@ export type {
   QuoteRequestOwnerNotificationPayload,
   SendQuoteRequestOwnerNotificationResult,
 } from './quote-request-owner-notification/types';
+
+export { sendWelcomeLiveEmail } from './welcome-live/sendWelcomeLiveEmail';
+export type {
+  SendWelcomeLiveEmailResult,
+  WelcomeLiveEmailPayload,
+} from './welcome-live/types';
