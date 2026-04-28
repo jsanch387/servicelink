@@ -1,8 +1,7 @@
-/* eslint-disable no-unused-vars */
 'use client';
 
-import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import { Button, Input, Select } from '@/components/shared';
+import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import React, { useState } from 'react';
 
 interface Step1BusinessNameAndTypeProps {
@@ -20,7 +19,8 @@ export const Step1BusinessNameAndType: React.FC<
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  const canContinue = businessName.trim().length > 0;
+  const canContinue =
+    businessName.trim().length > 0 && businessType.trim().length > 0;
 
   const handleNext = async () => {
     if (!canContinue || isLoading) return;
@@ -33,7 +33,7 @@ export const Step1BusinessNameAndType: React.FC<
         body: JSON.stringify({
           businessProfileId: businessProfileId ?? null,
           businessName: businessName.trim(),
-          businessType: businessType.trim() || '',
+          businessType: businessType.trim(),
         }),
       });
       const data = await res.json();
@@ -69,18 +69,25 @@ export const Step1BusinessNameAndType: React.FC<
         <div className="space-y-6">
           <Input
             label="Business name"
-            placeholder="e.g. Joyce's Braids"
+            placeholder="e.g. Shine Auto Detailing"
             value={businessName}
             onChange={value => onUpdate({ businessName: value })}
             required
           />
-          <Select
-            label="What type of business is this?"
-            placeholder="Pick one"
-            value={businessType}
-            onChange={value => onUpdate({ businessType: value })}
-            options={BUSINESS_TYPE_OPTIONS}
-          />
+          <div>
+            <Select
+              label="What type of business is this?"
+              placeholder="Pick one"
+              value={businessType}
+              onChange={value => onUpdate({ businessType: value })}
+              options={BUSINESS_TYPE_OPTIONS}
+              required
+            />
+            <p className="mt-2.5 text-left text-sm text-gray-400">
+              Pick the type that fits your business best. We use it so your
+              booking form and settings make sense for what you offer.
+            </p>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">

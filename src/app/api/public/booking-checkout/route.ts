@@ -12,6 +12,7 @@
 
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
@@ -269,6 +270,14 @@ export async function POST(request: NextRequest) {
         businessSlug,
         profileError: profileError?.message,
       });
+      return NextResponse.json(
+        { success: false, error: 'Business not found.' },
+        { status: 404 }
+      );
+    }
+
+    if (!(await isPublicBusinessSlugVisible(supabase, businessSlug))) {
+      logCheckoutDev('reject: business not publicly visible', { businessSlug });
       return NextResponse.json(
         { success: false, error: 'Business not found.' },
         { status: 404 }

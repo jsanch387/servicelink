@@ -6,9 +6,21 @@
  * crawlers discover and index content.
  */
 
+import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusinessProfileLive';
 import { GUIDES } from '@/features/resources';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import type { Database } from '@/libs/supabase/client';
 import { NextResponse } from 'next/server';
+
+/** Explicit row shape — Supabase `.not(..., 'is', null)` can infer `never` for `data` in some TS versions. */
+type SitemapBusinessProfileRow = Pick<
+  Database['public']['Tables']['business_profiles']['Row'],
+  'business_slug' | 'updated_at' | 'profile_id'
+>;
+
+type IndexedSitemapProfile = SitemapBusinessProfileRow & {
+  business_slug: string;
+};
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -16,22 +28,67 @@ export const revalidate = 3600; // Revalidate every hour
 
 export async function GET() {
   try {
-    // Use direct client (no cookies needed for public data)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createSupabaseAdminClient();
 
-    // Get all business profiles with slugs
     const { data: profiles, error } = await supabase
       .from('business_profiles')
-      .select('business_slug, updated_at')
+      .select('business_slug, updated_at, profile_id')
       .not('business_slug', 'is', null);
 
     if (error) {
       console.error('Error fetching profiles for sitemap:', error);
       return new NextResponse('Error generating sitemap', { status: 500 });
     }
+
+    const rows: SitemapBusinessProfileRow[] = (profiles ??
+      []) as SitemapBusinessProfileRow[];
+    const ownerIds = [
+      ...new Set(
+        rows
+          .map(p => p.profile_id?.trim())
+          .filter((id): id is string => Boolean(id))
+      ),
+    ];
+
+    let ownersByUserId = new Map<string, Record<string, unknown>>();
+    if (ownerIds.length > 0) {
+      const { data: owners, error: ownersError } = await supabase
+        .from('profiles')
+        .select(
+          'user_id, onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+        )
+        .in('user_id', ownerIds);
+
+      if (ownersError) {
+        console.error('Error fetching owners for sitemap:', ownersError);
+        return new NextResponse('Error generating sitemap', { status: 500 });
+      }
+
+      ownersByUserId = new Map(
+        (owners || []).map(o => [
+          (o as { user_id: string }).user_id,
+          o as Record<string, unknown>,
+        ])
+      );
+    }
+
+    const indexedProfiles = rows.filter((p): p is IndexedSitemapProfile => {
+      const slug = p.business_slug;
+      if (!slug?.trim()) return false;
+      const pid = p.profile_id?.trim();
+      if (!pid) return true;
+      const owner = ownersByUserId.get(pid);
+      if (!owner) return false;
+      return isPublicBusinessProfileLive({
+        onboarding_status: owner.onboarding_status as string | null,
+        subscription_tier: owner.subscription_tier as string | null,
+        subscription_current_period_end:
+          owner.subscription_current_period_end as string | null,
+        subscription_status: owner.subscription_status as string | null,
+        stripe_subscription_id: owner.stripe_subscription_id as string | null,
+        stripe_customer_id: owner.stripe_customer_id as string | null,
+      });
+    });
 
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
@@ -75,7 +132,7 @@ ${GUIDES.map(
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>${resourcesUrls}
-${(profiles || [])
+${indexedProfiles
   .map(
     profile => `  <url>
     <loc>${baseUrl}/${profile.business_slug}</loc>

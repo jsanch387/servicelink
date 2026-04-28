@@ -5,6 +5,8 @@
  * Tracks a profile view with deduplication.
  */
 
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { assertPublicTrackViewRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
@@ -32,6 +34,14 @@ export async function POST(request: NextRequest) {
       String(businessSlug)
     );
     if (rateLimited) return rateLimited;
+
+    const admin = createSupabaseAdminClient();
+    if (!(await isPublicBusinessSlugVisible(admin, String(businessSlug)))) {
+      return NextResponse.json(
+        { success: false, error: 'Business profile not found' },
+        { status: 404 }
+      );
+    }
 
     // Get client IP from request headers (for future use)
     // const _clientIP =

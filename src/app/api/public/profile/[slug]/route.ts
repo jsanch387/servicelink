@@ -7,7 +7,9 @@
  * Used for public profile viewing.
  */
 
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import type { Database } from '@/libs/supabase/client';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { assertPublicProfileGetRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,6 +26,14 @@ export async function GET(
   try {
     const rateLimited = await assertPublicProfileGetRateLimits(request, slug);
     if (rateLimited) return rateLimited;
+
+    const admin = createSupabaseAdminClient();
+    if (!(await isPublicBusinessSlugVisible(admin, slug))) {
+      return NextResponse.json(
+        { error: 'Business profile not found' },
+        { status: 404 }
+      );
+    }
 
     const supabase = await createSupabaseServerClient();
 

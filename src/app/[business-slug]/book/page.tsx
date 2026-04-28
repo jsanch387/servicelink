@@ -21,6 +21,7 @@ import type { PublicBookingPaymentSettings } from '@/features/availability/booki
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { isProAccess } from '@/features/pricing';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
@@ -208,10 +209,14 @@ export default async function BookingRequestPage({
     notFound();
   }
 
+  const adminClient = createSupabaseAdminClient();
+  if (!(await isPublicBusinessSlugVisible(adminClient, slug))) {
+    notFound();
+  }
+
   const slugForRoutes = businessProfile.business_slug || slug;
 
   // Fetch availability with admin client so RLS doesn't block (public page needs to read accept_bookings)
-  const adminClient = createSupabaseAdminClient();
   const availabilityRow = await getAvailabilityForBusiness(
     adminClient,
     businessProfile.id

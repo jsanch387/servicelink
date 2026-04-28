@@ -38,11 +38,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (
+      businessType == null ||
+      typeof businessType !== 'string' ||
+      !businessType.trim()
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'Business type is required' },
+        { status: 400 }
+      );
+    }
+
     const result = await saveStep1(supabase as any, {
       profileId: user.id,
       businessProfileId: businessProfileId ?? null,
       businessName: businessName.trim(),
-      businessType: typeof businessType === 'string' ? businessType.trim() : '',
+      businessType: businessType.trim(),
     });
 
     if (!result.success) {

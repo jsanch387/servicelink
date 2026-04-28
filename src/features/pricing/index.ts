@@ -19,6 +19,11 @@ export {
 export { FREE_BOOKINGS_LIMIT, PLANS, PRO_FEATURES } from './types';
 export type { PlanId, PlanInfo, ProFeatureItem } from './types';
 export {
-  isProAccess,
   STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO,
+  hasStripeBillingHistory,
+  isProAccess,
 } from './utils/isProAccess';
+export {
+  isPublicBusinessProfileLive,
+  type PublicProfileLiveOwnerFields,
+} from './utils/publicBusinessProfileLive';

@@ -10,6 +10,7 @@ import {
 } from '@/constants/routes';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -90,6 +91,9 @@ export default async function ServiceDetailsPage({
   if (!businessId) notFound();
 
   const adminClient = createSupabaseAdminClient();
+  if (!(await isPublicBusinessSlugVisible(adminClient, slug))) {
+    notFound();
+  }
   const [profileRow, availabilityRow] = await Promise.all([
     adminClient
       .from('business_profiles')

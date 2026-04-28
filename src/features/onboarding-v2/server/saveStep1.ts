@@ -5,7 +5,12 @@
  * Uses existing tables: profiles (onboarding_status, onboarding_step), business_profiles (business_name, business_type).
  */
 
+import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+const ALLOWED_BUSINESS_TYPES = new Set(
+  BUSINESS_TYPE_OPTIONS.map(option => option.value)
+);
 
 export interface SaveStep1Params {
   profileId: string;
@@ -27,6 +32,19 @@ export async function saveStep1(
   const { profileId, businessProfileId, businessName, businessType } = params;
 
   try {
+    const typeTrimmed = businessType.trim();
+    if (!typeTrimmed) {
+      return {
+        success: false,
+        error: 'Business type is required',
+      };
+    }
+    if (!ALLOWED_BUSINESS_TYPES.has(typeTrimmed)) {
+      return {
+        success: false,
+        error: 'Please choose a business type from the list',
+      };
+    }
     let resolvedBusinessProfileId = businessProfileId ?? null;
 
     if (!resolvedBusinessProfileId) {
@@ -67,7 +85,7 @@ export async function saveStep1(
       .from('business_profiles')
       .update({
         business_name: businessName.trim(),
-        business_type: businessType.trim() || null,
+        business_type: typeTrimmed,
         updated_at: new Date().toISOString(),
         last_edited: new Date().toISOString(),
       } as never)

@@ -8,6 +8,23 @@ export const STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO = new Set([
 ]);
 
 /**
+ * Owner has entered the Stripe subscription lifecycle (customer/subscription row
+ * or a synced non-empty `subscription_status`). Matches dashboard middleware
+ * so “grandfathered free” and public profile visibility stay aligned.
+ */
+export function hasStripeBillingHistory(
+  stripeCustomerId: string | null | undefined,
+  stripeSubscriptionId: string | null | undefined,
+  subscriptionStatus: string | null | undefined
+): boolean {
+  return Boolean(
+    stripeCustomerId?.trim() ||
+      stripeSubscriptionId?.trim() ||
+      subscriptionStatus?.trim()
+  );
+}
+
+/**
  * Whether this profile is tied to a paying Stripe subscription (vs comped/manual Pro).
  */
 function hasStripeBillingSubscription(

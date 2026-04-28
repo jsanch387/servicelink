@@ -1,4 +1,5 @@
 import { isProAccess } from '@/features/pricing';
+import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusinessProfileLive';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type MinimalBusiness = {
@@ -40,10 +41,24 @@ export async function publicQuoteRequestAllowedForSlug(
   const { data: ownerProfile } = await adminForProfiles
     .from('profiles')
     .select(
-      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
     )
     .eq('user_id', biz.profile_id)
     .maybeSingle();
+
+  if (
+    !isPublicBusinessProfileLive({
+      onboarding_status: ownerProfile?.onboarding_status,
+      subscription_tier: ownerProfile?.subscription_tier,
+      subscription_current_period_end:
+        ownerProfile?.subscription_current_period_end,
+      subscription_status: ownerProfile?.subscription_status,
+      stripe_subscription_id: ownerProfile?.stripe_subscription_id,
+      stripe_customer_id: ownerProfile?.stripe_customer_id,
+    })
+  ) {
+    return { ok: false };
+  }
 
   const tier = ownerProfile?.subscription_tier;
   const periodEnd = ownerProfile?.subscription_current_period_end;

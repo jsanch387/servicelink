@@ -8,6 +8,7 @@
 import { StructuredData } from '@/components/shared';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { MediaService } from '@/features/media';
 import { isProAccess } from '@/features/pricing';
@@ -118,6 +119,11 @@ export default async function PublicProfilePage({
 }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
 
+  const adminGate = createSupabaseAdminClient();
+  if (!(await isPublicBusinessSlugVisible(adminGate, slug))) {
+    notFound();
+  }
+
   // Fetch the business profile by slug
   const businessProfile = await fetchBusinessProfileBySlug(slug);
 
@@ -131,8 +137,7 @@ export default async function PublicProfilePage({
   let showVerifiedBadge = false;
   let ownerTier: 'free' | 'pro' = 'free';
   if (profileId) {
-    const admin = createSupabaseAdminClient();
-    const { data: ownerProfile } = await admin
+    const { data: ownerProfile } = await adminGate
       .from('profiles')
       .select(
         'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
@@ -194,6 +199,15 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
 
   try {
+    const adminMeta = createSupabaseAdminClient();
+    if (!(await isPublicBusinessSlugVisible(adminMeta, slug))) {
+      return {
+        title: 'Business Profile Not Found | ServiceLink',
+        description: 'The requested business profile could not be found.',
+        robots: 'noindex, nofollow',
+      };
+    }
+
     const siteUrl = (
       process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
     ).replace(/\/$/, '');

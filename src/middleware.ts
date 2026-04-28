@@ -1,5 +1,8 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
-import { isProAccess } from '@/features/pricing/utils/isProAccess';
+import {
+  hasStripeBillingHistory,
+  isProAccess,
+} from '@/features/pricing/utils/isProAccess';
 import { createSupabaseMiddlewareClient } from '@/libs/supabase/server';
 import type { User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
@@ -125,10 +128,10 @@ export async function middleware(request: NextRequest) {
 
     const profile = (profileRow as ProfileAccessRow | null) ?? null;
     const onboardingComplete = profile?.onboarding_status === 'completed';
-    const hasStripeBillingHistory = Boolean(
-      profile?.stripe_customer_id?.trim() ||
-        profile?.stripe_subscription_id?.trim() ||
-        profile?.subscription_status?.trim()
+    const ownerHasStripeBillingHistory = hasStripeBillingHistory(
+      profile?.stripe_customer_id,
+      profile?.stripe_subscription_id,
+      profile?.subscription_status
     );
 
     if (!onboardingComplete) {
@@ -140,7 +143,7 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    if (hasStripeBillingHistory) {
+    if (ownerHasStripeBillingHistory) {
       const hasAppAccess = isProAccess(
         profile?.subscription_tier,
         profile?.subscription_current_period_end,

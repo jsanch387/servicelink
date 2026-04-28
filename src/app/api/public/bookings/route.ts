@@ -12,6 +12,7 @@ import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
@@ -139,6 +140,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
+      return NextResponse.json(
+        { success: false, error: 'Business not found' },
+        { status: 404 }
+      );
+    }
+
+    if (
+      !(await isPublicBusinessSlugVisible(supabase, body.businessSlug.trim()))
+    ) {
       return NextResponse.json(
         { success: false, error: 'Business not found' },
         { status: 404 }

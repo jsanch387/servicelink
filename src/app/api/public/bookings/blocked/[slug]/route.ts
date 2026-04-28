@@ -6,6 +6,7 @@
  * Uses service role so we can read bookings for any business.
  */
 
+import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextResponse } from 'next/server';
 
@@ -23,6 +24,13 @@ export async function GET(
     }
 
     const supabase = createSupabaseAdminClient();
+
+    if (!(await isPublicBusinessSlugVisible(supabase, slug))) {
+      return NextResponse.json(
+        { success: false, error: 'Business not found' },
+        { status: 404 }
+      );
+    }
 
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
