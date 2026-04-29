@@ -57,7 +57,17 @@ export async function POST(request: NextRequest) {
         },
       ],
       ...(fromOnboarding
-        ? { subscription_data: { trial_period_days: 7 } }
+        ? {
+            payment_method_collection: 'if_required',
+            subscription_data: {
+              trial_period_days: 7,
+              trial_settings: {
+                end_behavior: {
+                  missing_payment_method: 'cancel',
+                },
+              },
+            },
+          }
         : {}),
       success_url: `${baseUrl}${successPath}`,
       cancel_url: `${baseUrl}${cancelPath}`,

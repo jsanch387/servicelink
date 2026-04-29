@@ -44,8 +44,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
           Start your 7-day free trial
         </h1>
         <p className="text-gray-400 text-sm sm:text-base mt-1">
-          Make your booking link live today. You pay nothing now, then $10/month
-          after your trial.
+          Make your booking link live today. No card required.
         </p>
       </div>
 

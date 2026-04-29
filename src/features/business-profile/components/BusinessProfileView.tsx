@@ -313,8 +313,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       >
         <div className="flex flex-col gap-5">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-            <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              Your public booking profile is live
+            <h2 className="flex items-center gap-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              <span className="relative flex h-3.5 w-3.5 shrink-0" aria-hidden>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/30" />
+              </span>
+              Your booking link is live
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-300">
               This is the page customers see when they visit your link. Add your
