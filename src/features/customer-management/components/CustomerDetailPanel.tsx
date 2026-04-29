@@ -9,8 +9,10 @@ import {
 } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
+import { EnrollMaintenanceModalBody } from '@/features/maintenance/components/EnrollMaintenanceModalBody';
 import {
   ArrowLeftIcon,
+  ArrowPathRoundedSquareIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
   LockClosedIcon,
@@ -61,6 +63,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
 }) => {
   const [emailCopied, setEmailCopied] = useState(false);
   const [checkInTeaserOpen, setCheckInTeaserOpen] = useState(false);
+  const [enrollMaintenanceOpen, setEnrollMaintenanceOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(customer.note);
   const [noteSaved, setNoteSaved] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -106,6 +109,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
 
   useEffect(() => {
     setCheckInTeaserOpen(false);
+    setEnrollMaintenanceOpen(false);
   }, [customer.id]);
 
   const handleCopyEmail = async () => {
@@ -404,6 +408,21 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               Actions
             </h3>
             <div className="space-y-2.5">
+              {!isSampleCustomer ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setEnrollMaintenanceOpen(true)}
+                  icon={
+                    <ArrowPathRoundedSquareIcon className="h-4 w-4 text-sky-400" />
+                  }
+                  fullWidth={true}
+                  className="text-sm font-semibold"
+                  aria-label="Enroll customer in maintenance plan"
+                >
+                  Enroll in maintenance
+                </Button>
+              ) : null}
               {needsAttention ? (
                 <div className="relative">
                   <span className="pointer-events-none absolute -top-2.5 right-3 z-20 inline-flex items-center rounded-full border border-emerald-400/35 bg-[#0f0f0f] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
@@ -466,6 +485,22 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
       >
         <CheckInProTeaserModalBody
           onClose={() => setCheckInTeaserOpen(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={enrollMaintenanceOpen}
+        onClose={() => setEnrollMaintenanceOpen(false)}
+        title="Enroll in maintenance"
+        maxWidth="lg"
+        panelClassName="sm:ring-1 sm:ring-inset sm:ring-white/10 sm:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.55)]"
+        headerClassName="lg:px-10 lg:py-6 lg:border-white/[0.08]"
+        titleClassName="lg:text-xl lg:tracking-tight"
+        contentClassName="lg:px-10 lg:pb-10 lg:pt-8"
+      >
+        <EnrollMaintenanceModalBody
+          customerName={customer.name}
+          onClose={() => setEnrollMaintenanceOpen(false)}
         />
       </Modal>
     </>
