@@ -51,11 +51,8 @@ export default async function DashboardUpgradePage() {
   const isBillingLocked =
     onboardingComplete && hasStripeBillingHistory && !isProSubscriber;
 
-  // Keep upgrade as a billing-lock/reactivation surface only.
-  // Legacy free users (grandfathered) should not browse this page.
-  if (!isBillingLocked && !isProSubscriber) {
-    redirect('/dashboard');
-  }
+  // Free users (no Stripe history) must be able to open this page to start checkout.
+  // Middleware already sends ex-subscribers without Pro to here; do not redirect them away.
 
   return (
     <UpgradeContent

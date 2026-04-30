@@ -28,14 +28,26 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
     try {
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       });
-      const data = await res.json();
+      const data = (await res.json()) as {
+        success?: boolean;
+        url?: string;
+        error?: string;
+      };
       if (!res.ok || !data.success || !data.url) {
-        setError(data.error ?? 'Something went wrong');
+        const message = data.error ?? 'Something went wrong';
+        console.error('[Upgrade] create-checkout-session failed', {
+          status: res.status,
+          message,
+        });
+        setError(message);
         return;
       }
       window.location.href = data.url;
-    } catch {
+    } catch (err) {
+      console.error('[Upgrade] create-checkout-session request error', err);
       setError('Something went wrong');
     } finally {
       setCheckoutLoading(false);
