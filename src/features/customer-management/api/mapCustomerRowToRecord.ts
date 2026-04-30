@@ -1,6 +1,9 @@
 import type { CustomerBookingMetrics } from '@/features/customer-management/server/aggregateBookingsPerCustomer';
 import { normalizeEmailForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
-import type { CustomerRecord } from '@/features/customer-management/types';
+import type {
+  CustomerMaintenanceEnrollmentSummary,
+  CustomerRecord,
+} from '@/features/customer-management/types';
 import {
   daysSinceDateString,
   daysUntilDateString,
@@ -13,7 +16,8 @@ import type { CustomerDbRow } from './customerDbRow';
  */
 export function mapCustomerRowToRecord(
   row: CustomerDbRow,
-  metrics?: CustomerBookingMetrics | null
+  metrics?: CustomerBookingMetrics | null,
+  maintenance?: CustomerMaintenanceEnrollmentSummary | null
 ): CustomerRecord {
   const emailRaw = row.email_normalized ?? row.email ?? '';
   const email = emailRaw ? normalizeEmailForLookup(emailRaw) : '';
@@ -77,6 +81,7 @@ export function mapCustomerRowToRecord(
       totalSpent: metrics.totalSpentCents / 100,
       status: metrics.lifecycle,
       note: row.notes ?? '',
+      maintenanceEnrollment: maintenance ?? null,
     };
   }
 
@@ -94,5 +99,6 @@ export function mapCustomerRowToRecord(
     totalSpent: 0,
     status: 'new',
     note: row.notes ?? '',
+    maintenanceEnrollment: maintenance ?? null,
   };
 }

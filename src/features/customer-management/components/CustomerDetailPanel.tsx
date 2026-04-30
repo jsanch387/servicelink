@@ -1,7 +1,10 @@
 'use client';
 
 import { Button, Modal } from '@/components/shared';
-import type { CustomerRecord } from '@/features/customer-management/types';
+import type {
+  CustomerMaintenanceEnrollmentSummary,
+  CustomerRecord,
+} from '@/features/customer-management/types';
 import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import {
   customerPhoneHref,
@@ -9,20 +12,28 @@ import {
 } from '@/features/customer-management/utils/customerFormatting';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
+import {
+  customerMaintenanceEnrollmentCardSubtitle,
+  customerMaintenancePlanChipVariant,
+} from '@/features/customer-management/utils/customerMaintenanceEnrollmentLabels';
 import { EnrollMaintenanceModalBody } from '@/features/maintenance/components/EnrollMaintenanceModalBody';
 import {
   ArrowLeftIcon,
   ArrowPathRoundedSquareIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
+  ClockIcon,
   LockClosedIcon,
   PaperAirplaneIcon,
   PencilSquareIcon,
+  RectangleStackIcon,
   TrashIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import React, { useEffect, useState } from 'react';
 import { CheckInProTeaserModalBody } from './CheckInProTeaserModalBody';
+import { CustomerMaintenanceDetailsModalBody } from './CustomerMaintenanceDetailsModalBody';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 
 const CUSTOMER_NOTE_MAX_LENGTH = 280;
@@ -31,6 +42,35 @@ const DEMO_CUSTOMER_ID_PREFIX = 'demo_';
 function addOnsSummaryLine(count: number): string | null {
   if (count < 1) return null;
   return count === 1 ? '1 add-on' : `${count} add-ons`;
+}
+
+function MaintenanceEnrollmentStatusChip({
+  enrollment,
+}: {
+  enrollment: CustomerMaintenanceEnrollmentSummary;
+}) {
+  const chip = customerMaintenancePlanChipVariant(enrollment);
+  if (chip === 'confirmed') {
+    return (
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
+        <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-400" aria-hidden />
+        Confirmed
+      </span>
+    );
+  }
+  if (chip === 'cancelled') {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full border border-white/15 bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold text-gray-400">
+        Cancelled
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200/95">
+      <ClockIcon className="h-3.5 w-3.5 text-amber-400/90" aria-hidden />
+      Pending
+    </span>
+  );
 }
 
 interface CustomerDetailPanelProps {
@@ -64,6 +104,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   const [emailCopied, setEmailCopied] = useState(false);
   const [checkInTeaserOpen, setCheckInTeaserOpen] = useState(false);
   const [enrollMaintenanceOpen, setEnrollMaintenanceOpen] = useState(false);
+  const [maintenanceDetailsOpen, setMaintenanceDetailsOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(customer.note);
   const [noteSaved, setNoteSaved] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -110,6 +151,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   useEffect(() => {
     setCheckInTeaserOpen(false);
     setEnrollMaintenanceOpen(false);
+    setMaintenanceDetailsOpen(false);
   }, [customer.id]);
 
   const handleCopyEmail = async () => {
@@ -313,6 +355,44 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
             </div>
           </section>
 
+          {!isSampleCustomer && customer.maintenanceEnrollment ? (
+            <section>
+              <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-500 flex items-center gap-2">
+                <RectangleStackIcon className="h-4 w-4" aria-hidden />
+                Maintenance
+              </h3>
+              <div className="rounded-xl border border-white/[0.08] bg-[#111111] p-4">
+                <div className="min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-white">
+                      Maintenance plan
+                    </p>
+                    <MaintenanceEnrollmentStatusChip
+                      enrollment={customer.maintenanceEnrollment}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                    {customerMaintenanceEnrollmentCardSubtitle(
+                      customer.maintenanceEnrollment
+                    )}
+                  </p>
+                </div>
+                <div className="mt-4 border-t border-dashed border-white/[0.12] pt-4">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    fullWidth
+                    className="text-sm font-semibold"
+                    onClick={() => setMaintenanceDetailsOpen(true)}
+                  >
+                    View details
+                  </Button>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
           <section>
             <div className="mb-3 flex items-center justify-between gap-3">
               <h3 className="text-xs font-semibold text-gray-500 tracking-wider flex items-center gap-2">
@@ -418,9 +498,9 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   }
                   fullWidth={true}
                   className="text-sm font-semibold"
-                  aria-label="Enroll customer in maintenance plan"
+                  aria-label="Send maintenance plan invite to customer"
                 >
-                  Enroll in maintenance
+                  Maintenance plan invite
                 </Button>
               ) : null}
               {needsAttention ? (
@@ -489,9 +569,23 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
       </Modal>
 
       <Modal
+        isOpen={maintenanceDetailsOpen}
+        onClose={() => setMaintenanceDetailsOpen(false)}
+        title="Maintenance plan"
+        maxWidth="md"
+      >
+        {customer.maintenanceEnrollment ? (
+          <CustomerMaintenanceDetailsModalBody
+            enrollment={customer.maintenanceEnrollment}
+            onClose={() => setMaintenanceDetailsOpen(false)}
+          />
+        ) : null}
+      </Modal>
+
+      <Modal
         isOpen={enrollMaintenanceOpen}
         onClose={() => setEnrollMaintenanceOpen(false)}
-        title="Enroll in maintenance"
+        title="Maintenance plan invite"
         maxWidth="lg"
         panelClassName="sm:ring-1 sm:ring-inset sm:ring-white/10 sm:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.55)]"
         headerClassName="lg:px-10 lg:py-6 lg:border-white/[0.08]"
@@ -499,6 +593,8 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
         contentClassName="lg:px-10 lg:pb-10 lg:pt-8"
       >
         <EnrollMaintenanceModalBody
+          key={`${customer.id}-${enrollMaintenanceOpen}`}
+          customerId={customer.id}
           customerName={customer.name}
           onClose={() => setEnrollMaintenanceOpen(false)}
         />

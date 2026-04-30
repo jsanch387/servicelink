@@ -5,6 +5,19 @@ export interface CustomerBookingAddOn {
   price: number;
 }
 
+/** Latest maintenance enrollment for CRM (from `maintenance_enrollments`). */
+export interface CustomerMaintenanceEnrollmentSummary {
+  enrollmentId: string;
+  status: string;
+  paymentStatus: string;
+  serviceNameSnapshot: string;
+  priceCents: number;
+  frequencyWeeks: number;
+  durationMinutes: number;
+  anchorDate: string | null;
+  anchorTime: string | null;
+}
+
 export interface CustomerRecord {
   id: string;
   name: string;
@@ -29,6 +42,8 @@ export interface CustomerRecord {
   totalSpent: number;
   status: CustomerLifecycle;
   note: string;
+  /** Present when this customer has at least one enrollment row (latest by `created_at`). */
+  maintenanceEnrollment?: CustomerMaintenanceEnrollmentSummary | null;
 }
 
 /** Aggregates for the customer list header (from bookings + customer rows when wired to API). */

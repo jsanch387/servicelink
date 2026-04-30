@@ -31,6 +31,8 @@ import {
   sendWelcomeLiveEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
+import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
 import { completeOnboardingV2 } from '@/features/onboarding-v2/server/completeOnboarding';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
@@ -659,6 +661,122 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({ received: true }, { status: 200 });
     }
+
+    if (session.metadata?.kind === 'maintenance_enrollment') {
+      const enrollmentId =
+        typeof session.metadata?.maintenanceEnrollmentId === 'string'
+          ? session.metadata.maintenanceEnrollmentId.trim()
+          : '';
+      const expectedRaw = session.metadata?.expectedAmountCents;
+      const expectedAmountCents =
+        typeof expectedRaw === 'string'
+          ? parseInt(expectedRaw, 10)
+          : typeof expectedRaw === 'number'
+            ? Math.round(expectedRaw)
+            : NaN;
+
+      if (!enrollmentId || !Number.isFinite(expectedAmountCents)) {
+        console.error(
+          '[maintenance:webhook] checkout.session.completed missing metadata',
+          { eventId: event.id, sessionId: session.id }
+        );
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: maintRow, error: maintLoadErr } = await (supabase as any)
+        .from('maintenance_enrollments')
+        .select(
+          'id, status, payment_status, price_cents, stripe_checkout_session_id, anchor_date, anchor_time'
+        )
+        .eq('id', enrollmentId)
+        .maybeSingle();
+
+      if (maintLoadErr || !maintRow) {
+        console.error('[maintenance:webhook] enrollment not found', {
+          enrollmentId,
+          error: maintLoadErr,
+        });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      if (!hasMaintenanceAnchorScheduled(maintRow)) {
+        console.error('[maintenance:webhook] missing first-visit anchor', {
+          enrollmentId,
+          sessionId: session.id,
+        });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      const rowSessionId = String(
+        (maintRow as { stripe_checkout_session_id?: string | null })
+          .stripe_checkout_session_id ?? ''
+      ).trim();
+      if (rowSessionId && rowSessionId !== session.id) {
+        console.warn('[maintenance:webhook] session id mismatch', {
+          enrollmentId,
+          rowSessionId,
+          sessionId: session.id,
+        });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      const priceCents = Math.round(
+        Number((maintRow as { price_cents?: number }).price_cents ?? 0)
+      );
+      if (priceCents !== expectedAmountCents) {
+        console.error('[maintenance:webhook] metadata amount vs row mismatch', {
+          enrollmentId,
+          priceCents,
+          expectedAmountCents,
+        });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      const amountPaidCents =
+        typeof session.amount_total === 'number' ? session.amount_total : 0;
+      if (amountPaidCents !== expectedAmountCents) {
+        console.error('[maintenance:webhook] amount mismatch', {
+          enrollmentId,
+          amountPaidCents,
+          expectedAmountCents,
+        });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      const nowIso = new Date().toISOString();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- maintenance_enrollments not in generated Database types
+      const maintDb = supabase as any;
+      const { data: maintUpdated, error: maintUpdateErr } = await maintDb
+        .from('maintenance_enrollments')
+        .update({
+          status: 'accepted',
+          accepted_at: nowIso,
+          payment_status: MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD,
+          customer_selected_payment: 'card',
+        })
+        .eq('id', enrollmentId)
+        .eq('status', 'enrolled_pending_customer')
+        .eq('payment_status', 'pending')
+        .select('id')
+        .maybeSingle();
+
+      if (maintUpdateErr) {
+        console.error('[maintenance:webhook] update failed', maintUpdateErr);
+        return NextResponse.json(
+          { error: 'Maintenance enrollment update failed' },
+          { status: 500 }
+        );
+      }
+
+      if (!maintUpdated) {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
     const userId = session.metadata?.userId as string | undefined;
     if (!userId?.trim()) {
       console.error(

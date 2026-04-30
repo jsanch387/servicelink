@@ -4,6 +4,7 @@ import {
   aggregateBookingsPerCustomer,
   type BookingRowForCustomerMetrics,
 } from '@/features/customer-management/server/aggregateBookingsPerCustomer';
+import { loadLatestMaintenanceEnrollmentByCustomerIds } from '@/features/customer-management/server/loadLatestMaintenanceEnrollmentByCustomerIds';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
@@ -100,8 +101,20 @@ export async function GET() {
 
     const customerRows: CustomerDbRow[] =
       (rows as CustomerDbRow[] | null) ?? [];
+    const customerIds = customerRows.map(r => r.id);
+    const maintenanceByCustomer =
+      await loadLatestMaintenanceEnrollmentByCustomerIds(
+        supabase,
+        businessId,
+        customerIds
+      );
+
     const customers = customerRows.map(row =>
-      mapCustomerRowToRecord(row, metricsByCustomer.get(row.id) ?? null)
+      mapCustomerRowToRecord(
+        row,
+        metricsByCustomer.get(row.id) ?? null,
+        maintenanceByCustomer.get(row.id) ?? null
+      )
     );
 
     return NextResponse.json({

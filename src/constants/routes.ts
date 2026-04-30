@@ -174,3 +174,13 @@ export function getBusinessBookDetailsUrl(
   }
   return `/${encodeURIComponent(slug)}/book/details?${q.toString()}`;
 }
+
+/**
+ * Customer-facing maintenance enrollment review link (raw URL-safe token in path).
+ * Server resolves `customer_link_token_hash` = SHA-256 hex of the raw token.
+ */
+export function getPublicMaintenanceEnrollmentPath(token: string): string {
+  const t = token.trim();
+  if (!t) return '/maintenance/e';
+  return `/maintenance/e/${encodeURIComponent(t)}`;
+}
