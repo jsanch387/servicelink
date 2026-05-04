@@ -100,6 +100,7 @@ export async function createBookingFromApprovedQuote(
     scheduledDate,
     startTime,
     customer,
+    suppressCustomerBookingConfirmation: true,
   });
 
   return { bookingId };

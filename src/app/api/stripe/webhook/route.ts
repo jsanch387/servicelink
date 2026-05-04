@@ -22,10 +22,10 @@
  */
 
 import type { CustomerFormData } from '@/features/availability/booking/types';
+import { isBookingEmailWebhookDispatchEnabled } from '@/features/availability/server/bookingEmailWebhookFlags';
+import { dispatchNewAvailabilityBookingNotifications } from '@/features/availability/server/dispatchNewAvailabilityBookingNotifications';
 import { createBooking } from '@/features/availability/services/bookingService';
-import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import {
-  sendAvailabilityBookingCustomerConfirmationEmail,
   sendSubscriptionPaymentFailedEmail,
   sendTrialEndingSoonEmail,
   sendWelcomeLiveEmail,
@@ -595,33 +595,24 @@ export async function POST(request: NextRequest) {
         bookingId: createdBooking.id,
         paymentStatus,
       });
-      await notifyOwnerForAvailabilityBookingCreated(supabase, {
-        profileId,
-        bookingId: createdBooking.id,
-        customerName: bookingPayload.customer.fullName.trim(),
-        serviceSummaryLine: storedServiceName,
-        scheduledDate: bookingPayload.scheduledDate,
-        emailPayload: availabilityEmailPayload,
-      });
-      logBookingCheckoutStage('owner_notified', {
-        eventId: event.id,
-        sessionId: session.id,
-        bookingId: createdBooking.id,
-      });
-      try {
-        await sendAvailabilityBookingCustomerConfirmationEmail(
-          bookingPayload.customer.email.trim(),
+      if (!isBookingEmailWebhookDispatchEnabled()) {
+        await dispatchNewAvailabilityBookingNotifications(supabase, {
+          profileId,
+          bookingId: createdBooking.id,
+          customerName: bookingPayload.customer.fullName.trim(),
+          serviceSummaryLine: storedServiceName,
+          scheduledDate: bookingPayload.scheduledDate,
+          emailPayload: availabilityEmailPayload,
+          sendCustomerConfirmation: true,
           businessDisplayName,
-          availabilityEmailPayload
-        );
-        logBookingCheckoutStage('customer_email.sent', {
+        });
+        logBookingCheckoutStage('booking_emails.legacy_dispatch', {
           eventId: event.id,
           sessionId: session.id,
           bookingId: createdBooking.id,
         });
-      } catch {
-        // best-effort customer confirmation email
-        logBookingCheckoutStage('customer_email.failed', {
+      } else {
+        logBookingCheckoutStage('booking_emails.webhook_only', {
           eventId: event.id,
           sessionId: session.id,
           bookingId: createdBooking.id,

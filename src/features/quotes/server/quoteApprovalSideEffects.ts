@@ -9,7 +9,8 @@ import {
   checkFreeTierBookingCapAllowsCreate,
   persistFreeTierBookingIncrementAfterBooking,
 } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
-import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
+import { isBookingEmailWebhookDispatchEnabled } from '@/features/availability/server/bookingEmailWebhookFlags';
+import { dispatchNewAvailabilityBookingNotifications } from '@/features/availability/server/dispatchNewAvailabilityBookingNotifications';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { normalizePhoneForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
 import type { AvailabilityBookingNotificationPayload } from '@/features/email';
@@ -261,14 +262,21 @@ export async function finalizeApprovedQuoteToBooking(
     };
   }
 
-  await notifyOwnerForAvailabilityBookingCreated(supabase, {
-    profileId: businessProfile.profile_id,
-    bookingId,
-    customerName: quote.customer_name.trim(),
-    serviceSummaryLine: serviceNameForOwner,
-    scheduledDate,
-    emailPayload,
-  });
+  if (!isBookingEmailWebhookDispatchEnabled()) {
+    await dispatchNewAvailabilityBookingNotifications(supabase, {
+      profileId: businessProfile.profile_id,
+      bookingId,
+      customerName: quote.customer_name.trim(),
+      serviceSummaryLine: serviceNameForOwner,
+      scheduledDate,
+      emailPayload,
+      sendCustomerConfirmation: false,
+      businessDisplayName:
+        businessProfile.business_name?.trim() ||
+        businessProfile.business_slug?.trim() ||
+        'Your business',
+    });
+  }
 
   return { ok: true, bookingId };
 }

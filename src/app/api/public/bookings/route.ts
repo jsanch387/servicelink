@@ -10,70 +10,15 @@ import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/sl
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
-import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
+import { isBookingEmailWebhookDispatchEnabled } from '@/features/availability/server/bookingEmailWebhookFlags';
+import { buildPaymentSummaryForAvailabilityBookingEmail } from '@/features/availability/server/buildPaymentSummaryForAvailabilityBookingEmail';
+import { dispatchNewAvailabilityBookingNotifications } from '@/features/availability/server/dispatchNewAvailabilityBookingNotifications';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
-import {
-  sendAvailabilityBookingCustomerConfirmationEmail,
-  type AvailabilityBookingNotificationPayload,
-  type AvailabilityBookingPaymentSummary,
-} from '@/features/email';
+import type { AvailabilityBookingNotificationPayload } from '@/features/email';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
-
-function buildPaymentSummaryForPublicBooking(params: {
-  paymentsEnabled: boolean;
-  checkoutMode: string | null | undefined;
-  currency: string;
-  totalPriceCents: number;
-  /** Email shows a Price details card with this total when true — avoid duplicating the row here. */
-  hasPriceLineItems: boolean;
-}): AvailabilityBookingPaymentSummary {
-  const code = /^[a-z]{3}$/.test(params.currency.trim().toLowerCase())
-    ? params.currency.trim().toLowerCase()
-    : 'usd';
-  const fmt = (cents: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: code.toUpperCase(),
-    }).format(cents / 100);
-
-  const rows: Array<{ label: string; value: string }> = [];
-
-  if (!params.paymentsEnabled) {
-    rows.push({
-      label: 'Online payment',
-      value: 'Not required for this booking',
-    });
-  } else if (params.checkoutMode === 'in_person') {
-    rows.push({
-      label: 'How you pay',
-      value: 'Pay your provider when you meet',
-    });
-    rows.push({
-      label: 'ServiceLink card charge',
-      value: 'None',
-    });
-  } else {
-    rows.push({
-      label: 'ServiceLink card charge',
-      value: 'None for this booking',
-    });
-  }
-
-  if (params.totalPriceCents > 0 && !params.hasPriceLineItems) {
-    rows.push({
-      label: 'Appointment total',
-      value: fmt(params.totalPriceCents),
-    });
-  }
-
-  return {
-    title: 'Payment',
-    rows,
-  };
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -255,7 +200,7 @@ export async function POST(request: NextRequest) {
         body.servicePriceCents > 0) ||
       selectedAddOnsForEmail.length > 0;
 
-    const paymentSummary = buildPaymentSummaryForPublicBooking({
+    const paymentSummary = buildPaymentSummaryForAvailabilityBookingEmail({
       paymentsEnabled: paySettings?.payments_enabled === true,
       checkoutMode: paySettings?.checkout_mode,
       currency: paySettings?.currency?.trim() || 'usd',
@@ -281,23 +226,17 @@ export async function POST(request: NextRequest) {
       paymentSummary,
     };
 
-    await notifyOwnerForAvailabilityBookingCreated(supabase, {
-      profileId,
-      bookingId: result.id,
-      customerName: body.customer?.fullName?.trim() ?? 'A customer',
-      serviceSummaryLine: storedServiceName,
-      scheduledDate: body.scheduledDate,
-      emailPayload: availabilityEmailPayload,
-    });
-
-    try {
-      await sendAvailabilityBookingCustomerConfirmationEmail(
-        body.customer.email.trim(),
+    if (!isBookingEmailWebhookDispatchEnabled()) {
+      await dispatchNewAvailabilityBookingNotifications(supabase, {
+        profileId,
+        bookingId: result.id,
+        customerName: body.customer?.fullName?.trim() ?? 'A customer',
+        serviceSummaryLine: storedServiceName,
+        scheduledDate: body.scheduledDate,
+        emailPayload: availabilityEmailPayload,
+        sendCustomerConfirmation: true,
         businessDisplayName,
-        availabilityEmailPayload
-      );
-    } catch {
-      // Best-effort; booking already succeeded
+      });
     }
 
     return NextResponse.json(

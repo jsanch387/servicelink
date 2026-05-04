@@ -37,6 +37,8 @@ export interface CreateBookingPayload {
   customer_vehicle_model: string | null;
   customer_notes: string | null;
   customer_id: string;
+  /** DB column; when true, booking-insert webhook skips customer confirmation email. */
+  suppress_customer_booking_confirmation?: boolean;
 }
 
 function mapCustomerToRow(
@@ -87,6 +89,12 @@ export async function createBooking(
     scheduledDate: string;
     startTime: string;
     customer: CustomerFormData;
+    /**
+     * Persists `suppress_customer_booking_confirmation` on `bookings` so the DB
+     * webhook omits the customer “confirmed” email (e.g. quote approval). Requires
+     * that column on `bookings` (see POST /api/webhooks/supabase/bookings docblock).
+     */
+    suppressCustomerBookingConfirmation?: boolean;
   }
 ): Promise<{ id: string }> {
   const addonDetails =
@@ -116,6 +124,9 @@ export async function createBooking(
     start_time: payload.startTime,
     ...mapCustomerToRow(payload.customer),
     customer_id: customerId,
+    ...(payload.suppressCustomerBookingConfirmation === true
+      ? { suppress_customer_booking_confirmation: true }
+      : {}),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
