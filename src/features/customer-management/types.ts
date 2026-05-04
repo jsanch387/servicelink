@@ -16,6 +16,11 @@ export interface CustomerMaintenanceEnrollmentSummary {
   durationMinutes: number;
   anchorDate: string | null;
   anchorTime: string | null;
+  /**
+   * Raw invite token (same as URL path). Present for enrollments created after
+   * `customer_invite_token` exists; null for older rows.
+   */
+  inviteToken: string | null;
 }
 
 export interface CustomerRecord {

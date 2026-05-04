@@ -6,8 +6,8 @@
 import { sendMaintenanceEnrollmentConfirmedEmail } from '@/features/email/maintenance-enrollment-confirmed/sendMaintenanceEnrollmentConfirmedEmail';
 import type { MaintenanceEnrollmentConfirmedPayload } from '@/features/email/maintenance-enrollment-confirmed/types';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
-import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import { maintenanceEnrollmentPaidWithCard } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
+import { maintenanceDetailServiceLabel } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -24,7 +24,7 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
   const { data: row, error } = await db
     .from('maintenance_enrollments')
     .select(
-      'id, business_id, customer_id, status, payment_status, customer_selected_payment, service_name_snapshot, price_cents, duration_minutes, frequency_weeks, anchor_date, anchor_time'
+      'id, business_id, customer_id, status, payment_status, customer_selected_payment, service_name_snapshot, price_cents, duration_minutes, frequency_weeks, anchor_date, anchor_time, confirmation_email_sent_at'
     )
     .eq('id', enrollmentId)
     .maybeSingle();
@@ -45,6 +45,13 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
   }
 
   if (!hasMaintenanceAnchorScheduled(row)) {
+    return;
+  }
+
+  if (
+    (row as { confirmation_email_sent_at?: string | null })
+      .confirmation_email_sent_at
+  ) {
     return;
   }
 
@@ -117,7 +124,7 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
   const payload: MaintenanceEnrollmentConfirmedPayload = {
     customerName,
     businessName,
-    serviceName: maintenancePlanServiceLabel(row.service_name_snapshot),
+    serviceName: maintenanceDetailServiceLabel(row.service_name_snapshot),
     priceCents: Math.max(0, Math.round(Number(row.price_cents ?? 0))),
     visitDate: String(row.anchor_date ?? '').trim(),
     visitTime: String(row.anchor_time ?? '')
@@ -141,5 +148,19 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
       enrollmentId,
       error: result.error,
     });
+    return;
+  }
+
+  const { error: markErr } = await db
+    .from('maintenance_enrollments')
+    .update({ confirmation_email_sent_at: new Date().toISOString() })
+    .eq('id', enrollmentId);
+
+  if (markErr) {
+    console.error(
+      '[maintenance] confirmation email: could not persist sent timestamp',
+      markErr,
+      enrollmentId
+    );
   }
 }

@@ -102,16 +102,16 @@ export function EnrollMaintenanceModalBody({
       <div className="space-y-5 lg:space-y-6">
         <div className="rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3">
           <p className="text-sm font-semibold text-white">
-            {successPayload.emailSent ? 'Invite sent' : 'Plan saved'}
+            {successPayload.emailSent ? 'Invite sent' : 'Detail saved'}
           </p>
           <p className="mt-1 text-xs text-gray-400">
             {successPayload.emailSent
               ? successPayload.notifiedEmail
-                ? `We emailed ${successPayload.notifiedEmail} with a secure link to review and confirm the maintenance plan.`
-                : 'We emailed your customer with a secure link to review and confirm the maintenance plan.'
+                ? `Emailed ${successPayload.notifiedEmail} a link to accept and pay.`
+                : 'Emailed them a link to accept and pay.'
               : successPayload.emailError
-                ? `Email was not sent (${successPayload.emailError}). Copy the link below and send it yourself.`
-                : 'Copy the link below and send it to your customer.'}
+                ? `Email didn’t send (${successPayload.emailError}). Copy the link below.`
+                : 'Copy the link below and send it yourself.'}
           </p>
         </div>
 
@@ -143,10 +143,8 @@ export function EnrollMaintenanceModalBody({
 
   return (
     <div className="space-y-5 lg:space-y-6">
-      <p className="text-sm leading-relaxed text-gray-400 lg:text-[15px] lg:leading-relaxed">
-        {`Put this customer on a `}
-        <span className="font-medium text-gray-300">maintenance detail</span>
-        {`—regular upkeep after they've already been detailed by you. Set price, schedule, and visit length below.`}
+      <p className="text-sm text-gray-400">
+        Fill in the details for this customer&apos;s maintenance detail below.
       </p>
 
       <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-5 lg:space-y-0">
@@ -195,9 +193,8 @@ export function EnrollMaintenanceModalBody({
           <p className="mb-2 text-sm font-semibold text-gray-200">
             Maintenance date (optional)
           </p>
-          <p className="mb-3 text-xs leading-relaxed text-gray-500">
-            If you skip this, your customer picks a date when they open the
-            link.
+          <p className="mb-3 text-xs text-gray-500">
+            Optional—if you skip this, they pick a date from the link.
           </p>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-8">
             <div className="min-w-0">
@@ -227,10 +224,13 @@ export function EnrollMaintenanceModalBody({
       </div>
 
       <div className="space-y-4 lg:border-t lg:border-white/10 lg:pt-6">
-        <p className="text-xs text-gray-500 lg:text-[13px]">
-          Saves the plan and emails a review link when the customer has an email
-          on file. You can copy the link to send yourself anytime.
-        </p>
+        <div className="space-y-1.5 text-xs text-gray-500 lg:text-[13px]">
+          <p>
+            Send invite saves this detail and emails a link. They accept and pay
+            with your payment settings, then the visit shows on your calendar.
+          </p>
+          <p>No customer email? Copy the link on the next screen.</p>
+        </div>
         {submitError ? (
           <p className="text-xs text-red-300">{submitError}</p>
         ) : null}

@@ -8,10 +8,10 @@ import { createBookingForExistingCustomer } from '@/features/availability/servic
 import { persistFreeTierBookingIncrementAfterBooking } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { checkMaintenanceAnchorAgainstCalendar } from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
 import { notifyOwnerForMaintenanceInitialBooking } from '@/features/maintenance/server/notifyOwnerForMaintenanceInitialBooking';
+import { maintenanceCalendarBookingServiceTitle } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
 import { quoteStartTimeToHHmm } from '@/features/quotes/server/createBookingFromApprovedQuote';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { maintenanceCalendarBookingServiceTitle } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import { hasMaintenanceAnchorScheduled } from './hasMaintenanceAnchorScheduled';
 import { maintenanceEnrollmentPaidWithCard } from './maintenanceEnrollmentPaymentStatus';
 
@@ -147,7 +147,7 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
     enrollment.service_name_snapshot
   );
   const freq = Math.max(1, Math.round(Number(enrollment.frequency_weeks ?? 1)));
-  const bookingCustomerNotes = `Maintenance plan (first visit). Repeats every ${freq} week(s).`;
+  const bookingCustomerNotes = `Maintenance detail (first visit). Repeats every ${freq} week(s).`;
 
   const slotCheck = await checkMaintenanceAnchorAgainstCalendar(supabase, {
     businessId: enrollment.business_id,

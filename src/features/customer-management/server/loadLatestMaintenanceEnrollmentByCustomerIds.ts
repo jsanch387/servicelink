@@ -1,5 +1,5 @@
 import type { CustomerMaintenanceEnrollmentSummary } from '@/features/customer-management/types';
-import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
+import { maintenanceDetailServiceLabel } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -15,6 +15,7 @@ type MaintenanceEnrollmentListRow = {
   anchor_date: string | null;
   anchor_time: string | null;
   created_at: string | null;
+  customer_invite_token?: string | null;
 };
 
 function rowToSummary(
@@ -24,12 +25,15 @@ function rowToSummary(
     enrollmentId: row.id,
     status: String(row.status ?? ''),
     paymentStatus: String(row.payment_status ?? ''),
-    serviceNameSnapshot: maintenancePlanServiceLabel(row.service_name_snapshot),
+    serviceNameSnapshot: maintenanceDetailServiceLabel(
+      row.service_name_snapshot
+    ),
     priceCents: Math.max(0, Math.round(Number(row.price_cents ?? 0))),
     frequencyWeeks: Math.max(0, Math.round(Number(row.frequency_weeks ?? 0))),
     durationMinutes: Math.max(0, Math.round(Number(row.duration_minutes ?? 0))),
     anchorDate: row.anchor_date ? String(row.anchor_date).trim() : null,
     anchorTime: row.anchor_time ? String(row.anchor_time).trim() : null,
+    inviteToken: String(row.customer_invite_token ?? '').trim() || null,
   };
 }
 
@@ -48,7 +52,7 @@ export async function loadLatestMaintenanceEnrollmentByCustomerIds(
   const { data, error } = await (supabase as unknown as SupabaseClient<any>)
     .from('maintenance_enrollments')
     .select(
-      'id, customer_id, status, payment_status, service_name_snapshot, price_cents, frequency_weeks, duration_minutes, anchor_date, anchor_time, created_at'
+      'id, customer_id, status, payment_status, service_name_snapshot, price_cents, frequency_weeks, duration_minutes, anchor_date, anchor_time, created_at, customer_invite_token'
     )
     .eq('business_id', businessId)
     .in('customer_id', customerIds)

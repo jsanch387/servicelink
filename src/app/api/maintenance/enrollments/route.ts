@@ -1,7 +1,6 @@
 import { getPublicMaintenanceEnrollmentPath } from '@/constants/routes';
 import { serviceDurationHHmmToMinutes } from '@/features/availability/utils/timeOptions';
 import { sendMaintenanceEnrollmentSentEmail } from '@/features/email/maintenance-enrollment-sent/sendMaintenanceEnrollmentSentEmail';
-import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import {
   checkMaintenanceAnchorAgainstCalendar,
@@ -12,6 +11,7 @@ import {
   MAINTENANCE_ANCHOR_PLACEHOLDER_TIME,
 } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { maintenanceOwnerPaymentModeFromCheckout } from '@/features/maintenance/server/maintenanceOwnerPaymentMode';
+import { maintenanceDetailServiceLabel } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
@@ -273,6 +273,7 @@ export async function POST(request: NextRequest) {
         anchor_time: anchorTimeInsert,
         owner_payment_mode: ownerPaymentMode,
         customer_link_token_hash: tokenHash,
+        customer_invite_token: rawToken,
       })
       .select('id')
       .single();
@@ -307,7 +308,7 @@ export async function POST(request: NextRequest) {
         {
           customerName,
           businessName,
-          serviceName: maintenancePlanServiceLabel(serviceNameSnapshot),
+          serviceName: maintenanceDetailServiceLabel(serviceNameSnapshot),
           priceCents,
           frequencyWeeks,
           durationMinutes,

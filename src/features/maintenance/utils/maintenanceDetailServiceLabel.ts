@@ -23,13 +23,13 @@ export function maintenanceServiceDisplayName(
 }
 
 /**
- * Label shown to customers and owners (emails, CRM): generic plans read as "Maintenance plan".
+ * Label shown to customers and owners (emails, CRM): generic enrollments read as "Maintenance detail".
  */
-export function maintenancePlanServiceLabel(
+export function maintenanceDetailServiceLabel(
   snapshot: string | null | undefined
 ): string {
   const inner = cleanedSnapshot(snapshot);
-  if (!inner) return 'Maintenance plan';
+  if (!inner) return 'Maintenance detail';
   return inner;
 }
 
@@ -38,6 +38,6 @@ export function maintenanceCalendarBookingServiceTitle(
   snapshot: string | null | undefined
 ): string {
   const inner = cleanedSnapshot(snapshot);
-  if (!inner) return 'Maintenance plan';
+  if (!inner) return 'Maintenance detail';
   return `${inner} (maintenance)`;
 }

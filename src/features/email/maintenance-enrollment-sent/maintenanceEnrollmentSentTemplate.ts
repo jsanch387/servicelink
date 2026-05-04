@@ -1,5 +1,5 @@
-import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import { escapeHtml } from '../utils/escapeHtml';
+import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import type { MaintenanceEnrollmentSentPayload } from './types';
 
 function formatPriceWholeDollars(cents: number): string {
@@ -54,11 +54,11 @@ export function buildMaintenanceEnrollmentSentPlainText(
   return [
     `Hi ${payload.customerName.trim() || 'there'},`,
     '',
-    `${businessName} sent you a secure link to review your maintenance plan. Open it to see the details, set your visit date if needed, and confirm or pay (depending on what ${businessName} offers).`,
+    `${businessName} sent you a secure link to review your maintenance detail. Open it to see the details, set your visit date if needed, and confirm or pay (depending on what ${businessName} offers).`,
     '',
-    `Open your plan: ${payload.publicEnrollmentUrl}`,
+    `Your invite link: ${payload.publicEnrollmentUrl}`,
     '',
-    'Plan summary',
+    'Summary',
     `— Business: ${businessName}`,
     `— First visit: ${dateLabel}`,
     `— ${timeRowLabel}: ${timeRowValue}`,
@@ -68,7 +68,7 @@ export function buildMaintenanceEnrollmentSentPlainText(
     `— Service: ${payload.serviceName}`,
     `— Price per visit: ${priceLabel}`,
     '',
-    `You received this email because ${businessName} invited you to a maintenance plan.`,
+    `You received this email because ${businessName} invited you to a maintenance detail.`,
     `© ${new Date().getFullYear()} ServiceLink`,
   ].join('\n');
 }
@@ -98,7 +98,7 @@ export function buildMaintenanceEnrollmentSentHtml(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Maintenance plan from ${businessName}</title>
+  <title>Maintenance detail from ${businessName}</title>
   <style>
     body { margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
     .wrapper { width: 100%; table-layout: fixed; background-color: #f4f7f9; padding-bottom: 40px; }
@@ -131,17 +131,17 @@ export function buildMaintenanceEnrollmentSentHtml(
       <tr><td class="header"><div style="height: 20px;"></div></td></tr>
       <tr>
         <td class="hero">
-          <h1 style="font-size: 26px; margin: 0; color: #1e293b; letter-spacing: -0.02em;">Your maintenance plan</h1>
+          <h1 style="font-size: 26px; margin: 0; color: #1e293b; letter-spacing: -0.02em;">Your maintenance detail</h1>
           <p style="font-size: 16px; color: #1e293b; margin-top: 12px; font-weight: 600;">Hi ${escapeHtml(payload.customerName)},</p>
           <p style="font-size: 16px; color: #64748b; margin-top: 8px; line-height: 1.5;">
-            ${businessName} sent you a secure link to review your maintenance plan. Open it to see the details, pick your visit date if needed, and confirm or pay—whatever ${businessName} has set up for you.
+            ${businessName} sent you a secure link to review your maintenance detail. Open it to see the details, pick your visit date if needed, and confirm or pay—whatever ${businessName} has set up for you.
           </p>
         </td>
       </tr>
       <tr>
         <td class="content">
           <div class="card">
-            <div class="section-title">Plan summary</div>
+            <div class="section-title">Summary</div>
             <table width="100%" cellspacing="0" cellpadding="0" role="presentation">
               <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 16px 12px 0; vertical-align: top; width: 42%;">Business</td>
@@ -175,13 +175,13 @@ export function buildMaintenanceEnrollmentSentHtml(
             </table>
           </div>
           <p style="margin: 0 0 8px 0;">
-            <a href="${escapeHtml(payload.publicEnrollmentUrl)}" class="button" target="_blank" rel="noopener noreferrer">Review maintenance plan</a>
+            <a href="${escapeHtml(payload.publicEnrollmentUrl)}" class="button" target="_blank" rel="noopener noreferrer">Review maintenance detail</a>
           </p>
         </td>
       </tr>
       <tr>
         <td class="footer">
-          You received this email because a business added you to a maintenance plan.<br>
+          You received this email because a business added you to a maintenance detail.<br>
           &copy; ${new Date().getFullYear()} ServiceLink.
         </td>
       </tr>
@@ -196,5 +196,5 @@ export function getMaintenanceEnrollmentSentSubject(
   businessName: string
 ): string {
   const name = businessName.trim() || 'Your detailer';
-  return `Your maintenance plan link from ${name}`;
+  return `Your maintenance detail link from ${name}`;
 }

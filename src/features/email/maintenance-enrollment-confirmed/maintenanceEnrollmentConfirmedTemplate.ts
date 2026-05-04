@@ -1,5 +1,5 @@
-import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import { escapeHtml } from '../utils/escapeHtml';
+import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import type { MaintenanceEnrollmentConfirmedPayload } from './types';
 
 function formatMoney(cents: number): string {
@@ -114,7 +114,7 @@ export function buildMaintenanceEnrollmentConfirmedPlainText(
   return [
     `Hi ${name},`,
     '',
-    `Your maintenance plan with ${business} is confirmed.`,
+    `Your maintenance detail with ${business} is confirmed.`,
     '',
     '— Visit —',
     `When: ${formatDateLong(payload.visitDate)} at ${formatTimeHHmm(payload.visitTime)}`,
@@ -154,7 +154,7 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Maintenance plan confirmed</title>
+  <title>Maintenance detail confirmed</title>
   <style>
     body { margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #eef2f6; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
     .wrapper { width: 100%; table-layout: fixed; background-color: #eef2f6; padding-bottom: 40px; }
@@ -195,7 +195,7 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
           <h1 style="font-size: 24px; margin: 0; color: #0f172a; letter-spacing: -0.02em; line-height: 1.2;">You're all set</h1>
           <p style="font-size: 15px; color: #1e293b; margin-top: 12px; font-weight: 600;">Hi ${name},</p>
           <p style="font-size: 14px; color: #64748b; margin-top: 8px; line-height: 1.55; margin-bottom: 0;">
-            Your maintenance plan with <strong style="color: #334155;">${business}</strong> is confirmed. Below is your visit summary and a payment receipt for this appointment.
+            Your maintenance detail with <strong style="color: #334155;">${business}</strong> is confirmed. Below is your visit summary and a payment receipt for this appointment.
           </p>
         </td>
       </tr>
@@ -261,5 +261,5 @@ export function getMaintenanceEnrollmentConfirmedSubject(
   businessName: string
 ): string {
   const name = businessName.trim() || 'Your detailer';
-  return `Maintenance confirmed — ${name}`;
+  return `Maintenance detail confirmed — ${name}`;
 }

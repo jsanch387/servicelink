@@ -35,7 +35,7 @@ export type CustomerMaintenancePlanChipVariant =
   | 'cancelled'
   | 'visit_completed';
 
-/** Row badge next to “Maintenance plan” title in customer detail. */
+/** Row badge next to “Maintenance detail” title in customer detail. */
 export function customerMaintenancePlanChipVariant(
   e: CustomerMaintenanceEnrollmentSummary
 ): CustomerMaintenancePlanChipVariant {
@@ -43,6 +43,17 @@ export function customerMaintenancePlanChipVariant(
   if (e.status === 'visit_completed') return 'visit_completed';
   if (e.status === 'accepted') return 'confirmed';
   return 'pending';
+}
+
+/**
+ * True while a tracked invite is still in flight (owner should not start another).
+ * Pending without a stored token (legacy row) stays actionable so they can retry.
+ */
+export function maintenanceEnrollmentBlocksNewOwnerInvite(
+  enrollment: CustomerMaintenanceEnrollmentSummary | null | undefined
+): boolean {
+  if (!enrollment?.inviteToken) return false;
+  return customerMaintenancePlanChipVariant(enrollment) === 'pending';
 }
 
 export function customerMaintenanceEnrollmentCardSubtitle(
@@ -58,7 +69,7 @@ export function customerMaintenanceEnrollmentCardSubtitle(
   }
   if (e.status === 'enrolled_pending_customer') return 'Waiting on customer';
   if (e.status === 'visit_completed')
-    return 'Visit completed · send a new invite for the next cycle';
+    return 'Visit completed · send another maintenance detail when ready';
   return e.status.replace(/_/g, ' ') || 'Maintenance';
 }
 

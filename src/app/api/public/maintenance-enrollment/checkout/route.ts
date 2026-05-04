@@ -15,7 +15,7 @@ import {
   maintenanceCustomerPaymentOptions,
   type MaintenanceLivePaymentFlags,
 } from '@/features/maintenance/server/maintenancePaymentEligibility';
-import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
+import { maintenanceDetailServiceLabel } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
@@ -101,7 +101,10 @@ export async function POST(request: NextRequest) {
     );
     if (priceCents < MIN_AMOUNT_CENTS || priceCents > MAX_AMOUNT_CENTS) {
       return NextResponse.json(
-        { success: false, error: 'Invalid payment amount for this plan.' },
+        {
+          success: false,
+          error: 'Invalid payment amount for this maintenance detail.',
+        },
         { status: 400 }
       );
     }
@@ -233,7 +236,7 @@ export async function POST(request: NextRequest) {
     const cancelUrl = `${baseUrl}/maintenance/e/${encodeURIComponent(rawToken)}?checkout=cancel`;
 
     const stripe = getStripePlatform();
-    const lineItemName = maintenancePlanServiceLabel(
+    const lineItemName = maintenanceDetailServiceLabel(
       enrollment.service_name_snapshot
     ).slice(0, 120);
 

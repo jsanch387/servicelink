@@ -10,12 +10,13 @@ import {
   customerPhoneHref,
   formatCustomerPhone,
 } from '@/features/customer-management/utils/customerFormatting';
-import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
-import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
 import {
   customerMaintenanceEnrollmentCardSubtitle,
   customerMaintenancePlanChipVariant,
+  maintenanceEnrollmentBlocksNewOwnerInvite,
 } from '@/features/customer-management/utils/customerMaintenanceEnrollmentLabels';
+import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
+import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
 import { EnrollMaintenanceModalBody } from '@/features/maintenance/components/EnrollMaintenanceModalBody';
 import {
   ArrowLeftIcon,
@@ -385,7 +386,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                 <div className="min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-semibold text-white">
-                      Maintenance plan
+                      Maintenance detail
                     </p>
                     <MaintenanceEnrollmentStatusChip
                       enrollment={customer.maintenanceEnrollment}
@@ -513,52 +514,57 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   variant="inverse"
                   size="sm"
                   onClick={() => setEnrollMaintenanceOpen(true)}
+                  disabled={maintenanceEnrollmentBlocksNewOwnerInvite(
+                    customer.maintenanceEnrollment
+                  )}
                   icon={
                     <ArrowPathRoundedSquareIcon className="h-4 w-4 text-sky-700" />
                   }
                   fullWidth={true}
                   className="text-sm font-semibold"
-                  aria-label="Send maintenance plan invite to customer"
+                  aria-label="Send maintenance detail invite to customer"
+                  title={
+                    maintenanceEnrollmentBlocksNewOwnerInvite(
+                      customer.maintenanceEnrollment
+                    )
+                      ? 'Open invite is still pending—use View details to copy the link, or wait until they finish.'
+                      : undefined
+                  }
                 >
                   Send maintenance invite
                 </Button>
               ) : null}
               {needsAttention ? (
-                <div className="relative">
-                  <span className="pointer-events-none absolute -top-2.5 right-3 z-20 inline-flex items-center rounded-full border border-emerald-400/35 bg-[#0f0f0f] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-                    New
-                  </span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      hasProCheckInAccess
-                        ? onMessageCustomer('win_back')
-                        : setCheckInTeaserOpen(true)
-                    }
-                    icon={
-                      hasProCheckInAccess ? (
-                        <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
-                      ) : (
-                        <LockClosedIcon className="h-4 w-4 text-gray-400" />
-                      )
-                    }
-                    fullWidth={true}
-                    className={`text-sm font-semibold ${
-                      !hasProCheckInAccess
-                        ? 'border-white/15 bg-white/[0.04] hover:bg-white/[0.07]'
-                        : ''
-                    }`}
-                    aria-label={
-                      hasProCheckInAccess
-                        ? `${actionLabel} customer via SMS`
-                        : `${actionLabel}: Pro feature — learn more`
-                    }
-                    title={hasProCheckInAccess ? undefined : 'Pro feature'}
-                  >
-                    {actionLabel}
-                  </Button>
-                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    hasProCheckInAccess
+                      ? onMessageCustomer('win_back')
+                      : setCheckInTeaserOpen(true)
+                  }
+                  icon={
+                    hasProCheckInAccess ? (
+                      <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
+                    ) : (
+                      <LockClosedIcon className="h-4 w-4 text-gray-400" />
+                    )
+                  }
+                  fullWidth={true}
+                  className={`text-sm font-semibold ${
+                    !hasProCheckInAccess
+                      ? 'border-white/15 bg-white/[0.04] hover:bg-white/[0.07]'
+                      : ''
+                  }`}
+                  aria-label={
+                    hasProCheckInAccess
+                      ? `${actionLabel} customer via SMS`
+                      : `${actionLabel}: Pro feature — learn more`
+                  }
+                  title={hasProCheckInAccess ? undefined : 'Pro feature'}
+                >
+                  {actionLabel}
+                </Button>
               ) : null}
               {!isSampleCustomer ? (
                 <Button
@@ -591,7 +597,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
       <Modal
         isOpen={maintenanceDetailsOpen}
         onClose={() => setMaintenanceDetailsOpen(false)}
-        title="Maintenance plan"
+        title="Maintenance detail"
         maxWidth="md"
       >
         {customer.maintenanceEnrollment ? (
@@ -605,7 +611,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
       <Modal
         isOpen={enrollMaintenanceOpen}
         onClose={() => setEnrollMaintenanceOpen(false)}
-        title="Maintenance plan invite"
+        title="Maintenance detail invite"
         maxWidth="lg"
         panelClassName="sm:ring-1 sm:ring-inset sm:ring-white/10 sm:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.55)]"
         headerClassName="lg:px-10 lg:py-6 lg:border-white/[0.08]"

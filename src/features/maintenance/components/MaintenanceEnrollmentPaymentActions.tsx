@@ -202,7 +202,7 @@ export const MaintenanceEnrollmentPaymentActions: React.FC<
       {inPersonOnly && firstVisitScheduled && !isAccepted ? (
         <p className="text-sm text-gray-400">
           This business isn&apos;t set up for card checkout here. Confirm below
-          to agree to the plan—you&apos;ll pay {businessDisplayName} in person.
+          to confirm—you&apos;ll pay {businessDisplayName} in person.
         </p>
       ) : null}
       {!firstVisitScheduled && !isAccepted ? (

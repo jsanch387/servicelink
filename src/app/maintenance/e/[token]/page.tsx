@@ -4,11 +4,11 @@ import { MaintenanceEnrollmentPaymentActions } from '@/features/maintenance/comp
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { loadPublicMaintenanceEnrollmentByToken } from '@/features/maintenance/server/loadPublicMaintenanceEnrollment';
 import { maintenanceEnrollmentPaidWithCard } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
-import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import {
   maintenanceCustomerPaymentOptions,
   type MaintenanceLivePaymentFlags,
 } from '@/features/maintenance/server/maintenancePaymentEligibility';
+import { maintenanceDetailServiceLabel } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
@@ -224,10 +224,10 @@ export default async function PublicMaintenanceEnrollmentPage({
       <div className="mx-auto w-full max-w-lg px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 md:max-w-xl lg:max-w-2xl lg:px-8 lg:pt-12">
         <header className="mb-6 sm:mb-8">
           <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-3xl">
-            Your maintenance plan
+            Your maintenance detail
           </h1>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-400 md:max-w-lg">
-            Here is your maintenance plan.
+            Here is your maintenance detail.
           </p>
         </header>
 
@@ -242,7 +242,7 @@ export default async function PublicMaintenanceEnrollmentPage({
             />
             <div className="min-w-0 flex-1">
               <p className="text-base font-semibold leading-snug text-white">
-                Your maintenance plan is confirmed.
+                Your maintenance detail is confirmed.
               </p>
               <p className="mt-1.5 text-sm text-gray-400">
                 With {businessName}. Read on for the details.
@@ -298,7 +298,7 @@ export default async function PublicMaintenanceEnrollmentPage({
             <div className="space-y-4">
               <div>
                 <p className="text-base font-semibold leading-snug text-white">
-                  {maintenancePlanServiceLabel(
+                  {maintenanceDetailServiceLabel(
                     enrollment.service_name_snapshot
                   )}
                 </p>

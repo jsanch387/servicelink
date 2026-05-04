@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'This plan can no longer be updated here.',
+          error: 'This maintenance detail can no longer be updated here.',
         },
         { status: 409 }
       );

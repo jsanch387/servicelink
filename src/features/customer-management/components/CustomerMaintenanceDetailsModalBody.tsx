@@ -8,6 +8,9 @@ import {
   customerMaintenanceEnrollmentCardSubtitle,
 } from '@/features/customer-management/utils/customerMaintenanceEnrollmentLabels';
 import { maintenanceEnrollmentPaidWithCard } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
+import { buildMaintenanceInviteCustomerUrl } from '@/features/maintenance/utils/buildMaintenanceInviteCustomerUrl';
+import { CheckIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 function formatPriceWhole(cents: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -54,13 +57,57 @@ export function CustomerMaintenanceDetailsModalBody({
   onClose,
 }: CustomerMaintenanceDetailsModalBodyProps) {
   const statusLine = customerMaintenanceEnrollmentCardSubtitle(enrollment);
+  const inviteUrl = enrollment.inviteToken
+    ? buildMaintenanceInviteCustomerUrl(enrollment.inviteToken)
+    : '';
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyInviteLink = async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      setLinkCopied(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-gray-400">
-        The invite link is only sent from the invite flow—it does not appear
-        here.
+        Copy the link to text or email—especially if they have no inbox on file.
       </p>
+
+      {inviteUrl ? (
+        <Button
+          type="button"
+          variant="inverse"
+          size="sm"
+          fullWidth
+          className="text-sm font-semibold"
+          onClick={() => void handleCopyInviteLink()}
+          icon={
+            linkCopied ? (
+              <CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
+            ) : (
+              <ClipboardDocumentIcon
+                className="h-4 w-4 text-neutral-700"
+                aria-hidden
+              />
+            )
+          }
+        >
+          {linkCopied ? 'Copied' : 'Copy invite link'}
+        </Button>
+      ) : (
+        <p className="text-xs text-gray-500">
+          No link on file for this enrollment (older invites). You can send a
+          new invite from the customer panel when this invite is no longer
+          pending.
+        </p>
+      )}
+
       <div className="space-y-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-4">
         <DetailRow label="Status" value={statusLine} />
         <div className="h-px bg-white/[0.06]" />
