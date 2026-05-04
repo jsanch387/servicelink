@@ -4,6 +4,10 @@
  * Creates a Stripe Checkout Session for the Pro plan and returns the session URL.
  * Requires auth. User is redirected to Stripe to complete payment.
  *
+ * When `profiles.stripe_customer_id` is set, passes `customer` so Stripe reuses
+ * that Customer (avoids duplicate Customers per email). Otherwise uses `customer_email`.
+ * See `src/app/api/stripe/README.md` → “One Stripe Customer per profile”.
+ *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
  *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs.
  */
@@ -38,6 +42,20 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = getAppBaseUrl(request);
     const stripe = getStripePlatform();
+
+    // Reuse the Stripe Customer already tied to this profile so Checkout does not
+    // create a second Customer with the same email (orphan rows + confusing renewals).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profileRow } = await (supabase as any)
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const existingStripeCustomerId =
+      typeof profileRow?.stripe_customer_id === 'string'
+        ? profileRow.stripe_customer_id.trim()
+        : '';
+
     const body = await request.json().catch(() => ({}));
     const fromOnboarding =
       body &&
@@ -71,7 +89,9 @@ export async function POST(request: NextRequest) {
         : {}),
       success_url: `${baseUrl}${successPath}`,
       cancel_url: `${baseUrl}${cancelPath}`,
-      customer_email: user.email ?? undefined,
+      ...(existingStripeCustomerId
+        ? { customer: existingStripeCustomerId }
+        : { customer_email: user.email ?? undefined }),
       metadata: {
         userId: user.id,
         source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',

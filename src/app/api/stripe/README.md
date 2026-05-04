@@ -18,12 +18,22 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 
 1. User clicks **Get Pro** on `/dashboard/upgrade` (or the plan card links there first).
 2. Client calls `POST /api/stripe/create-checkout-session`.
-3. API creates a subscription Checkout Session and returns the session URL.
+3. API loads `profiles.stripe_customer_id` for the signed-in user, then creates a subscription Checkout Session and returns the session URL (see **One Stripe Customer per profile** below).
 4. Client redirects to Stripe Checkout.
 5. User completes payment on Stripe.
 6. Stripe sends `checkout.session.completed` to `POST /api/stripe/webhook`.
 7. Webhook verifies signature, records event id for idempotency, then updates `profiles`: `subscription_tier = 'pro'`, `subscription_status = 'active'`, `stripe_customer_id`, `stripe_subscription_id`, `subscription_current_period_end`.
 8. User is redirected to `{SITE_URL}/dashboard/settings?checkout=success`. They now have unlimited bookings (no monthly cap).
+
+## One Stripe Customer per profile (Checkout)
+
+**Problem we fixed:** If Checkout is created with only `customer_email` and no Stripe Customer id, Stripe may create a **new** `cus_…` on every completed session. The same person then appears as **multiple Customers** in the Dashboard (same email, different records). That is confusing for support, looks like “Link vs card” mismatches, and is easy to misread as double billing. Renewals still attach to the **subscription’s** Customer only—but duplicate rows create noise and distrust.
+
+**What we do:** `POST /api/stripe/create-checkout-session` reads `profiles.stripe_customer_id`. When it is set (e.g. after a prior subscription, including after cancel—see **Subscription end**), the session is created with `customer: <stripe_customer_id>` so Stripe **reuses** that Customer. A new subscription after re-upgrade is created **on that same Customer**; the webhook continues to write the new `stripe_subscription_id` and period end from `checkout.session.completed`. When `stripe_customer_id` is still null (first-ever paid signup), the session uses `customer_email` so Stripe creates the Customer on first successful checkout, and the webhook stores the id.
+
+**Operational note:** Legacy accounts may already have duplicate Customers in Stripe from before this behavior. You can leave inactive orphans alone or use Stripe’s tools to merge/delete duplicates; going forward, new checkouts from the app should stay on a single Customer per profile as long as `stripe_customer_id` was saved at least once.
+
+**Out of scope:** Booking payments use Connect Checkout on **connected** accounts (`/api/public/booking-checkout`); that flow is unrelated to platform `profiles.stripe_customer_id` and is unchanged.
 
 ## Webhook idempotency table
 
