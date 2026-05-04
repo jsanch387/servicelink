@@ -138,6 +138,173 @@ export async function createBooking(
   return { id: data.id };
 }
 
+/** Address / vehicle snapshot from the customer's most recent booking, if any. */
+async function loadLatestBookingCustomerSnapshotForCustomer(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  businessId: string,
+  customerId: string
+): Promise<Partial<
+  Pick<
+    CustomerFormData,
+    | 'streetAddress'
+    | 'unitApt'
+    | 'city'
+    | 'state'
+    | 'zip'
+    | 'vehicleYear'
+    | 'vehicleMake'
+    | 'vehicleModel'
+  >
+> | null> {
+  const { data, error } = await db
+    .from('bookings')
+    .select(
+      'customer_street_address, customer_unit_apt, customer_city, customer_state, customer_zip, customer_vehicle_year, customer_vehicle_make, customer_vehicle_model'
+    )
+    .eq('business_id', businessId)
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const row = data as {
+    customer_street_address?: string | null;
+    customer_unit_apt?: string | null;
+    customer_city?: string | null;
+    customer_state?: string | null;
+    customer_zip?: string | null;
+    customer_vehicle_year?: string | null;
+    customer_vehicle_make?: string | null;
+    customer_vehicle_model?: string | null;
+  };
+
+  const street = String(row.customer_street_address ?? '').trim();
+  const city = String(row.customer_city ?? '').trim();
+  if (!street && !city) {
+    return null;
+  }
+
+  return {
+    streetAddress: street,
+    unitApt: String(row.customer_unit_apt ?? '').trim(),
+    city,
+    state: String(row.customer_state ?? '').trim(),
+    zip: String(row.customer_zip ?? '').trim(),
+    vehicleYear: String(row.customer_vehicle_year ?? '').trim(),
+    vehicleMake: String(row.customer_vehicle_make ?? '').trim(),
+    vehicleModel: String(row.customer_vehicle_model ?? '').trim(),
+  };
+}
+
+/**
+ * Inserts a booking for an existing `customers` row (no upsert). Denormalized
+ * customer fields are copied from the customer record; address/vehicle are
+ * filled from their latest booking when present. Server-only.
+ */
+export async function createBookingForExistingCustomer(
+  supabase: SupabaseClient<Database>,
+  payload: {
+    businessId: string;
+    businessSlug: string;
+    customerId: string;
+    serviceId?: string | null;
+    serviceName: string;
+    servicePriceCents?: number | null;
+    selectedAddOns?: AddOnAtBooking[];
+    durationMinutes: number;
+    scheduledDate: string;
+    startTime: string;
+    /** Stored on `bookings.customer_notes` only (not merged into `customers.notes`). */
+    bookingCustomerNotes?: string | null;
+  }
+): Promise<{ id: string }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  const { data: customerRow, error: loadErr } = await db
+    .from('customers')
+    .select('id, business_id, full_name, phone, email, email_normalized, notes')
+    .eq('id', payload.customerId)
+    .eq('business_id', payload.businessId)
+    .maybeSingle();
+
+  if (loadErr) {
+    throw loadErr;
+  }
+  if (!customerRow) {
+    throw new Error('Customer not found for booking');
+  }
+
+  const c = customerRow as {
+    full_name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    email_normalized?: string | null;
+  };
+
+  const emailRaw = (c.email_normalized ?? c.email ?? '').trim();
+  const fromPrior = await loadLatestBookingCustomerSnapshotForCustomer(
+    db,
+    payload.businessId,
+    payload.customerId
+  );
+
+  const customer: CustomerFormData = {
+    fullName: (c.full_name ?? '').trim() || 'Customer',
+    email: emailRaw,
+    phone: (c.phone ?? '').trim(),
+    streetAddress: fromPrior?.streetAddress ?? '',
+    unitApt: fromPrior?.unitApt ?? '',
+    city: fromPrior?.city ?? '',
+    state: fromPrior?.state ?? '',
+    zip: fromPrior?.zip ?? '',
+    vehicleYear: fromPrior?.vehicleYear ?? '',
+    vehicleMake: fromPrior?.vehicleMake ?? '',
+    vehicleModel: fromPrior?.vehicleModel ?? '',
+    notes: (payload.bookingCustomerNotes ?? '').trim(),
+  };
+
+  const addonDetails =
+    payload.selectedAddOns?.length && payload.selectedAddOns.length > 0
+      ? payload.selectedAddOns
+      : null;
+
+  const row: CreateBookingPayload = {
+    business_id: payload.businessId,
+    business_slug: payload.businessSlug || null,
+    service_id: payload.serviceId ?? null,
+    service_name: payload.serviceName.trim(),
+    service_price_cents: payload.servicePriceCents ?? null,
+    addon_details: addonDetails,
+    duration_minutes: payload.durationMinutes,
+    scheduled_date: payload.scheduledDate,
+    start_time: payload.startTime.trim(),
+    ...mapCustomerToRow(customer),
+    customer_id: payload.customerId,
+  };
+
+  const { data, error } = await db
+    .from(TABLE)
+    .insert(row)
+    .select('id, customer_id')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.customer_id) {
+    throw new Error('Booking was created without customer_id');
+  }
+
+  return { id: data.id };
+}
+
 /**
  * Lists all bookings for a business (owner view). Use with authenticated
  * client so RLS allows SELECT for their business_id.

@@ -16,6 +16,8 @@ interface CreateMaintenanceEnrollmentSuccess {
   id: string;
   customerViewUrl: string;
   emailSent: boolean;
+  /** Customer inbox that received the invite, when email was sent. */
+  notifiedEmail?: string;
   emailError?: string;
 }
 
@@ -51,6 +53,7 @@ export async function createMaintenanceEnrollment(
             id?: string;
             customerViewUrl?: string;
             emailSent?: boolean;
+            notifiedEmail?: string;
             emailError?: string;
           };
           error?: string;
@@ -74,6 +77,10 @@ export async function createMaintenanceEnrollment(
       id: json.data.id,
       customerViewUrl: json.data.customerViewUrl,
       emailSent: Boolean(json.data.emailSent),
+      notifiedEmail:
+        typeof json.data.notifiedEmail === 'string'
+          ? json.data.notifiedEmail
+          : undefined,
       emailError: json.data.emailError,
     };
   } catch {

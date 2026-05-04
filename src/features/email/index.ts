@@ -37,6 +37,12 @@ export type {
   SendQuoteRequestOwnerNotificationResult,
 } from './quote-request-owner-notification/types';
 
+export { sendMaintenanceEnrollmentConfirmedEmail } from './maintenance-enrollment-confirmed/sendMaintenanceEnrollmentConfirmedEmail';
+export type {
+  MaintenanceEnrollmentConfirmedPayload,
+  SendMaintenanceEnrollmentConfirmedResult,
+} from './maintenance-enrollment-confirmed/types';
+
 export { sendWelcomeLiveEmail } from './welcome-live/sendWelcomeLiveEmail';
 export type {
   SendWelcomeLiveEmailResult,

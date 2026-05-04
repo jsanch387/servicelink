@@ -438,6 +438,7 @@ export type Database = {
           phone_normalized: string | null;
           email_normalized: string | null;
           notes: string | null;
+          maintenance_visits_completed: number;
           created_at: string;
           updated_at: string;
         };
@@ -450,6 +451,7 @@ export type Database = {
           phone_normalized?: string | null;
           email_normalized?: string | null;
           notes?: string | null;
+          maintenance_visits_completed?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -462,6 +464,7 @@ export type Database = {
           phone_normalized?: string | null;
           email_normalized?: string | null;
           notes?: string | null;
+          maintenance_visits_completed?: number;
           created_at?: string;
           updated_at?: string;
         };

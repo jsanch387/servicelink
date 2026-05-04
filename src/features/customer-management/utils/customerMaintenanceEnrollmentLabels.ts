@@ -32,13 +32,15 @@ function formatTime12FromHHmm(hhmm: string): string {
 export type CustomerMaintenancePlanChipVariant =
   | 'confirmed'
   | 'pending'
-  | 'cancelled';
+  | 'cancelled'
+  | 'visit_completed';
 
 /** Row badge next to “Maintenance plan” title in customer detail. */
 export function customerMaintenancePlanChipVariant(
   e: CustomerMaintenanceEnrollmentSummary
 ): CustomerMaintenancePlanChipVariant {
   if (e.status === 'cancelled') return 'cancelled';
+  if (e.status === 'visit_completed') return 'visit_completed';
   if (e.status === 'accepted') return 'confirmed';
   return 'pending';
 }
@@ -55,6 +57,8 @@ export function customerMaintenanceEnrollmentCardSubtitle(
     return 'Confirmed';
   }
   if (e.status === 'enrolled_pending_customer') return 'Waiting on customer';
+  if (e.status === 'visit_completed')
+    return 'Visit completed · send a new invite for the next cycle';
   return e.status.replace(/_/g, ' ') || 'Maintenance';
 }
 

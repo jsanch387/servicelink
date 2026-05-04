@@ -58,7 +58,8 @@ export function CustomerMaintenanceDetailsModalBody({
   return (
     <div className="space-y-5">
       <p className="text-sm text-gray-400">
-        Customer invite link is not shown here — it stays on their side only.
+        The invite link is only sent from the invite flow—it does not appear
+        here.
       </p>
       <div className="space-y-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-4">
         <DetailRow label="Status" value={statusLine} />
@@ -88,6 +89,7 @@ export function CustomerMaintenanceDetailsModalBody({
         size="sm"
         fullWidth
         onClick={onClose}
+        className="!border-white/15 !bg-zinc-950 !text-white hover:!bg-black hover:!border-white/25"
       >
         Close
       </Button>

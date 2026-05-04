@@ -21,6 +21,10 @@ export function mapCustomerRowToRecord(
 ): CustomerRecord {
   const emailRaw = row.email_normalized ?? row.email ?? '';
   const email = emailRaw ? normalizeEmailForLookup(emailRaw) : '';
+  const maintenanceVisitsCompleted = Math.max(
+    0,
+    Math.round(Number(row.maintenance_visits_completed ?? 0))
+  );
 
   if (metrics) {
     const lastVisitDate = metrics.lastVisitScheduledDate;
@@ -79,6 +83,7 @@ export function mapCustomerRowToRecord(
       nextAppointmentAddOnDetails: nextAddOnDetails,
       totalVisits: metrics.totalVisits,
       totalSpent: metrics.totalSpentCents / 100,
+      maintenanceVisitsCompleted,
       status: metrics.lifecycle,
       note: row.notes ?? '',
       maintenanceEnrollment: maintenance ?? null,
@@ -97,6 +102,7 @@ export function mapCustomerRowToRecord(
     nextAppointmentDaysUntil: null,
     totalVisits: 0,
     totalSpent: 0,
+    maintenanceVisitsCompleted,
     status: 'new',
     note: row.notes ?? '',
     maintenanceEnrollment: maintenance ?? null,

@@ -1,7 +1,12 @@
 import { getPublicMaintenanceEnrollmentPath } from '@/constants/routes';
 import { serviceDurationHHmmToMinutes } from '@/features/availability/utils/timeOptions';
 import { sendMaintenanceEnrollmentSentEmail } from '@/features/email/maintenance-enrollment-sent/sendMaintenanceEnrollmentSentEmail';
+import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
+import {
+  checkMaintenanceAnchorAgainstCalendar,
+  maintenanceSlotAvailabilityUserMessage,
+} from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
 import {
   MAINTENANCE_ANCHOR_PLACEHOLDER_DATE,
   MAINTENANCE_ANCHOR_PLACEHOLDER_TIME,
@@ -59,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceNameSnapshot =
-      body.serviceNameSnapshot?.trim() || 'Maintenance Detail';
+      body.serviceNameSnapshot?.trim() || 'Maintenance';
     const priceCents =
       typeof body.priceCents === 'number'
         ? Math.max(0, Math.floor(body.priceCents))
@@ -235,6 +240,24 @@ export async function POST(request: NextRequest) {
     const rawToken = crypto.randomBytes(32).toString('base64url');
     const tokenHash = resolveQuoteTokenHash(rawToken);
 
+    if (hasAnchorDate) {
+      const slotCheck = await checkMaintenanceAnchorAgainstCalendar(supabase, {
+        businessId,
+        anchorDate: anchorDateTrimmed,
+        anchorTime: anchorTimeTrimmed,
+        durationMinutes,
+      });
+      if (!slotCheck.ok) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: maintenanceSlotAvailabilityUserMessage(slotCheck.reason),
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('maintenance_enrollments')
@@ -284,7 +307,7 @@ export async function POST(request: NextRequest) {
         {
           customerName,
           businessName,
-          serviceName: serviceNameSnapshot,
+          serviceName: maintenancePlanServiceLabel(serviceNameSnapshot),
           priceCents,
           frequencyWeeks,
           durationMinutes,
@@ -322,6 +345,9 @@ export async function POST(request: NextRequest) {
           id: enrollmentId,
           customerViewUrl,
           emailSent,
+          ...(emailSent && customerEmail
+            ? { notifiedEmail: customerEmail }
+            : {}),
           emailError: emailError ?? undefined,
         },
       },

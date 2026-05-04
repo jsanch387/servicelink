@@ -4,6 +4,10 @@
  * Customer sets first-visit date/time when the owner left them blank.
  */
 
+import {
+  checkMaintenanceAnchorAgainstCalendar,
+  maintenanceSlotAvailabilityUserMessage,
+} from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { loadPublicMaintenanceEnrollmentByToken } from '@/features/maintenance/server/loadPublicMaintenanceEnrollment';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -77,6 +81,26 @@ export async function POST(request: NextRequest) {
     if (hasMaintenanceAnchorScheduled(enrollment)) {
       return NextResponse.json(
         { success: false, error: 'A first visit date is already set.' },
+        { status: 409 }
+      );
+    }
+
+    const durationMinutes = Math.max(
+      1,
+      Math.round(Number(enrollment.duration_minutes ?? 60))
+    );
+    const slotCheck = await checkMaintenanceAnchorAgainstCalendar(supabase, {
+      businessId: enrollment.business_id,
+      anchorDate,
+      anchorTime,
+      durationMinutes,
+    });
+    if (!slotCheck.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: maintenanceSlotAvailabilityUserMessage(slotCheck.reason),
+        },
         { status: 409 }
       );
     }

@@ -6,6 +6,30 @@
 import type { DayKey, WeeklySchedule } from '../../types/availability';
 import type { ExistingBooking, TimeOffInterval } from '../types';
 
+/**
+ * True if a booking [startTime, startTime + duration) overlaps any existing
+ * booking on the same calendar day (same half-open convention as time-off).
+ */
+export function bookingOverlapsExistingBookings(
+  scheduledDate: string,
+  startTime: string,
+  durationMinutes: number,
+  existingBookings: ReadonlyArray<ExistingBooking>
+): boolean {
+  const sStart = parseTimeHHmm(startTime.trim().slice(0, 5));
+  const sEnd = sStart + Math.max(1, durationMinutes);
+  return existingBookings.some(b => {
+    if (b.date !== scheduledDate) return false;
+    const bStart = parseTimeHHmm(
+      String(b.startTime ?? '')
+        .trim()
+        .slice(0, 5)
+    );
+    const bEnd = bStart + Math.max(1, b.durationMinutes);
+    return sStart < bEnd && sEnd > bStart;
+  });
+}
+
 const DAY_KEYS: DayKey[] = [
   'sunday',
   'monday',

@@ -6,6 +6,7 @@
 import { getFromEmail, getResendClient } from '../services/resendClient';
 import {
   buildMaintenanceEnrollmentSentHtml,
+  buildMaintenanceEnrollmentSentPlainText,
   getMaintenanceEnrollmentSentSubject,
 } from './maintenanceEnrollmentSentTemplate';
 import type {
@@ -24,12 +25,14 @@ export async function sendMaintenanceEnrollmentSentEmail(
 
   const subject = getMaintenanceEnrollmentSentSubject(payload.businessName);
   const html = buildMaintenanceEnrollmentSentHtml(payload);
+  const text = buildMaintenanceEnrollmentSentPlainText(payload);
 
   const { data, error } = await client.emails.send({
     from: getFromEmail(),
     to: [to.trim()],
     subject,
     html,
+    text,
   });
 
   if (error) {

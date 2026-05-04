@@ -40,6 +40,8 @@ export interface CustomerRecord {
   nextAppointmentAddOnDetails?: CustomerBookingAddOn[];
   totalVisits: number;
   totalSpent: number;
+  /** Completed maintenance-plan visits (from enrollment-linked bookings or maintenance-titled services). */
+  maintenanceVisitsCompleted: number;
   status: CustomerLifecycle;
   note: string;
   /** Present when this customer has at least one enrollment row (latest by `created_at`). */

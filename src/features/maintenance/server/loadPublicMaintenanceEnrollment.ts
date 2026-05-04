@@ -38,7 +38,7 @@ export async function loadPublicMaintenanceEnrollmentByToken(
   if (error || !enrollment) return null;
 
   const status = String(enrollment.status ?? '');
-  if (status === 'cancelled') return null;
+  if (status === 'cancelled' || status === 'visit_completed') return null;
 
   return enrollment as MaintenanceEnrollmentPublicRow;
 }

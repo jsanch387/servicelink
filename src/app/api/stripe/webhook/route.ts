@@ -31,6 +31,8 @@ import {
   sendWelcomeLiveEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
+import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
 import { completeOnboardingV2 } from '@/features/onboarding-v2/server/completeOnboarding';
@@ -748,7 +750,7 @@ export async function POST(request: NextRequest) {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- maintenance_enrollments not in generated Database types
       const maintDb = supabase as any;
-      const { data: maintUpdated, error: maintUpdateErr } = await maintDb
+      const { error: maintUpdateErr } = await maintDb
         .from('maintenance_enrollments')
         .update({
           status: 'accepted',
@@ -758,9 +760,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', enrollmentId)
         .eq('status', 'enrolled_pending_customer')
-        .eq('payment_status', 'pending')
-        .select('id')
-        .maybeSingle();
+        .eq('payment_status', 'pending');
 
       if (maintUpdateErr) {
         console.error('[maintenance:webhook] update failed', maintUpdateErr);
@@ -770,9 +770,35 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (!maintUpdated) {
-        return NextResponse.json({ received: true }, { status: 200 });
+      try {
+        const ensured = await ensureMaintenanceEnrollmentInitialBooking(
+          supabase,
+          enrollmentId,
+          {
+            stripeCheckoutSessionId: session.id,
+          }
+        );
+        if (!ensured.created && ensured.skippedReason) {
+          console.warn('[maintenance:webhook] calendar booking not created', {
+            enrollmentId,
+            sessionId: session.id,
+            skippedReason: ensured.skippedReason,
+          });
+        }
+      } catch (ensureErr) {
+        console.error(
+          '[maintenance:webhook] ensure calendar booking failed',
+          ensureErr,
+          { enrollmentId, sessionId: session.id }
+        );
       }
+
+      void sendMaintenanceEnrollmentConfirmedIfApplicable(
+        supabase,
+        enrollmentId
+      ).catch(err => {
+        console.error('[maintenance:webhook] confirmation email', err);
+      });
 
       return NextResponse.json({ received: true }, { status: 200 });
     }

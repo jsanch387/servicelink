@@ -5,12 +5,17 @@
  * Customer must pass the same magic token as in their email link.
  */
 
+import {
+  checkMaintenanceAnchorAgainstCalendar,
+  maintenanceSlotAvailabilityUserMessage,
+} from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { loadPublicMaintenanceEnrollmentByToken } from '@/features/maintenance/server/loadPublicMaintenanceEnrollment';
 import {
   maintenanceCustomerPaymentOptions,
   type MaintenanceLivePaymentFlags,
 } from '@/features/maintenance/server/maintenancePaymentEligibility';
+import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
@@ -180,6 +185,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const durationMinutes = Math.max(
+      1,
+      Math.round(Number(enrollment.duration_minutes ?? 60))
+    );
+    const slotCheck = await checkMaintenanceAnchorAgainstCalendar(supabase, {
+      businessId,
+      anchorDate: String(enrollment.anchor_date ?? '').trim(),
+      anchorTime: String(enrollment.anchor_time ?? ''),
+      durationMinutes,
+    });
+    if (!slotCheck.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: maintenanceSlotAvailabilityUserMessage(slotCheck.reason),
+        },
+        { status: 409 }
+      );
+    }
+
     const { data: profileRow, error: profileError } = await supabase
       .from('business_profiles')
       .select('business_name')
@@ -208,8 +233,9 @@ export async function POST(request: NextRequest) {
     const cancelUrl = `${baseUrl}/maintenance/e/${encodeURIComponent(rawToken)}?checkout=cancel`;
 
     const stripe = getStripePlatform();
-    const serviceName = String(enrollment.service_name_snapshot ?? '').trim();
-    const lineItemName = (serviceName || 'Maintenance visit').slice(0, 120);
+    const lineItemName = maintenancePlanServiceLabel(
+      enrollment.service_name_snapshot
+    ).slice(0, 120);
 
     let session;
     try {

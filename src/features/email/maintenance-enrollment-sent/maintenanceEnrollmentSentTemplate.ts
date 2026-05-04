@@ -1,3 +1,4 @@
+import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import { escapeHtml } from '../utils/escapeHtml';
 import type { MaintenanceEnrollmentSentPayload } from './types';
 
@@ -30,11 +31,46 @@ function formatTimeHHmm(hhmm: string): string {
   return `${h12}:${min} ${ampm}`;
 }
 
-function formatDurationHours(minutes: number): string {
-  if (minutes <= 0) return '';
-  const hours = Math.round(minutes / 60);
-  if (hours < 1) return `${minutes} min`;
-  return hours === 1 ? '1 hr' : `${hours} hrs`;
+/** Plain-text body for Resend (accessibility + clients without HTML). */
+export function buildMaintenanceEnrollmentSentPlainText(
+  payload: MaintenanceEnrollmentSentPayload
+): string {
+  const businessName = payload.businessName.trim() || 'Your detailer';
+  const priceLabel = formatPriceWholeDollars(payload.priceCents);
+  const hasAnchor =
+    Boolean(payload.anchorDate?.trim()) && Boolean(payload.anchorTime?.trim());
+  const dateLabel = hasAnchor
+    ? formatDateLong(payload.anchorDate as string)
+    : "You'll choose this when you open your link";
+  const timeRowLabel = hasAnchor ? 'Time' : 'Visit length';
+  const timeRowValue = hasAnchor
+    ? `${formatTimeHHmm(payload.anchorTime as string)} · ${formatDurationForEmail(payload.durationMinutes)}`
+    : formatDurationForEmail(payload.durationMinutes);
+  const freqLabel =
+    payload.frequencyWeeks === 1
+      ? 'Every week'
+      : `Every ${payload.frequencyWeeks} weeks`;
+
+  return [
+    `Hi ${payload.customerName.trim() || 'there'},`,
+    '',
+    `${businessName} sent you a secure link to review your maintenance plan. Open it to see the details, set your visit date if needed, and confirm or pay (depending on what ${businessName} offers).`,
+    '',
+    `Open your plan: ${payload.publicEnrollmentUrl}`,
+    '',
+    'Plan summary',
+    `— Business: ${businessName}`,
+    `— First visit: ${dateLabel}`,
+    `— ${timeRowLabel}: ${timeRowValue}`,
+    `— Frequency: ${freqLabel}`,
+    '',
+    'Service & pricing',
+    `— Service: ${payload.serviceName}`,
+    `— Price per visit: ${priceLabel}`,
+    '',
+    `You received this email because ${businessName} invited you to a maintenance plan.`,
+    `© ${new Date().getFullYear()} ServiceLink`,
+  ].join('\n');
 }
 
 export function buildMaintenanceEnrollmentSentHtml(
@@ -49,8 +85,8 @@ export function buildMaintenanceEnrollmentSentHtml(
     : "You'll choose this when you open your link";
   const timeRowLabel = hasAnchor ? 'Time' : 'Visit length';
   const timeRowValue = hasAnchor
-    ? `${formatTimeHHmm(payload.anchorTime as string)} · ${formatDurationHours(payload.durationMinutes)}`
-    : formatDurationHours(payload.durationMinutes);
+    ? `${formatTimeHHmm(payload.anchorTime as string)} · ${formatDurationForEmail(payload.durationMinutes)}`
+    : formatDurationForEmail(payload.durationMinutes);
   const freqLabel =
     payload.frequencyWeeks === 1
       ? 'Every week'
@@ -74,9 +110,19 @@ export function buildMaintenanceEnrollmentSentHtml(
     .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 16px; }
     .detail-label { font-size: 14px; color: #64748b; }
     .detail-value { font-size: 14px; font-weight: 500; color: #1e293b; text-align: right; }
-    .button { background-color: #0d9488; border-radius: 8px; color: #ffffff !important; display: inline-block; font-size: 16px; font-weight: 600; line-height: 50px; text-align: center; text-decoration: none; width: 100%; }
+    .button { background-color: #ffffff; border-radius: 12px; color: #171717 !important; display: block; font-size: 16px; font-weight: 600; line-height: 50px; text-align: center; text-decoration: none; width: 100%; max-width: 100%; box-sizing: border-box; border: 1px solid #e4e4e7; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .footer { padding: 30px; text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.6; }
-    @media screen and (max-width: 600px) { .content { padding: 0 20px 30px 20px; } .card { padding: 16px; } }
+    @media screen and (max-width: 520px) {
+      .hero { padding: 10px 18px 22px 18px !important; }
+      .hero h1 { font-size: 22px !important; line-height: 1.2 !important; }
+      .content { padding: 0 16px 28px 16px !important; }
+      .card { padding: 16px 14px !important; }
+      .footer { padding: 22px 16px !important; }
+      .mob-stack td { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: left !important; }
+      .mob-stack td.detail-label { padding: 0 0 4px 0 !important; }
+      .mob-stack td.detail-value { padding: 0 0 14px 0 !important; }
+      .mob-stack tr:last-child td.detail-value { padding-bottom: 0 !important; }
+    }
   </style>
 </head>
 <body>
@@ -88,7 +134,7 @@ export function buildMaintenanceEnrollmentSentHtml(
           <h1 style="font-size: 26px; margin: 0; color: #1e293b; letter-spacing: -0.02em;">Your maintenance plan</h1>
           <p style="font-size: 16px; color: #1e293b; margin-top: 12px; font-weight: 600;">Hi ${escapeHtml(payload.customerName)},</p>
           <p style="font-size: 16px; color: #64748b; margin-top: 8px; line-height: 1.5;">
-            ${businessName} enrolled you in a maintenance detail. Review the details and confirm when you&apos;re ready.
+            ${businessName} sent you a secure link to review your maintenance plan. Open it to see the details, pick your visit date if needed, and confirm or pay—whatever ${businessName} has set up for you.
           </p>
         </td>
       </tr>
@@ -97,19 +143,19 @@ export function buildMaintenanceEnrollmentSentHtml(
           <div class="card">
             <div class="section-title">Plan summary</div>
             <table width="100%" cellspacing="0" cellpadding="0" role="presentation">
-              <tr>
+              <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 16px 12px 0; vertical-align: top; width: 42%;">Business</td>
                 <td class="detail-value" style="padding: 0 0 12px 0; vertical-align: top;">${businessName}</td>
               </tr>
-              <tr>
+              <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 16px 12px 0; vertical-align: top;">First visit</td>
                 <td class="detail-value" style="padding: 0 0 12px 0; vertical-align: top;">${escapeHtml(dateLabel)}</td>
               </tr>
-              <tr>
+              <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 16px 12px 0; vertical-align: top;">${timeRowLabel}</td>
                 <td class="detail-value" style="padding: 0 0 12px 0; vertical-align: top;">${escapeHtml(timeRowValue)}</td>
               </tr>
-              <tr>
+              <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 16px 12px 0; vertical-align: top;">Frequency</td>
                 <td class="detail-value" style="padding: 0 0 12px 0; vertical-align: top;">${escapeHtml(freqLabel)}</td>
               </tr>
@@ -118,13 +164,13 @@ export function buildMaintenanceEnrollmentSentHtml(
           <div class="card" style="background-color: #ffffff;">
             <div class="section-title">Service &amp; pricing</div>
             <table width="100%" cellspacing="0" cellpadding="0" role="presentation">
-              <tr>
+              <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 16px 12px 0; vertical-align: top; width: 42%;">Service</td>
                 <td class="detail-value" style="padding: 0 0 12px 0; vertical-align: top;">${escapeHtml(payload.serviceName)}</td>
               </tr>
-              <tr>
+              <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 16px 0 0; vertical-align: top;">Price per visit</td>
-                <td class="detail-value" style="padding: 0; vertical-align: top; color: #0d9488; font-weight: 700;">${escapeHtml(priceLabel)}</td>
+                <td class="detail-value" style="padding: 0; vertical-align: top; color: #0f172a; font-weight: 700;">${escapeHtml(priceLabel)}</td>
               </tr>
             </table>
           </div>
@@ -150,5 +196,5 @@ export function getMaintenanceEnrollmentSentSubject(
   businessName: string
 ): string {
   const name = businessName.trim() || 'Your detailer';
-  return `Maintenance plan from ${name}`;
+  return `Your maintenance plan link from ${name}`;
 }

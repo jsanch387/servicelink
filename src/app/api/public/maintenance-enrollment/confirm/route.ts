@@ -4,6 +4,12 @@
  * Customer confirms "pay in person" for a maintenance enrollment (magic token link).
  */
 
+import {
+  checkMaintenanceAnchorAgainstCalendar,
+  maintenanceSlotAvailabilityUserMessage,
+} from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
+import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
+import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { loadPublicMaintenanceEnrollmentByToken } from '@/features/maintenance/server/loadPublicMaintenanceEnrollment';
 import {
@@ -55,6 +61,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (enrollment.status === 'accepted') {
+      try {
+        await ensureMaintenanceEnrollmentInitialBooking(
+          supabase,
+          enrollment.id
+        );
+      } catch (e) {
+        console.error(
+          '[maintenance-confirm] ensure calendar booking failed',
+          e,
+          { enrollmentId: enrollment.id }
+        );
+      }
       return NextResponse.json({ success: true, alreadyAccepted: true });
     }
 
@@ -135,6 +153,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const durationMinutes = Math.max(
+      1,
+      Math.round(Number(enrollment.duration_minutes ?? 60))
+    );
+    const slotCheck = await checkMaintenanceAnchorAgainstCalendar(supabase, {
+      businessId,
+      anchorDate: String(enrollment.anchor_date ?? '').trim(),
+      anchorTime: String(enrollment.anchor_time ?? ''),
+      durationMinutes,
+    });
+    if (!slotCheck.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: maintenanceSlotAvailabilityUserMessage(slotCheck.reason),
+        },
+        { status: 409 }
+      );
+    }
+
     const nowIso = new Date().toISOString();
 
     const { error: updateError } = await db
@@ -155,6 +193,21 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    try {
+      await ensureMaintenanceEnrollmentInitialBooking(supabase, enrollment.id);
+    } catch (e) {
+      console.error('[maintenance-confirm] ensure calendar booking failed', e, {
+        enrollmentId: enrollment.id,
+      });
+    }
+
+    void sendMaintenanceEnrollmentConfirmedIfApplicable(
+      supabase,
+      enrollment.id
+    ).catch(err => {
+      console.error('[maintenance-confirm] confirmation email', err);
+    });
 
     return NextResponse.json({ success: true });
   } catch (e) {

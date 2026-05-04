@@ -3,6 +3,7 @@
  */
 
 import { formatPhoneUsDisplay } from '@/lib/formatPhoneUs';
+import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import { escapeHtml } from '../utils/escapeHtml';
 import type { AvailabilityBookingNotificationPayload } from './types';
 
@@ -29,12 +30,6 @@ function formatDateLong(dateStr: string): string {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-/** Format duration in minutes as hours (whole hours only), e.g. 60 → "1 hr", 120 → "2 hrs". */
-function formatDurationHours(minutes: number): string {
-  const hours = Math.round(minutes / 60);
-  return hours === 1 ? '1 hr' : `${hours} hrs`;
 }
 
 function formatPriceCents(cents: number): string {
@@ -117,7 +112,7 @@ export function buildAvailabilityBookingEmailHtml(
 ): string {
   const timeLabel = formatTimeHHmm(payload.startTime);
   const dateLabel = formatDateLong(payload.scheduledDate);
-  const durationLabel = formatDurationHours(payload.durationMinutes);
+  const durationLabel = formatDurationForEmail(payload.durationMinutes);
 
   const vehicleLine = formatVehicleLine(payload);
   const addOns = payload.selectedAddOns ?? [];

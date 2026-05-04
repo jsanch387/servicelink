@@ -38,6 +38,7 @@ export function EnrollMaintenanceModalBody({
   const [successPayload, setSuccessPayload] = useState<{
     customerViewUrl: string;
     emailSent: boolean;
+    notifiedEmail?: string;
     emailError?: string;
   } | null>(null);
 
@@ -58,7 +59,7 @@ export function EnrollMaintenanceModalBody({
 
     const result = await createMaintenanceEnrollment({
       customerId,
-      serviceNameSnapshot: 'Maintenance Detail',
+      serviceNameSnapshot: 'Maintenance',
       priceCents: Number.isFinite(priceDollars) ? priceDollars * 100 : 0,
       frequencyWeeks: Number.isFinite(frequency) ? frequency : 0,
       durationMinutes,
@@ -80,6 +81,7 @@ export function EnrollMaintenanceModalBody({
     setSuccessPayload({
       customerViewUrl: result.customerViewUrl,
       emailSent: result.emailSent,
+      notifiedEmail: result.notifiedEmail,
       emailError: result.emailError,
     });
   };
@@ -98,13 +100,15 @@ export function EnrollMaintenanceModalBody({
   if (successPayload) {
     return (
       <div className="space-y-5 lg:space-y-6">
-        <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3">
-          <p className="text-sm font-semibold text-emerald-200">
-            Enrollment saved
+        <div className="rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 py-3">
+          <p className="text-sm font-semibold text-white">
+            {successPayload.emailSent ? 'Invite sent' : 'Plan saved'}
           </p>
           <p className="mt-1 text-xs text-gray-400">
             {successPayload.emailSent
-              ? 'We emailed the customer a link to review their plan.'
+              ? successPayload.notifiedEmail
+                ? `We emailed ${successPayload.notifiedEmail} with a secure link to review and confirm the maintenance plan.`
+                : 'We emailed your customer with a secure link to review and confirm the maintenance plan.'
               : successPayload.emailError
                 ? `Email was not sent (${successPayload.emailError}). Copy the link below and send it yourself.`
                 : 'Copy the link below and send it to your customer.'}
@@ -121,7 +125,7 @@ export function EnrollMaintenanceModalBody({
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
-              variant="secondary"
+              variant="inverse"
               size="sm"
               onClick={() => void handleCopyLink()}
               className="text-sm font-semibold"
@@ -236,13 +240,13 @@ export function EnrollMaintenanceModalBody({
             Cancel
           </Button>
           <Button
-            variant="secondary"
+            variant="inverse"
             onClick={() => void handleEnroll()}
             disabled={!canSubmitEnroll}
             loading={isSubmitting}
             className="text-sm font-semibold lg:min-w-[160px]"
           >
-            Send maintenance invite
+            Send invite
           </Button>
         </div>
       </div>

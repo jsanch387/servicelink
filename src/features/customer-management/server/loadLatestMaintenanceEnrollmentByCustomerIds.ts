@@ -1,4 +1,5 @@
 import type { CustomerMaintenanceEnrollmentSummary } from '@/features/customer-management/types';
+import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -23,8 +24,7 @@ function rowToSummary(
     enrollmentId: row.id,
     status: String(row.status ?? ''),
     paymentStatus: String(row.payment_status ?? ''),
-    serviceNameSnapshot:
-      String(row.service_name_snapshot ?? '').trim() || 'Maintenance',
+    serviceNameSnapshot: maintenancePlanServiceLabel(row.service_name_snapshot),
     priceCents: Math.max(0, Math.round(Number(row.price_cents ?? 0))),
     frequencyWeeks: Math.max(0, Math.round(Number(row.frequency_weeks ?? 0))),
     durationMinutes: Math.max(0, Math.round(Number(row.duration_minutes ?? 0))),

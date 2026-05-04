@@ -65,6 +65,14 @@ function MaintenanceEnrollmentStatusChip({
       </span>
     );
   }
+  if (chip === 'visit_completed') {
+    return (
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-500/35 bg-zinc-500/12 px-2 py-0.5 text-[11px] font-semibold text-zinc-200">
+        <CheckCircleIcon className="h-3.5 w-3.5 text-zinc-400" aria-hidden />
+        Visit done
+      </span>
+    );
+  }
   return (
     <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200/95">
       <ClockIcon className="h-3.5 w-3.5 text-amber-400/90" aria-hidden />
@@ -352,6 +360,18 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   </div>
                 </>
               ) : null}
+
+              {!isSampleCustomer ? (
+                <>
+                  <div className="my-3 border-t border-dashed border-white/[0.12]" />
+                  <div className="flex items-center justify-between gap-3 text-xs text-gray-400">
+                    <span>Maintenance visits (tracked)</span>
+                    <span className="tabular-nums font-medium text-gray-300">
+                      {customer.maintenanceVisitsCompleted}
+                    </span>
+                  </div>
+                </>
+              ) : null}
             </div>
           </section>
 
@@ -490,17 +510,17 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
             <div className="space-y-2.5">
               {!isSampleCustomer ? (
                 <Button
-                  variant="secondary"
+                  variant="inverse"
                   size="sm"
                   onClick={() => setEnrollMaintenanceOpen(true)}
                   icon={
-                    <ArrowPathRoundedSquareIcon className="h-4 w-4 text-sky-400" />
+                    <ArrowPathRoundedSquareIcon className="h-4 w-4 text-sky-700" />
                   }
                   fullWidth={true}
                   className="text-sm font-semibold"
                   aria-label="Send maintenance plan invite to customer"
                 >
-                  Maintenance plan invite
+                  Send maintenance invite
                 </Button>
               ) : null}
               {needsAttention ? (

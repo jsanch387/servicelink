@@ -4,6 +4,7 @@ import { MaintenanceEnrollmentPaymentActions } from '@/features/maintenance/comp
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { loadPublicMaintenanceEnrollmentByToken } from '@/features/maintenance/server/loadPublicMaintenanceEnrollment';
 import { maintenanceEnrollmentPaidWithCard } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
+import { maintenancePlanServiceLabel } from '@/features/maintenance/utils/maintenancePlanServiceLabel';
 import {
   maintenanceCustomerPaymentOptions,
   type MaintenanceLivePaymentFlags,
@@ -297,7 +298,9 @@ export default async function PublicMaintenanceEnrollmentPage({
             <div className="space-y-4">
               <div>
                 <p className="text-base font-semibold leading-snug text-white">
-                  {String(enrollment.service_name_snapshot ?? '')}
+                  {maintenancePlanServiceLabel(
+                    enrollment.service_name_snapshot
+                  )}
                 </p>
                 <p className="mt-2 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-xs font-medium text-gray-300">
                   {formatDurationMinutes(
