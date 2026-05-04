@@ -9,7 +9,7 @@ import {
 } from '@/features/calendar-sync';
 import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
 import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
@@ -215,9 +215,45 @@ export function AvailabilityBookingsView({
     setSelectedBooking(null);
   };
 
+  /** Same approach as shared Modal: freeze document scroll so only the detail sheet moves (esp. iOS). */
+  useLayoutEffect(() => {
+    if (!selectedBooking) return;
+
+    const html = document.documentElement;
+    const scrollY = window.scrollY;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyPosition = document.body.style.position;
+    const prevBodyTop = document.body.style.top;
+    const prevBodyLeft = document.body.style.left;
+    const prevBodyRight = document.body.style.right;
+    const prevBodyWidth = document.body.style.width;
+    const prevBodyOverflow = document.body.style.overflow;
+
+    html.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      document.body.style.position = prevBodyPosition;
+      document.body.style.top = prevBodyTop;
+      document.body.style.left = prevBodyLeft;
+      document.body.style.right = prevBodyRight;
+      document.body.style.width = prevBodyWidth;
+      document.body.style.overflow = prevBodyOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [selectedBooking]);
+
   return (
-    <main className="relative flex min-h-screen flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
-      <div className="min-h-0 flex-1 overflow-y-auto pb-36">
+    <main className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
+      <div
+        className={`min-h-0 flex-1 pb-36 ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
+      >
         <header className="sticky top-0 z-10 w-full border-b border-white/[0.05] bg-[#0f0f0f]/80 px-3 pt-4 pb-3 backdrop-blur-xl sm:px-4 sm:pt-6 sm:pb-4 md:px-6 md:pt-8 lg:px-8">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1 text-left">

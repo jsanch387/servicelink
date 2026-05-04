@@ -114,11 +114,11 @@ export function AvailabilityBookingDetailPanel({
   return (
     <>
       <div
-        className="fixed inset-0 z-40 md:bg-black/40 md:backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-black/30 md:bg-black/40 md:backdrop-blur-sm"
         aria-hidden
       />
       <div
-        className="fixed inset-0 z-50 md:inset-y-0 md:left-auto md:right-0 md:w-full md:max-w-md md:shadow-2xl bg-[#0f0f0f] border-l border-white/5 flex flex-col animate-in slide-in-from-right duration-200"
+        className="fixed inset-0 z-50 flex min-h-0 min-w-0 flex-col overscroll-none bg-[#0f0f0f] animate-in slide-in-from-right duration-200 md:inset-y-0 md:left-auto md:right-0 md:w-full md:max-w-md md:border-l md:border-white/5 md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="booking-detail-title"
@@ -141,7 +141,7 @@ export function AvailabilityBookingDetailPanel({
           </h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-6">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-5 [-webkit-overflow-scrolling:touch]">
           {isCancelled && (
             <div
               className="rounded-xl border border-rose-500/35 bg-rose-500/[0.09] px-4 py-3"

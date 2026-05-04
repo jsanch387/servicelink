@@ -57,8 +57,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           )}
         </div>
-        {/* Main Content - scrolls naturally with the page */}
-        <div className="flex-1">{children}</div>
+        {/* Main content: min-h-0 lets nested pages (e.g. Bookings) use flex + overflow-y without growing past the viewport */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
       </div>
     </div>
   );
