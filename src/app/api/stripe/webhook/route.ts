@@ -26,7 +26,6 @@ import { createBooking } from '@/features/availability/services/bookingService';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
-  sendSubscriptionPaymentFailedEmail,
   sendTrialEndingSoonEmail,
   sendWelcomeLiveEmail,
   type AvailabilityBookingNotificationPayload,
@@ -41,14 +40,6 @@ import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-
-const DELINQUENT_OR_ENDED_STATUSES = new Set([
-  'past_due',
-  'unpaid',
-  'canceled',
-  'incomplete',
-  'incomplete_expired',
-]);
 
 function logBookingWebhook(message: string, payload?: Record<string, unknown>) {
   if (
@@ -896,7 +887,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Recurring payment failed (card declined, expired, etc.) – notify customer
+  // Recurring payment failed — sync profile only (no ServiceLink email; use in-app Settings banner + Stripe optional emails).
   if (event.type === 'invoice.payment_failed') {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -928,20 +919,6 @@ export async function POST(request: NextRequest) {
         : subscriptionRef && typeof subscriptionRef === 'object'
           ? (subscriptionRef as Stripe.Subscription).id
           : null;
-    let priorSubscriptionStatus: string | null = null;
-    if (subscriptionId) {
-      // Capture previous DB status before sync so we only send one failure email
-      // when the account first enters a delinquent state.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: priorProfile } = await (supabase as any)
-        .from('profiles')
-        .select('subscription_status')
-        .eq('stripe_subscription_id', subscriptionId)
-        .maybeSingle();
-      priorSubscriptionStatus =
-        (priorProfile as { subscription_status?: string | null } | null)
-          ?.subscription_status ?? null;
-    }
     if (subscriptionId) {
       try {
         const stripe = getStripePlatform();
@@ -970,31 +947,6 @@ export async function POST(request: NextRequest) {
     } else {
       console.warn(
         '[Stripe webhook] invoice.payment_failed no subscription on invoice',
-        { eventId: event.id }
-      );
-    }
-    const customerEmail = (invoice as { customer_email?: string | null })
-      .customer_email;
-    const priorStatusNormalized = priorSubscriptionStatus?.trim() || '';
-    const shouldSendFailedEmail =
-      !priorStatusNormalized ||
-      !DELINQUENT_OR_ENDED_STATUSES.has(priorStatusNormalized);
-    if (customerEmail?.trim()) {
-      if (shouldSendFailedEmail) {
-        const emailResult = await sendSubscriptionPaymentFailedEmail(
-          customerEmail.trim()
-        );
-        if (!emailResult.sent) {
-          console.error(
-            'Stripe webhook: sendSubscriptionPaymentFailedEmail failed',
-            emailResult.error
-          );
-          // Don't return 500 – we've recorded idempotency; Stripe would retry and we'd skip. Log is enough.
-        }
-      }
-    } else {
-      console.warn(
-        '[Stripe webhook] invoice.payment_failed no customer_email on invoice',
         { eventId: event.id }
       );
     }

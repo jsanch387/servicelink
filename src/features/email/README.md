@@ -17,7 +17,7 @@ email/
 │   ├── types.ts
 │   ├── bookingNotificationTemplate.ts
 │   └── sendBookingNotificationEmail.ts
-├── subscription-payment-failed/ (billing failure reminder)
+├── subscription-payment-failed/ (legacy send helper; not used by webhooks)
 │   ├── types.ts
 │   └── sendSubscriptionPaymentFailedEmail.ts
 ├── trial-ending-soon/        (trial reminder before first charge)
@@ -33,7 +33,7 @@ email/
 - **`services/`** – shared Resend client and URL/from helpers used by all email types.
 - **`utils/`** – shared helpers (e.g. escaping for HTML).
 - **`booking-notification/`** – one subfolder per “email use case”; each can have its own README, types, template, and send function.
-- **`subscription-payment-failed/`** – sends a payment update reminder when account first transitions into a delinquent/ended billing state.
+- **`subscription-payment-failed/`** – `sendSubscriptionPaymentFailedEmail` exists for reuse/manual sends; **`invoice.payment_failed` does not send email** (in-app Settings handles payment issues).
 - **`trial-ending-soon/`** – sends a pre-charge reminder (triggered from Stripe trial ending webhook flow).
 
 ## Billing/trial email flow
@@ -46,16 +46,11 @@ These emails are orchestrated from `src/app/api/stripe/webhook/route.ts`:
   - Email CTA goes to Dashboard Settings (`/dashboard/settings`) so users can manage billing details.
 
 - **`invoice.payment_failed`**
-  - Triggers `sendSubscriptionPaymentFailedEmail(to)` **only on first transition**
-    into a delinquent/ended state.
-  - Anti-spam rule: do not send on every retry attempt if user is already
-    `past_due` / `unpaid` / `canceled` / `incomplete` / `incomplete_expired`.
+  - **No Resend email.** Updates the profile via subscription sync only (`past_due` / etc.) so the Settings banner and portal flow stay correct.
 
 ### Why this design
 
-- Keeps reminder timing reliable with low complexity.
-- Prevents repeated "payment failed" email spam during Stripe retry cycles.
-- Maintains a single source of truth in webhook handlers for billing lifecycle messaging.
+- Trial email stays on Stripe’s `trial_will_end` + Resend; payment failures are surfaced in-app to avoid duplicate or mistimed mail (e.g. retries after cancel).
 
 ## Stripe events required in production
 

@@ -103,6 +103,6 @@ When a recurring payment fails (card declined, expired, etc.), Stripe sends `inv
 
 - Records the event for idempotency.
 - Retrieves the subscription from Stripe and updates `subscription_status` and `subscription_current_period_end` on the profile (same as `customer.subscription.updated`), so failed payments are reflected in the database even if the update event is missed or ordered differently.
-- Sends a **subscription payment failed** email to the invoice’s `customer_email` (via Resend), asking the user to update their payment method in Settings.
+- Does **not** send email from ServiceLink for failed charges (avoids mail after cancel, odd retry timing, or overlap with Stripe’s own notifications if enabled).
 
 Stripe will retry automatically. The app also shows an in-app banner on Settings when `subscription_status` is `past_due` or `unpaid`, with an “Update payment method” button that opens the Customer Portal.
