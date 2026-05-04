@@ -1,6 +1,13 @@
 'use client';
 
-import { Button, PriceInput, Select, TimeSelect } from '@/components/shared';
+import {
+  Button,
+  NativeScheduleDateRow,
+  NativeScheduleTimeRow,
+  PriceInput,
+  Select,
+  TimeSelect,
+} from '@/components/shared';
 import { serviceDurationHHmmToMinutes } from '@/features/availability/utils/timeOptions';
 import { createMaintenanceEnrollment } from '@/features/maintenance/api/createMaintenanceEnrollment';
 import { useState } from 'react';
@@ -198,25 +205,31 @@ export function EnrollMaintenanceModalBody({
           </p>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-8">
             <div className="min-w-0">
-              <label className="mb-2.5 block text-left text-sm font-semibold text-gray-200">
+              <label
+                htmlFor="enroll-maint-preferred-date"
+                className="mb-2.5 block text-left text-sm font-semibold text-gray-200"
+              >
                 Preferred date
               </label>
-              <input
-                type="date"
+              <NativeScheduleDateRow
+                id="enroll-maint-preferred-date"
                 value={anchorDate}
-                onChange={e => setAnchorDate(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-gray-500 focus:border-white/30 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark] lg:rounded-xl"
+                onChange={setAnchorDate}
+                aria-label="Preferred first visit date"
               />
             </div>
             <div className="min-w-0">
-              <label className="mb-2.5 block text-left text-sm font-semibold text-gray-200">
+              <label
+                htmlFor="enroll-maint-preferred-time"
+                className="mb-2.5 block text-left text-sm font-semibold text-gray-200"
+              >
                 Preferred time
               </label>
-              <input
-                type="time"
+              <NativeScheduleTimeRow
+                id="enroll-maint-preferred-time"
                 value={anchorTime}
-                onChange={e => setAnchorTime(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm font-medium text-white focus:border-white/30 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-white/20 [color-scheme:dark] lg:rounded-xl"
+                onChange={setAnchorTime}
+                aria-label="Preferred first visit time"
               />
             </div>
           </div>

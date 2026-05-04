@@ -1,6 +1,10 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import {
+  Button,
+  NativeScheduleDateRow,
+  NativeScheduleTimeRow,
+} from '@/components/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -60,12 +64,11 @@ export function MaintenanceEnrollmentAnchorForm({
           >
             Maintenance date
           </label>
-          <input
+          <NativeScheduleDateRow
             id="maint-anchor-date"
-            type="date"
             value={anchorDate}
-            onChange={e => setAnchorDate(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-white/25 focus:outline-none focus:ring-2 focus:ring-white/15 [color-scheme:dark]"
+            onChange={setAnchorDate}
+            aria-label="Maintenance visit date"
           />
         </div>
         <div>
@@ -75,12 +78,11 @@ export function MaintenanceEnrollmentAnchorForm({
           >
             Preferred time
           </label>
-          <input
+          <NativeScheduleTimeRow
             id="maint-anchor-time"
-            type="time"
             value={anchorTime}
-            onChange={e => setAnchorTime(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-white/25 focus:outline-none focus:ring-2 focus:ring-white/15 [color-scheme:dark]"
+            onChange={setAnchorTime}
+            aria-label="Preferred visit time"
           />
         </div>
       </div>

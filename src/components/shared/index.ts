@@ -31,6 +31,10 @@ export { Logo } from './Logo';
 export { LogoPlaceholder } from './LogoPlaceholder';
 export { Modal } from './Modal';
 export { ModernLoadingSpinner } from './ModernLoadingSpinner';
+export {
+  NativeScheduleDateRow,
+  NativeScheduleTimeRow,
+} from './NativeSchedulePickerRow';
 export { RequiredLabel } from './RequiredLabel';
 export { SectionTitle } from './SectionTitle';
 export { SERVICE_DURATION_HOURS_OPTIONS } from './ServiceDurationOptions';
