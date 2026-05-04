@@ -1,15 +1,12 @@
-import {
-  getFromEmail,
-  getResendClient,
-} from '../services/resendClient';
-import {
-  buildWelcomeLiveHtml,
-  WELCOME_LIVE_SUBJECT,
-} from './welcomeLiveTemplate';
+import { getFromEmail, getResendClient } from '../services/resendClient';
 import type {
   SendWelcomeLiveEmailResult,
   WelcomeLiveEmailPayload,
 } from './types';
+import {
+  WELCOME_LIVE_SUBJECT,
+  buildWelcomeLiveHtml,
+} from './welcomeLiveTemplate';
 
 export async function sendWelcomeLiveEmail(
   to: string,

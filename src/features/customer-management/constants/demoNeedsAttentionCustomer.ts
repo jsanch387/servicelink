@@ -12,6 +12,7 @@ export const DEMO_NEEDS_ATTENTION_CUSTOMER: CustomerRecord = {
   nextAppointmentDaysUntil: null,
   totalVisits: 2,
   totalSpent: 770,
+  maintenanceVisitsCompleted: 0,
   status: 'returning',
   note: 'Demo customer for Needs Attention flow preview.',
 };

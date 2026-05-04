@@ -42,6 +42,7 @@ const dueCustomerFixture: CustomerRecord = {
   nextAppointmentDaysUntil: null,
   totalVisits: 2,
   totalSpent: 50000,
+  maintenanceVisitsCompleted: 0,
   status: 'returning',
   note: '',
 };

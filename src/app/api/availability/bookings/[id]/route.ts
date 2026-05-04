@@ -10,6 +10,8 @@ import {
   updateBookingStatus,
   type BookingStatusUpdate,
 } from '@/features/availability/services/bookingService';
+import { applyMaintenanceVisitCompletedFromBooking } from '@/features/maintenance/server/applyMaintenanceVisitCompletedFromBooking';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
@@ -82,6 +84,22 @@ export async function PATCH(
         { success: false, error: 'Booking not found' },
         { status: 404 }
       );
+    }
+
+    if (status === 'completed') {
+      try {
+        const admin = createSupabaseAdminClient();
+        await applyMaintenanceVisitCompletedFromBooking(admin, {
+          id: updated.id,
+          business_id: updated.business_id,
+          customer_id: updated.customer_id,
+        });
+      } catch (sideErr) {
+        console.error(
+          '[API] PATCH booking maintenance completion side effects',
+          sideErr
+        );
+      }
     }
 
     return NextResponse.json({

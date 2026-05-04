@@ -1,6 +1,9 @@
 import type { CustomerBookingMetrics } from '@/features/customer-management/server/aggregateBookingsPerCustomer';
 import { normalizeEmailForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
-import type { CustomerRecord } from '@/features/customer-management/types';
+import type {
+  CustomerMaintenanceEnrollmentSummary,
+  CustomerRecord,
+} from '@/features/customer-management/types';
 import {
   daysSinceDateString,
   daysUntilDateString,
@@ -13,10 +16,15 @@ import type { CustomerDbRow } from './customerDbRow';
  */
 export function mapCustomerRowToRecord(
   row: CustomerDbRow,
-  metrics?: CustomerBookingMetrics | null
+  metrics?: CustomerBookingMetrics | null,
+  maintenance?: CustomerMaintenanceEnrollmentSummary | null
 ): CustomerRecord {
   const emailRaw = row.email_normalized ?? row.email ?? '';
   const email = emailRaw ? normalizeEmailForLookup(emailRaw) : '';
+  const maintenanceVisitsCompleted = Math.max(
+    0,
+    Math.round(Number(row.maintenance_visits_completed ?? 0))
+  );
 
   if (metrics) {
     const lastVisitDate = metrics.lastVisitScheduledDate;
@@ -75,8 +83,10 @@ export function mapCustomerRowToRecord(
       nextAppointmentAddOnDetails: nextAddOnDetails,
       totalVisits: metrics.totalVisits,
       totalSpent: metrics.totalSpentCents / 100,
+      maintenanceVisitsCompleted,
       status: metrics.lifecycle,
       note: row.notes ?? '',
+      maintenanceEnrollment: maintenance ?? null,
     };
   }
 
@@ -92,7 +102,9 @@ export function mapCustomerRowToRecord(
     nextAppointmentDaysUntil: null,
     totalVisits: 0,
     totalSpent: 0,
+    maintenanceVisitsCompleted,
     status: 'new',
     note: row.notes ?? '',
+    maintenanceEnrollment: maintenance ?? null,
   };
 }

@@ -15,22 +15,30 @@ function createAdminClientMock(scenario: {
 }): SupabaseClient {
   let currentTable = '';
 
-  const chain = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    maybeSingle: vi.fn(async () => {
-      if (currentTable === 'business_profiles') {
-        return {
-          data: scenario.business,
-          error: scenario.businessError ?? null,
-        };
-      }
-      if (currentTable === 'profiles') {
-        return { data: scenario.owner, error: null };
-      }
-      return { data: null, error: null };
-    }),
-  };
+  interface QueryChain {
+    select: () => QueryChain;
+    eq: () => QueryChain;
+    maybeSingle: () => Promise<{
+      data: unknown;
+      error: { message: string } | null;
+    }>;
+  }
+
+  const chain = {} as QueryChain;
+  chain.select = vi.fn(() => chain);
+  chain.eq = vi.fn(() => chain);
+  chain.maybeSingle = vi.fn(async () => {
+    if (currentTable === 'business_profiles') {
+      return {
+        data: scenario.business,
+        error: scenario.businessError ?? null,
+      };
+    }
+    if (currentTable === 'profiles') {
+      return { data: scenario.owner, error: null };
+    }
+    return { data: null, error: null };
+  });
 
   return {
     from: vi.fn((table: string) => {
@@ -57,9 +65,7 @@ describe('isPublicBusinessSlugVisible', () => {
       business: null,
       owner: { onboarding_status: 'completed', subscription_tier: 'free' },
     });
-    expect(await isPublicBusinessSlugVisible(admin, 'acme-detail')).toBe(
-      false
-    );
+    expect(await isPublicBusinessSlugVisible(admin, 'acme-detail')).toBe(false);
   });
 
   it('returns false when business query errors', async () => {
@@ -68,9 +74,7 @@ describe('isPublicBusinessSlugVisible', () => {
       businessError: { message: 'db error' },
       owner: { onboarding_status: 'completed', subscription_tier: 'free' },
     });
-    expect(await isPublicBusinessSlugVisible(admin, 'acme-detail')).toBe(
-      false
-    );
+    expect(await isPublicBusinessSlugVisible(admin, 'acme-detail')).toBe(false);
   });
 
   it('returns true when profile_id is missing (legacy row)', async () => {
@@ -78,9 +82,7 @@ describe('isPublicBusinessSlugVisible', () => {
       business: { profile_id: null },
       owner: { onboarding_status: 'completed', subscription_tier: 'free' },
     });
-    expect(await isPublicBusinessSlugVisible(admin, 'legacy-slug')).toBe(
-      true
-    );
+    expect(await isPublicBusinessSlugVisible(admin, 'legacy-slug')).toBe(true);
   });
 
   it('returns false when owner row is missing', async () => {
@@ -88,9 +90,7 @@ describe('isPublicBusinessSlugVisible', () => {
       business: { profile_id: 'user-1' },
       owner: null,
     });
-    expect(await isPublicBusinessSlugVisible(admin, 'orphan-slug')).toBe(
-      false
-    );
+    expect(await isPublicBusinessSlugVisible(admin, 'orphan-slug')).toBe(false);
   });
 
   it('returns true for grandfathered free (completed, no Stripe history)', async () => {
@@ -149,9 +149,7 @@ describe('isPublicBusinessSlugVisible', () => {
         stripe_customer_id: null,
       },
     });
-    expect(await isPublicBusinessSlugVisible(admin, 'abandoned')).toBe(
-      false
-    );
+    expect(await isPublicBusinessSlugVisible(admin, 'abandoned')).toBe(false);
   });
 
   it('returns false for free tier with Stripe billing history (churned)', async () => {

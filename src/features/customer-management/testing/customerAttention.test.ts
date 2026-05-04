@@ -15,6 +15,7 @@ function customerFixture(overrides?: Partial<CustomerRecord>): CustomerRecord {
     nextAppointmentDaysUntil: null,
     totalVisits: 2,
     totalSpent: 700,
+    maintenanceVisitsCompleted: 0,
     status: 'returning',
     note: '',
     ...overrides,
