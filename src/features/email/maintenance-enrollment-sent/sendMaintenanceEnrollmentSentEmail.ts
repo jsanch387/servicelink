@@ -23,7 +23,7 @@ export async function sendMaintenanceEnrollmentSentEmail(
     return { sent: false, error: 'RESEND_API_KEY is not set' };
   }
 
-  const subject = getMaintenanceEnrollmentSentSubject(payload.businessName);
+  const subject = getMaintenanceEnrollmentSentSubject();
   const html = buildMaintenanceEnrollmentSentHtml(payload);
   const text = buildMaintenanceEnrollmentSentPlainText(payload);
 
