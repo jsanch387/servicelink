@@ -95,6 +95,24 @@ export function AdminDashboardPage({ metrics, warning }: AdminDashboardPageProps
 
         <section className="space-y-4 sm:space-y-6 mt-8">
           <h2 className="text-lg sm:text-xl font-semibold text-white">
+            Subscriptions (Stripe)
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 min-w-0">
+            <LifecycleMetricCard
+              title="Paying subscribers"
+              value={String(metrics.payingActiveSubscribers)}
+              subtitle="Pro tier, Stripe status active, current period not ended, linked subscription"
+            />
+            <LifecycleMetricCard
+              title="On Pro free trial"
+              value={String(metrics.proTrialSubscribers)}
+              subtitle="Stripe status trialing with valid access window"
+            />
+          </div>
+        </section>
+
+        <section className="space-y-4 sm:space-y-6 mt-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-white">
             Core Product Usage
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">

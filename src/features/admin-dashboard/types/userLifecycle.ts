@@ -8,6 +8,10 @@ export interface UserLifecycleMetrics {
   totalBookings: number;
   bookingsLast7Days: number;
   bookingsLast30Days: number;
+  /** Pro users with Stripe `active` status, valid period, and a subscription id (excludes trialing and tier-only). */
+  payingActiveSubscribers: number;
+  /** Pro users on Stripe free trial (`trialing`) with valid period and subscription id. */
+  proTrialSubscribers: number;
   generatedAtIso: string;
   usersWithCreatedService: number;
   usersWithUploadedImage: number;

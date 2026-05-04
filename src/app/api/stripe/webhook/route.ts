@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
         : (session.subscription?.id ?? null);
 
     let currentPeriodEnd: string | null = null;
+    let subscriptionStatus: string | null = null;
     if (stripeSubscriptionId) {
       try {
         const stripe = getStripe();
@@ -112,6 +113,8 @@ export async function POST(request: NextRequest) {
           .current_period_end;
         currentPeriodEnd =
           periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null;
+        subscriptionStatus =
+          typeof subscription.status === 'string' ? subscription.status : null;
       } catch (e) {
         console.error('Stripe webhook: failed to retrieve subscription', e);
       }
@@ -122,6 +125,7 @@ export async function POST(request: NextRequest) {
       stripeCustomerId,
       stripeSubscriptionId,
       currentPeriodEnd,
+      subscriptionStatus,
     });
 
     if (!result.success) {

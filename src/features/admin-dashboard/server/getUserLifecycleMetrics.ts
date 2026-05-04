@@ -1,3 +1,4 @@
+import { isProAccess } from '@/features/pricing/utils/isProAccess';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { UserLifecycleMetricsResult } from '../types/userLifecycle';
 
@@ -58,6 +59,7 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
       bookings7dResult,
       bookings30dResult,
       usageRowsResult,
+      subscriptionRowsResult,
     ] = await Promise.all([
       supabase
         .from('profiles')
@@ -97,6 +99,14 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
           images:business_images(count)
         `
       ),
+      supabase
+        .from('profiles')
+        .select(
+          'subscription_tier, subscription_status, subscription_current_period_end, stripe_subscription_id'
+        )
+        .eq('subscription_tier', 'pro')
+        .not('stripe_subscription_id', 'is', null)
+        .in('subscription_status', ['active', 'trialing']),
     ]);
 
     const warning =
@@ -109,7 +119,29 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
       bookings7dResult.error?.message ||
       bookings30dResult.error?.message ||
       usageRowsResult.error?.message ||
+      subscriptionRowsResult.error?.message ||
       null;
+
+    type SubscriptionRow = {
+      subscription_tier: string | null;
+      subscription_status: string | null;
+      subscription_current_period_end: string | null;
+      stripe_subscription_id: string | null;
+    };
+    const subscriptionRows = (subscriptionRowsResult.data ?? []) as SubscriptionRow[];
+    let payingActiveSubscribers = 0;
+    let proTrialSubscribers = 0;
+    for (const row of subscriptionRows) {
+      if (
+        !row.stripe_subscription_id?.trim() ||
+        !isProAccess(row.subscription_tier, row.subscription_current_period_end)
+      ) {
+        continue;
+      }
+      const status = row.subscription_status?.trim().toLowerCase();
+      if (status === 'active') payingActiveSubscribers += 1;
+      else if (status === 'trialing') proTrialSubscribers += 1;
+    }
 
     type UsageRow = {
       profile_id: string;
@@ -168,6 +200,8 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
         totalBookings: totalBookingsResult.count ?? 0,
         bookingsLast7Days: bookings7dResult.count ?? 0,
         bookingsLast30Days: bookings30dResult.count ?? 0,
+        payingActiveSubscribers,
+        proTrialSubscribers,
         generatedAtIso,
         usersWithCreatedService,
         usersWithUploadedImage,
@@ -189,6 +223,8 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
         totalBookings: 0,
         bookingsLast7Days: 0,
         bookingsLast30Days: 0,
+        payingActiveSubscribers: 0,
+        proTrialSubscribers: 0,
         generatedAtIso,
         usersWithCreatedService: 0,
         usersWithUploadedImage: 0,

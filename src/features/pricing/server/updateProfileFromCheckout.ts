@@ -15,6 +15,8 @@ export interface UpdateProfileFromCheckoutParams {
   stripeSubscriptionId: string | null;
   /** End of current billing period (ISO string). From subscription.current_period_end. */
   currentPeriodEnd: string | null;
+  /** From Stripe Subscription.status (e.g. trialing, active). Defaults to active if omitted. */
+  subscriptionStatus?: string | null;
 }
 
 /**
@@ -25,16 +27,26 @@ export async function updateProfileFromCheckout(
   supabase: SupabaseClient,
   params: UpdateProfileFromCheckoutParams
 ): Promise<{ success: boolean; error?: string }> {
-  const { userId, stripeCustomerId, stripeSubscriptionId, currentPeriodEnd } =
-    params;
+  const {
+    userId,
+    stripeCustomerId,
+    stripeSubscriptionId,
+    currentPeriodEnd,
+    subscriptionStatus,
+  } = params;
 
   if (!userId?.trim()) {
     return { success: false, error: 'userId is required' };
   }
 
+  const status =
+    typeof subscriptionStatus === 'string' && subscriptionStatus.trim()
+      ? subscriptionStatus.trim()
+      : 'active';
+
   const updates: Record<string, unknown> = {
     subscription_tier: 'pro',
-    subscription_status: 'active',
+    subscription_status: status,
     updated_at: new Date().toISOString(),
   };
 
