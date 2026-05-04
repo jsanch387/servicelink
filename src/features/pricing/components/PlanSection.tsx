@@ -39,6 +39,8 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   const isPro = planId === 'pro';
   const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
   const isTrialing = subscriptionStatus === 'trialing';
+  const displayPlanName =
+    isPro && isTrialing ? 'Pro trial' : plan.name;
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageSubscription = async () => {
@@ -82,19 +84,25 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
           <p className="inline-flex items-center gap-1.5 font-semibold leading-none text-white">
             {isPro ? (
               <>
-                <span>{plan.name}</span>
+                <span>{displayPlanName}</span>
                 <CrownIcon className="h-5 w-5 shrink-0 translate-y-[3px] text-amber-300" />
               </>
             ) : (
               plan.name
             )}
           </p>
-          <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-white tabular-nums">
-            {plan.price}
-            <span className="text-sm font-normal leading-none text-gray-400">
-              /month
-            </span>
-          </p>
+          {isPro && isTrialing ? (
+            <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-emerald-300">
+              Free trial
+            </p>
+          ) : (
+            <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-white tabular-nums">
+              {plan.price}
+              <span className="text-sm font-normal leading-none text-gray-400">
+                /month
+              </span>
+            </p>
+          )}
         </div>
       </div>
 

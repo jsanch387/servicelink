@@ -87,6 +87,9 @@ export async function middleware(request: NextRequest) {
     pathname === ROUTES.DASHBOARD.MAIN ||
     pathname.startsWith(`${ROUTES.DASHBOARD.MAIN}/`);
   const isUpgradeRoute = pathname === ROUTES.DASHBOARD.UPGRADE;
+  const isBusinessProfileRoute = pathname === ROUTES.DASHBOARD.BUSINESS_PROFILE;
+  const onboardingCompleteReturn =
+    request.nextUrl.searchParams.get('onboarding') === 'complete';
   const isPublicProfileRoute = request.nextUrl.pathname.startsWith('/profile');
   const isWaitlistRoute = request.nextUrl.pathname.startsWith('/waitlist');
   const isHomeRoute = request.nextUrl.pathname === '/';
@@ -135,6 +138,11 @@ export async function middleware(request: NextRequest) {
     );
 
     if (!onboardingComplete) {
+      const allowOnboardingBusinessProfileReturn =
+        isBusinessProfileRoute && onboardingCompleteReturn;
+      if (allowOnboardingBusinessProfileReturn) {
+        return response;
+      }
       if (pathname !== ROUTES.DASHBOARD.MAIN) {
         return NextResponse.redirect(
           new URL(ROUTES.DASHBOARD.MAIN, request.url)

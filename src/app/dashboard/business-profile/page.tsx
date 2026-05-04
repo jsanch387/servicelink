@@ -3,6 +3,7 @@ import {
   isOnboardingCompleted,
 } from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { OnboardingCheckoutReturnGate } from '@/features/onboarding-v2/components/OnboardingCheckoutReturnGate';
 import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
@@ -67,6 +68,9 @@ export default async function BusinessProfilePage({
 
   // Check if onboarding is completed
   if (!isOnboardingCompleted(userProfile.onboarding_status)) {
+    if (onboardingComplete) {
+      return <OnboardingCheckoutReturnGate />;
+    }
     redirect('/dashboard');
   }
 

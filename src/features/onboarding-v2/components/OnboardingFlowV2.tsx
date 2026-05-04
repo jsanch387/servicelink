@@ -17,7 +17,7 @@ import { Step4ClaimLink } from './Step4ClaimLink';
 import { Step5Done } from './Step5Done';
 
 const TOTAL_STEPS = 5;
-const STEP_LABELS = ['Business', 'Services', 'Hours', 'Link', 'Trial'];
+const STEP_LABELS = ['Business', 'Services', 'Hours', 'Link', 'Go live'];
 
 const getInitialState = (): OnboardingV2FlowState => ({
   businessName: '',

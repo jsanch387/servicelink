@@ -1,6 +1,7 @@
 /**
- * Sends the "subscription payment failed" email when Stripe fires invoice.payment_failed.
- * Asks the user to update their payment method in Settings.
+ * Sends the "subscription payment failed" email (Resend).
+ * Not called from the Stripe webhook — payment issues are surfaced in-app on Settings.
+ * Kept for one-off/manual use or a future opt-in flow.
  */
 
 import { ROUTES } from '@/constants/routes';
