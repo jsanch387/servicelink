@@ -33,9 +33,23 @@ function formatTimeHHmm(hhmm: string): string {
   return `${h12}:${min} ${ampm}`;
 }
 
-function frequencyLabel(weeks: number): string {
-  if (weeks <= 1) return 'Every week';
-  return `Every ${weeks} weeks`;
+/** One receipt line: even vertical rhythm; omit bottom border when row sits above the total bar. */
+function receiptLine(
+  label: string,
+  value: string,
+  opts?: { subtle?: boolean; lastBeforeTotal?: boolean }
+) {
+  const subtle = opts?.subtle === true;
+  const bottom = opts?.lastBeforeTotal ? 'none' : '1px solid #e8ecf1';
+  return `
+              <tr class="mob-stack receipt-line">
+                <td class="detail-label" style="padding:14px 0;border-bottom:${bottom};font-size:14px;line-height:1.45;vertical-align:top;color:${subtle ? '#64748b' : '#334155'};">
+                  ${escapeHtml(label)}
+                </td>
+                <td class="detail-value" style="padding:14px 0;border-bottom:${bottom};font-size:14px;line-height:1.45;font-weight:600;color:#0f172a;text-align:right;vertical-align:top;font-variant-numeric:tabular-nums;">
+                  ${escapeHtml(value)}
+                </td>
+              </tr>`;
 }
 
 function buildReceiptRowsHtml(payload: MaintenanceEnrollmentConfirmedPayload): {
@@ -45,43 +59,37 @@ function buildReceiptRowsHtml(payload: MaintenanceEnrollmentConfirmedPayload): {
   methodNote: string;
 } {
   const cents = Math.max(0, Math.round(payload.priceCents));
-  const line = (label: string, value: string, subtle?: boolean) => `
-              <tr class="mob-stack">
-                <td class="detail-label" style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:14px;color:${subtle ? '#64748b' : '#334155'};">
-                  ${escapeHtml(label)}
-                </td>
-                <td class="detail-value" style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:14px;font-weight:600;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums;">
-                  ${escapeHtml(value)}
-                </td>
-              </tr>`;
+  const service = payload.serviceName.trim() || 'Visit';
 
   if (payload.paidWithCard) {
     return {
-      bodyRows:
-        line(`${payload.serviceName} (this appointment)`, formatMoney(cents)) +
-        line('Paid online (card)', formatMoney(cents), true),
+      bodyRows: receiptLine(service, formatMoney(cents), {
+        lastBeforeTotal: true,
+      }),
       totalLabel: 'Total charged',
       totalValue: formatMoney(cents),
       methodNote:
-        'This receipt reflects the card payment processed through ServiceLink. You may also get a separate receipt from your card provider.',
+        'Paid by card through ServiceLink. Your bank may list this as its own line item—you were not charged twice.',
     };
   }
 
   if (cents > 0) {
     return {
-      bodyRows:
-        line(`${payload.serviceName} (this appointment)`, formatMoney(cents)) +
-        line('Paid online', '$0.00', true) +
-        line('Balance due at your visit', formatMoney(cents), true),
+      bodyRows: receiptLine(service, formatMoney(cents), {
+        lastBeforeTotal: true,
+      }),
       totalLabel: 'Amount due at visit',
       totalValue: formatMoney(cents),
       methodNote:
-        'No card charge for this visit—you agreed to pay your provider in person. Bring payment as you arranged with them.',
+        'No charge online for this visit—bring payment to your appointment as you agreed with your provider.',
     };
   }
 
   return {
-    bodyRows: line('This visit', 'No charge recorded', true),
+    bodyRows: receiptLine(service, '$0.00', {
+      subtle: true,
+      lastBeforeTotal: true,
+    }),
     totalLabel: 'Total',
     totalValue: '$0.00',
     methodNote: 'No payment was collected online for this visit.',
@@ -92,39 +100,40 @@ export function buildMaintenanceEnrollmentConfirmedPlainText(
   payload: MaintenanceEnrollmentConfirmedPayload
 ): string {
   const business = payload.businessName.trim() || 'Your detailer';
-  const name = payload.customerName.trim() || 'there';
   const durationHuman = formatDurationForEmail(payload.durationMinutes);
   const cents = Math.max(0, Math.round(payload.priceCents));
   const money = formatMoney(cents);
+  const service = payload.serviceName.trim() || 'Visit';
 
-  const visitLine = `${payload.serviceName}: ${money}`;
-  const receiptLines: string[] = [];
+  const receiptBlock: string[] = [];
   if (payload.paidWithCard) {
-    receiptLines.push(visitLine);
-    receiptLines.push(`Paid online (card): ${money}`);
-    receiptLines.push(`TOTAL CHARGED: ${money}`);
+    receiptBlock.push(`${service}: ${money}`);
+    receiptBlock.push(`Total charged: ${money}`);
+    receiptBlock.push(
+      'Paid by card through ServiceLink. Your bank may list this as its own line item—you were not charged twice.'
+    );
   } else if (cents > 0) {
-    receiptLines.push(visitLine);
-    receiptLines.push('Paid online: $0.00');
-    receiptLines.push(`AMOUNT DUE AT VISIT: ${money}`);
+    receiptBlock.push(`${service}: ${money}`);
+    receiptBlock.push(`Amount due at visit: ${money}`);
+    receiptBlock.push(
+      'No charge online for this visit—bring payment to your appointment as you agreed with your provider.'
+    );
   } else {
-    receiptLines.push('No charge recorded for this visit.');
+    receiptBlock.push(`${service}: $0.00`);
+    receiptBlock.push('Total: $0.00');
+    receiptBlock.push('No payment was collected online for this visit.');
   }
 
   return [
-    `Hi ${name},`,
-    '',
     `Your maintenance detail with ${business} is confirmed.`,
     '',
-    '— Visit —',
+    'Visit',
     `When: ${formatDateLong(payload.visitDate)} at ${formatTimeHHmm(payload.visitTime)}`,
     `Duration: ${durationHuman}`,
-    `Frequency: ${frequencyLabel(payload.frequencyWeeks)}`,
-    `Service: ${payload.serviceName}`,
+    `Service: ${service}`,
     '',
-    '— Receipt —',
-    ...receiptLines,
-    `Payment: ${payload.paymentSummary}`,
+    'Summary',
+    ...receiptBlock,
     '',
     `${business} has this visit on their calendar. To reschedule, contact them directly.`,
     '',
@@ -136,14 +145,11 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
   payload: MaintenanceEnrollmentConfirmedPayload
 ): string {
   const business = escapeHtml(payload.businessName.trim() || 'Your detailer');
-  const name = escapeHtml(payload.customerName.trim() || 'there');
   const visitWhen = `${escapeHtml(formatDateLong(payload.visitDate))} · ${escapeHtml(formatTimeHHmm(payload.visitTime))}`;
   const durationHuman = escapeHtml(
     formatDurationForEmail(payload.durationMinutes)
   );
-  const freq = escapeHtml(frequencyLabel(payload.frequencyWeeks));
-  const service = escapeHtml(payload.serviceName);
-  const pay = escapeHtml(payload.paymentSummary);
+  const service = escapeHtml(payload.serviceName.trim() || 'Visit');
 
   const { bodyRows, totalLabel, totalValue, methodNote } =
     buildReceiptRowsHtml(payload);
@@ -159,30 +165,33 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
     body { margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #eef2f6; color: #1a1a1a; -webkit-font-smoothing: antialiased; }
     .wrapper { width: 100%; table-layout: fixed; background-color: #eef2f6; padding-bottom: 40px; }
     .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; color: #334155; border: 1px solid #e2e8f0; border-radius: 2px; }
-    .hero { padding: 28px 28px 20px 28px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .hero { padding: 28px 28px 22px 28px; text-align: left; border-bottom: 1px solid #e2e8f0; }
     .content { padding: 24px 28px 32px 28px; }
     .card { background-color: #f8fafc; border-radius: 10px; padding: 20px 22px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
     .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; margin-bottom: 14px; }
     .detail-label { font-size: 13px; color: #64748b; }
     .detail-value { font-size: 14px; font-weight: 600; color: #0f172a; text-align: right; }
-    .receipt { background: #fafafa; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
-    .receipt-head { background: #0f172a; color: #f8fafc; padding: 12px 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
-    .receipt-body { padding: 4px 20px 8px 20px; }
-    .receipt-total { background: #f1f5f9; padding: 16px 20px; border-top: 2px solid #0f172a; }
-    .method { font-size: 13px; color: #64748b; line-height: 1.55; padding: 0 4px 8px 4px; }
+    .receipt { background: #fafafa; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+    .receipt-head { background: #0f172a; color: #f8fafc; padding: 14px 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .receipt-body { padding: 0 20px; }
+    .receipt-body table { border-collapse: collapse; }
+    .receipt-total { background: #f1f5f9; padding: 18px 20px; border-top: 2px solid #0f172a; }
+    .receipt-total .detail-label { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .receipt-total .detail-value { font-size: 18px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+    .method { font-size: 13px; color: #64748b; line-height: 1.6; margin: 18px 0 0 0; padding: 0 2px; }
     .footer { padding: 20px 28px 28px 28px; text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.6; border-top: 1px solid #e2e8f0; }
     @media screen and (max-width: 520px) {
       .hero h1 { font-size: 20px !important; }
-      .hero { padding: 20px 16px 16px 16px !important; }
+      .hero { padding: 20px 16px 18px 16px !important; }
       .content { padding: 18px 16px 24px 16px !important; }
       .card { padding: 16px 14px !important; margin-bottom: 16px !important; }
-      .receipt-body { padding-left: 14px !important; padding-right: 14px !important; }
-      .receipt-total { padding-left: 14px !important; padding-right: 14px !important; }
+      .receipt-body { padding-left: 16px !important; padding-right: 16px !important; }
+      .receipt-total { padding: 16px 16px !important; }
       .mob-stack td { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: left !important; }
-      .mob-stack td.detail-label { padding: 0 0 4px 0 !important; }
-      .mob-stack td.detail-value { padding: 0 0 14px 0 !important; }
-      .mob-stack tr:last-child td.detail-value { padding-bottom: 0 !important; }
-      .receipt-total .mob-stack td.detail-value { text-align: left !important; padding-top: 6px !important; }
+      .mob-stack td.detail-label { padding-top: 12px !important; padding-bottom: 4px !important; border-bottom: none !important; }
+      .mob-stack td.detail-value { padding-top: 0 !important; padding-bottom: 12px !important; border-bottom: 1px solid #e8ecf1 !important; }
+      .receipt-line:last-child td.detail-value { border-bottom: none !important; padding-bottom: 14px !important; }
+      .receipt-total .mob-stack td.detail-value { text-align: left !important; padding-top: 6px !important; border-bottom: none !important; }
     }
   </style>
 </head>
@@ -191,11 +200,10 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
     <table class="main" role="presentation">
       <tr>
         <td class="hero">
-          <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">Confirmation & receipt</p>
+          <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#64748b;">Confirmation</p>
           <h1 style="font-size: 24px; margin: 0; color: #0f172a; letter-spacing: -0.02em; line-height: 1.2;">You're all set</h1>
-          <p style="font-size: 15px; color: #1e293b; margin-top: 12px; font-weight: 600;">Hi ${name},</p>
-          <p style="font-size: 14px; color: #64748b; margin-top: 8px; line-height: 1.55; margin-bottom: 0;">
-            Your maintenance detail with <strong style="color: #334155;">${business}</strong> is confirmed. Below is your visit summary and a payment receipt for this appointment.
+          <p style="font-size: 14px; color: #64748b; margin-top: 14px; line-height: 1.55; margin-bottom: 0;">
+            Your maintenance detail with <strong style="color: #334155;">${business}</strong> is confirmed. Here is your visit summary.
           </p>
         </td>
       </tr>
@@ -213,10 +221,6 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
                 <td class="detail-value" style="padding: 0 0 10px 0; vertical-align: top;">${durationHuman}</td>
               </tr>
               <tr class="mob-stack">
-                <td class="detail-label" style="padding: 0 12px 10px 0; vertical-align: top;">Frequency</td>
-                <td class="detail-value" style="padding: 0 0 10px 0; vertical-align: top;">${freq}</td>
-              </tr>
-              <tr class="mob-stack">
                 <td class="detail-label" style="padding: 0 12px 0 0; vertical-align: top;">Service</td>
                 <td class="detail-value" style="padding: 0; vertical-align: top;">${service}</td>
               </tr>
@@ -224,7 +228,7 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
           </div>
 
           <div class="receipt">
-            <div class="receipt-head">Receipt</div>
+            <div class="receipt-head">Summary</div>
             <div class="receipt-body">
               <table width="100%" cellspacing="0" cellpadding="0" role="presentation">
                 ${bodyRows}
@@ -233,15 +237,14 @@ export function buildMaintenanceEnrollmentConfirmedHtml(
             <div class="receipt-total">
               <table width="100%" cellspacing="0" cellpadding="0" role="presentation">
                 <tr class="mob-stack receipt-total-row">
-                  <td class="detail-label" style="font-size: 14px; font-weight: 700; color: #0f172a;">${escapeHtml(totalLabel)}</td>
-                  <td class="detail-value" style="font-size: 18px; font-weight: 800; color: #0f172a; text-align: right; font-variant-numeric: tabular-nums;">${escapeHtml(totalValue)}</td>
+                  <td class="detail-label" style="padding: 0; vertical-align: middle;">${escapeHtml(totalLabel)}</td>
+                  <td class="detail-value" style="padding: 0; text-align: right; vertical-align: middle;">${escapeHtml(totalValue)}</td>
                 </tr>
               </table>
             </div>
           </div>
 
           <p class="method">${escapeHtml(methodNote)}</p>
-          <p style="margin:12px 0 0 0;font-size:13px;color:#475569;"><strong>Payment method on file:</strong> ${pay}</p>
         </td>
       </tr>
       <tr>

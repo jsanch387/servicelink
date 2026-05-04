@@ -24,7 +24,7 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
   const { data: row, error } = await db
     .from('maintenance_enrollments')
     .select(
-      'id, business_id, customer_id, status, payment_status, customer_selected_payment, service_name_snapshot, price_cents, duration_minutes, frequency_weeks, anchor_date, anchor_time, confirmation_email_sent_at'
+      'id, business_id, customer_id, status, payment_status, service_name_snapshot, price_cents, duration_minutes, anchor_date, anchor_time, confirmation_email_sent_at'
     )
     .eq('id', enrollmentId)
     .maybeSingle();
@@ -61,7 +61,7 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
 
   const { data: customerRow, error: custErr } = await db
     .from('customers')
-    .select('email, email_normalized, full_name')
+    .select('email, email_normalized')
     .eq('id', customerId)
     .eq('business_id', businessId)
     .maybeSingle();
@@ -106,23 +106,10 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
     (
       bizRow as { business_name?: string | null } | null
     )?.business_name?.trim() || 'Your detailer';
-  const customerName =
-    (customerRow as { full_name?: string | null }).full_name?.trim() || 'there';
-
   const payStatus = String(row.payment_status ?? '').trim();
-  const payChoice = String(
-    (row as { customer_selected_payment?: string | null })
-      .customer_selected_payment ?? ''
-  ).trim();
   const paidWithCard = maintenanceEnrollmentPaidWithCard(payStatus);
-  const paymentSummary = paidWithCard
-    ? 'Paid with card'
-    : payStatus === 'pay_in_person' || payChoice === 'in_person'
-      ? 'Pay in person at your visit'
-      : 'Confirmed';
 
   const payload: MaintenanceEnrollmentConfirmedPayload = {
-    customerName,
     businessName,
     serviceName: maintenanceDetailServiceLabel(row.service_name_snapshot),
     priceCents: Math.max(0, Math.round(Number(row.price_cents ?? 0))),
@@ -134,8 +121,6 @@ export async function sendMaintenanceEnrollmentConfirmedIfApplicable(
       1,
       Math.round(Number(row.duration_minutes ?? 60))
     ),
-    frequencyWeeks: Math.max(1, Math.round(Number(row.frequency_weeks ?? 1))),
-    paymentSummary,
     paidWithCard,
   };
 

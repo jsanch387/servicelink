@@ -1,5 +1,4 @@
 export interface MaintenanceEnrollmentConfirmedPayload {
-  customerName: string;
   businessName: string;
   serviceName: string;
   priceCents: number;
@@ -8,9 +7,6 @@ export interface MaintenanceEnrollmentConfirmedPayload {
   /** HH:mm */
   visitTime: string;
   durationMinutes: number;
-  frequencyWeeks: number;
-  /** Short label, e.g. "Paid with card" or "Pay in person" */
-  paymentSummary: string;
   /** Drives receipt line items (card vs pay in person). */
   paidWithCard: boolean;
 }
