@@ -50,6 +50,8 @@ function valueToLabel(value: string): string {
 }
 
 interface TimeSelectProps {
+  /** Optional id for the trigger control (e.g. label `htmlFor`). */
+  id?: string;
   value: string;
 
   onChange: (value: string) => void;
@@ -64,6 +66,7 @@ interface TimeSelectProps {
 }
 
 export const TimeSelect: React.FC<TimeSelectProps> = ({
+  id,
   value,
   onChange,
   disabled = false,
@@ -369,6 +372,7 @@ export const TimeSelect: React.FC<TimeSelectProps> = ({
     <>
       <div className={className}>
         <button
+          id={id}
           ref={triggerRef}
           type="button"
           onClick={handleOpen}

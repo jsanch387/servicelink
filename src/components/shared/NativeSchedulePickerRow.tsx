@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDaysIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 
 function formatDateRowLabel(iso: string): string {
   const t = iso.trim();
@@ -13,18 +13,6 @@ function formatDateRowLabel(iso: string): string {
     day: 'numeric',
     year: 'numeric',
   });
-}
-
-function formatTimeRowLabel(hhmm: string): string {
-  const s = hhmm.trim().slice(0, 5);
-  if (!s) return 'Choose time';
-  const m = s.match(/^(\d{1,2}):(\d{2})$/);
-  if (!m) return s;
-  const h = parseInt(m[1]!, 10);
-  const min = m[2]!;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${min} ${ampm}`;
 }
 
 const rowShell =
@@ -67,46 +55,6 @@ export function NativeScheduleDateRow({
       <input
         id={id}
         type="date"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        autoComplete="off"
-        aria-label={ariaLabel}
-        className={inputOverlay}
-      />
-    </div>
-  );
-}
-
-export type NativeScheduleTimeRowProps = {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
-  'aria-label': string;
-};
-
-/**
- * Native `<input type="time">` with visible row + clock icon (same tap target
- * pattern as {@link NativeScheduleDateRow}).
- */
-export function NativeScheduleTimeRow({
-  id,
-  value,
-  onChange,
-  'aria-label': ariaLabel,
-}: NativeScheduleTimeRowProps) {
-  return (
-    <div className={rowShell}>
-      <div className={fauxRow} aria-hidden>
-        <ClockIcon className="h-5 w-5 shrink-0 text-white" />
-        <span
-          className={`min-w-0 truncate text-base font-medium ${value ? 'text-white' : 'text-gray-500'}`}
-        >
-          {formatTimeRowLabel(value)}
-        </span>
-      </div>
-      <input
-        id={id}
-        type="time"
         value={value}
         onChange={e => onChange(e.target.value)}
         autoComplete="off"

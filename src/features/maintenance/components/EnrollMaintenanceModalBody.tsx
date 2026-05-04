@@ -3,7 +3,6 @@
 import {
   Button,
   NativeScheduleDateRow,
-  NativeScheduleTimeRow,
   PriceInput,
   Select,
   TimeSelect,
@@ -225,7 +224,7 @@ export function EnrollMaintenanceModalBody({
               >
                 Preferred time
               </label>
-              <NativeScheduleTimeRow
+              <TimeSelect
                 id="enroll-maint-preferred-time"
                 value={anchorTime}
                 onChange={setAnchorTime}

@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  Button,
-  NativeScheduleDateRow,
-  NativeScheduleTimeRow,
-} from '@/components/shared';
+import { Button, NativeScheduleDateRow, TimeSelect } from '@/components/shared';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -78,7 +74,7 @@ export function MaintenanceEnrollmentAnchorForm({
           >
             Preferred time
           </label>
-          <NativeScheduleTimeRow
+          <TimeSelect
             id="maint-anchor-time"
             value={anchorTime}
             onChange={setAnchorTime}
