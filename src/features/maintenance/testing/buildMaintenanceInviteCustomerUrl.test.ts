@@ -30,7 +30,8 @@ describe('[Maintenance] buildMaintenanceInviteCustomerUrl', () => {
   });
 
   it('returns path only when no base URL', () => {
-    vi.stubGlobal('window', { location: { origin: '' } } as Window & typeof globalThis);
+    vi.stubGlobal('window', { location: { origin: '' } } as Window &
+      typeof globalThis);
     process.env.NEXT_PUBLIC_SITE_URL = '';
     const url = buildMaintenanceInviteCustomerUrl('x');
     expect(url).toBe('/maintenance/e/x');

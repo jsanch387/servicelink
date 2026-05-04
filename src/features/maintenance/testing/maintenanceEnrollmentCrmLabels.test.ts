@@ -29,14 +29,10 @@ describe('[Maintenance] customerMaintenancePlanChipVariant', () => {
   it('maps statuses to chip variants', () => {
     expect(customerMaintenancePlanChipVariant(enrollment({}))).toBe('pending');
     expect(
-      customerMaintenancePlanChipVariant(
-        enrollment({ status: 'accepted' })
-      )
+      customerMaintenancePlanChipVariant(enrollment({ status: 'accepted' }))
     ).toBe('confirmed');
     expect(
-      customerMaintenancePlanChipVariant(
-        enrollment({ status: 'cancelled' })
-      )
+      customerMaintenancePlanChipVariant(enrollment({ status: 'cancelled' }))
     ).toBe('cancelled');
     expect(
       customerMaintenancePlanChipVariant(
@@ -94,7 +90,9 @@ describe('[Maintenance] customerMaintenanceEnrollmentCardSubtitle', () => {
 
 describe('[Maintenance] customerMaintenanceAnchorDisplay', () => {
   it('shows Not set yet when anchor missing', () => {
-    expect(customerMaintenanceAnchorDisplay(enrollment({}))).toBe('Not set yet');
+    expect(customerMaintenanceAnchorDisplay(enrollment({}))).toBe(
+      'Not set yet'
+    );
   });
 
   it('shows a formatted line when anchor is scheduled', () => {

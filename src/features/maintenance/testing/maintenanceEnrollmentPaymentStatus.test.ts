@@ -6,9 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 describe('[Maintenance] maintenanceEnrollmentPaidWithCard', () => {
   it('is true for canonical paid card status', () => {
-    expect(maintenanceEnrollmentPaidWithCard(MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD)).toBe(
-      true
-    );
+    expect(
+      maintenanceEnrollmentPaidWithCard(
+        MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD
+      )
+    ).toBe(true);
   });
 
   it('is true for legacy paid_online alias', () => {
