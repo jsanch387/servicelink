@@ -8,7 +8,9 @@ import {
   Select,
   TextArea,
 } from '@/components/shared';
-import { API_ROUTES } from '@/constants/routes';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { API_ROUTES, getPublicBusinessProfilePath } from '@/constants/routes';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
 import React, { useMemo, useState } from 'react';
@@ -22,6 +24,7 @@ interface PublicQuoteRequestScreenProps {
   businessSlug: string;
   businessName: string;
   businessType?: string | null;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 type QuoteRequestStep = 'contact' | 'vehicle' | 'request';
@@ -54,7 +57,16 @@ function isValidVehicleYear(value: string): boolean {
 
 export const PublicQuoteRequestScreen: React.FC<
   PublicQuoteRequestScreenProps
-> = ({ businessSlug, businessName, businessType }) => {
+> = ({
+  businessSlug,
+  businessName,
+  businessType,
+  bookingFlowLocale = 'en',
+}) => {
+  const ui = useMemo(
+    () => publicBookingUi(bookingFlowLocale),
+    [bookingFlowLocale]
+  );
   const [form, setForm] = useState<PublicQuoteRequestFormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<PublicQuoteRequestFormErrors>({});
   const [submitted, setSubmitted] = useState(false);
@@ -250,10 +262,12 @@ export const PublicQuoteRequestScreen: React.FC<
     <main className="min-h-screen bg-[var(--dashboard-bg)] px-4 pb-32 pt-6 sm:px-6 sm:pb-32 sm:pt-8">
       <div className="mx-auto w-full max-w-3xl">
         <QuoteFlowHeader
-          backHref={`/${businessSlug}`}
-          backLabel="Back to profile"
-          title="Request Quote"
-          subtitle={`Share a few details and ${businessName} will send back a quote.`}
+          backHref={getPublicBusinessProfilePath(businessSlug, {
+            lang: bookingFlowLocale,
+          })}
+          backLabel={ui.nav.backToProfile}
+          title={ui.profile.requestQuote}
+          subtitle={ui.profile.quotePageSubtitle(businessName)}
           fullWidthDividerAfterBack
           hideDividerAfterTitle
         />

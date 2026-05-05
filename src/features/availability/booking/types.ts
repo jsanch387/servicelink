@@ -3,6 +3,7 @@
  * POC: UI and mock data only.
  */
 
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
 import type { WeeklySchedule } from '../types/availability';
 
@@ -81,6 +82,8 @@ export interface AvailabilityBookingPageProps {
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */
   isOwnerManualBooking?: boolean;
+  /** Public funnel locale (`?lang=` + cookie). UI chrome only — not service copy. */
+  bookingFlowLocale?: PublicBookingFlowLocale;
   /** Public payment behavior configured by business owner. */
   paymentSettings?: PublicBookingPaymentSettings | null;
   /**

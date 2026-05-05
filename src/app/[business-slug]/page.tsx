@@ -13,8 +13,13 @@ import { CompleteBusinessProfile } from '@/features/business-profile/types/busin
 import { MediaService } from '@/features/media';
 import { isProAccess } from '@/features/pricing';
 import { FREE_MAX_PORTFOLIO_IMAGES } from '@/features/pricing/types';
+import {
+  BOOKING_FLOW_LOCALE_COOKIE_NAME,
+  resolveBookingFlowLocale,
+} from '@/libs/bookingFlowLocale';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 // Enable static generation with revalidation for better performance
@@ -24,6 +29,7 @@ interface PublicProfilePageProps {
   params: Promise<{
     'business-slug': string;
   }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 type PublicBusinessProfileRow = {
@@ -116,8 +122,22 @@ async function fetchBusinessProfileBySlug(
 
 export default async function PublicProfilePage({
   params,
+  searchParams,
 }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
+  const sp = (await searchParams) ?? {};
+  const langRaw = sp.lang;
+  const langParam =
+    typeof langRaw === 'string'
+      ? langRaw
+      : Array.isArray(langRaw)
+        ? langRaw[0]
+        : undefined;
+  const cookieStore = await cookies();
+  const bookingFlowLocale = resolveBookingFlowLocale(
+    langParam,
+    cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value
+  );
 
   const adminGate = createSupabaseAdminClient();
   if (!(await isPublicBusinessSlugVisible(adminGate, slug))) {
@@ -189,6 +209,7 @@ export default async function PublicProfilePage({
         showVerifiedBadge={showVerifiedBadge}
         showRequestQuoteCta={showRequestQuoteCta}
         publicOwnerHasProForPriceOptions={ownerTier === 'pro'}
+        bookingFlowLocale={bookingFlowLocale}
       />
     </div>
   );

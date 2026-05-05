@@ -3,6 +3,8 @@
  * Only whitelisted query keys from `resumeQuery` are forwarded (open-redirect safe).
  */
 
+import { PUBLIC_BOOKING_FLOW_LANG_QUERY } from '@/constants/routes';
+
 const WHITELIST = new Set([
   'serviceId',
   'addOnIds',
@@ -10,6 +12,7 @@ const WHITELIST = new Set([
   'skipDetails',
   'detailsStep',
   'for',
+  PUBLIC_BOOKING_FLOW_LANG_QUERY,
 ]);
 
 const MAX_PARAM_VALUE_LEN = 500;

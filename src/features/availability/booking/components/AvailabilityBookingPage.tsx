@@ -1,7 +1,11 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { API_ROUTES } from '@/constants/routes';
+import { API_ROUTES, type PublicBookingFlowLocale } from '@/constants/routes';
+import {
+  bcp47ForBookingLocale,
+  publicBookingUi,
+} from '@/libs/i18n/publicBookingUi';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
@@ -19,7 +23,9 @@ import {
   loadBookingCheckoutResumeDraft,
   saveBookingCheckoutResumeDraft,
 } from '../utils/bookingCheckoutResumeStorage';
+import { formatBookingWallTime } from '../utils/formatBookingWallTime';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
+import { publicBookingFlowUserFacingError } from '../utils/publicBookingFlowUserFacingError';
 import { BookingPaymentSuccess } from './BookingPaymentSuccess';
 import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 import { BookingSuccess } from './BookingSuccess';
@@ -27,15 +33,6 @@ import { BookingSummary } from './BookingSummary';
 import { CustomerForm, isCustomerFormValid } from './CustomerForm';
 import { DateSelector } from './DateSelector';
 import { TimeSlotGrid } from './TimeSlotGrid';
-
-function formatTimeDisplay(hhmm: string): string {
-  const [h, m] = hhmm.split(':').map(Number);
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  const ampm = h < 12 ? 'AM' : 'PM';
-  return m === 0
-    ? `${h12} ${ampm}`
-    : `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-}
 
 const CUSTOMER_FORM_ID = 'availability-booking-details-form';
 
@@ -46,10 +43,14 @@ export type CalendarBookingStep = 'schedule' | 'details' | 'review' | 'payment';
 
 type PaymentChoice = 'pay_now' | 'pay_in_person';
 
-function formatPrice(cents: number, currency: string): string {
+function formatPrice(
+  cents: number,
+  currency: string,
+  locale: PublicBookingFlowLocale
+): string {
   const amount = Number.isFinite(cents) ? Math.max(0, cents) : 0;
   const safeCurrency = (currency || 'usd').toUpperCase();
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat(bcp47ForBookingLocale(locale), {
     style: 'currency',
     currency: safeCurrency,
   }).format(amount / 100);
@@ -173,7 +174,12 @@ export function AvailabilityBookingPage({
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
   stripeCheckoutSessionId = null,
+  bookingFlowLocale = 'en',
 }: AvailabilityBookingPageProps) {
+  const ui = useMemo(
+    () => publicBookingUi(bookingFlowLocale),
+    [bookingFlowLocale]
+  );
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
 
@@ -299,17 +305,21 @@ export function AvailabilityBookingPage({
       paymentSettings?.checkoutMode === 'customer_choice' &&
       customerPaymentChoice === null
     ) {
-      return 'Choose how to pay';
+      return ui.calendar.chooseHowToPay;
     }
-    if (amountDueNowCents <= 0) return 'Confirm Booking';
-    const amt = formatPrice(amountDueNowCents, paymentCurrency);
+    if (amountDueNowCents <= 0) return ui.calendar.confirmBooking;
+    const amt = formatPrice(
+      amountDueNowCents,
+      paymentCurrency,
+      bookingFlowLocale
+    );
     if (requiresPayNow && amountDueNowCents >= totalPriceCents) {
-      return `Pay ${amt}`;
+      return ui.calendar.payAmount(amt);
     }
     if (requiresDepositNow && amountDueNowCents < totalPriceCents) {
-      return `Pay ${amt} deposit`;
+      return ui.calendar.payDepositAmount(amt);
     }
-    return `Pay ${amt}`;
+    return ui.calendar.payAmount(amt);
   }, [
     amountDueNowCents,
     totalPriceCents,
@@ -318,15 +328,17 @@ export function AvailabilityBookingPage({
     paymentCurrency,
     paymentSettings?.checkoutMode,
     customerPaymentChoice,
+    ui,
+    bookingFlowLocale,
   ]);
 
   /** Shown with the spinner while the payment CTA is working (no ellipsis). */
   const paymentPrimaryBusyLabel = useMemo(() => {
     if (amountDueNowCents > 0) {
-      return 'Going to checkout';
+      return ui.calendar.goingToCheckout;
     }
-    return 'Confirming booking';
-  }, [amountDueNowCents]);
+    return ui.calendar.confirmingBooking;
+  }, [amountDueNowCents, ui]);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
   const canContinueFromDetails = isCustomerFormValid(
@@ -448,9 +460,7 @@ export function AvailabilityBookingPage({
         } catch {
           // keep flow resilient if summary endpoint is temporarily unavailable
         }
-        setSubmitError(
-          'Payment received, but we are still finalizing your booking. Please refresh in a moment.'
-        );
+        setSubmitError(ui.calendar.paymentFinalizeWait);
       };
       void loadSummary();
       return;
@@ -500,6 +510,7 @@ export function AvailabilityBookingPage({
     searchParams,
     shouldShowPaymentStep,
     stripeCheckoutSessionId,
+    ui,
   ]);
 
   // Scroll to top when step changes so user sees the top of the form (especially on mobile)
@@ -524,14 +535,14 @@ export function AvailabilityBookingPage({
       logBookingCheckoutDev(
         'checkout aborted: payments not enabled for this session'
       );
-      setSubmitError('Online payment is not available for this booking.');
+      setSubmitError(ui.calendar.onlinePaymentUnavailable);
       return;
     }
     if (!Number.isFinite(amountToChargeCents) || amountToChargeCents < 50) {
       logBookingCheckoutDev('checkout aborted: invalid amount', {
         amountToChargeCents,
       });
-      setSubmitError('Invalid payment amount. Please refresh and try again.');
+      setSubmitError(ui.calendar.invalidPaymentAmount);
       return;
     }
     setSubmitError(null);
@@ -607,9 +618,11 @@ export function AvailabilityBookingPage({
       });
       if (!res.ok || json.success === false || !json.url?.trim()) {
         setSubmitError(
-          typeof json.error === 'string' && json.error.trim()
-            ? json.error
-            : 'Could not start checkout.'
+          publicBookingFlowUserFacingError(
+            json.error,
+            'checkout',
+            bookingFlowLocale
+          )
         );
         setIsSubmitting(false);
         return;
@@ -681,12 +694,18 @@ export function AvailabilityBookingPage({
       });
       const json = await res.json();
       if (!res.ok) {
-        setSubmitError(json.error ?? 'Something went wrong');
+        setSubmitError(
+          publicBookingFlowUserFacingError(
+            json.error,
+            'booking',
+            bookingFlowLocale
+          )
+        );
         return;
       }
       setSubmittedData({
         date: scheduledDate,
-        time: formatTimeDisplay(selectedTime),
+        time: formatBookingWallTime(selectedTime, bookingFlowLocale),
         customer: customerData,
         selectedAddOns,
       });
@@ -712,6 +731,7 @@ export function AvailabilityBookingPage({
         date={submittedData.date}
         time={submittedData.time}
         isOwnerManualBooking={isOwnerManualBooking}
+        bookingFlowLocale={bookingFlowLocale}
       />
     );
   }
@@ -728,10 +748,10 @@ export function AvailabilityBookingPage({
         <div
           className="h-10 w-10 rounded-full border-2 border-white/15 border-t-emerald-400 animate-spin"
           role="status"
-          aria-label="Confirming payment"
+          aria-label={ui.calendar.confirmingPaymentAria}
         />
         <p className="mt-6 text-sm text-gray-400 text-center max-w-xs">
-          Confirming your payment…
+          {ui.calendar.confirmingPaymentText}
         </p>
       </div>
     );
@@ -756,6 +776,7 @@ export function AvailabilityBookingPage({
         customerVehicleYear={paymentSuccessData.customerVehicleYear}
         customerVehicleMake={paymentSuccessData.customerVehicleMake}
         customerVehicleModel={paymentSuccessData.customerVehicleModel}
+        bookingFlowLocale={bookingFlowLocale}
       />
     );
   }
@@ -764,9 +785,10 @@ export function AvailabilityBookingPage({
     'inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors';
 
   return (
-    <div className="flex flex-col min-h-[60vh]">
-      <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 mb-2 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-2xl mx-auto">
+    <>
+      {/* Match ServiceDetailsScreen: full-width sticky bar; back row uses max-w-2xl + page gutters. */}
+      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           {step === 'schedule' && (
             <Link href={exitCalendarFlowHref} className={headerClassName}>
               <ArrowLeftIcon className="h-5 w-5" />
@@ -782,7 +804,9 @@ export function AvailabilityBookingPage({
               className={headerClassName}
             >
               <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">Back to date & time</span>
+              <span className="text-sm font-medium">
+                {ui.nav.backToDateTime}
+              </span>
             </button>
           )}
           {step === 'review' && (
@@ -792,7 +816,9 @@ export function AvailabilityBookingPage({
               className={headerClassName}
             >
               <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">Back to details</span>
+              <span className="text-sm font-medium">
+                {ui.nav.backToDetails}
+              </span>
             </button>
           )}
           {step === 'payment' && (
@@ -802,384 +828,379 @@ export function AvailabilityBookingPage({
               className={headerClassName}
             >
               <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">Back to review</span>
+              <span className="text-sm font-medium">{ui.nav.backToReview}</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="flex-1 pb-28">
-        {/* Step 1 – Schedule */}
-        {step === 'schedule' && (
-          <div className="space-y-6 pt-4">
-            <BookingPriceBreakdown
-              serviceName={serviceName}
-              serviceDurationMinutes={serviceDurationMinutes}
-              servicePriceCents={servicePriceCents}
-              serviceVariantLabel={selectedPriceOptionLabel}
-              selectedAddOns={selectedAddOns}
-              totalBookingDurationMinutes={totalBookingDurationMinutes}
-              totalPriceCents={totalPriceCents}
-            />
-            <DateSelector
-              weeklySchedule={weeklySchedule}
-              serviceDurationMinutes={totalBookingDurationMinutes}
-              existingBookings={existingBookings}
-              timeOffBlocks={timeOffBlocksProp}
-              selectedDate={selectedDate}
-              onSelectDate={date => {
-                setSelectedDate(date);
-                setSelectedTime(null);
-              }}
-            />
-            <TimeSlotGrid
-              selectedDate={selectedDate}
-              serviceDurationMinutes={totalBookingDurationMinutes}
-              weeklySchedule={weeklySchedule}
-              existingBookings={existingBookings}
-              timeOffBlocks={timeOffBlocksProp}
-              selectedTime={selectedTime}
-              onSelectTime={setSelectedTime}
-            />
-          </div>
-        )}
+      <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
+        <div className="flex-1 pb-28">
+          {/* Step 1 – Schedule */}
+          {step === 'schedule' && (
+            <div className="space-y-6">
+              <BookingPriceBreakdown
+                serviceName={serviceName}
+                serviceDurationMinutes={serviceDurationMinutes}
+                servicePriceCents={servicePriceCents}
+                serviceVariantLabel={selectedPriceOptionLabel}
+                selectedAddOns={selectedAddOns}
+                totalBookingDurationMinutes={totalBookingDurationMinutes}
+                totalPriceCents={totalPriceCents}
+                bookingFlowLocale={bookingFlowLocale}
+              />
+              <DateSelector
+                weeklySchedule={weeklySchedule}
+                serviceDurationMinutes={totalBookingDurationMinutes}
+                existingBookings={existingBookings}
+                timeOffBlocks={timeOffBlocksProp}
+                selectedDate={selectedDate}
+                onSelectDate={date => {
+                  setSelectedDate(date);
+                  setSelectedTime(null);
+                }}
+                calendarTitle={ui.calendar.chooseDateTitle}
+                calendarSubtitle={ui.calendar.chooseDateSubtitle}
+              />
+              <TimeSlotGrid
+                selectedDate={selectedDate}
+                serviceDurationMinutes={totalBookingDurationMinutes}
+                weeklySchedule={weeklySchedule}
+                existingBookings={existingBookings}
+                timeOffBlocks={timeOffBlocksProp}
+                selectedTime={selectedTime}
+                onSelectTime={setSelectedTime}
+                heading={ui.calendar.chooseTime}
+                selectDateHint={ui.calendar.selectDateHint}
+                noSlotsHint={ui.calendar.noSlotsHint}
+              />
+            </div>
+          )}
 
-        {/* Step 2 – Details */}
-        {step === 'details' && (
-          <div className="pt-4">
-            <CustomerForm
-              id={CUSTOMER_FORM_ID}
-              value={customerData}
-              onChange={setCustomerData}
-              onSubmit={() => setStep('review')}
-              showVehicleFields={showVehicleFields}
-              hideSubmitButton
-              submitLabel="Review Booking"
-            />
-          </div>
-        )}
+          {/* Step 2 – Details */}
+          {step === 'details' && (
+            <div>
+              <CustomerForm
+                id={CUSTOMER_FORM_ID}
+                value={customerData}
+                onChange={setCustomerData}
+                onSubmit={() => setStep('review')}
+                showVehicleFields={showVehicleFields}
+                hideSubmitButton
+                submitLabel={ui.calendar.reviewBookingCta}
+                bookingFlowLocale={bookingFlowLocale}
+              />
+            </div>
+          )}
 
-        {/* Step 3 – Confirm */}
-        {step === 'review' && selectedDate && selectedTime && (
-          <div className="pt-4 space-y-4">
-            {submitError && (
-              <p className="text-sm text-red-400" role="alert">
-                {submitError}
-              </p>
-            )}
-            <BookingSummary
-              serviceName={serviceName}
-              serviceDurationMinutes={serviceDurationMinutes}
-              totalAppointmentMinutes={totalBookingDurationMinutes}
-              servicePriceCents={servicePriceCents}
-              serviceVariantLabel={selectedPriceOptionLabel}
-              selectedAddOns={selectedAddOns}
-              totalPriceCents={totalPriceCents}
-              date={selectedDate.toISOString().slice(0, 10)}
-              time={formatTimeDisplay(selectedTime)}
-              customer={customerData}
-            />
-          </div>
-        )}
+          {/* Step 3 – Confirm */}
+          {step === 'review' && selectedDate && selectedTime && (
+            <div className="space-y-4">
+              {submitError && (
+                <p className="text-sm text-red-400" role="alert">
+                  {submitError}
+                </p>
+              )}
+              <BookingSummary
+                serviceName={serviceName}
+                serviceDurationMinutes={serviceDurationMinutes}
+                totalAppointmentMinutes={totalBookingDurationMinutes}
+                servicePriceCents={servicePriceCents}
+                serviceVariantLabel={selectedPriceOptionLabel}
+                selectedAddOns={selectedAddOns}
+                totalPriceCents={totalPriceCents}
+                date={selectedDate.toISOString().slice(0, 10)}
+                startTimeHhmm={selectedTime}
+                customer={customerData}
+                bookingFlowLocale={bookingFlowLocale}
+              />
+            </div>
+          )}
 
-        {step === 'payment' && selectedDate && selectedTime && (
-          <div className="pt-4 space-y-5">
-            <h2 className="text-xl font-semibold text-white tracking-tight">
-              Payment
-            </h2>
-            {submitError && (
-              <p className="text-sm text-red-400" role="alert">
-                {submitError}
-              </p>
-            )}
+          {step === 'payment' && selectedDate && selectedTime && (
+            <div className="space-y-5">
+              <h2 className="text-xl font-semibold text-white tracking-tight">
+                {ui.calendar.paymentHeading}
+              </h2>
+              {submitError && (
+                <p className="text-sm text-red-400" role="alert">
+                  {submitError}
+                </p>
+              )}
 
-            {paymentSettingsEnabled && (
-              <>
-                {(requiresDepositNow ||
-                  paymentSettings?.checkoutMode !== 'customer_choice') && (
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-                    {requiresDepositNow ? (
-                      <p
-                        id={paymentDepositLeadId}
-                        className="text-sm text-gray-200 leading-relaxed"
-                      >
-                        {depositIsPercent && depositPercentWhole != null ? (
-                          <>
-                            <span className="font-semibold text-white">
-                              {businessName}
-                            </span>{' '}
-                            requires{' '}
-                            <span className="font-semibold text-white">
-                              {depositPercentWhole}%
-                            </span>{' '}
-                            of the total cost as a deposit to book this
-                            appointment. This deposit is non-refundable.
-                          </>
-                        ) : (
-                          <>
-                            <span className="font-semibold text-white">
-                              {businessName}
-                            </span>{' '}
-                            requires a{' '}
-                            <span className="font-semibold text-white">
-                              {formatPrice(
-                                configuredDepositCents,
-                                paymentCurrency
+              {paymentSettingsEnabled && (
+                <>
+                  {(requiresDepositNow ||
+                    paymentSettings?.checkoutMode !== 'customer_choice') && (
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                      {requiresDepositNow ? (
+                        <p
+                          id={paymentDepositLeadId}
+                          className="text-sm text-gray-200 leading-relaxed"
+                        >
+                          {depositIsPercent && depositPercentWhole != null
+                            ? ui.calendar.depositPercentLead(
+                                businessName,
+                                depositPercentWhole
+                              )
+                            : ui.calendar.depositFixedLead(
+                                businessName,
+                                formatPrice(
+                                  configuredDepositCents,
+                                  paymentCurrency,
+                                  bookingFlowLocale
+                                )
                               )}
-                            </span>{' '}
-                            deposit to book this appointment. This deposit is
-                            non-refundable.
-                          </>
-                        )}
-                      </p>
-                    ) : (
-                      <p
-                        id={paymentChoiceGroupDescId}
-                        className="text-sm text-gray-300 leading-relaxed"
-                      >
-                        {paymentSettings?.checkoutMode === 'in_app' && (
-                          <>
-                            <span className="font-semibold text-white">
-                              {businessName}
-                            </span>{' '}
-                            asks you to pay in full by card to confirm this
-                            booking.
-                          </>
-                        )}
-                        {paymentSettings?.checkoutMode === 'in_person' && (
-                          <>
-                            <span className="font-semibold text-white">
-                              {businessName}
-                            </span>{' '}
-                            collects payment when you meet—nothing is charged
-                            here today.
-                          </>
-                        )}
-                        {paymentSettings?.checkoutMode == null && (
-                          <>
-                            Payment options for{' '}
-                            <span className="font-semibold text-white">
-                              {businessName}
-                            </span>{' '}
-                            are not fully set up yet. You will not be charged
-                            here today.
-                          </>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {paymentSettings?.checkoutMode === 'customer_choice' && (
-                  <div
-                    className="flex flex-col gap-3"
-                    role="radiogroup"
-                    aria-labelledby={paymentChoiceGroupLabelId}
-                    aria-describedby={
-                      requiresDepositNow ? paymentDepositLeadId : undefined
-                    }
-                  >
-                    <p
-                      id={paymentChoiceGroupLabelId}
-                      className="text-sm font-semibold text-white tracking-tight"
-                    >
-                      How do you want to pay?
-                    </p>
-                    <BookingPaymentOptionButton
-                      selected={customerPaymentChoice === 'pay_now'}
-                      onSelect={() => setCustomerPaymentChoice('pay_now')}
-                      title="Pay with card"
-                      description={
-                        requiresDepositNow
-                          ? 'Pay the full total now by card (your deposit is included).'
-                          : 'Pay the full total now by card.'
-                      }
-                    />
-                    <BookingPaymentOptionButton
-                      selected={customerPaymentChoice === 'pay_in_person'}
-                      onSelect={() => setCustomerPaymentChoice('pay_in_person')}
-                      title="Pay in person"
-                      description={
-                        requiresDepositNow
-                          ? 'Pay the deposit now to book. Pay the rest in person at your appointment.'
-                          : 'Pay in person at your appointment.'
-                      }
-                    />
-                  </div>
-                )}
-
-                {(paymentSettings?.checkoutMode === 'in_person' ||
-                  paymentSettings?.checkoutMode === 'in_app' ||
-                  paymentSettings?.checkoutMode == null) && (
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 space-y-4">
-                    {paymentSettings?.checkoutMode === 'in_person' && (
-                      <p className="text-sm text-gray-400 leading-relaxed">
-                        {requiresDepositNow
-                          ? 'Pay the deposit with your card on the next step. Pay the remaining balance in person when you meet your provider.'
-                          : 'Bring payment when you meet your provider.'}
-                      </p>
-                    )}
-
-                    {paymentSettings?.checkoutMode === 'in_app' && (
-                      <p className="text-sm text-gray-400 leading-relaxed">
-                        {requiresDepositNow
-                          ? 'The amount due now includes your deposit and confirms your spot.'
-                          : 'The full booking total is due by card to confirm your spot.'}
-                      </p>
-                    )}
-
-                    {paymentSettings?.checkoutMode == null && (
-                      <p className="text-sm text-gray-400 leading-relaxed">
-                        You can still continue; card checkout will be available
-                        once this business finishes payment setup.
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
-                  <p className="text-sm font-semibold text-white tracking-tight pb-3 border-b border-white/10">
-                    Summary
-                  </p>
-                  <div className="flex flex-col gap-3.5 pt-4">
-                    <div className="flex items-center justify-between gap-4 text-sm">
-                      <span className="text-gray-300 shrink-0">
-                        Booking total
-                      </span>
-                      <span className="text-white font-semibold text-right tabular-nums">
-                        {formatPrice(totalPriceCents, paymentCurrency)}
-                      </span>
+                        </p>
+                      ) : (
+                        <p
+                          id={paymentChoiceGroupDescId}
+                          className="text-sm text-gray-300 leading-relaxed"
+                        >
+                          {paymentSettings?.checkoutMode === 'in_app' && (
+                            <>{ui.calendar.payInFullLead(businessName)}</>
+                          )}
+                          {paymentSettings?.checkoutMode === 'in_person' && (
+                            <>{ui.calendar.payInPersonLead(businessName)}</>
+                          )}
+                          {paymentSettings?.checkoutMode == null && (
+                            <>{ui.calendar.paymentNotSetupLead(businessName)}</>
+                          )}
+                        </p>
+                      )}
                     </div>
-                    {requiresDepositNow && (
+                  )}
+
+                  {paymentSettings?.checkoutMode === 'customer_choice' && (
+                    <div
+                      className="flex flex-col gap-3"
+                      role="radiogroup"
+                      aria-labelledby={paymentChoiceGroupLabelId}
+                      aria-describedby={
+                        requiresDepositNow ? paymentDepositLeadId : undefined
+                      }
+                    >
+                      <p
+                        id={paymentChoiceGroupLabelId}
+                        className="text-sm font-semibold text-white tracking-tight"
+                      >
+                        {ui.calendar.howDoYouWantToPay}
+                      </p>
+                      <BookingPaymentOptionButton
+                        selected={customerPaymentChoice === 'pay_now'}
+                        onSelect={() => setCustomerPaymentChoice('pay_now')}
+                        title={ui.calendar.payWithCard}
+                        description={
+                          requiresDepositNow
+                            ? ui.calendar.payWithCardDescDeposit
+                            : ui.calendar.payWithCardDescFull
+                        }
+                      />
+                      <BookingPaymentOptionButton
+                        selected={customerPaymentChoice === 'pay_in_person'}
+                        onSelect={() =>
+                          setCustomerPaymentChoice('pay_in_person')
+                        }
+                        title={ui.calendar.payInPerson}
+                        description={
+                          requiresDepositNow
+                            ? ui.calendar.payInPersonDescDeposit
+                            : ui.calendar.payInPersonDescNoDeposit
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {(paymentSettings?.checkoutMode === 'in_person' ||
+                    paymentSettings?.checkoutMode === 'in_app' ||
+                    paymentSettings?.checkoutMode == null) && (
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 space-y-4">
+                      {paymentSettings?.checkoutMode === 'in_person' && (
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          {requiresDepositNow
+                            ? ui.calendar.payInPersonNoteDeposit
+                            : ui.calendar.payInPersonNoteNoDeposit}
+                        </p>
+                      )}
+
+                      {paymentSettings?.checkoutMode === 'in_app' && (
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          {requiresDepositNow
+                            ? ui.calendar.payInAppNoteDeposit
+                            : ui.calendar.payInAppNoteFull}
+                        </p>
+                      )}
+
+                      {paymentSettings?.checkoutMode == null && (
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                          {ui.calendar.payNotSetupNote}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+                    <p className="text-sm font-semibold text-white tracking-tight pb-3 border-b border-white/10">
+                      {ui.common.summary}
+                    </p>
+                    <div className="flex flex-col gap-3.5 pt-4">
                       <div className="flex items-center justify-between gap-4 text-sm">
                         <span className="text-gray-300 shrink-0">
-                          {depositIsPercent && depositPercentWhole != null
-                            ? `Deposit (${depositPercentWhole}% of total)`
-                            : 'Deposit'}
+                          {ui.common.bookingTotal}
                         </span>
                         <span className="text-white font-semibold text-right tabular-nums">
-                          {formatPrice(configuredDepositCents, paymentCurrency)}
+                          {formatPrice(
+                            totalPriceCents,
+                            paymentCurrency,
+                            bookingFlowLocale
+                          )}
                         </span>
                       </div>
-                    )}
-                    {(requiresPayNow || requiresDepositNow) && (
-                      <>
+                      {requiresDepositNow && (
                         <div className="flex items-center justify-between gap-4 text-sm">
                           <span className="text-gray-300 shrink-0">
-                            Due now
+                            {depositIsPercent && depositPercentWhole != null
+                              ? ui.common.depositPercentOfTotal(
+                                  depositPercentWhole
+                                )
+                              : ui.common.deposit}
                           </span>
                           <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(amountDueNowCents, paymentCurrency)}
+                            {formatPrice(
+                              configuredDepositCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between gap-4 text-sm">
-                          <span className="text-gray-300 shrink-0">
-                            Remaining
-                          </span>
-                          <span className="text-white font-semibold text-right tabular-nums">
-                            {formatPrice(amountDueLaterCents, paymentCurrency)}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                      )}
+                      {(requiresPayNow || requiresDepositNow) && (
+                        <>
+                          <div className="flex items-center justify-between gap-4 text-sm">
+                            <span className="text-gray-300 shrink-0">
+                              {ui.common.dueNow}
+                            </span>
+                            <span className="text-white font-semibold text-right tabular-nums">
+                              {formatPrice(
+                                amountDueNowCents,
+                                paymentCurrency,
+                                bookingFlowLocale
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-4 text-sm">
+                            <span className="text-gray-300 shrink-0">
+                              {ui.common.remaining}
+                            </span>
+                            <span className="text-white font-semibold text-right tabular-nums">
+                              {formatPrice(
+                                amountDueLaterCents,
+                                paymentCurrency,
+                                bookingFlowLocale
+                              )}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {amountDueNowCents > 0 && (
-                  <p className="text-xs text-gray-400 text-center px-1">
-                    You will leave this page to pay securely with Stripe.
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Sticky bottom CTA — high z-index + touch-manipulation avoid taps being eaten on mobile */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
-        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-      >
-        <div className="max-w-2xl mx-auto">
-          {step === 'schedule' && (
-            <Button
-              type="button"
-              variant="inverse"
-              fullWidth
-              className="font-semibold"
-              disabled={!canContinueFromSchedule}
-              onClick={() => setStep('details')}
-            >
-              Continue
-            </Button>
-          )}
-          {step === 'details' && (
-            <Button
-              type="submit"
-              form={CUSTOMER_FORM_ID}
-              variant="inverse"
-              fullWidth
-              className="font-semibold"
-              disabled={!canContinueFromDetails}
-            >
-              Review Booking
-            </Button>
-          )}
-          {step === 'review' && (
-            <Button
-              type="button"
-              variant="inverse"
-              fullWidth
-              className="font-semibold"
-              disabled={isSubmitting}
-              onClick={() =>
-                shouldShowPaymentStep
-                  ? setStep('payment')
-                  : handleConfirmBooking()
-              }
-            >
-              {shouldShowPaymentStep
-                ? 'Continue to payment'
-                : 'Confirm Booking'}
-            </Button>
-          )}
-          {step === 'payment' && (
-            <Button
-              type="button"
-              variant="inverse"
-              fullWidth
-              className="font-semibold touch-manipulation min-h-[52px]"
-              disabled={!canContinueFromPayment}
-              loading={isSubmitting}
-              onClick={() => {
-                const cents = computeOnlineAmountDueNowCents(
-                  paymentSettings,
-                  shouldShowPaymentStep,
-                  customerPaymentChoice,
-                  totalPriceCents
-                );
-                logBookingCheckoutDev('payment primary CTA clicked', {
-                  cents,
-                  action:
-                    cents > 0 ? 'stripe_checkout' : 'confirm_booking_only',
-                  ctaLabel: paymentStepCtaLabel,
-                });
-                if (cents > 0) void handleStartCheckout(cents);
-                else {
-                  logBookingCheckoutDev(
-                    'payment CTA: no online amount due — creating booking without checkout',
-                    { cents }
-                  );
-                  void handleConfirmBooking();
-                }
-              }}
-            >
-              {isSubmitting ? paymentPrimaryBusyLabel : paymentStepCtaLabel}
-            </Button>
+                  {amountDueNowCents > 0 && (
+                    <p className="text-xs text-gray-400 text-center px-1">
+                      {ui.calendar.stripeLeaveNotice}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
+
+        {/* Sticky bottom CTA — high z-index + touch-manipulation avoid taps being eaten on mobile */}
+        <div
+          className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        >
+          <div className="max-w-2xl mx-auto">
+            {step === 'schedule' && (
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                disabled={!canContinueFromSchedule}
+                onClick={() => setStep('details')}
+              >
+                {ui.common.continue}
+              </Button>
+            )}
+            {step === 'details' && (
+              <Button
+                type="submit"
+                form={CUSTOMER_FORM_ID}
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                disabled={!canContinueFromDetails}
+              >
+                {ui.calendar.reviewBookingCta}
+              </Button>
+            )}
+            {step === 'review' && (
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                disabled={isSubmitting}
+                onClick={() =>
+                  shouldShowPaymentStep
+                    ? setStep('payment')
+                    : handleConfirmBooking()
+                }
+              >
+                {shouldShowPaymentStep
+                  ? ui.calendar.continueToPayment
+                  : ui.calendar.confirmBooking}
+              </Button>
+            )}
+            {step === 'payment' && (
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold touch-manipulation min-h-[52px]"
+                disabled={!canContinueFromPayment}
+                loading={isSubmitting}
+                onClick={() => {
+                  const cents = computeOnlineAmountDueNowCents(
+                    paymentSettings,
+                    shouldShowPaymentStep,
+                    customerPaymentChoice,
+                    totalPriceCents
+                  );
+                  logBookingCheckoutDev('payment primary CTA clicked', {
+                    cents,
+                    action:
+                      cents > 0 ? 'stripe_checkout' : 'confirm_booking_only',
+                    ctaLabel: paymentStepCtaLabel,
+                  });
+                  if (cents > 0) void handleStartCheckout(cents);
+                  else {
+                    logBookingCheckoutDev(
+                      'payment CTA: no online amount due — creating booking without checkout',
+                      { cents }
+                    );
+                    void handleConfirmBooking();
+                  }
+                }}
+              >
+                {isSubmitting ? paymentPrimaryBusyLabel : paymentStepCtaLabel}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

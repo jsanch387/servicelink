@@ -1,23 +1,9 @@
 /**
- * Maps Stripe errors from `checkout.sessions.create(..., { stripeAccount })` to an API-safe message.
- * Connect failures often mean test/live key mismatch or a connected account from another platform.
+ * Customer-safe message for Stripe Checkout session creation on a connected account.
+ * Callers must `console.error` the raw `error` first — this string is never suitable
+ * for diagnosing key/account mismatches; use logs and the Stripe Dashboard instead.
  */
-
 export function userFacingStripeConnectCheckoutError(error: unknown): string {
-  if (process.env.NODE_ENV === 'development' && error instanceof Error) {
-    return error.message;
-  }
-
-  const err = error as { code?: string; type?: string };
-  if (
-    err?.code === 'account_invalid' ||
-    err?.type === 'StripePermissionError'
-  ) {
-    return (
-      'Payments cannot start: this Stripe connected account does not match your platform API keys. ' +
-      'Use test keys with test Express accounts (or live with live), and reconnect Stripe in Business settings if needed.'
-    );
-  }
-
+  void error;
   return 'Could not start checkout.';
 }

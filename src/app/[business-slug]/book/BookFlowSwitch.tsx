@@ -1,6 +1,8 @@
 'use client';
 
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { AvailabilityBookingPage } from '@/features/availability/booking';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import type {
   AddOnDisplay,
   PublicBookingPaymentSettings,
@@ -38,6 +40,7 @@ interface BookFlowSwitchProps {
   exitCalendarFlowLabel: string;
   /** From server when URL has `checkout=success&session_id=…` after Stripe. */
   stripeCheckoutSessionId?: string | null;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 /**
@@ -65,7 +68,9 @@ export function BookFlowSwitch({
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
   stripeCheckoutSessionId = null,
+  bookingFlowLocale = 'en',
 }: BookFlowSwitchProps) {
+  const ui = publicBookingUi(bookingFlowLocale);
   if (useAvailabilityBooking) {
     const schedule = weeklySchedule ?? DEFAULT_SCHEDULE;
     return (
@@ -88,6 +93,7 @@ export function BookFlowSwitch({
         exitCalendarFlowHref={exitCalendarFlowHref}
         exitCalendarFlowLabel={exitCalendarFlowLabel}
         stripeCheckoutSessionId={stripeCheckoutSessionId}
+        bookingFlowLocale={bookingFlowLocale}
       />
     );
   }
@@ -96,11 +102,9 @@ export function BookFlowSwitch({
     return (
       <div className="rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
         <p className="text-gray-300 text-base font-medium">
-          This business isn&apos;t accepting bookings yet.
+          {ui.notAccepting.title}
         </p>
-        <p className="text-gray-500 text-sm mt-2">
-          Check back later or contact them directly.
-        </p>
+        <p className="text-gray-500 text-sm mt-2">{ui.notAccepting.body}</p>
       </div>
     );
   }

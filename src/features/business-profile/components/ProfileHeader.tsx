@@ -1,6 +1,12 @@
 import { Button } from '@/components/shared';
+import {
+  getPublicQuoteRequestPath,
+  type PublicBookingFlowLocale,
+} from '@/constants/routes';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { PhoneIcon } from '@heroicons/react/24/outline';
 import { CheckBadgeIcon } from '@heroicons/react/24/solid';
+import { PublicBookingLanguageToggle } from './PublicBookingLanguageToggle';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
 import {
@@ -20,6 +26,8 @@ interface ProfileHeaderProps {
   showVerifiedBadge?: boolean;
   /** When true with `isPublic` + slug, show Request quote CTA (Pro + accept_quote_req). */
   showRequestQuoteCta?: boolean;
+  /** Public profile: resolved booking-funnel locale (`?lang=` + cookie). */
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -27,7 +35,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   isPublic = false,
   showVerifiedBadge = false,
   showRequestQuoteCta = false,
+  bookingFlowLocale = 'en',
 }) => {
+  const ui = publicBookingUi(bookingFlowLocale);
   const slugTrimmed = businessProfile.business_slug?.trim();
   const phoneTrimmed = businessProfile.phone_number_call?.trim();
   const showCtaRow =
@@ -58,6 +68,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             isPublic={isPublic}
           />
         )}
+        {isPublic && slugTrimmed ? (
+          <div className="pointer-events-auto absolute right-3 top-3 z-20 sm:right-4 sm:top-4">
+            <PublicBookingLanguageToggle
+              initialLocale={bookingFlowLocale}
+              publicProfileSlug={slugTrimmed}
+            />
+          </div>
+        ) : null}
         {/* Gradient overlay at the bottom edge only for seamless blending */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-[#0f0f0f] pointer-events-none" />
       </div>
@@ -121,7 +139,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             {showRequestQuoteCta ? (
               <>
                 <Button
-                  href={`/${slugTrimmed}/quote`}
+                  href={getPublicQuoteRequestPath(slugTrimmed, {
+                    lang: bookingFlowLocale,
+                  })}
                   variant="inverse"
                   className={
                     phoneTrimmed
@@ -129,7 +149,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                       : 'w-full max-w-xs font-semibold px-5'
                   }
                 >
-                  Request Quote
+                  {ui.profile.requestQuote}
                 </Button>
                 {phoneTrimmed ? (
                   <Button
@@ -150,7 +170,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 className="w-auto shrink-0 font-semibold px-4"
                 icon={<PhoneIcon className="h-5 w-5" aria-hidden />}
               >
-                Contact
+                {ui.profile.contactPhoneCta}
               </Button>
             ) : null}
           </div>

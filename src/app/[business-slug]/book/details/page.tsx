@@ -7,7 +7,12 @@
 import {
   OWNER_MANUAL_BOOKING_FOR,
   getBusinessBookPath,
+  getBusinessBookScheduleUrl,
 } from '@/constants/routes';
+import {
+  BOOKING_FLOW_LOCALE_COOKIE_NAME,
+  resolveBookingFlowLocale,
+} from '@/libs/bookingFlowLocale';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -15,6 +20,7 @@ import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServi
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { unstable_noStore as noStore } from 'next/cache';
 import { notFound, redirect } from 'next/navigation';
 
@@ -29,6 +35,7 @@ interface ServiceDetailsPageProps {
     /** `price` | `addons` — restores sub-step when returning from calendar. */
     detailsStep?: string;
     for?: string;
+    lang?: string;
   }>;
 }
 
@@ -75,15 +82,31 @@ export default async function ServiceDetailsPage({
     priceOptionId,
     detailsStep,
     for: bookingForParam,
+    lang: langParam,
   } = await searchParams;
   const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
+
+  const langFromQuery =
+    typeof langParam === 'string'
+      ? langParam
+      : Array.isArray(langParam)
+        ? langParam[0]
+        : undefined;
+  const cookieStore = await cookies();
+  const bookingFlowLocale = resolveBookingFlowLocale(
+    langFromQuery,
+    cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value
+  );
 
   // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
   if (!serviceId?.trim()) {
     redirect(
       isOwnerManualBooking
-        ? getBusinessBookPath(slug, { forOwner: true })
-        : `/${slug}/book`
+        ? getBusinessBookPath(slug, {
+            forOwner: true,
+            lang: bookingFlowLocale,
+          })
+        : getBusinessBookPath(slug, { lang: bookingFlowLocale })
     );
   }
 
@@ -113,7 +136,7 @@ export default async function ServiceDetailsPage({
     (!legacyRequestBookingEnabled || availabilityConfigured);
 
   if (showNotAcceptingBookings) {
-    redirect(`/${slug}/book`);
+    redirect(getBusinessBookPath(slug, { lang: bookingFlowLocale }));
   }
 
   const result = await getServiceWithAddOnsForBooking(
@@ -129,14 +152,14 @@ export default async function ServiceDetailsPage({
 
   // No add-ons and no price choice needed: skip details and go straight to date selection
   if (!needsPriceStep && addOns.length === 0) {
-    const q = new URLSearchParams({
-      serviceId: serviceId.trim(),
-      skipDetails: '1',
-    });
-    if (isOwnerManualBooking) {
-      q.set('for', OWNER_MANUAL_BOOKING_FOR);
-    }
-    redirect(`/${slug}/book?${q.toString()}`);
+    redirect(
+      getBusinessBookScheduleUrl(slug, {
+        serviceId: serviceId.trim(),
+        skipDetails: true,
+        forOwner: isOwnerManualBooking,
+        lang: bookingFlowLocale,
+      })
+    );
   }
 
   const initialAddOnIds = addOnIds?.trim()
@@ -152,7 +175,7 @@ export default async function ServiceDetailsPage({
       : undefined;
 
   return (
-    <div className="min-h-screen bg-[var(--dashboard-bg)]">
+    <>
       <ServiceDetailsScreen
         businessSlug={slug}
         serviceId={serviceId.trim()}
@@ -163,7 +186,8 @@ export default async function ServiceDetailsPage({
         initialPriceOptionId={priceOptionId?.trim()}
         initialDetailsStep={initialDetailsStep}
         isOwnerManualBooking={isOwnerManualBooking}
+        bookingFlowLocale={bookingFlowLocale}
       />
-    </div>
+    </>
   );
 }

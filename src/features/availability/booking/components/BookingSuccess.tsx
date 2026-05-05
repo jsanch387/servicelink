@@ -1,8 +1,13 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import {
+  bcp47ForBookingLocale,
+  publicBookingUi,
+} from '@/libs/i18n/publicBookingUi';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import React from 'react';
@@ -23,6 +28,7 @@ interface BookingSuccessProps {
   date: string;
   time: string;
   isOwnerManualBooking?: boolean;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 function formatPrice(cents: number): string {
@@ -51,9 +57,11 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   date,
   time,
   isOwnerManualBooking = false,
+  bookingFlowLocale = 'en',
 }) => {
+  const ui = publicBookingUi(bookingFlowLocale);
   const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString(
-    undefined,
+    bcp47ForBookingLocale(bookingFlowLocale),
     {
       weekday: 'long',
       year: 'numeric',
@@ -72,16 +80,13 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
-        You&apos;re booked
+        {ui.bookingSuccess.title}
       </h2>
       <p className="self-center text-gray-400 text-sm mb-8 max-w-sm text-center">
         {isOwnerManualBooking ? (
-          <>
-            Your appointment has been created. Your customer will receive an
-            email notification.
-          </>
+          <>{ui.bookingSuccess.subtitleOwner}</>
         ) : (
-          <>Your appointment with {businessName} is confirmed. See you then!</>
+          <>{ui.bookingSuccess.subtitleCustomer(businessName)}</>
         )}
       </p>
 
@@ -95,12 +100,14 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
       >
         <div className="px-4 py-3 border-b border-white/10">
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
-            {isOwnerManualBooking ? 'Appointment' : 'Your booking'}
+            {isOwnerManualBooking
+              ? ui.bookingSuccess.cardHeaderOwner
+              : ui.bookingSuccess.cardHeaderCustomer}
           </p>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Service</p>
+            <p className="text-xs text-gray-500 mb-0.5">{ui.common.service}</p>
             <div className="flex items-baseline justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-white font-semibold">{serviceName}</p>
@@ -121,7 +128,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
             <>
               <div className="h-px bg-white/10" />
               <div>
-                <p className="text-xs text-gray-500 mb-1">Add-ons</p>
+                <p className="text-xs text-gray-500 mb-1">{ui.common.addOns}</p>
                 <ul className="space-y-1">
                   {selectedAddOns.map(addOn => (
                     <li
@@ -133,7 +140,11 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
                         {addOn.durationMinutes != null &&
                         addOn.durationMinutes > 0 ? (
                           <span className="text-gray-500 block text-xs mt-0.5">
-                            +{formatDurationMinutes(addOn.durationMinutes)}
+                            +
+                            {formatDurationMinutes(
+                              addOn.durationMinutes,
+                              bookingFlowLocale
+                            )}
                           </span>
                         ) : null}
                       </span>
@@ -150,7 +161,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
             <>
               <div className="h-px bg-white/10" />
               <div className="flex justify-between items-center">
-                <p className="text-sm font-medium text-white">Total</p>
+                <p className="text-sm font-medium text-white">
+                  {ui.common.total}
+                </p>
                 <p className="text-lg font-semibold text-white">
                   {formatPrice(totalPriceCents)}
                 </p>
@@ -159,11 +172,11 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
           )}
           <div className="h-px bg-white/10" />
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Date</p>
+            <p className="text-xs text-gray-500 mb-0.5">{ui.common.date}</p>
             <p className="text-white font-medium">{dateFormatted}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Time</p>
+            <p className="text-xs text-gray-500 mb-0.5">{ui.common.time}</p>
             <p className="text-white font-medium">{time}</p>
           </div>
 
@@ -171,7 +184,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
             <>
               <div className="h-px bg-white/10" />
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Vehicle</p>
+                <p className="text-xs text-gray-500 mb-0.5">
+                  {ui.common.vehicle}
+                </p>
                 <p className="text-white font-medium">{vehicleLine}</p>
               </div>
             </>
@@ -181,9 +196,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
 
       <p className="self-center text-xs text-gray-500 text-center mb-6 max-w-sm">
         {isOwnerManualBooking ? (
-          <>Payment details are saved with this appointment.</>
+          <>{ui.bookingSuccess.ownerPaymentNote}</>
         ) : (
-          <>Payment details will be shared in your booking confirmation.</>
+          <>{ui.bookingSuccess.customerPaymentNote}</>
         )}
       </p>
 
@@ -193,7 +208,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         }
         className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors"
       >
-        {isOwnerManualBooking ? 'Go to bookings' : 'Back to profile'}
+        {isOwnerManualBooking
+          ? ui.bookingSuccess.goToBookings
+          : ui.bookingSuccess.backToProfile}
       </Link>
     </div>
   );

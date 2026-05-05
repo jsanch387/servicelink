@@ -113,18 +113,61 @@ export const DASHBOARD_ROUTES = Object.values(
 /** Query flag: business owner booking on a customer's behalf (dashboard → book flow). */
 export const OWNER_MANUAL_BOOKING_FOR = 'owner' as const;
 
+/** Query key for locale across `/[slug]/book` and `/[slug]/book/details` (funnel only). */
+export const PUBLIC_BOOKING_FLOW_LANG_QUERY = 'lang' as const;
+
+/** Single source of truth: add a code here, then add catalog + BCP 47 + API overrides. */
+export const PUBLIC_BOOKING_FLOW_LOCALES = ['en', 'es'] as const;
+
+export type PublicBookingFlowLocale =
+  (typeof PUBLIC_BOOKING_FLOW_LOCALES)[number];
+
+/** Default funnel locale (clean URLs omit `?lang=` for this code). */
+export const DEFAULT_PUBLIC_BOOKING_FLOW_LOCALE: PublicBookingFlowLocale =
+  PUBLIC_BOOKING_FLOW_LOCALES[0];
+
+/** Short labels for the public profile language toggle (extend when adding locales). */
+export const PUBLIC_BOOKING_FLOW_LOCALE_SHORT_LABEL: Record<
+  PublicBookingFlowLocale,
+  string
+> = {
+  en: 'EN',
+  es: 'ES',
+};
+
+export function isPublicBookingFlowLocale(
+  value: string | null | undefined
+): value is PublicBookingFlowLocale {
+  return (
+    typeof value === 'string' &&
+    (PUBLIC_BOOKING_FLOW_LOCALES as readonly string[]).includes(value)
+  );
+}
+
+function appendPublicBookingFlowLang(
+  q: URLSearchParams,
+  lang?: PublicBookingFlowLocale | null
+) {
+  if (!lang || lang === DEFAULT_PUBLIC_BOOKING_FLOW_LOCALE) return;
+  if (!isPublicBookingFlowLocale(lang)) return;
+  q.set(PUBLIC_BOOKING_FLOW_LANG_QUERY, lang);
+}
+
 /** Public booking flow (V1 request or V2 availability), same path customers use. */
 export function getBusinessBookPath(
   businessSlug: string,
-  options?: { forOwner?: boolean }
+  options?: { forOwner?: boolean; lang?: PublicBookingFlowLocale | null }
 ): string {
   const s = businessSlug.trim();
   if (!s) return ROUTES.DASHBOARD.BOOKINGS;
   const base = `/${encodeURIComponent(s)}/book`;
+  const q = new URLSearchParams();
   if (options?.forOwner) {
-    return `${base}?for=${OWNER_MANUAL_BOOKING_FOR}`;
+    q.set('for', OWNER_MANUAL_BOOKING_FOR);
   }
-  return base;
+  appendPublicBookingFlowLang(q, options?.lang);
+  const qs = q.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 /**
@@ -134,11 +177,12 @@ export function getBusinessBookPath(
 export function getBusinessBookDetailsPath(
   businessSlug: string,
   serviceId: string,
-  options?: { forOwner?: boolean }
+  options?: { forOwner?: boolean; lang?: PublicBookingFlowLocale | null }
 ): string {
   return getBusinessBookDetailsUrl(businessSlug, {
     serviceId,
     forOwner: options?.forOwner,
+    lang: options?.lang,
   });
 }
 
@@ -154,6 +198,7 @@ export function getBusinessBookDetailsUrl(
     /** Which details sub-step to open (`price` = choose option, `addons` = add-ons). */
     detailsStep?: BookDetailsStepQuery;
     forOwner?: boolean;
+    lang?: PublicBookingFlowLocale | null;
   }
 ): string {
   const slug = businessSlug.trim();
@@ -172,7 +217,85 @@ export function getBusinessBookDetailsUrl(
   if (params.forOwner) {
     q.set('for', OWNER_MANUAL_BOOKING_FOR);
   }
+  appendPublicBookingFlowLang(q, params.lang);
   return `/${encodeURIComponent(slug)}/book/details?${q.toString()}`;
+}
+
+/**
+ * Calendar + post-schedule steps live on `/[slug]/book` with query params.
+ * Prefer this over string templates so `lang` and other keys stay consistent.
+ */
+export function getBusinessBookScheduleUrl(
+  businessSlug: string,
+  params: {
+    serviceId: string;
+    priceOptionId?: string;
+    addOnIds?: string;
+    detailsStep?: BookDetailsStepQuery;
+    /** When set, calendar opens after skipping configure (server redirect). */
+    skipDetails?: boolean;
+    forOwner?: boolean;
+    checkout?: string;
+    session_id?: string;
+    lang?: PublicBookingFlowLocale | null;
+  }
+): string {
+  const slug = businessSlug.trim();
+  const sid = params.serviceId.trim();
+  if (!slug || !sid) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  q.set('serviceId', sid);
+  if (params.priceOptionId?.trim()) {
+    q.set('priceOptionId', params.priceOptionId.trim());
+  }
+  if (params.addOnIds?.trim()) {
+    q.set('addOnIds', params.addOnIds.trim());
+  }
+  if (params.detailsStep === 'addons' || params.detailsStep === 'price') {
+    q.set('detailsStep', params.detailsStep);
+  }
+  if (params.skipDetails) {
+    q.set('skipDetails', '1');
+  }
+  if (params.forOwner) {
+    q.set('for', OWNER_MANUAL_BOOKING_FOR);
+  }
+  if (params.checkout?.trim()) {
+    q.set('checkout', params.checkout.trim());
+  }
+  if (params.session_id?.trim()) {
+    q.set('session_id', params.session_id.trim());
+  }
+  appendPublicBookingFlowLang(q, params.lang);
+  return `/${encodeURIComponent(slug)}/book?${q.toString()}`;
+}
+
+/**
+ * Public marketing profile `/{slug}` — adds `?lang=` for non-default funnel locales.
+ */
+export function getPublicBusinessProfilePath(
+  businessSlug: string,
+  options?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const s = businessSlug.trim();
+  if (!s) return '/';
+  const base = `/${encodeURIComponent(s)}`;
+  const lang = options?.lang;
+  if (!lang || lang === DEFAULT_PUBLIC_BOOKING_FLOW_LOCALE) return base;
+  return `${base}?${PUBLIC_BOOKING_FLOW_LANG_QUERY}=${lang}`;
+}
+
+/** Public “request quote” wizard `/{slug}/quote` — adds `?lang=` for non-default locales. */
+export function getPublicQuoteRequestPath(
+  businessSlug: string,
+  options?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const s = businessSlug.trim();
+  if (!s) return '/';
+  const base = `/${encodeURIComponent(s)}/quote`;
+  const lang = options?.lang;
+  if (!lang || lang === DEFAULT_PUBLIC_BOOKING_FLOW_LOCALE) return base;
+  return `${base}?${PUBLIC_BOOKING_FLOW_LANG_QUERY}=${lang}`;
 }
 
 /**

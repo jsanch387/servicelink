@@ -18,6 +18,7 @@ import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQue
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import { getAppBaseUrl } from '@/libs/stripe/appBaseUrl';
 import { getStripePlatform } from '@/libs/stripe/platformClient';
+import { userFacingStripeConnectCheckoutError } from '@/libs/stripe/userFacingStripeConnectCheckoutError';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -499,11 +500,12 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ success: true, url: session.url });
   } catch (e) {
-    const message =
-      e instanceof Error ? e.message : 'Could not start checkout.';
     console.error('[booking-checkout:api] POST failed', e);
     return NextResponse.json(
-      { success: false, error: message },
+      {
+        success: false,
+        error: userFacingStripeConnectCheckoutError(e),
+      },
       { status: 500 }
     );
   }

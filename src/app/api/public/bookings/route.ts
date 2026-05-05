@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: err instanceof Error ? err.message : 'Failed to create booking',
+        error: 'Something went wrong. Please try again.',
       },
       { status: 500 }
     );
