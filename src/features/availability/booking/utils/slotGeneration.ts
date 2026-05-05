@@ -45,6 +45,33 @@ function getDayKey(date: Date): DayKey {
   return DAY_KEYS[dayIndex];
 }
 
+/** Calendar `YYYY-MM-DD` at local noon → weekday key (matches booking date usage). */
+export function getDayKeyFromYYYYMMDD(isoDate: string): DayKey {
+  const d = new Date(`${isoDate.trim()}T12:00:00`);
+  return getDayKey(d);
+}
+
+/**
+ * True when `[startTime, startTime + duration)` lies fully inside the owner's
+ * enabled weekly window for that calendar day.
+ */
+export function isSlotWithinWeeklyHours(
+  scheduledDate: string,
+  startTimeHHmm: string,
+  durationMinutes: number,
+  weeklySchedule: WeeklySchedule
+): boolean {
+  const dayKey = getDayKeyFromYYYYMMDD(scheduledDate);
+  const daySchedule = weeklySchedule[dayKey];
+  if (!daySchedule?.enabled) return false;
+
+  const windowStart = parseTimeHHmm(daySchedule.start);
+  const windowEnd = parseTimeHHmm(daySchedule.end);
+  const slotStart = parseTimeHHmm(startTimeHHmm.trim().slice(0, 5));
+  const slotEnd = slotStart + Math.max(1, Math.round(durationMinutes));
+  return slotStart >= windowStart && slotEnd <= windowEnd;
+}
+
 export function parseTimeHHmm(s: string): number {
   const [h, m] = s.split(':').map(Number);
   return (h ?? 0) * 60 + (m ?? 0);

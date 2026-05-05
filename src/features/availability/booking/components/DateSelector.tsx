@@ -31,6 +31,10 @@ interface DateSelectorProps {
   minDate?: Date;
   /** Calendar without outer card chrome (nested inside another panel). */
   plainCalendar?: boolean;
+  /** Shown above the month header (passed to shared Calendar). */
+  calendarTitle?: string;
+  /** Muted line under title (e.g. availability hint). */
+  calendarSubtitle?: string;
 }
 
 export const DateSelector: React.FC<DateSelectorProps> = ({
@@ -42,6 +46,8 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   onSelectDate,
   minDate = new Date(),
   plainCalendar = false,
+  calendarTitle,
+  calendarSubtitle,
 }) => {
   const isDateDisabled = useCallback(
     (date: Date) => {
@@ -69,6 +75,8 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       isDateDisabled={isDateDisabled}
       showYear={true}
       plain={plainCalendar}
+      title={calendarTitle}
+      subtitle={calendarSubtitle}
     />
   );
 };

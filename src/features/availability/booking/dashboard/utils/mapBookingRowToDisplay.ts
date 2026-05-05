@@ -3,6 +3,7 @@
  * Used by the list-bookings API and any server-side listing.
  */
 
+import { normalizeWallClockHm } from '@/features/availability/types/blockTime';
 import type { AvailabilityBookingDisplay } from '../types';
 
 /** Raw row from bookings table (select *). */
@@ -67,6 +68,12 @@ export function mapBookingRowToDisplay(
     addonDetails,
     date: row.scheduled_date,
     time: formatTimeDisplay(row.start_time ?? ''),
+    startTimeHHmm:
+      normalizeWallClockHm(
+        String(row.start_time ?? '')
+          .trim()
+          .slice(0, 5)
+      ) ?? '09:00',
     status: row.status as AvailabilityBookingDisplay['status'],
     address: {
       street: row.customer_street_address ?? '',

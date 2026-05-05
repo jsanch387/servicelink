@@ -20,6 +20,7 @@ export const MOCK_AVAILABILITY_BOOKINGS: AvailabilityBookingDisplay[] = [
     addonDetails: [],
     date: todayStr,
     time: '2:30 PM',
+    startTimeHHmm: '14:30',
     status: 'confirmed',
     address: {
       street: '124 Oak Lane',
@@ -41,6 +42,7 @@ export const MOCK_AVAILABILITY_BOOKINGS: AvailabilityBookingDisplay[] = [
     addonDetails: [],
     date: getDateOffset(1),
     time: '10:00 AM',
+    startTimeHHmm: '10:00',
     status: 'confirmed',
     address: {
       street: '450 Maple St',
@@ -63,6 +65,7 @@ export const MOCK_AVAILABILITY_BOOKINGS: AvailabilityBookingDisplay[] = [
     addonDetails: [],
     date: getDateOffset(2),
     time: '9:00 AM',
+    startTimeHHmm: '09:00',
     status: 'confirmed',
     address: {
       street: '88 River Rd',
@@ -84,6 +87,7 @@ export const MOCK_AVAILABILITY_BOOKINGS: AvailabilityBookingDisplay[] = [
     addonDetails: [],
     date: getDateOffset(3),
     time: '1:00 PM',
+    startTimeHHmm: '13:00',
     status: 'confirmed',
     address: {
       street: '200 Park Blvd',
@@ -105,6 +109,7 @@ export const MOCK_AVAILABILITY_BOOKINGS: AvailabilityBookingDisplay[] = [
     addonDetails: [],
     date: getDateOffset(-1),
     time: '11:00 AM',
+    startTimeHHmm: '11:00',
     status: 'completed',
     address: {
       street: '55 Cedar Ave',
@@ -126,6 +131,7 @@ export const MOCK_AVAILABILITY_BOOKINGS: AvailabilityBookingDisplay[] = [
     addonDetails: [],
     date: getDateOffset(4),
     time: '3:00 PM',
+    startTimeHHmm: '15:00',
     status: 'cancelled',
     address: {
       street: '100 Pine St',

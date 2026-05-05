@@ -8,6 +8,10 @@
 import { BookingsPageSwitch } from '@/features/availability/booking/dashboard/BookingsPageSwitch';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import {
+  DEFAULT_SCHEDULE,
+  type WeeklySchedule,
+} from '@/features/availability/types/availability';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -67,6 +71,9 @@ export default async function BookingsPage() {
   const timeOffBlocks = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
   );
+  const weeklySchedule =
+    (availabilityRow?.weekly_schedule as WeeklySchedule | null) ??
+    DEFAULT_SCHEDULE;
   // Legacy request booking only when legacy user has NOT set availability; once set, no fallback
   const showRequestBookingFallback =
     legacyRequestBookingEnabled && !availabilityConfigured;
@@ -114,6 +121,7 @@ export default async function BookingsPage() {
       initialBookingRequests={bookingRequests ?? []}
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
+      weeklySchedule={weeklySchedule}
       timeOffBlocks={timeOffBlocks}
       freeBookingsUsed={freeBookingsUsed}
       showFreeBookingsTracker={isFreeTier}

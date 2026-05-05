@@ -1,26 +1,46 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, Modal } from '@/components/shared';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
+import type { ExistingBooking, TimeOffInterval } from '../types';
+import { DateSelector } from '../components/DateSelector';
+import { TimeSlotGrid } from '../components/TimeSlotGrid';
 import {
   ArrowLeftIcon,
+  ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   CalendarIcon,
+  CheckCircleIcon,
   EnvelopeIcon,
   MapPinIcon,
   PhoneIcon,
   UserCircleIcon,
+  XCircleIcon,
 } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
+import { useEffect, useState } from 'react';
 import { formatDurationMinutes } from '../utils/formatDuration';
 import type { AvailabilityBookingDisplay } from './types';
+import { localDateKey } from './dayPlannerUtils';
 
 interface AvailabilityBookingDetailPanelProps {
   booking: AvailabilityBookingDisplay;
   onClose: () => void;
   onMarkCompleted: (id: string) => void;
   onCancel: (id: string) => void;
+  /** Confirmed booking only: PATCH reschedule with calendar validation. */
+  onReschedule?: (
+    id: string,
+    scheduledDate: string,
+    startTime: string
+  ) => Promise<{ success: boolean; error?: string }>;
   isUpdating?: boolean;
+  isRescheduling?: boolean;
   updateError?: string | null;
+  weeklySchedule: WeeklySchedule;
+  timeOffBlocks: TimeOffInterval[];
+  /** Confirmed/completed bookings except the one being rescheduled (for slot blocking). */
+  existingBookingsForSlotGrid: ExistingBooking[];
 }
 
 function formatFullAddress(
@@ -63,10 +83,39 @@ export function AvailabilityBookingDetailPanel({
   onClose,
   onMarkCompleted,
   onCancel,
+  onReschedule,
   isUpdating = false,
+  isRescheduling = false,
   updateError = null,
+  weeklySchedule,
+  timeOffBlocks,
+  existingBookingsForSlotGrid,
 }: AvailabilityBookingDetailPanelProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  const [rescheduleSuccess, setRescheduleSuccess] = useState(false);
+
+  /**
+   * Reset picker when opening the modal or switching bookings.
+   * Intentionally omits `booking.date` / `startTimeHHmm` so a successful reschedule
+   * (same id, new slot) does not reset the form and dismiss the confirmation step.
+   */
+  useEffect(() => {
+    if (!showRescheduleModal) return;
+    setRescheduleSuccess(false);
+    setRescheduleError(null);
+    setSelectedDate(new Date(`${booking.date}T12:00:00`));
+    setSelectedTime(booking.startTimeHHmm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- init from latest booking only when modal opens or booking row changes
+  }, [showRescheduleModal, booking.id]);
+
+  const closeRescheduleModal = () => {
+    setShowRescheduleModal(false);
+    setRescheduleSuccess(false);
+  };
 
   const fullAddress = formatFullAddress(booking.address);
   const phoneFormatted = formatPhoneDisplay(booking.customerPhone);
@@ -110,6 +159,32 @@ export function AvailabilityBookingDetailPanel({
     onMarkCompleted(booking.id);
     // Panel closes when parent's handleMarkCompleted succeeds (setSelectedBooking(null))
   };
+
+  const handleRescheduleSave = async () => {
+    setRescheduleError(null);
+    if (!onReschedule) {
+      closeRescheduleModal();
+      return;
+    }
+    if (!selectedDate || !selectedTime?.trim()) {
+      setRescheduleError('Choose a date and an available time.');
+      return;
+    }
+    const scheduledDate = localDateKey(selectedDate);
+    const result = await onReschedule(
+      booking.id,
+      scheduledDate,
+      selectedTime.trim()
+    );
+    if (!result.success) {
+      setRescheduleError(result.error ?? 'Could not save the new time.');
+      return;
+    }
+    setRescheduleSuccess(true);
+  };
+
+  const bookingActionTileClass =
+    'group flex min-h-[4.5rem] w-full min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.06] px-1 py-3.5 text-gray-400 transition-colors hover:border-white/16 hover:bg-white/[0.1] hover:text-gray-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f] disabled:pointer-events-none disabled:opacity-45 sm:min-h-[4.75rem] sm:py-4';
 
   return (
     <>
@@ -354,38 +429,214 @@ export function AvailabilityBookingDetailPanel({
             </section>
           )}
 
-          {/* Actions – only for confirmed */}
+          {/* Actions – control panel (confirmed only) */}
           {isConfirmed && (
             <section className="pt-2">
+              <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-2">
+                Actions
+              </h3>
               {updateError && (
-                <p className="text-sm text-rose-400 mb-3" role="alert">
+                <p className="text-sm text-rose-400 mb-2.5" role="alert">
                   {updateError}
                 </p>
               )}
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="inverse"
-                  fullWidth
-                  className="font-semibold"
-                  disabled={isUpdating}
-                  onClick={handleMarkCompletedClick}
+              <div
+                className="grid w-full grid-cols-3 gap-1.5 sm:gap-2"
+                role="group"
+                aria-label="Booking actions"
+                aria-busy={isUpdating}
+              >
+                <button
+                  type="button"
+                  disabled={isUpdating || isRescheduling}
+                  onClick={() => setShowRescheduleModal(true)}
+                  className={bookingActionTileClass}
                 >
-                  {isUpdating ? 'Saving…' : 'Mark as Completed'}
-                </Button>
-                <Button
-                  variant="outline"
-                  fullWidth
-                  className="font-semibold border-rose-500/50 text-rose-400 hover:bg-rose-500/10"
-                  disabled={isUpdating}
+                  <ArrowPathIcon
+                    className="h-5 w-5 shrink-0 text-gray-500 group-hover:text-gray-300 sm:h-[22px] sm:w-[22px]"
+                    aria-hidden
+                  />
+                  <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                    Reschedule
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isUpdating || isRescheduling}
                   onClick={handleCancelClick}
+                  aria-label="Cancel booking"
+                  className={bookingActionTileClass}
                 >
-                  Cancel Booking
-                </Button>
+                  <XCircleIcon
+                    className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
+                    aria-hidden
+                  />
+                  <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                    Cancel
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isUpdating || isRescheduling}
+                  onClick={handleMarkCompletedClick}
+                  aria-label="Mark booking as completed"
+                  className={bookingActionTileClass}
+                >
+                  <CheckCircleIcon
+                    className="h-5 w-5 shrink-0 text-emerald-500 group-hover:text-emerald-400 sm:h-[22px] sm:w-[22px]"
+                    aria-hidden
+                  />
+                  <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                    Complete
+                  </span>
+                </button>
               </div>
             </section>
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={showRescheduleModal}
+        onClose={closeRescheduleModal}
+        title="Reschedule appointment"
+        maxWidth="xl"
+        uniformHorizontalPadding16
+        titleClassName="font-bold"
+        contentClassName="scrollbar-hide !pt-4 sm:!pt-5 !pb-4 sm:!pb-5"
+      >
+        {rescheduleSuccess ? (
+          <>
+            <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-4 backdrop-blur-sm sm:rounded-2xl sm:px-5 sm:py-5">
+              <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left">
+                <CheckCircleSolidIcon
+                  className="h-11 w-11 shrink-0 text-emerald-400"
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className="text-base font-semibold text-white">
+                    Appointment updated
+                  </p>
+                  <p className="text-sm font-medium text-gray-200">
+                    {booking.serviceName}
+                  </p>
+                  <p className="text-sm leading-relaxed text-gray-400">
+                    {new Date(booking.date + 'T12:00:00').toLocaleDateString(
+                      'en-US',
+                      {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      }
+                    )}
+                    <span className="text-gray-600"> · </span>
+                    {booking.time}
+                    <span className="text-gray-600"> · </span>
+                    {formatDurationMinutes(booking.serviceDurationMinutes)}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end border-t border-white/[0.06] pt-6">
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="sm:w-auto sm:min-w-[10rem]"
+                onClick={closeRescheduleModal}
+              >
+                Done
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-400">Pick a new date and time.</p>
+
+            {rescheduleError ? (
+              <p className="mt-3 text-sm text-rose-400" role="alert">
+                {rescheduleError}
+              </p>
+            ) : null}
+
+            <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3 sm:rounded-2xl sm:px-4 sm:py-3.5">
+              <p className="text-sm font-medium text-white">
+                {booking.serviceName}
+              </p>
+              <p className="mt-1 text-sm text-gray-400">
+                {new Date(booking.date + 'T12:00:00').toLocaleDateString(
+                  'en-US',
+                  {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  }
+                )}{' '}
+                · {booking.time} ·{' '}
+                {formatDurationMinutes(booking.serviceDurationMinutes)}
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-6 sm:mt-6 lg:mt-6">
+              <div className="lg:grid lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start lg:gap-8">
+                <div className="min-w-0">
+                  <DateSelector
+                    weeklySchedule={weeklySchedule}
+                    serviceDurationMinutes={booking.serviceDurationMinutes}
+                    existingBookings={existingBookingsForSlotGrid}
+                    timeOffBlocks={timeOffBlocks}
+                    selectedDate={selectedDate}
+                    onSelectDate={date => {
+                      setSelectedDate(date);
+                      setSelectedTime(null);
+                    }}
+                  />
+                </div>
+                <div className="min-w-0 pt-6 lg:pt-0">
+                  <TimeSlotGrid
+                    selectedDate={selectedDate}
+                    serviceDurationMinutes={booking.serviceDurationMinutes}
+                    weeklySchedule={weeklySchedule}
+                    existingBookings={existingBookingsForSlotGrid}
+                    timeOffBlocks={timeOffBlocks}
+                    selectedTime={selectedTime}
+                    onSelectTime={setSelectedTime}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 border-t border-white/[0.06] pt-6 sm:flex-row sm:justify-end sm:gap-3 lg:mt-7">
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                className="sm:w-auto sm:min-w-[7rem]"
+                disabled={isRescheduling}
+                onClick={closeRescheduleModal}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="sm:w-auto sm:min-w-[10rem] min-h-[48px]"
+                disabled={isRescheduling || !onReschedule}
+                loading={isRescheduling}
+                onClick={() => void handleRescheduleSave()}
+                aria-label={
+                  isRescheduling ? 'Updating appointment' : 'Save new time'
+                }
+              >
+                {isRescheduling ? 'Updating' : 'Save new time'}
+              </Button>
+            </div>
+          </>
+        )}
+      </Modal>
 
       {/* Cancel confirmation dialog */}
       {showCancelConfirm && (

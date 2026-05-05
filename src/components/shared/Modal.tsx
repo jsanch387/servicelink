@@ -18,6 +18,11 @@ interface ModalProps {
   headerClassName?: string;
   /** Merged onto the `<h3>` title element. */
   titleClassName?: string;
+  /**
+   * When true, header and content use 16px horizontal padding at sm+ (overrides
+   * wider sm:px-6 / md:px-8). Mobile stays px-4.
+   */
+  uniformHorizontalPadding16?: boolean;
 }
 
 /**
@@ -37,6 +42,7 @@ export const Modal: React.FC<ModalProps> = ({
   contentClassName = '',
   headerClassName = '',
   titleClassName = '',
+  uniformHorizontalPadding16 = false,
 }) => {
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -73,6 +79,13 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const headerPaddingClass = uniformHorizontalPadding16
+    ? 'px-4 py-4 sm:px-4 sm:py-4'
+    : 'p-4 sm:p-6';
+  const contentHorizontalClass = uniformHorizontalPadding16
+    ? 'px-4 sm:px-4 md:px-4'
+    : 'px-4 sm:px-6 md:px-8';
 
   // Full width on mobile; apply max-width from sm breakpoint up (matches edit modal)
   const maxWidthClasses = {
@@ -115,7 +128,7 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Fixed Header: title only (close via Cancel button or overlay) */}
         {title && (
           <div
-            className={`flex min-w-0 items-center p-4 sm:p-6 border-b border-white/10 flex-shrink-0 ${headerClassName}`}
+            className={`flex min-w-0 items-center border-b border-white/10 flex-shrink-0 ${headerPaddingClass} ${headerClassName}`}
           >
             <h3
               className={`text-lg font-semibold text-white min-w-0 ${titleClassName}`}
@@ -127,7 +140,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Scrollable Content */}
         <div
-          className={`min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain pt-6 pb-6 px-4 sm:pt-8 sm:px-6 md:px-8 sm:pb-8 flex-1 ${contentClassName}`}
+          className={`min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pt-6 pb-6 sm:pt-8 sm:pb-8 ${contentHorizontalClass} ${contentClassName}`}
           onWheel={handleContentScroll}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >

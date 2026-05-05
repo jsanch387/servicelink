@@ -14,8 +14,16 @@ interface TimeSlotGridProps {
   selectedTime: string | null;
   // eslint-disable-next-line no-unused-vars
   onSelectTime: (time: string) => void;
-  /** When false, omit the “Choose time” heading (parent supplies section title). */
+  /** When false, omit the heading (parent supplies section title). */
   showHeading?: boolean;
+  /** Section title above the slot grid. Default matches public booking. */
+  heading?: string;
+  /** Optional line under the heading (e.g. “Open slots only”). */
+  headingSubtitle?: string | null;
+  /** Copy when no day is selected yet. */
+  selectDateHint?: string;
+  /** Copy when the selected day has zero slots. */
+  noSlotsHint?: string;
 }
 
 export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
@@ -27,6 +35,10 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   selectedTime,
   onSelectTime,
   showHeading = true,
+  heading = 'Choose time',
+  headingSubtitle = null,
+  selectDateHint = 'Select a date to see available times.',
+  noSlotsHint = 'No available times for this date.',
 }) => {
   const slots = selectedDate
     ? generateTimeSlots(
@@ -41,16 +53,16 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
 
   if (!selectedDate) {
     return (
-      <p className="text-sm text-gray-500 py-4">
-        Select a date to see available times.
+      <p className="text-sm leading-relaxed text-gray-500 py-4 lg:pt-1">
+        {selectDateHint}
       </p>
     );
   }
 
   if (slots.length === 0) {
     return (
-      <p className="text-sm text-gray-500 py-4">
-        No available times for this date.
+      <p className="text-sm leading-relaxed text-gray-500 py-4 lg:pt-1">
+        {noSlotsHint}
       </p>
     );
   }
@@ -58,9 +70,14 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   return (
     <div className="space-y-3">
       {showHeading ? (
-        <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
-          Choose time
-        </h2>
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
+            {heading}
+          </h2>
+          {headingSubtitle ? (
+            <p className="mt-1 text-sm text-gray-500">{headingSubtitle}</p>
+          ) : null}
+        </div>
       ) : null}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {slots.map(time => (

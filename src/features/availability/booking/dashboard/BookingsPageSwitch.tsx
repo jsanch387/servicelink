@@ -8,6 +8,7 @@ import type { BookingRequest } from '@/features/booking-request/types/bookingReq
 import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { useEffect } from 'react';
 import { AvailabilityBookingsView } from './AvailabilityBookingsView';
 
@@ -31,6 +32,8 @@ export interface BookingsPageSwitchProps {
   showFreeBookingsTracker?: boolean;
   /** Owner time-off blocks (planner view). */
   timeOffBlocks?: BlockTimeEntry[];
+  /** Weekly hours for V2 reschedule slot picker. */
+  weeklySchedule: WeeklySchedule;
 }
 
 /**
@@ -45,6 +48,7 @@ export function BookingsPageSwitch({
   freeBookingsUsed = 0,
   showFreeBookingsTracker = true,
   timeOffBlocks = [],
+  weeklySchedule,
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
     s => s.setAcceptBookings
@@ -62,6 +66,7 @@ export function BookingsPageSwitch({
         freeBookingsUsed={freeBookingsUsed}
         showFreeBookingsTracker={showFreeBookingsTracker}
         timeOffBlocks={timeOffBlocks}
+        weeklySchedule={weeklySchedule}
       />
     );
   }

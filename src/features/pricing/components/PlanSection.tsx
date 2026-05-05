@@ -39,8 +39,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   const isPro = planId === 'pro';
   const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
   const isTrialing = subscriptionStatus === 'trialing';
-  const displayPlanName =
-    isPro && isTrialing ? 'Pro trial' : plan.name;
+  const displayPlanName = isPro && isTrialing ? 'Pro trial' : plan.name;
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageSubscription = async () => {

@@ -42,6 +42,8 @@ export interface AvailabilityBookingDisplay {
   addonDetails: AddOnAtBookingDisplay[];
   date: string;
   time: string;
+  /** Local wall start `HH:mm` (00/30) for slot generation and reschedule APIs. */
+  startTimeHHmm: string;
   status: AvailabilityBookingStatus;
   address: AvailabilityBookingAddress;
   notes: string;

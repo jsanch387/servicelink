@@ -7,6 +7,10 @@ const API_URL = '/api/availability/bookings';
 
 type StatusUpdate = 'completed' | 'cancelled';
 
+export type RescheduleBookingResult =
+  | { success: true; booking: AvailabilityBookingDisplay }
+  | { success: false; error: string };
+
 /**
  * Fetches V2 bookings on every visit to the Bookings tab so the list is always fresh.
  * Mark complete / cancel still update via API and local state only (no refetch).
@@ -73,11 +77,51 @@ export function useAvailabilityBookings() {
     []
   );
 
+  const rescheduleBooking = useCallback(
+    async (
+      id: string,
+      scheduledDate: string,
+      startTime: string
+    ): Promise<RescheduleBookingResult> => {
+      try {
+        const res = await fetch(`${API_URL}/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scheduledDate: scheduledDate.trim(),
+            startTime: startTime.trim(),
+          }),
+        });
+        const json = (await res.json()) as {
+          success?: boolean;
+          error?: string;
+          data?: AvailabilityBookingDisplay;
+        };
+        if (!res.ok || !json.success || !json.data) {
+          return {
+            success: false,
+            error: json.error ?? 'Could not reschedule this appointment',
+          };
+        }
+        const booking = json.data;
+        setBookings(prev => prev.map(b => (b.id === id ? booking : b)));
+        return { success: true, booking };
+      } catch {
+        return {
+          success: false,
+          error: 'Could not reschedule this appointment',
+        };
+      }
+    },
+    []
+  );
+
   return {
     bookings,
     isLoading,
     error,
     refetch: fetchBookings,
     updateBookingStatus,
+    rescheduleBooking,
   };
 }

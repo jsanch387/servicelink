@@ -3,13 +3,8 @@
  * confirmed/completed bookings (same rules as the public booking overlap checks).
  */
 
-import type { ExistingBooking } from '@/features/availability/booking/types';
-import {
-  bookingOverlapsExistingBookings,
-  bookingOverlapsTimeOff,
-} from '@/features/availability/booking/utils/slotGeneration';
-import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import { validateOwnerBookingSlot } from '@/features/availability/booking/server/validateOwnerBookingSlot';
+import type { OwnerBookingSlotValidationCode } from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import { quoteStartTimeToHHmm } from '@/features/quotes/server/createBookingFromApprovedQuote';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -18,6 +13,17 @@ export type MaintenanceAnchorCalendarConflict =
   | 'time_off_conflict'
   | 'existing_booking_conflict'
   | 'load_bookings_failed';
+
+const SLOT_CODE_TO_MAINTENANCE: Record<
+  OwnerBookingSlotValidationCode,
+  MaintenanceAnchorCalendarConflict
+> = {
+  time_off_conflict: 'time_off_conflict',
+  existing_booking_conflict: 'existing_booking_conflict',
+  load_bookings_failed: 'load_bookings_failed',
+  outside_weekly_hours: 'existing_booking_conflict',
+  availability_not_configured: 'existing_booking_conflict',
+};
 
 export function maintenanceSlotAvailabilityUserMessage(
   reason: MaintenanceAnchorCalendarConflict
@@ -49,73 +55,18 @@ export async function checkMaintenanceAnchorAgainstCalendar(
   const durationMinutes = Math.max(1, Math.round(params.durationMinutes));
 
   try {
-    const availabilityRow = await getAvailabilityForBusiness(
-      supabase,
-      params.businessId
-    );
-    const timeOffIntervals = parseStoredTimeOffBlocks(
-      availabilityRow?.time_off_blocks
-    );
-    if (
-      bookingOverlapsTimeOff(
-        scheduledDate,
-        startTime,
-        durationMinutes,
-        timeOffIntervals
-      )
-    ) {
-      return { ok: false, reason: 'time_off_conflict' };
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    const { data: dayBookings, error: dayBookErr } = await db
-      .from('bookings')
-      .select('id, scheduled_date, start_time, duration_minutes')
-      .eq('business_id', params.businessId)
-      .eq('scheduled_date', scheduledDate)
-      .in('status', ['confirmed', 'completed']);
-
-    if (dayBookErr) {
-      console.error(
-        '[maintenance] slot check: load same-day bookings',
-        dayBookErr
-      );
-      return { ok: false, reason: 'load_bookings_failed' };
-    }
-
-    const exclude = params.excludeBookingId?.trim() ?? '';
-    const existingForOverlap: ExistingBooking[] = (dayBookings ?? [])
-      .filter(
-        (r: { id?: string }) =>
-          !exclude || String(r.id ?? '').trim() !== exclude
-      )
-      .map(
-        (r: {
-          scheduled_date?: string;
-          start_time?: string;
-          duration_minutes?: number;
-        }) => ({
-          date: String(r.scheduled_date ?? '').trim(),
-          startTime: String(r.start_time ?? '')
-            .trim()
-            .slice(0, 5),
-          durationMinutes: Math.max(
-            1,
-            Math.round(Number(r.duration_minutes ?? 60))
-          ),
-        })
-      );
-
-    if (
-      bookingOverlapsExistingBookings(
-        scheduledDate,
-        startTime,
-        durationMinutes,
-        existingForOverlap
-      )
-    ) {
-      return { ok: false, reason: 'existing_booking_conflict' };
+    const slot = await validateOwnerBookingSlot(supabase, {
+      businessId: params.businessId,
+      scheduledDate,
+      startTimeHHmm: startTime,
+      durationMinutes,
+      excludeBookingId: params.excludeBookingId,
+    });
+    if (!slot.ok) {
+      return {
+        ok: false,
+        reason: SLOT_CODE_TO_MAINTENANCE[slot.code],
+      };
     }
 
     return { ok: true };

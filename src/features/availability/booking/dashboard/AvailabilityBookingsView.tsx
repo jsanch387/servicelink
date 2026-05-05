@@ -3,13 +3,18 @@
 import { Button } from '@/components/shared';
 import { getBusinessBookPath } from '@/constants/routes';
 import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
+import type {
+  ExistingBooking,
+  TimeOffInterval,
+} from '@/features/availability/booking/types';
 import {
   SyncBookingsConfirmModal,
   SyncBookingsCtaCard,
 } from '@/features/calendar-sync';
 import { FreeBookingsTracker } from '@/features/pricing';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
 import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
@@ -109,6 +114,8 @@ export interface AvailabilityBookingsViewProps {
   showFreeBookingsTracker?: boolean;
   /** Owner time-off blocks for planner overlay (from availability). */
   timeOffBlocks?: BlockTimeEntry[];
+  /** Weekly hours for reschedule slot picker (same rules as public booking). */
+  weeklySchedule: WeeklySchedule;
 }
 
 export function AvailabilityBookingsView({
@@ -116,8 +123,9 @@ export function AvailabilityBookingsView({
   freeBookingsUsed = 0,
   showFreeBookingsTracker = true,
   timeOffBlocks = [],
-}: AvailabilityBookingsViewProps = {}) {
-  const { bookings, isLoading, error, updateBookingStatus } =
+  weeklySchedule,
+}: AvailabilityBookingsViewProps) {
+  const { bookings, isLoading, error, updateBookingStatus, rescheduleBooking } =
     useAvailabilityBookings();
   const [activeTab, setActiveTab] = useState<TabId>('upcoming');
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('list');
@@ -127,6 +135,7 @@ export function AvailabilityBookingsView({
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
 
@@ -191,6 +200,31 @@ export function AvailabilityBookingsView({
     [timeOffBlocks, plannerDateKey]
   );
 
+  const timeOffIntervalsForSlots = useMemo<TimeOffInterval[]>(
+    () =>
+      timeOffBlocks.map(b => ({
+        date: b.date,
+        startTime: b.startTime,
+        endTime: b.endTime,
+      })),
+    [timeOffBlocks]
+  );
+
+  const existingBookingsForReschedule = useMemo<ExistingBooking[]>(() => {
+    if (!selectedBooking) return [];
+    return bookings
+      .filter(
+        b =>
+          b.id !== selectedBooking.id &&
+          (b.status === 'confirmed' || b.status === 'completed')
+      )
+      .map(b => ({
+        date: b.date,
+        startTime: b.startTimeHHmm,
+        durationMinutes: b.serviceDurationMinutes,
+      }));
+  }, [bookings, selectedBooking]);
+
   const handleMarkCompleted = async (id: string) => {
     setUpdateError(null);
     setUpdatingId(id);
@@ -214,6 +248,21 @@ export function AvailabilityBookingsView({
     }
     setSelectedBooking(null);
   };
+
+  const handleReschedule = useCallback(
+    async (id: string, scheduledDate: string, startTime: string) => {
+      setUpdateError(null);
+      setReschedulingId(id);
+      const result = await rescheduleBooking(id, scheduledDate, startTime);
+      setReschedulingId(null);
+      if (!result.success) {
+        return { success: false as const, error: result.error };
+      }
+      setSelectedBooking(result.booking);
+      return { success: true as const };
+    },
+    [rescheduleBooking]
+  );
 
   /** Same approach as shared Modal: freeze document scroll so only the detail sheet moves (esp. iOS). */
   useLayoutEffect(() => {
@@ -392,8 +441,13 @@ export function AvailabilityBookingsView({
           onClose={() => setSelectedBooking(null)}
           onMarkCompleted={handleMarkCompleted}
           onCancel={handleCancel}
+          onReschedule={handleReschedule}
           isUpdating={updatingId === selectedBooking.id}
+          isRescheduling={reschedulingId === selectedBooking.id}
           updateError={updateError}
+          weeklySchedule={weeklySchedule}
+          timeOffBlocks={timeOffIntervalsForSlots}
+          existingBookingsForSlotGrid={existingBookingsForReschedule}
         />
       )}
 

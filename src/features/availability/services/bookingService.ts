@@ -3,6 +3,10 @@
  * Used by API routes only. Do not import from client components.
  */
 
+import {
+  ownerBookingSlotValidationMessage,
+  validateOwnerBookingSlot,
+} from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -409,4 +413,106 @@ export async function updateBookingStatus(
   }
 
   return data as BookingRow | null;
+}
+
+export type RescheduleBookingForOwnerResult =
+  | { ok: true; row: BookingRow }
+  | { ok: false; error: string; httpStatus: number };
+
+/**
+ * Moves a confirmed booking to a new date/time after calendar validation.
+ * Caller must pass `businessId` from the authenticated owner context.
+ */
+export async function rescheduleBookingForOwner(
+  supabase: SupabaseClient<Database>,
+  params: {
+    businessId: string;
+    bookingId: string;
+    scheduledDate: string;
+    startTimeHHmm: string;
+  }
+): Promise<RescheduleBookingForOwnerResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  const { data: row, error: loadErr } = await db
+    .from(TABLE)
+    .select('*')
+    .eq('id', params.bookingId.trim())
+    .eq('business_id', params.businessId)
+    .maybeSingle();
+
+  if (loadErr) {
+    console.error('[rescheduleBookingForOwner] load', loadErr);
+    return {
+      ok: false,
+      error: 'Could not load this booking. Please try again.',
+      httpStatus: 500,
+    };
+  }
+
+  if (!row) {
+    return { ok: false, error: 'Booking not found.', httpStatus: 404 };
+  }
+
+  const status = String((row as BookingRow).status ?? '').trim();
+  if (status !== 'confirmed') {
+    return {
+      ok: false,
+      error: 'Only confirmed appointments can be rescheduled.',
+      httpStatus: 409,
+    };
+  }
+
+  const durationMinutes = Math.max(
+    1,
+    Math.round(Number((row as BookingRow).duration_minutes ?? 60))
+  );
+
+  const slot = await validateOwnerBookingSlot(supabase, {
+    businessId: params.businessId,
+    scheduledDate: params.scheduledDate.trim(),
+    startTimeHHmm: params.startTimeHHmm.trim(),
+    durationMinutes,
+    excludeBookingId: params.bookingId.trim(),
+  });
+
+  if (!slot.ok) {
+    return {
+      ok: false,
+      error: ownerBookingSlotValidationMessage(slot.code),
+      httpStatus: 409,
+    };
+  }
+
+  const { data: updated, error: updateErr } = await db
+    .from(TABLE)
+    .update({
+      scheduled_date: params.scheduledDate.trim(),
+      start_time: params.startTimeHHmm.trim().slice(0, 5),
+    })
+    .eq('id', params.bookingId.trim())
+    .eq('business_id', params.businessId)
+    .eq('status', 'confirmed')
+    .select()
+    .maybeSingle();
+
+  if (updateErr) {
+    console.error('[rescheduleBookingForOwner] update', updateErr);
+    return {
+      ok: false,
+      error: 'Could not save the new time. Please try again.',
+      httpStatus: 500,
+    };
+  }
+
+  if (!updated) {
+    return {
+      ok: false,
+      error: 'That booking is no longer confirmed or was removed.',
+      httpStatus: 409,
+    };
+  }
+
+  return { ok: true, row: updated as BookingRow };
 }

@@ -1,48 +1,34 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
-import {
-  BriefcaseIcon,
-  ChevronRightIcon,
-  MapPinIcon,
-} from '@heroicons/react/24/outline';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import React, { useCallback } from 'react';
 import type { AvailabilityBookingDisplay } from './types';
+import { formatListCardTimeForBooking } from './utils/formatListCardTime';
 
 interface AvailabilityBookingCardProps {
   booking: AvailabilityBookingDisplay;
   onClick: () => void;
 }
 
-/** Time string like "2:30 PM" → { time: "2:30", period: "PM" } */
-function parseTimeDisplay(timeStr: string): { time: string; period: string } {
-  const upper = timeStr.toUpperCase();
-  if (upper.endsWith(' AM')) {
-    return { time: timeStr.slice(0, -3).trim(), period: 'AM' };
-  }
-  if (upper.endsWith(' PM')) {
-    return { time: timeStr.slice(0, -3).trim(), period: 'PM' };
-  }
-  return { time: timeStr, period: '' };
+function formatVehicleLine(booking: AvailabilityBookingDisplay): string | null {
+  const parts = [
+    booking.customerVehicleYear?.trim(),
+    booking.customerVehicleMake?.trim(),
+    booking.customerVehicleModel?.trim(),
+  ].filter(Boolean);
+  if (parts.length === 0) return null;
+  return parts.join(' ');
 }
 
-/** Date string YYYY-MM-DD → "Feb 22" */
-function formatDateShort(dateStr: string): string {
-  const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function shortAddress(booking: AvailabilityBookingDisplay): string {
-  const { address } = booking;
-  return (
-    address.street ||
-    [address.city, address.state].filter(Boolean).join(', ') ||
-    ''
-  );
+function serviceLineText(booking: AvailabilityBookingDisplay): string {
+  const base = booking.serviceName.trim();
+  const addons = (booking.addonDetails ?? [])
+    .map(a => a.name.trim())
+    .filter(Boolean);
+  if (addons.length === 0) return base;
+  return `${base} · ${addons.join(', ')}`;
 }
 
 function StatusPill({
@@ -76,9 +62,9 @@ export function AvailabilityBookingCard({
   booking,
   onClick,
 }: AvailabilityBookingCardProps) {
-  const addressPreview = shortAddress(booking);
-  const { time: timePart, period } = parseTimeDisplay(booking.time);
-  const dateShort = formatDateShort(booking.date);
+  const vehicleLine = formatVehicleLine(booking);
+  const servicesText = serviceLineText(booking);
+  const timeLabel = formatListCardTimeForBooking(booking);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -104,47 +90,56 @@ export function AvailabilityBookingCard({
         showBlur={false}
         className="!p-4 sm:!p-5"
       >
-        <div className="flex items-stretch gap-4 sm:gap-5 min-h-[100px] w-full">
-          {/* Left: Time & Date (centered) */}
-          <div className="flex flex-col justify-center items-center flex-shrink-0 w-14 sm:w-16 text-center">
-            <span className="text-xl sm:text-2xl font-bold text-white tabular-nums leading-tight">
-              {timePart}
-            </span>
-            <span className="text-sm font-normal text-white/90 mt-0.5">
-              {period}
-            </span>
-            <span className="text-sm font-normal text-white mt-2 tracking-wide">
-              {dateShort}
-            </span>
-          </div>
-
-          {/* Vertical divider */}
-          <div
-            className="w-px flex-shrink-0 bg-white/10 self-stretch"
-            aria-hidden
-          />
-
-          {/* Middle: Customer, Service, Address */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 py-0.5">
-            <h3 className="font-bold text-white text-base sm:text-lg truncate">
-              {booking.customerName}
-            </h3>
-            <div className="flex items-center gap-1.5 text-white/80 text-xs tracking-wider mt-0.5">
-              <BriefcaseIcon className="h-3.5 w-3.5 flex-shrink-0 text-white/60" />
-              <span>{booking.serviceName}</span>
+        <div className="flex w-full items-stretch gap-3 sm:gap-4">
+          {/* Time + divider: narrow column + rule hugging the time */}
+          <div className="flex shrink-0 items-stretch gap-1 sm:gap-1.5">
+            <div className="flex w-[4.25rem] shrink-0 flex-col justify-center text-center sm:w-[4.5rem]">
+              <span className="whitespace-nowrap text-[11px] font-bold leading-none tracking-tight text-white tabular-nums sm:text-xs sm:leading-none">
+                {timeLabel}
+              </span>
             </div>
-            {addressPreview && (
-              <div className="flex items-center gap-1.5 text-white/70 text-sm mt-1 min-w-0">
-                <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate">{addressPreview}</span>
-              </div>
-            )}
+            <div
+              className="w-px flex-shrink-0 self-stretch bg-white/10"
+              aria-hidden
+            />
           </div>
 
-          {/* Right: Status top, Chevron bottom right */}
-          <div className="flex flex-col items-end justify-between flex-shrink-0 py-0.5">
-            <StatusPill status={booking.status} />
-            <ChevronRightIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white/80 mt-auto" />
+          <div className="flex min-w-0 flex-1 flex-col py-0.5 pr-1 sm:pr-2">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <h3 className="min-w-0 flex-1 truncate pt-0.5 text-base font-bold leading-tight text-white sm:text-lg">
+                {booking.customerName}
+              </h3>
+              <div className="shrink-0">
+                <StatusPill status={booking.status} />
+              </div>
+            </div>
+
+            <div className="mt-3 flex min-w-0 flex-col gap-0.5 text-sm leading-snug sm:mt-3.5">
+              {vehicleLine ? (
+                <>
+                  <span className="min-w-0 text-white/80">{servicesText}</span>
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <span className="min-w-0 flex-1 text-white/70">
+                      {vehicleLine}
+                    </span>
+                    <ChevronRightIcon
+                      className="h-5 w-5 shrink-0 text-white/80 sm:h-6 sm:w-6"
+                      aria-hidden
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <span className="min-w-0 flex-1 text-white/80">
+                    {servicesText}
+                  </span>
+                  <ChevronRightIcon
+                    className="h-5 w-5 shrink-0 text-white/80 sm:h-6 sm:w-6"
+                    aria-hidden
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </GlassCard>
