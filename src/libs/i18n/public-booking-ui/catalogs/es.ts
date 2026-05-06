@@ -62,8 +62,6 @@ export const publicBookingUiEs: PublicBookingUi = {
     body: 'Vuelve más tarde o contáctalos directamente.',
   },
   calendar: {
-    chooseDateTitle: 'Elige una fecha',
-    chooseDateSubtitle: 'Solo puedes elegir días con horarios disponibles.',
     chooseTime: 'Elige la hora',
     selectDateHint: 'Selecciona una fecha para ver los horarios disponibles.',
     noSlotsHint: 'No hay horarios disponibles para esta fecha.',

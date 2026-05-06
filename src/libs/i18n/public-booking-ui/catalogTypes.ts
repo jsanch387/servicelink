@@ -60,8 +60,6 @@ export type PublicBookingUi = {
     body: string;
   };
   calendar: {
-    chooseDateTitle: string;
-    chooseDateSubtitle: string;
     chooseTime: string;
     selectDateHint: string;
     noSlotsHint: string;

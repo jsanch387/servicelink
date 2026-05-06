@@ -2,9 +2,6 @@
 
 import { Button, Modal } from '@/components/shared';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
-import type { ExistingBooking, TimeOffInterval } from '../types';
-import { DateSelector } from '../components/DateSelector';
-import { TimeSlotGrid } from '../components/TimeSlotGrid';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -19,9 +16,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import { useEffect, useState } from 'react';
+import { DateSelector } from '../components/DateSelector';
+import { TimeSlotGrid } from '../components/TimeSlotGrid';
+import type { ExistingBooking, TimeOffInterval } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
-import type { AvailabilityBookingDisplay } from './types';
 import { localDateKey } from './dayPlannerUtils';
+import type { AvailabilityBookingDisplay } from './types';
 
 interface AvailabilityBookingDetailPanelProps {
   booking: AvailabilityBookingDisplay;
@@ -123,7 +123,25 @@ export function AvailabilityBookingDetailPanel({
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
-  const showPaymentSection = (payment?.paidOnlineAmountCents ?? 0) > 0;
+  const showPaymentSection = Boolean(payment);
+
+  const paymentDetailVariant = payment
+    ? (() => {
+        const paid = payment.paidOnlineAmountCents;
+        const rem = payment.remainingAmountCents;
+        const method = payment.paymentMethodSelected?.trim().toLowerCase();
+        if (method === 'pay_in_person' && paid <= 0) {
+          return 'pay_in_person' as const;
+        }
+        if (paid > 0 && rem > 0) {
+          return 'deposit' as const;
+        }
+        if (paid > 0 && rem <= 0) {
+          return 'paid_full' as const;
+        }
+        return 'other' as const;
+      })()
+    : null;
 
   const navigationUrl = (() => {
     const destination = fullAddress.trim();
@@ -184,7 +202,7 @@ export function AvailabilityBookingDetailPanel({
   };
 
   const bookingActionTileClass =
-    'group flex min-h-[4.5rem] w-full min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.06] px-1 py-3.5 text-gray-400 transition-colors hover:border-white/16 hover:bg-white/[0.1] hover:text-gray-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f] disabled:pointer-events-none disabled:opacity-45 sm:min-h-[4.75rem] sm:py-4';
+    'group flex min-h-[4.5rem] w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.06] px-1 py-3.5 text-gray-400 transition-colors hover:border-white/16 hover:bg-white/[0.1] hover:text-gray-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-[4.75rem] sm:py-4';
 
   return (
     <>
@@ -310,39 +328,85 @@ export function AvailabilityBookingDetailPanel({
             </div>
           </section>
 
-          {/* Customer */}
-          {showPaymentSection && payment && (
+          {/* Payment */}
+          {showPaymentSection && payment && paymentDetailVariant && (
             <section>
               <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
                 Payment
               </h3>
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-gray-300">Paid online</span>
-                  <span className="font-semibold text-emerald-300 tabular-nums">
-                    {formatCurrencyAmount(
-                      payment.paidOnlineAmountCents,
-                      payment.currency
+                {paymentDetailVariant === 'pay_in_person' && (
+                  <>
+                    <p className="text-sm font-semibold text-white">
+                      Pay in person
+                    </p>
+                    {payment.totalAmountCents > 0 ? (
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-gray-300">Amount due</span>
+                        <span className="font-semibold text-white tabular-nums">
+                          {formatCurrencyAmount(
+                            payment.remainingAmountCents,
+                            payment.currency
+                          )}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">
+                        No amount due for this appointment.
+                      </p>
                     )}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-gray-300">Remaining</span>
-                  <span className="font-semibold text-white tabular-nums">
-                    {formatCurrencyAmount(
-                      payment.remainingAmountCents,
-                      payment.currency
-                    )}
-                  </span>
-                </div>
-                {payment.remainingAmountCents <= 0 ? (
-                  <p className="text-xs text-emerald-300/90">
-                    This booking is paid in full.
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-400">
-                    Customer paid a deposit. Collect the remaining balance in
-                    person.
+                  </>
+                )}
+
+                {paymentDetailVariant === 'deposit' && (
+                  <>
+                    <p className="text-sm font-semibold text-white">
+                      Deposit paid
+                    </p>
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-gray-300">Amount paid</span>
+                      <span className="font-semibold text-emerald-300 tabular-nums">
+                        {formatCurrencyAmount(
+                          payment.paidOnlineAmountCents,
+                          payment.currency
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-gray-300">Amount due</span>
+                      <span className="font-semibold text-white tabular-nums">
+                        {formatCurrencyAmount(
+                          payment.remainingAmountCents,
+                          payment.currency
+                        )}
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {paymentDetailVariant === 'paid_full' && (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <CheckCircleSolidIcon
+                        className="h-5 w-5 shrink-0 text-emerald-400"
+                        aria-hidden
+                      />
+                      <span className="text-sm font-semibold text-white">
+                        Paid
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-emerald-300 tabular-nums">
+                      {formatCurrencyAmount(
+                        payment.paidOnlineAmountCents,
+                        payment.currency
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                {paymentDetailVariant === 'other' && (
+                  <p className="text-sm text-gray-400 leading-snug">
+                    No card payment through the app for this booking.
                   </p>
                 )}
               </div>

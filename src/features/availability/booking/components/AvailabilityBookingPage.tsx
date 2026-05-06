@@ -666,6 +666,11 @@ export function AvailabilityBookingPage({
     setIsSubmitting(true);
     const scheduledDate = selectedDate.toISOString().slice(0, 10);
     try {
+      const paymentMethodForPublicCreate =
+        shouldShowPaymentStep && customerPaymentChoice === 'pay_in_person'
+          ? ('pay_in_person' as const)
+          : ('none' as const);
+
       const res = await fetch('/api/public/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -690,6 +695,7 @@ export function AvailabilityBookingPage({
           scheduledDate,
           startTime: selectedTime,
           customer: customerData,
+          paymentMethodSelected: paymentMethodForPublicCreate,
         }),
       });
       const json = await res.json();
@@ -859,8 +865,6 @@ export function AvailabilityBookingPage({
                   setSelectedDate(date);
                   setSelectedTime(null);
                 }}
-                calendarTitle={ui.calendar.chooseDateTitle}
-                calendarSubtitle={ui.calendar.chooseDateSubtitle}
               />
               <TimeSlotGrid
                 selectedDate={selectedDate}

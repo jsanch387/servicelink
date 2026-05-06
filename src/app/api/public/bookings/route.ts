@@ -8,7 +8,10 @@
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
-import { createBooking } from '@/features/availability/services/bookingService';
+import {
+  createBooking,
+  insertBookingPaymentsRowForNoCheckoutPublicBooking,
+} from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
@@ -249,6 +252,40 @@ export async function POST(request: NextRequest) {
       checkout_mode?: string | null;
       currency?: string | null;
     } | null;
+
+    const rawClientPm = body.paymentMethodSelected;
+    const clientPaymentMethod =
+      rawClientPm === 'pay_in_person' ||
+      rawClientPm === 'pay_now' ||
+      rawClientPm === 'none'
+        ? rawClientPm
+        : null;
+
+    try {
+      await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
+        bookingId: result.id,
+        businessId,
+        totalAmountCents: totalPriceCentsForEmail,
+        currency: paySettings?.currency?.trim() || 'usd',
+        paymentsEnabled: paySettings?.payments_enabled === true,
+        checkoutMode: paySettings?.checkout_mode ?? null,
+        clientPaymentMethod,
+      });
+    } catch (payErr) {
+      console.error(
+        '[API] POST /api/public/bookings booking_payments insert',
+        payErr
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('bookings').delete().eq('id', result.id);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Something went wrong. Please try again.',
+        },
+        { status: 500 }
+      );
+    }
 
     const hasPriceLineItems =
       (typeof body.servicePriceCents === 'number' &&

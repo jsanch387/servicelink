@@ -62,8 +62,6 @@ export const publicBookingUiEn: PublicBookingUi = {
     body: 'Check back later or contact them directly.',
   },
   calendar: {
-    chooseDateTitle: 'Choose a date',
-    chooseDateSubtitle: 'Only days with open slots are selectable.',
     chooseTime: 'Choose time',
     selectDateHint: 'Select a date to see available times.',
     noSlotsHint: 'No available times for this date.',

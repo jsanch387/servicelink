@@ -8,16 +8,16 @@ import {
 } from '@/libs/i18n/publicBookingUi';
 
 describe('public booking UI catalogs', () => {
-  it('publicBookingUi returns distinct Spanish copy for calendar title', () => {
+  it('publicBookingUi returns distinct Spanish copy for calendar strings', () => {
     const en = publicBookingUi('en');
     const es = publicBookingUi('es');
-    expect(en.calendar.chooseDateTitle).toBe('Choose a date');
-    expect(es.calendar.chooseDateTitle).toBe('Elige una fecha');
+    expect(en.calendar.chooseTime).toBe('Choose time');
+    expect(es.calendar.chooseTime).toBe('Elige la hora');
   });
 
   it('publicBookingUiFromUnknown falls back to English for invalid input', () => {
     const ui = publicBookingUiFromUnknown('xx');
-    expect(ui.calendar.chooseDateTitle).toBe('Choose a date');
+    expect(ui.calendar.chooseTime).toBe('Choose time');
   });
 
   it('publicBookingUiFromUnknown accepts supported query values', () => {

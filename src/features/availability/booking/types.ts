@@ -131,4 +131,9 @@ export interface CreateBookingRequest {
   scheduledDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   customer: CustomerFormData;
+  /**
+   * When checkout mode is `customer_choice` and the customer confirms without
+   * Stripe (e.g. pay in person), the client sends `pay_in_person`. Otherwise omit.
+   */
+  paymentMethodSelected?: 'pay_now' | 'pay_in_person' | 'none';
 }
