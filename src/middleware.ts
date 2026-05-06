@@ -93,10 +93,9 @@ export async function middleware(request: NextRequest) {
   const isPublicProfileRoute = request.nextUrl.pathname.startsWith('/profile');
   const isWaitlistRoute = request.nextUrl.pathname.startsWith('/waitlist');
   const isHomeRoute = request.nextUrl.pathname === '/';
-  const isResetPasswordRoute = pathname === ROUTES.AUTH.RESET_PASSWORD;
 
-  // Redirect authenticated users away from auth pages (keep reset page for recovery session)
-  if (isAuthRoute && user && !isResetPasswordRoute) {
+  // Redirect authenticated users away from auth pages
+  if (isAuthRoute && user) {
     return NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url));
   }
 
