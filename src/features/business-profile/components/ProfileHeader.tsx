@@ -3,6 +3,7 @@ import {
   getPublicQuoteRequestPath,
   type PublicBookingFlowLocale,
 } from '@/constants/routes';
+import { normalizePublicBookingOfferedLocales } from '@/libs/bookingFlowLocale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { PhoneIcon } from '@heroicons/react/24/outline';
 import { CheckBadgeIcon } from '@heroicons/react/24/solid';
@@ -26,7 +27,7 @@ interface ProfileHeaderProps {
   showVerifiedBadge?: boolean;
   /** When true with `isPublic` + slug, show Request quote CTA (Pro + accept_quote_req). */
   showRequestQuoteCta?: boolean;
-  /** Public profile: resolved booking-funnel locale (`?lang=` + cookie). */
+  /** Public / owner preview: resolved booking-funnel locale (query → cookie → DB default). */
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -71,6 +72,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         {isPublic && slugTrimmed ? (
           <div className="pointer-events-auto absolute right-3 top-3 z-20 sm:right-4 sm:top-4">
             <PublicBookingLanguageToggle
+              offeredLocales={normalizePublicBookingOfferedLocales(
+                businessProfile.public_booking_locales
+              )}
               initialLocale={bookingFlowLocale}
               publicProfileSlug={slugTrimmed}
             />

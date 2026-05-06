@@ -36,4 +36,15 @@ describe('buildBookPageCheckoutReturnUrl', () => {
     expect(url).toContain('checkout=cancel');
     expect(url).not.toContain('CHECKOUT_SESSION_ID');
   });
+
+  it('forwards funnel lang on success return (Stripe resume whitelist)', () => {
+    const url = buildBookPageCheckoutReturnUrl({
+      baseUrl: 'https://app.example.com',
+      businessSlug: 'acme-auto',
+      checkout: 'success',
+      resumeQuery: 'serviceId=svc-1&lang=es',
+    });
+    expect(url).toContain('lang=es');
+    expect(url).toContain('serviceId=svc-1');
+  });
 });

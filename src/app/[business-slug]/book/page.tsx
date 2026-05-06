@@ -29,7 +29,8 @@ import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIds
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
-  resolveBookingFlowLocale,
+  normalizePublicBookingOfferedLocales,
+  resolvePublicBookingFlowLocale,
 } from '@/libs/bookingFlowLocale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -72,6 +73,8 @@ type PublicBusinessProfileForBooking = {
   profile_id: string | null;
   free_bookings_month: string | null;
   free_bookings_count: number | null;
+  public_booking_locales: string[];
+  public_booking_default_locale: string;
   [key: string]: unknown;
 };
 
@@ -134,7 +137,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count, public_booking_locales, public_booking_default_locale'
       )
       .eq('business_slug', slug)
       .single();
@@ -196,11 +199,6 @@ export default async function BookingRequestPage({
         ? langParam[0]
         : undefined;
   const cookieStore = await cookies();
-  const bookingFlowLocale = resolveBookingFlowLocale(
-    langFromQuery,
-    cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value
-  );
-  const ui = publicBookingUi(bookingFlowLocale);
 
   const stripeCheckoutSessionId =
     checkoutParam === 'success' && sessionIdParam?.trim()
@@ -230,6 +228,16 @@ export default async function BookingRequestPage({
   if (!businessProfile) {
     notFound();
   }
+
+  const bookingFlowLocale = resolvePublicBookingFlowLocale({
+    offeredLocales: normalizePublicBookingOfferedLocales(
+      businessProfile.public_booking_locales
+    ),
+    businessDefaultLocale: businessProfile.public_booking_default_locale,
+    searchParamsLang: langFromQuery,
+    cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
+  });
+  const ui = publicBookingUi(bookingFlowLocale);
 
   const adminClient = createSupabaseAdminClient();
   if (!(await isPublicBusinessSlugVisible(adminClient, slug))) {

@@ -6,11 +6,17 @@ import { EyeIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
 import {
+  bookingLinkLocalesPersistFromUi,
+  bookingLinkLocalesUiFromProfile,
+  type BookingLinkLocalesUiState,
+} from '../../utils/bookingLinkLocales';
+import {
   EditingFormData,
   ImageFormData,
   cleanupPreviewUrls,
   saveBusinessProfile,
 } from '../../utils/editing/editingHelpers';
+import { DashboardProfileBookingLanguageCard } from '../DashboardProfileBookingLanguageCard';
 import { BannerSection } from './sections/BannerSection';
 import { BusinessInfoSection } from './sections/BusinessInfoSection';
 import { ContactSection } from './sections/ContactSection';
@@ -81,7 +87,7 @@ const convertHeicFiles = async (files: File[]): Promise<File[]> => {
 
 interface EditBusinessProfileProps {
   businessProfile: CompleteBusinessProfile;
-  // eslint-disable-next-line no-unused-vars
+
   onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
@@ -114,6 +120,11 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         position: image.position,
       })) || [],
   });
+
+  const [bookingLinkLocales, setBookingLinkLocales] =
+    useState<BookingLinkLocalesUiState>(() =>
+      bookingLinkLocalesUiFromProfile(businessProfile)
+    );
 
   const [errors, setErrors] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -286,7 +297,8 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       // Save everything to database
       const result = await saveBusinessProfile(
         businessProfile.id,
-        finalFormData
+        finalFormData,
+        bookingLinkLocales
       );
 
       if (result.success) {
@@ -294,7 +306,14 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         setErrors([]);
         // The parent component will handle switching to preview mode
         // by calling onSave with the updated data
-        await onSave(finalFormData as unknown as Record<string, unknown>);
+        const bookingPersist =
+          bookingLinkLocalesPersistFromUi(bookingLinkLocales);
+        await onSave({
+          ...(finalFormData as unknown as Record<string, unknown>),
+          public_booking_locales: bookingPersist.public_booking_locales,
+          public_booking_default_locale:
+            bookingPersist.public_booking_default_locale,
+        });
       } else {
         setErrors([result.error || 'Failed to save business profile']);
       }
@@ -391,6 +410,26 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           onInputChange={handleInputChange}
           errors={errors}
         />
+
+        <div className="mt-5 sm:mt-6 w-full min-w-0">
+          <DashboardProfileBookingLanguageCard
+            offerSpanish={bookingLinkLocales.offerSpanish}
+            onOfferSpanishChange={offer => {
+              setBookingLinkLocales(prev => ({
+                ...prev,
+                offerSpanish: offer,
+                visitorDefaultLocale: offer ? prev.visitorDefaultLocale : 'en',
+              }));
+            }}
+            visitorDefaultLocale={bookingLinkLocales.visitorDefaultLocale}
+            onVisitorDefaultLocaleChange={visitorDefaultLocale =>
+              setBookingLinkLocales(prev => ({
+                ...prev,
+                visitorDefaultLocale,
+              }))
+            }
+          />
+        </div>
 
         {/* Divider */}
         <div className="border-t border-white/10 my-8 sm:my-12" />

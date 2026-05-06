@@ -96,6 +96,10 @@ export type Database = {
           free_bookings_count: number;
           /** When true and owner is Pro, public profile shows Request quote. */
           accept_quote_req: boolean;
+          /** Locales offered on the public booking flow link (always includes `en`). */
+          public_booking_locales: string[];
+          /** Visitor default when opening the booking link (must be in `public_booking_locales`). */
+          public_booking_default_locale: string;
         };
         Insert: {
           id?: string;
@@ -125,6 +129,8 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           accept_quote_req?: boolean;
+          public_booking_locales?: string[];
+          public_booking_default_locale?: string;
         };
         Update: {
           id?: string;
@@ -154,6 +160,8 @@ export type Database = {
           free_bookings_month?: string | null;
           free_bookings_count?: number;
           accept_quote_req?: boolean;
+          public_booking_locales?: string[];
+          public_booking_default_locale?: string;
         };
       };
       service_addons: {

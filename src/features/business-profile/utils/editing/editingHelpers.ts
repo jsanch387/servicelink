@@ -6,6 +6,8 @@
  */
 
 import { BusinessProfileApi } from '../../services/businessProfileApi';
+import type { BookingLinkLocalesUiState } from '../bookingLinkLocales';
+import { bookingLinkLocalesPersistFromUi } from '../bookingLinkLocales';
 
 export interface EditingFormData {
   business_name: string;
@@ -123,7 +125,8 @@ export function transformFormDataForAPI(
  */
 export async function saveBusinessProfile(
   businessProfileId: string,
-  formData: EditingFormData
+  formData: EditingFormData,
+  bookingLinkLocales: BookingLinkLocalesUiState
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Validate form data
@@ -137,11 +140,15 @@ export async function saveBusinessProfile(
 
     // Transform data for API
     const apiData = transformFormDataForAPI(formData, businessProfileId);
+    const bookingPersist = bookingLinkLocalesPersistFromUi(bookingLinkLocales);
 
-    // Save business profile (basic info)
+    // Save business profile (basic info + booking link locale settings)
     const profileResult = await BusinessProfileApi.updateBusinessProfile(
       businessProfileId,
-      apiData.businessProfile
+      {
+        ...apiData.businessProfile,
+        ...bookingPersist,
+      }
     );
     if (!profileResult.success) {
       return {

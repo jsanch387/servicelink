@@ -11,7 +11,8 @@ import {
 } from '@/constants/routes';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
-  resolveBookingFlowLocale,
+  normalizePublicBookingOfferedLocales,
+  resolvePublicBookingFlowLocale,
 } from '@/libs/bookingFlowLocale';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
@@ -37,16 +38,6 @@ interface ServiceDetailsPageProps {
     for?: string;
     lang?: string;
   }>;
-}
-
-async function fetchBusinessIdBySlug(slug: string): Promise<string | null> {
-  const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('business_slug', slug)
-    .single();
-  return (data as { id: string } | null)?.id ?? null;
 }
 
 export async function generateMetadata({
@@ -92,11 +83,36 @@ export default async function ServiceDetailsPage({
       : Array.isArray(langParam)
         ? langParam[0]
         : undefined;
+
+  const adminClient = createSupabaseAdminClient();
+  if (!(await isPublicBusinessSlugVisible(adminClient, slug))) {
+    notFound();
+  }
+
+  const { data: profileMeta } = await adminClient
+    .from('business_profiles')
+    .select(
+      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale'
+    )
+    .eq('business_slug', slug)
+    .maybeSingle();
+
+  if (!profileMeta) notFound();
+
   const cookieStore = await cookies();
-  const bookingFlowLocale = resolveBookingFlowLocale(
-    langFromQuery,
-    cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value
-  );
+  const bookingFlowLocale = resolvePublicBookingFlowLocale({
+    offeredLocales: normalizePublicBookingOfferedLocales(
+      (profileMeta as { public_booking_locales?: string[] | null })
+        .public_booking_locales
+    ),
+    businessDefaultLocale: (
+      profileMeta as { public_booking_default_locale?: string | null }
+    ).public_booking_default_locale,
+    searchParamsLang: langFromQuery,
+    cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
+  });
+
+  const businessId = (profileMeta as { id: string }).id;
 
   // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
   if (!serviceId?.trim()) {
@@ -110,25 +126,14 @@ export default async function ServiceDetailsPage({
     );
   }
 
-  const businessId = await fetchBusinessIdBySlug(slug);
-  if (!businessId) notFound();
-
-  const adminClient = createSupabaseAdminClient();
-  if (!(await isPublicBusinessSlugVisible(adminClient, slug))) {
-    notFound();
-  }
-  const [profileRow, availabilityRow] = await Promise.all([
-    adminClient
-      .from('business_profiles')
-      .select('legacy_request_booking_enabled')
-      .eq('id', businessId)
-      .single(),
-    getAvailabilityForBusiness(adminClient, businessId),
-  ]);
-
   const legacyRequestBookingEnabled =
-    (profileRow.data as { legacy_request_booking_enabled?: boolean } | null)
-      ?.legacy_request_booking_enabled === true;
+    (profileMeta as { legacy_request_booking_enabled?: boolean | null })
+      .legacy_request_booking_enabled === true;
+
+  const availabilityRow = await getAvailabilityForBusiness(
+    adminClient,
+    businessId
+  );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
   const showNotAcceptingBookings =

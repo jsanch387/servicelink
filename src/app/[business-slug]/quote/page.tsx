@@ -2,7 +2,8 @@ import { PublicQuoteRequestScreen } from '@/features/quotes/public-request/compo
 import { publicQuoteRequestAllowedForSlug } from '@/features/quotes/public-request/server/publicQuoteRequestPageAllowed';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
-  resolveBookingFlowLocale,
+  normalizePublicBookingOfferedLocales,
+  resolvePublicBookingFlowLocale,
 } from '@/libs/bookingFlowLocale';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -27,11 +28,6 @@ export default async function PublicQuotePage({
       : Array.isArray(langParam)
         ? langParam[0]
         : undefined;
-  const cookieStore = await cookies();
-  const bookingFlowLocale = resolveBookingFlowLocale(
-    langFromQuery,
-    cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value
-  );
   const supabase = await createSupabaseServerClient();
   const admin = createSupabaseAdminClient();
 
@@ -42,11 +38,26 @@ export default async function PublicQuotePage({
 
   const { data: profile } = await supabase
     .from('business_profiles')
-    .select('business_name, business_type')
+    .select(
+      'business_name, business_type, public_booking_locales, public_booking_default_locale'
+    )
     .eq('business_slug', slug)
     .maybeSingle();
 
   if (!profile) notFound();
+
+  const cookieStore = await cookies();
+  const bookingFlowLocale = resolvePublicBookingFlowLocale({
+    offeredLocales: normalizePublicBookingOfferedLocales(
+      (profile as { public_booking_locales?: string[] | null })
+        .public_booking_locales
+    ),
+    businessDefaultLocale: (
+      profile as { public_booking_default_locale?: string | null }
+    ).public_booking_default_locale,
+    searchParamsLang: langFromQuery,
+    cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
+  });
 
   const businessName = (
     profile as { business_name?: string }

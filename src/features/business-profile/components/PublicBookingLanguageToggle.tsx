@@ -18,9 +18,10 @@ function localeLabel(loc: PublicBookingFlowLocale): string {
 }
 
 export interface PublicBookingLanguageToggleProps {
+  /** From `public_booking_locales`; component renders nothing when only one locale. */
   offeredLocales?: PublicBookingFlowLocale[];
   className?: string;
-  /** From server: `?lang=` then cookie, default `en`. */
+  /** Server-resolved locale for this visit (`?lang=` → cookie → DB default). */
   initialLocale: PublicBookingFlowLocale;
   /** Public profile slug (path segment) for syncing `?lang=` on the landing URL. */
   publicProfileSlug: string;
@@ -30,7 +31,10 @@ const DEFAULT_OFFERED: PublicBookingFlowLocale[] = [
   ...PUBLIC_BOOKING_FLOW_LOCALES,
 ];
 
-/** EN/ES control on the public business profile (`/{slug}`). Persists cookie + URL for the booking funnel. */
+/**
+ * EN/ES toggle on the public profile cover when the business offers both languages.
+ * Persists cookie + URL for the booking funnel.
+ */
 export function PublicBookingLanguageToggle({
   offeredLocales = DEFAULT_OFFERED,
   className = '',
