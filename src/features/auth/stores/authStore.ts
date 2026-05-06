@@ -230,20 +230,28 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // Request password reset email (must use prod URL in prod so email link goes to app, not localhost)
+      // Request password reset email. On localhost, use tab origin so NEXT_PUBLIC_SITE_URL
+      // can stay prod for OG/canonical without breaking local reset links.
       requestPasswordReset: async (email: string) => {
         const supabase = createClient();
         set({ isLoading: true });
 
         try {
           const origin =
-            typeof window !== 'undefined' ? window.location.origin : '';
-          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+            typeof window !== 'undefined'
+              ? window.location.origin.replace(/\/$/, '')
+              : '';
+          const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(
+            /\/$/,
+            ''
+          );
+          const isLocalOrigin =
+            origin.includes('localhost') || origin.includes('127.0.0.1');
           const baseUrl =
-            siteUrl && !siteUrl.includes('localhost')
-              ? siteUrl.replace(/\/$/, '')
-              : origin && !origin.includes('localhost')
-                ? origin
+            isLocalOrigin && origin
+              ? origin
+              : siteUrl && !siteUrl.includes('localhost')
+                ? siteUrl
                 : origin || siteUrl;
           const redirectTo = `${baseUrl}/auth/reset-password`;
 

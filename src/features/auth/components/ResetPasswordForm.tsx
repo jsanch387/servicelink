@@ -105,6 +105,29 @@ export const ResetPasswordForm: React.FC = () => {
         return;
       }
 
+      // Flow 3: PKCE — Supabase redirects here with ?code=... after /auth/v1/verify
+      const pkceCode = queryParams.code;
+      if (pkceCode) {
+        try {
+          const { error: err } =
+            await supabase.auth.exchangeCodeForSession(pkceCode);
+          if (err) {
+            setSessionError(
+              'This link is invalid or has expired. Please request a new one.'
+            );
+            setSessionReady(true);
+            return;
+          }
+          window.history.replaceState(null, '', window.location.pathname);
+        } catch {
+          setSessionError(
+            'Something went wrong. Please request a new reset link.'
+          );
+        }
+        setSessionReady(true);
+        return;
+      }
+
       // Already have a session (e.g. came back to the page)
       const {
         data: { session },
