@@ -1,8 +1,10 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { getBusinessBookDetailsPath } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -38,6 +40,8 @@ interface ServiceCardProps {
    * knows the business owner is booking on a customer's behalf.
    */
   manualBookingForCustomer?: boolean;
+  /** When set, forwarded to `/book/details` as `?lang=` (booking funnel only). */
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -48,7 +52,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   isPublic = false,
   businessSlug = '',
   manualBookingForCustomer = false,
+  bookingFlowLocale = 'en',
 }) => {
+  const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const description = service.description || '';
   const isLongDescription = serviceDescriptionNeedsSeeMore(description);
@@ -68,18 +74,19 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
     // If it's a number (price in cents), convert to dollars
     if (typeof price === 'number') {
-      if (price === 0) return 'Contact for quote';
+      if (price === 0) return ui.serviceCard.contactForQuote;
       return `$${(price / 100).toFixed(0)}`;
     }
 
     // If it's a string without $, try to parse it
     if (typeof price === 'string') {
-      if (!price || price === '0' || price === '$0') return 'Contact for quote';
+      if (!price || price === '0' || price === '$0')
+        return ui.serviceCard.contactForQuote;
       const numericPrice = price.replace(/[^0-9]/g, '');
-      return numericPrice ? `$${numericPrice}` : 'Contact for quote';
+      return numericPrice ? `$${numericPrice}` : ui.serviceCard.contactForQuote;
     }
 
-    return 'Contact for quote';
+    return ui.serviceCard.contactForQuote;
   };
 
   const showStartingAt =
@@ -102,7 +109,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         <span className="text-right leading-none flex-shrink-0">
           {showStartingAt ? (
             <span className="block text-xs font-medium text-zinc-400 mb-0.5 leading-none sm:mb-1 sm:text-[11px]">
-              Starting at
+              {ui.serviceCard.startingAt}
             </span>
           ) : null}
           <span className="text-lg font-bold text-white leading-none tabular-nums sm:text-xl sm:font-black">
@@ -132,12 +139,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             {isDescriptionExpanded ? (
               <>
                 <ChevronUpIcon className="h-3.5 w-3.5" />
-                See less
+                {ui.serviceCard.seeLess}
               </>
             ) : (
               <>
                 <ChevronDownIcon className="h-3.5 w-3.5" />
-                See more
+                {ui.serviceCard.seeMore}
               </>
             )}
           </button>
@@ -150,7 +157,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3.5 w-3.5 flex-shrink-0 sm:h-3 sm:w-3" />
             <span className="text-[13px] font-medium sm:text-xs">
-              {formatDurationMinutes(effectiveDurationMinutes)}
+              {formatDurationMinutes(
+                effectiveDurationMinutes,
+                bookingFlowLocale
+              )}
             </span>
           </div>
         ) : (
@@ -161,10 +171,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <Link
             href={getBusinessBookDetailsPath(businessSlug, service.id, {
               forOwner: manualBookingForCustomer,
+              lang: bookingFlowLocale,
             })}
             className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
           >
-            Select
+            {ui.common.select}
             <ChevronRightIcon className="h-3.5 w-3.5" />
           </Link>
         )}

@@ -1,6 +1,8 @@
 'use client';
 
 import { Button, Input, PhoneInput, TextArea } from '@/components/shared';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
 import type { CustomerFormData } from '../types';
 
@@ -15,6 +17,7 @@ interface CustomerFormProps {
   submitLabel?: string;
   /** Form id for external submit (e.g. sticky button). */
   id?: string;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 const REQUIRED_KEYS: (keyof CustomerFormData)[] = [
@@ -49,9 +52,14 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   onSubmit,
   showVehicleFields = false,
   hideSubmitButton = false,
-  submitLabel = 'Review Booking',
+  submitLabel,
   id,
+  bookingFlowLocale = 'en',
 }) => {
+  const ui = publicBookingUi(bookingFlowLocale);
+  const cf = ui.customerForm;
+  const effectiveSubmitLabel = submitLabel ?? ui.calendar.reviewBookingCta;
+
   const [errors, setErrors] = React.useState<
     Partial<Record<keyof CustomerFormData, string>>
   >({});
@@ -62,21 +70,17 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
 
   const validate = (): boolean => {
     const next: Partial<Record<keyof CustomerFormData, string>> = {};
-    if (!value.fullName.trim()) next.fullName = 'Full name is required';
-    if (!value.email.trim()) next.email = 'Email is required';
-    if (!value.phone.trim()) next.phone = 'Phone is required';
-    if (!value.streetAddress.trim())
-      next.streetAddress = 'Street address is required';
-    if (!value.city.trim()) next.city = 'City is required';
-    if (!value.state.trim()) next.state = 'State is required';
-    if (!value.zip.trim()) next.zip = 'ZIP is required';
+    if (!value.fullName.trim()) next.fullName = cf.errFullName;
+    if (!value.email.trim()) next.email = cf.errEmail;
+    if (!value.phone.trim()) next.phone = cf.errPhone;
+    if (!value.streetAddress.trim()) next.streetAddress = cf.errStreet;
+    if (!value.city.trim()) next.city = cf.errCity;
+    if (!value.state.trim()) next.state = cf.errState;
+    if (!value.zip.trim()) next.zip = cf.errZip;
     if (showVehicleFields) {
-      if (!value.vehicleYear.trim())
-        next.vehicleYear = 'Vehicle year is required';
-      if (!value.vehicleMake.trim())
-        next.vehicleMake = 'Vehicle make is required';
-      if (!value.vehicleModel.trim())
-        next.vehicleModel = 'Vehicle model is required';
+      if (!value.vehicleYear.trim()) next.vehicleYear = cf.errVehicleYear;
+      if (!value.vehicleMake.trim()) next.vehicleMake = cf.errVehicleMake;
+      if (!value.vehicleModel.trim()) next.vehicleModel = cf.errVehicleModel;
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -93,12 +97,12 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       {/* Contact */}
       <div className="space-y-3">
         <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
-          Your details
+          {cf.yourDetails}
         </h2>
         <div className="space-y-3 border-t border-white/10 pt-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Full Name"
+              label={cf.fullName}
               value={value.fullName}
               onChange={v => update({ fullName: v })}
               placeholder="Jane Doe"
@@ -106,7 +110,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               required
             />
             <Input
-              label="Email"
+              label={cf.email}
               type="email"
               value={value.email}
               onChange={v => update({ email: v })}
@@ -117,7 +121,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           </div>
           <div className="sm:max-w-xs">
             <PhoneInput
-              label="Phone"
+              label={cf.phone}
               value={value.phone}
               onChange={v => update({ phone: v })}
               placeholder="(555) 123-4567"
@@ -132,11 +136,11 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       {/* Address */}
       <div className="space-y-3 pt-4">
         <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
-          Service address
+          {cf.serviceAddress}
         </h2>
         <div className="space-y-3 border-t border-white/10 pt-3">
           <Input
-            label="Street Address"
+            label={cf.streetAddress}
             value={value.streetAddress}
             onChange={v => update({ streetAddress: v })}
             placeholder="123 Main St"
@@ -145,13 +149,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           />
           <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-4">
             <Input
-              label="Unit / Apt (optional)"
+              label={cf.unitApt}
               value={value.unitApt}
               onChange={v => update({ unitApt: v })}
               placeholder="Apt 4B"
             />
             <Input
-              label="City"
+              label={cf.city}
               value={value.city}
               onChange={v => update({ city: v })}
               placeholder="City"
@@ -160,7 +164,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             />
             <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3">
               <Input
-                label="State"
+                label={cf.state}
                 value={value.state}
                 onChange={v => update({ state: v.toUpperCase().slice(0, 2) })}
                 placeholder="ST"
@@ -169,7 +173,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 maxLength={2}
               />
               <Input
-                label="ZIP"
+                label={cf.zip}
                 value={value.zip}
                 onChange={v => update({ zip: v })}
                 placeholder="ZIP"
@@ -185,11 +189,11 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       {showVehicleFields && (
         <div className="space-y-3 pt-4">
           <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
-            Vehicle
+            {cf.vehicle}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-white/10 pt-3">
             <Input
-              label="Year"
+              label={cf.year}
               value={value.vehicleYear}
               onChange={v => update({ vehicleYear: v })}
               placeholder="2018"
@@ -197,7 +201,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               required
             />
             <Input
-              label="Make"
+              label={cf.make}
               value={value.vehicleMake}
               onChange={v => update({ vehicleMake: v })}
               placeholder="Toyota"
@@ -205,7 +209,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               required
             />
             <Input
-              label="Model"
+              label={cf.model}
               value={value.vehicleModel}
               onChange={v => update({ vehicleModel: v })}
               placeholder="Camry"
@@ -219,10 +223,10 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       {/* Notes */}
       <div className="space-y-2 pt-2 border-t border-white/10">
         <TextArea
-          label="Notes (optional)"
+          label={cf.notesOptional}
           value={value.notes}
           onChange={v => update({ notes: v })}
-          placeholder="Any special requests or access instructions…"
+          placeholder={cf.notesPlaceholder}
           rows={3}
         />
       </div>
@@ -235,7 +239,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
             fullWidth
             className="font-semibold"
           >
-            {submitLabel}
+            {effectiveSubmitLabel}
           </Button>
         </div>
       )}

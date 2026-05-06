@@ -309,6 +309,76 @@ export async function createBookingForExistingCustomer(
   return { id: data.id };
 }
 
+/** How the customer committed to pay when no Stripe checkout row is involved. */
+export type PublicBookingNoCheckoutPaymentMethod =
+  | 'pay_now'
+  | 'pay_in_person'
+  | 'none';
+
+/**
+ * Inserts `booking_payments` for bookings created via POST /api/public/bookings
+ * (pay in person, payments off, or $0 confirm). Card-paid bookings get their row
+ * from the Stripe webhook instead.
+ */
+export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
+  supabase: SupabaseClient<Database>,
+  args: {
+    bookingId: string;
+    businessId: string;
+    totalAmountCents: number;
+    currency: string;
+    paymentsEnabled: boolean;
+    checkoutMode: string | null | undefined;
+    /** When `checkout_mode` is `customer_choice`, the customer's chosen path. */
+    clientPaymentMethod?: PublicBookingNoCheckoutPaymentMethod | null;
+  }
+): Promise<void> {
+  const total = Math.max(0, Math.round(args.totalAmountCents));
+  const cur = /^[a-z]{3}$/.test(args.currency.trim().toLowerCase())
+    ? args.currency.trim().toLowerCase()
+    : 'usd';
+
+  let paymentMethodSelected: PublicBookingNoCheckoutPaymentMethod = 'none';
+  const mode = String(args.checkoutMode ?? '').trim();
+  if (!args.paymentsEnabled || !mode) {
+    paymentMethodSelected = 'none';
+  } else if (mode === 'in_person') {
+    paymentMethodSelected = 'pay_in_person';
+  } else if (mode === 'customer_choice') {
+    paymentMethodSelected =
+      args.clientPaymentMethod === 'pay_in_person' ? 'pay_in_person' : 'none';
+  } else {
+    paymentMethodSelected = 'none';
+  }
+
+  const paymentStatus =
+    paymentMethodSelected === 'pay_in_person' && total > 0
+      ? 'awaiting_payment'
+      : 'not_required';
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('booking_payments').insert({
+    booking_id: args.bookingId,
+    business_id: args.businessId,
+    provider: 'none',
+    payment_status: paymentStatus,
+    payment_method_selected: paymentMethodSelected,
+    currency: cur,
+    total_amount_cents: total,
+    required_online_amount_cents: 0,
+    paid_online_amount_cents: 0,
+    remaining_amount_cents: total,
+    deposit_type: null,
+    deposit_value: null,
+    last_checkout_session_id: null,
+    paid_at: null,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 /**
  * Lists all bookings for a business (owner view). Use with authenticated
  * client so RLS allows SELECT for their business_id.
@@ -335,6 +405,7 @@ export async function listBookingsForBusiness(
     string,
     {
       payment_status: string | null;
+      payment_method_selected: string | null;
       currency: string | null;
       total_amount_cents: number | null;
       paid_online_amount_cents: number | null;
@@ -347,13 +418,14 @@ export async function listBookingsForBusiness(
     const { data: paymentRows } = await (supabase as any)
       .from('booking_payments')
       .select(
-        'booking_id, payment_status, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
+        'booking_id, payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
       )
       .in('booking_id', bookingIds);
 
     const normalized = (paymentRows ?? []) as Array<{
       booking_id: string;
       payment_status: string | null;
+      payment_method_selected: string | null;
       currency: string | null;
       total_amount_cents: number | null;
       paid_online_amount_cents: number | null;
@@ -376,6 +448,9 @@ export async function listBookingsForBusiness(
       ...display,
       payment: {
         paymentStatus: payment.payment_status ?? 'not_required',
+        paymentMethodSelected: String(
+          payment.payment_method_selected ?? 'none'
+        ),
         currency: (payment.currency ?? 'usd').toLowerCase(),
         totalAmountCents: Math.max(0, payment.total_amount_cents ?? 0),
         paidOnlineAmountCents: Math.max(

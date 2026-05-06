@@ -5,7 +5,13 @@ import {
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { OnboardingCheckoutReturnGate } from '@/features/onboarding-v2/components/OnboardingCheckoutReturnGate';
 import { isProAccess } from '@/features/pricing';
+import {
+  BOOKING_FLOW_LOCALE_COOKIE_NAME,
+  normalizePublicBookingOfferedLocales,
+  resolvePublicBookingFlowLocale,
+} from '@/libs/bookingFlowLocale';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 // Force dynamic rendering (requires authentication)
@@ -119,6 +125,16 @@ export default async function BusinessProfilePage({
 
   const businessProfile = profileResult.data;
 
+  const cookieStore = await cookies();
+  const bookingFlowLocale = resolvePublicBookingFlowLocale({
+    offeredLocales: normalizePublicBookingOfferedLocales(
+      businessProfile.public_booking_locales
+    ),
+    businessDefaultLocale: businessProfile.public_booking_default_locale,
+    searchParamsLang: undefined,
+    cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
+  });
+
   // Determine initial edit mode from URL parameters
   const initialMode = params.mode === 'edit' ? 'edit' : 'view';
 
@@ -149,6 +165,7 @@ export default async function BusinessProfilePage({
         onboardingCompleteFromUrl={onboardingComplete}
         showProfileWelcomeModalOnLoad={showProfileWelcomeModalOnLoad}
         showRequestQuoteCta={showRequestQuoteCta}
+        bookingFlowLocale={bookingFlowLocale}
       />
     </div>
   );

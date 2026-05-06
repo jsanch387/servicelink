@@ -1,5 +1,6 @@
 'use client';
 
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { ServiceAddOn } from './types';
 
@@ -10,6 +11,10 @@ interface ServiceDetailsBookingSummaryProps {
   selectedVariantLabel?: string;
   selectedAddOns: ServiceAddOn[];
   totalCents: number;
+  serviceLabel: string;
+  addOnsLabel: string;
+  totalLabel: string;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 function formatPrice(cents: number): string {
@@ -22,12 +27,16 @@ export function ServiceDetailsBookingSummary({
   selectedVariantLabel,
   selectedAddOns,
   totalCents,
+  serviceLabel,
+  addOnsLabel,
+  totalLabel,
+  bookingFlowLocale = 'en',
 }: ServiceDetailsBookingSummaryProps) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
       <div>
         <p className="text-zinc-400 text-xs font-medium uppercase tracking-wider mb-1">
-          Service
+          {serviceLabel}
         </p>
         <div className="flex justify-between items-baseline text-sm gap-3">
           <span className="text-white font-semibold min-w-0">
@@ -46,7 +55,7 @@ export function ServiceDetailsBookingSummary({
       {selectedAddOns.length > 0 && (
         <div>
           <p className="text-zinc-400 text-xs font-medium uppercase tracking-wider mb-1">
-            Add-ons
+            {addOnsLabel}
           </p>
           <div className="space-y-1">
             {selectedAddOns.map(a => (
@@ -58,7 +67,11 @@ export function ServiceDetailsBookingSummary({
                   {a.name}
                   {a.durationMinutes != null && a.durationMinutes > 0 ? (
                     <span className="text-zinc-500 block text-xs mt-0.5 font-normal">
-                      + {formatDurationMinutes(a.durationMinutes)}
+                      +{' '}
+                      {formatDurationMinutes(
+                        a.durationMinutes,
+                        bookingFlowLocale
+                      )}
                     </span>
                   ) : null}
                 </span>
@@ -71,7 +84,7 @@ export function ServiceDetailsBookingSummary({
         </div>
       )}
       <div className="flex justify-between items-baseline text-base font-semibold text-white pt-2 border-t border-white/10">
-        <span>Total</span>
+        <span>{totalLabel}</span>
         <span className="tabular-nums">{formatPrice(totalCents)}</span>
       </div>
     </div>

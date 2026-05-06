@@ -7,7 +7,13 @@
 import {
   OWNER_MANUAL_BOOKING_FOR,
   getBusinessBookPath,
+  getBusinessBookScheduleUrl,
 } from '@/constants/routes';
+import {
+  BOOKING_FLOW_LOCALE_COOKIE_NAME,
+  normalizePublicBookingOfferedLocales,
+  resolvePublicBookingFlowLocale,
+} from '@/libs/bookingFlowLocale';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -15,6 +21,7 @@ import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServi
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { unstable_noStore as noStore } from 'next/cache';
 import { notFound, redirect } from 'next/navigation';
 
@@ -29,17 +36,8 @@ interface ServiceDetailsPageProps {
     /** `price` | `addons` — restores sub-step when returning from calendar. */
     detailsStep?: string;
     for?: string;
+    lang?: string;
   }>;
-}
-
-async function fetchBusinessIdBySlug(slug: string): Promise<string | null> {
-  const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('business_slug', slug)
-    .single();
-  return (data as { id: string } | null)?.id ?? null;
 }
 
 export async function generateMetadata({
@@ -75,37 +73,67 @@ export default async function ServiceDetailsPage({
     priceOptionId,
     detailsStep,
     for: bookingForParam,
+    lang: langParam,
   } = await searchParams;
   const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
 
-  // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
-  if (!serviceId?.trim()) {
-    redirect(
-      isOwnerManualBooking
-        ? getBusinessBookPath(slug, { forOwner: true })
-        : `/${slug}/book`
-    );
-  }
-
-  const businessId = await fetchBusinessIdBySlug(slug);
-  if (!businessId) notFound();
+  const langFromQuery =
+    typeof langParam === 'string'
+      ? langParam
+      : Array.isArray(langParam)
+        ? langParam[0]
+        : undefined;
 
   const adminClient = createSupabaseAdminClient();
   if (!(await isPublicBusinessSlugVisible(adminClient, slug))) {
     notFound();
   }
-  const [profileRow, availabilityRow] = await Promise.all([
-    adminClient
-      .from('business_profiles')
-      .select('legacy_request_booking_enabled')
-      .eq('id', businessId)
-      .single(),
-    getAvailabilityForBusiness(adminClient, businessId),
-  ]);
+
+  const { data: profileMeta } = await adminClient
+    .from('business_profiles')
+    .select(
+      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale'
+    )
+    .eq('business_slug', slug)
+    .maybeSingle();
+
+  if (!profileMeta) notFound();
+
+  const cookieStore = await cookies();
+  const bookingFlowLocale = resolvePublicBookingFlowLocale({
+    offeredLocales: normalizePublicBookingOfferedLocales(
+      (profileMeta as { public_booking_locales?: string[] | null })
+        .public_booking_locales
+    ),
+    businessDefaultLocale: (
+      profileMeta as { public_booking_default_locale?: string | null }
+    ).public_booking_default_locale,
+    searchParamsLang: langFromQuery,
+    cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
+  });
+
+  const businessId = (profileMeta as { id: string }).id;
+
+  // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
+  if (!serviceId?.trim()) {
+    redirect(
+      isOwnerManualBooking
+        ? getBusinessBookPath(slug, {
+            forOwner: true,
+            lang: bookingFlowLocale,
+          })
+        : getBusinessBookPath(slug, { lang: bookingFlowLocale })
+    );
+  }
 
   const legacyRequestBookingEnabled =
-    (profileRow.data as { legacy_request_booking_enabled?: boolean } | null)
-      ?.legacy_request_booking_enabled === true;
+    (profileMeta as { legacy_request_booking_enabled?: boolean | null })
+      .legacy_request_booking_enabled === true;
+
+  const availabilityRow = await getAvailabilityForBusiness(
+    adminClient,
+    businessId
+  );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
   const showNotAcceptingBookings =
@@ -113,7 +141,7 @@ export default async function ServiceDetailsPage({
     (!legacyRequestBookingEnabled || availabilityConfigured);
 
   if (showNotAcceptingBookings) {
-    redirect(`/${slug}/book`);
+    redirect(getBusinessBookPath(slug, { lang: bookingFlowLocale }));
   }
 
   const result = await getServiceWithAddOnsForBooking(
@@ -129,14 +157,14 @@ export default async function ServiceDetailsPage({
 
   // No add-ons and no price choice needed: skip details and go straight to date selection
   if (!needsPriceStep && addOns.length === 0) {
-    const q = new URLSearchParams({
-      serviceId: serviceId.trim(),
-      skipDetails: '1',
-    });
-    if (isOwnerManualBooking) {
-      q.set('for', OWNER_MANUAL_BOOKING_FOR);
-    }
-    redirect(`/${slug}/book?${q.toString()}`);
+    redirect(
+      getBusinessBookScheduleUrl(slug, {
+        serviceId: serviceId.trim(),
+        skipDetails: true,
+        forOwner: isOwnerManualBooking,
+        lang: bookingFlowLocale,
+      })
+    );
   }
 
   const initialAddOnIds = addOnIds?.trim()
@@ -152,7 +180,7 @@ export default async function ServiceDetailsPage({
       : undefined;
 
   return (
-    <div className="min-h-screen bg-[var(--dashboard-bg)]">
+    <>
       <ServiceDetailsScreen
         businessSlug={slug}
         serviceId={serviceId.trim()}
@@ -163,7 +191,8 @@ export default async function ServiceDetailsPage({
         initialPriceOptionId={priceOptionId?.trim()}
         initialDetailsStep={initialDetailsStep}
         isOwnerManualBooking={isOwnerManualBooking}
+        bookingFlowLocale={bookingFlowLocale}
       />
-    </div>
+    </>
   );
 }

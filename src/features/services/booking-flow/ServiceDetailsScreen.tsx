@@ -1,9 +1,11 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import {
-  OWNER_MANUAL_BOOKING_FOR,
   getBusinessBookPath,
+  getBusinessBookScheduleUrl,
+  getPublicBusinessProfilePath,
   type BookDetailsStepQuery,
 } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -12,6 +14,10 @@ import type {
   PriceOptionForBooking,
   ServiceForBooking,
 } from '@/features/services/api/getServiceWithAddOnsForBooking';
+import {
+  bcp47ForBookingLocale,
+  publicBookingUi,
+} from '@/libs/i18n/publicBookingUi';
 import { ArrowLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
@@ -37,10 +43,16 @@ interface ServiceDetailsScreenProps {
   initialDetailsStep?: BookDetailsStepQuery;
   /** Preserves `for=owner` on the continue-to-calendar URL (dashboard manual booking). */
   isOwnerManualBooking?: boolean;
+  /** Funnel locale from server (`?lang=` + cookie). */
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
-function formatPrice(cents: number): string {
-  return `$${(cents / 100).toFixed(0)}`;
+function formatPrice(cents: number, locale: PublicBookingFlowLocale): string {
+  return new Intl.NumberFormat(bcp47ForBookingLocale(locale), {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
 }
 
 export function ServiceDetailsScreen({
@@ -53,7 +65,12 @@ export function ServiceDetailsScreen({
   initialPriceOptionId,
   initialDetailsStep,
   isOwnerManualBooking = false,
+  bookingFlowLocale = 'en',
 }: ServiceDetailsScreenProps) {
+  const ui = useMemo(
+    () => publicBookingUi(bookingFlowLocale),
+    [bookingFlowLocale]
+  );
   const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
 
   const validInitialOptionId =
@@ -114,19 +131,20 @@ export function ServiceDetailsScreen({
   };
 
   const buildCalendarUrl = useCallback(() => {
-    const searchParams = new URLSearchParams();
-    searchParams.set('serviceId', serviceId);
-    if (needsPriceStep && selectedPriceOptionId) {
-      searchParams.set('priceOptionId', selectedPriceOptionId);
-    }
-    if (selectedAddOnIds.size > 0) {
-      searchParams.set('addOnIds', Array.from(selectedAddOnIds).join(','));
-    }
-    if (isOwnerManualBooking) {
-      searchParams.set('for', OWNER_MANUAL_BOOKING_FOR);
-    }
-    searchParams.set('detailsStep', phase === 'addons' ? 'addons' : 'price');
-    return `/${businessSlug}/book?${searchParams.toString()}`;
+    return getBusinessBookScheduleUrl(businessSlug, {
+      serviceId,
+      priceOptionId:
+        needsPriceStep && selectedPriceOptionId
+          ? selectedPriceOptionId
+          : undefined,
+      addOnIds:
+        selectedAddOnIds.size > 0
+          ? Array.from(selectedAddOnIds).join(',')
+          : undefined,
+      detailsStep: phase === 'addons' ? 'addons' : 'price',
+      forOwner: isOwnerManualBooking,
+      lang: bookingFlowLocale,
+    });
   }, [
     businessSlug,
     serviceId,
@@ -135,6 +153,7 @@ export function ServiceDetailsScreen({
     selectedAddOnIds,
     isOwnerManualBooking,
     phase,
+    bookingFlowLocale,
   ]);
 
   const calendarUrl = buildCalendarUrl();
@@ -161,11 +180,16 @@ export function ServiceDetailsScreen({
     : baseDurationMinutes;
 
   const exitDetailsHref = isOwnerManualBooking
-    ? getBusinessBookPath(businessSlug, { forOwner: true })
-    : `/${businessSlug}`;
+    ? getBusinessBookPath(businessSlug, {
+        forOwner: true,
+        lang: bookingFlowLocale,
+      })
+    : getPublicBusinessProfilePath(businessSlug, {
+        lang: bookingFlowLocale,
+      });
   const exitDetailsLabel = isOwnerManualBooking
-    ? 'Back to services'
-    : 'Back to profile';
+    ? ui.nav.backToServices
+    : ui.serviceDetails.backToProfile;
 
   return (
     <>
@@ -178,7 +202,9 @@ export function ServiceDetailsScreen({
               className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
               <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">Back to options</span>
+              <span className="text-sm font-medium">
+                {ui.serviceDetails.backToOptions}
+              </span>
             </button>
           ) : (
             <Link
@@ -203,7 +229,10 @@ export function ServiceDetailsScreen({
                 </h1>
                 <div className="mt-0.5 flex items-center gap-1 text-sm tabular-nums italic">
                   <p className="text-zinc-400">
-                    {formatDurationMinutes(durationForHeader)}
+                    {formatDurationMinutes(
+                      durationForHeader,
+                      bookingFlowLocale
+                    )}
                   </p>
                   {selectedPriceOption &&
                   (phase === 'price' || phase === 'addons') ? (
@@ -224,11 +253,12 @@ export function ServiceDetailsScreen({
               <div className="shrink-0 text-right pt-0.5 min-w-[4.5rem]">
                 {showStartingAtOnly ? (
                   <span className="text-sm text-zinc-400 tabular-nums leading-snug">
-                    Starting at {formatPrice(service.priceCents)}
+                    {ui.serviceDetails.startingAt}{' '}
+                    {formatPrice(service.priceCents, bookingFlowLocale)}
                   </span>
                 ) : (
                   <span className="text-sm text-zinc-300 tabular-nums">
-                    {formatPrice(basePriceCents)}
+                    {formatPrice(basePriceCents, bookingFlowLocale)}
                   </span>
                 )}
               </div>
@@ -241,7 +271,7 @@ export function ServiceDetailsScreen({
           {phase === 'price' && needsPriceStep && (
             <section className="mb-6">
               <h2 className="text-base font-semibold text-white mb-3">
-                Choose an option
+                {ui.serviceDetails.chooseOption}
               </h2>
               <PriceOptionSelector
                 options={priceOptions}
@@ -254,7 +284,7 @@ export function ServiceDetailsScreen({
           {phase === 'addons' && showAddOnSection && (
             <section className="mb-6">
               <h2 className="text-base font-semibold text-white mb-3">
-                Optional add-ons
+                {ui.serviceDetails.optionalAddOns}
               </h2>
               <AddOnSelector
                 addOns={addOns as ServiceAddOn[]}
@@ -271,6 +301,10 @@ export function ServiceDetailsScreen({
               selectedVariantLabel={selectedPriceOption?.label}
               selectedAddOns={selectedAddOns}
               totalCents={totalCents}
+              serviceLabel={ui.common.service}
+              addOnsLabel={ui.common.addOns}
+              totalLabel={ui.common.total}
+              bookingFlowLocale={bookingFlowLocale}
             />
           </section>
         </div>
@@ -291,7 +325,7 @@ export function ServiceDetailsScreen({
                 icon={<ChevronRightIcon className="h-5 w-5" />}
                 iconPosition="right"
               >
-                Continue
+                {ui.serviceDetails.continue}
               </Button>
             )}
 
@@ -306,7 +340,7 @@ export function ServiceDetailsScreen({
                     icon={<ChevronRightIcon className="h-5 w-5" />}
                     iconPosition="right"
                   >
-                    Date & time
+                    {ui.serviceDetails.dateAndTime}
                   </Button>
                 ) : (
                   <Button
@@ -318,7 +352,7 @@ export function ServiceDetailsScreen({
                     icon={<ChevronRightIcon className="h-5 w-5" />}
                     iconPosition="right"
                   >
-                    Date & time
+                    {ui.serviceDetails.dateAndTime}
                   </Button>
                 )}
               </>
@@ -333,7 +367,7 @@ export function ServiceDetailsScreen({
                 icon={<ChevronRightIcon className="h-5 w-5" />}
                 iconPosition="right"
               >
-                Date & time
+                {ui.serviceDetails.dateAndTime}
               </Button>
             )}
           </div>

@@ -303,11 +303,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, url: session.url });
   } catch (e) {
-    const message =
-      e instanceof Error ? e.message : 'Could not start checkout.';
     console.error('[maintenance-checkout] POST failed', e);
     return NextResponse.json(
-      { success: false, error: message },
+      {
+        success: false,
+        error: 'Something went wrong. Please try again.',
+      },
       { status: 500 }
     );
   }

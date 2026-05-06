@@ -1,23 +1,28 @@
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { Button } from '@/components';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 
 interface QuoteButtonProps {
   onClick?: () => void;
   contained?: boolean;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const QuoteButton: React.FC<QuoteButtonProps> = ({
   onClick,
   contained = false,
+  bookingFlowLocale = 'en',
 }) => {
+  const label = publicBookingUi(bookingFlowLocale).profile.requestQuote;
   if (contained) {
     return (
       <div className="max-w-xl mx-auto md:max-w-2xl lg:max-w-3xl px-4 pb-4">
         <div className="bg-neutral-900/90 backdrop-blur-md rounded-lg p-3">
           <Button onClick={onClick} variant="primary" className="w-full">
             <ChatBubbleLeftRightIcon className="h-6 w-6 mr-2" />
-            Request Quote
+            {label}
           </Button>
         </div>
       </div>
@@ -29,7 +34,7 @@ export const QuoteButton: React.FC<QuoteButtonProps> = ({
       <div className="max-w-xl mx-auto">
         <Button onClick={onClick} variant="primary" className="w-full">
           <ChatBubbleLeftRightIcon className="h-6 w-6 mr-2" />
-          Request Quote
+          {label}
         </Button>
       </div>
     </div>

@@ -15,7 +15,9 @@ import {
   RequiredLabel,
   WarningCallout,
 } from '@/components/shared';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { StoryPostShareButton } from '@/features/story-post';
@@ -65,6 +67,8 @@ interface BusinessProfileViewProps {
    * When false, public services list hides multi-price presentation (data may still exist in DB).
    */
   publicOwnerHasProForPriceOptions?: boolean;
+  /** Resolved booking-funnel locale for public profile + service links. */
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -78,6 +82,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   showProfileWelcomeModalOnLoad = false,
   showRequestQuoteCta = false,
   publicOwnerHasProForPriceOptions = false,
+  bookingFlowLocale = 'en',
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
@@ -89,6 +94,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   const [showProfileChecklistModal, setShowProfileChecklistModal] =
     useState(false);
   const { city, state } = parseCityState(businessProfile.service_area);
+  const bookingUi = publicBookingUi(bookingFlowLocale);
   const completionChecks = [
     {
       label: 'Cover photo',
@@ -449,6 +455,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 isPublic={isPublic}
                 showVerifiedBadge={showVerifiedBadge}
                 showRequestQuoteCta={showRequestQuoteCta}
+                bookingFlowLocale={bookingFlowLocale}
               />
 
               {/* Tabs Navigation */}
@@ -462,7 +469,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                         : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
-                    Services
+                    {bookingUi.profile.servicesTab}
                     {activeTab === 'services' && (
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
@@ -475,7 +482,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                         : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
-                    Gallery
+                    {bookingUi.profile.galleryTab}
                     {activeTab === 'gallery' && (
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
@@ -488,7 +495,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                         : 'text-zinc-500 hover:text-zinc-400'
                     }`}
                   >
-                    Bio
+                    {bookingUi.profile.bioTab}
                     {activeTab === 'bio' && (
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
@@ -507,6 +514,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   publicOwnerHasProForPriceOptions={
                     publicOwnerHasProForPriceOptions
                   }
+                  bookingFlowLocale={bookingFlowLocale}
                 />
               ) : activeTab === 'gallery' ? (
                 <WorkShowcase
@@ -522,7 +530,9 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                       {businessProfile.bio}
                     </p>
                   ) : (
-                    <p className="text-sm text-zinc-500">No bio added yet.</p>
+                    <p className="text-sm text-zinc-500">
+                      {bookingUi.profile.noBioYet}
+                    </p>
                   )}
                 </section>
               )}

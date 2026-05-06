@@ -1,4 +1,6 @@
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ServiceCard } from '@/features/business-profile';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 
 export interface BookServicePickerItem {
   id: string;
@@ -19,6 +21,7 @@ export interface BookServicePickerProps {
    * Uses the same ServiceCard + Select control as the public profile; copy reflects owner flow.
    */
   isOwnerManualBooking?: boolean;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 /**
@@ -30,19 +33,21 @@ export function BookServicePicker({
   businessName,
   services,
   isOwnerManualBooking = false,
+  bookingFlowLocale = 'en',
 }: BookServicePickerProps) {
+  const ui = publicBookingUi(bookingFlowLocale);
   if (services.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
         <p className="text-gray-300 text-base font-medium">
           {isOwnerManualBooking
-            ? 'No services to pick yet.'
-            : 'No services yet.'}
+            ? ui.bookPicker.noServicesOwnerTitle
+            : ui.bookPicker.noServicesPublicTitle}
         </p>
         <p className="text-gray-500 text-sm mt-2 leading-relaxed">
           {isOwnerManualBooking
-            ? 'Go to Services in your dashboard. Add a service, then come back here.'
-            : 'Services will show up here when this business adds them.'}
+            ? ui.bookPicker.noServicesOwnerBody
+            : ui.bookPicker.noServicesPublicBody}
         </p>
       </div>
     );
@@ -53,13 +58,13 @@ export function BookServicePicker({
       <header className="mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
           {isOwnerManualBooking
-            ? 'Create new appointment'
-            : `Book with ${businessName}`}
+            ? ui.bookPicker.createAppointmentTitle
+            : ui.bookPicker.bookWithTitle(businessName)}
         </h1>
         <p className="text-sm text-gray-400 mt-1 leading-relaxed">
           {isOwnerManualBooking
-            ? 'You are creating a new appointment. Choose a service below to continue.'
-            : 'Pick a service. You can add extras next if there are any. Then pick date and time.'}
+            ? ui.bookPicker.createAppointmentSubtitle
+            : ui.bookPicker.bookWithSubtitle}
         </p>
       </header>
 
@@ -80,6 +85,7 @@ export function BookServicePicker({
               isPublic
               businessSlug={businessSlug}
               manualBookingForCustomer={isOwnerManualBooking}
+              bookingFlowLocale={bookingFlowLocale}
             />
           </div>
         ))}

@@ -21,6 +21,8 @@ export interface AddOnAtBookingDisplay {
 
 export interface BookingPaymentSummaryDisplay {
   paymentStatus: string;
+  /** `pay_now` (card), `pay_in_person`, or `none` (no in-app card charge). */
+  paymentMethodSelected: string;
   currency: string;
   totalAmountCents: number;
   paidOnlineAmountCents: number;

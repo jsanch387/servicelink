@@ -1,6 +1,8 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { getBusinessBookPath } from '@/constants/routes';
+import { readBookingFlowLocaleFromDocument } from '@/libs/bookingFlowLocale';
 import { CalendarIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import React from 'react';
@@ -18,7 +20,8 @@ export const BookingRequestButton: React.FC<BookingRequestButtonProps> = ({
 
   const handleClick = () => {
     if (businessSlug) {
-      router.push(`/${businessSlug}/book`);
+      const lang = readBookingFlowLocaleFromDocument() ?? 'en';
+      router.push(getBusinessBookPath(businessSlug, { lang }));
     }
   };
 

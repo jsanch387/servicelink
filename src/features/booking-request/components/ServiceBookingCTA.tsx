@@ -1,5 +1,7 @@
 'use client';
 
+import { getBusinessBookScheduleUrl } from '@/constants/routes';
+import { readBookingFlowLocaleFromDocument } from '@/libs/bookingFlowLocale';
 import { CalendarIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import React from 'react';
@@ -22,7 +24,8 @@ export const ServiceBookingCTA: React.FC<ServiceBookingCTAProps> = ({
   const router = useRouter();
 
   const handleClick = () => {
-    router.push(`/${businessSlug}/book?serviceId=${serviceId}`);
+    const lang = readBookingFlowLocaleFromDocument() ?? 'en';
+    router.push(getBusinessBookScheduleUrl(businessSlug, { serviceId, lang }));
   };
 
   if (variant === 'link') {

@@ -1,5 +1,6 @@
 'use client';
 
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import React from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { EmptyState } from './EmptyState';
@@ -16,6 +17,7 @@ interface ServicesListProps {
    * if the owner still has Pro (matches booking flow).
    */
   publicOwnerHasProForPriceOptions?: boolean;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const ServicesList: React.FC<ServicesListProps> = ({
@@ -25,6 +27,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   onCancel: _onCancel,
   isPublic = false,
   publicOwnerHasProForPriceOptions = false,
+  bookingFlowLocale = 'en',
 }) => {
   const services = businessProfile.services || [];
   const hasServices = services && services.length > 0;
@@ -57,6 +60,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
               isEditable={false}
               isPublic={isPublic}
               businessSlug={businessSlug}
+              bookingFlowLocale={bookingFlowLocale}
             />
           ))}
         </div>

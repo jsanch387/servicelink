@@ -11,6 +11,7 @@ import {
   ROUTES,
   getBusinessBookDetailsUrl,
   getBusinessBookPath,
+  getPublicBusinessProfilePath,
   type BookDetailsStepQuery,
 } from '@/constants/routes';
 import {
@@ -26,9 +27,16 @@ import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMap
 import { isProAccess } from '@/features/pricing';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
+import {
+  BOOKING_FLOW_LOCALE_COOKIE_NAME,
+  normalizePublicBookingOfferedLocales,
+  resolvePublicBookingFlowLocale,
+} from '@/libs/bookingFlowLocale';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { BookFlowSwitch } from './BookFlowSwitch';
@@ -52,6 +60,7 @@ interface BookingRequestPageProps {
     /** Stripe Checkout return markers (set on success/cancel URLs). */
     checkout?: string;
     session_id?: string;
+    lang?: string;
   }>;
 }
 
@@ -64,6 +73,8 @@ type PublicBusinessProfileForBooking = {
   profile_id: string | null;
   free_bookings_month: string | null;
   free_bookings_count: number | null;
+  public_booking_locales: string[];
+  public_booking_default_locale: string;
   [key: string]: unknown;
 };
 
@@ -126,7 +137,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count, public_booking_locales, public_booking_default_locale'
       )
       .eq('business_slug', slug)
       .single();
@@ -178,7 +189,16 @@ export default async function BookingRequestPage({
     for: bookingForParam,
     checkout: checkoutParam,
     session_id: sessionIdParam,
+    lang: langParam,
   } = sp;
+
+  const langFromQuery =
+    typeof langParam === 'string'
+      ? langParam
+      : Array.isArray(langParam)
+        ? langParam[0]
+        : undefined;
+  const cookieStore = await cookies();
 
   const stripeCheckoutSessionId =
     checkoutParam === 'success' && sessionIdParam?.trim()
@@ -208,6 +228,16 @@ export default async function BookingRequestPage({
   if (!businessProfile) {
     notFound();
   }
+
+  const bookingFlowLocale = resolvePublicBookingFlowLocale({
+    offeredLocales: normalizePublicBookingOfferedLocales(
+      businessProfile.public_booking_locales
+    ),
+    businessDefaultLocale: businessProfile.public_booking_default_locale,
+    searchParamsLang: langFromQuery,
+    cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
+  });
+  const ui = publicBookingUi(bookingFlowLocale);
 
   const adminClient = createSupabaseAdminClient();
   if (!(await isPublicBusinessSlugVisible(adminClient, slug))) {
@@ -332,6 +362,7 @@ export default async function BookingRequestPage({
         getBusinessBookDetailsUrl(slugForRoutes, {
           serviceId: availabilityPickerServices[0].id,
           forOwner: isOwnerManualBooking,
+          lang: bookingFlowLocale,
         })
       );
     }
@@ -364,6 +395,7 @@ export default async function BookingRequestPage({
             priceOptionId: priceOptionId?.trim(),
             detailsStep: effectiveDetailsStep,
             forOwner: isOwnerManualBooking,
+            lang: bookingFlowLocale,
           })
         );
       }
@@ -413,15 +445,20 @@ export default async function BookingRequestPage({
 
   let bookPageBackHref: string;
   let bookPageBackLabel: string;
-  const profilePath = `/${slug}`;
+  const profilePath = getPublicBusinessProfilePath(slugForRoutes, {
+    lang: bookingFlowLocale,
+  });
 
   if (isOwnerManualBooking) {
     if (!serviceId?.trim()) {
       bookPageBackHref = ROUTES.DASHBOARD.BOOKINGS;
-      bookPageBackLabel = 'Back to bookings';
+      bookPageBackLabel = ui.nav.backToBookings;
     } else if (skipDetailsFlag) {
-      bookPageBackHref = getBusinessBookPath(slugForRoutes, { forOwner: true });
-      bookPageBackLabel = 'Back to services';
+      bookPageBackHref = getBusinessBookPath(slugForRoutes, {
+        forOwner: true,
+        lang: bookingFlowLocale,
+      });
+      bookPageBackLabel = ui.nav.backToServices;
     } else {
       bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
         serviceId: serviceId.trim(),
@@ -429,15 +466,14 @@ export default async function BookingRequestPage({
         priceOptionId: priceOptionId?.trim(),
         detailsStep: effectiveDetailsStep,
         forOwner: true,
+        lang: bookingFlowLocale,
       });
       bookPageBackLabel =
         effectiveDetailsStep === 'addons'
-          ? 'Back to add-ons'
+          ? ui.nav.backToAddOns
           : effectiveDetailsStep === 'price' && priceOptionId?.trim()
-            ? 'Back to options'
-            : effectiveDetailsStep === 'price'
-              ? 'Back to service'
-              : 'Back to service';
+            ? ui.nav.backToOptions
+            : ui.nav.backToService;
     }
   } else if (serviceId?.trim() && !skipDetailsFlag) {
     bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
@@ -445,18 +481,17 @@ export default async function BookingRequestPage({
       addOnIds: addOnIds?.trim(),
       priceOptionId: priceOptionId?.trim(),
       detailsStep: effectiveDetailsStep,
+      lang: bookingFlowLocale,
     });
     bookPageBackLabel =
       effectiveDetailsStep === 'addons'
-        ? 'Back to add-ons'
+        ? ui.nav.backToAddOns
         : effectiveDetailsStep === 'price' && priceOptionId?.trim()
-          ? 'Back to options'
-          : effectiveDetailsStep === 'price'
-            ? 'Back to service'
-            : 'Back to service';
+          ? ui.nav.backToOptions
+          : ui.nav.backToService;
   } else {
     bookPageBackHref = profilePath;
-    bookPageBackLabel = 'Back to profile';
+    bookPageBackLabel = ui.nav.backToProfile;
   }
 
   /** V2 calendar + details + review render their own sticky back bar; avoid duplicate header. */
@@ -467,7 +502,7 @@ export default async function BookingRequestPage({
     !showNotAcceptingBookings;
 
   return (
-    <div className="min-h-screen bg-[var(--dashboard-bg)]">
+    <>
       {!calendarFlowOwnsHeader && (
         <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
@@ -482,17 +517,8 @@ export default async function BookingRequestPage({
         </div>
       )}
 
-      <div
-        className={`max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 ${calendarFlowOwnsHeader ? 'pt-2 sm:pt-4' : 'pt-6 sm:pt-8'}`}
-      >
-        {showAvailabilityServicePicker ? (
-          <BookServicePicker
-            businessSlug={slugForRoutes}
-            businessName={businessProfile.business_name}
-            services={availabilityPickerServices}
-            isOwnerManualBooking={isOwnerManualBooking}
-          />
-        ) : (
+      {calendarFlowOwnsHeader ? (
+        <div className="pb-16 sm:pb-24">
           <BookFlowSwitch
             useAvailabilityBooking={effectiveUseAvailabilityBooking}
             showNotAcceptingBookings={showNotAcceptingBookings}
@@ -514,9 +540,46 @@ export default async function BookingRequestPage({
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
             stripeCheckoutSessionId={stripeCheckoutSessionId}
+            bookingFlowLocale={bookingFlowLocale}
           />
-        )}
-      </div>
-    </div>
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 pt-6 sm:pt-8">
+          {showAvailabilityServicePicker ? (
+            <BookServicePicker
+              businessSlug={slugForRoutes}
+              businessName={businessProfile.business_name}
+              services={availabilityPickerServices}
+              isOwnerManualBooking={isOwnerManualBooking}
+              bookingFlowLocale={bookingFlowLocale}
+            />
+          ) : (
+            <BookFlowSwitch
+              useAvailabilityBooking={effectiveUseAvailabilityBooking}
+              showNotAcceptingBookings={showNotAcceptingBookings}
+              businessName={businessProfile.business_name}
+              businessId={businessProfile.id}
+              businessSlug={slugForRoutes}
+              showVehicleFields={showVehicleFields}
+              serviceId={serviceId?.trim() ?? undefined}
+              addOnIds={addOnIds?.trim() || undefined}
+              selectedAddOns={selectedAddOns}
+              serviceName={serviceName}
+              servicePrice={servicePriceForBooking}
+              serviceDurationMinutes={serviceDurationMinutes}
+              selectedPriceOptionLabel={selectedPriceOptionLabel}
+              weeklySchedule={weeklySchedule}
+              timeOffBlocks={timeOffBlocks}
+              paymentSettings={paymentSettings}
+              isOwnerManualBooking={isOwnerManualBooking}
+              exitCalendarFlowHref={bookPageBackHref}
+              exitCalendarFlowLabel={bookPageBackLabel}
+              stripeCheckoutSessionId={stripeCheckoutSessionId}
+              bookingFlowLocale={bookingFlowLocale}
+            />
+          )}
+        </div>
+      )}
+    </>
   );
 }

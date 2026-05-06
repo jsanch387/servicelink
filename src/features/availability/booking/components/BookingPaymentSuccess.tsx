@@ -1,15 +1,25 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { formatBookingWallTime } from '@/features/availability/booking/utils/formatBookingWallTime';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import {
+  bcp47ForBookingLocale,
+  publicBookingUi,
+} from '@/libs/i18n/publicBookingUi';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import type { AddOnDisplay } from '../types';
 
-function formatMoney(cents: number, currency: string): string {
+function formatMoney(
+  cents: number,
+  currency: string,
+  locale: PublicBookingFlowLocale
+): string {
   const safeCents = Number.isFinite(cents) ? Math.max(0, cents) : 0;
   const safeCurrency = (currency || 'usd').toUpperCase();
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat(bcp47ForBookingLocale(locale), {
     style: 'currency',
     currency: safeCurrency,
   }).format(safeCents / 100);
@@ -19,24 +29,19 @@ function formatLinePrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-function formatDateDisplay(isoDate: string): string {
-  return new Date(`${isoDate}T12:00:00`).toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-function formatTimeDisplay(timeValue: string): string {
-  const parts = timeValue.split(':').map(Number);
-  const h = Number.isFinite(parts[0]) ? parts[0] : 0;
-  const m = Number.isFinite(parts[1]) ? parts[1] : 0;
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  const ampm = h < 12 ? 'AM' : 'PM';
-  return m === 0
-    ? `${h12} ${ampm}`
-    : `${h12}:${`${m}`.padStart(2, '0')} ${ampm}`;
+function formatDateDisplay(
+  isoDate: string,
+  locale: PublicBookingFlowLocale
+): string {
+  return new Date(`${isoDate}T12:00:00`).toLocaleDateString(
+    bcp47ForBookingLocale(locale),
+    {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }
+  );
 }
 
 /** Stored name may be `Service — Option` (same as webhook / createBooking). */
@@ -85,6 +90,7 @@ export function BookingPaymentSuccess({
   customerVehicleYear,
   customerVehicleMake,
   customerVehicleModel,
+  bookingFlowLocale = 'en',
 }: {
   businessName: string;
   businessSlug: string;
@@ -102,13 +108,17 @@ export function BookingPaymentSuccess({
   customerVehicleYear?: string | null;
   customerVehicleMake?: string | null;
   customerVehicleModel?: string | null;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }) {
+  const ui = publicBookingUi(bookingFlowLocale);
   const paidTitle =
-    paymentStatus === 'paid_full' ? 'Payment received' : 'Deposit received';
+    paymentStatus === 'paid_full'
+      ? ui.bookingPaymentSuccess.paidFullTitle
+      : ui.bookingPaymentSuccess.depositTitle;
   const heroSubtitle =
     paymentStatus === 'paid_full'
-      ? `Your appointment with ${businessName} is confirmed and paid in full through ServiceLink.`
-      : `Your appointment with ${businessName} is confirmed. Your deposit was received through ServiceLink; the rest is due later as agreed with your provider.`;
+      ? ui.bookingPaymentSuccess.heroPaidFull(businessName)
+      : ui.bookingPaymentSuccess.heroDeposit(businessName);
 
   const { title: serviceTitle, variant: serviceVariant } =
     splitStoredServiceName(serviceName);
@@ -117,15 +127,15 @@ export function BookingPaymentSuccess({
     make: customerVehicleMake,
     model: customerVehicleModel,
   });
-  const dateFormatted = formatDateDisplay(scheduledDate);
-  const timeLabel = formatTimeDisplay(startTime);
+  const dateFormatted = formatDateDisplay(scheduledDate, bookingFlowLocale);
+  const timeLabel = formatBookingWallTime(startTime, bookingFlowLocale);
   const safeTotal =
     Number.isFinite(totalAmountCents) && totalAmountCents > 0
       ? totalAmountCents
       : null;
 
   return (
-    <div className="flex flex-col w-full py-10 pb-16">
+    <div className="flex flex-col w-full px-4 py-10 pb-16">
       <div className="self-center w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-8 shadow-lg shadow-emerald-500/25">
         <CheckIcon className="w-10 h-10 text-white" />
       </div>
@@ -146,12 +156,12 @@ export function BookingPaymentSuccess({
       >
         <div className="px-4 py-3 border-b border-white/10">
           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
-            Your booking
+            {ui.bookingPaymentSuccess.cardHeader}
           </p>
         </div>
         <div className="p-4 sm:p-6 space-y-4">
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Service</p>
+            <p className="text-xs text-gray-500 mb-0.5">{ui.common.service}</p>
             <div className="flex items-baseline justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-white font-semibold">{serviceTitle}</p>
@@ -171,7 +181,7 @@ export function BookingPaymentSuccess({
             <>
               <div className="h-px bg-white/10" />
               <div>
-                <p className="text-xs text-gray-500 mb-1">Add-ons</p>
+                <p className="text-xs text-gray-500 mb-1">{ui.common.addOns}</p>
                 <ul className="space-y-1">
                   {selectedAddOns.map(addOn => (
                     <li
@@ -183,7 +193,11 @@ export function BookingPaymentSuccess({
                         {addOn.durationMinutes != null &&
                         addOn.durationMinutes > 0 ? (
                           <span className="text-gray-500 block text-xs mt-0.5">
-                            +{formatDurationMinutes(addOn.durationMinutes)}
+                            +
+                            {formatDurationMinutes(
+                              addOn.durationMinutes,
+                              bookingFlowLocale
+                            )}
                           </span>
                         ) : null}
                       </span>
@@ -201,9 +215,11 @@ export function BookingPaymentSuccess({
             <>
               <div className="h-px bg-white/10" />
               <div className="flex justify-between items-center">
-                <p className="text-sm font-medium text-white">Total</p>
+                <p className="text-sm font-medium text-white">
+                  {ui.common.total}
+                </p>
                 <p className="text-lg font-semibold text-white">
-                  {formatMoney(safeTotal, currency)}
+                  {formatMoney(safeTotal, currency, bookingFlowLocale)}
                 </p>
               </div>
             </>
@@ -212,36 +228,46 @@ export function BookingPaymentSuccess({
           <div className="h-px bg-white/10" />
           <div>
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
-              ServiceLink payment
+              {ui.bookingPaymentSuccess.serviceLinkPayment}
             </p>
             <div className="flex items-center justify-between gap-4 text-sm">
-              <span className="text-gray-300">Paid now</span>
+              <span className="text-gray-300">
+                {ui.bookingPaymentSuccess.paidNow}
+              </span>
               <span className="text-white font-semibold tabular-nums">
-                {formatMoney(paidOnlineAmountCents, currency)}
+                {formatMoney(
+                  paidOnlineAmountCents,
+                  currency,
+                  bookingFlowLocale
+                )}
               </span>
             </div>
             <div className="flex items-center justify-between gap-4 text-sm mt-2">
-              <span className="text-gray-300">Remaining</span>
+              <span className="text-gray-300">
+                {ui.bookingPaymentSuccess.remaining}
+              </span>
               <span className="text-white font-semibold tabular-nums">
-                {formatMoney(remainingAmountCents, currency)}
+                {formatMoney(remainingAmountCents, currency, bookingFlowLocale)}
               </span>
             </div>
           </div>
 
           <div className="h-px bg-white/10" />
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Date</p>
+            <p className="text-xs text-gray-500 mb-0.5">{ui.common.date}</p>
             <p className="text-white font-medium">{dateFormatted}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Time</p>
+            <p className="text-xs text-gray-500 mb-0.5">{ui.common.time}</p>
             <p className="text-white font-medium">{timeLabel}</p>
           </div>
           {durationMinutes != null && durationMinutes > 0 && (
             <div>
-              <p className="text-xs text-gray-500 mb-0.5">Duration</p>
+              <p className="text-xs text-gray-500 mb-0.5">
+                {ui.common.duration}
+              </p>
               <p className="text-white font-medium">
-                {formatDurationMinutes(durationMinutes)}
+                {formatDurationMinutes(durationMinutes, bookingFlowLocale)}
               </p>
             </div>
           )}
@@ -250,7 +276,9 @@ export function BookingPaymentSuccess({
             <>
               <div className="h-px bg-white/10" />
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Vehicle</p>
+                <p className="text-xs text-gray-500 mb-0.5">
+                  {ui.common.vehicle}
+                </p>
                 <p className="text-white font-medium">{vehicleLine}</p>
               </div>
             </>
@@ -259,15 +287,14 @@ export function BookingPaymentSuccess({
       </GlassCard>
 
       <p className="self-center text-xs text-gray-500 text-center mb-6 max-w-sm px-2">
-        A confirmation email was sent with these details. If you paid by card,
-        Stripe may send a receipt as well.
+        {ui.bookingPaymentSuccess.confirmationNote}
       </p>
 
       <Link
         href={`/${businessSlug}`}
         className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors"
       >
-        Back to profile
+        {ui.bookingPaymentSuccess.backToProfile}
       </Link>
     </div>
   );

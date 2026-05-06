@@ -1,5 +1,6 @@
 'use client';
 
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import React from 'react';
 import type { AddOnDisplay } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
@@ -15,6 +16,7 @@ export interface BookingPriceBreakdownProps {
   totalPriceCents?: number;
   /** Default `h2` (calendar step); use `h3` under a page-level heading on review. */
   serviceTitleTag?: 'h2' | 'h3';
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export function BookingPriceBreakdown({
@@ -26,6 +28,7 @@ export function BookingPriceBreakdown({
   totalBookingDurationMinutes,
   totalPriceCents,
   serviceTitleTag = 'h2',
+  bookingFlowLocale = 'en',
 }: BookingPriceBreakdownProps) {
   const TitleTag = serviceTitleTag;
 
@@ -38,7 +41,7 @@ export function BookingPriceBreakdown({
           </TitleTag>
           <div className="mt-0.5 flex items-center gap-1 text-sm tabular-nums italic">
             <p className="text-gray-400">
-              {formatDurationMinutes(serviceDurationMinutes)}
+              {formatDurationMinutes(serviceDurationMinutes, bookingFlowLocale)}
             </p>
             {serviceVariantLabel ? (
               <>
@@ -75,7 +78,11 @@ export function BookingPriceBreakdown({
                   {addOn.durationMinutes != null &&
                   addOn.durationMinutes > 0 ? (
                     <p className="text-sm text-gray-400 mt-0.5 tabular-nums italic">
-                      + {formatDurationMinutes(addOn.durationMinutes)}
+                      +{' '}
+                      {formatDurationMinutes(
+                        addOn.durationMinutes,
+                        bookingFlowLocale
+                      )}
                     </p>
                   ) : null}
                 </div>
@@ -87,7 +94,10 @@ export function BookingPriceBreakdown({
           </ul>
           <div className="flex justify-between items-start gap-4 pt-3 border-t border-white/10">
             <p className="text-sm font-semibold text-white tabular-nums italic">
-              {formatDurationMinutes(totalBookingDurationMinutes)}
+              {formatDurationMinutes(
+                totalBookingDurationMinutes,
+                bookingFlowLocale
+              )}
             </p>
             {totalPriceCents != null && totalPriceCents > 0 ? (
               <span className="text-base font-semibold text-white tabular-nums shrink-0 text-right min-w-[4.5rem]">

@@ -76,7 +76,7 @@ vi.mock('@/features/availability/booking/components/CustomerForm', () => ({
   isCustomerFormValid: () => true,
 }));
 
-function renderBookingFlow() {
+function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
   return render(
     <AvailabilityBookingPage
       businessName="Acme Auto"
@@ -91,6 +91,7 @@ function renderBookingFlow() {
       selectedAddOns={[]}
       exitCalendarFlowHref="/acme-auto/book/details?serviceId=svc-1"
       exitCalendarFlowLabel="Back to add-ons"
+      bookingFlowLocale={options?.bookingFlowLocale ?? 'en'}
     />
   );
 }
@@ -141,5 +142,22 @@ describe('AvailabilityBookingPage flow navigation', () => {
 
     // Variant appears in service block only once.
     expect(screen.getAllByText('SUV')).toHaveLength(1);
+  });
+});
+
+describe('AvailabilityBookingPage (Spanish locale)', () => {
+  it('uses Spanish continue and back labels (mocked date/time pickers hide calendar title)', async () => {
+    const user = userEvent.setup();
+    renderBookingFlow({ bookingFlowLocale: 'es' });
+
+    expect(screen.getByRole('button', { name: /^continuar$/i })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /pick date/i }));
+    await user.click(screen.getByRole('button', { name: /pick time/i }));
+    await user.click(screen.getByRole('button', { name: /^continuar$/i }));
+
+    expect(
+      screen.getByRole('button', { name: /volver a fecha y hora/i })
+    ).toBeTruthy();
   });
 });
