@@ -79,6 +79,16 @@ export default function TermsPage() {
                 accurate.
               </li>
             </ul>
+            <p className="text-base leading-relaxed mt-4">
+              You may delete your ServiceLink account at any time through
+              account settings in the app or on the website. Account deletion is
+              processed when you complete the in-product flow (including
+              confirmation steps we require); it is not subject to a fixed
+              multi-day grace period unless applicable law requires otherwise.
+              Deletion ends your access to the platform and removes your account
+              and associated ServiceLink data as described in our Privacy
+              Policy.
+            </p>
           </section>
 
           <section>
@@ -138,6 +148,14 @@ export default function TermsPage() {
                 through Stripe-powered checkout and billing tools.
               </li>
               <li>
+                If you delete your account, active subscriptions are ended in
+                line with how billing is processed through Stripe (for example,
+                cancellation of the subscription tied to your account). Some
+                billing or transaction records may remain with Stripe or other
+                processors for legal, tax, or fraud-prevention purposes as
+                described in our Privacy Policy.
+              </li>
+              <li>
                 Unless otherwise stated, fees are non-refundable except where
                 required by law.
               </li>
@@ -167,6 +185,12 @@ export default function TermsPage() {
               We may suspend or terminate accounts for violations of these
               Terms, fraudulent activity, payment failures, or behavior that
               creates legal, security, or operational risk.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              Voluntary account closure by you (through account deletion) is
+              separate from suspension or termination by us. Either way, certain
+              records may be retained where our processors or the law require
+              it, as explained in our Privacy Policy.
             </p>
           </section>
 

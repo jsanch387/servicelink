@@ -7,6 +7,7 @@ import {
   WarningCallout,
 } from '@/components/shared';
 import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
+import { DeleteAccountSection } from '@/features/account';
 import { useAuth } from '@/features/auth';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import type { PlanId } from '@/features/pricing';
@@ -46,6 +47,8 @@ interface SettingsData {
   subscriptionCurrentPeriodEnd?: string | null;
   /** True when Stripe has scheduled cancel at period end (no further renewals). */
   subscriptionCancelAtPeriodEnd?: boolean;
+  /** Auth user's email — required for the typed-confirmation Delete Account flow. */
+  accountEmail?: string;
 }
 
 interface SettingsContentProps {
@@ -393,7 +396,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             </a>
           </div>
 
-          <div className="mt-10 pb-2">
+          <div className="mt-10 pb-2 flex flex-col items-start gap-3">
             <button
               type="button"
               onClick={handleLogout}
@@ -403,6 +406,9 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
               <ArrowRightStartOnRectangleIcon className="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-white" />
               {logoutLoading ? 'Signing out…' : 'Log out'}
             </button>
+            {settingsData.accountEmail ? (
+              <DeleteAccountSection accountEmail={settingsData.accountEmail} />
+            ) : null}
           </div>
         </div>
       </div>

@@ -97,6 +97,12 @@ export const API_ROUTES = {
   /** Owner: send an existing `requested` or `draft` quote (e.g. from customer request). */
   QUOTE_SEND_EXISTING: (quoteId: string) =>
     `/api/quotes/${encodeURIComponent(quoteId.trim())}/send`,
+  /**
+   * Authenticated: permanently delete the current user's account.
+   * Method: DELETE. Body: `{ confirmEmail }`. Auth via cookie or
+   * `Authorization: Bearer <supabase access token>` (mobile).
+   */
+  ACCOUNT: '/api/account',
 } as const;
 
 export const PUBLIC_ROUTES = [
