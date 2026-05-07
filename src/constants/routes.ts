@@ -22,6 +22,8 @@ export const ROUTES = {
   AUTH: {
     LOGIN: '/login',
     SIGNUP: '/signup',
+    /** PKCE `code` exchange (OAuth + password recovery). Use `?next=` for post-auth path. */
+    CALLBACK: '/auth/callback',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
   },

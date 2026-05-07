@@ -6,11 +6,30 @@ import { NextResponse } from 'next/server';
 const EMAIL_EXISTS_ERROR = 'email_exists_use_password';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+  const url = new URL(request.url);
+  const { searchParams } = url;
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? ROUTES.DASHBOARD.MAIN;
 
   if (!code) {
+    const err = searchParams.get('error');
+    const errCode = searchParams.get('error_code');
+    if (err || errCode) {
+      const recoveryNext =
+        next.includes('reset-password') || next === ROUTES.AUTH.RESET_PASSWORD;
+      if (recoveryNext) {
+        const target = new URL(ROUTES.AUTH.RESET_PASSWORD, request.url);
+        for (const key of ['error_description'] as const) {
+          const v = searchParams.get(key);
+          if (v) target.searchParams.set(key, v);
+        }
+        return NextResponse.redirect(target);
+      }
+    }
+    console.warn('[auth/callback] missing code — redirecting to login', {
+      next,
+      queryKeys: [...searchParams.keys()],
+    });
     return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
   }
 

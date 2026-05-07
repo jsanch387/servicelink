@@ -94,8 +94,11 @@ export async function middleware(request: NextRequest) {
   const isWaitlistRoute = request.nextUrl.pathname.startsWith('/waitlist');
   const isHomeRoute = request.nextUrl.pathname === '/';
 
-  // Redirect authenticated users away from auth pages
-  if (isAuthRoute && user) {
+  // Redirect authenticated users away from auth pages (except password reset:
+  // recovery session is logged-in until they submit a new password.)
+  const isPasswordResetPage =
+    request.nextUrl.pathname === ROUTES.AUTH.RESET_PASSWORD;
+  if (isAuthRoute && user && !isPasswordResetPage) {
     return NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url));
   }
 

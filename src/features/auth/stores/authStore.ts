@@ -1,5 +1,6 @@
 'use client';
 
+import { ROUTES } from '@/constants/routes';
 import { ProfileService } from '@/features/profiles';
 import { createClient } from '@/libs/supabase';
 import { create } from 'zustand';
@@ -202,10 +203,11 @@ export const useAuthStore = create<AuthStore>()(
 
         try {
           // Use explicit site URL in prod so redirect never goes to localhost
-          const baseUrl =
+          const baseUrl = (
             process.env.NEXT_PUBLIC_SITE_URL ||
-            (typeof window !== 'undefined' ? window.location.origin : '');
-          const redirectTo = `${baseUrl}/auth/callback`;
+            (typeof window !== 'undefined' ? window.location.origin : '')
+          ).replace(/\/$/, '');
+          const redirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}`;
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo },
@@ -245,7 +247,7 @@ export const useAuthStore = create<AuthStore>()(
               : origin && !origin.includes('localhost')
                 ? origin
                 : origin || siteUrl;
-          const redirectTo = `${baseUrl}/auth/reset-password`;
+          const redirectTo = `${baseUrl.replace(/\/$/, '')}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(ROUTES.AUTH.RESET_PASSWORD)}`;
 
           const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo,

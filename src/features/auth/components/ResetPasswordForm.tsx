@@ -13,8 +13,18 @@ function parseHashParams(hash: string): Record<string, string> {
   if (!hash || hash.charAt(0) !== '#') return params;
   const query = hash.slice(1);
   query.split('&').forEach(part => {
-    const [key, value] = part.split('=');
-    if (key && value) params[key] = decodeURIComponent(value);
+    const eq = part.indexOf('=');
+    if (eq === -1) return;
+    const key = part.slice(0, eq);
+    const rawValue = part.slice(eq + 1);
+    if (!key || !rawValue) return;
+    let valueDecoded = rawValue.replace(/\+/g, ' ');
+    try {
+      valueDecoded = decodeURIComponent(valueDecoded);
+    } catch {
+      // keep as-is
+    }
+    params[key] = valueDecoded;
   });
   return params;
 }
@@ -26,9 +36,19 @@ function parseSearchParams(search: string): Record<string, string> {
     .slice(1)
     .split('&')
     .forEach(part => {
-      const [key, value] = part.split('=');
-      if (key && value)
-        params[decodeURIComponent(key)] = decodeURIComponent(value);
+      const eq = part.indexOf('=');
+      if (eq === -1) return;
+      const key = part.slice(0, eq);
+      const rawValue = part.slice(eq + 1);
+      if (!key) return;
+      const keyDecoded = decodeURIComponent(key);
+      let valueDecoded = rawValue.replace(/\+/g, ' ');
+      try {
+        valueDecoded = decodeURIComponent(valueDecoded);
+      } catch {
+        // keep as-is
+      }
+      params[keyDecoded] = valueDecoded;
     });
   return params;
 }
@@ -50,6 +70,30 @@ export const ResetPasswordForm: React.FC = () => {
     const initSession = async () => {
       const hashParams = parseHashParams(window.location.hash);
       const queryParams = parseSearchParams(window.location.search);
+
+      const accessDenied =
+        queryParams.error === 'access_denied' ||
+        hashParams.error === 'access_denied';
+      const errCode = queryParams.error_code || hashParams.error_code;
+      const errDesc = (
+        queryParams.error_description ||
+        hashParams.error_description ||
+        ''
+      ).trim();
+      if (accessDenied || errCode) {
+        let message =
+          'This reset link is invalid or has expired. Please request a new one.';
+        if (errCode === 'otp_expired') {
+          message =
+            'This reset link has expired or was already used. Request a new link from Forgot password — each link works once and is time-limited.';
+        } else if (errDesc) {
+          message = errDesc;
+        }
+        setSessionError(message);
+        setSessionReady(true);
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
 
       // Flow 1: tokens in hash (access_token + refresh_token)
       if (
@@ -74,6 +118,8 @@ export const ResetPasswordForm: React.FC = () => {
           setSessionError(
             'Something went wrong. Please request a new reset link.'
           );
+          setSessionReady(true);
+          return;
         }
         setSessionReady(true);
         return;
@@ -100,6 +146,8 @@ export const ResetPasswordForm: React.FC = () => {
           setSessionError(
             'Something went wrong. Please request a new reset link.'
           );
+          setSessionReady(true);
+          return;
         }
         setSessionReady(true);
         return;
