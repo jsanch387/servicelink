@@ -113,6 +113,14 @@ export default function PrivacyPage() {
               payment-related information in accordance with its own terms and
               privacy policy.
             </p>
+            <p className="text-base leading-relaxed mt-4">
+              If you delete your ServiceLink account, we remove your platform
+              account and associated profile data from our systems as described
+              in our retention practices. Stripe and other payment processors
+              may retain certain billing and transaction records for their own
+              compliance, fraud prevention, and legal obligations; that
+              retention is governed by the processor&apos;s policies, not ours.
+            </p>
           </section>
 
           <section>
@@ -150,6 +158,18 @@ export default function PrivacyPage() {
               enforce agreements. Retention periods vary based on the type of
               data and legal requirements.
             </p>
+            <p className="text-base leading-relaxed mt-4">
+              When you choose to delete your account through the ServiceLink app
+              or website (for example, from account settings), we process that
+              request without an artificial waiting period: your access ends and
+              we remove your account and associated data from our systems in
+              line with this policy and our technical capabilities. There is no
+              fixed &quot;grace period&quot; before deletion unless we are
+              required to delay or retain specific information by law. Some
+              information may still exist where another party holds it (for
+              example, a customer who received a booking from you, or billing
+              records held by Stripe) as described elsewhere in this policy.
+            </p>
           </section>
 
           <section>
@@ -176,6 +196,12 @@ export default function PrivacyPage() {
               <li>Request access to or a copy of your personal information</li>
               <li>Request correction of inaccurate information</li>
               <li>Request deletion, subject to legal exceptions</li>
+              <li>
+                Delete your account directly in ServiceLink (web or mobile app),
+                which removes your account and associated platform data when the
+                request succeeds; billing-related records may still be retained
+                by payment processors as noted above
+              </li>
               <li>Request limits on certain processing activities</li>
             </ul>
           </section>

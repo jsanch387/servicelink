@@ -74,24 +74,23 @@ export const ConfirmDeleteAccountModal: React.FC<
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="" maxWidth="md">
-      <div className="space-y-6 -mt-2">
+      <div className="space-y-5 -mt-2 min-w-0">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
             Delete your account
           </h2>
-          <p className="text-gray-400 text-sm sm:text-base mt-2 leading-relaxed">
-            This permanently removes your ServiceLink account, profile, and
-            data. Any active subscription will be canceled immediately. This
-            cannot be undone.
+          <p className="text-gray-400 text-sm mt-3 leading-relaxed">
+            This can&apos;t be undone. Type the email below in the field to
+            confirm.
           </p>
-        </div>
-
-        <div className="rounded-xl border border-red-400/25 bg-red-500/8 px-4 py-3 text-sm text-red-200">
-          To confirm, type your email{' '}
-          <span className="font-mono text-red-100 break-all">
-            {accountEmail}
-          </span>{' '}
-          below.
+          <div
+            className="mt-3 w-full min-w-0 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5"
+            title={accountEmail}
+          >
+            <p className="text-left font-mono text-sm text-white leading-relaxed break-all select-all">
+              {accountEmail || '—'}
+            </p>
+          </div>
         </div>
 
         <Input
