@@ -120,6 +120,7 @@ export default async function SettingsPage({
         profileRow?.subscription_current_period_end ?? null,
       subscriptionCancelAtPeriodEnd:
         profileRow?.subscription_cancel_at_period_end === true,
+      accountEmail: user.email ?? '',
     };
 
     return (
