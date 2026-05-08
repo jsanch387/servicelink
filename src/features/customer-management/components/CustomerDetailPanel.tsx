@@ -117,8 +117,11 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   const [noteDraft, setNoteDraft] = useState(customer.note);
   const [noteSaved, setNoteSaved] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
+  const emailTrimmed = customer.email.trim();
+  const hasEmail = emailTrimmed.length > 0;
   const phoneHref = customerPhoneHref(customer.phone);
   const displayPhone = formatCustomerPhone(customer.phone);
+  const hasPhone = displayPhone.trim().length > 0;
   const hasCompletedVisits = customer.totalVisits > 0;
   const upcomingOnly =
     !hasCompletedVisits && Boolean(customer.nextAppointmentDate);
@@ -161,11 +164,13 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
     setCheckInTeaserOpen(false);
     setEnrollMaintenanceOpen(false);
     setMaintenanceDetailsOpen(false);
+    setEmailCopied(false);
   }, [customer.id]);
 
   const handleCopyEmail = async () => {
+    if (!hasEmail) return;
     try {
-      await navigator.clipboard.writeText(customer.email);
+      await navigator.clipboard.writeText(emailTrimmed);
       setEmailCopied(true);
       window.setTimeout(() => setEmailCopied(false), 1500);
     } catch {
@@ -223,37 +228,43 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                 <p className="text-base font-semibold text-white">
                   {customer.name}
                 </p>
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-gray-300">{customer.email}</p>
-                    <button
-                      type="button"
-                      onClick={handleCopyEmail}
-                      className="inline-flex items-center justify-center p-0.5 text-gray-300 hover:text-white transition-colors md:cursor-pointer"
-                      aria-label="Copy customer email"
-                      title="Copy email"
-                    >
-                      <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                    </button>
-                    {emailCopied && (
-                      <span className="text-[11px] text-emerald-300">
-                        Copied
-                      </span>
-                    )}
+                {(hasEmail || hasPhone) && (
+                  <div className="mt-2 space-y-2">
+                    {hasEmail ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-300">{emailTrimmed}</p>
+                        <button
+                          type="button"
+                          onClick={handleCopyEmail}
+                          className="inline-flex items-center justify-center p-0.5 text-gray-300 hover:text-white transition-colors md:cursor-pointer"
+                          aria-label="Copy customer email"
+                          title="Copy email"
+                        >
+                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                        </button>
+                        {emailCopied ? (
+                          <span className="text-[11px] text-emerald-300">
+                            Copied
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {hasPhone ? (
+                      phoneHref ? (
+                        <a
+                          href={phoneHref}
+                          className="inline-flex items-center text-xs text-gray-300 tabular-nums tracking-wide underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white/80 transition-colors"
+                        >
+                          {displayPhone}
+                        </a>
+                      ) : (
+                        <p className="text-xs text-gray-300 tabular-nums tracking-wide">
+                          {displayPhone}
+                        </p>
+                      )
+                    ) : null}
                   </div>
-                  {phoneHref ? (
-                    <a
-                      href={phoneHref}
-                      className="inline-flex items-center text-xs text-gray-300 tabular-nums tracking-wide underline underline-offset-2 decoration-white/40 hover:text-white hover:decoration-white/80 transition-colors"
-                    >
-                      {displayPhone}
-                    </a>
-                  ) : (
-                    <p className="text-xs text-gray-500 tabular-nums tracking-wide">
-                      {displayPhone}
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
               <CustomerStatusBadge
                 status={customer.status}
