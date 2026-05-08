@@ -5,6 +5,10 @@ import {
   type BookingRowForCustomerMetrics,
 } from '@/features/customer-management/server/aggregateBookingsPerCustomer';
 import { loadLatestMaintenanceEnrollmentByCustomerIds } from '@/features/customer-management/server/loadLatestMaintenanceEnrollmentByCustomerIds';
+import {
+  DUPLICATE_CUSTOMER_MESSAGE,
+  parseCreateCustomerBody,
+} from '@/features/customer-management/utils/parseCreateCustomerBody';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
@@ -14,6 +18,105 @@ function withHttps(url: string): string {
   if (!trimmed) return trimmed;
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
+}
+
+type CustomerIdRow = { id: string };
+
+export async function POST(req: Request) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const resolved = await resolveCurrentBusinessId(supabase);
+
+    if (!resolved.ok) {
+      return NextResponse.json(
+        { success: false, error: resolved.error },
+        { status: resolved.status }
+      );
+    }
+
+    const businessId = resolved.businessId;
+    const rawBody: unknown = await req.json().catch(() => null);
+    const parsed = parseCreateCustomerBody(rawBody);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { success: false, error: parsed.error },
+        { status: 400 }
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+
+    if (parsed.phoneNormalized) {
+      const { data: byPhone } = await db
+        .from('customers')
+        .select('id')
+        .eq('business_id', businessId)
+        .eq('phone_normalized', parsed.phoneNormalized)
+        .maybeSingle();
+
+      const row = byPhone as CustomerIdRow | null;
+      if (row?.id) {
+        return NextResponse.json(
+          { success: false, error: DUPLICATE_CUSTOMER_MESSAGE },
+          { status: 409 }
+        );
+      }
+    }
+
+    if (parsed.emailNormalized) {
+      const { data: byEmail } = await db
+        .from('customers')
+        .select('id')
+        .eq('business_id', businessId)
+        .eq('email_normalized', parsed.emailNormalized)
+        .maybeSingle();
+
+      const row = byEmail as CustomerIdRow | null;
+      if (row?.id) {
+        return NextResponse.json(
+          { success: false, error: DUPLICATE_CUSTOMER_MESSAGE },
+          { status: 409 }
+        );
+      }
+    }
+
+    const { error: insertError } = await db.from('customers').insert({
+      business_id: businessId,
+      full_name: parsed.fullName,
+      phone: parsed.phoneNormalized,
+      email: parsed.emailNormalized,
+      phone_normalized: parsed.phoneNormalized,
+      email_normalized: parsed.emailNormalized,
+      notes: parsed.notes,
+      maintenance_visits_completed: 0,
+    });
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        return NextResponse.json(
+          { success: false, error: DUPLICATE_CUSTOMER_MESSAGE },
+          { status: 409 }
+        );
+      }
+      console.error('customers POST insert:', insertError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: insertError.message || 'Failed to create customer',
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error('customers POST:', e);
+    return NextResponse.json(
+      { success: false, error: 'Unexpected server error' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function GET() {

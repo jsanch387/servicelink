@@ -32,6 +32,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     contact: 'Contact',
     address: 'Address',
     dateAndTime: 'Date & time',
+    emailNotProvided: 'No email provided',
   },
   serviceDetails: {
     startingAt: 'Starting at',
@@ -140,13 +141,21 @@ export const publicBookingUiEn: PublicBookingUi = {
     errVehicleYear: 'Vehicle year is required',
     errVehicleMake: 'Vehicle make is required',
     errVehicleModel: 'Vehicle model is required',
+    emailOptional: 'Email (optional)',
+    emailOptionalNoConfirmation:
+      'Without an email address, no booking confirmation email will be sent.',
+    errEmailInvalid: 'Please enter a valid email address',
   },
   bookingSuccess: {
     title: "You're booked",
     subtitleOwner:
       'Your appointment has been created. Your customer will receive an email notification.',
+    subtitleOwnerNoCustomerEmail:
+      'Your appointment has been created. No confirmation email was sent because no customer email was provided.',
     subtitleCustomer: businessName =>
       `Your appointment with ${businessName} is confirmed. See you then!`,
+    subtitleCustomerNoEmail: businessName =>
+      `Your appointment with ${businessName} is confirmed. No confirmation email was sent because no email address was provided.`,
     cardHeaderOwner: 'Appointment',
     cardHeaderCustomer: 'Your booking',
     ownerPaymentNote: 'Payment details are saved with this appointment.',

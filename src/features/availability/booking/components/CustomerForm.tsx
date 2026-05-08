@@ -2,6 +2,7 @@
 
 import { Button, Input, PhoneInput, TextArea } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { isValidEmail } from '@/features/auth/utils/validation';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
 import type { CustomerFormData } from '../types';
@@ -18,6 +19,8 @@ interface CustomerFormProps {
   /** Form id for external submit (e.g. sticky button). */
   id?: string;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** When true, email is optional and an empty-email hint is shown. */
+  emailOptional?: boolean;
 }
 
 const REQUIRED_KEYS: (keyof CustomerFormData)[] = [
@@ -30,14 +33,32 @@ const REQUIRED_KEYS: (keyof CustomerFormData)[] = [
   'zip',
 ];
 
+const REQUIRED_WITHOUT_EMAIL: (keyof CustomerFormData)[] = [
+  'fullName',
+  'phone',
+  'streetAddress',
+  'city',
+  'state',
+  'zip',
+];
+
 export function isCustomerFormValid(
   data: CustomerFormData,
-  requireVehicleFields = false
+  requireVehicleFields = false,
+  emailOptional = false
 ): boolean {
-  const baseValid = REQUIRED_KEYS.every(
+  const keys = emailOptional ? REQUIRED_WITHOUT_EMAIL : REQUIRED_KEYS;
+  const baseValid = keys.every(
     k => typeof data[k] === 'string' && (data[k] as string).trim().length > 0
   );
   if (!baseValid) return false;
+  if (
+    emailOptional &&
+    data.email.trim().length > 0 &&
+    !isValidEmail(data.email.trim())
+  ) {
+    return false;
+  }
   if (!requireVehicleFields) return true;
   return (
     !!data.vehicleYear.trim() &&
@@ -55,6 +76,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   submitLabel,
   id,
   bookingFlowLocale = 'en',
+  emailOptional = false,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const cf = ui.customerForm;
@@ -71,7 +93,14 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   const validate = (): boolean => {
     const next: Partial<Record<keyof CustomerFormData, string>> = {};
     if (!value.fullName.trim()) next.fullName = cf.errFullName;
-    if (!value.email.trim()) next.email = cf.errEmail;
+    if (!emailOptional && !value.email.trim()) next.email = cf.errEmail;
+    if (
+      emailOptional &&
+      value.email.trim().length > 0 &&
+      !isValidEmail(value.email.trim())
+    ) {
+      next.email = cf.errEmailInvalid;
+    }
     if (!value.phone.trim()) next.phone = cf.errPhone;
     if (!value.streetAddress.trim()) next.streetAddress = cf.errStreet;
     if (!value.city.trim()) next.city = cf.errCity;
@@ -109,15 +138,22 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
               error={errors.fullName}
               required
             />
-            <Input
-              label={cf.email}
-              type="email"
-              value={value.email}
-              onChange={v => update({ email: v })}
-              placeholder="jane@example.com"
-              error={errors.email}
-              required
-            />
+            <div className="space-y-1.5">
+              <Input
+                label={emailOptional ? cf.emailOptional : cf.email}
+                type="email"
+                value={value.email}
+                onChange={v => update({ email: v })}
+                placeholder="jane@example.com"
+                error={errors.email}
+                required={!emailOptional}
+              />
+              {emailOptional && !value.email.trim() ? (
+                <p className="text-xs text-gray-500 leading-snug">
+                  {cf.emailOptionalNoConfirmation}
+                </p>
+              ) : null}
+            </div>
           </div>
           <div className="sm:max-w-xs">
             <PhoneInput

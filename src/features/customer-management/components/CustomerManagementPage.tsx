@@ -5,7 +5,9 @@ import { DEMO_NEEDS_ATTENTION_CUSTOMER } from '@/features/customer-management/co
 import { useCustomerManagement } from '@/features/customer-management/hooks/useCustomerManagement';
 import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { AddCustomerModalBody } from './AddCustomerModalBody';
 import { CustomerDesktopTable } from './CustomerDesktopTable';
 import { CustomerDetailPanel } from './CustomerDetailPanel';
 import { CustomerListEmptyState } from './CustomerListEmptyState';
@@ -24,6 +26,9 @@ interface CustomerManagementPageProps {
 export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
   hasProCheckInAccess,
 }) => {
+  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] =
+    React.useState(false);
+  const [addCustomerModalBusy, setAddCustomerModalBusy] = React.useState(false);
   const {
     loadStatus,
     loadError,
@@ -47,6 +52,7 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
     openDeleteCustomerModal,
     confirmDeleteCustomer,
     saveCustomerNote,
+    createCustomer,
     openCustomerSms,
   } = useCustomerManagement();
   const hasAnyRealDueCustomers = customers.some(isCustomerNeedsAttention);
@@ -60,7 +66,7 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
   const shownCount = customersForDisplay.length;
 
   return (
-    <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+    <main className="flex-1 pt-8 pb-28 sm:pt-10 sm:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
       <div className="max-w-6xl mx-auto w-full min-w-0">
         {loadStatus === 'loading' && <CustomerManagementPageSkeleton />}
 
@@ -83,7 +89,9 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
 
         {loadStatus === 'ready' && (
           <>
-            <CustomerPageHeader />
+            <CustomerPageHeader
+              onAddCustomer={() => setIsAddCustomerModalOpen(true)}
+            />
 
             <CustomerStatsRow stats={stats} />
 
@@ -150,6 +158,39 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
                 formatCurrency={formatCustomerCurrency}
               />
             )}
+
+            <div
+              className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4 backdrop-blur-sm sm:hidden safe-area-pb"
+              style={{
+                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+              }}
+            >
+              <div className="mx-auto w-full max-w-6xl">
+                <Button
+                  variant="inverse"
+                  fullWidth
+                  onClick={() => setIsAddCustomerModalOpen(true)}
+                  icon={<PlusIcon className="h-4 w-4" aria-hidden />}
+                  aria-label="Add a customer"
+                >
+                  Add a customer
+                </Button>
+              </div>
+            </div>
+
+            <Modal
+              isOpen={isAddCustomerModalOpen}
+              onClose={() => setIsAddCustomerModalOpen(false)}
+              title="Add customer"
+              maxWidth="sm"
+              preventClose={addCustomerModalBusy}
+            >
+              <AddCustomerModalBody
+                onClose={() => setIsAddCustomerModalOpen(false)}
+                onBusyChange={setAddCustomerModalBusy}
+                createCustomer={createCustomer}
+              />
+            </Modal>
 
             <Modal
               isOpen={Boolean(activeDeleteCustomer)}

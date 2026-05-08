@@ -31,9 +31,9 @@ import {
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
-import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
+import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { completeOnboardingV2 } from '@/features/onboarding-v2/server/completeOnboarding';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
@@ -71,6 +71,19 @@ function logBookingCheckoutStage(
   }
 ) {
   console.info('[booking-checkout:stage]', stage, details ?? {});
+}
+
+/** Email collected on Stripe Checkout when the booking form left it blank. */
+function stripeCheckoutCollectedEmail(
+  session: Stripe.Checkout.Session
+): string {
+  const direct =
+    typeof session.customer_email === 'string'
+      ? session.customer_email.trim()
+      : '';
+  if (direct.length > 0) return direct;
+  const fromDetails = session.customer_details?.email;
+  return typeof fromDetails === 'string' ? fromDetails.trim() : '';
 }
 
 type StoredBookingCheckoutPayload = {
@@ -180,7 +193,6 @@ function parseStoredBookingCheckoutPayload(
     !Number.isFinite(durationMinutes) ||
     durationMinutes < 1 ||
     !fullName ||
-    !email ||
     !Number.isFinite(totalPriceCents) ||
     !Number.isFinite(requiredOnlineAmountCents) ||
     !method
@@ -438,6 +450,9 @@ export async function POST(request: NextRequest) {
           .eq('id', checkoutSessionRow.id);
         return NextResponse.json({ received: true }, { status: 200 });
       }
+      const stripeCollectedEmail = stripeCheckoutCollectedEmail(session);
+      const resolvedCustomerEmail =
+        bookingPayload.customer.email.trim() || stripeCollectedEmail;
       const amountPaidCents =
         typeof session.amount_total === 'number' ? session.amount_total : 0;
       const expectedAmountCents =
@@ -533,7 +548,7 @@ export async function POST(request: NextRequest) {
       }
       const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
         customerName: bookingPayload.customer.fullName.trim(),
-        customerEmail: bookingPayload.customer.email.trim(),
+        customerEmail: resolvedCustomerEmail,
         customerPhone: bookingPayload.customer.phone?.trim(),
         customerVehicleYear: bookingPayload.customer.vehicleYear?.trim(),
         customerVehicleMake: bookingPayload.customer.vehicleMake?.trim(),
@@ -603,24 +618,26 @@ export async function POST(request: NextRequest) {
         sessionId: session.id,
         bookingId: createdBooking.id,
       });
-      try {
-        await sendAvailabilityBookingCustomerConfirmationEmail(
-          bookingPayload.customer.email.trim(),
-          businessDisplayName,
-          availabilityEmailPayload
-        );
-        logBookingCheckoutStage('customer_email.sent', {
-          eventId: event.id,
-          sessionId: session.id,
-          bookingId: createdBooking.id,
-        });
-      } catch {
-        // best-effort customer confirmation email
-        logBookingCheckoutStage('customer_email.failed', {
-          eventId: event.id,
-          sessionId: session.id,
-          bookingId: createdBooking.id,
-        });
+      if (resolvedCustomerEmail) {
+        try {
+          await sendAvailabilityBookingCustomerConfirmationEmail(
+            resolvedCustomerEmail,
+            businessDisplayName,
+            availabilityEmailPayload
+          );
+          logBookingCheckoutStage('customer_email.sent', {
+            eventId: event.id,
+            sessionId: session.id,
+            bookingId: createdBooking.id,
+          });
+        } catch {
+          // best-effort customer confirmation email
+          logBookingCheckoutStage('customer_email.failed', {
+            eventId: event.id,
+            sessionId: session.id,
+            bookingId: createdBooking.id,
+          });
+        }
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)

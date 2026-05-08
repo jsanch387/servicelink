@@ -36,11 +36,12 @@ export async function upsertCustomerForBooking(
   const db = supabase as any;
 
   const full_name = input.fullName.trim();
-  const email_normalized = normalizeEmailForLookup(input.email);
+  const rawEmail = (input.email ?? '').trim();
+  const email_normalized = rawEmail ? normalizeEmailForLookup(rawEmail) : null;
   const phone_normalized = normalizePhoneForLookup(input.phone ?? null);
   /** Store digits-only in `phone` when present (canonical display + dedupe). */
   const phone = phone_normalized;
-  /** Single canonical email in DB (normalized). Booking form notes are not copied here. */
+  /** Canonical email in DB when provided; otherwise null (owner booking without email). */
   const email = email_normalized;
 
   if (phone_normalized) {
@@ -57,16 +58,18 @@ export async function upsertCustomerForBooking(
     }
   }
 
-  const { data: byEmail } = await db
-    .from('customers')
-    .select('id')
-    .eq('business_id', businessId)
-    .eq('email_normalized', email_normalized)
-    .maybeSingle();
+  if (email_normalized) {
+    const { data: byEmail } = await db
+      .from('customers')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('email_normalized', email_normalized)
+      .maybeSingle();
 
-  const emailRow = byEmail as CustomerIdRow | null;
-  if (emailRow?.id) {
-    return { id: emailRow.id };
+    const emailRow = byEmail as CustomerIdRow | null;
+    if (emailRow?.id) {
+      return { id: emailRow.id };
+    }
   }
 
   const { data: inserted, error } = await db
@@ -97,15 +100,17 @@ export async function upsertCustomerForBooking(
           return { id: r.id };
         }
       }
-      const { data: againEmail } = await db
-        .from('customers')
-        .select('id')
-        .eq('business_id', businessId)
-        .eq('email_normalized', email_normalized)
-        .maybeSingle();
-      const r2 = againEmail as CustomerIdRow | null;
-      if (r2?.id) {
-        return { id: r2.id };
+      if (email_normalized) {
+        const { data: againEmail } = await db
+          .from('customers')
+          .select('id')
+          .eq('business_id', businessId)
+          .eq('email_normalized', email_normalized)
+          .maybeSingle();
+        const r2 = againEmail as CustomerIdRow | null;
+        if (r2?.id) {
+          return { id: r2.id };
+        }
       }
     }
     throw error;

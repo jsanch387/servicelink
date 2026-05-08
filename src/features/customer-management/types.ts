@@ -53,6 +53,14 @@ export interface CustomerRecord {
   maintenanceEnrollment?: CustomerMaintenanceEnrollmentSummary | null;
 }
 
+/** Payload for manually adding a customer (dashboard modal). */
+export interface AddCustomerDraft {
+  name: string;
+  email: string;
+  phone: string;
+  notes: string;
+}
+
 /** Aggregates for the customer list header (from bookings + customer rows when wired to API). */
 export interface CustomerListStats {
   totalCustomers: number;

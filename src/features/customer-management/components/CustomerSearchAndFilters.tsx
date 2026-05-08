@@ -24,8 +24,8 @@ export const CustomerSearchAndFilters: React.FC<
   CustomerSearchAndFiltersProps
 > = ({ query, onQueryChange, statusFilter, onStatusFilterChange }) => {
   return (
-    <div className="mb-4 sm:mb-5">
-      <div className="flex flex-col gap-3">
+    <div className="mb-3 sm:mb-5">
+      <div className="flex flex-col gap-2 sm:gap-3">
         <Input
           value={query}
           onChange={onQueryChange}
@@ -39,6 +39,7 @@ export const CustomerSearchAndFilters: React.FC<
           value={statusFilter}
           onChange={onStatusFilterChange}
           ariaLabel="Filter customers"
+          compactOnMobile
         />
       </div>
     </div>

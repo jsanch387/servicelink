@@ -22,8 +22,8 @@ export const DeleteCustomerModalBody: React.FC<
         customer list?
       </p>
       <p className="text-xs text-gray-500">
-        This can’t be undone. Related data may also be affected depending on
-        your database configuration.
+        This can&apos;t be undone. They&apos;ll be removed from your customer
+        list and won&apos;t show up here anymore.
       </p>
 
       {error && (
@@ -41,8 +41,8 @@ export const DeleteCustomerModalBody: React.FC<
         >
           Cancel
         </Button>
-        <Button variant="danger" onClick={onConfirm} disabled={isDeleting}>
-          {isDeleting ? 'Deleting…' : 'Delete customer'}
+        <Button variant="danger" onClick={onConfirm} loading={isDeleting}>
+          {isDeleting ? 'Deleting' : 'Delete customer'}
         </Button>
       </div>
     </div>

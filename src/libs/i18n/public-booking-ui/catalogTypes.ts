@@ -34,6 +34,8 @@ export type PublicBookingUi = {
     contact: string;
     address: string;
     dateAndTime: string;
+    /** Summary row when customer email was left blank */
+    emailNotProvided: string;
   };
   serviceDetails: {
     startingAt: string;
@@ -124,11 +126,20 @@ export type PublicBookingUi = {
     errVehicleYear: string;
     errVehicleMake: string;
     errVehicleModel: string;
+    /** Label when owner books without requiring customer email */
+    emailOptional: string;
+    /** Hint under email when optional and field empty */
+    emailOptionalNoConfirmation: string;
+    errEmailInvalid: string;
   };
   bookingSuccess: {
     title: string;
     subtitleOwner: string;
+    /** Owner booked successfully but customer had no email (no confirmation sent) */
+    subtitleOwnerNoCustomerEmail: string;
     subtitleCustomer: (businessName: string) => string;
+    /** Public booking confirmed without customer email (no confirmation sent) */
+    subtitleCustomerNoEmail: (businessName: string) => string;
     cardHeaderOwner: string;
     cardHeaderCustomer: string;
     ownerPaymentNote: string;
