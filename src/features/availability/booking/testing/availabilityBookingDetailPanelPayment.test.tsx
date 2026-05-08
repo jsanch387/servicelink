@@ -156,3 +156,20 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     expect(screen.queryByRole('heading', { name: /^payment$/i })).toBeNull();
   });
 });
+
+describe('AvailabilityBookingDetailPanel customer section', () => {
+  it('shows only the customer name when phone and email are empty', () => {
+    const booking = baseBooking(undefined);
+    booking.customerPhone = '';
+    booking.customerEmail = '';
+    renderPanel(booking);
+
+    expect(screen.getByText('Jane Customer')).toBeTruthy();
+    expect(
+      screen.queryByRole('link', { name: /call customer/i })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('link', { name: /email customer/i })
+    ).toBeNull();
+  });
+});

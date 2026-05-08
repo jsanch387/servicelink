@@ -118,8 +118,13 @@ export function AvailabilityBookingDetailPanel({
   };
 
   const fullAddress = formatFullAddress(booking.address);
+  const phoneDigits = booking.customerPhone.replace(/\D/g, '');
+  const hasPhone = phoneDigits.length > 0;
   const phoneFormatted = formatPhoneDisplay(booking.customerPhone);
-  const telHref = `tel:${booking.customerPhone.replace(/\D/g, '')}`;
+  const telHref = hasPhone ? `tel:${phoneDigits}` : '';
+
+  const customerEmailTrimmed = booking.customerEmail.trim();
+  const hasEmail = customerEmailTrimmed.length > 0;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
@@ -421,22 +426,26 @@ export function AvailabilityBookingDetailPanel({
             </h3>
             <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2">
               <p className="font-semibold text-white">{booking.customerName}</p>
-              <a
-                href={telHref}
-                aria-label="Call customer"
-                className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors hover:bg-blue-500/10"
-              >
-                <PhoneIcon className="h-4 w-4" />
-                {phoneFormatted}
-              </a>
-              <a
-                href={`mailto:${booking.customerEmail}`}
-                aria-label="Email customer"
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors hover:bg-white/[0.06]"
-              >
-                <EnvelopeIcon className="h-4 w-4" />
-                {booking.customerEmail}
-              </a>
+              {hasPhone ? (
+                <a
+                  href={telHref}
+                  aria-label="Call customer"
+                  className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors hover:bg-blue-500/10"
+                >
+                  <PhoneIcon className="h-4 w-4" />
+                  {phoneFormatted}
+                </a>
+              ) : null}
+              {hasEmail ? (
+                <a
+                  href={`mailto:${customerEmailTrimmed}`}
+                  aria-label="Email customer"
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors hover:bg-white/[0.06]"
+                >
+                  <EnvelopeIcon className="h-4 w-4" />
+                  {customerEmailTrimmed}
+                </a>
+              ) : null}
             </div>
           </section>
 
