@@ -1,9 +1,11 @@
 'use client';
 
+import { createCustomerRequest } from '@/features/customer-management/api/createCustomer';
 import { deleteCustomerById } from '@/features/customer-management/api/deleteCustomer';
 import { fetchCustomersList } from '@/features/customer-management/api/fetchCustomers';
 import { updateCustomerNote } from '@/features/customer-management/api/updateCustomerNote';
 import type {
+  AddCustomerDraft,
   CustomerLifecycle,
   CustomerListStats,
   CustomerRecord,
@@ -64,16 +66,21 @@ export function useCustomerManagement() {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [saveNoteError, setSaveNoteError] = useState<string | null>(null);
 
-  const loadCustomers = useCallback(async () => {
-    setLoadStatus('loading');
-    setLoadError(null);
+  const loadCustomers = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
+    if (!silent) {
+      setLoadStatus('loading');
+      setLoadError(null);
+    }
     const result = await fetchCustomersList();
     if (result.ok) {
       setCustomers(result.customers);
       setSmsBusinessName(result.businessName ?? BUSINESS_NAME_PLACEHOLDER);
       setSmsBookingLink(result.businessBookingLink || BOOKING_LINK_PLACEHOLDER);
-      setLoadStatus('ready');
-    } else {
+      if (!silent) {
+        setLoadStatus('ready');
+      }
+    } else if (!silent) {
       setLoadError(result.error);
       setLoadStatus('error');
     }
@@ -190,6 +197,18 @@ export function useCustomerManagement() {
     [isSavingNote]
   );
 
+  const createCustomer = useCallback(
+    async (draft: AddCustomerDraft) => {
+      const result = await createCustomerRequest(draft);
+      if (!result.ok) {
+        return result;
+      }
+      await loadCustomers({ silent: true });
+      return { ok: true as const };
+    },
+    [loadCustomers]
+  );
+
   const openCustomerSms = useCallback(
     (customer: CustomerRecord, mode: SmsMode) => {
       const body =
@@ -236,6 +255,7 @@ export function useCustomerManagement() {
     openDeleteCustomerModal,
     confirmDeleteCustomer,
     saveCustomerNote,
+    createCustomer,
     openCustomerSms,
   };
 }

@@ -1,11 +1,13 @@
 /**
  * POST /api/public/bookings
  *
- * Creates a V2 (availability) booking. Public endpoint; no auth.
- * Resolves business by slug, then inserts one row into bookings via feature service.
+ * Creates a V2 (availability) booking. Public endpoint.
+ * Owner dashboard booking (`ownerManualBooking`) requires an authenticated session
+ * for the same business as `businessId`. Otherwise resolves business by slug only.
  */
 
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
+import { isValidEmail } from '@/features/auth/utils/validation';
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import {
@@ -23,6 +25,8 @@ import {
 } from '@/features/email';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
 function buildPaymentSummaryForPublicBooking(params: {
@@ -118,19 +122,52 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const customer = body.customer;
-    if (!customer?.fullName?.trim()) {
+    const customerRaw = body.customer;
+    if (!customerRaw?.fullName?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Customer name is required' },
         { status: 400 }
       );
     }
-    if (!customer?.email?.trim()) {
+
+    const ownerManualBooking = body.ownerManualBooking === true;
+    const customerEmailTrim =
+      typeof customerRaw.email === 'string' ? customerRaw.email.trim() : '';
+
+    if (ownerManualBooking) {
+      if (!body.businessId?.trim()) {
+        return NextResponse.json(
+          { success: false, error: 'Business id is required' },
+          { status: 400 }
+        );
+      }
+      const sessionSb = await createSupabaseServerClient();
+      const resolved = await resolveCurrentBusinessId(sessionSb);
+      if (!resolved.ok) {
+        return NextResponse.json(
+          { success: false, error: resolved.error },
+          { status: resolved.status }
+        );
+      }
+      if (resolved.businessId !== body.businessId.trim()) {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden' },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (customerEmailTrim && !isValidEmail(customerEmailTrim)) {
       return NextResponse.json(
-        { success: false, error: 'Customer email is required' },
+        { success: false, error: 'Please enter a valid email address' },
         { status: 400 }
       );
     }
+
+    const sanitizedCustomer = {
+      ...customerRaw,
+      email: customerEmailTrim,
+    };
 
     const supabase = createSupabaseAdminClient();
 
@@ -170,6 +207,13 @@ export async function POST(request: NextRequest) {
     const businessSlug = p.business_slug ?? body.businessSlug.trim();
     const businessDisplayName = p.business_name?.trim() || businessSlug;
     const profileId = p.profile_id ?? null;
+
+    if (!body.businessId?.trim() || body.businessId.trim() !== businessId) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid request' },
+        { status: 400 }
+      );
+    }
 
     const cap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
       id: businessId,
@@ -223,7 +267,7 @@ export async function POST(request: NextRequest) {
       durationMinutes: body.durationMinutes,
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
-      customer: body.customer,
+      customer: sanitizedCustomer,
     });
 
     const selectedAddOnsForEmail = body.selectedAddOns ?? [];
@@ -301,12 +345,12 @@ export async function POST(request: NextRequest) {
     });
 
     const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
-      customerName: body.customer.fullName.trim(),
-      customerEmail: body.customer.email.trim(),
-      customerPhone: body.customer.phone?.trim(),
-      customerVehicleYear: body.customer.vehicleYear?.trim(),
-      customerVehicleMake: body.customer.vehicleMake?.trim(),
-      customerVehicleModel: body.customer.vehicleModel?.trim(),
+      customerName: sanitizedCustomer.fullName.trim(),
+      customerEmail: customerEmailTrim,
+      customerPhone: sanitizedCustomer.phone?.trim(),
+      customerVehicleYear: sanitizedCustomer.vehicleYear?.trim(),
+      customerVehicleMake: sanitizedCustomer.vehicleMake?.trim(),
+      customerVehicleModel: sanitizedCustomer.vehicleModel?.trim(),
       serviceName: body.serviceName.trim(),
       servicePriceOptionLabel: optionLabel || undefined,
       scheduledDate: body.scheduledDate,
@@ -321,20 +365,22 @@ export async function POST(request: NextRequest) {
     await notifyOwnerForAvailabilityBookingCreated(supabase, {
       profileId,
       bookingId: result.id,
-      customerName: body.customer?.fullName?.trim() ?? 'A customer',
+      customerName: sanitizedCustomer?.fullName?.trim() ?? 'A customer',
       serviceSummaryLine: storedServiceName,
       scheduledDate: body.scheduledDate,
       emailPayload: availabilityEmailPayload,
     });
 
-    try {
-      await sendAvailabilityBookingCustomerConfirmationEmail(
-        body.customer.email.trim(),
-        businessDisplayName,
-        availabilityEmailPayload
-      );
-    } catch {
-      // Best-effort; booking already succeeded
+    if (customerEmailTrim) {
+      try {
+        await sendAvailabilityBookingCustomerConfirmationEmail(
+          customerEmailTrim,
+          businessDisplayName,
+          availabilityEmailPayload
+        );
+      } catch {
+        // Best-effort; booking already succeeded
+      }
     }
 
     return NextResponse.json(

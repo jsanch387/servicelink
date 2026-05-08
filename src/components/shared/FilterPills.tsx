@@ -13,6 +13,7 @@ interface FilterPillsProps<T extends string = string> {
   onChange: (id: T) => void;
   ariaLabel?: string;
   className?: string;
+  compactOnMobile?: boolean;
 }
 
 export function FilterPills<T extends string = string>({
@@ -21,6 +22,7 @@ export function FilterPills<T extends string = string>({
   onChange,
   ariaLabel = 'Filters',
   className = '',
+  compactOnMobile = false,
 }: FilterPillsProps<T>) {
   return (
     <div
@@ -37,7 +39,11 @@ export function FilterPills<T extends string = string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.id)}
-            className={`shrink-0 cursor-pointer touch-manipulation rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+            className={`shrink-0 cursor-pointer touch-manipulation rounded-full font-medium transition-colors ${
+              compactOnMobile
+                ? 'px-2.5 py-1.5 text-xs sm:px-3.5 sm:py-2 sm:text-sm'
+                : 'px-3.5 py-2 text-sm'
+            } ${
               active
                 ? 'bg-white text-black'
                 : 'bg-white/[0.06] text-gray-400 hover:bg-white/[0.1] hover:text-white'

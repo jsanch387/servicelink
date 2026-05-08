@@ -1,4 +1,5 @@
 import { getFromEmail, getResendClient } from '../services/resendClient';
+import { normalizedCustomerRecipientEmail } from '../utils/normalizedCustomerRecipientEmail';
 import {
   buildMaintenanceEnrollmentConfirmedHtml,
   buildMaintenanceEnrollmentConfirmedPlainText,
@@ -18,8 +19,8 @@ export async function sendMaintenanceEnrollmentConfirmedEmail(
     return { sent: false, error: 'RESEND_API_KEY is not set' };
   }
 
-  const trimmed = to.trim();
-  if (!trimmed) {
+  const recipient = normalizedCustomerRecipientEmail(to);
+  if (!recipient) {
     return { sent: false, error: 'Customer has no email on file' };
   }
 
@@ -31,7 +32,7 @@ export async function sendMaintenanceEnrollmentConfirmedEmail(
 
   const { data, error } = await client.emails.send({
     from: getFromEmail(),
-    to: [trimmed],
+    to: [recipient],
     subject,
     html,
     text,

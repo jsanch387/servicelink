@@ -84,9 +84,15 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
       </h2>
       <p className="self-center text-gray-400 text-sm mb-8 max-w-sm text-center">
         {isOwnerManualBooking ? (
-          <>{ui.bookingSuccess.subtitleOwner}</>
-        ) : (
+          <>
+            {customer.email.trim()
+              ? ui.bookingSuccess.subtitleOwner
+              : ui.bookingSuccess.subtitleOwnerNoCustomerEmail}
+          </>
+        ) : customer.email.trim() ? (
           <>{ui.bookingSuccess.subtitleCustomer(businessName)}</>
+        ) : (
+          <>{ui.bookingSuccess.subtitleCustomerNoEmail(businessName)}</>
         )}
       </p>
 

@@ -29,7 +29,7 @@ export interface CreateBookingPayload {
   scheduled_date: string; // YYYY-MM-DD
   start_time: string; // HH:mm (Postgres time accepts this)
   customer_name: string;
-  customer_email: string;
+  customer_email: string | null;
   customer_phone: string | null;
   customer_street_address: string | null;
   customer_unit_apt: string | null;
@@ -60,7 +60,7 @@ function mapCustomerToRow(
 > {
   return {
     customer_name: c.fullName.trim(),
-    customer_email: c.email.trim(),
+    customer_email: c.email.trim() ? c.email.trim() : null,
     customer_phone: c.phone?.trim() || null,
     customer_street_address: c.streetAddress?.trim() || null,
     customer_unit_apt: c.unitApt?.trim() || null,

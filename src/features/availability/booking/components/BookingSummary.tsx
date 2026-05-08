@@ -106,7 +106,11 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
             {ui.common.contact}
           </p>
           <p className="text-white font-medium">{customer.fullName}</p>
-          <p className="text-sm text-gray-400">{customer.email}</p>
+          <p className="text-sm text-gray-400">
+            {customer.email.trim()
+              ? customer.email.trim()
+              : ui.common.emailNotProvided}
+          </p>
           <p className="text-sm text-gray-400">
             {formatPhoneUsDisplay(customer.phone)}
           </p>

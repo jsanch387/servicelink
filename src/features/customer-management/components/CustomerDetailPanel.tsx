@@ -362,7 +362,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                 </>
               ) : null}
 
-              {!isSampleCustomer ? (
+              {!isSampleCustomer && customer.maintenanceVisitsCompleted > 0 ? (
                 <>
                   <div className="my-3 border-t border-dashed border-white/[0.12]" />
                   <div className="flex items-center justify-between gap-3 text-xs text-gray-400">

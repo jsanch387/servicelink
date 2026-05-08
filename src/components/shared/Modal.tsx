@@ -23,6 +23,8 @@ interface ModalProps {
    * wider sm:px-6 / md:px-8). Mobile stays px-4.
    */
   uniformHorizontalPadding16?: boolean;
+  /** When true, tapping the overlay does not dismiss (e.g. during async submit). */
+  preventClose?: boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ export const Modal: React.FC<ModalProps> = ({
   headerClassName = '',
   titleClassName = '',
   uniformHorizontalPadding16 = false,
+  preventClose = false,
 }) => {
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -66,8 +69,23 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, [isOpen]);
 
+  /** While `preventClose` (e.g. async submit), block Escape so the sheet cannot dismiss mid-flight. */
+  useEffect(() => {
+    if (!isOpen || !preventClose) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, preventClose]);
+
   // Prevent scroll on overlay
   const handleOverlayClick = (e: React.MouseEvent) => {
+    if (preventClose) return;
     if (e.target === e.currentTarget) {
       onClose();
     }

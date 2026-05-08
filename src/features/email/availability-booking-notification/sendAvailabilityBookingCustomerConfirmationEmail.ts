@@ -4,6 +4,7 @@
  */
 
 import { getFromEmail, getResendClient } from '../services/resendClient';
+import { normalizedCustomerRecipientEmail } from '../utils/normalizedCustomerRecipientEmail';
 import {
   buildAvailabilityBookingEmailHtml,
   getAvailabilityBookingCustomerSubject,
@@ -21,6 +22,11 @@ export async function sendAvailabilityBookingCustomerConfirmationEmail(
   businessName: string,
   payload: AvailabilityBookingNotificationPayload
 ): Promise<SendAvailabilityBookingNotificationResult> {
+  const recipient = normalizedCustomerRecipientEmail(to);
+  if (!recipient) {
+    return { sent: false, error: 'No valid recipient email' };
+  }
+
   const client = getResendClient();
   if (!client) {
     return { sent: false, error: 'RESEND_API_KEY is not set' };
@@ -34,7 +40,7 @@ export async function sendAvailabilityBookingCustomerConfirmationEmail(
 
   const { data, error } = await client.emails.send({
     from: getFromEmail(),
-    to: [to],
+    to: [recipient],
     subject,
     html,
   });

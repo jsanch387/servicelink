@@ -343,7 +343,8 @@ export function AvailabilityBookingPage({
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
   const canContinueFromDetails = isCustomerFormValid(
     customerData,
-    showVehicleFields
+    showVehicleFields,
+    true
   );
   const canContinueFromPayment =
     !isSubmitting &&
@@ -696,6 +697,7 @@ export function AvailabilityBookingPage({
           startTime: selectedTime,
           customer: customerData,
           paymentMethodSelected: paymentMethodForPublicCreate,
+          ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
         }),
       });
       const json = await res.json();
@@ -893,6 +895,7 @@ export function AvailabilityBookingPage({
                 hideSubmitButton
                 submitLabel={ui.calendar.reviewBookingCta}
                 bookingFlowLocale={bookingFlowLocale}
+                emailOptional
               />
             </div>
           )}

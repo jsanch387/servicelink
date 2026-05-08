@@ -32,6 +32,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     contact: 'Contacto',
     address: 'Dirección',
     dateAndTime: 'Fecha y hora',
+    emailNotProvided: 'Sin correo electrónico',
   },
   serviceDetails: {
     startingAt: 'Desde',
@@ -141,13 +142,21 @@ export const publicBookingUiEs: PublicBookingUi = {
     errVehicleYear: 'El año del vehículo es obligatorio',
     errVehicleMake: 'La marca del vehículo es obligatoria',
     errVehicleModel: 'El modelo del vehículo es obligatorio',
+    emailOptional: 'Correo electrónico (opcional)',
+    emailOptionalNoConfirmation:
+      'Sin dirección de correo, no se enviará un correo de confirmación de la reserva.',
+    errEmailInvalid: 'Introduce una dirección de correo válida',
   },
   bookingSuccess: {
     title: 'Reserva confirmada',
     subtitleOwner:
       'Se creó la cita. Tu cliente recibirá un correo de notificación.',
+    subtitleOwnerNoCustomerEmail:
+      'Se creó la cita. No se envió correo de confirmación porque no indicaste el correo del cliente.',
     subtitleCustomer: businessName =>
       `Tu cita con ${businessName} está confirmada. ¡Nos vemos!`,
+    subtitleCustomerNoEmail: businessName =>
+      `Tu cita con ${businessName} está confirmada. No se envió correo de confirmación porque no indicaste una dirección de correo.`,
     cardHeaderOwner: 'Cita',
     cardHeaderCustomer: 'Tu reserva',
     ownerPaymentNote: 'Los datos de pago quedan guardados con esta cita.',

@@ -4,6 +4,7 @@
  */
 
 import { getFromEmail, getResendClient } from '../services/resendClient';
+import { normalizedCustomerRecipientEmail } from '../utils/normalizedCustomerRecipientEmail';
 import {
   buildMaintenanceEnrollmentSentHtml,
   buildMaintenanceEnrollmentSentPlainText,
@@ -18,6 +19,11 @@ export async function sendMaintenanceEnrollmentSentEmail(
   to: string,
   payload: MaintenanceEnrollmentSentPayload
 ): Promise<SendMaintenanceEnrollmentSentResult> {
+  const recipient = normalizedCustomerRecipientEmail(to);
+  if (!recipient) {
+    return { sent: false, error: 'No valid recipient email' };
+  }
+
   const client = getResendClient();
   if (!client) {
     return { sent: false, error: 'RESEND_API_KEY is not set' };
@@ -29,7 +35,7 @@ export async function sendMaintenanceEnrollmentSentEmail(
 
   const { data, error } = await client.emails.send({
     from: getFromEmail(),
-    to: [to.trim()],
+    to: [recipient],
     subject,
     html,
     text,
