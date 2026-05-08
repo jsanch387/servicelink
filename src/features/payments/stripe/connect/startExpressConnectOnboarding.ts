@@ -20,6 +20,14 @@ export type StartExpressConnectOnboardingParams = {
    * (resume after abandon or expired link).
    */
   existingStripeAccountId?: string | null;
+  /**
+   * Stripe Account Link `return_url` / `refresh_url` (e.g. mobile deep links).
+   * Omit to use `{site}/dashboard/payments?connect=return|refresh` (web).
+   */
+  accountLinkUrls?: {
+    returnUrl: string;
+    refreshUrl: string;
+  };
 };
 
 export type StartExpressConnectOnboardingResult = {
@@ -38,8 +46,16 @@ export async function startExpressConnectOnboarding(
 ): Promise<StartExpressConnectOnboardingResult> {
   const stripe = getStripePlatform();
   const baseUrl = getAppBaseUrl(params.request);
-  const returnUrl = `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS}?connect=return`;
-  const refreshUrl = `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS}?connect=refresh`;
+  const customReturn = params.accountLinkUrls?.returnUrl?.trim();
+  const customRefresh = params.accountLinkUrls?.refreshUrl?.trim();
+  const returnUrl =
+    customReturn && customRefresh
+      ? customReturn
+      : `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS}?connect=return`;
+  const refreshUrl =
+    customReturn && customRefresh
+      ? customRefresh
+      : `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS}?connect=refresh`;
 
   const existingId = params.existingStripeAccountId?.trim() || null;
 
@@ -90,7 +106,7 @@ export async function startExpressConnectOnboarding(
   logConnect('stripe.account_link_created', {
     businessId: params.businessId,
     stripeAccountId,
-    returnPath: `${ROUTES.DASHBOARD.PAYMENTS}?connect=return`,
+    returnKind: customReturn && customRefresh ? 'mobile_env' : 'web_dashboard',
   });
 
   return {

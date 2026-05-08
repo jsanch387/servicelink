@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import { API_ROUTES } from '@/constants/routes';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import React, { useCallback, useState } from 'react';
 import { FreePaymentPreviewLockedDashboard } from '../free-payment-preview';
@@ -31,7 +32,7 @@ export const ProPaymentsSetupExperience: React.FC<
     setConnectError(null);
     setConnectLoading(true);
     try {
-      const res = await fetch('/api/stripe/connect/onboard', {
+      const res = await fetch(API_ROUTES.STRIPE_CONNECT_ONBOARD, {
         method: 'POST',
       });
       const data = (await res.json().catch(() => ({}))) as {

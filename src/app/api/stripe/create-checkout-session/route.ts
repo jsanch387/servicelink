@@ -2,38 +2,52 @@
  * POST /api/stripe/create-checkout-session
  *
  * Creates a Stripe Checkout Session for the Pro plan and returns the session URL.
- * Requires auth. User is redirected to Stripe to complete payment.
+ * Requires auth (Supabase cookies on web, or `Authorization: Bearer <access_token>`
+ * from the Expo app). User opens `url` in an in-app browser to complete payment.
  *
  * When `profiles.stripe_customer_id` is set, passes `customer` so Stripe reuses
  * that Customer (avoids duplicate Customers per email). Otherwise uses `customer_email`.
  * See `src/app/api/stripe/README.md` → “One Stripe Customer per profile”.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
- *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs.
+ *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs (web).
+ *      For mobile onboarding trial: STRIPE_MOBILE_ONBOARDING_SUCCESS_URL,
+ *      STRIPE_MOBILE_ONBOARDING_CANCEL_URL.
+ *      For mobile paywall upgrade (no onboarding source): STRIPE_MOBILE_UPGRADE_SUCCESS_URL,
+ *      STRIPE_MOBILE_UPGRADE_CANCEL_URL.
  */
 
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+
+type CheckoutRequestBody = {
+  source?: unknown;
+  /** When `mobile` with `source: onboarding_trial_bridge`, success/cancel use env deep links. */
+  client?: unknown;
+};
+
+const LOG = '[stripe:create-checkout-session]';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      console.warn(`${LOG} auth failed`, {
+        status: auth.status,
+        code: auth.code,
+        message: auth.error,
+      });
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: auth.error },
+        { status: auth.status }
       );
     }
+    const { user, supabase } = auth;
 
     const priceId = process.env.STRIPE_PRO_PRICE_ID;
     if (!priceId) {
-      console.error('STRIPE_PRO_PRICE_ID is not set');
+      console.error(`${LOG} STRIPE_PRO_PRICE_ID is not set`);
       return NextResponse.json(
         { success: false, error: 'Checkout is not configured' },
         { status: 500 }
@@ -56,15 +70,82 @@ export async function POST(request: NextRequest) {
         ? profileRow.stripe_customer_id.trim()
         : '';
 
-    const body = await request.json().catch(() => ({}));
+    const body = (await request
+      .json()
+      .catch(() => ({}))) as CheckoutRequestBody;
     const fromOnboarding =
       body &&
       typeof body === 'object' &&
-      (body as { source?: unknown }).source === 'onboarding_trial_bridge';
-    const successPath = fromOnboarding
-      ? '/dashboard/business-profile?onboarding=complete'
-      : '/dashboard/settings?checkout=success';
-    const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
+      body.source === 'onboarding_trial_bridge';
+    const isMobileClient = body.client === 'mobile';
+    /** 7-day trial only for first Stripe customer; returning `cus_…` skips trial (same as paywall upgrade). */
+    const applyOnboardingTrial = fromOnboarding && !existingStripeCustomerId;
+
+    let successUrl: string;
+    let cancelUrl: string;
+
+    if (isMobileClient) {
+      if (fromOnboarding) {
+        const mobileSuccess =
+          process.env.STRIPE_MOBILE_ONBOARDING_SUCCESS_URL?.trim();
+        const mobileCancel =
+          process.env.STRIPE_MOBILE_ONBOARDING_CANCEL_URL?.trim();
+        if (!mobileSuccess || !mobileCancel) {
+          console.error(`${LOG} mobile onboarding return URLs missing`, {
+            STRIPE_MOBILE_ONBOARDING_SUCCESS_URL: Boolean(mobileSuccess)
+              ? '(set)'
+              : '(missing)',
+            STRIPE_MOBILE_ONBOARDING_CANCEL_URL: Boolean(mobileCancel)
+              ? '(set)'
+              : '(missing)',
+            hint: 'Add both to .env.local and restart next dev',
+          });
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                'Mobile onboarding checkout is not configured. Set STRIPE_MOBILE_ONBOARDING_SUCCESS_URL and STRIPE_MOBILE_ONBOARDING_CANCEL_URL.',
+            },
+            { status: 500 }
+          );
+        }
+        successUrl = mobileSuccess;
+        cancelUrl = mobileCancel;
+      } else {
+        const upgradeSuccess =
+          process.env.STRIPE_MOBILE_UPGRADE_SUCCESS_URL?.trim();
+        const upgradeCancel =
+          process.env.STRIPE_MOBILE_UPGRADE_CANCEL_URL?.trim();
+        if (!upgradeSuccess || !upgradeCancel) {
+          console.error(`${LOG} mobile upgrade return URLs missing`, {
+            STRIPE_MOBILE_UPGRADE_SUCCESS_URL: Boolean(upgradeSuccess)
+              ? '(set)'
+              : '(missing)',
+            STRIPE_MOBILE_UPGRADE_CANCEL_URL: Boolean(upgradeCancel)
+              ? '(set)'
+              : '(missing)',
+            hint: 'Add both to .env.local and restart next dev',
+          });
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                'Mobile upgrade checkout is not configured. Set STRIPE_MOBILE_UPGRADE_SUCCESS_URL and STRIPE_MOBILE_UPGRADE_CANCEL_URL.',
+            },
+            { status: 500 }
+          );
+        }
+        successUrl = upgradeSuccess;
+        cancelUrl = upgradeCancel;
+      }
+    } else {
+      const successPath = fromOnboarding
+        ? '/dashboard/business-profile?onboarding=complete'
+        : '/dashboard/settings?checkout=success';
+      const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
+      successUrl = `${baseUrl}${successPath}`;
+      cancelUrl = `${baseUrl}${cancelPath}`;
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -74,7 +155,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      ...(fromOnboarding
+      ...(applyOnboardingTrial
         ? {
             payment_method_collection: 'if_required',
             subscription_data: {
@@ -87,27 +168,31 @@ export async function POST(request: NextRequest) {
             },
           }
         : {}),
-      success_url: `${baseUrl}${successPath}`,
-      cancel_url: `${baseUrl}${cancelPath}`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       ...(existingStripeCustomerId
         ? { customer: existingStripeCustomerId }
         : { customer_email: user.email ?? undefined }),
       metadata: {
         userId: user.id,
         source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
+        ...(isMobileClient ? { client: 'mobile' } : {}),
       },
     });
 
     if (!session.url) {
+      console.error(`${LOG} Stripe returned no session.url`);
       return NextResponse.json(
         { success: false, error: 'Failed to create checkout session' },
         { status: 500 }
       );
     }
 
+    console.info(`${LOG} checkout session created`);
+
     return NextResponse.json({ success: true, url: session.url });
   } catch (err) {
-    console.error('Stripe checkout session error:', err);
+    console.error(`${LOG} Stripe checkout session error`, err);
     return NextResponse.json(
       { success: false, error: 'Something went wrong' },
       { status: 500 }
