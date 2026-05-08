@@ -68,6 +68,10 @@ export const publicBookingUiEs: PublicBookingUi = {
     noSlotsHint: 'No hay horarios disponibles para esta fecha.',
     reviewBooking: 'Revisa tu reserva',
     reviewBookingCta: 'Revisar reserva',
+    notificationsConsentLabel:
+      'Al confirmar esta cita, aceptas recibir notificaciones por correo y SMS sobre tu reserva.',
+    notificationsConsentRequired:
+      'Marca la casilla para aceptar las notificaciones por correo y SMS antes de continuar.',
     continueToPayment: 'Continuar al pago',
     confirmBooking: 'Confirmar reserva',
     chooseHowToPay: 'Elige cómo pagar',
@@ -139,13 +143,17 @@ export const publicBookingUiEs: PublicBookingUi = {
     errCity: 'La ciudad es obligatoria',
     errState: 'El estado es obligatorio',
     errZip: 'El código postal es obligatorio',
+    errZipInvalid:
+      'Introduce un código postal válido de EE. UU. (5 dígitos o 9 con ZIP+4)',
     errVehicleYear: 'El año del vehículo es obligatorio',
+    errVehicleYearInvalid: 'Introduce un año válido de 4 dígitos',
     errVehicleMake: 'La marca del vehículo es obligatoria',
     errVehicleModel: 'El modelo del vehículo es obligatorio',
     emailOptional: 'Correo electrónico (opcional)',
     emailOptionalNoConfirmation:
       'Sin dirección de correo, no se enviará un correo de confirmación de la reserva.',
     errEmailInvalid: 'Introduce una dirección de correo válida',
+    errValueTooLong: 'Este valor es demasiado largo',
   },
   bookingSuccess: {
     title: 'Reserva confirmada',

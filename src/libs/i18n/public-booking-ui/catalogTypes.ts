@@ -67,6 +67,9 @@ export type PublicBookingUi = {
     noSlotsHint: string;
     reviewBooking: string;
     reviewBookingCta: string;
+    /** Public booking: required consent for transactional email + SMS (e.g. Twilio). */
+    notificationsConsentLabel: string;
+    notificationsConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;
     chooseHowToPay: string;
@@ -123,7 +126,9 @@ export type PublicBookingUi = {
     errCity: string;
     errState: string;
     errZip: string;
+    errZipInvalid: string;
     errVehicleYear: string;
+    errVehicleYearInvalid: string;
     errVehicleMake: string;
     errVehicleModel: string;
     /** Label when owner books without requiring customer email */
@@ -131,6 +136,7 @@ export type PublicBookingUi = {
     /** Hint under email when optional and field empty */
     emailOptionalNoConfirmation: string;
     errEmailInvalid: string;
+    errValueTooLong: string;
   };
   bookingSuccess: {
     title: string;

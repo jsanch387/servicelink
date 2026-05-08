@@ -66,6 +66,49 @@ describe('isCustomerFormValid (optional email)', () => {
   it('returns false when email is required and empty', () => {
     expect(isCustomerFormValid(base, false, false)).toBe(false);
   });
+
+  it('returns false when email is required and invalid', () => {
+    expect(
+      isCustomerFormValid({ ...base, email: 'not-an-email' }, false, false)
+    ).toBe(false);
+  });
+
+  it('returns true when email is required and valid', () => {
+    expect(
+      isCustomerFormValid({ ...base, email: 'jane@example.com' }, false, false)
+    ).toBe(true);
+  });
+
+  it('returns false for invalid US ZIP', () => {
+    expect(isCustomerFormValid({ ...base, zip: '1234' }, false, true)).toBe(
+      false
+    );
+    expect(isCustomerFormValid({ ...base, zip: '123456' }, false, true)).toBe(
+      false
+    );
+  });
+
+  it('returns true for 5- or 9-digit US ZIP', () => {
+    expect(isCustomerFormValid({ ...base, zip: '78701' }, false, true)).toBe(
+      true
+    );
+    expect(
+      isCustomerFormValid({ ...base, zip: '787011234' }, false, true)
+    ).toBe(true);
+  });
+
+  it('validates vehicle year when vehicle fields are required', () => {
+    const withVehicle = {
+      ...base,
+      vehicleYear: '1899',
+      vehicleMake: 'Toyota',
+      vehicleModel: 'Camry',
+    };
+    expect(isCustomerFormValid(withVehicle, true, true)).toBe(false);
+    expect(
+      isCustomerFormValid({ ...withVehicle, vehicleYear: '2024' }, true, true)
+    ).toBe(true);
+  });
 });
 
 function CustomerFormHarness(props: {
@@ -116,6 +159,28 @@ describe('CustomerForm optional email UI', () => {
       screen.queryByText(
         /Without an email address, no booking confirmation email will be sent\./i
       )
+    ).toBeNull();
+  });
+
+  it('shows a small live hint while the email format is invalid, then clears when valid', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <CustomerFormHarness initial={filledCustomer()} onSubmit={onSubmit} />
+    );
+
+    const input = screen.getByPlaceholderText('jane@example.com');
+    await user.type(input, 'not');
+
+    expect(
+      screen.getByText(publicBookingUi('en').customerForm.errEmailInvalid)
+    ).toBeTruthy();
+
+    await user.clear(input);
+    await user.type(input, 'a@b.co');
+
+    expect(
+      screen.queryByText(publicBookingUi('en').customerForm.errEmailInvalid)
     ).toBeNull();
   });
 

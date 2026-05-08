@@ -11,7 +11,10 @@
  */
 
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
-import { isValidEmail } from '@/features/auth/utils/validation';
+import {
+  bookingCustomerPayloadErrorMessage,
+  normalizeBookingCustomerInput,
+} from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
@@ -195,7 +198,7 @@ export async function POST(request: NextRequest) {
       typeof body.businessSlug === 'string' ? body.businessSlug.trim() : '';
     const resumeQuery =
       typeof body.resumeQuery === 'string' ? body.resumeQuery.trim() : '';
-    const bookingPayload = parseBookingCheckoutDraftPayload(
+    const parsedBookingPayload = parseBookingCheckoutDraftPayload(
       body.bookingPayload
     );
     const amountCentsRaw = body.amountCents;
@@ -213,21 +216,29 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (!bookingPayload) {
+    if (!parsedBookingPayload) {
       logCheckoutDev('reject: missing or invalid bookingPayload');
       return NextResponse.json(
         { success: false, error: 'Missing booking details.' },
         { status: 400 }
       );
     }
-    const checkoutCustomerEmail = bookingPayload.customer.email.trim();
-    if (checkoutCustomerEmail && !isValidEmail(checkoutCustomerEmail)) {
-      logCheckoutDev('reject: invalid customer email');
+    const customerPayloadErr = bookingCustomerPayloadErrorMessage(
+      parsedBookingPayload.customer
+    );
+    if (customerPayloadErr) {
+      logCheckoutDev('reject: invalid customer payload', {
+        error: customerPayloadErr,
+      });
       return NextResponse.json(
-        { success: false, error: 'Please enter a valid email address.' },
+        { success: false, error: customerPayloadErr },
         { status: 400 }
       );
     }
+    const bookingPayload = {
+      ...parsedBookingPayload,
+      customer: normalizeBookingCustomerInput(parsedBookingPayload.customer),
+    };
     if (bookingPayload.businessSlug !== businessSlug) {
       logCheckoutDev('reject: bookingPayload slug mismatch', {
         bodySlug: businessSlug,

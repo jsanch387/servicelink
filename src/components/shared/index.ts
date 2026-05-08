@@ -31,6 +31,7 @@ export { Logo } from './Logo';
 export { LogoPlaceholder } from './LogoPlaceholder';
 export { Modal } from './Modal';
 export { ModernLoadingSpinner } from './ModernLoadingSpinner';
+export { nativeCheckboxSmClassName } from './nativeCheckboxClasses';
 export { NativeScheduleDateRow } from './NativeSchedulePickerRow';
 export { RequiredLabel } from './RequiredLabel';
 export { SectionTitle } from './SectionTitle';

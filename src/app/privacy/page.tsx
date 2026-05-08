@@ -47,6 +47,12 @@ export default function PrivacyPage() {
                 number, address, appointment preferences, and service notes)
               </li>
               <li>
+                Where you opt in on a booking flow, your mobile phone number for
+                transactional SMS about that appointment (for example,
+                confirmations or reminders), delivered through our messaging
+                vendor (currently Twilio Inc. or a successor we designate)
+              </li>
+              <li>
                 Content uploads (logos, images, service descriptions, and other
                 profile content)
               </li>
@@ -88,6 +94,37 @@ export default function PrivacyPage() {
               You can opt out of marketing emails using the unsubscribe link. We
               may still send transactional or service-related communications.
             </p>
+            <h3 className="text-lg font-semibold text-white mt-6 mb-2">
+              Text messages (SMS)
+            </h3>
+            <p className="text-base leading-relaxed mb-3">
+              If you provide a mobile number and clearly consent where our
+              booking flow asks you to agree, we may send a limited number of
+              transactional SMS messages about your booking (for example,
+              confirmation or reminders). Message frequency varies with your
+              activity. Message and data rates may apply. Carriers are not
+              liable for delayed or undelivered messages.
+            </p>
+            <p className="text-base leading-relaxed mb-3">
+              You can typically opt out of further SMS from a message thread by
+              replying with standard keywords such as STOP, END, CANCEL,
+              UNSUBSCRIBE, or QUIT (exact keywords and behavior depend on the
+              sender configuration and carrier rules). You may receive a
+              one-time confirmation text. Reply HELP for help where supported.
+            </p>
+            <p className="text-base leading-relaxed">
+              Twilio processes phone numbers and message content as a service
+              provider to deliver these texts. See Twilio&apos;s privacy notice:{' '}
+              <a
+                href="https://www.twilio.com/legal/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-orange-400 hover:text-orange-300 underline"
+              >
+                twilio.com/legal/privacy
+              </a>
+              .
+            </p>
           </section>
 
           <section>
@@ -100,6 +137,13 @@ export default function PrivacyPage() {
               with the customer and complete the requested service. Business
               owners are responsible for their own use of customer data and must
               comply with applicable privacy and consumer protection laws.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              If the customer opts in to SMS notifications at booking, phone
+              numbers and related message metadata may be processed by
+              ServiceLink and our messaging vendors (such as Twilio) solely to
+              send transactional texts about that booking, unless otherwise
+              described in this policy or required by law.
             </p>
           </section>
 
@@ -135,6 +179,11 @@ export default function PrivacyPage() {
               <li>
                 With payment processors and infrastructure partners, including
                 Stripe
+              </li>
+              <li>
+                With Twilio Inc. (or a similar messaging provider) to send
+                transactional SMS you have opted into at booking, as described
+                in this policy
               </li>
               <li>
                 With business owners when customers submit booking requests to
@@ -203,6 +252,11 @@ export default function PrivacyPage() {
                 by payment processors as noted above
               </li>
               <li>Request limits on certain processing activities</li>
+              <li>
+                Decline further transactional SMS where the program supports
+                reply-based opt-out (for example, STOP), subject to any messages
+                we are still required to send by law or for security
+              </li>
             </ul>
           </section>
 

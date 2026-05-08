@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, nativeCheckboxSmClassName } from '@/components/shared';
 import { API_ROUTES, type PublicBookingFlowLocale } from '@/constants/routes';
 import {
   bcp47ForBookingLocale,
@@ -239,6 +239,13 @@ export function AvailabilityBookingPage({
   } | null>(null);
   const [customerPaymentChoice, setCustomerPaymentChoice] =
     useState<PaymentChoice | null>(null);
+  /** Public customers only: required before confirm / continue to payment (SMS compliance). */
+  const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
+    useState(false);
+  const [notificationsConsentError, setNotificationsConsentError] = useState<
+    string | null
+  >(null);
+  const notificationsConsentErrorId = useId();
 
   const router = useRouter();
   const pathname = usePathname();
@@ -496,7 +503,10 @@ export function AvailabilityBookingPage({
     setCustomerData({ ...INITIAL_CUSTOMER_FORM_DATA, ...draft.customerData });
     setCustomerPaymentChoice(draft.customerPaymentChoice);
     skipNextStepScrollRef.current = true;
-    setStep(shouldShowPaymentStep ? 'payment' : 'review');
+    // Always return to review so the customer sees booking summary and notification consent.
+    setAgreedToPublicNotifications(false);
+    setNotificationsConsentError(null);
+    setStep('review');
     setSubmitError(null);
     setIsSubmitting(false);
 
@@ -509,7 +519,6 @@ export function AvailabilityBookingPage({
     pathname,
     router,
     searchParams,
-    shouldShowPaymentStep,
     stripeCheckoutSessionId,
     ui,
   ]);
@@ -521,6 +530,12 @@ export function AvailabilityBookingPage({
       return;
     }
     window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 'details') return;
+    setAgreedToPublicNotifications(false);
+    setNotificationsConsentError(null);
   }, [step]);
 
   const handleStartCheckout = async (amountToChargeCents: number) => {
@@ -544,6 +559,10 @@ export function AvailabilityBookingPage({
         amountToChargeCents,
       });
       setSubmitError(ui.calendar.invalidPaymentAmount);
+      return;
+    }
+    if (!isOwnerManualBooking && !agreedToPublicNotifications) {
+      setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
       return;
     }
     setSubmitError(null);
@@ -663,7 +682,12 @@ export function AvailabilityBookingPage({
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
+    if (!isOwnerManualBooking && !agreedToPublicNotifications) {
+      setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
+      return;
+    }
     setSubmitError(null);
+    setNotificationsConsentError(null);
     setIsSubmitting(true);
     const scheduledDate = selectedDate.toISOString().slice(0, 10);
     try {
@@ -921,6 +945,40 @@ export function AvailabilityBookingPage({
                 customer={customerData}
                 bookingFlowLocale={bookingFlowLocale}
               />
+              {!isOwnerManualBooking && (
+                <div className="space-y-1.5 pt-1">
+                  <label className="flex cursor-pointer items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={agreedToPublicNotifications}
+                      onChange={e => {
+                        const on = e.target.checked;
+                        setAgreedToPublicNotifications(on);
+                        if (on) setNotificationsConsentError(null);
+                      }}
+                      className={`mt-0.5 cursor-pointer ${nativeCheckboxSmClassName}`}
+                      aria-invalid={Boolean(notificationsConsentError)}
+                      aria-describedby={
+                        notificationsConsentError
+                          ? notificationsConsentErrorId
+                          : undefined
+                      }
+                    />
+                    <span className="text-xs leading-snug text-gray-400">
+                      {ui.calendar.notificationsConsentLabel}
+                    </span>
+                  </label>
+                  {notificationsConsentError && (
+                    <p
+                      id={notificationsConsentErrorId}
+                      className="text-xs text-red-400/95 pl-6"
+                      role="alert"
+                    >
+                      {notificationsConsentError}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1160,11 +1218,17 @@ export function AvailabilityBookingPage({
                 fullWidth
                 className="font-semibold"
                 disabled={isSubmitting}
-                onClick={() =>
-                  shouldShowPaymentStep
-                    ? setStep('payment')
-                    : handleConfirmBooking()
-                }
+                onClick={() => {
+                  if (!isOwnerManualBooking && !agreedToPublicNotifications) {
+                    setNotificationsConsentError(
+                      ui.calendar.notificationsConsentRequired
+                    );
+                    return;
+                  }
+                  setNotificationsConsentError(null);
+                  if (shouldShowPaymentStep) setStep('payment');
+                  else void handleConfirmBooking();
+                }}
               >
                 {shouldShowPaymentStep
                   ? ui.calendar.continueToPayment

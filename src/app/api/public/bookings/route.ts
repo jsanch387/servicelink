@@ -7,7 +7,11 @@
  */
 
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
-import { isValidEmail } from '@/features/auth/utils/validation';
+import {
+  bookingCustomerPayloadErrorMessage,
+  coerceCustomerFormData,
+  normalizeBookingCustomerInput,
+} from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import {
@@ -122,17 +126,17 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const customerRaw = body.customer;
-    if (!customerRaw?.fullName?.trim()) {
+    const ownerManualBooking = body.ownerManualBooking === true;
+    const coercedCustomer = coerceCustomerFormData(body.customer);
+    const customerPayloadErr =
+      bookingCustomerPayloadErrorMessage(coercedCustomer);
+    if (customerPayloadErr) {
       return NextResponse.json(
-        { success: false, error: 'Customer name is required' },
+        { success: false, error: customerPayloadErr },
         { status: 400 }
       );
     }
-
-    const ownerManualBooking = body.ownerManualBooking === true;
-    const customerEmailTrim =
-      typeof customerRaw.email === 'string' ? customerRaw.email.trim() : '';
+    const sanitizedCustomer = normalizeBookingCustomerInput(coercedCustomer);
 
     if (ownerManualBooking) {
       if (!body.businessId?.trim()) {
@@ -156,18 +160,6 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-
-    if (customerEmailTrim && !isValidEmail(customerEmailTrim)) {
-      return NextResponse.json(
-        { success: false, error: 'Please enter a valid email address' },
-        { status: 400 }
-      );
-    }
-
-    const sanitizedCustomer = {
-      ...customerRaw,
-      email: customerEmailTrim,
-    };
 
     const supabase = createSupabaseAdminClient();
 
@@ -346,7 +338,7 @@ export async function POST(request: NextRequest) {
 
     const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
       customerName: sanitizedCustomer.fullName.trim(),
-      customerEmail: customerEmailTrim,
+      customerEmail: sanitizedCustomer.email,
       customerPhone: sanitizedCustomer.phone?.trim(),
       customerVehicleYear: sanitizedCustomer.vehicleYear?.trim(),
       customerVehicleMake: sanitizedCustomer.vehicleMake?.trim(),
@@ -371,10 +363,10 @@ export async function POST(request: NextRequest) {
       emailPayload: availabilityEmailPayload,
     });
 
-    if (customerEmailTrim) {
+    if (sanitizedCustomer.email) {
       try {
         await sendAvailabilityBookingCustomerConfirmationEmail(
-          customerEmailTrim,
+          sanitizedCustomer.email,
           businessDisplayName,
           availabilityEmailPayload
         );

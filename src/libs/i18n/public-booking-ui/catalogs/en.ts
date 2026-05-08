@@ -68,6 +68,10 @@ export const publicBookingUiEn: PublicBookingUi = {
     noSlotsHint: 'No available times for this date.',
     reviewBooking: 'Review your booking',
     reviewBookingCta: 'Review Booking',
+    notificationsConsentLabel:
+      'By confirming this appointment, you agree to receive email and SMS notifications about your booking.',
+    notificationsConsentRequired:
+      'Please check the box to agree to email and SMS notifications before continuing.',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',
     chooseHowToPay: 'Choose how to pay',
@@ -138,13 +142,16 @@ export const publicBookingUiEn: PublicBookingUi = {
     errCity: 'City is required',
     errState: 'State is required',
     errZip: 'ZIP is required',
+    errZipInvalid: 'Enter a valid US ZIP (5 digits, or 9 digits for ZIP+4)',
     errVehicleYear: 'Vehicle year is required',
+    errVehicleYearInvalid: 'Enter a valid 4-digit year',
     errVehicleMake: 'Vehicle make is required',
     errVehicleModel: 'Vehicle model is required',
     emailOptional: 'Email (optional)',
     emailOptionalNoConfirmation:
       'Without an email address, no booking confirmation email will be sent.',
     errEmailInvalid: 'Please enter a valid email address',
+    errValueTooLong: 'This value is too long',
   },
   bookingSuccess: {
     title: "You're booked",

@@ -58,6 +58,13 @@ export default function TermsPage() {
                 ServiceLink may send booking-related and account-related email
                 notifications.
               </li>
+              <li>
+                Where a customer clearly consents in the booking flow, we may
+                also send a limited number of transactional SMS messages about
+                their appointment (for example via Twilio). Standard carrier
+                charges may apply; reply-based opt-out (such as STOP) may be
+                available depending on the program.
+              </li>
             </ul>
           </section>
 
@@ -111,6 +118,21 @@ export default function TermsPage() {
               <li>
                 You may not misuse booking data, including spam or unauthorized
                 marketing.
+              </li>
+              <li>
+                If you use features that send SMS to customers, you are
+                responsible for obtaining and documenting appropriate consent,
+                honoring opt-outs (including carrier-supported reply keywords
+                such as STOP where applicable), and complying with the Telephone
+                Consumer Protection Act (TCPA), the CAN-SPAM Act, and other
+                applicable telecommunications and consumer-protection laws.
+              </li>
+              <li>
+                ServiceLink may use third-party providers (such as Twilio) to
+                deliver transactional messages on your behalf where the product
+                supports it; your use of those features constitutes direction to
+                send messages consistent with customer consent captured in the
+                product.
               </li>
             </ul>
           </section>

@@ -15,6 +15,8 @@ export interface TextAreaProps {
   name?: string;
   rows?: number;
   maxLength?: number;
+  /** When true, `maxLength` is enforced but the x/y counter is hidden. */
+  hideCharCount?: boolean;
 }
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
@@ -33,10 +35,12 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
       name,
       rows = 4,
       maxLength,
+      hideCharCount = false,
     },
     ref
   ) {
-    const showFooterRow = footerStart != null || maxLength != null;
+    const showCharCounter = maxLength != null && !hideCharCount;
+    const showFooterRow = footerStart != null || showCharCounter;
 
     return (
       <div className={`w-full ${className}`}>
@@ -68,7 +72,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
         {showFooterRow && (
           <div
             className={`mt-1.5 min-h-[2.25rem] flex items-center ${
-              footerStart != null && maxLength != null
+              footerStart != null && showCharCounter
                 ? 'justify-between gap-3'
                 : footerStart != null
                   ? 'justify-start'
@@ -80,7 +84,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
                 {footerStart}
               </div>
             ) : null}
-            {maxLength != null ? (
+            {showCharCounter ? (
               <p className="text-xs text-gray-400 shrink-0 tabular-nums">
                 {value.length}/{maxLength}
               </p>

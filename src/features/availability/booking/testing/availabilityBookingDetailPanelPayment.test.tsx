@@ -165,11 +165,7 @@ describe('AvailabilityBookingDetailPanel customer section', () => {
     renderPanel(booking);
 
     expect(screen.getByText('Jane Customer')).toBeTruthy();
-    expect(
-      screen.queryByRole('link', { name: /call customer/i })
-    ).toBeNull();
-    expect(
-      screen.queryByRole('link', { name: /email customer/i })
-    ).toBeNull();
+    expect(screen.queryByRole('link', { name: /call customer/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /email customer/i })).toBeNull();
   });
 });

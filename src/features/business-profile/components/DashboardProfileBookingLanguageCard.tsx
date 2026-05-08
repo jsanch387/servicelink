@@ -1,10 +1,7 @@
 'use client';
 
-import { GlassCard } from '@/components/shared';
+import { GlassCard, nativeCheckboxSmClassName } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-
-const checkboxSm =
-  'h-3.5 w-3.5 shrink-0 rounded border-white/20 bg-white/[0.04] text-emerald-500 focus:ring-1 focus:ring-emerald-500/30 focus:ring-offset-0 focus:ring-offset-[#0f0f0f] accent-emerald-500';
 
 export interface DashboardProfileBookingLanguageCardProps {
   offerSpanish: boolean;
@@ -38,7 +35,7 @@ export function DashboardProfileBookingLanguageCard({
               type="checkbox"
               checked
               disabled
-              className={`${checkboxSm} cursor-not-allowed opacity-60`}
+              className={`${nativeCheckboxSmClassName} cursor-not-allowed opacity-60`}
               aria-label="English always included"
             />
             <span className="text-xs text-gray-300">
@@ -51,7 +48,7 @@ export function DashboardProfileBookingLanguageCard({
               type="checkbox"
               checked={offerSpanish}
               onChange={e => onOfferSpanishChange(e.target.checked)}
-              className={`${checkboxSm} cursor-pointer`}
+              className={`${nativeCheckboxSmClassName} cursor-pointer`}
               aria-label="Offer Spanish on booking link"
             />
             <span className="text-xs text-gray-300">

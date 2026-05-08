@@ -143,6 +143,57 @@ describe('AvailabilityBookingPage flow navigation', () => {
     // Variant appears in service block only once.
     expect(screen.getAllByText('SUV')).toHaveLength(1);
   });
+
+  it('requires notification consent on review before confirming', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const u = typeof input === 'string' ? input : input.toString();
+      if (u.includes('/api/public/bookings/blocked/')) {
+        return {
+          ok: true,
+          json: async () => ({ success: true, blockedSlots: [] }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({}),
+      } as Response;
+    });
+
+    const user = userEvent.setup();
+    renderBookingFlow();
+
+    await user.click(screen.getByRole('button', { name: /pick date/i }));
+    await user.click(screen.getByRole('button', { name: /pick time/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /review booking/i }));
+
+    const postsToCreateBooking = () =>
+      fetchMock.mock.calls.filter(
+        args =>
+          args[1]?.method === 'POST' &&
+          typeof args[0] === 'string' &&
+          args[0].includes('/api/public/bookings') &&
+          !args[0].includes('/blocked/')
+      );
+
+    await user.click(screen.getByRole('button', { name: /confirm booking/i }));
+    expect(
+      screen.getByText(
+        /please check the box to agree to email and sms notifications/i
+      )
+    ).toBeTruthy();
+    expect(postsToCreateBooking()).toHaveLength(0);
+
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /by confirming this appointment/i,
+      })
+    );
+    await user.click(screen.getByRole('button', { name: /confirm booking/i }));
+
+    expect(postsToCreateBooking().length).toBeGreaterThan(0);
+  });
 });
 
 describe('AvailabilityBookingPage (Spanish locale)', () => {
