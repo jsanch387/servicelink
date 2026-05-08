@@ -6,18 +6,22 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 
 ## Environment variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `STRIPE_SECRET_KEY` | Yes | Stripe secret key (starts with `sk_`). From [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys). |
-| `STRIPE_PRO_PRICE_ID` | Yes | Stripe Price ID for the Pro monthly plan (e.g. `price_xxx`). Create a Product in [Stripe Dashboard → Products](https://dashboard.stripe.com/products), then add a recurring price. |
-| `STRIPE_WEBHOOK_SECRET` | Yes (for webhook) | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret. |
-| `STRIPE_CONNECT_WEBHOOK_SECRET` | Yes (for Connect webhook) | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments). |
-| `NEXT_PUBLIC_SITE_URL` | No | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`. |
-| `STRIPE_MOBILE_ONBOARDING_SUCCESS_URL` | Yes for Expo onboarding trial | Full URL Stripe redirects to after successful Checkout (e.g. custom scheme `servicelinkmobile://onboarding/stripe?result=success` or an `https://` bridge page). Only used when the client sends `client: "mobile"` with `source: "onboarding_trial_bridge"`. |
-| `STRIPE_MOBILE_ONBOARDING_CANCEL_URL` | Yes for Expo onboarding trial | Same as above, for cancel / abandon. |
-| `STRIPE_MOBILE_UPGRADE_SUCCESS_URL` | Yes for Expo paywall upgrade | Success redirect when `client: "mobile"` **without** onboarding `source` (trial ended, canceled, `past_due`, etc.). See [`docs/contracts/mobile-upgrade-stripe-checkout.md`](../../../../docs/contracts/mobile-upgrade-stripe-checkout.md). |
-| `STRIPE_MOBILE_UPGRADE_CANCEL_URL` | Yes for Expo paywall upgrade | Cancel redirect for the same mobile upgrade flow. |
-| `STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL` | Yes for Expo “Manage subscription” | Where Stripe Customer Portal sends the user when they leave the portal (deep link or bridge). Only used when `POST /api/stripe/create-portal-session` body includes `client: "mobile"`. |
+| Variable                                       | Required                           | Description                                                                                                                                                                                                                                                     |
+| ---------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`                            | Yes                                | Stripe secret key (starts with `sk_`). From [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys).                                                                                                                                   |
+| `STRIPE_PRO_PRICE_ID`                          | Yes                                | Stripe Price ID for the Pro monthly plan (e.g. `price_xxx`). Create a Product in [Stripe Dashboard → Products](https://dashboard.stripe.com/products), then add a recurring price.                                                                              |
+| `STRIPE_WEBHOOK_SECRET`                        | Yes (for webhook)                  | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.                                                                                                                                          |
+| `STRIPE_CONNECT_WEBHOOK_SECRET`                | Yes (for Connect webhook)          | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments).                                                                                                                  |
+| `NEXT_PUBLIC_SITE_URL`                         | No                                 | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`.                                                                                                                                     |
+| `STRIPE_MOBILE_ONBOARDING_SUCCESS_URL`         | Yes for Expo onboarding trial      | Full URL Stripe redirects to after successful Checkout (e.g. custom scheme `servicelinkmobile://onboarding/stripe?result=success` or an `https://` bridge page). Only used when the client sends `client: "mobile"` with `source: "onboarding_trial_bridge"`.   |
+| `STRIPE_MOBILE_ONBOARDING_CANCEL_URL`          | Yes for Expo onboarding trial      | Same as above, for cancel / abandon.                                                                                                                                                                                                                            |
+| `STRIPE_MOBILE_UPGRADE_SUCCESS_URL`            | Yes for Expo paywall upgrade       | Success redirect when `client: "mobile"` **without** onboarding `source` (trial ended, canceled, `past_due`, etc.). See [`docs/contracts/mobile-upgrade-stripe-checkout.md`](../../../../docs/contracts/mobile-upgrade-stripe-checkout.md).                     |
+| `STRIPE_MOBILE_UPGRADE_CANCEL_URL`             | Yes for Expo paywall upgrade       | Cancel redirect for the same mobile upgrade flow.                                                                                                                                                                                                               |
+| `STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL`      | Yes for Expo “Manage subscription” | Where Stripe Customer Portal sends the user when they leave the portal (deep link or bridge). Only used when `POST /api/stripe/create-portal-session` body includes `client: "mobile"`.                                                                         |
+| `STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL`  | Yes for Expo Connect onboarding    | Stripe Connect **Account Link** `return_url` when `POST /api/stripe/connect/onboard` body includes `client: "mobile"`. Must be **`https://…`** or **`http://…`** (Stripe rejects custom schemes like `myapp://` — use an https bridge page that opens the app). |
+| `STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL` | Yes for Expo Connect onboarding    | Account Link `refresh_url` (expired link / resume). Same **http(s)** rule as return URL.                                                                                                                                                                        |
+| `STRIPE_MOBILE_CONNECT_DEEP_LINK_RETURN_URL`   | Optional                           | Deep link that the bridge route opens for Connect return. Default: `servicelinkmobile://payments/connect?connect=return`.                                                                                                                                       |
+| `STRIPE_MOBILE_CONNECT_DEEP_LINK_REFRESH_URL`  | Optional                           | Deep link that the bridge route opens for Connect refresh. Default: `servicelinkmobile://payments/connect?connect=refresh`.                                                                                                                                     |
 
 ## Flow
 
@@ -120,6 +124,20 @@ Same endpoint as web; auth uses `Authorization: Bearer <supabase_access_token>`.
 3. **`return_url`:** With `client: "mobile"`, Stripe uses `STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL` (Customer Portal has a single return URL, unlike Checkout). Configure it in each environment; restart `next dev` after `.env.local` changes.
 4. **Prerequisite:** `profiles.stripe_customer_id` must exist (same as web — typically after first successful Checkout). Otherwise the API returns **400** `No billing account found`.
 5. **State after return:** Subscription changes are driven by webhooks (`customer.subscription.updated`, etc.). Refetch profile / subscription fields after the portal session closes.
+
+## Mobile app (Expo): Stripe Connect onboarding (payments / Express)
+
+Same **`POST /api/stripe/connect/onboard`** route as web; auth uses `Authorization: Bearer <supabase_access_token>`.
+
+1. **Request:** `POST /api/stripe/connect/onboard` with headers `Authorization` and `Content-Type: application/json`, body `{ "client": "mobile" }`.
+2. **Response:** `{ "success": true, "url": "https://connect.stripe.com/..." }` — open `url` in the in-app browser.
+3. **Return URLs:** With `client: "mobile"`, Stripe Account Link `return_url` / `refresh_url` come from `STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL` and `STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL` (both required in that environment). Recommended values are:
+   - `${SITE}/mobile-bridge/connect-return`
+   - `${SITE}/mobile-bridge/connect-refresh`
+     These routes are in this repo and log with prefix `[mobile-connect-bridge]`.
+4. **After Stripe redirects:** Call **`POST /api/stripe/connect/sync`** with the same Bearer token (empty JSON body is fine). That runs the same Stripe → `payment_accounts` update as web’s `/dashboard/payments?connect=return|refresh`. Then refetch `payment_accounts` from Supabase for UI.
+
+Contract: [`docs/contracts/mobile-stripe-connect-onboarding.md`](../../../../docs/contracts/mobile-stripe-connect-onboarding.md).
 
 ### Local development vs production Stripe data
 

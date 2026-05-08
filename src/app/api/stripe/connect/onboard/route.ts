@@ -3,15 +3,25 @@
  *
  * Opens Stripe-hosted Connect Express onboarding; persists `payment_accounts`
  * on first connect and reuses `stripe_account_id` afterward (new Account Link).
+ *
+ * Auth: Supabase cookies (web) or `Authorization: Bearer <access_token>` (mobile).
+ * Mobile: JSON `{ "client": "mobile" }` and env return/refresh URLs (see Stripe README).
  */
 
 import { logConnect } from '@/features/payments/server/connectOnboardingLog';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { startExpressConnectOnboarding } from '@/features/payments/stripe';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { validateConnectAccountLinkUrl } from '@/libs/stripe/validateConnectAccountLinkUrl';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
+
+type OnboardRequestBody = {
+  client?: unknown;
+};
+
+const LOG = '[stripe:connect-onboard]';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,19 +38,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user?.id) {
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      console.warn(`${LOG} auth failed`, {
+        status: auth.status,
+        code: auth.code,
+        message: auth.error,
+      });
       logConnect('onboard.abort', { reason: 'unauthenticated' });
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: auth.error },
+        { status: auth.status }
       );
     }
+    const { user, supabase } = auth;
 
     const hasPro = await getHasProAccessForPayments(supabase, user.id);
     if (!hasPro) {
@@ -70,6 +81,65 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const body = (await request.json().catch(() => ({}))) as OnboardRequestBody;
+    const isMobileClient = body.client === 'mobile';
+
+    let accountLinkUrls: { returnUrl: string; refreshUrl: string } | undefined;
+    if (isMobileClient) {
+      const mobileReturn =
+        process.env.STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL?.trim();
+      const mobileRefresh =
+        process.env.STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL?.trim();
+      if (!mobileReturn || !mobileRefresh) {
+        console.error(`${LOG} mobile Connect return URLs missing`, {
+          STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL: Boolean(mobileReturn)
+            ? '(set)'
+            : '(missing)',
+          STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL: Boolean(mobileRefresh)
+            ? '(set)'
+            : '(missing)',
+          hint: 'Add both to .env.local and restart next dev',
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'Mobile Connect onboarding is not configured. Set STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL and STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL.',
+          },
+          { status: 500 }
+        );
+      }
+      const returnParsed = validateConnectAccountLinkUrl(
+        mobileReturn,
+        'STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL'
+      );
+      const refreshParsed = validateConnectAccountLinkUrl(
+        mobileRefresh,
+        'STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL'
+      );
+      if (!returnParsed.ok || !refreshParsed.ok) {
+        const detail = !returnParsed.ok
+          ? returnParsed.message
+          : !refreshParsed.ok
+            ? refreshParsed.message
+            : '';
+        console.error(`${LOG} mobile Connect URLs invalid for Stripe`, {
+          hint: 'Use https://… (or http://localhost… in dev). Custom schemes like myapp:// are rejected.',
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Invalid Connect redirect URL: ${detail}`,
+          },
+          { status: 500 }
+        );
+      }
+      accountLinkUrls = {
+        returnUrl: returnParsed.href,
+        refreshUrl: refreshParsed.href,
+      };
+    }
+
     const { data: existingRow } = await paymentAccountsOf(supabase)
       .select('stripe_account_id')
       .eq('business_id', businessResolved.businessId)
@@ -90,6 +160,7 @@ export async function POST(request: NextRequest) {
       user: { id: user.id, email: user.email ?? undefined },
       businessId: businessResolved.businessId,
       existingStripeAccountId: existingStripeAccountId || undefined,
+      accountLinkUrls,
     });
 
     if (result.createdNewStripeAccount) {
@@ -135,7 +206,24 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unexpected error';
     logConnect('onboard.error', { message });
-    console.error('POST /api/stripe/connect/onboard', e);
+    console.error(`${LOG} error`, e);
+    const stripeCode =
+      typeof e === 'object' &&
+      e !== null &&
+      'code' in e &&
+      typeof (e as { code?: unknown }).code === 'string'
+        ? (e as { code: string }).code
+        : null;
+    if (stripeCode === 'url_invalid') {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Stripe rejected the Connect return or refresh URL. Use full http(s) URLs in STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL and STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL — not custom app schemes (use an https bridge that opens the app).',
+        },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to start Stripe onboarding' },
       { status: 500 }

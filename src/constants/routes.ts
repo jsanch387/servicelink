@@ -74,6 +74,10 @@ export const ROUTES = {
 export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
 
 export const API_ROUTES = {
+  /** Pro: Stripe Connect Express onboarding (Account Link); web cookies or Bearer (mobile). */
+  STRIPE_CONNECT_ONBOARD: '/api/stripe/connect/onboard',
+  /** Pro: refresh `payment_accounts` from Stripe (e.g. after Connect return on mobile). */
+  STRIPE_CONNECT_SYNC: '/api/stripe/connect/sync',
   /** Pro: one-time URL to the connected account’s Stripe Express Dashboard. */
   STRIPE_CONNECT_EXPRESS_DASHBOARD: '/api/stripe/connect/express-dashboard',
   /** Pro + Stripe connected: create/update `payment_settings` and turn on ServiceLink payments. */
