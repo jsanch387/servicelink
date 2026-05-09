@@ -1,12 +1,16 @@
 'use client';
 
-import { Button, nativeCheckboxSmClassName } from '@/components/shared';
+import {
+  BookingFlowProgressBar,
+  Button,
+  nativeCheckboxSmClassName,
+  ResponsiveBackNavIcon,
+} from '@/components/shared';
 import { API_ROUTES, type PublicBookingFlowLocale } from '@/constants/routes';
 import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -25,6 +29,10 @@ import {
 } from '../utils/bookingCheckoutResumeStorage';
 import { formatBookingWallTime } from '../utils/formatBookingWallTime';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
+import {
+  getPostScheduleStepCount,
+  postConfigureBookingFlowProgressValue,
+} from '../utils/publicBookingFlowProgress';
 import { publicBookingFlowUserFacingError } from '../utils/publicBookingFlowUserFacingError';
 import { BookingPaymentSuccess } from './BookingPaymentSuccess';
 import { BookingPriceBreakdown } from './BookingPriceBreakdown';
@@ -173,8 +181,10 @@ export function AvailabilityBookingPage({
   paymentSettings = null,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
+  onExitScheduleStep,
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
+  bookingFlowConfigurePhaseCount = 0,
 }: AvailabilityBookingPageProps) {
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
@@ -277,6 +287,22 @@ export function AvailabilityBookingPage({
    */
   const shouldShowPaymentStep =
     paymentSettingsEnabled && hasCheckoutModeConfigured;
+
+  const postScheduleStepCountForProgress = useMemo(
+    () => getPostScheduleStepCount(paymentSettings, isOwnerManualBooking),
+    [paymentSettings, isOwnerManualBooking]
+  );
+
+  const stickyHeaderProgress = useMemo(
+    () =>
+      postConfigureBookingFlowProgressValue({
+        configurePhaseCount: bookingFlowConfigurePhaseCount,
+        postScheduleStepCount: postScheduleStepCountForProgress,
+        step,
+      }),
+    [bookingFlowConfigurePhaseCount, postScheduleStepCountForProgress, step]
+  );
+
   const configuredDepositCents = paymentSettings
     ? getDepositDueNowCents(paymentSettings, totalPriceCents)
     : 0;
@@ -821,21 +847,33 @@ export function AvailabilityBookingPage({
       {/* Match ServiceDetailsScreen: full-width sticky bar; back row uses max-w-2xl + page gutters. */}
       <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
-          {step === 'schedule' && (
-            <Link href={exitCalendarFlowHref} className={headerClassName}>
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                {exitCalendarFlowLabel}
-              </span>
-            </Link>
-          )}
+          {step === 'schedule' &&
+            (onExitScheduleStep ? (
+              <button
+                type="button"
+                onClick={onExitScheduleStep}
+                className={headerClassName}
+              >
+                <ResponsiveBackNavIcon />
+                <span className="text-sm font-medium">
+                  {exitCalendarFlowLabel}
+                </span>
+              </button>
+            ) : (
+              <Link href={exitCalendarFlowHref} className={headerClassName}>
+                <ResponsiveBackNavIcon />
+                <span className="text-sm font-medium">
+                  {exitCalendarFlowLabel}
+                </span>
+              </Link>
+            ))}
           {step === 'details' && (
             <button
               type="button"
               onClick={() => setStep('schedule')}
               className={headerClassName}
             >
-              <ArrowLeftIcon className="h-5 w-5" />
+              <ResponsiveBackNavIcon />
               <span className="text-sm font-medium">
                 {ui.nav.backToDateTime}
               </span>
@@ -847,7 +885,7 @@ export function AvailabilityBookingPage({
               onClick={() => setStep('details')}
               className={headerClassName}
             >
-              <ArrowLeftIcon className="h-5 w-5" />
+              <ResponsiveBackNavIcon />
               <span className="text-sm font-medium">
                 {ui.nav.backToDetails}
               </span>
@@ -859,11 +897,12 @@ export function AvailabilityBookingPage({
               onClick={() => setStep('review')}
               className={headerClassName}
             >
-              <ArrowLeftIcon className="h-5 w-5" />
+              <ResponsiveBackNavIcon />
               <span className="text-sm font-medium">{ui.nav.backToReview}</span>
             </button>
           )}
         </div>
+        <BookingFlowProgressBar value={stickyHeaderProgress} />
       </div>
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">

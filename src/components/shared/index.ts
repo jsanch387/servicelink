@@ -13,6 +13,7 @@ export { TextArea } from './TextArea';
 export { TimeSelect } from './TimeSelect';
 
 // Shared Components
+export { BookingFlowProgressBar } from './BookingFlowProgressBar';
 export { Button } from './Button';
 export { Calendar } from './Calendar';
 export { Card } from './Card';
@@ -34,6 +35,7 @@ export { ModernLoadingSpinner } from './ModernLoadingSpinner';
 export { nativeCheckboxSmClassName } from './nativeCheckboxClasses';
 export { NativeScheduleDateRow } from './NativeSchedulePickerRow';
 export { RequiredLabel } from './RequiredLabel';
+export { ResponsiveBackNavIcon } from './ResponsiveBackNavIcon';
 export { SectionTitle } from './SectionTitle';
 export { SERVICE_DURATION_HOURS_OPTIONS } from './ServiceDurationOptions';
 export { SettingsLoadingState } from './SettingsLoadingState';

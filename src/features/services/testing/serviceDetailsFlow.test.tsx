@@ -39,6 +39,8 @@ vi.mock('@/components/shared', () => ({
         {children}
       </button>
     ),
+  ResponsiveBackNavIcon: () => <span data-testid="back-nav-icon" />,
+  BookingFlowProgressBar: () => null,
 }));
 
 vi.mock('@/features/services/booking-flow/PriceOptionSelector', () => ({

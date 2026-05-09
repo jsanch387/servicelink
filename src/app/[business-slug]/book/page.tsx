@@ -5,12 +5,13 @@
  * Displays the booking request form for a specific business
  */
 
+import { ResponsiveBackNavIcon } from '@/components/shared';
 import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import {
   OWNER_MANUAL_BOOKING_FOR,
   ROUTES,
-  getBusinessBookDetailsUrl,
   getBusinessBookPath,
+  getBusinessBookScheduleUrl,
   getPublicBusinessProfilePath,
   type BookDetailsStepQuery,
 } from '@/constants/routes';
@@ -19,13 +20,21 @@ import {
   type BookServicePickerItem,
 } from '@/features/availability/booking/components/BookServicePicker';
 import type { PublicBookingPaymentSettings } from '@/features/availability/booking/types';
+import { configureBackNavLabelFromBookUrl } from '@/features/availability/booking/utils/configureBackNavLabelFromBookUrl';
+import {
+  publicBookingCalendarExitNavWithoutConfigureFunnel,
+  publicBookingServiceRequiresConfigureUi,
+  publicBookingShouldRenderConfigureScheduleFunnel,
+} from '@/features/availability/booking/utils/publicBookingBookPageDecisions';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { enrichServicesWithPublicBookingLoadHints } from '@/features/business-profile/server/publicBookingServiceHints';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { isProAccess } from '@/features/pricing';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
+import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -34,12 +43,12 @@ import {
 } from '@/libs/bookingFlowLocale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { BookFlowSwitch } from './BookFlowSwitch';
+import { PublicBookingConfigureScheduleFunnel } from './PublicBookingConfigureScheduleFunnel';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -116,7 +125,9 @@ function mapPaymentSettingsForBooking(
 }
 
 function mapRowToPickerItem(
-  row: ServiceRowForPicker,
+  row: ServiceRowForPicker & {
+    public_booking_load_hint?: 'configure' | 'calendar';
+  },
   ownerPro: boolean
 ): BookServicePickerItem {
   return {
@@ -127,6 +138,7 @@ function mapRowToPickerItem(
     priceOptionsEnabled: row.price_options_enabled === true && ownerPro,
     hours_to_complete: row.hours_to_complete ?? null,
     duration_minutes: row.duration_minutes ?? null,
+    publicBookingLoadHint: row.public_booking_load_hint,
   };
 }
 
@@ -352,17 +364,28 @@ export default async function BookingRequestPage({
       );
     }
 
-    availabilityPickerServices =
-      (serviceRows as ServiceRowForPicker[] | null)
-        ?.map(row => mapRowToPickerItem(row, ownerHasPro))
-        .filter(s => s.id && s.name) ?? [];
+    const pickerRows =
+      (serviceRows as ServiceRowForPicker[] | null)?.filter(
+        r => r.id && r.name
+      ) ?? [];
+    const enrichedPickerRows = await enrichServicesWithPublicBookingLoadHints(
+      adminClient,
+      businessProfile.id,
+      pickerRows,
+      ownerHasPro
+    );
+    availabilityPickerServices = enrichedPickerRows.map(row =>
+      mapRowToPickerItem(row, ownerHasPro)
+    );
 
     if (availabilityPickerServices.length === 1) {
+      const only = availabilityPickerServices[0];
       redirect(
-        getBusinessBookDetailsUrl(slugForRoutes, {
-          serviceId: availabilityPickerServices[0].id,
+        getBusinessBookScheduleUrl(slugForRoutes, {
+          serviceId: only.id,
           forOwner: isOwnerManualBooking,
           lang: bookingFlowLocale,
+          bookLoad: only.publicBookingLoadHint,
         })
       );
     }
@@ -370,10 +393,40 @@ export default async function BookingRequestPage({
 
   const trimmedServiceId = serviceId?.trim() ?? '';
 
+  type ServiceConfigureBundle = NonNullable<
+    Awaited<ReturnType<typeof getServiceWithAddOnsForBooking>>
+  >;
+  let configureBundle: ServiceConfigureBundle | null = null;
+  let needsConfigureStep = false;
+  const fetchConfigureBundle =
+    Boolean(trimmedServiceId) &&
+    effectiveUseAvailabilityBooking &&
+    !skipDetailsFlag;
+
+  if (fetchConfigureBundle) {
+    const bundle = await getServiceWithAddOnsForBooking(
+      businessProfile.id,
+      trimmedServiceId
+    );
+    if (!bundle) {
+      notFound();
+    }
+    configureBundle = bundle;
+    needsConfigureStep = publicBookingServiceRequiresConfigureUi({
+      priceOptionsEnabled: bundle.service.priceOptionsEnabled,
+      priceOptionCount: bundle.priceOptions.length,
+      addOnCount: bundle.addOns.length,
+    });
+  }
+
+  const allowInlinePriceConfigure =
+    needsConfigureStep && !skipDetailsFlag && effectiveUseAvailabilityBooking;
+
   let serviceName = '';
   let serviceDurationMinutes = 60;
   let servicePriceForBooking: number | undefined;
   let selectedPriceOptionLabel: string | undefined;
+  let resolvedServiceOk = false;
 
   if (trimmedServiceId) {
     const resolved = await resolvePublicBookingService(
@@ -383,30 +436,45 @@ export default async function BookingRequestPage({
       priceOptionId
     );
 
-    if (!resolved.ok) {
-      if (
-        resolved.reason === 'price_option_required' ||
-        resolved.reason === 'invalid_price_option'
-      ) {
-        redirect(
-          getBusinessBookDetailsUrl(slugForRoutes, {
-            serviceId: trimmedServiceId,
-            addOnIds: addOnIds?.trim(),
-            priceOptionId: priceOptionId?.trim(),
-            detailsStep: effectiveDetailsStep,
-            forOwner: isOwnerManualBooking,
-            lang: bookingFlowLocale,
-          })
-        );
-      }
+    if (resolved.ok) {
+      resolvedServiceOk = true;
+      const d = resolved.data;
+      serviceName = d.serviceName;
+      serviceDurationMinutes = d.serviceDurationMinutes;
+      servicePriceForBooking = d.servicePriceCents;
+      selectedPriceOptionLabel = d.selectedPriceOption?.label;
+    } else if (
+      allowInlinePriceConfigure &&
+      (resolved.reason === 'price_option_required' ||
+        resolved.reason === 'invalid_price_option')
+    ) {
+      // Inline configure + calendar funnel — no redirect.
+    } else if (
+      resolved.reason === 'price_option_required' ||
+      resolved.reason === 'invalid_price_option'
+    ) {
+      redirect(
+        getBusinessBookScheduleUrl(slugForRoutes, {
+          serviceId: trimmedServiceId,
+          addOnIds: addOnIds?.trim(),
+          priceOptionId:
+            resolved.reason === 'invalid_price_option'
+              ? undefined
+              : priceOptionId?.trim(),
+          detailsStep: effectiveDetailsStep,
+          forOwner: isOwnerManualBooking,
+          lang: bookingFlowLocale,
+        })
+      );
+    } else {
       notFound();
     }
+  }
 
-    const d = resolved.data;
-    serviceName = d.serviceName;
-    serviceDurationMinutes = d.serviceDurationMinutes;
-    servicePriceForBooking = d.servicePriceCents;
-    selectedPriceOptionLabel = d.selectedPriceOption?.label;
+  if (!resolvedServiceOk && configureBundle) {
+    serviceName = configureBundle.service.name;
+    serviceDurationMinutes = configureBundle.service.durationMinutes;
+    servicePriceForBooking = configureBundle.service.priceCents;
   }
 
   // Fetch add-ons when addOnIds present (resolves IDs to full objects for display)
@@ -460,7 +528,7 @@ export default async function BookingRequestPage({
       });
       bookPageBackLabel = ui.nav.backToServices;
     } else {
-      bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
+      bookPageBackHref = getBusinessBookScheduleUrl(slugForRoutes, {
         serviceId: serviceId.trim(),
         addOnIds: addOnIds?.trim(),
         priceOptionId: priceOptionId?.trim(),
@@ -468,27 +536,23 @@ export default async function BookingRequestPage({
         forOwner: true,
         lang: bookingFlowLocale,
       });
-      bookPageBackLabel =
-        effectiveDetailsStep === 'addons'
-          ? ui.nav.backToAddOns
-          : effectiveDetailsStep === 'price' && priceOptionId?.trim()
-            ? ui.nav.backToOptions
-            : ui.nav.backToService;
+      bookPageBackLabel = configureBackNavLabelFromBookUrl(
+        bookPageBackHref,
+        ui.nav
+      );
     }
   } else if (serviceId?.trim() && !skipDetailsFlag) {
-    bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
+    bookPageBackHref = getBusinessBookScheduleUrl(slugForRoutes, {
       serviceId: serviceId.trim(),
       addOnIds: addOnIds?.trim(),
       priceOptionId: priceOptionId?.trim(),
       detailsStep: effectiveDetailsStep,
       lang: bookingFlowLocale,
     });
-    bookPageBackLabel =
-      effectiveDetailsStep === 'addons'
-        ? ui.nav.backToAddOns
-        : effectiveDetailsStep === 'price' && priceOptionId?.trim()
-          ? ui.nav.backToOptions
-          : ui.nav.backToService;
+    bookPageBackLabel = configureBackNavLabelFromBookUrl(
+      bookPageBackHref,
+      ui.nav
+    );
   } else {
     bookPageBackHref = profilePath;
     bookPageBackLabel = ui.nav.backToProfile;
@@ -501,6 +565,81 @@ export default async function BookingRequestPage({
     !showAvailabilityServicePicker &&
     !showNotAcceptingBookings;
 
+  const showConfigureScheduleFunnel =
+    publicBookingShouldRenderConfigureScheduleFunnel({
+      needsConfigureStep,
+      skipDetailsFlag,
+      useAvailabilityBooking: effectiveUseAvailabilityBooking,
+      hasConfigureBundle: configureBundle != null,
+      showAvailabilityServicePicker,
+      showNotAcceptingBookings,
+    });
+
+  const passedServiceConfigureGate =
+    skipDetailsFlag ||
+    detailsStepForBack === 'price' ||
+    detailsStepForBack === 'addons' ||
+    addonIdList.length > 0;
+
+  const funnelInitialPhase: 'configure' | 'schedule' =
+    showConfigureScheduleFunnel && configureBundle
+      ? passedServiceConfigureGate
+        ? 'schedule'
+        : 'configure'
+      : 'schedule';
+
+  const initialAddOnIdsForFunnel = addOnIds?.trim()
+    ? addOnIds
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const calendarExitWhenNoConfigureFunnel =
+    publicBookingCalendarExitNavWithoutConfigureFunnel({
+      isOwnerManualBooking,
+      businessSlug: slugForRoutes,
+      bookingFlowLocale,
+      labels: {
+        backToProfile: ui.nav.backToProfile,
+        backToServices: ui.nav.backToServices,
+      },
+    });
+
+  const configureExitHref =
+    serviceId?.trim() && !skipDetailsFlag
+      ? getBusinessBookScheduleUrl(slugForRoutes, {
+          serviceId: serviceId.trim(),
+          addOnIds: addOnIds?.trim(),
+          priceOptionId: priceOptionId?.trim(),
+          detailsStep: effectiveDetailsStep,
+          forOwner: isOwnerManualBooking,
+          lang: bookingFlowLocale,
+        })
+      : bookPageBackHref;
+
+  const bookFlowCoreProps = {
+    useAvailabilityBooking: effectiveUseAvailabilityBooking,
+    showNotAcceptingBookings: showNotAcceptingBookings,
+    businessName: businessProfile.business_name,
+    businessId: businessProfile.id,
+    businessSlug: slugForRoutes,
+    showVehicleFields: showVehicleFields,
+    serviceId: serviceId?.trim() ?? undefined,
+    addOnIds: addOnIds?.trim() || undefined,
+    selectedAddOns: selectedAddOns,
+    serviceName,
+    servicePrice: servicePriceForBooking,
+    serviceDurationMinutes,
+    selectedPriceOptionLabel,
+    weeklySchedule,
+    timeOffBlocks,
+    paymentSettings,
+    isOwnerManualBooking,
+    stripeCheckoutSessionId,
+    bookingFlowLocale,
+  };
+
   return (
     <>
       {!calendarFlowOwnsHeader && (
@@ -510,7 +649,7 @@ export default async function BookingRequestPage({
               href={bookPageBackHref}
               className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
-              <ArrowLeftIcon className="h-5 w-5" />
+              <ResponsiveBackNavIcon />
               <span className="text-sm font-medium">{bookPageBackLabel}</span>
             </Link>
           </div>
@@ -519,29 +658,33 @@ export default async function BookingRequestPage({
 
       {calendarFlowOwnsHeader ? (
         <div className="pb-16 sm:pb-24">
-          <BookFlowSwitch
-            useAvailabilityBooking={effectiveUseAvailabilityBooking}
-            showNotAcceptingBookings={showNotAcceptingBookings}
-            businessName={businessProfile.business_name}
-            businessId={businessProfile.id}
-            businessSlug={slugForRoutes}
-            showVehicleFields={showVehicleFields}
-            serviceId={serviceId?.trim() ?? undefined}
-            addOnIds={addOnIds?.trim() || undefined}
-            selectedAddOns={selectedAddOns}
-            serviceName={serviceName}
-            servicePrice={servicePriceForBooking}
-            serviceDurationMinutes={serviceDurationMinutes}
-            selectedPriceOptionLabel={selectedPriceOptionLabel}
-            weeklySchedule={weeklySchedule}
-            timeOffBlocks={timeOffBlocks}
-            paymentSettings={paymentSettings}
-            isOwnerManualBooking={isOwnerManualBooking}
-            exitCalendarFlowHref={bookPageBackHref}
-            exitCalendarFlowLabel={bookPageBackLabel}
-            stripeCheckoutSessionId={stripeCheckoutSessionId}
-            bookingFlowLocale={bookingFlowLocale}
-          />
+          {showConfigureScheduleFunnel && configureBundle ? (
+            <PublicBookingConfigureScheduleFunnel
+              businessSlug={slugForRoutes}
+              serviceId={trimmedServiceId}
+              service={configureBundle.service}
+              addOns={configureBundle.addOns}
+              priceOptions={configureBundle.priceOptions}
+              initialAddOnIds={initialAddOnIdsForFunnel}
+              initialPriceOptionId={priceOptionId?.trim()}
+              initialDetailsStep={effectiveDetailsStep}
+              isOwnerManualBooking={isOwnerManualBooking}
+              bookingFlowLocale={bookingFlowLocale}
+              initialPhase={funnelInitialPhase}
+              exitScheduleToConfigureHref={configureExitHref}
+              bookFlowProps={{
+                ...bookFlowCoreProps,
+                exitCalendarFlowHref: configureExitHref,
+                exitCalendarFlowLabel: bookPageBackLabel,
+              }}
+            />
+          ) : (
+            <BookFlowSwitch
+              {...bookFlowCoreProps}
+              exitCalendarFlowHref={calendarExitWhenNoConfigureFunnel.href}
+              exitCalendarFlowLabel={calendarExitWhenNoConfigureFunnel.label}
+            />
+          )}
         </div>
       ) : (
         <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 pt-6 sm:pt-8">
@@ -555,27 +698,9 @@ export default async function BookingRequestPage({
             />
           ) : (
             <BookFlowSwitch
-              useAvailabilityBooking={effectiveUseAvailabilityBooking}
-              showNotAcceptingBookings={showNotAcceptingBookings}
-              businessName={businessProfile.business_name}
-              businessId={businessProfile.id}
-              businessSlug={slugForRoutes}
-              showVehicleFields={showVehicleFields}
-              serviceId={serviceId?.trim() ?? undefined}
-              addOnIds={addOnIds?.trim() || undefined}
-              selectedAddOns={selectedAddOns}
-              serviceName={serviceName}
-              servicePrice={servicePriceForBooking}
-              serviceDurationMinutes={serviceDurationMinutes}
-              selectedPriceOptionLabel={selectedPriceOptionLabel}
-              weeklySchedule={weeklySchedule}
-              timeOffBlocks={timeOffBlocks}
-              paymentSettings={paymentSettings}
-              isOwnerManualBooking={isOwnerManualBooking}
+              {...bookFlowCoreProps}
               exitCalendarFlowHref={bookPageBackHref}
               exitCalendarFlowLabel={bookPageBackLabel}
-              stripeCheckoutSessionId={stripeCheckoutSessionId}
-              bookingFlowLocale={bookingFlowLocale}
             />
           )}
         </div>

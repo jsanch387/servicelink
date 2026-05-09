@@ -61,6 +61,13 @@ export const ServicesList: React.FC<ServicesListProps> = ({
               isPublic={isPublic}
               businessSlug={businessSlug}
               bookingFlowLocale={bookingFlowLocale}
+              publicBookingLoadHint={
+                'public_booking_load_hint' in service &&
+                (service.public_booking_load_hint === 'configure' ||
+                  service.public_booking_load_hint === 'calendar')
+                  ? service.public_booking_load_hint
+                  : undefined
+              }
             />
           ))}
         </div>

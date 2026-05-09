@@ -1,3 +1,7 @@
+/**
+ * End-to-end-ish RTL checks for `AvailabilityBookingPage` (calendar → details → review).
+ * Complements `publicBookingBookPageDecisions` (server rules) and funnel wiring tests.
+ */
 import { AvailabilityBookingPage } from '@/features/availability/booking/components/AvailabilityBookingPage';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -89,7 +93,7 @@ function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
       selectedPriceOptionLabel="SUV"
       weeklySchedule={DEFAULT_SCHEDULE}
       selectedAddOns={[]}
-      exitCalendarFlowHref="/acme-auto/book/details?serviceId=svc-1"
+      exitCalendarFlowHref="/acme-auto/book?serviceId=svc-1"
       exitCalendarFlowLabel="Back to add-ons"
       bookingFlowLocale={options?.bookingFlowLocale ?? 'en'}
     />
@@ -104,7 +108,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
     // Step 1: top back exits calendar flow.
     const exitLink = screen.getByRole('link', { name: /back to add-ons/i });
     expect(exitLink.getAttribute('href')).toBe(
-      '/acme-auto/book/details?serviceId=svc-1'
+      '/acme-auto/book?serviceId=svc-1'
     );
 
     await user.click(screen.getByRole('button', { name: /pick date/i }));

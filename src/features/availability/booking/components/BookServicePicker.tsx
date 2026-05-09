@@ -1,4 +1,7 @@
-import type { PublicBookingFlowLocale } from '@/constants/routes';
+import type {
+  PublicBookingBookLoadValue,
+  PublicBookingFlowLocale,
+} from '@/constants/routes';
 import { ServiceCard } from '@/features/business-profile';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 
@@ -10,6 +13,8 @@ export interface BookServicePickerItem {
   priceOptionsEnabled: boolean;
   hours_to_complete: number | null;
   duration_minutes: number | null;
+  /** Matches profile links — drives `/book` loading skeleton. */
+  publicBookingLoadHint?: PublicBookingBookLoadValue;
 }
 
 export interface BookServicePickerProps {
@@ -86,6 +91,7 @@ export function BookServicePicker({
               businessSlug={businessSlug}
               manualBookingForCustomer={isOwnerManualBooking}
               bookingFlowLocale={bookingFlowLocale}
+              publicBookingLoadHint={s.publicBookingLoadHint}
             />
           </div>
         ))}

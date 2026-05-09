@@ -9,6 +9,7 @@ import { StructuredData } from '@/components/shared';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import { enrichServicesWithPublicBookingLoadHints } from '@/features/business-profile/server/publicBookingServiceHints';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { MediaService } from '@/features/media';
 import { isProAccess } from '@/features/pricing';
@@ -200,6 +201,19 @@ export default async function PublicProfilePage({
   const showRequestQuoteCta =
     ownerTier === 'pro' && displayProfile.accept_quote_req === true;
 
+  const servicesWithBookingHints =
+    await enrichServicesWithPublicBookingLoadHints(
+      adminGate,
+      displayProfile.id,
+      displayProfile.services,
+      ownerTier === 'pro'
+    );
+
+  const businessProfileForView: CompleteBusinessProfile = {
+    ...displayProfile,
+    services: servicesWithBookingHints,
+  };
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
@@ -209,7 +223,7 @@ export default async function PublicProfilePage({
       <StructuredData businessProfile={displayProfile} slug={slug} />
 
       <BusinessProfileView
-        businessProfile={displayProfile}
+        businessProfile={businessProfileForView}
         initialMode="view"
         isPublic={true}
         showVerifiedBadge={showVerifiedBadge}

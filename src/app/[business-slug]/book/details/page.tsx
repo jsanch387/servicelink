@@ -1,13 +1,13 @@
 /**
- * Service Details page (price options if enabled, then add-ons, then calendar).
- * Fetches service, active price options, and assigned add-ons.
- * Redirects straight to /book when there is nothing to configure here.
+ * Legacy `/book/details` entry — redirects to `/book` with the same query params.
+ * Configure + calendar live on a single client funnel on `/[slug]/book`.
  */
 
 import {
   OWNER_MANUAL_BOOKING_FOR,
   getBusinessBookPath,
   getBusinessBookScheduleUrl,
+  type BookDetailsStepQuery,
 } from '@/constants/routes';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -18,7 +18,6 @@ import { getAvailabilityForBusiness } from '@/features/availability/services/ava
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
-import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -33,7 +32,6 @@ interface ServiceDetailsPageProps {
     serviceId?: string;
     addOnIds?: string;
     priceOptionId?: string;
-    /** `price` | `addons` — restores sub-step when returning from calendar. */
     detailsStep?: string;
     for?: string;
     lang?: string;
@@ -114,7 +112,6 @@ export default async function ServiceDetailsPage({
 
   const businessId = (profileMeta as { id: string }).id;
 
-  // Missing serviceId: redirect to book page so user can pick a service (avoids 404 from shared links/bookmarks that dropped query params)
   if (!serviceId?.trim()) {
     redirect(
       isOwnerManualBooking
@@ -152,10 +149,13 @@ export default async function ServiceDetailsPage({
   if (!result) notFound();
 
   const { service, addOns, priceOptions } = result;
-
   const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
 
-  // No add-ons and no price choice needed: skip details and go straight to date selection
+  const initialDetailsStep: BookDetailsStepQuery | undefined =
+    detailsStep === 'addons' || detailsStep === 'price'
+      ? detailsStep
+      : undefined;
+
   if (!needsPriceStep && addOns.length === 0) {
     redirect(
       getBusinessBookScheduleUrl(slug, {
@@ -167,32 +167,14 @@ export default async function ServiceDetailsPage({
     );
   }
 
-  const initialAddOnIds = addOnIds?.trim()
-    ? addOnIds
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
-    : undefined;
-
-  const initialDetailsStep =
-    detailsStep === 'addons' || detailsStep === 'price'
-      ? detailsStep
-      : undefined;
-
-  return (
-    <>
-      <ServiceDetailsScreen
-        businessSlug={slug}
-        serviceId={serviceId.trim()}
-        service={service}
-        addOns={addOns}
-        priceOptions={priceOptions}
-        initialAddOnIds={initialAddOnIds}
-        initialPriceOptionId={priceOptionId?.trim()}
-        initialDetailsStep={initialDetailsStep}
-        isOwnerManualBooking={isOwnerManualBooking}
-        bookingFlowLocale={bookingFlowLocale}
-      />
-    </>
+  redirect(
+    getBusinessBookScheduleUrl(slug, {
+      serviceId: serviceId.trim(),
+      addOnIds: addOnIds?.trim(),
+      priceOptionId: priceOptionId?.trim(),
+      detailsStep: initialDetailsStep,
+      forOwner: isOwnerManualBooking,
+      lang: bookingFlowLocale,
+    })
   );
 }

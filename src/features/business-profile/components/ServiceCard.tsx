@@ -2,7 +2,10 @@
 
 import { Button, GlassCard } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import { getBusinessBookDetailsPath } from '@/constants/routes';
+import {
+  getBusinessBookScheduleUrl,
+  type PublicBookingBookLoadValue,
+} from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
@@ -40,8 +43,10 @@ interface ServiceCardProps {
    * knows the business owner is booking on a customer's behalf.
    */
   manualBookingForCustomer?: boolean;
-  /** When set, forwarded to `/book/details` as `?lang=` (booking funnel only). */
+  /** When set, forwarded to `/book` as `?lang=` (booking funnel only). */
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** Hint for `/book` loading skeleton (`bookLoad=` query). */
+  publicBookingLoadHint?: PublicBookingBookLoadValue;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -53,6 +58,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   businessSlug = '',
   manualBookingForCustomer = false,
   bookingFlowLocale = 'en',
+  publicBookingLoadHint,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -169,9 +175,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
         {isPublic && !isEditable && businessSlug && service.id && (
           <Link
-            href={getBusinessBookDetailsPath(businessSlug, service.id, {
+            href={getBusinessBookScheduleUrl(businessSlug, {
+              serviceId: service.id,
               forOwner: manualBookingForCustomer,
               lang: bookingFlowLocale,
+              bookLoad: publicBookingLoadHint,
             })}
             className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
           >

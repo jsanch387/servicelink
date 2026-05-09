@@ -1,6 +1,10 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import {
+  BookingFlowProgressBar,
+  Button,
+  ResponsiveBackNavIcon,
+} from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import {
   getBusinessBookPath,
@@ -9,6 +13,11 @@ import {
   type BookDetailsStepQuery,
 } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import {
+  configureBookingFlowProgressValue,
+  getConfigurePhaseCount,
+  getPostScheduleStepCount,
+} from '@/features/availability/booking/utils/publicBookingFlowProgress';
 import type {
   AddOnForBooking,
   PriceOptionForBooking,
@@ -18,7 +27,7 @@ import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
-import { ArrowLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
 import { AddOnSelector } from './AddOnSelector';
@@ -45,6 +54,17 @@ interface ServiceDetailsScreenProps {
   isOwnerManualBooking?: boolean;
   /** Funnel locale from server (`?lang=` + cookie). */
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /**
+   * When set, "Date & time" uses client navigation (no full route load).
+   * Caller should sync the URL (e.g. `history.replaceState`) if needed.
+   */
+  onScheduleContinue?: (scheduleUrl: string) => void;
+  /**
+   * With `bookingFlowPostScheduleStepCount`, drives one continuous progress bar
+   * into the calendar step. Funnel should pass both; defaults keep tests simple.
+   */
+  bookingFlowConfigurePhaseCount?: number;
+  bookingFlowPostScheduleStepCount?: number;
 }
 
 function formatPrice(cents: number, locale: PublicBookingFlowLocale): string {
@@ -66,6 +86,9 @@ export function ServiceDetailsScreen({
   initialDetailsStep,
   isOwnerManualBooking = false,
   bookingFlowLocale = 'en',
+  onScheduleContinue,
+  bookingFlowConfigurePhaseCount: bookingFlowConfigurePhaseCountProp,
+  bookingFlowPostScheduleStepCount: bookingFlowPostScheduleStepCountProp,
 }: ServiceDetailsScreenProps) {
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
@@ -158,8 +181,35 @@ export function ServiceDetailsScreen({
 
   const calendarUrl = buildCalendarUrl();
 
+  const handleScheduleContinue = () => {
+    if (onScheduleContinue) onScheduleContinue(calendarUrl);
+  };
+
   const canContinueFromPrice = Boolean(selectedPriceOptionId);
   const showAddOnSection = addOns.length > 0;
+
+  const configureHeaderProgress = useMemo(() => {
+    const configureCount =
+      bookingFlowConfigurePhaseCountProp ??
+      getConfigurePhaseCount(needsPriceStep, showAddOnSection);
+    const postCount =
+      bookingFlowPostScheduleStepCountProp ??
+      getPostScheduleStepCount(null, isOwnerManualBooking);
+    return configureBookingFlowProgressValue({
+      configurePhaseCount: configureCount,
+      postScheduleStepCount: postCount,
+      needsPriceStep,
+      showAddOnSection,
+      phase,
+    });
+  }, [
+    bookingFlowConfigurePhaseCountProp,
+    bookingFlowPostScheduleStepCountProp,
+    needsPriceStep,
+    showAddOnSection,
+    phase,
+    isOwnerManualBooking,
+  ]);
 
   const handlePriceStepContinue = () => {
     if (!canContinueFromPrice) return;
@@ -201,7 +251,7 @@ export function ServiceDetailsScreen({
               onClick={() => setPhase('price')}
               className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
-              <ArrowLeftIcon className="h-5 w-5" />
+              <ResponsiveBackNavIcon />
               <span className="text-sm font-medium">
                 {ui.serviceDetails.backToOptions}
               </span>
@@ -211,11 +261,12 @@ export function ServiceDetailsScreen({
               href={exitDetailsHref}
               className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
-              <ArrowLeftIcon className="h-5 w-5" />
+              <ResponsiveBackNavIcon />
               <span className="text-sm font-medium">{exitDetailsLabel}</span>
             </Link>
           )}
         </div>
+        <BookingFlowProgressBar value={configureHeaderProgress} />
       </div>
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
@@ -333,7 +384,12 @@ export function ServiceDetailsScreen({
               <>
                 {showPrimaryAsLink ? (
                   <Button
-                    href={primaryButtonHref}
+                    {...(onScheduleContinue
+                      ? {
+                          type: 'button' as const,
+                          onClick: handleScheduleContinue,
+                        }
+                      : { href: primaryButtonHref })}
                     variant="inverse"
                     fullWidth
                     className="font-semibold"
@@ -360,7 +416,12 @@ export function ServiceDetailsScreen({
 
             {phase === 'addons' && (
               <Button
-                href={calendarUrl}
+                {...(onScheduleContinue
+                  ? {
+                      type: 'button' as const,
+                      onClick: handleScheduleContinue,
+                    }
+                  : { href: calendarUrl })}
                 variant="inverse"
                 fullWidth
                 className="font-semibold"

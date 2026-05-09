@@ -23,6 +23,7 @@ export function usePublicBlockedSlots(
   const fetchBlocked = useCallback(async () => {
     if (!businessSlug?.trim()) {
       setBlockedSlots([]);
+      setLoading(false);
       return;
     }
     setLoading(true);

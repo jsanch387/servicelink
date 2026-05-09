@@ -93,6 +93,17 @@ export interface AvailabilityBookingPageProps {
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
   /**
+   * When set, schedule-step back uses this instead of a full navigation to
+   * `exitCalendarFlowHref` (keeps configure + calendar in one client shell).
+   */
+  onExitScheduleStep?: () => void;
+  /**
+   * How many configure sub-steps (price / add-ons) exist for this service.
+   * Pass from `PublicBookingConfigureScheduleFunnel` so the progress bar matches
+   * configure + calendar as one journey; default `0` (customer opened `/book` directly).
+   */
+  bookingFlowConfigurePhaseCount?: number;
+  /**
    * When Stripe redirects with `?checkout=success&session_id=…`, the server passes
    * the session id so the client can show a confirmation placeholder immediately
    * instead of flashing the calendar before `useSearchParams` + fetch settle.

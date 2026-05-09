@@ -38,9 +38,14 @@ interface BookFlowSwitchProps {
   /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
+  onExitScheduleStep?: () => void;
   /** From server when URL has `checkout=success&session_id=…` after Stripe. */
   stripeCheckoutSessionId?: string | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /**
+   * Phases before calendar in the inline funnel; `0` when the customer opened `/book` directly.
+   */
+  bookingFlowConfigurePhaseCount?: number;
 }
 
 /**
@@ -67,8 +72,10 @@ export function BookFlowSwitch({
   paymentSettings = null,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
+  onExitScheduleStep,
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
+  bookingFlowConfigurePhaseCount = 0,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
   if (useAvailabilityBooking) {
@@ -92,8 +99,10 @@ export function BookFlowSwitch({
         paymentSettings={paymentSettings}
         exitCalendarFlowHref={exitCalendarFlowHref}
         exitCalendarFlowLabel={exitCalendarFlowLabel}
+        onExitScheduleStep={onExitScheduleStep}
         stripeCheckoutSessionId={stripeCheckoutSessionId}
         bookingFlowLocale={bookingFlowLocale}
+        bookingFlowConfigurePhaseCount={bookingFlowConfigurePhaseCount}
       />
     );
   }

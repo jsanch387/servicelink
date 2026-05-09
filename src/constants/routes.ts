@@ -128,6 +128,11 @@ export const OWNER_MANUAL_BOOKING_FOR = 'owner' as const;
 /** Query key for locale across `/[slug]/book` and `/[slug]/book/details` (funnel only). */
 export const PUBLIC_BOOKING_FLOW_LANG_QUERY = 'lang' as const;
 
+/** Hint for `/book` route `loading.tsx` — which skeleton to show while RSC loads. */
+export const PUBLIC_BOOKING_BOOKLOAD_QUERY = 'bookLoad' as const;
+
+export type PublicBookingBookLoadValue = 'configure' | 'calendar';
+
 /** Single source of truth: add a code here, then add catalog + BCP 47 + API overrides. */
 export const PUBLIC_BOOKING_FLOW_LOCALES = ['en', 'es'] as const;
 
@@ -246,6 +251,11 @@ export function getBusinessBookScheduleUrl(
     detailsStep?: BookDetailsStepQuery;
     /** When set, calendar opens after skipping configure (server redirect). */
     skipDetails?: boolean;
+    /**
+     * Optional: tells `loading.tsx` which skeleton to show (`configure` vs calendar).
+     * Omitted from deep links after first paint; safe to ignore on the server.
+     */
+    bookLoad?: PublicBookingBookLoadValue | null;
     forOwner?: boolean;
     checkout?: string;
     session_id?: string;
@@ -268,6 +278,9 @@ export function getBusinessBookScheduleUrl(
   }
   if (params.skipDetails) {
     q.set('skipDetails', '1');
+  }
+  if (params.bookLoad === 'configure' || params.bookLoad === 'calendar') {
+    q.set(PUBLIC_BOOKING_BOOKLOAD_QUERY, params.bookLoad);
   }
   if (params.forOwner) {
     q.set('for', OWNER_MANUAL_BOOKING_FOR);

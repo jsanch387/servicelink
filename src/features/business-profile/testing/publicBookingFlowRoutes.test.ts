@@ -7,6 +7,7 @@ import {
   getPublicQuoteRequestPath,
   isPublicBookingFlowLocale,
   OWNER_MANUAL_BOOKING_FOR,
+  PUBLIC_BOOKING_BOOKLOAD_QUERY,
   PUBLIC_BOOKING_FLOW_LANG_QUERY,
 } from '@/constants/routes';
 import { describe, expect, it } from 'vitest';
@@ -104,6 +105,15 @@ describe('public booking flow route helpers', () => {
       expect(u).toContain('serviceId=svc-1');
       expect(u).toContain('skipDetails=1');
       expect(u).toContain(`${PUBLIC_BOOKING_FLOW_LANG_QUERY}=es`);
+    });
+
+    it('includes bookLoad when set', () => {
+      const u = getBusinessBookScheduleUrl('acme-auto', {
+        serviceId: 'svc-1',
+        bookLoad: 'configure',
+      });
+      expect(u).toContain('serviceId=svc-1');
+      expect(u).toContain(`${PUBLIC_BOOKING_BOOKLOAD_QUERY}=configure`);
     });
   });
 });
