@@ -8,6 +8,7 @@ Single place to see **where code lives**, **which HTTP APIs exist**, and **how c
 
 | Doc | Contents |
 |-----|----------|
+| [MOBILE_QUOTE_SEND_CONTRACT.md](./MOBILE_QUOTE_SEND_CONTRACT.md) | **Mobile ↔ Next.js**: Bearer auth, JSON body, tracing headers, send / send-existing responses |
 | [QUOTES_TABLE.md](./QUOTES_TABLE.md) | `quotes` columns, statuses, owner vs customer request |
 | [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md) | `quote_public_links`, token hash, expiry, RLS notes |
 | [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md) | **Public quote request** intake vs **availability booking**, data flow, approve → V2 `bookings` |
@@ -69,7 +70,9 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 ### `POST /api/quotes/send`
 
-**Auth:** Session required (`createSupabaseServerClient` user).
+**Auth:** Session required — **Supabase cookies (web)** or **`Authorization: Bearer <access_token>` (mobile)** via `getAuthenticatedUser`.
+
+**Rate limit / tracing:** After auth, **`assertOwnerQuoteSendRateLimits`** (per user + per IP, 1h sliding window; Upstash when `UPSTASH_REDIS_*` set). Responses include **`X-Request-ID`**, **`Cache-Control: no-store`**; **429** + **`Retry-After`** when throttled. Structured **`[quotes-send]`** logs (no raw quote URLs/tokens; Supabase message text only outside production). Contract: [MOBILE_QUOTE_SEND_CONTRACT.md](./MOBILE_QUOTE_SEND_CONTRACT.md).
 
 **Purpose:** Create a `quotes` row (`status: sent`), insert `quote_public_links` with hashed token, return customer URL. **Service address is not collected here** — the customer enters it when they accept the quote (`POST /api/quotes/respond`).
 
@@ -94,7 +97,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Email:** After the quote and link exist, the API **best-effort** sends **Resend** email to `customerEmail` (`sendQuoteSentToCustomerEmail` in `src/features/email/quote-sent-to-customer/`). HTML follows the same layout as the **customer appointment confirmation** (availability booking email): cards, typography, full-width **Review quote** button. If `RESEND_API_KEY` is missing or Resend fails, the response is still **201**; failures are logged with `console.warn`.
 
-**Typical errors:** `401` unauthorized, `400` validation, `404` business not found, `403` slug not owned by user, `500` insert/link failure.
+**Typical errors:** `401` unauthorized, `400` validation / invalid JSON, `404` business not found, `403` slug not owned by user, `429` rate limit, `500` insert/link failure.
 
 **Code:** `src/app/api/quotes/send/route.ts`
 
@@ -118,7 +121,9 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 ### `POST /api/quotes/[id]/send`
 
-**Auth:** Session; business must own the quote (slug + `resolveCurrentBusinessId`).
+**Auth:** Same as `POST /api/quotes/send` (cookies or **Bearer**); business must own the quote (slug + `resolveCurrentBusinessId`).
+
+**Rate limit / tracing:** Same as `POST /api/quotes/send` (`assertOwnerQuoteSendRateLimits`, `X-Request-ID`, **429** + `Retry-After`).
 
 **Purpose:** **First send** for an existing row in `requested` or `draft` (e.g. customer request the owner finishes in `CreateQuoteScreen`). Updates the quote to `sent`, creates/revokes links like `POST /api/quotes/send`, emails the customer. Same payload shape as send + `businessSlug`.
 
@@ -269,6 +274,8 @@ Vitest includes `src/features/**/testing/**/*.test.ts` (see root `vitest.config.
 | `testing/resolveQuoteTokenHash.test.ts` | Token vs hash resolution |
 | `testing/quoteStartTimeToHHmm.test.ts` | `quoteStartTimeToHHmm` (DB time → `HH:mm`) |
 | `testing/deleteQuoteApiResponse.test.ts` | `parseDeleteQuoteApiResponse` |
+| `testing/quoteSendRouteLog.test.ts` | `getQuoteSendRequestId`, `maskEmailForLog`, `quoteSendJsonResponse`, `supabaseErrorForLogs`, safe log helpers |
+| `testing/ownerQuoteSendRateLimit.test.ts` | `assertOwnerQuoteSendRateLimits` memory path (61st call blocked) |
 
 Run: `npm test`
 

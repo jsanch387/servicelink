@@ -3,31 +3,84 @@ import {
   type QuoteSentToCustomerPayload,
 } from '@/features/email';
 import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
+import {
+  getQuoteSendRequestId,
+  logQuoteSend,
+  maskEmailForLog,
+  quoteSendJsonResponse,
+  shortUserIdForLog,
+  supabaseErrorForLogs,
+  truncateLogDetail,
+} from '@/features/quotes/server/quoteSendRouteLog';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { assertOwnerQuoteSendRateLimits } from '@/server/rateLimit/ownerQuoteSendRateLimit';
 import crypto from 'crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+
+const ROUTE_LABEL = 'POST /api/quotes/send';
 
 export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+  const requestId = getQuoteSendRequestId(request);
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+  try {
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'auth_failed', {
+        code: auth.code,
+      });
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: auth.error },
+        auth.status
       );
     }
 
-    const parsed = validateSendQuoteBody(await request.json());
+    const { user, authMethod } = auth;
+
+    const rateLimit = await assertOwnerQuoteSendRateLimits(request, user.id);
+    if (!rateLimit.ok) {
+      logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'rate_limited', {
+        authMethod,
+        reason: rateLimit.reason,
+        userIdPrefix: shortUserIdForLog(user.id),
+      });
+      return quoteSendJsonResponse(
+        requestId,
+        {
+          success: false,
+          error:
+            'Too many quote sends from this account or network. Please try again later.',
+        },
+        429,
+        { 'Retry-After': String(rateLimit.retryAfterSec) }
+      );
+    }
+
+    let json: unknown;
+    try {
+      json = await request.json();
+    } catch {
+      logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'invalid_json_body', {
+        authMethod,
+      });
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: 'Invalid JSON body' },
+        400
+      );
+    }
+
+    const parsed = validateSendQuoteBody(json);
     if (!parsed.ok) {
-      return NextResponse.json(
+      logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'validation_failed', {
+        authMethod,
+        status: parsed.status,
+      });
+      return quoteSendJsonResponse(
+        requestId,
         { success: false, error: parsed.error },
-        { status: parsed.status }
+        parsed.status
       );
     }
     const body = parsed.data;
@@ -41,9 +94,15 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (businessError || !business) {
-      return NextResponse.json(
+      logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'business_lookup_failed', {
+        authMethod,
+        businessSlug: body.businessSlug,
+        ...supabaseErrorForLogs(businessError ?? undefined),
+      });
+      return quoteSendJsonResponse(
+        requestId,
         { success: false, error: 'Business not found' },
-        { status: 404 }
+        404
       );
     }
 
@@ -66,9 +125,21 @@ export async function POST(request: NextRequest) {
         .join(' ') || null;
 
     if (!businessRow.profile_id || businessRow.profile_id !== user.id) {
-      return NextResponse.json(
+      logQuoteSend(
+        requestId,
+        ROUTE_LABEL,
+        'warn',
+        'forbidden_business_mismatch',
+        {
+          authMethod,
+          businessSlug: body.businessSlug,
+          userIdPrefix: shortUserIdForLog(user.id),
+        }
+      );
+      return quoteSendJsonResponse(
+        requestId,
         { success: false, error: 'Forbidden' },
-        { status: 403 }
+        403
       );
     }
 
@@ -100,9 +171,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (quoteError || !quote) {
-      return NextResponse.json(
+      logQuoteSend(requestId, ROUTE_LABEL, 'error', 'quote_insert_failed', {
+        authMethod,
+        businessId: businessRow.id,
+        ...supabaseErrorForLogs(quoteError ?? undefined),
+      });
+      return quoteSendJsonResponse(
+        requestId,
         { success: false, error: 'Failed to create quote' },
-        { status: 500 }
+        500
       );
     }
 
@@ -124,9 +201,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (linkError) {
-      return NextResponse.json(
+      logQuoteSend(
+        requestId,
+        ROUTE_LABEL,
+        'error',
+        'quote_link_insert_failed',
+        {
+          authMethod,
+          quoteId,
+          ...supabaseErrorForLogs(linkError ?? undefined),
+        }
+      );
+      return quoteSendJsonResponse(
+        requestId,
         { success: false, error: 'Failed to create quote link' },
-        { status: 500 }
+        500
       );
     }
 
@@ -154,27 +243,42 @@ export async function POST(request: NextRequest) {
         emailPayload
       );
       if (!emailResult.sent) {
-        console.warn(
-          '[API] POST /api/quotes/send: customer email not sent:',
-          emailResult.error
-        );
+        logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'customer_email_skipped', {
+          authMethod,
+          quoteId,
+          emailErrorHint: emailResult.error
+            ? truncateLogDetail(String(emailResult.error))
+            : undefined,
+        });
       }
     } catch (emailErr) {
-      console.warn(
-        '[API] POST /api/quotes/send: customer email error',
-        emailErr
-      );
+      logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'customer_email_exception', {
+        authMethod,
+        quoteId,
+      });
+      console.warn(`${ROUTE_LABEL} email`, emailErr);
     }
 
-    return NextResponse.json(
+    logQuoteSend(requestId, ROUTE_LABEL, 'info', 'quote_sent_ok', {
+      authMethod,
+      quoteId,
+      businessId: businessRow.id,
+      customerEmailMasked: maskEmailForLog(body.customerEmail),
+      expiresAt,
+    });
+
+    return quoteSendJsonResponse(
+      requestId,
       { success: true, data: { quoteId, publicUrl, expiresAt } },
-      { status: 201 }
+      201
     );
   } catch (error) {
-    console.error('[API] POST /api/quotes/send error', error);
-    return NextResponse.json(
+    logQuoteSend(requestId, ROUTE_LABEL, 'error', 'unhandled_exception', {});
+    console.error(ROUTE_LABEL, error);
+    return quoteSendJsonResponse(
+      requestId,
       { success: false, error: 'Failed to send quote' },
-      { status: 500 }
+      500
     );
   }
 }
