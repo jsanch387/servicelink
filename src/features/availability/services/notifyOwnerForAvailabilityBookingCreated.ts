@@ -3,16 +3,21 @@
  * Best-effort; failures are swallowed so the booking request can still succeed.
  */
 
+import { logAvailabilityOwnerNotify } from '@/features/availability/server/availabilityOwnerNotifyLog';
 import {
   sendAvailabilityBookingNotificationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { Database } from '@/libs/supabase/client';
+import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export async function notifyOwnerForAvailabilityBookingCreated(
   supabase: SupabaseClient<Database>,
   params: {
+    /** Optional HTTP request id for log correlation (e.g. public booking POST). */
+    correlationId?: string | null;
     profileId: string | null;
     bookingId: string;
     customerName: string;
@@ -23,6 +28,7 @@ export async function notifyOwnerForAvailabilityBookingCreated(
   }
 ): Promise<void> {
   const {
+    correlationId,
     profileId,
     bookingId,
     customerName,
@@ -30,28 +36,48 @@ export async function notifyOwnerForAvailabilityBookingCreated(
     scheduledDate,
   } = params;
 
-  if (profileId) {
-    const title = `New appointment from ${customerName}`;
-    const bodyText = serviceSummaryLine
-      ? `Service: ${serviceSummaryLine} · ${scheduledDate}`
-      : null;
-    try {
-      await supabase.from('notifications').insert({
-        user_id: profileId,
-        type: 'availability_booking',
-        reference_type: 'booking',
-        reference_id: bookingId,
-        title,
-        body: bodyText,
-      } as never);
-    } catch {
-      // Booking already created; notification is optional
-    }
-  }
-
   if (!profileId) {
+    logAvailabilityOwnerNotify(
+      correlationId ?? undefined,
+
+      'warn',
+      'skip_no_owner_profile',
+      {
+        bookingId,
+      }
+    );
     return;
   }
+
+  const title = `New appointment from ${customerName}`;
+  const bodyText = serviceSummaryLine
+    ? `Service: ${serviceSummaryLine} · ${scheduledDate}`
+    : null;
+
+  const { error: notifError } = await supabase.from('notifications').insert({
+    user_id: profileId,
+    type: 'availability_booking',
+    reference_type: 'booking',
+    reference_id: bookingId,
+    title,
+    body: bodyText,
+  } as never);
+
+  if (notifError) {
+    logAvailabilityOwnerNotify(
+      correlationId ?? undefined,
+      'warn',
+      'notification_insert_failed',
+      { bookingId, profileId, ...supabaseErrorForLogs(notifError) }
+    );
+  }
+
+  await sendExpoPushToUser(supabase, {
+    userId: profileId,
+    title,
+    body: bodyText,
+    data: { reference_type: 'booking', reference_id: bookingId },
+  });
 
   try {
     let ownerEmail: string | null = null;
@@ -69,7 +95,16 @@ export async function notifyOwnerForAvailabilityBookingCreated(
         params.emailPayload
       );
     }
-  } catch {
-    // Best-effort
+  } catch (e) {
+    logAvailabilityOwnerNotify(
+      correlationId ?? undefined,
+      'warn',
+      'owner_email_failed',
+      {
+        bookingId,
+        profileId,
+        message: e instanceof Error ? e.message.slice(0, 200) : String(e),
+      }
+    );
   }
 }

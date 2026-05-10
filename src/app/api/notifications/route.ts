@@ -28,7 +28,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('notifications')
       .select(
-        'id, type, reference_type, reference_id, title, body, read, read_at, created_at'
+        'id, type, reference_type, reference_id, title, body, read, read_at, created_at, metadata, dedupe_key'
       )
       .eq('user_id', user.id)
       .eq('read', false)

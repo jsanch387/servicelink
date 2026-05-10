@@ -1,8 +1,13 @@
+import type { Json } from '@/libs/supabase/client';
+
 /**
  * Notification types aligned with public.notifications table.
  */
 
-export type NotificationType = 'booking_request' | 'availability_booking';
+export type NotificationType =
+  | 'booking_request'
+  | 'availability_booking'
+  | 'quote_request';
 
 /** Row from notifications table (API/DB) */
 export interface Notification {
@@ -16,6 +21,8 @@ export interface Notification {
   read: boolean;
   read_at: string | null;
   created_at: string;
+  metadata: Json | null;
+  dedupe_key: string | null;
 }
 
 /** For list display in the UI */

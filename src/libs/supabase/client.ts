@@ -15,6 +15,15 @@ export type PaymentAccountOnboardingStatus =
   | 'complete'
   | 'restricted';
 
+/** JSON value for jsonb columns (Supabase-style). */
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 // Types for our database (we'll expand this as we build out our schema)
 export type Database = {
   public: {
@@ -489,6 +498,8 @@ export type Database = {
           read: boolean;
           read_at: string | null;
           created_at: string;
+          metadata: Json | null;
+          dedupe_key: string | null;
         };
         Insert: {
           id?: string;
@@ -501,6 +512,8 @@ export type Database = {
           read?: boolean;
           read_at?: string | null;
           created_at?: string;
+          metadata?: Json | null;
+          dedupe_key?: string | null;
         };
         Update: {
           id?: string;
@@ -513,6 +526,28 @@ export type Database = {
           read?: boolean;
           read_at?: string | null;
           created_at?: string;
+          metadata?: Json | null;
+          dedupe_key?: string | null;
+        };
+      };
+      user_push_tokens: {
+        Row: {
+          user_id: string;
+          expo_push_token: string;
+          platform: 'ios' | 'android';
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          expo_push_token: string;
+          platform: 'ios' | 'android';
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          expo_push_token?: string;
+          platform?: 'ios' | 'android';
+          updated_at?: string;
         };
       };
       payment_accounts: {

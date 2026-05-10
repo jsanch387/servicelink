@@ -3,6 +3,7 @@
  * Calls the app's API routes; auth is via session cookie.
  */
 
+import type { Json } from '@/libs/supabase/client';
 import type { NotificationDisplay } from '../types/notification';
 import { notificationToDisplay } from '../types/notification';
 
@@ -21,6 +22,8 @@ export interface NotificationsListResponse {
     read: boolean;
     read_at: string | null;
     created_at: string;
+    metadata: Json | null;
+    dedupe_key: string | null;
   }>;
   error?: string;
 }

@@ -13,6 +13,11 @@ import {
   normalizeBookingCustomerInput,
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
+import {
+  getPublicBookingRequestId,
+  logPublicBookingPost,
+  supabaseErrorForLogs,
+} from '@/features/availability/server/publicBookingRouteLog';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import {
   createBooking,
@@ -32,6 +37,20 @@ import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
+
+function publicBookingJson(
+  requestId: string,
+  body: unknown,
+  status: number
+): NextResponse {
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      'X-Request-ID': requestId,
+      'Cache-Control': 'no-store',
+    },
+  });
+}
 
 function buildPaymentSummaryForPublicBooking(params: {
   paymentsEnabled: boolean;
@@ -87,43 +106,49 @@ function buildPaymentSummaryForPublicBooking(params: {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = getPublicBookingRequestId(request);
   try {
     const body = (await request.json()) as CreateBookingRequest;
 
     if (!body.businessSlug?.trim()) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: 'Business slug is required' },
-        { status: 400 }
+        400
       );
     }
     if (!body.serviceName?.trim()) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: 'Service name is required' },
-        { status: 400 }
+        400
       );
     }
     if (
       !body.scheduledDate?.trim() ||
       !/^\d{4}-\d{2}-\d{2}$/.test(body.scheduledDate)
     ) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         {
           success: false,
           error: 'Valid scheduled date (YYYY-MM-DD) is required',
         },
-        { status: 400 }
+        400
       );
     }
     if (!body.startTime?.trim() || !/^\d{1,2}:\d{2}$/.test(body.startTime)) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: 'Valid start time (HH:mm) is required' },
-        { status: 400 }
+        400
       );
     }
     if (typeof body.durationMinutes !== 'number' || body.durationMinutes < 1) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: 'Duration is required' },
-        { status: 400 }
+        400
       );
     }
     const ownerManualBooking = body.ownerManualBooking === true;
@@ -131,32 +156,36 @@ export async function POST(request: NextRequest) {
     const customerPayloadErr =
       bookingCustomerPayloadErrorMessage(coercedCustomer);
     if (customerPayloadErr) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: customerPayloadErr },
-        { status: 400 }
+        400
       );
     }
     const sanitizedCustomer = normalizeBookingCustomerInput(coercedCustomer);
 
     if (ownerManualBooking) {
       if (!body.businessId?.trim()) {
-        return NextResponse.json(
+        return publicBookingJson(
+          requestId,
           { success: false, error: 'Business id is required' },
-          { status: 400 }
+          400
         );
       }
       const sessionSb = await createSupabaseServerClient();
       const resolved = await resolveCurrentBusinessId(sessionSb);
       if (!resolved.ok) {
-        return NextResponse.json(
+        return publicBookingJson(
+          requestId,
           { success: false, error: resolved.error },
-          { status: resolved.status }
+          resolved.status
         );
       }
       if (resolved.businessId !== body.businessId.trim()) {
-        return NextResponse.json(
+        return publicBookingJson(
+          requestId,
           { success: false, error: 'Forbidden' },
-          { status: 403 }
+          403
         );
       }
     }
@@ -172,18 +201,20 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: 'Business not found' },
-        { status: 404 }
+        404
       );
     }
 
     if (
       !(await isPublicBusinessSlugVisible(supabase, body.businessSlug.trim()))
     ) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: 'Business not found' },
-        { status: 404 }
+        404
       );
     }
 
@@ -201,9 +232,10 @@ export async function POST(request: NextRequest) {
     const profileId = p.profile_id ?? null;
 
     if (!body.businessId?.trim() || body.businessId.trim() !== businessId) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: 'Invalid request' },
-        { status: 400 }
+        400
       );
     }
 
@@ -214,9 +246,10 @@ export async function POST(request: NextRequest) {
       free_bookings_count: p.free_bookings_count,
     });
     if (!cap.ok) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         { success: false, error: cap.message },
-        { status: 403 }
+        403
       );
     }
 
@@ -235,12 +268,13 @@ export async function POST(request: NextRequest) {
         timeOffIntervals
       )
     ) {
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         {
           success: false,
           error: 'That time is not available. Please choose another slot.',
         },
-        { status: 409 }
+        409
       );
     }
 
@@ -262,6 +296,12 @@ export async function POST(request: NextRequest) {
       customer: sanitizedCustomer,
     });
 
+    logPublicBookingPost(requestId, 'info', 'booking_inserted', {
+      bookingId: result.id,
+      businessId,
+      ownerManualBooking,
+    });
+
     const selectedAddOnsForEmail = body.selectedAddOns ?? [];
     const basePriceForEmail = body.servicePriceCents ?? 0;
     const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
@@ -277,9 +317,11 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
     if (paymentSettingsError) {
-      console.error(
-        '[API] POST /api/public/bookings payment_settings',
-        paymentSettingsError
+      logPublicBookingPost(
+        requestId,
+        'warn',
+        'payment_settings_query_failed',
+        supabaseErrorForLogs(paymentSettingsError)
       );
     }
 
@@ -308,18 +350,27 @@ export async function POST(request: NextRequest) {
         clientPaymentMethod,
       });
     } catch (payErr) {
-      console.error(
-        '[API] POST /api/public/bookings booking_payments insert',
-        payErr
+      logPublicBookingPost(
+        requestId,
+        'error',
+        'booking_payments_insert_failed',
+        {
+          bookingId: result.id,
+          message:
+            payErr instanceof Error
+              ? payErr.message.slice(0, 200)
+              : String(payErr),
+        }
       );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('bookings').delete().eq('id', result.id);
-      return NextResponse.json(
+      return publicBookingJson(
+        requestId,
         {
           success: false,
           error: 'Something went wrong. Please try again.',
         },
-        { status: 500 }
+        500
       );
     }
 
@@ -355,6 +406,7 @@ export async function POST(request: NextRequest) {
     };
 
     await notifyOwnerForAvailabilityBookingCreated(supabase, {
+      correlationId: requestId,
       profileId,
       bookingId: result.id,
       customerName: sanitizedCustomer?.fullName?.trim() ?? 'A customer',
@@ -375,18 +427,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
+    logPublicBookingPost(requestId, 'info', 'request_completed', {
+      bookingId: result.id,
+    });
+    return publicBookingJson(
+      requestId,
       { success: true, data: { id: result.id } },
-      { status: 201 }
+      201
     );
   } catch (err) {
-    console.error('[API] POST /api/public/bookings:', err);
-    return NextResponse.json(
+    logPublicBookingPost(requestId, 'error', 'request_failed', {
+      message: err instanceof Error ? err.message.slice(0, 300) : String(err),
+    });
+    return publicBookingJson(
+      requestId,
       {
         success: false,
         error: 'Something went wrong. Please try again.',
       },
-      { status: 500 }
+      500
     );
   }
 }
