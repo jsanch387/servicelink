@@ -776,7 +776,7 @@ export function AvailabilityBookingPage({
 
   if (isAwaitingStripeCheckoutSummary) {
     return (
-      <div className="flex flex-col w-full min-h-[55vh] items-center justify-center py-16 px-4">
+      <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto items-center justify-center py-16 px-4 sm:px-6">
         <div
           className="h-10 w-10 rounded-full border-2 border-white/15 border-t-emerald-400 animate-spin"
           role="status"

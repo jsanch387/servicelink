@@ -14,6 +14,7 @@ import {
   sendBookingNotificationEmail,
   type BookingNotificationPayload,
 } from '@/features/email';
+import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database } from '@/libs/supabase/client';
 import { NextRequest, NextResponse } from 'next/server';
@@ -200,6 +201,18 @@ export async function POST(request: NextRequest) {
       } catch {
         // Do not fail the request; booking was already created
       }
+
+      await sendExpoPushToUser(admin, {
+        userId: profileId,
+        title: `New booking request from ${formData.name}`,
+        body: formData.service
+          ? `Service: ${formData.service} · ${formData.preferredDate}`
+          : null,
+        data: {
+          reference_type: 'booking_request',
+          reference_id: bookingId,
+        },
+      });
     }
 
     // Send email only after booking was created successfully (we only reach here when result.success)

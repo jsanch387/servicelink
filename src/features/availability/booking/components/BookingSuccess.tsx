@@ -73,7 +73,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   const vehicleLine = formatVehicle(customer);
 
   return (
-    <div className="flex flex-col w-full px-4 py-10 pb-16">
+    <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16 sm:pb-24">
       {/* Green check */}
       <div className="self-center w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-8 shadow-lg shadow-emerald-500/25">
         <CheckIcon className="w-10 h-10 text-white" />

@@ -7,6 +7,7 @@ import {
   sendQuoteRequestOwnerNotificationEmail,
   type QuoteRequestOwnerNotificationPayload,
 } from '@/features/email';
+import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -70,6 +71,13 @@ export async function notifyOwnerForPublicQuoteRequest(
   } catch {
     // Quote row already saved
   }
+
+  await sendExpoPushToUser(admin, {
+    userId: profileId,
+    title,
+    body: bodyText,
+    data: { reference_type: 'quote', reference_id: quoteId },
+  });
 
   // Same as booking-request submit: owner address lives on Supabase Auth, not business_profiles.
   let ownerEmail: string | null = null;

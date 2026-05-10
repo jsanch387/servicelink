@@ -1,0 +1,72 @@
+import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+describe('sendExpoPushToUser', () => {
+  const originalToken = process.env.EXPO_ACCESS_TOKEN;
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    process.env.EXPO_ACCESS_TOKEN = 'test-expo-token';
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    process.env.EXPO_ACCESS_TOKEN = originalToken;
+  });
+
+  it('no-ops when EXPO_ACCESS_TOKEN is unset', async () => {
+    delete process.env.EXPO_ACCESS_TOKEN;
+
+    const from = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+      }),
+    });
+
+    await sendExpoPushToUser({ from } as never, {
+      userId: 'user-1',
+      title: 'T',
+      body: 'B',
+      data: { reference_type: 'booking', reference_id: 'bid-1' },
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('posts Expo messages for each token', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ status: 'ok' }] }),
+    } as Response);
+
+    const eq = vi.fn().mockResolvedValue({
+      data: [{ expo_push_token: 'ExponentPushToken[aaa]' }],
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+
+    await sendExpoPushToUser({ from } as never, {
+      userId: 'user-1',
+      title: 'New appointment',
+      body: 'Details',
+      data: { reference_type: 'booking', reference_id: 'bid-1' },
+    });
+
+    expect(from).toHaveBeenCalledWith('user_push_tokens');
+    expect(eq).toHaveBeenCalledWith('user_id', 'user-1');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init?.method).toBe('POST');
+    const body = JSON.parse(String(init?.body));
+    expect(body).toEqual([
+      {
+        to: 'ExponentPushToken[aaa]',
+        title: 'New appointment',
+        body: 'Details',
+        data: { reference_type: 'booking', reference_id: 'bid-1' },
+      },
+    ]);
+  });
+});
