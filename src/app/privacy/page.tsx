@@ -125,6 +125,11 @@ export default function PrivacyPage() {
               </a>
               .
             </p>
+            <p className="text-base leading-relaxed mt-4">
+              ServiceLink does not use SMS for marketing or promotional
+              purposes. SMS is strictly limited to transactional appointment
+              updates and reminders.
+            </p>
           </section>
 
           <section>
@@ -195,6 +200,11 @@ export default function PrivacyPage() {
                 assets
               </li>
             </ul>
+            <p className="text-base leading-relaxed mt-4">
+              The categories above exclude text messaging originator opt-in data
+              and consent; this information will not be shared with any third
+              parties for their own marketing or promotional purposes.
+            </p>
           </section>
 
           <section>
