@@ -2,6 +2,10 @@ import { MetaCompleteRegistrationTracker } from '@/features/analytics';
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { Metadata } from 'next';
+import { unstable_noStore as noStore } from 'next/cache';
+
+/** Layout reads onboarding status; must not use a stale shell after step 5 completes. */
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Dashboard - ServiceLink',
@@ -19,6 +23,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  noStore();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

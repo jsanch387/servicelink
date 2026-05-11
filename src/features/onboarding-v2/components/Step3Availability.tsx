@@ -100,7 +100,7 @@ export const Step3Availability: React.FC<Step3AvailabilityProps> = ({
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
           When do you work?
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base mt-1">
+        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
           Pick your usual hours. Customers will only see times when you&apos;re
           free.
         </p>
@@ -122,8 +122,13 @@ export const Step3Availability: React.FC<Step3AvailabilityProps> = ({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button type="button" onClick={onBack} variant="secondary">
-          Back
+        <Button
+          type="button"
+          onClick={onBack}
+          variant="secondary"
+          disabled={saving}
+        >
+          Go back
         </Button>
         <Button
           type="button"

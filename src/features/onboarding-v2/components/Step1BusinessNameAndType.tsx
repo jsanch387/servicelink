@@ -50,12 +50,12 @@ export const Step1BusinessNameAndType: React.FC<
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full max-sm:pb-28">
       <div className="mb-6 sm:mb-8">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
           What&apos;s your business name?
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base mt-1">
+        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
           This is the name customers will see. You can change it later.
         </p>
       </div>
@@ -74,29 +74,42 @@ export const Step1BusinessNameAndType: React.FC<
             onChange={value => onUpdate({ businessName: value })}
             required
           />
-          <div>
-            <Select
-              label="What type of business is this?"
-              placeholder="Pick one"
-              value={businessType}
-              onChange={value => onUpdate({ businessType: value })}
-              options={BUSINESS_TYPE_OPTIONS}
-              required
-            />
-            <p className="mt-2.5 text-left text-sm text-gray-400">
-              Pick the type that fits your business best. We use it so your
-              booking form and settings make sense for what you offer.
-            </p>
-          </div>
+          <Select
+            label="What type of business is this?"
+            placeholder="Pick one"
+            value={businessType}
+            onChange={value => onUpdate({ businessType: value })}
+            options={BUSINESS_TYPE_OPTIONS}
+            required
+          />
         </div>
+      </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
+      <p className="mt-3 text-left text-sm text-gray-400 leading-relaxed sm:mt-4">
+        Pick the type that fits your business best. We use it so your booking
+        form and settings make sense for what you offer.
+      </p>
+
+      <div className="mt-8 hidden flex-col gap-3 sm:flex sm:flex-row sm:justify-end">
+        <Button
+          onClick={handleNext}
+          variant="inverse"
+          disabled={!canContinue || isLoading}
+          loading={isLoading}
+          className="w-full sm:w-auto min-w-[140px]"
+        >
+          Next
+        </Button>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[var(--dashboard-bg)]/95 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:hidden">
+        <div className="mx-auto flex max-w-2xl justify-stretch">
           <Button
             onClick={handleNext}
             variant="inverse"
             disabled={!canContinue || isLoading}
             loading={isLoading}
-            className="w-full sm:w-auto min-w-[140px]"
+            className="w-full font-semibold"
           >
             Next
           </Button>

@@ -19,13 +19,11 @@ function jsonError(
 export async function handleDeleteAccountRequest(request: NextRequest) {
   const auth = await getAuthenticatedUser(request);
   if ('error' in auth) {
-    console.warn('[account-delete] auth failed', {
-      code: auth.code,
-    });
+    console.warn('[account-delete] auth failed:', auth.code);
     return jsonError(auth.status, auth.code, auth.error);
   }
 
-  const { user, authMethod } = auth;
+  const { user } = auth;
 
   let body: unknown = null;
   try {
@@ -51,9 +49,7 @@ export async function handleDeleteAccountRequest(request: NextRequest) {
   }
 
   if (!accountEmail) {
-    console.warn('[account-delete] auth user has no email', {
-      authMethod,
-    });
+    console.warn('[account-delete] account has no email');
     return jsonError(
       400,
       'CONFIRM_EMAIL_MISMATCH',
@@ -62,9 +58,7 @@ export async function handleDeleteAccountRequest(request: NextRequest) {
   }
 
   if (confirmEmail !== accountEmail) {
-    console.warn('[account-delete] confirm email mismatch', {
-      authMethod,
-    });
+    console.warn('[account-delete] confirm email mismatch');
     return jsonError(
       400,
       'CONFIRM_EMAIL_MISMATCH',
@@ -74,11 +68,9 @@ export async function handleDeleteAccountRequest(request: NextRequest) {
 
   const rateLimit = await assertDeleteAccountRateLimit(request, user.id);
   if (!rateLimit.ok) {
-    console.warn('[account-delete] rate limited', {
-      authMethod,
-      reason: rateLimit.reason,
-      retryAfterSec: rateLimit.retryAfterSec,
-    });
+    console.warn(
+      `[account-delete] rate limited (retry in ${rateLimit.retryAfterSec}s)`
+    );
     return jsonError(
       429,
       'RATE_LIMITED',
@@ -90,9 +82,7 @@ export async function handleDeleteAccountRequest(request: NextRequest) {
     );
   }
 
-  console.info('[account-delete] start', {
-    authMethod,
-  });
+  console.info('[account-delete] start');
 
   try {
     const result = await deleteAccountForUser({
@@ -107,28 +97,19 @@ export async function handleDeleteAccountRequest(request: NextRequest) {
           : result.code === 'AUTH_DELETE_FAILED'
             ? 500
             : 500;
-      console.warn('[account-delete] aborted', {
-        authMethod,
-        outcomeCode: result.code,
-        httpStatus: status,
-      });
+      console.warn('[account-delete] aborted:', result.code);
       return jsonError(status, result.code, result.error);
     }
-
-    console.info('[account-delete] success', {
-      authMethod,
-      warningCount: result.warnings.length,
-    });
 
     return NextResponse.json(
       { success: true, warnings: result.warnings },
       { status: 200 }
     );
   } catch (err) {
-    console.error('[account-delete] unhandled error', {
-      authMethod,
-      message: err instanceof Error ? err.message : 'unknown',
-    });
+    console.error(
+      '[account-delete] unhandled error:',
+      err instanceof Error ? err.message : err
+    );
     return jsonError(500, 'INTERNAL_ERROR', 'Something went wrong.');
   }
 }

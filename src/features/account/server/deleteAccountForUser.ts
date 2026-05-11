@@ -13,7 +13,6 @@
  *      database FKs.
  *
  * Returns a discriminated union the API route can map to HTTP responses.
- * Each step logs structured context (no PII beyond user id) for ops.
  */
 
 import { getStripePlatform } from '@/libs/stripe';
@@ -78,18 +77,14 @@ export async function deleteAccountForUser({
     ]);
 
     if (profileRes.error) {
-      console.warn('[account-delete] profile lookup error', {
-        code: 'PROFILE_LOOKUP_ERROR',
-      });
+      console.warn('[account-delete] profile lookup failed');
     } else if (profileRes.data) {
       stripeCustomerId = profileRes.data.stripe_customer_id ?? null;
       stripeSubscriptionId = profileRes.data.stripe_subscription_id ?? null;
     }
 
     if (businessRes.error) {
-      console.warn('[account-delete] business lookup error', {
-        code: 'BUSINESS_LOOKUP_ERROR',
-      });
+      console.warn('[account-delete] business lookup failed');
     } else if (businessRes.data) {
       businessId = businessRes.data.id ?? null;
     }
@@ -101,18 +96,17 @@ export async function deleteAccountForUser({
         .eq('business_id', businessId)
         .maybeSingle();
       if (paymentRes.error) {
-        console.warn('[account-delete] payment_accounts lookup error', {
-          code: 'PAYMENT_ACCOUNT_LOOKUP_ERROR',
-        });
+        console.warn('[account-delete] payment_accounts lookup failed');
       } else if (paymentRes.data) {
         paymentAccountId = paymentRes.data.id ?? null;
         paymentStripeAccountId = paymentRes.data.stripe_account_id ?? null;
       }
     }
   } catch (err) {
-    console.error('[account-delete] failed loading billing refs', {
-      message: err instanceof Error ? err.message : 'unknown',
-    });
+    console.error(
+      '[account-delete] failed loading billing refs:',
+      err instanceof Error ? err.message : err
+    );
     return {
       ok: false,
       code: 'INTERNAL_ERROR',
@@ -128,10 +122,6 @@ export async function deleteAccountForUser({
     try {
       const stripe = getStripePlatform();
       await stripe.subscriptions.cancel(stripeSubscriptionId.trim());
-      console.info('[account-delete] stripe subscription canceled', {
-        userId,
-        stripeSubscriptionId,
-      });
     } catch (err) {
       const stripeErr = err as Stripe.errors.StripeError | Error;
       const code = (stripeErr as Stripe.errors.StripeError)?.code;
@@ -143,9 +133,10 @@ export async function deleteAccountForUser({
       const isMissing =
         code === 'resource_missing' || /no such subscription/i.test(message);
       if (!isMissing) {
-        console.error('[account-delete] stripe subscription cancel failed', {
-          code,
-        });
+        console.error(
+          '[account-delete] stripe subscription cancel failed:',
+          code ?? message
+        );
         return {
           ok: false,
           code: 'STRIPE_ERROR',
@@ -154,7 +145,7 @@ export async function deleteAccountForUser({
         };
       }
       warnings.push('subscription_already_missing');
-      console.warn('[account-delete] stripe subscription already missing');
+      console.warn('[account-delete] stripe subscription already gone');
     }
   }
 
@@ -164,15 +155,15 @@ export async function deleteAccountForUser({
     try {
       const stripe = getStripePlatform();
       await stripe.customers.del(stripeCustomerId.trim());
-      console.info('[account-delete] stripe customer deleted');
     } catch (err) {
       const stripeErr = err as Stripe.errors.StripeError | Error;
       const code = (stripeErr as Stripe.errors.StripeError)?.code;
       // Don't fail the whole delete; the customer either doesn't exist or
       // belongs to a different mode key. Log and move on.
-      console.warn('[account-delete] stripe customer delete soft-failed', {
-        code,
-      });
+      console.warn(
+        '[account-delete] stripe customer delete skipped:',
+        code ?? 'unknown'
+      );
       warnings.push('stripe_customer_delete_soft_failed');
     }
   }
@@ -181,7 +172,7 @@ export async function deleteAccountForUser({
   //    at a now-orphaned Stripe Connect account. We do NOT call
   //    accounts.reject / accounts.del on Stripe — Stripe disallows that for
   //    accounts with payment history (and we don't want to break their tax
-  //    records). Operations can locate the orphan via the logged id.
+  //    records).
   if (paymentAccountId) {
     try {
       const { error } = await (admin as any)
@@ -189,17 +180,14 @@ export async function deleteAccountForUser({
         .delete()
         .eq('id', paymentAccountId);
       if (error) {
-        console.warn('[account-delete] payment_accounts delete error', {
-          code: 'PAYMENT_ACCOUNT_DELETE_ERROR',
-        });
+        console.warn('[account-delete] payment_accounts delete failed');
         warnings.push('payment_accounts_delete_failed');
-      } else {
-        console.info('[account-delete] payment_accounts row deleted');
       }
     } catch (err) {
-      console.warn('[account-delete] payment_accounts delete threw', {
-        message: err instanceof Error ? err.message : 'unknown',
-      });
+      console.warn(
+        '[account-delete] payment_accounts delete error:',
+        err instanceof Error ? err.message : err
+      );
       warnings.push('payment_accounts_delete_failed');
     }
   }
@@ -210,9 +198,12 @@ export async function deleteAccountForUser({
   try {
     const { error } = await admin.auth.admin.deleteUser(userId);
     if (error) {
-      console.error('[account-delete] auth.admin.deleteUser failed', {
-        code: 'AUTH_DELETE_ERROR',
-      });
+      console.error(
+        '[account-delete] auth delete failed:',
+        'message' in error && typeof error.message === 'string'
+          ? error.message
+          : 'unknown'
+      );
       return {
         ok: false,
         code: 'AUTH_DELETE_FAILED',
@@ -220,9 +211,10 @@ export async function deleteAccountForUser({
       };
     }
   } catch (err) {
-    console.error('[account-delete] auth.admin.deleteUser threw', {
-      message: err instanceof Error ? err.message : 'unknown',
-    });
+    console.error(
+      '[account-delete] auth delete error:',
+      err instanceof Error ? err.message : err
+    );
     return {
       ok: false,
       code: 'AUTH_DELETE_FAILED',
@@ -230,12 +222,13 @@ export async function deleteAccountForUser({
     };
   }
 
-  console.info('[account-delete] complete', {
-    hadSubscription: !!stripeSubscriptionId,
-    hadCustomer: !!stripeCustomerId,
-    hadConnectAccount: !!paymentStripeAccountId,
-    warningCount: warnings.length,
-  });
+  if (warnings.length > 0) {
+    console.info(
+      `[account-delete] completed (${warnings.length} warning${warnings.length === 1 ? '' : 's'})`
+    );
+  } else {
+    console.info('[account-delete] completed');
+  }
 
   return { ok: true, warnings };
 }

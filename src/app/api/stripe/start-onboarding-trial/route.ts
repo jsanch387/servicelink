@@ -18,6 +18,7 @@ import { STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO } from '@/features/pricing/ut
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getStripePlatform } from '@/libs/stripe';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
           onboarding_status: trial_confirmation?.onboarding_status ?? null,
         }
       );
+      revalidatePath('/dashboard', 'layout');
       return NextResponse.json({
         success: true,
         alreadyActive: true,
@@ -314,6 +316,7 @@ export async function POST(request: NextRequest) {
       periodEnd: trial_confirmation?.subscription_current_period_end ?? null,
     });
 
+    revalidatePath('/dashboard', 'layout');
     return NextResponse.json({
       success: true,
       ...(trial_confirmation ? { trial_confirmation } : {}),

@@ -135,7 +135,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
           Add at least one service
         </h1>
-        <p className="text-gray-400 text-sm sm:text-base mt-1">
+        <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
           Add one service to continue — you can add the rest after onboarding.
         </p>
       </div>
@@ -266,7 +266,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           variant="secondary"
           disabled={isLoading}
         >
-          Back
+          Go back
         </Button>
         <Button
           type="button"

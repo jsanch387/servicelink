@@ -151,7 +151,7 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
           />
         );
       case 5:
-        return <Step5Done slug={state.slug} />;
+        return <Step5Done slug={state.slug} onBack={() => setStep(4)} />;
       default:
         return null;
     }
