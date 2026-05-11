@@ -17,7 +17,9 @@
  *      STRIPE_MOBILE_UPGRADE_CANCEL_URL.
  */
 
+import { API_ROUTES } from '@/constants/routes';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
         { status: auth.status }
       );
     }
-    const { user, supabase } = auth;
+    const { user, supabase, authMethod } = auth;
 
     const priceId = process.env.STRIPE_PRO_PRICE_ID;
     if (!priceId) {
@@ -80,6 +82,17 @@ export async function POST(request: NextRequest) {
     const isMobileClient = body.client === 'mobile';
     /** 7-day trial only for first Stripe customer; returning `cus_…` skips trial (same as paywall upgrade). */
     const applyOnboardingTrial = fromOnboarding && !existingStripeCustomerId;
+
+    onboardingStripeDebug('create-checkout', 'request', {
+      userId: user.id,
+      authMethod,
+      fromOnboarding,
+      isMobileClient,
+      applyOnboardingTrial,
+      existingStripeCustomerIdSuffix: existingStripeCustomerId
+        ? existingStripeCustomerId.slice(-8)
+        : null,
+    });
 
     let successUrl: string;
     let cancelUrl: string;
@@ -189,6 +202,29 @@ export async function POST(request: NextRequest) {
     }
 
     console.info(`${LOG} checkout session created`);
+
+    onboardingStripeDebug('create-checkout', 'session created', {
+      userId: user.id,
+      sessionIdSuffix: session.id.slice(-8),
+      fromOnboarding,
+      isMobileClient,
+      applyOnboardingTrial,
+    });
+
+    if (fromOnboarding && isMobileClient) {
+      return NextResponse.json({
+        success: true,
+        url: session.url,
+        trial_checkout_followup: {
+          confirm_session: {
+            method: 'POST' as const,
+            path: API_ROUTES.STRIPE_CONFIRM_ONBOARDING_TRIAL,
+            /** Pass the completed Checkout Session id (e.g. from `session_id` on your success URL). */
+            body_json_shape: { checkout_session_id: 'string' },
+          },
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, url: session.url });
   } catch (err) {

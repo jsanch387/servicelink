@@ -1,14 +1,15 @@
-import { CheckCircleIcon } from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/20/solid';
 import React from 'react';
 import type { ProFeatureItem } from '../types';
 
 function PricingPlanFeatureBullet() {
   return (
-    <CheckCircleIcon
-      className="mt-0.5 h-5 w-5 shrink-0 text-green-500/80"
-      strokeWidth={1.75}
+    <span
+      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/[0.06] ring-1 ring-white/[0.06]"
       aria-hidden
-    />
+    >
+      <CheckIcon className="h-3 w-3 text-emerald-400/90" />
+    </span>
   );
 }
 
@@ -22,17 +23,17 @@ export const PricingPlanFeatureList: React.FC<PricingPlanFeatureListProps> = ({
   items,
   emphasizeHighlights = true,
 }) => (
-  <ul className="space-y-3.5">
+  <ul className="space-y-3 text-left">
     {items.map((item, i) => (
       <li
         key={`${item.text}-${i}`}
-        className="flex items-start gap-3.5 text-gray-300 text-sm sm:text-base"
+        className="flex items-start gap-3 text-sm leading-relaxed text-zinc-400 sm:text-[0.9375rem]"
       >
         <PricingPlanFeatureBullet />
         <span
           className={
             emphasizeHighlights && item.highlight
-              ? 'font-semibold text-white'
+              ? 'font-medium text-zinc-100'
               : ''
           }
         >

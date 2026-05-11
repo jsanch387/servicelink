@@ -1,36 +1,62 @@
-# Contract: Mobile onboarding — Stripe free trial checkout
+# Contract: Mobile onboarding — Pro trial (Checkout or silent API)
 
-ServiceLink **web API** (this repo) creates a Stripe Checkout session for onboarding step 5 (“start free trial”). The **Expo app** opens the returned `url` in an in-app browser; Stripe redirects back using **deep link URLs** configured on the server. Subscription and onboarding completion are applied by the **existing Stripe webhook** (`checkout.session.completed`); the app should **refetch** user/profile after the browser closes.
+ServiceLink **web API** (this repo) supports two ways to start the onboarding step 5 trial:
+
+1. **Stripe Checkout (legacy / fallback)** — `POST /api/stripe/create-checkout-session` returns a `url`; the app opens it; Stripe redirects back via deep link. **Subscription rows and trial dates live in Stripe**; the app should call **`POST /api/stripe/confirm-onboarding-trial`** after success so the response includes **`trial_confirmation`** (DB + Stripe) without racing the webhook alone.
+2. **Silent subscription (recommended when supported)** — `POST /api/stripe/start-onboarding-trial` with the same Bearer auth **creates the subscription in Stripe without Checkout** and returns **`trial_confirmation` immediately** (same shape as confirm).
 
 ---
 
-## Endpoint
+## Shared: `trial_confirmation` (success payloads)
+
+Whenever the server finishes a trial activation path (silent API, confirm-after-checkout, or “already active” idempotent retry), responses may include:
+
+| Field | Type | Description |
+|-------|------|---------------|
+| `success` | `boolean` | Request succeeded. |
+| `trial_confirmation` | `object` \| omitted | Present when the profile could be loaded. Authoritative merge of **Supabase `profiles`** and **Stripe `Subscription`**. |
+
+### `trial_confirmation` object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user_id` | `string` | Supabase auth / `profiles.user_id`. |
+| `onboarding_status` | `string \| null` | e.g. `completed` after onboarding bridge. |
+| `subscription_tier` | `string \| null` | e.g. `pro`. |
+| `subscription_status` | `string \| null` | From DB (mirrors Stripe after sync), e.g. `trialing`, `active`. |
+| `stripe_customer_id` | `string \| null` | Stripe Customer id on the profile. |
+| `stripe_subscription_id` | `string \| null` | Stripe Subscription id on the profile. |
+| `subscription_current_period_end` | `string \| null` | ISO timestamp from DB (billing period end). |
+| `stripe` | `object` | Fields read live from Stripe when `stripe_subscription_id` is set. |
+| `stripe.subscription_id` | `string \| null` | Same as profile subscription id when retrieved. |
+| `stripe.status` | `string \| null` | Stripe subscription status (e.g. `trialing`). |
+| `stripe.trial_start` | `string \| null` | ISO start of trial from Stripe (null if not trialing / no trial). |
+| `stripe.trial_end` | `string \| null` | ISO end of trial from Stripe (null if not applicable). |
+
+**Mobile should** treat `trial_confirmation` as the source of truth for “trial is active” UI after a successful response, and still listen for profile refresh from Supabase/webhooks for later changes (cancel, past_due, etc.).
+
+---
+
+## A) Start Checkout (unchanged URL flow)
+
+### Endpoint
 
 | | |
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/api/stripe/create-checkout-session` |
-| **Local base URL** | `http://localhost:3000` (or whatever port `next dev` uses) |
 | **Full URL (local)** | `http://localhost:3000/api/stripe/create-checkout-session` |
 
-Use HTTPS in non-local environments (e.g. production or a tunnel like ngrok if the device cannot reach your machine’s `localhost`).
+Use HTTPS in production (or a tunnel if the device cannot reach your machine).
 
----
-
-## Authentication
+### Authentication
 
 | Header | Value |
-|--------|--------|
+|--------|-------|
 | `Authorization` | `Bearer <Supabase access_token>` |
 | `Content-Type` | `application/json` |
 
-Same JWT the app already uses for Supabase-authenticated API calls. Cookie-based web sessions are not required for this call.
-
----
-
-## Request body (JSON)
-
-Required shape for **onboarding trial from mobile**:
+### Request body (JSON)
 
 ```json
 {
@@ -40,98 +66,190 @@ Required shape for **onboarding trial from mobile**:
 ```
 
 | Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| `source` | string | Yes for this flow | Must be exactly `onboarding_trial_bridge` to enable 7-day trial + onboarding completion in webhook. |
-| `client` | string | Yes for deep-link returns | Must be exactly `mobile` so success/cancel URLs use server env (see below). |
+|-------|------|----------|-------|
+| `source` | string | Yes | Must be `onboarding_trial_bridge` for 7-day trial + onboarding completion metadata on the session. |
+| `client` | string | Yes | Must be `mobile` for mobile success/cancel URLs from env. |
 
----
-
-## Success response
-
-**HTTP:** `200`
-
-**Body:**
+### Success response (HTTP `200`)
 
 ```json
 {
   "success": true,
-  "url": "https://checkout.stripe.com/c/pay/cs_test_..."
+  "url": "https://checkout.stripe.com/c/pay/cs_test_...",
+  "trial_checkout_followup": {
+    "confirm_session": {
+      "method": "POST",
+      "path": "/api/stripe/confirm-onboarding-trial",
+      "body_json_shape": {
+        "checkout_session_id": "string"
+      }
+    }
+  }
 }
 ```
 
-The client **opens `url`** in the system / in-app browser (not an embedded WebView if your auth guidelines require otherwise, follow product rules).
+- `trial_checkout_followup` is present **only** for this mobile + onboarding combination. Use it to know **where** to confirm after Checkout.
+- `url` — open in the in-app / system browser as before.
+
+### Configure success URL with session id
+
+So the app can call confirm with the session id, set **`STRIPE_MOBILE_ONBOARDING_SUCCESS_URL`** to include Stripe’s placeholder, for example:
+
+`servicelinkmobile://onboarding/stripe?result=success&session_id={CHECKOUT_SESSION_ID}`
+
+Parse `session_id` (or whatever query name you use) and send it as **`checkout_session_id`** in the confirm request body.
 
 ---
 
-## Error responses
+## B) Confirm after Checkout (new — trial snapshot + optional sync)
 
-| HTTP | Body shape | Typical cause |
-|------|------------|----------------|
-| `401` | `{ "success": false, "error": "..." }` | Missing/invalid/expired Bearer token. |
-| `500` | `{ "success": false, "error": "..." }` | Misconfiguration (e.g. missing `STRIPE_PRO_PRICE_ID`, missing mobile return URL envs, Stripe API error). |
+Call when the user returns from Stripe with a **completed** session (or poll with the session id until `checkout_session_status` is `complete`).
 
----
+### Endpoint
 
-## Server environment (this repo)
+| | |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/stripe/confirm-onboarding-trial` |
 
-Required for any checkout:
+### Authentication
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_PRO_PRICE_ID`
+Same Bearer token as Checkout.
 
-Required **only** when body includes `source: onboarding_trial_bridge` **and** `client: mobile` (otherwise checkout uses normal web redirect URLs):
+### Request body (JSON)
 
-- `STRIPE_MOBILE_ONBOARDING_SUCCESS_URL` — full URL Stripe redirects to after **success** (e.g. `servicelinkmobile://onboarding/stripe?result=success` or an `https://` bridge).
-- `STRIPE_MOBILE_ONBOARDING_CANCEL_URL` — full URL for **cancel**.
+**After Checkout (recommended):**
 
-If those two are unset in that mobile+onboarding case, the API returns `500` with an explicit error message.
-
-### Example `.env.local` (local dev)
-
-Use **quotes** so `?` and `=` are not misread by your shell or editor:
-
-```bash
-STRIPE_MOBILE_ONBOARDING_SUCCESS_URL="servicelinkmobile://onboarding/stripe?result=success"
-STRIPE_MOBILE_ONBOARDING_CANCEL_URL="servicelinkmobile://onboarding/stripe?result=cancel"
+```json
+{
+  "checkout_session_id": "cs_test_..."
+}
 ```
 
-After changing env vars, **restart** `next dev` so Next.js reloads them.
+**Poll current trial state (no session id):**
 
-### Server logs
+```json
+{}
+```
 
-Look for the prefix **`[stripe:create-checkout-session]`** in the terminal where `npm run dev` runs. Useful lines include auth failures, missing mobile URL env errors, `checkout session created` (Stripe session ids are not logged), and Stripe errors.
+An empty body returns the latest **`trial_confirmation`** from DB + Stripe for the signed-in user (useful if the webhook already ran and you only need to refresh UI).
+
+### Success responses (HTTP `200`)
+
+**Checkout complete — profile synced from session:**
+
+```json
+{
+  "success": true,
+  "synced_from_checkout": true,
+  "trial_confirmation": { "...": "see table above" }
+}
+```
+
+**Checkout not complete yet (user returned early or Stripe still processing):**
+
+```json
+{
+  "success": true,
+  "checkout_pending": true,
+  "checkout_session_status": "open",
+  "synced_from_checkout": false,
+  "trial_confirmation": { "...": "current DB + Stripe; may update after completion" }
+}
+```
+
+**No `checkout_session_id` (profile poll):**
+
+```json
+{
+  "success": true,
+  "synced_from_checkout": false,
+  "trial_confirmation": { "...": "see table above" }
+}
+```
+
+### Error responses (selected)
+
+| HTTP | When |
+|------|------|
+| `400` | Invalid `checkout_session_id`, wrong session `mode`, or session not tagged `onboarding_trial_bridge`. |
+| `403` | Session metadata `userId` does not match the Bearer user. |
+| `401` | Missing/invalid token. |
+
+The confirm handler applies the **same** profile + onboarding updates as the Stripe webhook for a completed onboarding subscription session (idempotent if the webhook already ran).
 
 ---
 
-## Client behavior after Stripe
+## C) Silent trial (optional mobile path — no Checkout)
 
-1. User completes or cancels Checkout; Stripe redirects to the success or cancel URL above.
-2. **Do not** rely only on the deep link query string for entitlements.
-3. After the browser session ends, **reload** profile / onboarding state from your backend (or Supabase with RLS) so data reflects the webhook (`completeOnboardingV2`, Pro trial fields, etc.).
+Same as web: **`POST /api/stripe/start-onboarding-trial`** with Bearer auth and **no** body (or `{}`). On success:
+
+```json
+{
+  "success": true,
+  "trial_confirmation": { "...": "see table above" }
+}
+```
+
+If the user already has an active/trialing subscription:
+
+```json
+{
+  "success": true,
+  "alreadyActive": true,
+  "trial_confirmation": { "...": "see table above" }
+}
+```
+
+If Stripe rejects silent creation, the API may return **`fallbackToCheckout: true`** — then use flow **A** + **B**.
 
 ---
 
-## Example: `curl` (local)
+## Client checklist (Checkout flow)
 
-Replace `YOUR_ACCESS_TOKEN` and host/port as needed.
+1. `POST /api/stripe/create-checkout-session` with `source` + `client`; open `url`.
+2. On success deep link, read **`checkout_session_id`** (from `session_id` in your success URL).
+3. `POST /api/stripe/confirm-onboarding-trial` with `{ "checkout_session_id": "..." }` until `synced_from_checkout === true` (or `checkout_pending` is false and `trial_confirmation.subscription_status` is `trialing` / `active`).
+4. Drive UI from **`trial_confirmation`**; keep periodic profile sync for long-lived state.
+
+---
+
+## Server environment
+
+Same as before: `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, and for Checkout flow **`STRIPE_MOBILE_ONBOARDING_SUCCESS_URL`** / **`STRIPE_MOBILE_ONBOARDING_CANCEL_URL`**.
+
+Confirm + silent routes additionally rely on **`SUPABASE_SECRET_KEY`** or **`SUPABASE_SERVICE_ROLE_KEY`** (service role) for applying checkout completion when the client calls confirm (same as webhook).
+
+---
+
+## Example `curl`: confirm after Checkout
 
 ```bash
-curl -sS -X POST 'http://localhost:3000/api/stripe/create-checkout-session' \
+curl -sS -X POST 'http://localhost:3000/api/stripe/confirm-onboarding-trial' \
   -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
   -H 'Content-Type: application/json' \
-  -d '{"source":"onboarding_trial_bridge","client":"mobile"}'
+  -d '{"checkout_session_id":"cs_test_..."}'
 ```
-
-Expected: JSON with `success: true` and a `url` starting with `https://checkout.stripe.com/` (test mode when using test API keys).
 
 ---
 
 ## Paywall upgrade (different contract)
 
-After onboarding, when the user is paywalled and taps **Upgrade to Pro**, use **`{ "client": "mobile" }` only** (no `onboarding_trial_bridge`) and set **`STRIPE_MOBILE_UPGRADE_SUCCESS_URL`** / **`STRIPE_MOBILE_UPGRADE_CANCEL_URL`**. See [`mobile-upgrade-stripe-checkout.md`](./mobile-upgrade-stripe-checkout.md).
+Use **`POST /api/stripe/create-checkout-session`** with **`{ "client": "mobile" }` only** (no `onboarding_trial_bridge`). Confirm endpoint **rejects** sessions whose `metadata.source` is not `onboarding_trial_bridge`. For upgrades, refetch profile or add a separate contract later if you need a similar confirmation payload.
+
+---
+
+## Server debugging (ServiceLink repo)
+
+Verbose **`console.debug`** lines for these flows use the tag **`[stripe:onboarding:<scope>]`** (for example `create-checkout`, `start-trial`, `confirm-trial`, `trial-payload`, `apply-checkout`).
+
+- **Local / non-production:** enabled when `NODE_ENV !== 'production'`.
+- **Production:** set **`DEBUG_STRIPE_ONBOARDING=1`** to enable the same logs.
+
+Logs avoid email addresses and payment method details; they may include `userId`, truncated Stripe id suffixes, and status fields.
 
 ---
 
 ## Versioning
 
-No explicit API version in the path. Breaking changes to this contract should be announced to the mobile team; prefer additive fields on responses if possible.
+Responses are **additive**: new fields may appear on `trial_confirmation` or top-level success objects. Breaking path or auth changes should be coordinated with the mobile team.

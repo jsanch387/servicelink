@@ -22,7 +22,7 @@ export default function PricingPage() {
       {/* Visible gap between nav and content */}
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold t Startext-white mb-4 tracking-tight text-center">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight text-center">
           Pricing
         </h1>
         <p className="text-gray-400 text-center mb-12 sm:mb-16 max-w-2xl mx-auto text-sm sm:text-base">
@@ -57,7 +57,7 @@ export default function PricingPage() {
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
               <p className="text-sm font-medium text-white">7-day free trial</p>
               <p className="text-xs text-gray-400 mt-1">
-                Launch your profile and test everything befo re your first
+                Launch your profile and test everything before your first
                 charge.
               </p>
             </div>

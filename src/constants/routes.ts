@@ -80,6 +80,17 @@ export const API_ROUTES = {
   STRIPE_CONNECT_SYNC: '/api/stripe/connect/sync',
   /** Pro: one-time URL to the connected account’s Stripe Express Dashboard. */
   STRIPE_CONNECT_EXPRESS_DASHBOARD: '/api/stripe/connect/express-dashboard',
+  /** Onboarding step 5 (web): start Pro trial via Stripe Subscription API (no Checkout redirect). */
+  STRIPE_START_ONBOARDING_TRIAL: '/api/stripe/start-onboarding-trial',
+  /**
+   * After onboarding Stripe Checkout (mobile): POST with optional `checkout_session_id`
+   * to sync profile and return `trial_confirmation` (DB + Stripe trial fields).
+   */
+  STRIPE_CONFIRM_ONBOARDING_TRIAL: '/api/stripe/confirm-onboarding-trial',
+  /** Authenticated: Stripe Checkout session URL for Pro (upgrade or rare onboarding fallback). */
+  STRIPE_CREATE_CHECKOUT_SESSION: '/api/stripe/create-checkout-session',
+  /** Authenticated: Stripe Customer Portal session URL (manage subscription / payment method). */
+  STRIPE_CREATE_PORTAL_SESSION: '/api/stripe/create-portal-session',
   /** Pro + Stripe connected: create/update `payment_settings` and turn on ServiceLink payments. */
   PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
   /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */

@@ -27,17 +27,16 @@ import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availabilit
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   sendTrialEndingSoonEmail,
-  sendWelcomeLiveEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
-import { completeOnboardingV2 } from '@/features/onboarding-v2/server/completeOnboarding';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
+import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
-import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
+import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/trialConfirmationPayload';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -251,51 +250,6 @@ function parseStoredBookingCheckoutPayload(
         ? Math.max(0, Math.round(p.depositValue))
         : null,
   };
-}
-
-/**
- * Current billing period end (unix seconds). Basil API stores period bounds on
- * subscription items; fall back to legacy subscription-level field if present.
- */
-function subscriptionCurrentPeriodEndUnix(
-  subscription: Stripe.Subscription
-): number | null {
-  const items = subscription.items?.data;
-  if (items && items.length > 0) {
-    return Math.max(...items.map(i => i.current_period_end));
-  }
-  const legacy = subscription as Stripe.Subscription & {
-    current_period_end?: number;
-  };
-  return legacy.current_period_end ?? null;
-}
-
-/** Best-effort: subscription can lag right after checkout — retry once before writing null period end. */
-async function retrieveSubscriptionCurrentPeriodEndIso(
-  stripe: Stripe,
-  subscriptionId: string
-): Promise<string | null> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
-      if (periodEnd != null) {
-        return new Date(periodEnd * 1000).toISOString();
-      }
-    } catch (e) {
-      console.error(
-        `Stripe webhook: subscriptions.retrieve attempt ${attempt + 1} failed`,
-        e
-      );
-    }
-    if (attempt === 0) {
-      await new Promise(r => setTimeout(r, 750));
-    }
-  }
-  console.warn(
-    'Stripe webhook: subscription period end still null after checkout retrieve (will rely on customer.subscription.updated)'
-  );
-  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -819,108 +773,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    const stripeCustomerId =
-      typeof session.customer === 'string'
-        ? session.customer
-        : (session.customer?.id ?? null);
-    const stripeSubscriptionId =
-      typeof session.subscription === 'string'
-        ? session.subscription
-        : (session.subscription?.id ?? null);
-
-    let currentPeriodEnd: string | null = null;
-    let subscriptionStatus: string | null = null;
-    if (stripeSubscriptionId) {
-      const stripe = getStripePlatform();
-      try {
-        const subscription =
-          await stripe.subscriptions.retrieve(stripeSubscriptionId);
-        subscriptionStatus = subscription.status ?? null;
-      } catch (retrieveErr) {
-        console.warn(
-          '[Stripe webhook] subscriptions.retrieve status fetch failed after checkout',
-          { eventId: event.id, stripeSubscriptionId, retrieveErr }
-        );
-      }
-      currentPeriodEnd = await retrieveSubscriptionCurrentPeriodEndIso(
-        stripe,
-        stripeSubscriptionId
-      );
-    }
-
-    const result = await updateProfileFromCheckout(supabase, {
-      userId: userId.trim(),
-      stripeCustomerId,
-      stripeSubscriptionId,
-      currentPeriodEnd,
-      subscriptionStatus,
-    });
-
-    if (!result.success) {
+    const stripe = getStripePlatform();
+    const applyResult = await applyPlatformProCheckoutSessionCompleted(
+      supabase,
+      stripe,
+      session
+    );
+    if (!applyResult.success) {
       console.error(
-        'Stripe webhook: updateProfileFromCheckout failed',
-        result.error
+        'Stripe webhook: apply platform subscription checkout failed',
+        applyResult.error
       );
       return NextResponse.json(
         { error: 'Profile update failed' },
         { status: 500 }
       );
-    }
-
-    // Onboarding monetization bridge:
-    // only mark onboarding complete after successful checkout event.
-    if (session.metadata?.source === 'onboarding_trial_bridge') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profileBeforeComplete } = await (supabase as any)
-        .from('profiles')
-        .select('onboarding_status')
-        .eq('user_id', userId.trim())
-        .single();
-      const wasAlreadyCompleted =
-        profileBeforeComplete?.onboarding_status === 'completed';
-
-      const completeResult = await completeOnboardingV2(
-        supabase,
-        userId.trim()
-      );
-      if (!completeResult.success) {
-        console.error(
-          'Stripe webhook: completeOnboardingV2 failed for onboarding bridge',
-          completeResult.error
-        );
-        return NextResponse.json(
-          { error: 'Onboarding completion failed' },
-          { status: 500 }
-        );
-      }
-
-      if (!wasAlreadyCompleted) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: businessProfile } = await (supabase as any)
-          .from('business_profiles')
-          .select('business_slug')
-          .eq('profile_id', userId.trim())
-          .single();
-        const businessSlug = businessProfile?.business_slug?.trim();
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const authResult = await (supabase as any).auth.admin.getUserById(
-          userId.trim()
-        );
-        const userEmail = authResult?.data?.user?.email?.trim();
-
-        if (businessSlug && userEmail) {
-          const emailResult = await sendWelcomeLiveEmail(userEmail, {
-            businessSlug,
-          });
-          if (!emailResult.sent) {
-            console.error(
-              'Stripe webhook: failed to send onboarding welcome live email',
-              emailResult.error
-            );
-          }
-        }
-      }
     }
   }
 

@@ -1,42 +1,57 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { API_ROUTES, ROUTES } from '@/constants/routes';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import React, { useState } from 'react';
-
-const APP_DOMAIN = 'myservicelink.app';
+import { BoltIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation';
+import React, { useMemo, useState } from 'react';
 
 interface Step5DoneProps {
   /** Slug for the public booking link path. */
   slug: string;
 }
 
+function publicBookingHost(): string {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!raw) return 'myservicelink.app';
+  try {
+    const u = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+    return u.host;
+  } catch {
+    return 'myservicelink.app';
+  }
+}
+
 export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const slugDisplay = slug.trim() || 'your-link';
-  const bookingUrl = `${APP_DOMAIN}/${slugDisplay}`;
+  const bookingHost = useMemo(() => publicBookingHost(), []);
+  const bookingUrl = `${bookingHost}/${slugDisplay}`;
 
-  const handleStartTrial = async () => {
+  const handleActivateLink = async () => {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/stripe/create-checkout-session', {
+      const res = await fetch(API_ROUTES.STRIPE_START_ONBOARDING_TRIAL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          source: 'onboarding_trial_bridge',
-        }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.url) {
-        setError(data.error ?? 'Something went wrong.');
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (res.ok && data.success) {
+        const href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
+        router.prefetch(href);
+        router.push(href);
         return;
       }
-      window.location.href = data.url;
+
+      setError(data.error ?? 'Something went wrong.');
     } finally {
       setLoading(false);
     }
@@ -44,56 +59,64 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug }) => {
 
   return (
     <div className="w-full">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight uppercase">
-          Go live!
+      <header className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
+          Go live
         </h1>
-        <p className="text-sm sm:text-base mt-2 text-gray-400">
-          Your booking link is ready.{' '}
-          <span className="font-semibold text-white">No card required.</span>
+        <p className="text-sm sm:text-base mt-2 text-gray-400 leading-relaxed max-w-xl">
+          Your link goes live next.{' '}
+          <span className="font-semibold text-white">
+            Share it. Get booked.
+          </span>
         </p>
-      </div>
+      </header>
 
-      <div className="rounded-2xl border border-white/[0.12] bg-zinc-900/80 p-4">
+      <div className="rounded-2xl border border-white/10 bg-zinc-900/90 p-4 sm:p-5 shadow-sm shadow-black/20">
         {error && (
           <p className="text-red-400 text-sm mb-4" role="alert">
             {error}
           </p>
         )}
 
-        <div className="mb-5">
-          <p className="text-xs sm:text-sm text-gray-400 mb-1.5">
-            Your booking link
-          </p>
-          <p className="text-base sm:text-lg font-bold text-white font-mono break-all">
+        <div>
+          <p className="text-xs text-gray-500">Your booking link</p>
+          <p className="mt-1 text-sm sm:text-base font-bold text-white font-mono break-all leading-snug">
             {bookingUrl}
           </p>
         </div>
 
-        <div className="mb-6 rounded-xl border border-white/[0.08] bg-black/35 px-4 py-3.5 sm:px-4 sm:py-4">
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-bold text-white">7-Day Pro Access</p>
-            <span className="shrink-0 rounded-md bg-emerald-500 px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-white">
-              Free
-            </span>
+        <div className="mt-5 flex gap-3 rounded-xl border border-white/[0.06] bg-black/40 p-4">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm"
+            aria-hidden
+          >
+            <BoltIcon className="h-5 w-5 text-neutral-900" />
           </div>
-          <p className="mt-2 text-xs sm:text-sm text-gray-400 leading-relaxed">
-            Unlimited bookings, deposit integrations, and more Pro tools—all
-            included for your first week.
-          </p>
+
+          <div className="min-w-0 pt-0.5">
+            <p className="text-sm font-semibold text-white">
+              Ready to go live?
+            </p>
+            <p className="mt-1 text-sm text-gray-400 leading-snug">
+              Tap below, then share your link so clients can book you.
+            </p>
+          </div>
         </div>
 
-        <Button
-          onClick={handleStartTrial}
-          variant="inverse"
-          size="lg"
-          fullWidth
-          loading={loading}
-          icon={<ArrowRightIcon className="h-5 w-5 text-neutral-900" />}
-          iconPosition="right"
-        >
-          Activate my link
-        </Button>
+        <div className="mt-5">
+          <Button
+            onClick={handleActivateLink}
+            variant="inverse"
+            size="lg"
+            fullWidth
+            loading={loading}
+            className="font-semibold"
+            icon={<ArrowRightIcon className="h-5 w-5 text-neutral-900" />}
+            iconPosition="right"
+          >
+            Activate my link
+          </Button>
+        </div>
       </div>
     </div>
   );
