@@ -1,7 +1,11 @@
 'use client';
 
 import { Button, nativeCheckboxSmClassName } from '@/components/shared';
-import { API_ROUTES, type PublicBookingFlowLocale } from '@/constants/routes';
+import {
+  API_ROUTES,
+  ROUTES,
+  type PublicBookingFlowLocale,
+} from '@/constants/routes';
 import {
   bcp47ForBookingLocale,
   publicBookingUi,
@@ -246,6 +250,7 @@ export function AvailabilityBookingPage({
     string | null
   >(null);
   const notificationsConsentErrorId = useId();
+  const notificationsSmsFinePrintId = useId();
 
   const router = useRouter();
   const pathname = usePathname();
@@ -958,16 +963,34 @@ export function AvailabilityBookingPage({
                       }}
                       className={`mt-0.5 cursor-pointer ${nativeCheckboxSmClassName}`}
                       aria-invalid={Boolean(notificationsConsentError)}
-                      aria-describedby={
+                      aria-describedby={[
+                        notificationsSmsFinePrintId,
                         notificationsConsentError
                           ? notificationsConsentErrorId
-                          : undefined
-                      }
+                          : null,
+                      ]
+                        .filter((id): id is string => Boolean(id))
+                        .join(' ')}
                     />
-                    <span className="text-xs leading-snug text-gray-400">
+                    <span className="text-sm leading-snug text-gray-300">
                       {ui.calendar.notificationsConsentLabel}
                     </span>
                   </label>
+                  <p
+                    id={notificationsSmsFinePrintId}
+                    className="pl-6 text-[11px] leading-snug text-gray-500"
+                  >
+                    {ui.calendar.notificationsSmsFinePrintBeforeLink}
+                    <Link
+                      href={ROUTES.PRIVACY}
+                      className="text-gray-400 underline underline-offset-2 hover:text-gray-300"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {ui.calendar.notificationsSmsFinePrintLinkLabel}
+                    </Link>
+                    {ui.calendar.notificationsSmsFinePrintAfterLink}
+                  </p>
                   {notificationsConsentError && (
                     <p
                       id={notificationsConsentErrorId}

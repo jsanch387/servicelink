@@ -70,6 +70,10 @@ export const publicBookingUiEs: PublicBookingUi = {
     reviewBookingCta: 'Revisar reserva',
     notificationsConsentLabel:
       'Al confirmar esta cita, aceptas recibir notificaciones por correo y SMS sobre tu reserva.',
+    notificationsSmsFinePrintBeforeLink:
+      'Pueden aplicarse cargos por mensajes y datos. Responde STOP para darte de baja. Consulta nuestra ',
+    notificationsSmsFinePrintLinkLabel: 'Política de privacidad conforme a SMS',
+    notificationsSmsFinePrintAfterLink: '.',
     notificationsConsentRequired:
       'Marca la casilla para aceptar las notificaciones por correo y SMS antes de continuar.',
     continueToPayment: 'Continuar al pago',

@@ -70,6 +70,10 @@ export const publicBookingUiEn: PublicBookingUi = {
     reviewBookingCta: 'Review Booking',
     notificationsConsentLabel:
       'By confirming this appointment, you agree to receive email and SMS notifications about your booking.',
+    notificationsSmsFinePrintBeforeLink:
+      'Message and data rates may apply. Reply STOP to opt out. See our ',
+    notificationsSmsFinePrintLinkLabel: 'SMS-compliant Privacy Policy',
+    notificationsSmsFinePrintAfterLink: '.',
     notificationsConsentRequired:
       'Please check the box to agree to email and SMS notifications before continuing.',
     continueToPayment: 'Continue to payment',
