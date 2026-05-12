@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
       console.warn(`${LOG} auth failed`, {
         status: auth.status,
         code: auth.code,
-        message: auth.error,
       });
       return NextResponse.json(
         { success: false, error: auth.error },
@@ -67,6 +66,7 @@ export async function POST(request: NextRequest) {
         .single();
 
     if (profileReadError || !profileRow) {
+      console.warn(`${LOG} profile not found`);
       onboardingStripeDebug('start-trial', 'profile read failed', {
         userId: user.id,
         error: profileReadError?.message,
@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
         user.email
       );
       if (!bridge.success) {
+        console.error(`${LOG} onboarding bridge failed`, bridge.error);
         return NextResponse.json(
           { success: false, error: bridge.error ?? 'Onboarding update failed' },
           { status: 500 }
@@ -132,6 +133,7 @@ export async function POST(request: NextRequest) {
         }
       );
       revalidatePath('/dashboard', 'layout');
+      console.info(`${LOG} success (already_active)`);
       return NextResponse.json({
         success: true,
         alreadyActive: true,
@@ -240,7 +242,7 @@ export async function POST(request: NextRequest) {
     const normalizedStatus = (subscription.status ?? '').trim();
     if (!STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO.has(normalizedStatus)) {
       console.error(`${LOG} subscription created with unexpected status`, {
-        subscriptionId: subscription.id,
+        subscriptionIdSuffix: subscription.id.slice(-8),
         status: normalizedStatus,
       });
       return NextResponse.json(
@@ -287,6 +289,7 @@ export async function POST(request: NextRequest) {
       user.email
     );
     if (!bridge.success) {
+      console.error(`${LOG} onboarding bridge failed`, bridge.error);
       return NextResponse.json(
         {
           success: false,
@@ -295,11 +298,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    console.info(`${LOG} silent onboarding subscription created`, {
-      userId: user.id,
-      subscriptionId: subscription.id,
-    });
 
     const trial_confirmation = await buildTrialConfirmationPayload(
       supabase,
@@ -316,6 +314,7 @@ export async function POST(request: NextRequest) {
       periodEnd: trial_confirmation?.subscription_current_period_end ?? null,
     });
 
+    console.info(`${LOG} success`);
     revalidatePath('/dashboard', 'layout');
     return NextResponse.json({
       success: true,

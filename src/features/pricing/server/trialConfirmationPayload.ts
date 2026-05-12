@@ -78,8 +78,7 @@ export async function buildTrialConfirmationPayload(
       trialEnd = unixToIso(sub.trial_end);
     } catch (e) {
       console.warn('[trialConfirmationPayload] subscriptions.retrieve failed', {
-        userId: userId.trim(),
-        stripeSubscriptionId,
+        stripeSubscriptionIdSuffix: stripeSubscriptionId.slice(-8),
         e,
       });
     }
@@ -171,7 +170,10 @@ export async function applyPlatformProCheckoutSessionCompleted(
     } catch (retrieveErr) {
       console.warn(
         '[applyPlatformProCheckoutSessionCompleted] subscriptions.retrieve status failed',
-        { stripeSubscriptionId, retrieveErr }
+        {
+          stripeSubscriptionIdSuffix: stripeSubscriptionId.slice(-8),
+          retrieveErr,
+        }
       );
     }
     currentPeriodEnd = await retrieveSubscriptionCurrentPeriodEndIso(

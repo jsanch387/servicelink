@@ -241,12 +241,13 @@ Use **`POST /api/stripe/create-checkout-session`** with **`{ "client": "mobile" 
 
 ## Server debugging (ServiceLink repo)
 
-Verbose **`console.debug`** lines for these flows use the tag **`[stripe:onboarding:<scope>]`** (for example `create-checkout`, `start-trial`, `confirm-trial`, `trial-payload`, `apply-checkout`).
+Verbose **`console.debug`** lines for these flows use the tag **`[stripe:onboarding:<scope>]`** (for example `create-checkout`, `start-trial`, `confirm-trial`, `trial-payload`, `apply-checkout`). They are **off by default** in every environment.
 
-- **Local / non-production:** enabled when `NODE_ENV !== 'production'`.
-- **Production:** set **`DEBUG_STRIPE_ONBOARDING=1`** to enable the same logs.
+Set **`DEBUG_STRIPE_ONBOARDING=1`** to enable them (local, staging, or production).
 
-Logs avoid email addresses and payment method details; they may include `userId`, truncated Stripe id suffixes, and status fields.
+API routes still emit minimal **`console.info`** (success) and **`console.warn`** / **`console.error`** (failures) without this flag.
+
+Logs avoid email addresses and payment method details; verbose mode may include `userId`, truncated Stripe id suffixes, and status fields.
 
 ---
 

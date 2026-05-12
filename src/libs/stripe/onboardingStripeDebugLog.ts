@@ -1,10 +1,11 @@
 /**
- * Debug logging for onboarding + Stripe trial flows.
+ * Verbose debug logging for onboarding + Stripe trial flows.
  *
- * - **Development:** logs when `NODE_ENV !== 'production'`.
- * - **Production / staging:** set `DEBUG_STRIPE_ONBOARDING=1` to enable.
+ * Off by default. Set **`DEBUG_STRIPE_ONBOARDING=1`** to log request/branch
+ * details (user id suffixes, session ids, etc.).
  *
- * Avoid logging emails, payment method details, or full session objects.
+ * API routes use `console.info` / `console.warn` / `console.error` for normal
+ * transactional success and failure lines.
  */
 
 export function onboardingStripeDebug(
@@ -12,10 +13,7 @@ export function onboardingStripeDebug(
   message: string,
   data?: Record<string, unknown>
 ): void {
-  const enabled =
-    process.env.DEBUG_STRIPE_ONBOARDING === '1' ||
-    process.env.NODE_ENV !== 'production';
-  if (!enabled) return;
+  if (process.env.DEBUG_STRIPE_ONBOARDING !== '1') return;
   const tag = `[stripe:onboarding:${scope}]`;
   if (data && Object.keys(data).length > 0) {
     console.debug(tag, message, data);

@@ -114,6 +114,10 @@ export async function deleteAccountForUser({
     };
   }
 
+  console.info(
+    `[account-delete] billing refs loaded (subscription=${Boolean(stripeSubscriptionId?.trim())} customer=${Boolean(stripeCustomerId?.trim())} connect=${Boolean(paymentStripeAccountId)})`
+  );
+
   // 2) Cancel Stripe subscription immediately. Fail-stop: if Stripe has a
   //    subscription on file and we can't cancel it, do not proceed to delete
   //    the auth user — support can resolve the mismatch (e.g. test vs live key
@@ -122,6 +126,7 @@ export async function deleteAccountForUser({
     try {
       const stripe = getStripePlatform();
       await stripe.subscriptions.cancel(stripeSubscriptionId.trim());
+      console.info('[account-delete] stripe subscription canceled');
     } catch (err) {
       const stripeErr = err as Stripe.errors.StripeError | Error;
       const code = (stripeErr as Stripe.errors.StripeError)?.code;
@@ -145,8 +150,10 @@ export async function deleteAccountForUser({
         };
       }
       warnings.push('subscription_already_missing');
-      console.warn('[account-delete] stripe subscription already gone');
+      console.info('[account-delete] stripe subscription already absent (skip)');
     }
+  } else {
+    console.info('[account-delete] no stripe subscription on profile');
   }
 
   // 3) Best-effort: delete the Stripe customer to remove PII from Stripe.
@@ -155,6 +162,7 @@ export async function deleteAccountForUser({
     try {
       const stripe = getStripePlatform();
       await stripe.customers.del(stripeCustomerId.trim());
+      console.info('[account-delete] stripe customer deleted');
     } catch (err) {
       const stripeErr = err as Stripe.errors.StripeError | Error;
       const code = (stripeErr as Stripe.errors.StripeError)?.code;
@@ -166,6 +174,8 @@ export async function deleteAccountForUser({
       );
       warnings.push('stripe_customer_delete_soft_failed');
     }
+  } else {
+    console.info('[account-delete] no stripe customer on profile');
   }
 
   // 4) Best-effort: drop the local payment_accounts row so we no longer point
@@ -182,6 +192,8 @@ export async function deleteAccountForUser({
       if (error) {
         console.warn('[account-delete] payment_accounts delete failed');
         warnings.push('payment_accounts_delete_failed');
+      } else {
+        console.info('[account-delete] payment_accounts row removed');
       }
     } catch (err) {
       console.warn(
@@ -190,6 +202,8 @@ export async function deleteAccountForUser({
       );
       warnings.push('payment_accounts_delete_failed');
     }
+  } else {
+    console.info('[account-delete] no payment_accounts row');
   }
 
   // 5) Delete the Supabase auth user. FK cascades clean profile, business,
@@ -210,6 +224,7 @@ export async function deleteAccountForUser({
         error: 'Could not finalize account deletion. Please contact support.',
       };
     }
+    console.info('[account-delete] auth user deleted');
   } catch (err) {
     console.error(
       '[account-delete] auth delete error:',

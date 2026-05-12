@@ -34,7 +34,7 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 7. Webhook verifies signature, records event id for idempotency, then updates `profiles`: `subscription_tier = 'pro'`, `subscription_status = 'active'`, `stripe_customer_id`, `stripe_subscription_id`, `subscription_current_period_end`.
 8. User is redirected to `{SITE_URL}/dashboard/settings?checkout=success`. They now have unlimited bookings (no monthly cap).
 
-**Debug:** Onboarding + Stripe trial API routes emit **`[stripe:onboarding:…]`** `console.debug` lines when `NODE_ENV !== 'production'` or when **`DEBUG_STRIPE_ONBOARDING=1`** (see [`docs/contracts/mobile-onboarding-stripe-checkout.md`](../../../../docs/contracts/mobile-onboarding-stripe-checkout.md) → Server debugging).
+**Debug:** Verbose **`[stripe:onboarding:…]`** `console.debug` lines are off by default. Set **`DEBUG_STRIPE_ONBOARDING=1`** to enable them (see [`docs/contracts/mobile-onboarding-stripe-checkout.md`](../../../../docs/contracts/mobile-onboarding-stripe-checkout.md) → Server debugging). Normal **`[stripe:…]`** `console.info` / `console.warn` / `console.error` lines stay on for success and failure.
 
 ## Onboarding step 5 (web) — silent trial (no Checkout redirect)
 

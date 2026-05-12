@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
       console.warn(`${LOG} auth failed`, {
         status: auth.status,
         code: auth.code,
-        message: auth.error,
       });
       return NextResponse.json(
         { success: false, error: auth.error },
