@@ -30,6 +30,8 @@ export interface NotificationDisplay {
   id: string;
   type: NotificationType;
   title: string;
+  /** Subtitle (e.g. `From {customer}`); shown with timestamp in the bell. */
+  body: string | null;
   referenceId: string;
   readAt: string | null;
   createdAt: string;
@@ -40,6 +42,7 @@ export function notificationToDisplay(row: Notification): NotificationDisplay {
     id: row.id,
     type: row.type as NotificationType,
     title: row.title,
+    body: row.body,
     referenceId: row.reference_id,
     readAt: row.read_at,
     createdAt: row.created_at,

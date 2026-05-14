@@ -14,6 +14,10 @@ import {
   sendBookingNotificationEmail,
   type BookingNotificationPayload,
 } from '@/features/email';
+import {
+  notificationInboxSubtitleFromCustomer,
+  notificationMinimalDisplayTitle,
+} from '@/features/notifications/utils/notificationMinimalDisplayTitle';
 import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database } from '@/libs/supabase/client';
@@ -185,6 +189,13 @@ export async function POST(request: NextRequest) {
     const bookingId = result.data?.id ?? null;
 
     if (profileId && bookingId) {
+      const title = notificationMinimalDisplayTitle(
+        'booking_request',
+        'booking_request',
+        ''
+      );
+      const bodyText = notificationInboxSubtitleFromCustomer(formData.name);
+
       try {
         const notificationRow: Database['public']['Tables']['notifications']['Insert'] =
           {
@@ -192,10 +203,8 @@ export async function POST(request: NextRequest) {
             type: 'booking_request',
             reference_type: 'booking_request',
             reference_id: bookingId,
-            title: `New booking request from ${formData.name}`,
-            body: formData.service
-              ? `Service: ${formData.service} · ${formData.preferredDate}`
-              : null,
+            title,
+            body: bodyText,
           };
         await admin.from('notifications').insert(notificationRow as never);
       } catch {
@@ -204,10 +213,8 @@ export async function POST(request: NextRequest) {
 
       await sendExpoPushToUser(admin, {
         userId: profileId,
-        title: `New booking request from ${formData.name}`,
-        body: formData.service
-          ? `Service: ${formData.service} · ${formData.preferredDate}`
-          : null,
+        title,
+        body: bodyText,
         data: {
           reference_type: 'booking_request',
           reference_id: bookingId,

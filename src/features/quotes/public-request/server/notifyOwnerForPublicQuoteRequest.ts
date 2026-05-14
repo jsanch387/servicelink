@@ -7,6 +7,10 @@ import {
   sendQuoteRequestOwnerNotificationEmail,
   type QuoteRequestOwnerNotificationPayload,
 } from '@/features/email';
+import {
+  notificationInboxSubtitleFromCustomer,
+  notificationMinimalDisplayTitle,
+} from '@/features/notifications/utils/notificationMinimalDisplayTitle';
 import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -55,8 +59,8 @@ export async function notifyOwnerForPublicQuoteRequest(
     details,
   } = params;
 
-  const title = `New quote request from ${customerName}`;
-  const bodyText = serviceName ? `Service: ${serviceName}` : null;
+  const title = notificationMinimalDisplayTitle('quote_request', 'quote', '');
+  const bodyText = notificationInboxSubtitleFromCustomer(customerName);
   try {
     const notificationRow: Database['public']['Tables']['notifications']['Insert'] =
       {

@@ -65,8 +65,49 @@ describe('sendExpoPushToUser', () => {
         to: 'ExponentPushToken[aaa]',
         title: 'New appointment',
         body: 'Details',
-        data: { reference_type: 'booking', reference_id: 'bid-1' },
+        data: {
+          reference_type: 'booking',
+          reference_id: 'bid-1',
+          referenceType: 'booking',
+          referenceId: 'bid-1',
+        },
       },
     ]);
+  });
+
+  it('omits body when null or whitespace', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ status: 'ok' }] }),
+    } as Response);
+
+    const eq = vi.fn().mockResolvedValue({
+      data: [{ expo_push_token: 'ExponentPushToken[bbb]' }],
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+
+    await sendExpoPushToUser({ from } as never, {
+      userId: 'user-1',
+      title: 'New appointment',
+      body: null,
+      data: { reference_type: 'booking', reference_id: 'bid-1' },
+    });
+
+    const [, init] = fetchMock.mock.calls[0];
+    const parsed = JSON.parse(String(init?.body));
+    expect(parsed[0]).toEqual({
+      to: 'ExponentPushToken[bbb]',
+      title: 'New appointment',
+      data: {
+        reference_type: 'booking',
+        reference_id: 'bid-1',
+        referenceType: 'booking',
+        referenceId: 'bid-1',
+      },
+    });
+    expect(parsed[0].body).toBeUndefined();
   });
 });

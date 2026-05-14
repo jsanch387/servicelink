@@ -10,3 +10,7 @@ export type {
   NotificationType,
 } from './types/notification';
 export { notificationToDisplay } from './types/notification';
+export {
+  notificationInboxSubtitleFromCustomer,
+  notificationMinimalDisplayTitle,
+} from './utils/notificationMinimalDisplayTitle';

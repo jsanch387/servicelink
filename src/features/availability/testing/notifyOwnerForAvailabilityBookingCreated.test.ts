@@ -95,7 +95,8 @@ describe('notifyOwnerForAvailabilityBookingCreated', () => {
         type: 'availability_booking',
         reference_type: 'booking',
         reference_id: 'booking-uuid',
-        title: 'New appointment from Jordan',
+        title: 'New appointment',
+        body: 'From Jordan',
       })
     );
 
@@ -103,6 +104,8 @@ describe('notifyOwnerForAvailabilityBookingCreated', () => {
       supabase,
       expect.objectContaining({
         userId: 'profile-uuid',
+        title: 'New appointment',
+        body: 'From Jordan',
         data: { reference_type: 'booking', reference_id: 'booking-uuid' },
       })
     );

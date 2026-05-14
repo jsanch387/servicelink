@@ -8,6 +8,10 @@ import {
   sendAvailabilityBookingNotificationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import {
+  notificationInboxSubtitleFromCustomer,
+  notificationMinimalDisplayTitle,
+} from '@/features/notifications/utils/notificationMinimalDisplayTitle';
 import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { Database } from '@/libs/supabase/client';
 import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
@@ -49,10 +53,12 @@ export async function notifyOwnerForAvailabilityBookingCreated(
     return;
   }
 
-  const title = `New appointment from ${customerName}`;
-  const bodyText = serviceSummaryLine
-    ? `Service: ${serviceSummaryLine} · ${scheduledDate}`
-    : null;
+  const title = notificationMinimalDisplayTitle(
+    'availability_booking',
+    'booking',
+    ''
+  );
+  const bodyText = notificationInboxSubtitleFromCustomer(customerName);
 
   const { error: notifError } = await supabase.from('notifications').insert({
     user_id: profileId,

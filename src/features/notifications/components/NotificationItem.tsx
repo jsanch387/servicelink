@@ -52,8 +52,10 @@ export function NotificationItem({
         )}
         <div className={`min-w-0 flex-1 ${!isUnread ? 'pl-5' : ''}`}>
           <p className="text-sm font-medium text-white">{notification.title}</p>
-          <p className="mt-0.5 text-xs text-neutral-400">
-            {formatRelativeTime(notification.createdAt)}
+          <p className="mt-0.5 text-xs text-neutral-400 line-clamp-2">
+            {notification.body?.trim()
+              ? `${notification.body.trim()} · ${formatRelativeTime(notification.createdAt)}`
+              : formatRelativeTime(notification.createdAt)}
           </p>
         </div>
       </div>

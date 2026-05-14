@@ -18,7 +18,7 @@ export type ExpoPushDeepLinkData = {
 type ExpoPushMessage = {
   to: string;
   title: string;
-  body: string;
+  body?: string;
   data: Record<string, string>;
 };
 
@@ -109,16 +109,23 @@ export async function sendExpoPushToUser(
   const dataStrings: Record<string, string> = {
     reference_type: data.reference_type,
     reference_id: data.reference_id,
+    referenceType: data.reference_type,
+    referenceId: data.reference_id,
   };
 
-  const bodyText = body?.trim() ? body : ' ';
+  const bodyTrimmed = body?.trim() ? body.trim() : null;
 
-  const messages: ExpoPushMessage[] = tokens.map(to => ({
-    to,
-    title,
-    body: bodyText,
-    data: dataStrings,
-  }));
+  const messages: ExpoPushMessage[] = tokens.map(to => {
+    const msg: ExpoPushMessage = {
+      to,
+      title,
+      data: dataStrings,
+    };
+    if (bodyTrimmed) {
+      msg.body = bodyTrimmed;
+    }
+    return msg;
+  });
 
   try {
     for (let i = 0; i < messages.length; i += EXPO_BATCH_SIZE) {
