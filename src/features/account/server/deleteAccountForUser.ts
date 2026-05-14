@@ -9,12 +9,16 @@
  *      Connect account locally. The Stripe Connect account itself is left in
  *      place (Stripe doesn't allow deleting connected accounts that processed
  *      payments — finance/tax retention).
- *   5. `auth.admin.deleteUser(userId)` — cascades all dependent data via
+ *   5. Best-effort: delete `business_images` objects under
+ *      `businesses/{businessId}/` (logo, banner, portfolio) so Storage does not
+ *      retain orphaned files after DB/auth teardown.
+ *   6. `auth.admin.deleteUser(userId)` — cascades all dependent data via
  *      database FKs.
  *
  * Returns a discriminated union the API route can map to HTTP responses.
  */
 
+import { deleteBusinessStorageOnAccountDelete } from '@/features/media/server/deleteBusinessStorageOnAccountDelete';
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type Stripe from 'stripe';
@@ -56,7 +60,6 @@ export async function deleteAccountForUser({
   let stripeSubscriptionId: string | null = null;
   let businessId: string | null = null;
   let paymentAccountId: string | null = null;
-  let paymentStripeAccountId: string | null = null;
 
   try {
     const profileQuery = (admin as any)
@@ -92,14 +95,13 @@ export async function deleteAccountForUser({
     if (businessId) {
       const paymentRes = await (admin as any)
         .from('payment_accounts')
-        .select('id, stripe_account_id')
+        .select('id')
         .eq('business_id', businessId)
         .maybeSingle();
       if (paymentRes.error) {
         console.warn('[account-delete] payment_accounts lookup failed');
       } else if (paymentRes.data) {
         paymentAccountId = paymentRes.data.id ?? null;
-        paymentStripeAccountId = paymentRes.data.stripe_account_id ?? null;
       }
     }
   } catch (err) {
@@ -145,7 +147,6 @@ export async function deleteAccountForUser({
         };
       }
       warnings.push('subscription_already_missing');
-      console.warn('[account-delete] stripe subscription already gone');
     }
   }
 
@@ -192,7 +193,28 @@ export async function deleteAccountForUser({
     }
   }
 
-  // 5) Delete the Supabase auth user. FK cascades clean profile, business,
+  // 5) Best-effort: remove business media from Storage before auth delete so
+  //    objects are not orphaned (Storage is not tied to Postgres cascades).
+  let storageFilesRemoved: number | null = null;
+  if (businessId?.trim()) {
+    try {
+      const storageResult = await deleteBusinessStorageOnAccountDelete(
+        admin,
+        businessId
+      );
+      warnings.push(...storageResult.warnings);
+      storageFilesRemoved = storageResult.deletedObjectCount;
+    } catch (err) {
+      console.warn(
+        '[account-delete] storage cleanup threw:',
+        err instanceof Error ? err.message : err
+      );
+      warnings.push('storage_cleanup_threw');
+      storageFilesRemoved = 0;
+    }
+  }
+
+  // 6) Delete the Supabase auth user. FK cascades clean profile, business,
   //    and dependent rows. If this fails after a successful Stripe cancel,
   //    surface the error so support can finish the cleanup manually.
   try {
@@ -222,13 +244,14 @@ export async function deleteAccountForUser({
     };
   }
 
-  if (warnings.length > 0) {
-    console.info(
-      `[account-delete] completed (${warnings.length} warning${warnings.length === 1 ? '' : 's'})`
-    );
-  } else {
-    console.info('[account-delete] completed');
+  const summaryParts: string[] = ['[account-delete] completed'];
+  if (storageFilesRemoved !== null) {
+    summaryParts.push(`storageFiles=${storageFilesRemoved}`);
   }
+  if (warnings.length > 0) {
+    summaryParts.push(`warnings=${warnings.join(',')}`);
+  }
+  console.info(summaryParts.join(' '));
 
   return { ok: true, warnings };
 }

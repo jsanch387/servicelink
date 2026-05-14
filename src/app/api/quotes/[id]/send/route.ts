@@ -11,7 +11,6 @@ import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteB
 import {
   getQuoteSendRequestId,
   logQuoteSend,
-  maskEmailForLog,
   quoteSendJsonResponse,
   shortUserIdForLog,
   supabaseErrorForLogs,
@@ -227,8 +226,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       authMethod,
       quoteId,
       businessId: resolved.businessId,
-      customerEmailMasked: maskEmailForLog(parsed.data.customerEmail),
-      expiresAt: result.expiresAt,
     });
 
     return quoteSendJsonResponse(

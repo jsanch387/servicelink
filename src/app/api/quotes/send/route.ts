@@ -6,7 +6,6 @@ import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteB
 import {
   getQuoteSendRequestId,
   logQuoteSend,
-  maskEmailForLog,
   quoteSendJsonResponse,
   shortUserIdForLog,
   supabaseErrorForLogs,
@@ -252,19 +251,21 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (emailErr) {
+      const errHint =
+        emailErr instanceof Error
+          ? truncateLogDetail(emailErr.message)
+          : truncateLogDetail(String(emailErr));
       logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'customer_email_exception', {
         authMethod,
         quoteId,
+        errHint: errHint || undefined,
       });
-      console.warn(`${ROUTE_LABEL} email`, emailErr);
     }
 
     logQuoteSend(requestId, ROUTE_LABEL, 'info', 'quote_sent_ok', {
       authMethod,
       quoteId,
       businessId: businessRow.id,
-      customerEmailMasked: maskEmailForLog(body.customerEmail),
-      expiresAt,
     });
 
     return quoteSendJsonResponse(

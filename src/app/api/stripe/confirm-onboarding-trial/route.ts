@@ -29,6 +29,10 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await getAuthenticatedUser(request);
     if ('error' in auth) {
+      console.warn(`${LOG} auth failed`, {
+        status: auth.status,
+        code: auth.code,
+      });
       onboardingStripeDebug('confirm-trial', 'auth failed', {
         status: auth.status,
         code: auth.code,
@@ -69,7 +73,7 @@ export async function POST(request: NextRequest) {
         });
       } catch (e) {
         console.warn(`${LOG} session retrieve failed`, {
-          checkoutSessionId,
+          checkoutSessionIdSuffix: checkoutSessionId.slice(-8),
           e,
         });
         onboardingStripeDebug('confirm-trial', 'session retrieve failed', {
@@ -166,6 +170,7 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           checkout_session_status: session.status,
         });
+        console.info(`${LOG} success (checkout_pending)`);
         return NextResponse.json({
           success: true,
           checkout_pending: true,
@@ -183,6 +188,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!trial_confirmation) {
+      console.warn(`${LOG} profile not found`);
       onboardingStripeDebug('confirm-trial', 'trial_confirmation null', {
         userId: user.id,
       });
@@ -201,6 +207,7 @@ export async function POST(request: NextRequest) {
       onboarding_status: trial_confirmation.onboarding_status,
     });
 
+    console.info(`${LOG} success`);
     return NextResponse.json({
       success: true,
       synced_from_checkout: syncedFromCheckout,
