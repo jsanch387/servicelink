@@ -13,7 +13,7 @@ describe('notificationMinimalDisplayTitle', () => {
       notificationMinimalDisplayTitle('booking_request', 'booking_request', '')
     ).toBe('New appointment');
     expect(notificationMinimalDisplayTitle('quote_request', 'quote', '')).toBe(
-      'New quote'
+      'New quote request'
     );
   });
 
@@ -27,6 +27,12 @@ describe('notificationMinimalDisplayTitle', () => {
     expect(
       notificationMinimalDisplayTitle('billing', 'deposit_received', '')
     ).toBe('New payment');
+  });
+
+  it('generic quote without quote_request stays New quote', () => {
+    expect(notificationMinimalDisplayTitle('quote', 'created', '')).toBe(
+      'New quote'
+    );
   });
 
   it('quote outcome keywords', () => {
