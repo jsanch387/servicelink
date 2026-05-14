@@ -37,7 +37,7 @@ Web can send an empty body `{}` or omit parsing issues — behavior unchanged (`
 
 | Field | Type | Notes |
 |-------|------|--------|
-| `client` | string | Must be exactly `"mobile"` to use `STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL`. |
+| `client` | string | Must be exactly `"mobile"` to use the fixed Expo **`return_url`** (`MOBILE_BILLING_PORTAL_RETURN_URL` in `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`). |
 
 ---
 
@@ -62,7 +62,7 @@ Open `url` in the native / in-app browser.
 |------|------------------|
 | `401` | Invalid or missing Bearer token. |
 | `400` | `No billing account found` — user has no `profiles.stripe_customer_id` yet (needs checkout first). |
-| `500` | Stripe misconfiguration, missing `STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL` when `client` is `mobile`, or Stripe API error. |
+| `500` | Stripe misconfiguration or Stripe API error. |
 
 ---
 
@@ -72,17 +72,7 @@ Always required for portal:
 
 - `STRIPE_SECRET_KEY`
 
-Required when body includes **`client: "mobile"`**:
-
-- `STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL` — quoted deep link or HTTPS bridge, e.g.
-
-```bash
-STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL="servicelinkmobile://settings/subscription"
-```
-
-Restart Next after editing `.env.local`.
-
----
+When the body includes **`client: "mobile"`**, Stripe **`return_url`** is **`servicelinkmobile://settings/subscription`** (constant `MOBILE_BILLING_PORTAL_RETURN_URL` in `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`). No env var for that path.
 
 ## After the user returns
 
@@ -92,7 +82,7 @@ Stripe fires webhook events (e.g. `customer.subscription.updated`). Reload subsc
 
 ## Logs
 
-Server logs use prefix **`[stripe:create-portal-session]`** — auth failures, missing mobile return URL, `portal session created` (no Stripe session ids logged), and errors.
+Server logs use prefix **`[stripe:create-portal-session]`** — auth failures, `portal session created` (no Stripe session ids logged), and errors.
 
 ---
 

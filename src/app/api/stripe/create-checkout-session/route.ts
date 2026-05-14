@@ -11,21 +11,24 @@
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
  *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs (web).
- *      For mobile onboarding trial: STRIPE_MOBILE_ONBOARDING_SUCCESS_URL,
- *      STRIPE_MOBILE_ONBOARDING_CANCEL_URL.
- *      For mobile paywall upgrade (no onboarding source): STRIPE_MOBILE_UPGRADE_SUCCESS_URL,
- *      STRIPE_MOBILE_UPGRADE_CANCEL_URL.
+ *      Mobile Checkout return URLs: `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`.
  */
 
 import { API_ROUTES } from '@/constants/routes';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
-import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
+import {
+  MOBILE_ONBOARDING_CHECKOUT_CANCEL_URL,
+  MOBILE_ONBOARDING_CHECKOUT_SUCCESS_URL,
+  MOBILE_UPGRADE_CHECKOUT_CANCEL_URL,
+  MOBILE_UPGRADE_CHECKOUT_SUCCESS_URL,
+} from '@/libs/stripe/mobileSubscriptionCheckoutRedirects';
+import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { NextRequest, NextResponse } from 'next/server';
 
 type CheckoutRequestBody = {
   source?: unknown;
-  /** When `mobile` with `source: onboarding_trial_bridge`, success/cancel use env deep links. */
+  /** When `mobile`, success/cancel use fixed Expo deep links (see `mobileSubscriptionCheckoutRedirects`). */
   client?: unknown;
 };
 
@@ -98,57 +101,11 @@ export async function POST(request: NextRequest) {
 
     if (isMobileClient) {
       if (fromOnboarding) {
-        const mobileSuccess =
-          process.env.STRIPE_MOBILE_ONBOARDING_SUCCESS_URL?.trim();
-        const mobileCancel =
-          process.env.STRIPE_MOBILE_ONBOARDING_CANCEL_URL?.trim();
-        if (!mobileSuccess || !mobileCancel) {
-          console.error(`${LOG} mobile onboarding return URLs missing`, {
-            STRIPE_MOBILE_ONBOARDING_SUCCESS_URL: Boolean(mobileSuccess)
-              ? '(set)'
-              : '(missing)',
-            STRIPE_MOBILE_ONBOARDING_CANCEL_URL: Boolean(mobileCancel)
-              ? '(set)'
-              : '(missing)',
-            hint: 'Add both to .env.local and restart next dev',
-          });
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                'Mobile onboarding checkout is not configured. Set STRIPE_MOBILE_ONBOARDING_SUCCESS_URL and STRIPE_MOBILE_ONBOARDING_CANCEL_URL.',
-            },
-            { status: 500 }
-          );
-        }
-        successUrl = mobileSuccess;
-        cancelUrl = mobileCancel;
+        successUrl = MOBILE_ONBOARDING_CHECKOUT_SUCCESS_URL;
+        cancelUrl = MOBILE_ONBOARDING_CHECKOUT_CANCEL_URL;
       } else {
-        const upgradeSuccess =
-          process.env.STRIPE_MOBILE_UPGRADE_SUCCESS_URL?.trim();
-        const upgradeCancel =
-          process.env.STRIPE_MOBILE_UPGRADE_CANCEL_URL?.trim();
-        if (!upgradeSuccess || !upgradeCancel) {
-          console.error(`${LOG} mobile upgrade return URLs missing`, {
-            STRIPE_MOBILE_UPGRADE_SUCCESS_URL: Boolean(upgradeSuccess)
-              ? '(set)'
-              : '(missing)',
-            STRIPE_MOBILE_UPGRADE_CANCEL_URL: Boolean(upgradeCancel)
-              ? '(set)'
-              : '(missing)',
-            hint: 'Add both to .env.local and restart next dev',
-          });
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                'Mobile upgrade checkout is not configured. Set STRIPE_MOBILE_UPGRADE_SUCCESS_URL and STRIPE_MOBILE_UPGRADE_CANCEL_URL.',
-            },
-            { status: 500 }
-          );
-        }
-        successUrl = upgradeSuccess;
-        cancelUrl = upgradeCancel;
+        successUrl = MOBILE_UPGRADE_CHECKOUT_SUCCESS_URL;
+        cancelUrl = MOBILE_UPGRADE_CHECKOUT_CANCEL_URL;
       }
     } else {
       const successPath = fromOnboarding

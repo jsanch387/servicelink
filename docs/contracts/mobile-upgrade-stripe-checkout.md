@@ -80,14 +80,9 @@ Always required:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PRO_PRICE_ID`
 
-Required for **this** mobile flow (`client: "mobile"` **without** onboarding `source`):
+Mobile Checkout return URLs for **`client: "mobile"`** (onboarding vs paywall) are fixed in **`src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`** — no env vars.
 
-- `STRIPE_MOBILE_UPGRADE_SUCCESS_URL`
-- `STRIPE_MOBILE_UPGRADE_CANCEL_URL`
-
-If those are missing for this request shape, the API returns **500** with a clear error string.
-
-Onboarding mobile URLs (`STRIPE_MOBILE_ONBOARDING_*`) are **not** used for paywall upgrade.
+Onboarding mobile URLs (`MOBILE_ONBOARDING_CHECKOUT_*`) are **not** used for paywall upgrade.
 
 ---
 

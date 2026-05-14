@@ -38,6 +38,13 @@ function makePaymentDeleteQuery(error: { message: string } | null = null) {
   return { delete: del, eq };
 }
 
+function makeStorageBucketMock() {
+  const list = vi.fn().mockResolvedValue({ data: [], error: null });
+  const remove = vi.fn().mockResolvedValue({ data: [], error: null });
+  const storageFrom = vi.fn(() => ({ list, remove }));
+  return { storageFrom, list, remove };
+}
+
 describe('deleteAccountForUser', () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -54,6 +61,7 @@ describe('deleteAccountForUser', () => {
       stripe_account_id: 'acct_1',
     });
     const paymentDeleteQ = makePaymentDeleteQuery(null);
+    const { storageFrom } = makeStorageBucketMock();
 
     const from = vi
       .fn()
@@ -65,6 +73,7 @@ describe('deleteAccountForUser', () => {
     const deleteUser = vi.fn().mockResolvedValue({ error: null });
     vi.mocked(createSupabaseAdminClient).mockReturnValue({
       from,
+      storage: { from: storageFrom },
       auth: { admin: { deleteUser } },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
@@ -95,6 +104,7 @@ describe('deleteAccountForUser', () => {
     });
     const businessQ = makeBusinessQuery({ id: 'biz_1' });
     const paymentLookupQ = makePaymentLookupQuery(null);
+    const { storageFrom } = makeStorageBucketMock();
 
     const from = vi
       .fn()
@@ -105,6 +115,7 @@ describe('deleteAccountForUser', () => {
     const deleteUser = vi.fn().mockResolvedValue({ error: null });
     vi.mocked(createSupabaseAdminClient).mockReturnValue({
       from,
+      storage: { from: storageFrom },
       auth: { admin: { deleteUser } },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
@@ -131,6 +142,7 @@ describe('deleteAccountForUser', () => {
     expect(result.code).toBe('STRIPE_ERROR');
     expect(delCustomer).not.toHaveBeenCalled();
     expect(deleteUser).not.toHaveBeenCalled();
+    expect(storageFrom).not.toHaveBeenCalled();
   });
 
   it('continues when subscription is already missing and customer delete soft-fails', async () => {
@@ -140,6 +152,8 @@ describe('deleteAccountForUser', () => {
     });
     const businessQ = makeBusinessQuery(null);
 
+    const { storageFrom } = makeStorageBucketMock();
+
     const from = vi
       .fn()
       .mockImplementationOnce(() => profileQ)
@@ -148,6 +162,7 @@ describe('deleteAccountForUser', () => {
     const deleteUser = vi.fn().mockResolvedValue({ error: null });
     vi.mocked(createSupabaseAdminClient).mockReturnValue({
       from,
+      storage: { from: storageFrom },
       auth: { admin: { deleteUser } },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
@@ -181,5 +196,6 @@ describe('deleteAccountForUser', () => {
       ])
     );
     expect(deleteUser).toHaveBeenCalledWith('user_3');
+    expect(storageFrom).not.toHaveBeenCalled();
   });
 });

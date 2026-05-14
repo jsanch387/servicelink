@@ -68,7 +68,7 @@ Use HTTPS in production (or a tunnel if the device cannot reach your machine).
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `source` | string | Yes | Must be `onboarding_trial_bridge` for 7-day trial + onboarding completion metadata on the session. |
-| `client` | string | Yes | Must be `mobile` for mobile success/cancel URLs from env. |
+| `client` | string | Yes | Must be `mobile` for fixed Expo Checkout return URLs (see `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`). |
 
 ### Success response (HTTP `200`)
 
@@ -91,9 +91,9 @@ Use HTTPS in production (or a tunnel if the device cannot reach your machine).
 - `trial_checkout_followup` is present **only** for this mobile + onboarding combination. Use it to know **where** to confirm after Checkout.
 - `url` — open in the in-app / system browser as before.
 
-### Configure success URL with session id
+### Success URL and session id
 
-So the app can call confirm with the session id, set **`STRIPE_MOBILE_ONBOARDING_SUCCESS_URL`** to include Stripe’s placeholder, for example:
+The server uses a fixed onboarding success URL that includes Stripe’s **`{CHECKOUT_SESSION_ID}`** placeholder (see `MOBILE_ONBOARDING_CHECKOUT_SUCCESS_URL` in `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`), for example:
 
 `servicelinkmobile://onboarding/stripe?result=success&session_id={CHECKOUT_SESSION_ID}`
 
@@ -216,7 +216,7 @@ If Stripe rejects silent creation, the API may return **`fallbackToCheckout: tru
 
 ## Server environment
 
-Same as before: `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, and for Checkout flow **`STRIPE_MOBILE_ONBOARDING_SUCCESS_URL`** / **`STRIPE_MOBILE_ONBOARDING_CANCEL_URL`**.
+Same as before: `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`. Mobile Checkout return URLs are **not** env vars — they live in `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`.
 
 Confirm + silent routes additionally rely on **`SUPABASE_SECRET_KEY`** or **`SUPABASE_SERVICE_ROLE_KEY`** (service role) for applying checkout completion when the client calls confirm (same as webhook).
 

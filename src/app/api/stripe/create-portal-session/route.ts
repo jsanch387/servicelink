@@ -6,15 +6,17 @@
  * from Expo) and a stored `profiles.stripe_customer_id`.
  *
  * Env: STRIPE_SECRET_KEY, NEXT_PUBLIC_SITE_URL (web `return_url`).
- * Mobile: STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL when body includes `client: "mobile"`.
+ * Mobile `return_url`: `MOBILE_BILLING_PORTAL_RETURN_URL` in
+ * `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`.
  */
 
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
+import { MOBILE_BILLING_PORTAL_RETURN_URL } from '@/libs/stripe/mobileSubscriptionCheckoutRedirects';
 import { NextRequest, NextResponse } from 'next/server';
 
 type PortalRequestBody = {
-  /** When `mobile`, `return_url` uses STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL. */
+  /** When `mobile`, `return_url` uses the fixed Expo deep link constant. */
   client?: unknown;
 };
 
@@ -62,26 +64,7 @@ export async function POST(request: NextRequest) {
 
     let returnUrl: string;
     if (isMobileClient) {
-      const mobileReturn =
-        process.env.STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL?.trim();
-      if (!mobileReturn) {
-        console.error(
-          `${LOG} STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL missing`,
-
-          {
-            hint: 'Add to .env.local and restart next dev',
-          }
-        );
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              'Mobile billing portal is not configured. Set STRIPE_MOBILE_BILLING_PORTAL_RETURN_URL.',
-          },
-          { status: 500 }
-        );
-      }
-      returnUrl = mobileReturn;
+      returnUrl = MOBILE_BILLING_PORTAL_RETURN_URL;
     } else {
       returnUrl = `${baseUrl}/dashboard/settings`;
     }

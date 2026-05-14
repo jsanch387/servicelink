@@ -1,12 +1,14 @@
 import {
   getQuoteSendRequestId,
+  logQuoteSend,
   maskEmailForLog,
   quoteSendJsonResponse,
+  shortEntityIdForLog,
   shortUserIdForLog,
   supabaseErrorForLogs,
   truncateLogDetail,
 } from '@/features/quotes/server/quoteSendRouteLog';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 function headersFrom(
   entries: Record<string, string>
@@ -81,6 +83,55 @@ describe('shortUserIdForLog', () => {
   it('returns first 8 characters', () => {
     const id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     expect(shortUserIdForLog(id)).toBe('aaaaaaaa');
+  });
+});
+
+describe('shortEntityIdForLog', () => {
+  it('matches short prefix behavior for UUIDs', () => {
+    expect(shortEntityIdForLog('bbbbbbbb-cccc-dddd-eeee-ffffffffffff')).toBe(
+      'bbbbbbbb'
+    );
+  });
+});
+
+describe('logQuoteSend', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('emits one line with route tag new and shortened ids', () => {
+    const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    logQuoteSend(
+      'mobile-trace-1',
+      'POST /api/quotes/send',
+      'info',
+      'quote_sent_ok',
+      {
+        authMethod: 'bearer',
+        quoteId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        businessId: '11111111-2222-3333-4444-555555555555',
+      }
+    );
+    const line = String(spy.mock.calls[0]?.[0]);
+    expect(line).toMatch(/^\[quotes-send\] quote_sent_ok /);
+    expect(line).toContain('req=mobile-trace-1');
+    expect(line).toContain('route=new');
+    expect(line).toContain('quoteId=aaaaaaaa');
+    expect(line).toContain('businessId=11111111');
+    expect(line).not.toContain('eeeeeeee');
+    expect(spy.mock.calls[0]).toHaveLength(1);
+  });
+
+  it('uses route tag existing for [id] send path', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    logQuoteSend(
+      'r2',
+      'POST /api/quotes/[id]/send',
+      'warn',
+      'validation_failed',
+      { authMethod: 'bearer', quoteId: 'abc', status: 400 }
+    );
+    expect(String(spy.mock.calls[0]?.[0])).toContain('route=existing');
   });
 });
 
