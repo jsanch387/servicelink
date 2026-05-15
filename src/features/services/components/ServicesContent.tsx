@@ -2,6 +2,10 @@
 
 import { Button, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import {
+  FREE_MAX_SERVICES,
+  FREE_TIER_SERVICE_LIMIT_USER_MESSAGE,
+} from '@/features/pricing/types';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   ArrowsUpDownIcon,
@@ -27,8 +31,8 @@ export interface ServicesContentProps {
   fetchError?: string | null;
   /** Map of service ID → add-on count. */
   addOnCounts?: Record<string, number>;
-  /** Free plan at 5 services — cannot add more without Pro. */
-  freeTierServiceCapReached?: boolean;
+  /** When false, Free-plan service cap applies (derived with live list length). */
+  hasProAccess?: boolean;
 }
 
 /**
@@ -39,7 +43,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   initialServices,
   fetchError = null,
   addOnCounts,
-  freeTierServiceCapReached = false,
+  hasProAccess = true,
 }) => {
   const [services, setServices] = useState<ServiceRow[]>(initialServices);
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -55,6 +59,9 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const [toggleError, setToggleError] = useState<string | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  const freeTierServiceCapReached =
+    !hasProAccess && services.length >= FREE_MAX_SERVICES;
 
   const handleFinishSorting = useCallback(async () => {
     setOrderError(null);
@@ -126,6 +133,11 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
           setSaveError(result.error ?? 'Failed to update service');
         }
       } else {
+        const atCap = !hasProAccess && services.length >= FREE_MAX_SERVICES;
+        if (atCap) {
+          setSaveError(FREE_TIER_SERVICE_LIMIT_USER_MESSAGE);
+          return;
+        }
         setSaveError(null);
         setIsSavingEdit(true);
         const result = await createServiceAction({
@@ -143,7 +155,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         }
       }
     },
-    []
+    [hasProAccess, services]
   );
 
   const handleAddService = useCallback(() => {
@@ -171,6 +183,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
     setIsDeleting(false);
     if (result.success) {
       setServices(prev => prev.filter(s => s.id !== serviceToDelete.id));
+      setSaveError(null);
       setServiceToDelete(null);
     } else {
       setDeleteError(result.error ?? 'Failed to delete service');
@@ -307,10 +320,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             </div>
 
             {freeTierServiceCapReached ? (
-              <div
-                className="flex items-start gap-2.5 mb-6 px-0.5"
-                role="note"
-              >
+              <div className="flex items-start gap-2.5 mb-6 px-0.5" role="note">
                 <InformationCircleIcon
                   className="h-4 w-4 sm:h-[18px] sm:w-[18px] shrink-0 text-zinc-500 mt-0.5"
                   aria-hidden
@@ -322,8 +332,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                     className="font-medium text-white hover:text-white/85 underline-offset-2 hover:underline transition-colors"
                   >
                     Upgrade to Pro
-                  </Link>
-                  {' '}
+                  </Link>{' '}
                   to add more.
                 </p>
               </div>

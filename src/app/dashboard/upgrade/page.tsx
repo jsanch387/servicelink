@@ -1,4 +1,8 @@
-import { isProAccess, UpgradeContent } from '@/features/pricing';
+import {
+  isProAccess,
+  needsPaidProResubscribeForDashboard,
+  UpgradeContent,
+} from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -43,16 +47,17 @@ export default async function DashboardUpgradePage() {
     row?.stripe_customer_id
   );
   const onboardingComplete = row?.onboarding_status === 'completed';
-  const hasStripeBillingHistory = Boolean(
-    row?.stripe_customer_id?.trim() ||
-      row?.stripe_subscription_id?.trim() ||
-      row?.subscription_status?.trim()
+  const needsResubscribeGate = needsPaidProResubscribeForDashboard(
+    row?.subscription_tier,
+    row?.subscription_status,
+    row?.stripe_subscription_id,
+    row?.stripe_customer_id
   );
   const isBillingLocked =
-    onboardingComplete && hasStripeBillingHistory && !isProSubscriber;
+    onboardingComplete && needsResubscribeGate && !isProSubscriber;
 
-  // Free users (no Stripe history) must be able to open this page to start checkout.
-  // Middleware already sends ex-subscribers without Pro to here; do not redirect them away.
+  // Free users (no resubscribe gate) must be able to open this page to start checkout.
+  // Middleware sends lapsed **pro** rows without Pro access here; downgraded **free** users are not billing-locked.
 
   return (
     <UpgradeContent

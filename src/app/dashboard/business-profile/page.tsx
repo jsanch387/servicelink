@@ -149,10 +149,9 @@ export default async function BusinessProfilePage({
   const showVerifiedBadge = hasProAccess;
   const showRequestQuoteCta =
     hasProAccess && businessProfile.accept_quote_req === true;
+  // After step 5, free users see Try Pro first, then this welcome (client-sequence).
   const showProfileWelcomeModalOnLoad =
-    onboardingComplete &&
-    hasProAccess &&
-    userProfile?.profile_welcome_modal_seen !== true;
+    onboardingComplete && userProfile?.profile_welcome_modal_seen !== true;
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">

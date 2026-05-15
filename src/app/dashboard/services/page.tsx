@@ -6,7 +6,7 @@
  */
 
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { isProAccess, FREE_MAX_SERVICES } from '@/features/pricing';
+import { isProAccess } from '@/features/pricing';
 import {
   getAddOnCounts,
   getAddOns,
@@ -30,7 +30,7 @@ export default async function ServicesPage() {
     redirect('/login');
   }
 
-  const stateResult = await getOnboardingState(user.id);
+  const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || !stateResult.data) {
     redirect('/dashboard');
   }
@@ -67,9 +67,6 @@ export default async function ServicesPage() {
     p?.stripe_customer_id
   );
 
-  const freeTierServiceCapReached =
-    !hasProAccess && services.length >= FREE_MAX_SERVICES;
-
   const [addOnsResult, addOnCounts] = await Promise.all([
     getAddOns(businessProfile.id),
     getAddOnCounts(
@@ -85,7 +82,7 @@ export default async function ServicesPage() {
       addOnCounts={addOnCounts}
       initialAddOns={addOnsResult.data ?? []}
       addOnsFetchError={addOnsResult.success ? null : addOnsResult.error}
-      freeTierServiceCapReached={freeTierServiceCapReached}
+      hasProAccess={hasProAccess}
     />
   );
 }

@@ -11,7 +11,13 @@ export const metadata: Metadata = {
   },
 };
 
-type Props = { searchParams: Promise<{ error?: string; reset?: string }> };
+type Props = {
+  searchParams: Promise<{
+    error?: string;
+    reset?: string;
+    notice?: string;
+  }>;
+};
 
 export default async function LoginPage({ searchParams }: Props) {
   const params = await searchParams;
@@ -19,6 +25,7 @@ export default async function LoginPage({ searchParams }: Props) {
     <LoginForm
       redirectError={params.error}
       resetSuccess={params.reset === 'success'}
+      loginNotice={params.notice}
     />
   );
 }

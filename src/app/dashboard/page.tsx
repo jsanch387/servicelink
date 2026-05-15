@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   }
 
   // Get complete onboarding state
-  const stateResult = await getOnboardingState(user.id);
+  const stateResult = await getOnboardingState(user.id, supabase);
 
   if (!stateResult.success) {
     // If we can't determine state, redirect to login for safety

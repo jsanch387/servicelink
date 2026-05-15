@@ -30,7 +30,12 @@ export async function GET(request: Request) {
       next,
       queryKeys: [...searchParams.keys()],
     });
-    return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
+    return NextResponse.redirect(
+      new URL(
+        `${ROUTES.AUTH.LOGIN}?notice=email_confirm_open_login`,
+        request.url
+      )
+    );
   }
 
   const supabase = await createSupabaseServerClient();
@@ -38,7 +43,13 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('Auth callback error:', error);
-    return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
+    // Often: different browser/app than signup (missing PKCE cookie). Email may still be confirmed.
+    return NextResponse.redirect(
+      new URL(
+        `${ROUTES.AUTH.LOGIN}?notice=email_confirm_open_login`,
+        request.url
+      )
+    );
   }
 
   const user = data.user;
@@ -67,13 +78,18 @@ export async function GET(request: Request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Ensure profile exists for OAuth users (new sign-ups won't have one)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existingProfile } = await (supabase as any)
+  // Ensure profile exists (email confirmation has no client-side createProfile; OAuth needs this too)
+  const { data: existingRows, error: profileLookupError } = await supabase
     .from('profiles')
     .select('user_id')
     .eq('user_id', user.id)
-    .single();
+    .order('created_at', { ascending: true })
+    .limit(1);
+  const existingProfile = existingRows?.[0];
+
+  if (profileLookupError) {
+    console.error('[auth/callback] profile lookup failed:', profileLookupError);
+  }
 
   let isNewOAuthSignup = false;
 
@@ -84,10 +100,15 @@ export async function GET(request: Request) {
       user.user_metadata?.email ??
       null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('profiles').insert({
-      user_id: user.id,
-      full_name: name,
-    });
+    const { error: insertError } = await (supabase as any)
+      .from('profiles')
+      .insert({
+        user_id: user.id,
+        full_name: name,
+      });
+    if (insertError) {
+      console.error('[auth/callback] profile insert failed:', insertError);
+    }
     isNewOAuthSignup = true;
   }
 

@@ -17,6 +17,12 @@ interface ServicesListProps {
    * if the owner still has Pro (matches booking flow).
    */
   publicOwnerHasProForPriceOptions?: boolean;
+  /**
+   * Public profile: hide “Select” on service cards (e.g. free lifetime booking cap).
+   */
+  publicHideBookLinks?: boolean;
+  /** Tighter top padding when a one-line notice sits directly above this list. */
+  compactTopPadding?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -27,6 +33,8 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   onCancel: _onCancel,
   isPublic = false,
   publicOwnerHasProForPriceOptions = false,
+  publicHideBookLinks = false,
+  compactTopPadding = false,
   bookingFlowLocale = 'en',
 }) => {
   const services = businessProfile.services || [];
@@ -39,8 +47,11 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   const allowPriceOptionSignals =
     !isPublic || publicOwnerHasProForPriceOptions === true;
 
+  const sectionY =
+    compactTopPadding === true ? 'pt-2 pb-6 sm:pt-3 sm:pb-8' : 'py-6 sm:py-8';
+
   return (
-    <section className="px-4 py-6 sm:px-8 sm:py-8">
+    <section className={`px-4 sm:px-8 ${sectionY}`}>
       {hasServices ? (
         <div className="grid grid-cols-1 gap-4">
           {services.map(service => (
@@ -60,6 +71,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
               isEditable={false}
               isPublic={isPublic}
               businessSlug={businessSlug}
+              hideBookLink={publicHideBookLinks}
               bookingFlowLocale={bookingFlowLocale}
             />
           ))}

@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, Modal } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { CrownIcon } from '@/icons';
 import { useRouter } from 'next/navigation';
@@ -10,7 +11,11 @@ import { PricingPlanFeatureList } from './PricingPlanFeatureList';
 
 interface TryProPostOnboardingModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  /**
+   * @param continueToWelcome - true when user stays on profile ("Maybe later");
+   *   false when navigating to upgrade so the live-profile modal does not flash.
+   */
+  onClose: (options?: { continueToWelcome?: boolean }) => void;
 }
 
 function markModalSeen() {
@@ -33,13 +38,15 @@ export const TryProPostOnboardingModal: React.FC<
 
   const dismiss = () => {
     markModalSeen();
-    router.replace('/dashboard/business-profile');
-    onClose();
+    // Keep ?onboarding=complete so RSC still passes showProfileWelcomeModalOnLoad
+    // for the “booking link is live” modal right after this one.
+    router.replace(`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`);
+    onClose({ continueToWelcome: true });
   };
 
   const handleUpgrade = () => {
     markModalSeen();
-    onClose();
+    onClose({ continueToWelcome: false });
     router.push('/dashboard/upgrade');
   };
 

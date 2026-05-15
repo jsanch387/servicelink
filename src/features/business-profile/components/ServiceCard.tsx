@@ -40,7 +40,11 @@ interface ServiceCardProps {
    * knows the business owner is booking on a customer's behalf.
    */
   manualBookingForCustomer?: boolean;
-  /** When set, forwarded to `/book/details` as `?lang=` (booking funnel only). */
+  /**
+   * When set, forwarded to `/book/details` as `?lang=` (booking funnel only).
+   * When true on a public card, do not show the booking “Select” link.
+   */
+  hideBookLink?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -52,6 +56,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   isPublic = false,
   businessSlug = '',
   manualBookingForCustomer = false,
+  hideBookLink = false,
   bookingFlowLocale = 'en',
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
@@ -167,18 +172,22 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <div />
         )}
 
-        {isPublic && !isEditable && businessSlug && service.id && (
-          <Link
-            href={getBusinessBookDetailsPath(businessSlug, service.id, {
-              forOwner: manualBookingForCustomer,
-              lang: bookingFlowLocale,
-            })}
-            className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
-          >
-            {ui.common.select}
-            <ChevronRightIcon className="h-3.5 w-3.5" />
-          </Link>
-        )}
+        {isPublic &&
+          !hideBookLink &&
+          !isEditable &&
+          businessSlug &&
+          service.id && (
+            <Link
+              href={getBusinessBookDetailsPath(businessSlug, service.id, {
+                forOwner: manualBookingForCustomer,
+                lang: bookingFlowLocale,
+              })}
+              className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
+            >
+              {ui.common.select}
+              <ChevronRightIcon className="h-3.5 w-3.5" />
+            </Link>
+          )}
       </div>
 
       {/* Edit controls */}

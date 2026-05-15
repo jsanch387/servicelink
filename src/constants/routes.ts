@@ -24,6 +24,10 @@ export const ROUTES = {
     SIGNUP: '/signup',
     /** PKCE `code` exchange (OAuth + password recovery). Use `?next=` for post-auth path. */
     CALLBACK: '/auth/callback',
+    /** Shown after email/password sign-up when Supabase requires confirming email (no session yet). */
+    CHECK_EMAIL: '/auth/check-email',
+    /** After clicking the confirm link (same browser): session is set in callback, then user lands here before dashboard. */
+    EMAIL_CONFIRMED: '/auth/email-confirmed',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
   },

@@ -18,7 +18,7 @@ export default async function NewQuotePage() {
     redirect(ROUTES.AUTH.LOGIN);
   }
 
-  const stateResult = await getOnboardingState(user.id);
+  const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || stateResult.data?.status !== 'completed') {
     redirect(ROUTES.DASHBOARD.MAIN);
   }

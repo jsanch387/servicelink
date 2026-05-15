@@ -25,6 +25,27 @@ export function hasStripeBillingHistory(
 }
 
 /**
+ * Dashboard paywall: only when the profile is still **pro** but Stripe does not
+ * grant access (e.g. `past_due`, canceled while tier not yet synced). Users
+ * downgraded to **free** after cancel keep full Free app access even if
+ * `stripe_customer_id` / `subscription_status` remain set.
+ */
+export function needsPaidProResubscribeForDashboard(
+  subscriptionTier: string | null | undefined,
+  subscriptionStatus: string | null | undefined,
+  stripeSubscriptionId: string | null | undefined,
+  stripeCustomerId: string | null | undefined
+): boolean {
+  const tier = (subscriptionTier ?? '').trim().toLowerCase();
+  if (tier !== 'pro') return false;
+  return hasStripeBillingHistory(
+    stripeCustomerId,
+    stripeSubscriptionId,
+    subscriptionStatus
+  );
+}
+
+/**
  * Whether this profile is tied to a paying Stripe subscription (vs comped/manual Pro).
  */
 function hasStripeBillingSubscription(

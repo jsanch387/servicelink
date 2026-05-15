@@ -29,7 +29,7 @@ export async function updateAddOnAction(
     };
   }
 
-  const stateResult = await getOnboardingState(user.id);
+  const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || !stateResult.data) {
     return {
       success: false,

@@ -10,6 +10,7 @@ import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
+import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import { MediaService } from '@/features/media';
 import { isProAccess } from '@/features/pricing';
 import {
@@ -204,6 +205,17 @@ export default async function PublicProfilePage({
   const showRequestQuoteCta =
     ownerTier === 'pro' && displayProfile.accept_quote_req === true;
 
+  const profileIdForCap =
+    (businessProfile as { profile_id?: string | null }).profile_id ?? null;
+  const freeBookingsCount =
+    (businessProfile as { free_bookings_count?: number | null })
+      .free_bookings_count ?? null;
+  const { reachedFreeCap: publicFreeBookingsCapReached } =
+    await resolvePublicBookingFreeTierGate(adminGate, {
+      profileId: profileIdForCap,
+      freeBookingsCount,
+    });
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
@@ -219,6 +231,7 @@ export default async function PublicProfilePage({
         showVerifiedBadge={showVerifiedBadge}
         showRequestQuoteCta={showRequestQuoteCta}
         publicOwnerHasProForPriceOptions={ownerTier === 'pro'}
+        publicFreeBookingsCapReached={publicFreeBookingsCapReached}
         bookingFlowLocale={bookingFlowLocale}
       />
     </div>

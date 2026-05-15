@@ -5,7 +5,10 @@
  */
 
 import { isProAccess } from '@/features/pricing';
-import { FREE_MAX_SERVICES, FREE_TIER_SERVICE_LIMIT_USER_MESSAGE } from '@/features/pricing/types';
+import {
+  FREE_MAX_SERVICES,
+  FREE_TIER_SERVICE_LIMIT_USER_MESSAGE,
+} from '@/features/pricing/types';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -13,7 +16,9 @@ export const FREE_TIER_SERVICE_LIMIT_MESSAGE =
   FREE_TIER_SERVICE_LIMIT_USER_MESSAGE;
 
 /** Max service rows allowed after a replace-all on Free (grandfather existing larger counts). */
-export function maxServiceCountAllowedOnFreeTier(currentDbCount: number): number {
+export function maxServiceCountAllowedOnFreeTier(
+  currentDbCount: number
+): number {
   return Math.max(FREE_MAX_SERVICES, currentDbCount);
 }
 

@@ -5,7 +5,13 @@
 
 'use client';
 
-import { Button, CrownIcon, GlassCard, Switch, WarningCallout } from '@/components/shared';
+import {
+  Button,
+  CrownIcon,
+  GlassCard,
+  Switch,
+  WarningCallout,
+} from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAnalytics } from '@/features/analytics';
 import {
@@ -109,11 +115,11 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 {atFreeBookingCap ? (
                   <>
                     <span className="font-medium text-zinc-200">
-                      You&apos;ve used all {FREE_BOOKINGS_LIMIT} free bookings on
-                      your plan.
+                      You&apos;ve used all {FREE_BOOKINGS_LIMIT} free bookings
+                      on your plan.
                     </span>{' '}
-                    Upgrade to Pro for unlimited bookings and the rest of our Pro
-                    tools.
+                    Upgrade to Pro for unlimited bookings and the rest of our
+                    Pro tools.
                   </>
                 ) : (
                   <>

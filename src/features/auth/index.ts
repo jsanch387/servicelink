@@ -1,4 +1,6 @@
 // Auth Components
+export { CheckYourEmailScreen } from './components/CheckYourEmailScreen';
+export { EmailConfirmedScreen } from './components/EmailConfirmedScreen';
 export { LoginForm } from './components/LoginForm';
 export { SignupForm } from './components/SignupForm';
 

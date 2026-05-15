@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { isProAccess } from '../utils/isProAccess';
+import {
+  isProAccess,
+  needsPaidProResubscribeForDashboard,
+} from '../utils/isProAccess';
 
 /** Any non-empty id means “paying customer” vs comped manual Pro */
 const BILLED = 'sub_test123';
@@ -49,5 +52,40 @@ describe('isProAccess', () => {
   it('billed customer: empty or null status allows Pro (migration / sync gaps)', () => {
     expect(isProAccess('pro', null, null, BILLED, CUS)).toBe(true);
     expect(isProAccess('pro', null, '', BILLED, CUS)).toBe(true);
+  });
+});
+
+describe('needsPaidProResubscribeForDashboard', () => {
+  const BILLED = 'sub_x';
+  const CUS = 'cus_x';
+
+  it('is false when tier is free even with Stripe fields (post-cancel)', () => {
+    expect(
+      needsPaidProResubscribeForDashboard('free', 'canceled', null, CUS)
+    ).toBe(false);
+  });
+
+  it('is false when tier is null/empty and Stripe fields set', () => {
+    expect(
+      needsPaidProResubscribeForDashboard(null, 'canceled', BILLED, CUS)
+    ).toBe(false);
+  });
+
+  it('is true when tier is pro and Stripe customer exists', () => {
+    expect(
+      needsPaidProResubscribeForDashboard('pro', 'canceled', null, CUS)
+    ).toBe(true);
+  });
+
+  it('is true when tier is pro and subscription id exists', () => {
+    expect(needsPaidProResubscribeForDashboard('pro', null, BILLED, null)).toBe(
+      true
+    );
+  });
+
+  it('is false when tier is pro but no Stripe billing fields (comped)', () => {
+    expect(needsPaidProResubscribeForDashboard('pro', null, null, null)).toBe(
+      false
+    );
   });
 });

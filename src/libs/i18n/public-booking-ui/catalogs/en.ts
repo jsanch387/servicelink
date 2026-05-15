@@ -205,5 +205,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     galleryTab: 'Gallery',
     bioTab: 'Bio',
     noBioYet: 'No bio added yet.',
+    notTakingBookingsRightNow:
+      'Not taking bookings through ServiceLink right now.',
   },
 };
