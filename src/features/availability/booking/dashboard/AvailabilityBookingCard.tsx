@@ -23,9 +23,9 @@ function formatVehicleLine(booking: AvailabilityBookingDisplay): string | null {
 }
 
 function serviceLineText(booking: AvailabilityBookingDisplay): string {
-  const base = booking.serviceName.trim();
+  const base = (booking.serviceName ?? '').trim() || 'Service';
   const addons = (booking.addonDetails ?? [])
-    .map(a => a.name.trim())
+    .map(a => (a.name ?? '').trim())
     .filter(Boolean);
   if (addons.length === 0) return base;
   return `${base} · ${addons.join(', ')}`;

@@ -168,4 +168,12 @@ describe('AvailabilityBookingDetailPanel customer section', () => {
     expect(screen.queryByRole('link', { name: /call customer/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /email customer/i })).toBeNull();
   });
+
+  it('does not throw when customerEmail is null (optional email bookings)', () => {
+    const booking = baseBooking(undefined);
+    booking.customerEmail = null as unknown as string;
+    expect(() => renderPanel(booking)).not.toThrow();
+    expect(screen.getByText('Jane Customer')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /email customer/i })).toBeNull();
+  });
 });

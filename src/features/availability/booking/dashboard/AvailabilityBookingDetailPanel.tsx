@@ -118,12 +118,13 @@ export function AvailabilityBookingDetailPanel({
   };
 
   const fullAddress = formatFullAddress(booking.address);
-  const phoneDigits = booking.customerPhone.replace(/\D/g, '');
+  const customerPhone = booking.customerPhone ?? '';
+  const phoneDigits = customerPhone.replace(/\D/g, '');
   const hasPhone = phoneDigits.length > 0;
-  const phoneFormatted = formatPhoneDisplay(booking.customerPhone);
+  const phoneFormatted = formatPhoneDisplay(customerPhone);
   const telHref = hasPhone ? `tel:${phoneDigits}` : '';
 
-  const customerEmailTrimmed = booking.customerEmail.trim();
+  const customerEmailTrimmed = (booking.customerEmail ?? '').trim();
   const hasEmail = customerEmailTrimmed.length > 0;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
@@ -489,7 +490,7 @@ export function AvailabilityBookingDetailPanel({
           )}
 
           {/* Notes */}
-          {booking.notes.trim() && (
+          {(booking.notes ?? '').trim() && (
             <section>
               <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
                 Notes

@@ -19,7 +19,7 @@ export interface BookingRow {
   scheduled_date: string;
   start_time: string;
   customer_name: string;
-  customer_email: string;
+  customer_email: string | null;
   customer_phone: string | null;
   customer_street_address: string | null;
   customer_unit_apt: string | null;
@@ -58,7 +58,7 @@ export function mapBookingRowToDisplay(
     id: row.id,
     customerName: row.customer_name,
     customerPhone: row.customer_phone ?? '',
-    customerEmail: row.customer_email,
+    customerEmail: row.customer_email ?? '',
     customerVehicleYear: row.customer_vehicle_year ?? undefined,
     customerVehicleMake: row.customer_vehicle_make ?? undefined,
     customerVehicleModel: row.customer_vehicle_model ?? undefined,

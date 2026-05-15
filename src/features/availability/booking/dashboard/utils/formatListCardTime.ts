@@ -13,7 +13,7 @@ export function formatListCardTimeForBooking(
 ): string {
   const raw = booking.startTimeHHmm?.trim();
   if (!raw || !/^\d{1,2}:\d{2}$/.test(raw)) {
-    return booking.time.trim();
+    return (booking.time ?? '').trim() || '—';
   }
   const [hs, ms] = raw.split(':');
   const h24 = Math.min(23, Math.max(0, parseInt(hs, 10) || 0));
