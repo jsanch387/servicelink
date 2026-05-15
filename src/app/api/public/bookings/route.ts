@@ -2,8 +2,11 @@
  * POST /api/public/bookings
  *
  * Creates a V2 (availability) booking. Public endpoint.
- * Owner dashboard booking (`ownerManualBooking`) requires an authenticated session
- * for the same business as `businessId`. Otherwise resolves business by slug only.
+ * Owner dashboard / mobile owner booking (`ownerManualBooking`) requires auth
+ * for the same business as `businessId`:
+ * - Web: Supabase session cookies
+ * - Mobile: `Authorization: Bearer <Supabase access_token>` (same body as web)
+ * Otherwise resolves business by slug only (customer self-serve).
  */
 
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
@@ -15,8 +18,7 @@ import {
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import {
   getPublicBookingRequestId,
-  logPublicBookingPost,
-  supabaseErrorForLogs,
+  logBookingTransaction,
 } from '@/features/availability/server/publicBookingRouteLog';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import {
@@ -33,8 +35,8 @@ import {
   type AvailabilityBookingPaymentSummary,
 } from '@/features/email';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -164,6 +166,8 @@ export async function POST(request: NextRequest) {
     }
     const sanitizedCustomer = normalizeBookingCustomerInput(coercedCustomer);
 
+    let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
+
     if (ownerManualBooking) {
       if (!body.businessId?.trim()) {
         return publicBookingJson(
@@ -172,9 +176,22 @@ export async function POST(request: NextRequest) {
           400
         );
       }
-      const sessionSb = await createSupabaseServerClient();
-      const resolved = await resolveCurrentBusinessId(sessionSb);
+      const auth = await getAuthenticatedUser(request);
+      if ('error' in auth) {
+        logBookingTransaction(requestId, 'warn', 'owner_auth', {
+          http: auth.status,
+        });
+        return publicBookingJson(
+          requestId,
+          { success: false, error: auth.error },
+          auth.status
+        );
+      }
+      const resolved = await resolveCurrentBusinessId(auth.supabase);
       if (!resolved.ok) {
+        logBookingTransaction(requestId, 'warn', 'owner_business', {
+          http: resolved.status,
+        });
         return publicBookingJson(
           requestId,
           { success: false, error: resolved.error },
@@ -182,12 +199,14 @@ export async function POST(request: NextRequest) {
         );
       }
       if (resolved.businessId !== body.businessId.trim()) {
+        logBookingTransaction(requestId, 'warn', 'owner_forbidden', {});
         return publicBookingJson(
           requestId,
           { success: false, error: 'Forbidden' },
           403
         );
       }
+      ownerAuthMethod = auth.authMethod;
     }
 
     const supabase = createSupabaseAdminClient();
@@ -296,12 +315,6 @@ export async function POST(request: NextRequest) {
       customer: sanitizedCustomer,
     });
 
-    logPublicBookingPost(requestId, 'info', 'booking_inserted', {
-      bookingId: result.id,
-      businessId,
-      ownerManualBooking,
-    });
-
     const selectedAddOnsForEmail = body.selectedAddOns ?? [];
     const basePriceForEmail = body.servicePriceCents ?? 0;
     const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
@@ -317,12 +330,9 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
     if (paymentSettingsError) {
-      logPublicBookingPost(
-        requestId,
-        'warn',
-        'payment_settings_query_failed',
-        supabaseErrorForLogs(paymentSettingsError)
-      );
+      logBookingTransaction(requestId, 'warn', 'pay_settings', {
+        code: paymentSettingsError.code ?? 'unknown',
+      });
     }
 
     const paySettings = paymentSettingsRow as {
@@ -350,18 +360,13 @@ export async function POST(request: NextRequest) {
         clientPaymentMethod,
       });
     } catch (payErr) {
-      logPublicBookingPost(
-        requestId,
-        'error',
-        'booking_payments_insert_failed',
-        {
-          bookingId: result.id,
-          message:
-            payErr instanceof Error
-              ? payErr.message.slice(0, 200)
-              : String(payErr),
-        }
-      );
+      logBookingTransaction(requestId, 'error', 'payments_failed', {
+        bookingId: result.id,
+        err:
+          payErr instanceof Error
+            ? payErr.message.slice(0, 80)
+            : String(payErr).slice(0, 80),
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('bookings').delete().eq('id', result.id);
       return publicBookingJson(
@@ -415,6 +420,7 @@ export async function POST(request: NextRequest) {
       emailPayload: availabilityEmailPayload,
     });
 
+    let customerConfirmationOutcome: 'sent' | 'failed' | 'skipped' = 'skipped';
     if (sanitizedCustomer.email) {
       try {
         await sendAvailabilityBookingCustomerConfirmationEmail(
@@ -422,13 +428,23 @@ export async function POST(request: NextRequest) {
           businessDisplayName,
           availabilityEmailPayload
         );
-      } catch {
-        // Best-effort; booking already succeeded
+        customerConfirmationOutcome = 'sent';
+      } catch (emailErr) {
+        customerConfirmationOutcome = 'failed';
+        logBookingTransaction(requestId, 'warn', 'customer_mail', {
+          err:
+            emailErr instanceof Error
+              ? emailErr.message.slice(0, 72)
+              : String(emailErr).slice(0, 72),
+        });
       }
     }
 
-    logPublicBookingPost(requestId, 'info', 'request_completed', {
+    logBookingTransaction(requestId, 'info', 'created', {
       bookingId: result.id,
+      owner: ownerManualBooking ? 1 : 0,
+      auth: ownerAuthMethod,
+      email: customerConfirmationOutcome,
     });
     return publicBookingJson(
       requestId,
@@ -436,8 +452,11 @@ export async function POST(request: NextRequest) {
       201
     );
   } catch (err) {
-    logPublicBookingPost(requestId, 'error', 'request_failed', {
-      message: err instanceof Error ? err.message.slice(0, 300) : String(err),
+    logBookingTransaction(requestId, 'error', 'unhandled', {
+      err:
+        err instanceof Error
+          ? err.message.slice(0, 120)
+          : String(err).slice(0, 120),
     });
     return publicBookingJson(
       requestId,

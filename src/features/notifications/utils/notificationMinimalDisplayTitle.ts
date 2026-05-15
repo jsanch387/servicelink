@@ -38,6 +38,12 @@ export function notificationMinimalDisplayTitle(
     return 'New payment';
   }
 
+  // Public “request a quote” flow (`notifications.type`); must run before
+  // `blob.includes('quote')` because `quote_request` contains substring `quote`.
+  if (blob.includes('quote_request')) {
+    return 'New quote request';
+  }
+
   if (blob.includes('quote')) {
     if (blob.includes('accept')) return 'Quote accepted';
     if (blob.includes('decline') || blob.includes('reject')) {
