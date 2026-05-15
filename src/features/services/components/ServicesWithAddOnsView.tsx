@@ -22,6 +22,10 @@ export interface ServicesWithAddOnsViewProps {
   initialAddOns?: AddOnRow[];
   /** Error from add-ons fetch. */
   addOnsFetchError?: string | null;
+  /**
+   * When false, Free-plan service cap is enforced in the UI from live service count.
+   */
+  hasProAccess?: boolean;
 }
 
 /**
@@ -34,6 +38,7 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
   addOnCounts,
   initialAddOns = [],
   addOnsFetchError,
+  hasProAccess = true,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('services');
 
@@ -67,6 +72,7 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
           initialServices={initialServices}
           fetchError={fetchError}
           addOnCounts={addOnCounts}
+          hasProAccess={hasProAccess}
         />
       ) : (
         <AddOnsContent

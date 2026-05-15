@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/shared';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
+import { isOnboardingLegacyStripeTrialEnabled } from '@/features/pricing/config/onboardingLegacyStripeTrial';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { BoltIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
@@ -41,7 +42,31 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(API_ROUTES.STRIPE_START_ONBOARDING_TRIAL, {
+      const href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
+
+      if (isOnboardingLegacyStripeTrialEnabled()) {
+        // Legacy: Stripe 7-day Pro trial (toggle via NEXT_PUBLIC_ONBOARDING_LEGACY_STRIPE_TRIAL).
+        const res = await fetch(API_ROUTES.STRIPE_START_ONBOARDING_TRIAL, {
+          method: 'POST',
+        });
+        const data = (await res.json()) as {
+          success?: boolean;
+          error?: string;
+        };
+
+        if (res.ok && data.success) {
+          router.prefetch(href);
+          router.push(href);
+          await router.refresh();
+          return;
+        }
+
+        setError(data.error ?? 'Something went wrong.');
+        return;
+      }
+
+      // New default: Free tier only — no Stripe; marks onboarding complete server-side.
+      const res = await fetch(API_ROUTES.ONBOARDING_V2_COMPLETE, {
         method: 'POST',
       });
       const data = (await res.json()) as {
@@ -50,11 +75,8 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
       };
 
       if (res.ok && data.success) {
-        const href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
         router.prefetch(href);
         router.push(href);
-        // Re-fetch after navigation so the dashboard layout (sidebar) picks up
-        // `onboarding_status` — child pages were already force-dynamic; layout was not.
         await router.refresh();
         return;
       }

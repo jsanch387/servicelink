@@ -6,6 +6,9 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { isProAccess } from '@/features/pricing';
+import { assertFreeTierReplaceAllServiceCount } from '@/features/services/server/freeTierServiceLimit';
+
 export interface Step2ServicePayload {
   name: string;
   price: string;
@@ -53,6 +56,50 @@ export async function saveStep2(
     );
     if (validServices.length === 0) {
       return { success: false, error: 'Add at least one service' };
+    }
+
+    const { count: existingCountRaw, error: countError } = await supabase
+      .from('business_services')
+      .select('*', { count: 'exact', head: true })
+      .eq('business_id', businessProfileId);
+
+    if (countError) {
+      return { success: false, error: countError.message };
+    }
+
+    const existingCount = existingCountRaw ?? 0;
+
+    const { data: profileRaw } = await supabase
+      .from('profiles')
+      .select(
+        'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      )
+      .eq('user_id', profileId)
+      .maybeSingle();
+
+    const ownerProfile = profileRaw as {
+      subscription_tier?: string | null;
+      subscription_current_period_end?: string | null;
+      subscription_status?: string | null;
+      stripe_subscription_id?: string | null;
+      stripe_customer_id?: string | null;
+    } | null;
+
+    const ownerPro = isProAccess(
+      ownerProfile?.subscription_tier,
+      ownerProfile?.subscription_current_period_end,
+      ownerProfile?.subscription_status,
+      ownerProfile?.stripe_subscription_id,
+      ownerProfile?.stripe_customer_id
+    );
+
+    const replaceGate = assertFreeTierReplaceAllServiceCount(
+      existingCount,
+      validServices.length,
+      ownerPro
+    );
+    if (!replaceGate.ok) {
+      return { success: false, error: replaceGate.error };
     }
 
     // Delete existing services for this business (replace-all)

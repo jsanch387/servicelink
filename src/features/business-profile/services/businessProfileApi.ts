@@ -5,6 +5,7 @@
  * Clean, modular API operations for business profile feature.
  */
 
+import { resolveMaxPortfolioImagesForBusiness } from '@/features/business-profile/server/resolveMaxPortfolioImagesForBusiness';
 import { MediaService } from '@/features/media';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/libs/supabase';
@@ -142,6 +143,20 @@ export class BusinessProfileApi {
   ): Promise<ImageResponse> {
     try {
       const supabase = createClient();
+
+      const maxPortfolio = await resolveMaxPortfolioImagesForBusiness(
+        supabase as any,
+        businessId
+      );
+      if (images.length > maxPortfolio) {
+        return {
+          success: false,
+          error:
+            maxPortfolio <= 4
+              ? `Free plan includes up to ${maxPortfolio} gallery images. Remove extras or upgrade to Pro for up to 8.`
+              : `You can save up to ${maxPortfolio} gallery images.`,
+        };
+      }
 
       // Get current images from database
       const { data: currentImages, error: currentError } = await supabase

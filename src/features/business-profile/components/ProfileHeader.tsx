@@ -25,7 +25,7 @@ interface ProfileHeaderProps {
   isPublic?: boolean;
   /** When true, show verified badge on logo (derived from owner subscription_tier === 'pro'). */
   showVerifiedBadge?: boolean;
-  /** When true with `isPublic` + slug, show Request quote CTA (Pro + accept_quote_req). */
+  /** When true with `isPublic` + slug, show Request quote CTA (Pro quote gate + accept_quote_req). */
   showRequestQuoteCta?: boolean;
   /** Public / owner preview: resolved booking-funnel locale (query → cookie → DB default). */
   bookingFlowLocale?: PublicBookingFlowLocale;

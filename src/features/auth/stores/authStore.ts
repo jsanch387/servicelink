@@ -138,11 +138,19 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true });
 
         try {
+          const baseUrl = (
+            process.env.NEXT_PUBLIC_SITE_URL ||
+            (typeof window !== 'undefined' ? window.location.origin : '')
+          ).replace(/\/$/, '');
+          const emailRedirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
+            ROUTES.AUTH.EMAIL_CONFIRMED
+          )}`;
+
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-              emailRedirectTo: undefined, // Disable email confirmation redirect
+              emailRedirectTo,
             },
           });
 
@@ -151,11 +159,24 @@ export const useAuthStore = create<AuthStore>()(
             return { error: error.message };
           }
 
-          if (data.user) {
-            // CRITICAL: Create profile - signup fails if this fails
+          const session = data.session;
+          const signedUpUser = data.user;
+
+          if (signedUpUser && !session) {
+            // Do NOT call signOut() here. PKCE stores a code_verifier cookie during
+            // signUp; signOut clears it, so the email confirmation link (exchangeCodeForSession)
+            // fails with "code verifier should be non-empty". There is no session yet anyway.
+            set({ isLoading: false });
+            return {
+              needsEmailVerification: true,
+              email: signedUpUser.email ?? email,
+            };
+          }
+
+          if (signedUpUser && session) {
             const profileResult = await ProfileService.createProfile(
-              data.user.id,
-              null // No name provided during signup
+              signedUpUser.id,
+              null
             );
 
             if (!profileResult.success) {
@@ -164,7 +185,6 @@ export const useAuthStore = create<AuthStore>()(
                 profileResult.error
               );
 
-              // Sign out to clear the auth user
               await supabase.auth.signOut();
 
               set({ isLoading: false });
@@ -173,22 +193,22 @@ export const useAuthStore = create<AuthStore>()(
               };
             }
 
-            // Success - both auth user and profile created
             const user: AuthUser = {
-              id: data.user.id,
-              email: data.user.email!,
-              name: null, // No name provided during signup
+              id: signedUpUser.id,
+              email: signedUpUser.email!,
+              name: null,
             };
 
             set({
               user,
-              supabaseUser: data.user,
+              supabaseUser: signedUpUser,
               isLoading: false,
             });
+            return {};
           }
 
           set({ isLoading: false });
-          return {};
+          return { error: 'Something went wrong. Please try again.' };
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
           set({ isLoading: false });

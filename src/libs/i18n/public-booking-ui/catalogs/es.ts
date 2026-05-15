@@ -207,5 +207,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     galleryTab: 'Galería',
     bioTab: 'Biografía',
     noBioYet: 'Aún no hay biografía.',
+    notTakingBookingsRightNow:
+      'No aceptan reservas por ServiceLink en este momento.',
   },
 };

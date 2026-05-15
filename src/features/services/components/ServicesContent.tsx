@@ -1,12 +1,19 @@
 'use client';
 
 import { Button, Modal } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
+import {
+  FREE_MAX_SERVICES,
+  FREE_TIER_SERVICE_LIMIT_USER_MESSAGE,
+} from '@/features/pricing/types';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   ArrowsUpDownIcon,
+  InformationCircleIcon,
   PlusIcon,
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import React, { useCallback, useState } from 'react';
 import { createServiceAction } from '../actions/createService';
 import { deleteServiceAction } from '../actions/deleteService';
@@ -24,6 +31,8 @@ export interface ServicesContentProps {
   fetchError?: string | null;
   /** Map of service ID → add-on count. */
   addOnCounts?: Record<string, number>;
+  /** When false, Free-plan service cap applies (derived with live list length). */
+  hasProAccess?: boolean;
 }
 
 /**
@@ -34,6 +43,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   initialServices,
   fetchError = null,
   addOnCounts,
+  hasProAccess = true,
 }) => {
   const [services, setServices] = useState<ServiceRow[]>(initialServices);
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -49,6 +59,9 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   const [toggleError, setToggleError] = useState<string | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  const freeTierServiceCapReached =
+    !hasProAccess && services.length >= FREE_MAX_SERVICES;
 
   const handleFinishSorting = useCallback(async () => {
     setOrderError(null);
@@ -120,6 +133,11 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
           setSaveError(result.error ?? 'Failed to update service');
         }
       } else {
+        const atCap = !hasProAccess && services.length >= FREE_MAX_SERVICES;
+        if (atCap) {
+          setSaveError(FREE_TIER_SERVICE_LIMIT_USER_MESSAGE);
+          return;
+        }
         setSaveError(null);
         setIsSavingEdit(true);
         const result = await createServiceAction({
@@ -137,14 +155,15 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         }
       }
     },
-    []
+    [hasProAccess, services]
   );
 
   const handleAddService = useCallback(() => {
+    if (freeTierServiceCapReached) return;
     setSaveError(null);
     setToggleError(null);
     setIsAddServiceOpen(true);
-  }, []);
+  }, [freeTierServiceCapReached]);
 
   const handleDelete = useCallback(
     (serviceId: string) => {
@@ -164,6 +183,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
     setIsDeleting(false);
     if (result.success) {
       setServices(prev => prev.filter(s => s.id !== serviceToDelete.id));
+      setSaveError(null);
       setServiceToDelete(null);
     } else {
       setDeleteError(result.error ?? 'Failed to delete service');
@@ -251,6 +271,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             <Button
               variant="inverse"
               onClick={handleAddService}
+              disabled={freeTierServiceCapReached}
               icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
               className="mt-6"
             >
@@ -270,6 +291,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                   <Button
                     variant="inverse"
                     onClick={handleAddService}
+                    disabled={freeTierServiceCapReached}
                     icon={<PlusIcon className="h-4 w-4 text-emerald-500" />}
                     className="flex-1 sm:flex-none"
                   >
@@ -296,6 +318,25 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                 </Button>
               </div>
             </div>
+
+            {freeTierServiceCapReached ? (
+              <div className="flex items-start gap-2.5 mb-6 px-0.5" role="note">
+                <InformationCircleIcon
+                  className="h-4 w-4 sm:h-[18px] sm:w-[18px] shrink-0 text-zinc-500 mt-0.5"
+                  aria-hidden
+                />
+                <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
+                  You&apos;re on the free plan (5 services max).{' '}
+                  <Link
+                    href={ROUTES.DASHBOARD.UPGRADE}
+                    className="font-medium text-white hover:text-white/85 underline-offset-2 hover:underline transition-colors"
+                  >
+                    Upgrade to Pro
+                  </Link>{' '}
+                  to add more.
+                </p>
+              </div>
+            ) : null}
 
             {toggleError && (
               <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">

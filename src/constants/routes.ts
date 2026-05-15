@@ -24,6 +24,10 @@ export const ROUTES = {
     SIGNUP: '/signup',
     /** PKCE `code` exchange (OAuth + password recovery). Use `?next=` for post-auth path. */
     CALLBACK: '/auth/callback',
+    /** Shown after email/password sign-up when Supabase requires confirming email (no session yet). */
+    CHECK_EMAIL: '/auth/check-email',
+    /** After clicking the confirm link (same browser): session is set in callback, then user lands here before dashboard. */
+    EMAIL_CONFIRMED: '/auth/email-confirmed',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
   },
@@ -82,6 +86,8 @@ export const API_ROUTES = {
   STRIPE_CONNECT_EXPRESS_DASHBOARD: '/api/stripe/connect/express-dashboard',
   /** Onboarding step 5 (web): start Pro trial via Stripe Subscription API (no Checkout redirect). */
   STRIPE_START_ONBOARDING_TRIAL: '/api/stripe/start-onboarding-trial',
+  /** Onboarding V2: mark onboarding complete as Free (no Stripe). Used when legacy trial is off. */
+  ONBOARDING_V2_COMPLETE: '/api/onboarding-v2/complete',
   /**
    * After onboarding Stripe Checkout (mobile): POST with optional `checkout_session_id`
    * to sync profile and return `trial_confirmation` (DB + Stripe trial fields).

@@ -186,5 +186,7 @@ export type PublicBookingUi = {
     galleryTab: string;
     bioTab: string;
     noBioYet: string;
+    /** Public profile: free cap — clarify bookings are paused via ServiceLink only. */
+    notTakingBookingsRightNow: string;
   };
 };

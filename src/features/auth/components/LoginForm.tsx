@@ -13,10 +13,16 @@ const REDIRECT_ERROR_MESSAGES: Record<string, string> = {
     'This email is already registered. Please sign in with your password.',
 };
 
+const LOGIN_NOTICE_MESSAGES: Record<string, string> = {
+  email_confirm_open_login:
+    'Your email is verified. Sign in below to continue on this device. If you opened the link on another browser than where you signed up, that is fine — sign in here with your email and password.',
+};
+
 export const LoginForm: React.FC<{
   redirectError?: string;
   resetSuccess?: boolean;
-}> = ({ redirectError, resetSuccess }) => {
+  loginNotice?: string;
+}> = ({ redirectError, resetSuccess, loginNotice }) => {
   const router = useRouter();
   const { signIn, signInWithGoogle, isLoading } = useAuth();
   const [formData, setFormData] = useState({
@@ -33,6 +39,11 @@ export const LoginForm: React.FC<{
       router.replace(ROUTES.AUTH.LOGIN);
     }
   }, [redirectError, router]);
+
+  const loginNoticeMessage =
+    loginNotice && LOGIN_NOTICE_MESSAGES[loginNotice]
+      ? LOGIN_NOTICE_MESSAGES[loginNotice]
+      : null;
 
   useEffect(() => {
     if (resetSuccess) router.replace(ROUTES.AUTH.LOGIN);
@@ -124,6 +135,13 @@ export const LoginForm: React.FC<{
         </div>
 
         <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
+          {loginNoticeMessage && (
+            <div className="rounded-xl border border-sky-500/25 bg-sky-500/10 p-4 sm:p-4">
+              <p className="text-sm leading-relaxed text-sky-100 sm:text-base">
+                {loginNoticeMessage}
+              </p>
+            </div>
+          )}
           {resetSuccess && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 sm:p-4">
               <p className="text-green-400 text-base sm:text-base">

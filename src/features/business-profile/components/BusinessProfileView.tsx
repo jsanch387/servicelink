@@ -17,13 +17,14 @@ import {
 } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
-import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { StoryPostShareButton } from '@/features/story-post';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   ArrowRightIcon,
   CheckCircleIcon,
+  InformationCircleIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
@@ -60,13 +61,17 @@ interface BusinessProfileViewProps {
   onboardingCompleteFromUrl?: boolean;
   /** Server-side, account-level flag for one-time Pro welcome helper modal. */
   showProfileWelcomeModalOnLoad?: boolean;
-  /** Pro + accept_quote_req: show Request quote on public / owner preview header. */
+  /** Pro quote gate + accept_quote_req: show Request quote on public / owner preview header. */
   showRequestQuoteCta?: boolean;
   /**
    * Public profile only: owner still has Pro — show “starting at” for services with price options.
    * When false, public services list hides multi-price presentation (data may still exist in DB).
    */
   publicOwnerHasProForPriceOptions?: boolean;
+  /**
+   * Public profile: owner hit free lifetime public booking cap — banner + hide Select on services.
+   */
+  publicFreeBookingsCapReached?: boolean;
   /** Resolved booking-funnel locale for public profile + service links. */
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
@@ -82,6 +87,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   showProfileWelcomeModalOnLoad = false,
   showRequestQuoteCta = false,
   publicOwnerHasProForPriceOptions = false,
+  publicFreeBookingsCapReached = false,
   bookingFlowLocale = 'en',
 }) => {
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
@@ -205,21 +211,29 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     }
   }, [initialMode, isPublic]);
 
-  // One-time Try Pro modal when user lands from onboarding complete (free tier only)
+  // One-time Try Pro modal when user lands from onboarding complete (free tier only);
+  // “Booking link is live” welcome runs after Try Pro closes (or immediately if Try Pro already seen).
   useEffect(() => {
     if (isPublic || !onboardingCompleteFromUrl || !isFreeTier) return;
     try {
       if (!window.localStorage.getItem(ONBOARDING_PRO_MODAL_SEEN_KEY)) {
         setShowOnboardingProModal(true);
+      } else if (showProfileWelcomeModalOnLoad) {
+        setShowProfileWelcomeModal(true);
       }
     } catch {
       // ignore
     }
-  }, [isPublic, onboardingCompleteFromUrl, isFreeTier]);
+  }, [
+    isPublic,
+    onboardingCompleteFromUrl,
+    isFreeTier,
+    showProfileWelcomeModalOnLoad,
+  ]);
 
   useEffect(() => {
-    if (isPublic || isFreeTier) return;
-    setShowProfileWelcomeModal(showProfileWelcomeModalOnLoad);
+    if (isPublic || !showProfileWelcomeModalOnLoad || isFreeTier) return;
+    setShowProfileWelcomeModal(true);
   }, [isPublic, isFreeTier, showProfileWelcomeModalOnLoad]);
 
   const handleEdit = () => {
@@ -305,12 +319,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <Modal
-        isOpen={
-          !isPublic &&
-          !isFreeTier &&
-          editMode === 'view' &&
-          showProfileWelcomeModal
-        }
+        isOpen={!isPublic && editMode === 'view' && showProfileWelcomeModal}
         onClose={() => {
           // Intentionally no-op: this modal closes after "Edit profile".
         }}
@@ -338,12 +347,13 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
             bookings.
           </div>
 
-          <div className="flex">
+          <div className="w-full">
             <Button
               type="button"
               onClick={handleEditFromWelcomeModal}
               variant="inverse"
-              className="w-full sm:w-auto sm:min-w-[12rem]"
+              fullWidth
+              className="font-semibold"
               icon={<PencilIcon className="h-4 w-4" />}
               iconPosition="left"
             >
@@ -354,7 +364,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       </Modal>
       <TryProPostOnboardingModal
         isOpen={showOnboardingProModal}
-        onClose={() => setShowOnboardingProModal(false)}
+        onClose={opts => {
+          setShowOnboardingProModal(false);
+          if (opts?.continueToWelcome && showProfileWelcomeModalOnLoad) {
+            queueMicrotask(() => setShowProfileWelcomeModal(true));
+          }
+        }}
       />
       <Modal
         isOpen={showProfileChecklistModal}
@@ -505,17 +520,37 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
               {/* Tab Content */}
               {activeTab === 'services' ? (
-                <ServicesList
-                  businessProfile={businessProfile}
-                  editMode={editMode}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                  isPublic={isPublic}
-                  publicOwnerHasProForPriceOptions={
-                    publicOwnerHasProForPriceOptions
-                  }
-                  bookingFlowLocale={bookingFlowLocale}
-                />
+                <>
+                  {isPublic && publicFreeBookingsCapReached ? (
+                    <div
+                      className="px-4 sm:px-8 mt-5 mb-1 flex items-center gap-2 text-sm text-zinc-500"
+                      role="status"
+                    >
+                      <InformationCircleIcon
+                        className="h-4 w-4 shrink-0 text-zinc-500/80"
+                        aria-hidden
+                      />
+                      <span className="leading-snug">
+                        {bookingUi.profile.notTakingBookingsRightNow}
+                      </span>
+                    </div>
+                  ) : null}
+                  <ServicesList
+                    businessProfile={businessProfile}
+                    editMode={editMode}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                    isPublic={isPublic}
+                    publicOwnerHasProForPriceOptions={
+                      publicOwnerHasProForPriceOptions
+                    }
+                    publicHideBookLinks={
+                      isPublic && publicFreeBookingsCapReached
+                    }
+                    compactTopPadding={isPublic && publicFreeBookingsCapReached}
+                    bookingFlowLocale={bookingFlowLocale}
+                  />
+                </>
               ) : activeTab === 'gallery' ? (
                 <WorkShowcase
                   businessProfile={businessProfile}

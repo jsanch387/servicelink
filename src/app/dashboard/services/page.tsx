@@ -6,6 +6,7 @@
  */
 
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { isProAccess } from '@/features/pricing';
 import {
   getAddOnCounts,
   getAddOns,
@@ -29,7 +30,7 @@ export default async function ServicesPage() {
     redirect('/login');
   }
 
-  const stateResult = await getOnboardingState(user.id);
+  const stateResult = await getOnboardingState(user.id, supabase);
   if (!stateResult.success || !stateResult.data) {
     redirect('/dashboard');
   }
@@ -41,6 +42,30 @@ export default async function ServicesPage() {
 
   const servicesResult = await getServices(businessProfile.id);
   const services = servicesResult.data ?? [];
+
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const p = profileRow as {
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
+    subscription_status?: string | null;
+    stripe_subscription_id?: string | null;
+    stripe_customer_id?: string | null;
+  } | null;
+
+  const hasProAccess = isProAccess(
+    p?.subscription_tier,
+    p?.subscription_current_period_end,
+    p?.subscription_status,
+    p?.stripe_subscription_id,
+    p?.stripe_customer_id
+  );
 
   const [addOnsResult, addOnCounts] = await Promise.all([
     getAddOns(businessProfile.id),
@@ -57,6 +82,7 @@ export default async function ServicesPage() {
       addOnCounts={addOnCounts}
       initialAddOns={addOnsResult.data ?? []}
       addOnsFetchError={addOnsResult.success ? null : addOnsResult.error}
+      hasProAccess={hasProAccess}
     />
   );
 }

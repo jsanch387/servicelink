@@ -6,6 +6,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { resolveMaxPortfolioImagesForBusiness } from '@/features/business-profile/server/resolveMaxPortfolioImagesForBusiness';
 import { createClient } from '@/libs/supabase';
 import {
   PortfolioImage,
@@ -177,6 +178,17 @@ export class BusinessImagesService {
 
       if (images.length === 0) {
         return { success: true, data: [] };
+      }
+
+      const maxPortfolio = await resolveMaxPortfolioImagesForBusiness(
+        supabase as any,
+        businessId
+      );
+      if (images.length > maxPortfolio) {
+        return {
+          success: false,
+          error: `You can add up to ${maxPortfolio} portfolio images on your current plan.`,
+        };
       }
 
       const imagesData: PortfolioImageInsert[] = images.map(image => ({

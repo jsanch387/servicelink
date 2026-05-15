@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_slug, business_name, profile_id, free_bookings_month, free_bookings_count'
+        'id, business_slug, business_name, profile_id, free_bookings_count'
       )
       .eq('business_slug', body.businessSlug.trim())
       .single();
@@ -242,7 +242,6 @@ export async function POST(request: NextRequest) {
       business_slug: string | null;
       business_name: string | null;
       profile_id: string | null;
-      free_bookings_month: string | null;
       free_bookings_count: number | null;
     };
     const businessId = p.id;
@@ -261,7 +260,6 @@ export async function POST(request: NextRequest) {
     const cap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
       id: businessId,
       profile_id: profileId,
-      free_bookings_month: p.free_bookings_month,
       free_bookings_count: p.free_bookings_count,
     });
     if (!cap.ok) {

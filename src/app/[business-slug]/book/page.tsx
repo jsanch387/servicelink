@@ -18,13 +18,13 @@ import {
   BookServicePicker,
   type BookServicePickerItem,
 } from '@/features/availability/booking/components/BookServicePicker';
+import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { PublicBookingPaymentSettings } from '@/features/availability/booking/types';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
-import { isProAccess } from '@/features/pricing';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
 import {
@@ -71,7 +71,6 @@ type PublicBusinessProfileForBooking = {
   business_type: string | null;
   legacy_request_booking_enabled: boolean | null;
   profile_id: string | null;
-  free_bookings_month: string | null;
   free_bookings_count: number | null;
   public_booking_locales: string[];
   public_booking_default_locale: string;
@@ -137,7 +136,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count, public_booking_locales, public_booking_default_locale'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale'
       )
       .eq('business_slug', slug)
       .single();
@@ -260,61 +259,12 @@ export default async function BookingRequestPage({
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
 
-  // Free-tier cap: if this owner is on the free tier and has already used
-  // all 5 bookings for the current month, treat as not accepting bookings
-  // so we don't show the calendar/form at all.
-  let reachedFreeCap = false;
-  let ownerHasPro = false;
-  if (businessProfile.profile_id) {
-    const { data: ownerProfileRaw } = await adminClient
-      .from('profiles')
-      .select(
-        'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
-      )
-      .eq('user_id', businessProfile.profile_id)
-      .maybeSingle();
-
-    const ownerProfile: {
-      subscription_tier?: string | null;
-      subscription_current_period_end?: string | null;
-      subscription_status?: string | null;
-      stripe_subscription_id?: string | null;
-      stripe_customer_id?: string | null;
-    } | null = ownerProfileRaw as {
-      subscription_tier?: string | null;
-      subscription_current_period_end?: string | null;
-      subscription_status?: string | null;
-      stripe_subscription_id?: string | null;
-      stripe_customer_id?: string | null;
-    } | null;
-
-    const hasPro = isProAccess(
-      ownerProfile?.subscription_tier,
-      ownerProfile?.subscription_current_period_end,
-      ownerProfile?.subscription_status,
-      ownerProfile?.stripe_subscription_id,
-      ownerProfile?.stripe_customer_id
-    );
-    ownerHasPro = hasPro;
-    const isFreeTier = !hasPro;
-    if (isFreeTier) {
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-      const storedMonth = businessProfile.free_bookings_month;
-      const count = businessProfile.free_bookings_count ?? 0;
-
-      if (storedMonth === currentMonth && count >= 5) {
-        reachedFreeCap = true;
-      }
-    }
-  } else {
-    // Legacy data without profile_id: fall back purely on the stored month/count.
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    const storedMonth = businessProfile.free_bookings_month;
-    const count = businessProfile.free_bookings_count ?? 0;
-    if (storedMonth === currentMonth && count >= 5) {
-      reachedFreeCap = true;
-    }
-  }
+  // Free-tier lifetime cap: at limit on Free, treat as not accepting (same as public gate helper).
+  const { reachedFreeCap, ownerHasPro } =
+    await resolvePublicBookingFreeTierGate(adminClient, {
+      profileId: businessProfile.profile_id ?? null,
+      freeBookingsCount: businessProfile.free_bookings_count ?? null,
+    });
 
   // If they've set availability and toggle off, don't fall back to legacy request booking.
   // Also, if they've hit the free plan cap, show the \"not accepting\" message immediately.

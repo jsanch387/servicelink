@@ -8,6 +8,7 @@
  */
 
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import { resolveMaxPortfolioImagesForBusiness } from '@/features/business-profile/server/resolveMaxPortfolioImagesForBusiness';
 import type { Database } from '@/libs/supabase/client';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -76,11 +77,17 @@ export async function GET(
       // Images fetch failed, continue with empty array
     }
 
+    const maxPortfolio = await resolveMaxPortfolioImagesForBusiness(
+      admin as any,
+      profile.id
+    );
+    const imagesForResponse = (images || []).slice(0, maxPortfolio);
+
     // Construct complete business profile response
     const completeProfile = {
       ...profile,
       services: services || [],
-      images: images || [],
+      images: imagesForResponse,
     };
 
     return NextResponse.json({

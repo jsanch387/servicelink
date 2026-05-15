@@ -1,18 +1,24 @@
 /**
- * Free-tier V2 booking cap (5 per calendar month).
- * - Public booking flow: check + increment before insert (matches legacy behavior).
+ * Free-tier V2 booking cap: `FREE_BOOKINGS_LIMIT` lifetime public bookings per business on Free.
+ * Uses `business_profiles.free_bookings_count` only (`free_bookings_month` is legacy, unused here).
+ * Subjects owners to the cap when they are not {@link isExemptFromFreeTierLifetimeBookingCap}
+ * (aligned with the public book page gate).
+ * - Public booking flow: check + increment before insert.
  * - Quote approval: check before insert; increment only after the quote is linked to the booking
  *   so losing a link race does not consume a slot or leave stray counts.
  */
 
-import { isProAccess } from '@/features/pricing';
+import {
+  FREE_BOOKINGS_LIMIT,
+  isExemptFromFreeTierLifetimeBookingCap,
+} from '@/features/pricing';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+/** Rows passed into cap checks / increments (counter only; cap is lifetime). */
 export type BusinessProfileRowForBookingCap = {
   id: string;
   profile_id: string | null;
-  free_bookings_month: string | null;
   free_bookings_count: number | null;
 };
 
@@ -25,7 +31,6 @@ type CapContext =
   | {
       applies: true;
       atCap: boolean;
-      persistMonth: string;
       nextCount: number;
       businessId: string;
     };
@@ -55,7 +60,7 @@ async function resolveFreeTierCapContext(
     stripe_customer_id?: string | null;
   } | null;
 
-  const isFreeTier = !isProAccess(
+  const subjectToFreeTierBookingCap = !isExemptFromFreeTierLifetimeBookingCap(
     ownerProfile?.subscription_tier,
     ownerProfile?.subscription_current_period_end,
     ownerProfile?.subscription_status,
@@ -63,23 +68,15 @@ async function resolveFreeTierCapContext(
     ownerProfile?.stripe_customer_id
   );
 
-  if (!isFreeTier) {
+  if (!subjectToFreeTierBookingCap) {
     return { applies: false };
   }
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  let month = profile.free_bookings_month;
-  let count = profile.free_bookings_count ?? 0;
-
-  if (!month || month !== currentMonth) {
-    month = currentMonth;
-    count = 0;
-  }
+  const count = profile.free_bookings_count ?? 0;
 
   return {
     applies: true,
-    atCap: count >= 5,
-    persistMonth: month,
+    atCap: count >= FREE_BOOKINGS_LIMIT,
     nextCount: count + 1,
     businessId: profile.id,
   };
@@ -94,7 +91,6 @@ async function persistFreeTierIncrement(
 
     .from('business_profiles')
     .update({
-      free_bookings_month: ctx.persistMonth,
       free_bookings_count: ctx.nextCount,
     })
     .eq('id', ctx.businessId);
@@ -130,7 +126,7 @@ export async function persistFreeTierBookingIncrementAfterBooking(
 ): Promise<void> {
   const { data: profileRaw } = await supabase
     .from('business_profiles')
-    .select('id, profile_id, free_bookings_month, free_bookings_count')
+    .select('id, profile_id, free_bookings_count')
     .eq('id', businessId)
     .maybeSingle();
 
@@ -148,8 +144,8 @@ export async function persistFreeTierBookingIncrementAfterBooking(
 }
 
 /**
- * If the owner is on the free tier and at the monthly cap, returns `ok: false`.
- * Otherwise updates `free_bookings_month` / `free_bookings_count` when applicable.
+ * If the owner is subject to the free-tier cap and at the lifetime limit, returns `ok: false`.
+ * Otherwise increments `free_bookings_count`.
  */
 export async function enforceFreeTierBookingCapBeforeCreate(
   supabase: SupabaseClient<Database>,

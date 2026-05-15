@@ -1,48 +1,42 @@
 'use client';
 
 import { ROUTES } from '@/constants/routes';
-import { TicketIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React from 'react';
 import { FREE_BOOKINGS_LIMIT } from '../types';
 
 interface FreeBookingsTrackerProps {
-  /** Number of bookings used this month (0–5). */
+  /** Public bookings counted toward the Free plan lifetime cap (0–FREE_BOOKINGS_LIMIT). */
   bookingsUsed?: number;
   className?: string;
 }
 
+/**
+ * Free-plan usage strip — dark card, `n / limit` + “free bookings”, upgrade link on the right.
+ */
 export const FreeBookingsTracker: React.FC<FreeBookingsTrackerProps> = ({
   bookingsUsed = 0,
   className = '',
 }) => {
-  const atLimit = bookingsUsed >= FREE_BOOKINGS_LIMIT;
-
   return (
     <div
-      className={`flex flex-row items-center justify-between gap-2 text-sm ${className}`.trim()}
+      className={`rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 sm:px-4 sm:py-3.5 ${className}`.trim()}
     >
-      <div className="flex flex-col items-start gap-0.5">
-        <div className="inline-flex items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/30 px-2.5 py-1">
-          <TicketIcon className="h-3.5 w-3.5 text-amber-400/90 mr-1.5" />
-          <span className="text-xs font-medium text-amber-100">
-            {bookingsUsed} / {FREE_BOOKINGS_LIMIT}
+      <div className="flex flex-row items-center justify-between gap-3">
+        <p className="min-w-0 text-sm leading-tight">
+          <span className="font-bold tabular-nums text-white">
+            {bookingsUsed}
           </span>
-        </div>
-        <span className="text-[11px] sm:text-xs text-gray-500">
-          bookings this month
-        </span>
-      </div>
+          <span className="font-bold tabular-nums text-white/75">
+            {' '}
+            / {FREE_BOOKINGS_LIMIT}
+          </span>
+          <span className="font-medium text-zinc-500"> free bookings</span>
+        </p>
 
-      <div className="flex items-center gap-1.5">
-        {atLimit && (
-          <span className="text-[11px] sm:text-xs text-gray-400">
-            Limit reached
-          </span>
-        )}
         <Link
           href={ROUTES.DASHBOARD.UPGRADE}
-          className="text-xs font-semibold text-amber-400 hover:text-amber-300 underline-offset-2 hover:underline transition-colors"
+          className="shrink-0 text-xs font-semibold text-zinc-400 underline-offset-2 transition-colors hover:text-white hover:underline"
         >
           Upgrade
         </Link>

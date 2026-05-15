@@ -35,7 +35,7 @@ export default async function SettingsPage({
     }
 
     // Get complete onboarding state
-    const stateResult = await getOnboardingState(user.id);
+    const stateResult = await getOnboardingState(user.id, supabase);
     if (!stateResult.success) {
       redirect('/dashboard');
     }

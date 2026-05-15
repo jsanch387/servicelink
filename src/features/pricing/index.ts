@@ -16,12 +16,21 @@ export {
   POST_ONBOARDING_PRO_NUDGE_FEATURES,
   PUBLIC_PRICING_PRO_PLAN_FEATURES,
 } from './marketingPlanFeatures';
-export { FREE_BOOKINGS_LIMIT, PLANS, PRO_FEATURES } from './types';
+export {
+  FREE_BOOKINGS_LIMIT,
+  FREE_MAX_SERVICES,
+  FREE_TIER_SERVICE_LIMIT_USER_MESSAGE,
+  PLANS,
+  PRO_FEATURES,
+} from './types';
 export type { PlanId, PlanInfo, ProFeatureItem } from './types';
 export {
   STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO,
   hasStripeBillingHistory,
+  isExemptFromFreeTierLifetimeBookingCap,
   isProAccess,
+  isProAccessForPublicQuoteRequests,
+  needsPaidProResubscribeForDashboard,
 } from './utils/isProAccess';
 export {
   isPublicBusinessProfileLive,

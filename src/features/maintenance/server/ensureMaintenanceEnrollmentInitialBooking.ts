@@ -5,7 +5,7 @@
  */
 
 import { createBookingForExistingCustomer } from '@/features/availability/services/bookingService';
-import { persistFreeTierBookingIncrementAfterBooking } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
+import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { checkMaintenanceAnchorAgainstCalendar } from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
 import { notifyOwnerForMaintenanceInitialBooking } from '@/features/maintenance/server/notifyOwnerForMaintenanceInitialBooking';
 import { maintenanceCalendarBookingServiceTitle } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
@@ -31,7 +31,8 @@ export type EnsureMaintenanceBookingResult = {
     | 'insert_failed'
     | 'payment_row_failed'
     | 'link_failed'
-    | 'race_lost';
+    | 'race_lost'
+    | 'free_tier_cap';
 };
 
 /**
@@ -111,27 +112,6 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
     };
   }
 
-  const { data: businessRow, error: bizErr } = await supabase
-    .from('business_profiles')
-    .select('business_slug')
-    .eq('id', enrollment.business_id)
-    .maybeSingle();
-
-  if (bizErr || !businessRow) {
-    console.error('[maintenance] ensure booking: business', bizErr, {
-      enrollmentId,
-    });
-    return {
-      bookingId: null,
-      created: false,
-      skippedReason: 'business_not_found',
-    };
-  }
-
-  const businessSlug = (
-    (businessRow as { business_slug?: string | null }).business_slug ?? ''
-  ).trim();
-
   const scheduledDate = String(enrollment.anchor_date ?? '').trim();
   const startTime = quoteStartTimeToHHmm(String(enrollment.anchor_time ?? ''));
   const durationMinutes = Math.max(
@@ -168,6 +148,48 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
       skippedReason: slotCheck.reason,
     };
   }
+
+  const { data: businessRow, error: bizErr } = await supabase
+    .from('business_profiles')
+    .select('business_slug, profile_id, free_bookings_count')
+    .eq('id', enrollment.business_id)
+    .maybeSingle();
+
+  if (bizErr || !businessRow) {
+    console.error('[maintenance] ensure booking: business', bizErr, {
+      enrollmentId,
+    });
+    return {
+      bookingId: null,
+      created: false,
+      skippedReason: 'business_not_found',
+    };
+  }
+
+  const biz = businessRow as {
+    business_slug?: string | null;
+    profile_id?: string | null;
+    free_bookings_count?: number | null;
+  };
+
+  const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
+    id: enrollment.business_id,
+    profile_id: biz.profile_id ?? null,
+    free_bookings_count: biz.free_bookings_count ?? null,
+  });
+  if (!freeTierCap.ok) {
+    console.warn('[maintenance] ensure booking: free tier cap', {
+      enrollmentId,
+      businessId: enrollment.business_id,
+    });
+    return {
+      bookingId: null,
+      created: false,
+      skippedReason: 'free_tier_cap',
+    };
+  }
+
+  const businessSlug = (biz.business_slug ?? '').trim();
 
   let bookingId: string;
   try {
@@ -294,15 +316,6 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
       enrollmentId,
       bookingId,
     });
-  }
-
-  try {
-    await persistFreeTierBookingIncrementAfterBooking(
-      supabase,
-      enrollment.business_id
-    );
-  } catch {
-    // best-effort counter
   }
 
   return { bookingId, created: true };

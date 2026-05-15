@@ -25,6 +25,27 @@ export function hasStripeBillingHistory(
 }
 
 /**
+ * Dashboard paywall: only when the profile is still **pro** but Stripe does not
+ * grant access (e.g. `past_due`, canceled while tier not yet synced). Users
+ * downgraded to **free** after cancel keep full Free app access even if
+ * `stripe_customer_id` / `subscription_status` remain set.
+ */
+export function needsPaidProResubscribeForDashboard(
+  subscriptionTier: string | null | undefined,
+  subscriptionStatus: string | null | undefined,
+  stripeSubscriptionId: string | null | undefined,
+  stripeCustomerId: string | null | undefined
+): boolean {
+  const tier = (subscriptionTier ?? '').trim().toLowerCase();
+  if (tier !== 'pro') return false;
+  return hasStripeBillingHistory(
+    stripeCustomerId,
+    stripeSubscriptionId,
+    subscriptionStatus
+  );
+}
+
+/**
  * Whether this profile is tied to a paying Stripe subscription (vs comped/manual Pro).
  */
 function hasStripeBillingSubscription(
@@ -73,6 +94,83 @@ export function isProAccess(
     subscriptionStatus !== '' &&
     !STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO.has(subscriptionStatus)
   ) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Pro gate for **public quote intake** (header CTA, `/[slug]/quote`, `POST /api/public/quote-request`).
+ *
+ * Stricter than {@link isProAccess} when the owner has a Stripe subscription id: status must be
+ * explicitly `active` or `trialing`. Empty/missing status does **not** grant access, so churned
+ * or lagging webhooks do not expose “Request quote” while {@link isProAccess} may still grant app
+ * access during migration gaps.
+ *
+ * **Comped / manual Pro** (tier `pro`, no `stripe_subscription_id`, no `stripe_customer_id`) still
+ * matches {@link isProAccess} and remains allowed here.
+ */
+export function isProAccessForPublicQuoteRequests(
+  subscriptionTier: string | null | undefined,
+  /** Retained for API symmetry with {@link isProAccess}. */
+  _subscriptionCurrentPeriodEnd: string | null | undefined,
+  subscriptionStatus?: string | null,
+  stripeSubscriptionId?: string | null,
+  stripeCustomerId?: string | null
+): boolean {
+  if (subscriptionTier !== 'pro') return false;
+
+  if (!hasStripeBillingSubscription(stripeSubscriptionId)) {
+    if (stripeCustomerId != null && stripeCustomerId.trim() !== '') {
+      return false;
+    }
+    return true;
+  }
+
+  const st = (subscriptionStatus ?? '').trim();
+  return STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO.has(st);
+}
+
+const STRIPE_SUBSCRIPTION_STATUSES_ENDED_FOR_FREE_TIER_CAP = new Set([
+  'canceled',
+  'incomplete_expired',
+]);
+
+/**
+ * Broader than {@link isProAccess}: used only for the **lifetime free-tier public
+ * booking cap** and related public booking UX (e.g. price options on the book flow).
+ *
+ * Stripe webhooks may set `subscription_tier` to `free` while `subscription_status`
+ * is `past_due` / `unpaid` / `incomplete` / `paused` — the subscription still exists.
+ * Those owners should not be forced into the 5-booking Free cap or lose picker UX.
+ *
+ * **Not** for dashboard auth, Connect, or payments; keep using `isProAccess` there.
+ */
+export function isExemptFromFreeTierLifetimeBookingCap(
+  subscriptionTier: string | null | undefined,
+  subscriptionCurrentPeriodEnd: string | null | undefined,
+  subscriptionStatus: string | null | undefined,
+  stripeSubscriptionId: string | null | undefined,
+  stripeCustomerId: string | null | undefined
+): boolean {
+  if (
+    isProAccess(
+      subscriptionTier,
+      subscriptionCurrentPeriodEnd,
+      subscriptionStatus,
+      stripeSubscriptionId,
+      stripeCustomerId
+    )
+  ) {
+    return true;
+  }
+
+  const sid = stripeSubscriptionId?.trim();
+  if (!sid) return false;
+
+  const st = (subscriptionStatus ?? '').trim();
+  if (STRIPE_SUBSCRIPTION_STATUSES_ENDED_FOR_FREE_TIER_CAP.has(st)) {
     return false;
   }
 

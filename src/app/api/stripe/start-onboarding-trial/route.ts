@@ -10,6 +10,7 @@
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID
  */
 
+import { isOnboardingLegacyStripeTrialEnabled } from '@/features/pricing/config/onboardingLegacyStripeTrial';
 import { runOnboardingTrialBridgeAfterSubscribe } from '@/features/onboarding-v2/server/onboardingTrialBridgeAfterSubscribe';
 import { retrieveSubscriptionCurrentPeriodEndIso } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { buildTrialConfirmationPayload } from '@/features/pricing/server/trialConfirmationPayload';
@@ -38,6 +39,17 @@ export async function POST(request: NextRequest) {
       );
     }
     const { user, supabase, authMethod } = auth;
+
+    if (!isOnboardingLegacyStripeTrialEnabled()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'This activation path is disabled. Refresh the page and try again.',
+        },
+        { status: 400 }
+      );
+    }
 
     onboardingStripeDebug('start-trial', 'request', {
       userId: user.id,

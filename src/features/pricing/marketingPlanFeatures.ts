@@ -7,7 +7,7 @@ import {
 
 /** Feature bullets for Free tier on marketing / upgrade plan cards. */
 export const MARKETING_FREE_PLAN_FEATURES: readonly ProFeatureItem[] = [
-  { text: `${FREE_BOOKINGS_LIMIT} bookings per month` },
+  { text: `${FREE_BOOKINGS_LIMIT} lifetime bookings on Free` },
   { text: `Up to ${FREE_MAX_PORTFOLIO_IMAGES} gallery images` },
   { text: 'CRM, client notes, and visit history' },
   { text: 'Email alerts for bookings and updates' },

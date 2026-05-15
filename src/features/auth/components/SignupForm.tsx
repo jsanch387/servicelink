@@ -57,16 +57,19 @@ export const SignupForm: React.FC = () => {
         return;
       }
 
-      // Redirect to dashboard after successful signup
-      // The user will go through onboarding flow
-      // Use router.refresh() to ensure middleware sees the updated session
+      if (result.needsEmailVerification) {
+        const q = result.email
+          ? `?email=${encodeURIComponent(result.email)}`
+          : '';
+        router.push(`${ROUTES.AUTH.CHECK_EMAIL}${q}`);
+        return;
+      }
+
+      // Session active (e.g. email confirmation disabled): continue to dashboard
       router.refresh();
 
-      // Small delay to ensure cookies are set before navigation
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Mark that a completed signup reached the dashboard.
-      // Dashboard layout consumes this one-time flag and fires Meta CompleteRegistration.
       window.sessionStorage.setItem(SIGNUP_PIXEL_FLAG_KEY, '1');
 
       router.push(ROUTES.DASHBOARD.MAIN);

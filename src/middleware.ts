@@ -1,7 +1,7 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
 import {
-  hasStripeBillingHistory,
   isProAccess,
+  needsPaidProResubscribeForDashboard,
 } from '@/features/pricing/utils/isProAccess';
 import { createSupabaseMiddlewareClient } from '@/libs/supabase/server';
 import type { User } from '@supabase/supabase-js';
@@ -95,10 +95,13 @@ export async function middleware(request: NextRequest) {
   const isHomeRoute = request.nextUrl.pathname === '/';
 
   // Redirect authenticated users away from auth pages (except password reset:
-  // recovery session is logged-in until they submit a new password.)
+  // recovery session is logged-in until they submit a new password; email-confirmed
+  // is a deliberate one-step UX after verify so users see success before dashboard.)
   const isPasswordResetPage =
     request.nextUrl.pathname === ROUTES.AUTH.RESET_PASSWORD;
-  if (isAuthRoute && user && !isPasswordResetPage) {
+  const isEmailConfirmedPage =
+    request.nextUrl.pathname === ROUTES.AUTH.EMAIL_CONFIRMED;
+  if (isAuthRoute && user && !isPasswordResetPage && !isEmailConfirmedPage) {
     return NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url));
   }
 
@@ -110,9 +113,10 @@ export async function middleware(request: NextRequest) {
   // Centralized app access gate:
   // - While onboarding is not complete, keep users on /dashboard (onboarding flow).
   // - After onboarding is complete:
-  //   - Legacy free users (no Stripe billing history) keep access.
-  //   - Trial/subscription users (have Stripe billing history) require active/trialing
-  //     Pro access. Otherwise route to /dashboard/upgrade until they resubscribe.
+  //   - Free tier (`subscription_tier` not pro) keeps full Free dashboard access,
+  //     including after cancel (Stripe fields may remain on the row).
+  //   - Tier still **pro** with Stripe billing history must pass `isProAccess`
+  //     (active/trialing); otherwise route to /dashboard/upgrade until fixed.
   if (requiresAuth && user && isDashboardRoute) {
     type ProfileAccessRow = {
       onboarding_status?: string | null;
@@ -134,10 +138,11 @@ export async function middleware(request: NextRequest) {
 
     const profile = (profileRow as ProfileAccessRow | null) ?? null;
     const onboardingComplete = profile?.onboarding_status === 'completed';
-    const ownerHasStripeBillingHistory = hasStripeBillingHistory(
-      profile?.stripe_customer_id,
+    const needsProResubscribeGate = needsPaidProResubscribeForDashboard(
+      profile?.subscription_tier,
+      profile?.subscription_status,
       profile?.stripe_subscription_id,
-      profile?.subscription_status
+      profile?.stripe_customer_id
     );
 
     if (!onboardingComplete) {
@@ -154,7 +159,7 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    if (ownerHasStripeBillingHistory) {
+    if (needsProResubscribeGate) {
       const hasAppAccess = isProAccess(
         profile?.subscription_tier,
         profile?.subscription_current_period_end,
@@ -175,6 +180,8 @@ export async function middleware(request: NextRequest) {
         );
       }
     }
+
+    return response;
   }
 
   // Allow all public routes (home, auth, waitlist, profile, API routes, static files)

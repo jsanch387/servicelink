@@ -4,7 +4,10 @@ import {
 } from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { OnboardingCheckoutReturnGate } from '@/features/onboarding-v2/components/OnboardingCheckoutReturnGate';
-import { isProAccess } from '@/features/pricing';
+import {
+  isProAccess,
+  isProAccessForPublicQuoteRequests,
+} from '@/features/pricing';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
   normalizePublicBookingOfferedLocales,
@@ -148,11 +151,16 @@ export default async function BusinessProfilePage({
   const isFreeTier = !hasProAccess;
   const showVerifiedBadge = hasProAccess;
   const showRequestQuoteCta =
-    hasProAccess && businessProfile.accept_quote_req === true;
+    isProAccessForPublicQuoteRequests(
+      userProfile?.subscription_tier,
+      userProfile?.subscription_current_period_end,
+      userProfile?.subscription_status,
+      userProfile?.stripe_subscription_id,
+      userProfile?.stripe_customer_id
+    ) && businessProfile.accept_quote_req === true;
+  // After step 5, free users see Try Pro first, then this welcome (client-sequence).
   const showProfileWelcomeModalOnLoad =
-    onboardingComplete &&
-    hasProAccess &&
-    userProfile?.profile_welcome_modal_seen !== true;
+    onboardingComplete && userProfile?.profile_welcome_modal_seen !== true;
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">

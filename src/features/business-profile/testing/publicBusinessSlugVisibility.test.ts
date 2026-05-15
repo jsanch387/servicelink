@@ -152,7 +152,7 @@ describe('isPublicBusinessSlugVisible', () => {
     expect(await isPublicBusinessSlugVisible(admin, 'abandoned')).toBe(false);
   });
 
-  it('returns false for free tier with Stripe billing history (churned)', async () => {
+  it('returns true for free tier with Stripe billing history (churned)', async () => {
     const admin = createAdminClientMock({
       business: { profile_id: 'user-1' },
       owner: {
@@ -164,10 +164,10 @@ describe('isPublicBusinessSlugVisible', () => {
         stripe_customer_id: CUS,
       },
     });
-    expect(await isPublicBusinessSlugVisible(admin, 'churned')).toBe(false);
+    expect(await isPublicBusinessSlugVisible(admin, 'churned')).toBe(true);
   });
 
-  it('returns false for Pro tier but revoked Stripe status', async () => {
+  it('returns true for Pro tier with revoked Stripe status (public page still resolves)', async () => {
     const admin = createAdminClientMock({
       business: { profile_id: 'user-1' },
       owner: {
@@ -179,8 +179,6 @@ describe('isPublicBusinessSlugVisible', () => {
         stripe_customer_id: CUS,
       },
     });
-    expect(await isPublicBusinessSlugVisible(admin, 'canceled-pro')).toBe(
-      false
-    );
+    expect(await isPublicBusinessSlugVisible(admin, 'canceled-pro')).toBe(true);
   });
 });

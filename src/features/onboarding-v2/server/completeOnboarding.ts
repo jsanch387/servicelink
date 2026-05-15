@@ -3,6 +3,7 @@
  * Sets profiles.onboarding_status = 'completed' and onboarding_step = 5.
  */
 
+import { sendWelcomeLiveEmail } from '@/features/email';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface CompleteOnboardingResult {
@@ -31,20 +32,61 @@ export async function completeOnboardingV2(
     return { success: false, error: error.message };
   }
 
-  // Onboarding complete = user is ready to accept bookings.
-  // Initialize the free bookings tracking window for the associated business profile
-  // if it hasn't been set yet.
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  return { success: true };
+}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
-    .from('business_profiles')
-    .update({
-      free_bookings_month: currentMonth,
-      free_bookings_count: 0,
-    })
-    .eq('profile_id', profileId)
-    .is('free_bookings_month', null);
+/**
+ * Completes onboarding and sends **“Your business is officially LIVE!”** once when
+ * activation transitions the profile from not-completed → completed (Step 5
+ * “Activate my link”, or the Stripe onboarding-trial bridge). Idempotent on repeat
+ * completes: no duplicate email.
+ */
+export async function completeOnboardingV2WithWelcomeLiveEmail(
+  supabase: SupabaseClient,
+  profileId: string,
+  userEmail: string | null | undefined
+): Promise<CompleteOnboardingResult> {
+  if (!profileId?.trim()) {
+    return { success: false, error: 'Profile ID is required' };
+  }
+
+  const id = profileId.trim();
+
+  const { data: profileBeforeComplete } = await supabase
+    .from('profiles')
+    .select('onboarding_status')
+    .eq('user_id', id)
+    .single();
+
+  const wasAlreadyCompleted =
+    profileBeforeComplete?.onboarding_status === 'completed';
+
+  const completeResult = await completeOnboardingV2(supabase, id);
+  if (!completeResult.success) {
+    return completeResult;
+  }
+
+  if (!wasAlreadyCompleted && userEmail?.trim()) {
+    const { data: businessProfile } = await supabase
+      .from('business_profiles')
+      .select('business_slug')
+      .eq('profile_id', id)
+      .single();
+
+    const businessSlug = businessProfile?.business_slug?.trim();
+
+    if (businessSlug) {
+      const emailResult = await sendWelcomeLiveEmail(userEmail.trim(), {
+        businessSlug,
+      });
+      if (!emailResult.sent) {
+        console.error(
+          '[completeOnboardingV2WithWelcomeLiveEmail] welcome live email failed',
+          emailResult.error
+        );
+      }
+    }
+  }
 
   return { success: true };
 }
