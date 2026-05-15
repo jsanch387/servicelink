@@ -12,7 +12,10 @@ import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { MediaService } from '@/features/media';
 import { isProAccess } from '@/features/pricing';
-import { FREE_MAX_PORTFOLIO_IMAGES } from '@/features/pricing/types';
+import {
+  maxPortfolioImagesForSubscription,
+  type OwnerSubscriptionFieldsForPortfolio,
+} from '@/features/pricing/utils/maxPortfolioImagesForSubscription';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
   normalizePublicBookingOfferedLocales,
@@ -162,6 +165,7 @@ export default async function PublicProfilePage({
   const profileId = (businessProfile as { profile_id?: string }).profile_id;
   let showVerifiedBadge = false;
   let ownerTier: 'free' | 'pro' = 'free';
+  let ownerSubscriptionRow: OwnerSubscriptionFieldsForPortfolio | null = null;
   if (profileId) {
     const { data: ownerProfile } = await adminGate
       .from('profiles')
@@ -177,6 +181,7 @@ export default async function PublicProfilePage({
       stripe_subscription_id?: string | null;
       stripe_customer_id?: string | null;
     } | null;
+    ownerSubscriptionRow = row;
     const hasPro = isProAccess(
       row?.subscription_tier,
       row?.subscription_current_period_end,
@@ -188,14 +193,13 @@ export default async function PublicProfilePage({
     showVerifiedBadge = hasPro;
   }
 
-  // Free tier: only first 4 images visible on public profile (soft limit; no DB delete on cancel)
-  const displayProfile: CompleteBusinessProfile =
-    ownerTier === 'pro'
-      ? businessProfile
-      : {
-          ...businessProfile,
-          images: businessProfile.images.slice(0, FREE_MAX_PORTFOLIO_IMAGES),
-        };
+  // Gallery: cap visible images by plan (4 Free, 8 Pro); soft limit — DB may hold more for Free.
+  const maxGalleryImages =
+    maxPortfolioImagesForSubscription(ownerSubscriptionRow);
+  const displayProfile: CompleteBusinessProfile = {
+    ...businessProfile,
+    images: businessProfile.images.slice(0, maxGalleryImages),
+  };
 
   const showRequestQuoteCta =
     ownerTier === 'pro' && displayProfile.accept_quote_req === true;

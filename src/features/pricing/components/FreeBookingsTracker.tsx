@@ -7,7 +7,7 @@ import React from 'react';
 import { FREE_BOOKINGS_LIMIT } from '../types';
 
 interface FreeBookingsTrackerProps {
-  /** Number of bookings used this month (0–5). */
+  /** Number of Free-plan bookings used (lifetime cap). */
   bookingsUsed?: number;
   className?: string;
 }
@@ -30,7 +30,7 @@ export const FreeBookingsTracker: React.FC<FreeBookingsTrackerProps> = ({
           </span>
         </div>
         <span className="text-[11px] sm:text-xs text-gray-500">
-          bookings this month
+          Free plan bookings (lifetime)
         </span>
       </div>
 

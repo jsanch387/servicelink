@@ -14,6 +14,7 @@ import {
   normalizePublicBookingOfferedLocales,
   resolvePublicBookingFlowLocale,
 } from '@/libs/bookingFlowLocale';
+import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -92,7 +93,7 @@ export default async function ServiceDetailsPage({
   const { data: profileMeta } = await adminClient
     .from('business_profiles')
     .select(
-      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale'
+      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale, profile_id, free_bookings_count'
     )
     .eq('business_slug', slug)
     .maybeSingle();
@@ -136,9 +137,23 @@ export default async function ServiceDetailsPage({
   );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
+
+  const meta = profileMeta as {
+    profile_id?: string | null;
+    free_bookings_count?: number | null;
+  };
+  const { reachedFreeCap } = await resolvePublicBookingFreeTierGate(
+    adminClient,
+    {
+      profileId: meta.profile_id ?? null,
+      freeBookingsCount: meta.free_bookings_count ?? null,
+    }
+  );
+
   const showNotAcceptingBookings =
-    !useAvailabilityBooking &&
-    (!legacyRequestBookingEnabled || availabilityConfigured);
+    (!useAvailabilityBooking &&
+      (!legacyRequestBookingEnabled || availabilityConfigured)) ||
+    reachedFreeCap;
 
   if (showNotAcceptingBookings) {
     redirect(getBusinessBookPath(slug, { lang: bookingFlowLocale }));

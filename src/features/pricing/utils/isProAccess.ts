@@ -78,3 +78,48 @@ export function isProAccess(
 
   return true;
 }
+
+const STRIPE_SUBSCRIPTION_STATUSES_ENDED_FOR_FREE_TIER_CAP = new Set([
+  'canceled',
+  'incomplete_expired',
+]);
+
+/**
+ * Broader than {@link isProAccess}: used only for the **lifetime free-tier public
+ * booking cap** and related public booking UX (e.g. price options on the book flow).
+ *
+ * Stripe webhooks may set `subscription_tier` to `free` while `subscription_status`
+ * is `past_due` / `unpaid` / `incomplete` / `paused` — the subscription still exists.
+ * Those owners should not be forced into the 5-booking Free cap or lose picker UX.
+ *
+ * **Not** for dashboard auth, Connect, or payments; keep using `isProAccess` there.
+ */
+export function isExemptFromFreeTierLifetimeBookingCap(
+  subscriptionTier: string | null | undefined,
+  subscriptionCurrentPeriodEnd: string | null | undefined,
+  subscriptionStatus: string | null | undefined,
+  stripeSubscriptionId: string | null | undefined,
+  stripeCustomerId: string | null | undefined
+): boolean {
+  if (
+    isProAccess(
+      subscriptionTier,
+      subscriptionCurrentPeriodEnd,
+      subscriptionStatus,
+      stripeSubscriptionId,
+      stripeCustomerId
+    )
+  ) {
+    return true;
+  }
+
+  const sid = stripeSubscriptionId?.trim();
+  if (!sid) return false;
+
+  const st = (subscriptionStatus ?? '').trim();
+  if (STRIPE_SUBSCRIPTION_STATUSES_ENDED_FOR_FREE_TIER_CAP.has(st)) {
+    return false;
+  }
+
+  return true;
+}

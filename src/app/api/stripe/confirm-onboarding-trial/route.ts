@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       >;
       try {
         session = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
-          expand: ['subscription'],
+          expand: ['subscription', 'invoice'],
         });
       } catch (e) {
         console.warn(`${LOG} session retrieve failed`, {
@@ -106,12 +106,25 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (session.mode !== 'subscription') {
-        onboardingStripeDebug('confirm-trial', 'reject: wrong mode', {
+      const invoiceRef = session.invoice;
+      const hasInvoice =
+        typeof invoiceRef === 'string' ||
+        (!!invoiceRef && typeof invoiceRef === 'object');
+
+      const supportedCheckoutMode =
+        session.mode === 'subscription' ||
+        (session.mode === 'payment' && hasInvoice);
+
+      if (!supportedCheckoutMode) {
+        onboardingStripeDebug('confirm-trial', 'reject: unsupported mode', {
           mode: session.mode,
+          hasInvoice,
         });
         return NextResponse.json(
-          { success: false, error: 'Not a subscription checkout session' },
+          {
+            success: false,
+            error: 'Unsupported checkout session type',
+          },
           { status: 400 }
         );
       }

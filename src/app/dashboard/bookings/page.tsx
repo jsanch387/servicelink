@@ -89,9 +89,7 @@ export default async function BookingsPage() {
     console.error('Error fetching booking requests:', requestsError);
   }
 
-  // Derive free bookings used this month from business_profiles,
-  // but only for users on the free tier. If the stored month is
-  // from a previous month or unset, treat usage as 0.
+  // Free tier: lifetime bookings used (from business_profiles.free_bookings_count).
   let freeBookingsUsed = 0;
   const profile = profileRow as {
     subscription_tier?: string | null;
@@ -108,10 +106,7 @@ export default async function BookingsPage() {
     profile?.stripe_customer_id
   );
   if (isFreeTier) {
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    if (businessProfile.free_bookings_month === currentMonth) {
-      freeBookingsUsed = businessProfile.free_bookings_count ?? 0;
-    }
+    freeBookingsUsed = businessProfile.free_bookings_count ?? 0;
   }
 
   return (

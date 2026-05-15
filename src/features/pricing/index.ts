@@ -21,6 +21,7 @@ export type { PlanId, PlanInfo, ProFeatureItem } from './types';
 export {
   STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO,
   hasStripeBillingHistory,
+  isExemptFromFreeTierLifetimeBookingCap,
   isProAccess,
 } from './utils/isProAccess';
 export {

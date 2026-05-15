@@ -82,6 +82,8 @@ export const API_ROUTES = {
   STRIPE_CONNECT_EXPRESS_DASHBOARD: '/api/stripe/connect/express-dashboard',
   /** Onboarding step 5 (web): start Pro trial via Stripe Subscription API (no Checkout redirect). */
   STRIPE_START_ONBOARDING_TRIAL: '/api/stripe/start-onboarding-trial',
+  /** Onboarding V2: mark onboarding complete as Free (no Stripe). Used when legacy trial is off. */
+  ONBOARDING_V2_COMPLETE: '/api/onboarding-v2/complete',
   /**
    * After onboarding Stripe Checkout (mobile): POST with optional `checkout_session_id`
    * to sync profile and return `trial_confirmation` (DB + Stripe trial fields).

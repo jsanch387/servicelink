@@ -27,7 +27,7 @@ export const PLANS: Record<PlanId, PlanInfo> = {
   },
 } as const;
 
-/** Free plan: max bookings per month before upgrade prompt */
+/** Free plan: max lifetime bookings per business before upgrade (Pro = unlimited). */
 export const FREE_BOOKINGS_LIMIT = 5;
 
 /** Free plan: max portfolio images (edit + public display). */

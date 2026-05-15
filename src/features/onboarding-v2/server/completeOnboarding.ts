@@ -32,8 +32,8 @@ export async function completeOnboardingV2(
   }
 
   // Onboarding complete = user is ready to accept bookings.
-  // Initialize the free bookings tracking window for the associated business profile
-  // if it hasn't been set yet.
+  // Initialize the free bookings counter window for the associated business profile
+  // if it hasn't been set yet (count starts at 0; cap is lifetime on Free).
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

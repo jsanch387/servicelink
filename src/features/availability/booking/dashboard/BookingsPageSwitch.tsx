@@ -26,7 +26,7 @@ export interface BookingsPageSwitchProps {
   showRequestBookingFallback: boolean;
   /** From business_availability.accept_bookings. When true, show V2 UI. */
   useAvailabilityBooking: boolean;
-  /** Free plan: bookings used this month (0–5). Shown in tracker. */
+  /** Free plan: bookings used toward lifetime cap (0–5). Shown in tracker. */
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;

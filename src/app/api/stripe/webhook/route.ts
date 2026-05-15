@@ -23,6 +23,7 @@
 
 import type { CustomerFormData } from '@/features/availability/booking/types';
 import { createBooking } from '@/features/availability/services/bookingService';
+import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
@@ -436,6 +437,60 @@ export async function POST(request: NextRequest) {
                 ? session.payment_intent
                 : null,
           })
+          .eq('id', checkoutSessionRow.id);
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      const { data: capProfileRow, error: capProfileError } = await supabase
+        .from('business_profiles')
+        .select('id, profile_id, free_bookings_month, free_bookings_count')
+        .eq('id', bookingPayload.businessId.trim())
+        .maybeSingle();
+
+      if (capProfileError || !capProfileRow) {
+        logBookingCheckoutStage('business_profile.missing_for_cap', {
+          eventId: event.id,
+          sessionId: session.id,
+          checkoutSessionRowId: String(checkoutSessionRow.id),
+        });
+        console.error(
+          '[booking-checkout:webhook] business profile not found for cap',
+          capProfileError,
+          bookingPayload.businessId
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('booking_checkout_sessions')
+          .update({ status: 'failed' })
+          .eq('id', checkoutSessionRow.id);
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      const capProfile = capProfileRow as {
+        id: string;
+        profile_id: string | null;
+        free_bookings_month: string | null;
+        free_bookings_count: number | null;
+      };
+
+      const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
+        supabase,
+        capProfile
+      );
+      if (!freeTierCap.ok) {
+        logBookingCheckoutStage('free_tier_booking_cap', {
+          eventId: event.id,
+          sessionId: session.id,
+          checkoutSessionRowId: String(checkoutSessionRow.id),
+        });
+        console.warn('[booking-checkout:webhook] free tier cap', {
+          businessId: bookingPayload.businessId,
+          sessionId: session.id,
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('booking_checkout_sessions')
+          .update({ status: 'failed' })
           .eq('id', checkoutSessionRow.id);
         return NextResponse.json({ received: true }, { status: 200 });
       }

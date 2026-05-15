@@ -52,7 +52,7 @@ interface DashboardData {
   legacyRequestBookingEnabled: boolean;
   useAvailabilityBooking: boolean;
   upcomingBookingsCount: number;
-  /** Free plan: bookings used this month (0–5). Omit or leave 0 until API is ready. */
+  /** Free plan: bookings used toward lifetime cap (0–5). Omit or leave 0 until API is ready. */
   freeBookingsUsed?: number;
   /** When true, show "Try Pro" CTA (post-onboarding invite for free users). */
   isFreeTier?: boolean;

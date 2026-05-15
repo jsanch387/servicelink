@@ -5,9 +5,10 @@
  * Requires auth (Supabase cookies on web, or `Authorization: Bearer <access_token>`
  * from the Expo app). User opens `url` in an in-app browser to complete payment.
  *
- * When `profiles.stripe_customer_id` is set, passes `customer` so Stripe reuses
- * that Customer (avoids duplicate Customers per email). Otherwise uses `customer_email`.
- * See `src/app/api/stripe/README.md` → “One Stripe Customer per profile”.
+ * When `profiles.stripe_subscription_id` points at a subscription that still
+ * exists in Stripe (`past_due`, `unpaid`, `incomplete`, `paused`, or `active`/`trialing`
+ * with an open invoice), Checkout is created in **payment** mode for that invoice
+ * so the same subscription is paid (e.g. new card or Link) instead of starting a second subscription.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
  *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs (web).
@@ -15,6 +16,10 @@
  */
 
 import { API_ROUTES } from '@/constants/routes';
+import {
+  findOpenInvoiceIdForSubscriptionResume,
+  isSubscriptionResumableViaInvoice,
+} from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
 import {
@@ -25,6 +30,7 @@ import {
 } from '@/libs/stripe/mobileSubscriptionCheckoutRedirects';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { NextRequest, NextResponse } from 'next/server';
+import type Stripe from 'stripe';
 
 type CheckoutRequestBody = {
   source?: unknown;
@@ -66,12 +72,16 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profileRow } = await (supabase as any)
       .from('profiles')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, stripe_subscription_id')
       .eq('user_id', user.id)
       .maybeSingle();
     const existingStripeCustomerId =
       typeof profileRow?.stripe_customer_id === 'string'
         ? profileRow.stripe_customer_id.trim()
+        : '';
+    const existingStripeSubscriptionId =
+      typeof profileRow?.stripe_subscription_id === 'string'
+        ? profileRow.stripe_subscription_id.trim()
         : '';
 
     const body = (await request
@@ -114,6 +124,101 @@ export async function POST(request: NextRequest) {
       const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
       successUrl = `${baseUrl}${successPath}`;
       cancelUrl = `${baseUrl}${cancelPath}`;
+    }
+
+    /** Prefer paying an open invoice on the existing subscription (card failed, Link retry, etc.). */
+    if (existingStripeSubscriptionId) {
+      try {
+        const existingSub = await stripe.subscriptions.retrieve(
+          existingStripeSubscriptionId
+        );
+        const status = (existingSub.status ?? '').trim();
+        const useInvoiceResume =
+          status === 'active' ||
+          status === 'trialing' ||
+          isSubscriptionResumableViaInvoice(status);
+
+        if (useInvoiceResume) {
+          const openInv = await findOpenInvoiceIdForSubscriptionResume(
+            stripe,
+            existingStripeSubscriptionId
+          );
+          if (!openInv) {
+            const isHealthy = status === 'active' || status === 'trialing';
+            return NextResponse.json(
+              {
+                success: false,
+                error: isHealthy
+                  ? 'You already have an active subscription. Manage billing in Settings.'
+                  : 'We could not start a payment for your current subscription. Open Billing in Settings to update your payment method.',
+              },
+              { status: isHealthy ? 400 : 409 }
+            );
+          }
+
+          /** `invoice` on Checkout is valid in the Stripe API; SDK types may lag. */
+          const resumeSession = await stripe.checkout.sessions.create({
+            mode: 'payment',
+            invoice: openInv,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
+            ...(existingStripeCustomerId
+              ? { customer: existingStripeCustomerId }
+              : { customer_email: user.email ?? undefined }),
+            metadata: {
+              userId: user.id,
+              source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
+              ...(isMobileClient ? { client: 'mobile' } : {}),
+            },
+          } as unknown as Stripe.Checkout.SessionCreateParams);
+
+          if (!resumeSession.url) {
+            console.error(
+              `${LOG} Stripe returned no session.url (invoice resume)`
+            );
+            return NextResponse.json(
+              { success: false, error: 'Failed to create checkout session' },
+              { status: 500 }
+            );
+          }
+
+          console.info(
+            `${LOG} checkout session created (invoice resume, same subscription)`
+          );
+          onboardingStripeDebug(
+            'create-checkout',
+
+            'session created (invoice resume)',
+            {
+              userId: user.id,
+              sessionIdSuffix: resumeSession.id.slice(-8),
+              subscriptionIdSuffix: existingStripeSubscriptionId.slice(-8),
+              invoiceIdSuffix: openInv.slice(-8),
+              subscriptionStatus: status,
+            }
+          );
+
+          if (fromOnboarding && isMobileClient) {
+            return NextResponse.json({
+              success: true,
+              url: resumeSession.url,
+              trial_checkout_followup: {
+                confirm_session: {
+                  method: 'POST' as const,
+                  path: API_ROUTES.STRIPE_CONFIRM_ONBOARDING_TRIAL,
+                  body_json_shape: { checkout_session_id: 'string' },
+                },
+              },
+            });
+          }
+          return NextResponse.json({ success: true, url: resumeSession.url });
+        }
+      } catch (resumeErr) {
+        console.warn(
+          `${LOG} existing subscription resume skipped; creating new checkout`,
+          resumeErr
+        );
+      }
     }
 
     const session = await stripe.checkout.sessions.create({

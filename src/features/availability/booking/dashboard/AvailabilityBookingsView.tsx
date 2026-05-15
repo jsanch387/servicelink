@@ -12,7 +12,7 @@ import {
   SyncBookingsConfirmModal,
   SyncBookingsCtaCard,
 } from '@/features/calendar-sync';
-import { FreeBookingsTracker } from '@/features/pricing';
+import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
@@ -108,7 +108,7 @@ function groupBookingsByDayForTab(
 export interface AvailabilityBookingsViewProps {
   /** Public page slug for customer booking URL; when missing, New appointment is disabled. */
   businessSlug?: string | null;
-  /** Free plan: bookings used this month (0–5). Shown in tracker. */
+  /** Free plan: bookings used toward lifetime cap (0–5). Shown in tracker. */
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;
@@ -143,6 +143,26 @@ export function AvailabilityBookingsView({
   const newAppointmentHref = trimmedSlug
     ? getBusinessBookPath(trimmedSlug, { forOwner: true })
     : undefined;
+
+  const manualBookingBlockedByCap = useMemo(() => {
+    if (!showFreeBookingsTracker) return false;
+    return freeBookingsUsed >= FREE_BOOKINGS_LIMIT;
+  }, [showFreeBookingsTracker, freeBookingsUsed]);
+
+  const newAppointmentEnabled =
+    Boolean(newAppointmentHref) && !manualBookingBlockedByCap;
+
+  const newAppointmentTitle = manualBookingBlockedByCap
+    ? `You've reached your free plan limit (${FREE_BOOKINGS_LIMIT} appointments). Upgrade to Pro for unlimited bookings.`
+    : !newAppointmentHref
+      ? 'Set your public page URL under Business profile to create bookings from here.'
+      : undefined;
+
+  const newAppointmentAriaLabel = manualBookingBlockedByCap
+    ? 'New appointment unavailable. Free plan booking limit reached.'
+    : newAppointmentHref
+      ? 'New appointment for a customer'
+      : 'New appointment unavailable. Set your public page URL under Business profile first.';
 
   const { upcoming, past, cancelled } = useMemo(() => {
     const now = new Date();
@@ -414,21 +434,13 @@ export function AvailabilityBookingsView({
         <div className="mx-auto w-full max-w-xl lg:max-w-3xl">
           <Button
             href={newAppointmentHref}
-            disabled={!newAppointmentHref}
+            disabled={!newAppointmentEnabled}
             variant="inverse"
             fullWidth
             className="font-semibold"
             icon={<PlusIcon className="h-4 w-4" aria-hidden />}
-            title={
-              newAppointmentHref
-                ? undefined
-                : 'Set your public page URL under Business profile to create bookings from here.'
-            }
-            aria-label={
-              newAppointmentHref
-                ? 'New appointment for a customer'
-                : 'New appointment unavailable. Set your public page URL under Business profile first.'
-            }
+            title={newAppointmentTitle}
+            aria-label={newAppointmentAriaLabel}
           >
             New appointment
           </Button>
