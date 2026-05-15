@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     const { data: profileRaw, error: profileError } = await db
       .from('business_profiles')
       .select(
-        'id, profile_id, business_slug, business_name, free_bookings_month, free_bookings_count'
+        'id, profile_id, business_slug, business_name, free_bookings_count'
       )
       .eq('id', q.business_id)
       .maybeSingle();

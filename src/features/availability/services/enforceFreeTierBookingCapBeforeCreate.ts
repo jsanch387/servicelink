@@ -1,5 +1,8 @@
 /**
- * Free-tier V2 booking cap (5 lifetime per business on Free).
+ * Free-tier V2 booking cap: `FREE_BOOKINGS_LIMIT` lifetime public bookings per business on Free.
+ * Uses `business_profiles.free_bookings_count` only (`free_bookings_month` is legacy, unused here).
+ * Subjects owners to the cap when they are not {@link isExemptFromFreeTierLifetimeBookingCap}
+ * (aligned with the public book page gate).
  * - Public booking flow: check + increment before insert.
  * - Quote approval: check before insert; increment only after the quote is linked to the booking
  *   so losing a link race does not consume a slot or leave stray counts.
@@ -12,10 +15,10 @@ import {
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+/** Rows passed into cap checks / increments (counter only; cap is lifetime). */
 export type BusinessProfileRowForBookingCap = {
   id: string;
   profile_id: string | null;
-  free_bookings_month: string | null;
   free_bookings_count: number | null;
 };
 
@@ -123,7 +126,7 @@ export async function persistFreeTierBookingIncrementAfterBooking(
 ): Promise<void> {
   const { data: profileRaw } = await supabase
     .from('business_profiles')
-    .select('id, profile_id, free_bookings_month, free_bookings_count')
+    .select('id, profile_id, free_bookings_count')
     .eq('id', businessId)
     .maybeSingle();
 
@@ -141,8 +144,8 @@ export async function persistFreeTierBookingIncrementAfterBooking(
 }
 
 /**
- * If the owner is on the free tier and at the lifetime cap, returns `ok: false`.
- * Otherwise increments `free_bookings_count` when applicable.
+ * If the owner is subject to the free-tier cap and at the lifetime limit, returns `ok: false`.
+ * Otherwise increments `free_bookings_count`.
  */
 export async function enforceFreeTierBookingCapBeforeCreate(
   supabase: SupabaseClient<Database>,

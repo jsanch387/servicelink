@@ -108,7 +108,7 @@ function groupBookingsByDayForTab(
 export interface AvailabilityBookingsViewProps {
   /** Public page slug for customer booking URL; when missing, New appointment is disabled. */
   businessSlug?: string | null;
-  /** Free plan: bookings used toward lifetime cap (0–5). Shown in tracker. */
+  /** Free plan: public bookings used toward lifetime cap (0–5). Shown in tracker. */
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;

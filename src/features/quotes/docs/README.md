@@ -201,7 +201,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 1. Creates a V2 **`bookings`** row via `createBooking` (`service_name` from free-text quote; `service_id` null). **`quotes.booking_id`** is set only if the row still had no booking (avoids duplicate bookings under concurrent requests).
 2. Upserts **`customers`** for that business through the same path as public availability bookings (`upsertCustomerForBooking`); `phone` is stored as digits-only when present.
-3. Applies the same **free-tier monthly booking cap** as `POST /api/public/bookings` (check before insert; counter increments only after the quote is successfully linked to the booking).
+3. Applies the same **free-tier lifetime booking cap** as `POST /api/public/bookings` (check before insert; counter increments only after the quote is successfully linked to the booking).
 4. Blocks approval if the slot overlaps the business’s **time-off** blocks (same check as public booking).
 5. Updates **`quote_public_links`** (`response_status`, `responded_at`) and notifies the owner with the **availability booking** email + in-app notification (`notifyOwnerForAvailabilityBookingCreated`), matching the public booking flow. No customer confirmation email is sent on approve.
 

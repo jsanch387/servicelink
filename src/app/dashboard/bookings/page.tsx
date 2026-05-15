@@ -42,7 +42,7 @@ export default async function BookingsPage() {
   const { data: businessProfileRow, error: businessError } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_name, business_slug, legacy_request_booking_enabled, free_bookings_month, free_bookings_count'
+      'id, business_name, business_slug, legacy_request_booking_enabled, free_bookings_count'
     )
     .eq('profile_id', user.id)
     .single();
@@ -52,7 +52,6 @@ export default async function BookingsPage() {
     business_name: string;
     business_slug: string | null;
     legacy_request_booking_enabled: boolean | null;
-    free_bookings_month: string | null;
     free_bookings_count: number | null;
   } | null;
 
@@ -89,7 +88,7 @@ export default async function BookingsPage() {
     console.error('Error fetching booking requests:', requestsError);
   }
 
-  // Free tier: lifetime bookings used (from business_profiles.free_bookings_count).
+  // Free tier: lifetime cap from business_profiles.free_bookings_count.
   let freeBookingsUsed = 0;
   const profile = profileRow as {
     subscription_tier?: string | null;

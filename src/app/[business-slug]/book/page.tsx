@@ -71,7 +71,6 @@ type PublicBusinessProfileForBooking = {
   business_type: string | null;
   legacy_request_booking_enabled: boolean | null;
   profile_id: string | null;
-  free_bookings_month: string | null;
   free_bookings_count: number | null;
   public_booking_locales: string[];
   public_booking_default_locale: string;
@@ -137,7 +136,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_month, free_bookings_count, public_booking_locales, public_booking_default_locale'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale'
       )
       .eq('business_slug', slug)
       .single();
@@ -260,7 +259,7 @@ export default async function BookingRequestPage({
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
 
-  // Free-tier lifetime cap: at 5 bookings on Free, treat as not accepting (same as book/details).
+  // Free-tier lifetime cap: at limit on Free, treat as not accepting (same as public gate helper).
   const { reachedFreeCap, ownerHasPro } =
     await resolvePublicBookingFreeTierGate(adminClient, {
       profileId: businessProfile.profile_id ?? null,

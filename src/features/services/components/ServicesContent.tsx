@@ -1,12 +1,15 @@
 'use client';
 
 import { Button, Modal } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   ArrowsUpDownIcon,
+  InformationCircleIcon,
   PlusIcon,
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import React, { useCallback, useState } from 'react';
 import { createServiceAction } from '../actions/createService';
 import { deleteServiceAction } from '../actions/deleteService';
@@ -24,6 +27,8 @@ export interface ServicesContentProps {
   fetchError?: string | null;
   /** Map of service ID → add-on count. */
   addOnCounts?: Record<string, number>;
+  /** Free plan at 5 services — cannot add more without Pro. */
+  freeTierServiceCapReached?: boolean;
 }
 
 /**
@@ -34,6 +39,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   initialServices,
   fetchError = null,
   addOnCounts,
+  freeTierServiceCapReached = false,
 }) => {
   const [services, setServices] = useState<ServiceRow[]>(initialServices);
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -141,10 +147,11 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   );
 
   const handleAddService = useCallback(() => {
+    if (freeTierServiceCapReached) return;
     setSaveError(null);
     setToggleError(null);
     setIsAddServiceOpen(true);
-  }, []);
+  }, [freeTierServiceCapReached]);
 
   const handleDelete = useCallback(
     (serviceId: string) => {
@@ -251,6 +258,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
             <Button
               variant="inverse"
               onClick={handleAddService}
+              disabled={freeTierServiceCapReached}
               icon={<PlusIcon className="h-5 w-5 text-emerald-500" />}
               className="mt-6"
             >
@@ -270,6 +278,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                   <Button
                     variant="inverse"
                     onClick={handleAddService}
+                    disabled={freeTierServiceCapReached}
                     icon={<PlusIcon className="h-4 w-4 text-emerald-500" />}
                     className="flex-1 sm:flex-none"
                   >
@@ -296,6 +305,29 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
                 </Button>
               </div>
             </div>
+
+            {freeTierServiceCapReached ? (
+              <div
+                className="flex items-start gap-2.5 mb-6 px-0.5"
+                role="note"
+              >
+                <InformationCircleIcon
+                  className="h-4 w-4 sm:h-[18px] sm:w-[18px] shrink-0 text-zinc-500 mt-0.5"
+                  aria-hidden
+                />
+                <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
+                  You&apos;re on the free plan (5 services max).{' '}
+                  <Link
+                    href={ROUTES.DASHBOARD.UPGRADE}
+                    className="font-medium text-white hover:text-white/85 underline-offset-2 hover:underline transition-colors"
+                  >
+                    Upgrade to Pro
+                  </Link>
+                  {' '}
+                  to add more.
+                </p>
+              </div>
+            ) : null}
 
             {toggleError && (
               <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">

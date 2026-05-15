@@ -5,6 +5,10 @@
 
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  assertCanAddBusinessService,
+  resolveBusinessOwnerUserId,
+} from '../server/freeTierServiceLimit';
 import type {
   CreateServicePayload,
   CreateServiceResult,
@@ -21,6 +25,27 @@ export async function createService(
   payload: CreateServicePayload
 ): Promise<CreateServiceResult> {
   try {
+    const ownerUserId = await resolveBusinessOwnerUserId(supabase, businessId);
+    if (!ownerUserId) {
+      return {
+        success: false,
+        data: null,
+        error: 'Business not found.',
+      };
+    }
+    const gate = await assertCanAddBusinessService(
+      supabase,
+      businessId,
+      ownerUserId
+    );
+    if (!gate.ok) {
+      return {
+        success: false,
+        data: null,
+        error: gate.error,
+      };
+    }
+
     type TableInsert =
       Database['public']['Tables']['business_services']['Insert'];
     const insertPayload: TableInsert = {

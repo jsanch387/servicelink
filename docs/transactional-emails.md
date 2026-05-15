@@ -1,0 +1,52 @@
+# Transactional emails (Resend)
+
+All outbound product emails go through **Resend** (`src/features/email/services/resendClient.ts`). Sending is **best-effort** in most flows: failures are logged and do not roll back the underlying database action unless noted otherwise.
+
+This document lists **every email type implemented in code**, who receives it, the approximate subject line, and **when** it is sent (HTTP route, Stripe event, or server helper).
+
+---
+
+## Summary table
+
+| # | Email (purpose) | Recipient | Subject (as in code) | When it is sent |
+|---|-----------------|-----------|----------------------|-----------------|
+| 1 | **Booking request** (legacy public booking form) | Business owner (Supabase Auth email) | `New booking request from {customerName}` | After a successful `POST` to `src/app/api/booking-request/submit/route.ts` — customer submitted a booking request on a public profile. |
+| 2 | **Quote request** | Business owner | `New quote request from {customerName}` | After a successful public quote request: `notifyOwnerForPublicQuoteRequest` from `POST` `src/app/api/public/quote-request/route.ts`. |
+| 3 | **Quote sent to customer** | Customer | `Quote from {businessName}` (fallback: “Your detailer”) | When the business sends a quote: `POST` `src/app/api/quotes/send/route.ts` (new quote) or `POST` `src/app/api/quotes/[id]/send/route.ts` → `sendExistingQuoteAsSent` (first send from an existing request). |
+| 4 | **Availability: new appointment (owner)** | Business owner | `New appointment from {customerName}` | `notifyOwnerForAvailabilityBookingCreated` — (a) after `POST` `src/app/api/public/bookings/route.ts` when a public availability booking is created, or (b) after Stripe `checkout.session.completed` in `src/app/api/stripe/webhook/route.ts` when a paid availability checkout creates the booking. Owner email is resolved via Supabase Auth. |
+| 5 | **Availability: customer confirmation** | Customer | `Your appointment with {businessName}` | Same two paths as row 4, when a customer email is available: `sendAvailabilityBookingCustomerConfirmationEmail` from `src/app/api/public/bookings/route.ts` or from the Stripe webhook after paid checkout. |
+| 6 | **Maintenance: enrollment link / review** | Customer | `Your maintenance detail` | After the business creates a maintenance enrollment: `POST` `src/app/api/maintenance/enrollments/route.ts`, if the customer has an email on file. |
+| 7 | **Maintenance: enrollment confirmed** | Customer | `Maintenance detail confirmed — {businessName}` | Best-effort after enrollment becomes **accepted** with a scheduled anchor, and the customer has an email: `sendMaintenanceEnrollmentConfirmedIfApplicable` from (a) Stripe `checkout.session.completed` for `metadata.kind === 'maintenance_enrollment'` in `src/app/api/stripe/webhook/route.ts` (card paid), or (b) `POST` `src/app/api/public/maintenance-enrollment/confirm/route.ts` (pay-in-person confirmation). Sent at most once (`confirmation_email_sent_at`). |
+| 8 | **Welcome — business live** | Signed-in business owner | `🚀 Your business is officially LIVE!` | When onboarding is completed via `runOnboardingTrialBridgeAfterSubscribe` (`src/features/onboarding-v2/server/onboardingTrialBridgeAfterSubscribe.ts`): only if onboarding was **not** already completed, the user has an email, and the business has a `business_slug`. Triggered from **Pro trial subscription** flows: `applyPlatformProCheckoutSessionCompleted` when checkout metadata `source === 'onboarding_trial_bridge'` (Stripe webhook `checkout.session.completed` and `POST` `src/app/api/stripe/confirm-onboarding-trial` when the session is complete), and `POST` `src/app/api/stripe/start-onboarding-trial` (silent subscription creation or “already subscribed” completion path). |
+| 9 | **Trial ending soon** | Stripe customer email on the subscription | `Your ServiceLink trial ends soon` | Stripe webhook `customer.subscription.trial_will_end` in `src/app/api/stripe/webhook/route.ts` — Stripe emits this shortly before the trial ends; we resolve the customer email from Stripe. |
+| 10 | **Subscription payment failed** (template exists) | *(intended: account owner)* | `Action required: Update your payment method for ServiceLink Pro` | **Not sent by any automated route today.** `sendSubscriptionPaymentFailedEmail` is implemented for manual/future use; `invoice.payment_failed` does not call it (payment issues are handled in-app per `src/features/email/README.md`). |
+
+---
+
+## Implementation map
+
+| Folder / entrypoint | Send function |
+|---------------------|---------------|
+| `src/features/email/booking-notification/` | `sendBookingNotificationEmail` |
+| `src/features/email/quote-request-owner-notification/` | `sendQuoteRequestOwnerNotificationEmail` |
+| `src/features/email/quote-sent-to-customer/` | `sendQuoteSentToCustomerEmail` |
+| `src/features/email/availability-booking-notification/` | `sendAvailabilityBookingNotificationEmail`, `sendAvailabilityBookingCustomerConfirmationEmail` |
+| `src/features/email/maintenance-enrollment-sent/` | `sendMaintenanceEnrollmentSentEmail` |
+| `src/features/email/maintenance-enrollment-confirmed/` | `sendMaintenanceEnrollmentConfirmedEmail` |
+| `src/features/email/welcome-live/` | `sendWelcomeLiveEmail` |
+| `src/features/email/trial-ending-soon/` | `sendTrialEndingSoonEmail` |
+| `src/features/email/subscription-payment-failed/` | `sendSubscriptionPaymentFailedEmail` |
+
+Public exports: `src/features/email/index.ts` (maintenance-confirmed is imported directly from its module in some callers).
+
+---
+
+## Operational notes
+
+- **`RESEND_API_KEY`**: If unset, send helpers return `{ sent: false }` and callers typically log and continue.
+- **From address**: Configured in `getFromEmail()` in `resendClient.ts` (see `DEFAULT_FROM_EMAIL` and env overrides there).
+- **Idempotency**: Maintenance confirmation email is guarded by `confirmation_email_sent_at` on the enrollment row.
+
+---
+
+*Generated from repository scan. Update this file when adding a new `send*` under `src/features/email/` or a new caller.*

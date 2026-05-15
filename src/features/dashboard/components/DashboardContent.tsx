@@ -5,7 +5,7 @@
 
 'use client';
 
-import { Button, GlassCard, Switch, WarningCallout } from '@/components/shared';
+import { Button, CrownIcon, GlassCard, Switch, WarningCallout } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAnalytics } from '@/features/analytics';
 import {
@@ -16,8 +16,10 @@ import {
   QuickActionsCard,
   UpcomingBookingsCard,
 } from '@/features/dashboard';
+import { FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { QuoteRequestsSettingsCard } from '@/features/quotes';
 import { ClockIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import React from 'react';
 
 interface DashboardData {
@@ -52,9 +54,9 @@ interface DashboardData {
   legacyRequestBookingEnabled: boolean;
   useAvailabilityBooking: boolean;
   upcomingBookingsCount: number;
-  /** Free plan: bookings used toward lifetime cap (0–5). Omit or leave 0 until API is ready. */
+  /** Free plan: public bookings used toward lifetime cap (shown on dashboard + from `free_bookings_count`). */
   freeBookingsUsed?: number;
-  /** When true, show "Try Pro" CTA (post-onboarding invite for free users). */
+  /** When true, show free-tier upgrade CTA (and quote card in grid). */
   isFreeTier?: boolean;
   /** From `business_profiles.accept_quote_req` (quote-requests card when free). */
   acceptQuoteRequests?: boolean;
@@ -68,6 +70,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   dashboardData,
 }) => {
   const { businessProfile, slugData } = dashboardData;
+  const freeBookingsUsed = dashboardData.freeBookingsUsed ?? 0;
+  const atFreeBookingCap =
+    dashboardData.isFreeTier === true &&
+    freeBookingsUsed >= FREE_BOOKINGS_LIMIT;
 
   const { dashboardAnalytics, loading: analyticsLoading } = useAnalytics(
     businessProfile.id
@@ -89,6 +95,49 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               : 'Create your public link to start sharing with customers.'}
           </p>
         </div>
+
+        {dashboardData.isFreeTier ? (
+          <div
+            className={`mb-6 sm:mb-8 rounded-xl border px-4 py-3 sm:px-5 sm:py-3.5 ${
+              atFreeBookingCap
+                ? 'border-amber-500/30 bg-amber-500/[0.07]'
+                : 'border-white/10 bg-white/[0.04]'
+            }`}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="min-w-0 text-sm leading-snug text-zinc-400">
+                {atFreeBookingCap ? (
+                  <>
+                    <span className="font-medium text-zinc-200">
+                      You&apos;ve used all {FREE_BOOKINGS_LIMIT} free bookings on
+                      your plan.
+                    </span>{' '}
+                    Upgrade to Pro for unlimited bookings and the rest of our Pro
+                    tools.
+                  </>
+                ) : (
+                  <>
+                    You&apos;re on the Free plan.{' '}
+                    <span className="text-zinc-200">
+                      Upgrade to Pro for unlimited bookings and more.
+                    </span>
+                  </>
+                )}
+              </p>
+              <Link
+                href={ROUTES.DASHBOARD.UPGRADE}
+                className={`shrink-0 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  atFreeBookingCap
+                    ? 'bg-amber-500 text-zinc-950 hover:bg-amber-400'
+                    : 'bg-white text-zinc-950 hover:bg-zinc-200'
+                }`}
+              >
+                <CrownIcon className="h-4 w-4 shrink-0" aria-hidden />
+                Upgrade to Pro
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         <div className="space-y-6 sm:space-y-8 w-full min-w-0">
           {/* Link card or Create link CTA */}

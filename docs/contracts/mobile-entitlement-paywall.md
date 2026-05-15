@@ -1,5 +1,7 @@
 # Mobile: profile fields for access vs paywall (web parity)
 
+**Product context (plans, trials, paywall strategy):** [`../pricing-strategy-and-model.md`](../pricing-strategy-and-model.md) · **[`../subscription-and-pro-features.md`](../subscription-and-pro-features.md)**
+
 Mobile should mirror the same rules as the Next.js web app. **Canonical logic** lives in:
 
 - `src/features/pricing/utils/isProAccess.ts` — function `isProAccess` (+ `hasStripeBillingHistory`)

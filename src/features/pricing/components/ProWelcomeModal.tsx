@@ -24,7 +24,7 @@ const PRO_WELCOME_BULLETS = [
   },
   {
     icon: Squares2X2Icon,
-    text: 'Unlimited bookings—no monthly cap',
+    text: 'Unlimited bookings on your public page',
     accent: 'emerald' as const,
   },
   {

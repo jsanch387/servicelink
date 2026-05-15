@@ -22,6 +22,10 @@ export interface ServicesWithAddOnsViewProps {
   initialAddOns?: AddOnRow[];
   /** Error from add-ons fetch. */
   addOnsFetchError?: string | null;
+  /**
+   * When true, Free-plan user already at max services — hide primary add affordance + show upgrade hint.
+   */
+  freeTierServiceCapReached?: boolean;
 }
 
 /**
@@ -34,6 +38,7 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
   addOnCounts,
   initialAddOns = [],
   addOnsFetchError,
+  freeTierServiceCapReached = false,
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('services');
 
@@ -67,6 +72,7 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
           initialServices={initialServices}
           fetchError={fetchError}
           addOnCounts={addOnCounts}
+          freeTierServiceCapReached={freeTierServiceCapReached}
         />
       ) : (
         <AddOnsContent

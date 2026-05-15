@@ -6,6 +6,7 @@
  */
 
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { isProAccess, FREE_MAX_SERVICES } from '@/features/pricing';
 import {
   getAddOnCounts,
   getAddOns,
@@ -42,6 +43,33 @@ export default async function ServicesPage() {
   const servicesResult = await getServices(businessProfile.id);
   const services = servicesResult.data ?? [];
 
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const p = profileRow as {
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
+    subscription_status?: string | null;
+    stripe_subscription_id?: string | null;
+    stripe_customer_id?: string | null;
+  } | null;
+
+  const hasProAccess = isProAccess(
+    p?.subscription_tier,
+    p?.subscription_current_period_end,
+    p?.subscription_status,
+    p?.stripe_subscription_id,
+    p?.stripe_customer_id
+  );
+
+  const freeTierServiceCapReached =
+    !hasProAccess && services.length >= FREE_MAX_SERVICES;
+
   const [addOnsResult, addOnCounts] = await Promise.all([
     getAddOns(businessProfile.id),
     getAddOnCounts(
@@ -57,6 +85,7 @@ export default async function ServicesPage() {
       addOnCounts={addOnCounts}
       initialAddOns={addOnsResult.data ?? []}
       addOnsFetchError={addOnsResult.success ? null : addOnsResult.error}
+      freeTierServiceCapReached={freeTierServiceCapReached}
     />
   );
 }

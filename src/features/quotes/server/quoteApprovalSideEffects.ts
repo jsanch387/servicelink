@@ -30,7 +30,6 @@ export type BusinessProfileForQuoteApproval = {
   profile_id: string | null;
   business_slug: string | null;
   business_name: string | null;
-  free_bookings_month: string | null;
   free_bookings_count: number | null;
 };
 
@@ -141,7 +140,6 @@ export async function finalizeApprovedQuoteToBooking(
   const cap = await checkFreeTierBookingCapAllowsCreate(supabase, {
     id: businessProfile.id,
     profile_id: businessProfile.profile_id,
-    free_bookings_month: businessProfile.free_bookings_month,
     free_bookings_count: businessProfile.free_bookings_count,
   });
   if (!cap.ok) {

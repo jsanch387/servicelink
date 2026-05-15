@@ -151,9 +151,7 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
 
   const { data: businessRow, error: bizErr } = await supabase
     .from('business_profiles')
-    .select(
-      'business_slug, profile_id, free_bookings_month, free_bookings_count'
-    )
+    .select('business_slug, profile_id, free_bookings_count')
     .eq('id', enrollment.business_id)
     .maybeSingle();
 
@@ -171,14 +169,12 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
   const biz = businessRow as {
     business_slug?: string | null;
     profile_id?: string | null;
-    free_bookings_month?: string | null;
     free_bookings_count?: number | null;
   };
 
   const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(supabase, {
     id: enrollment.business_id,
     profile_id: biz.profile_id ?? null,
-    free_bookings_month: biz.free_bookings_month ?? null,
     free_bookings_count: biz.free_bookings_count ?? null,
   });
   if (!freeTierCap.ok) {

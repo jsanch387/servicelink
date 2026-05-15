@@ -2,7 +2,7 @@
 
 Checkout for the Pro plan is handled by creating a Stripe Checkout Session and redirecting the user to Stripe. When payment succeeds, the webhook updates the user's profile to Pro.
 
-**Product summary (who gets Pro, what features are paywalled):** see [`docs/subscription-and-pro-features.md`](../../../../docs/subscription-and-pro-features.md) at the repo root.
+**Product summary (pricing strategy, trials, paywall, Free vs Pro):** see [`docs/pricing-strategy-and-model.md`](../../../../docs/pricing-strategy-and-model.md) and the full guide [`docs/subscription-and-pro-features.md`](../../../../docs/subscription-and-pro-features.md).
 
 ## Environment variables
 
@@ -28,7 +28,7 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 5. User completes payment on Stripe.
 6. Stripe sends `checkout.session.completed` to `POST /api/stripe/webhook`.
 7. Webhook verifies signature, records event id for idempotency, then updates `profiles`: `subscription_tier = 'pro'`, `subscription_status = 'active'`, `stripe_customer_id`, `stripe_subscription_id`, `subscription_current_period_end`.
-8. User is redirected to `{SITE_URL}/dashboard/settings?checkout=success`. They now have unlimited bookings (no monthly cap).
+8. User is redirected to `{SITE_URL}/dashboard/settings?checkout=success`. They now have **unlimited bookings** (the Free plan cap no longer applies).
 
 **Debug:** Verbose **`[stripe:onboarding:…]`** `console.debug` lines are off by default. Set **`DEBUG_STRIPE_ONBOARDING=1`** to enable them (see [`docs/contracts/mobile-onboarding-stripe-checkout.md`](../../../../docs/contracts/mobile-onboarding-stripe-checkout.md) → Server debugging). Normal **`[stripe:…]`** `console.info` / `console.warn` / `console.error` lines stay on for success and failure.
 

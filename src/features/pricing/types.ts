@@ -27,8 +27,15 @@ export const PLANS: Record<PlanId, PlanInfo> = {
   },
 } as const;
 
-/** Free plan: max lifetime bookings per business before upgrade (Pro = unlimited). */
+/** Free plan: max lifetime public bookings per business before upgrade (Pro = unlimited). */
 export const FREE_BOOKINGS_LIMIT = 5;
+
+/** Free plan: max services per business (dashboard + onboarding); existing businesses with more may keep them but cannot add beyond that cap unless Pro. */
+export const FREE_MAX_SERVICES = 5;
+
+/** Shown when a Free user hits the service limit (UI + API errors). */
+export const FREE_TIER_SERVICE_LIMIT_USER_MESSAGE =
+  'Free plan includes up to 5 services. Upgrade to Pro to add more.';
 
 /** Free plan: max portfolio images (edit + public display). */
 export const FREE_MAX_PORTFOLIO_IMAGES = 4;
