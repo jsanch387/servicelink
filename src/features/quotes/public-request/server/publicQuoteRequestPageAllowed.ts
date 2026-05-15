@@ -1,4 +1,4 @@
-import { isProAccess } from '@/features/pricing';
+import { isProAccessForPublicQuoteRequests } from '@/features/pricing';
 import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusinessProfileLive';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -16,7 +16,8 @@ export type PublicQuoteRequestAllowedForSlugResult =
   | { ok: false };
 
 /**
- * Public `/[slug]/quote` and POST quote-request: business must opt in and owner must be Pro.
+ * Public `/[slug]/quote` and POST quote-request: business must opt in and owner must have
+ * **effective Pro for quote intake** (stricter than general app Pro when Stripe status is missing).
  */
 export async function publicQuoteRequestAllowedForSlug(
   supabase: SupabaseClient,
@@ -66,7 +67,7 @@ export async function publicQuoteRequestAllowedForSlug(
   const stripeSubscriptionId = ownerProfile?.stripe_subscription_id;
   const stripeCustomerId = ownerProfile?.stripe_customer_id;
   if (
-    !isProAccess(
+    !isProAccessForPublicQuoteRequests(
       tier,
       periodEnd,
       subscriptionStatus,

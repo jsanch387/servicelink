@@ -29,6 +29,7 @@ export {
   hasStripeBillingHistory,
   isExemptFromFreeTierLifetimeBookingCap,
   isProAccess,
+  isProAccessForPublicQuoteRequests,
   needsPaidProResubscribeForDashboard,
 } from './utils/isProAccess';
 export {

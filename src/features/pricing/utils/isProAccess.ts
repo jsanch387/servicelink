@@ -100,6 +100,38 @@ export function isProAccess(
   return true;
 }
 
+/**
+ * Pro gate for **public quote intake** (header CTA, `/[slug]/quote`, `POST /api/public/quote-request`).
+ *
+ * Stricter than {@link isProAccess} when the owner has a Stripe subscription id: status must be
+ * explicitly `active` or `trialing`. Empty/missing status does **not** grant access, so churned
+ * or lagging webhooks do not expose “Request quote” while {@link isProAccess} may still grant app
+ * access during migration gaps.
+ *
+ * **Comped / manual Pro** (tier `pro`, no `stripe_subscription_id`, no `stripe_customer_id`) still
+ * matches {@link isProAccess} and remains allowed here.
+ */
+export function isProAccessForPublicQuoteRequests(
+  subscriptionTier: string | null | undefined,
+  /** Retained for API symmetry with {@link isProAccess}. */
+  _subscriptionCurrentPeriodEnd: string | null | undefined,
+  subscriptionStatus?: string | null,
+  stripeSubscriptionId?: string | null,
+  stripeCustomerId?: string | null
+): boolean {
+  if (subscriptionTier !== 'pro') return false;
+
+  if (!hasStripeBillingSubscription(stripeSubscriptionId)) {
+    if (stripeCustomerId != null && stripeCustomerId.trim() !== '') {
+      return false;
+    }
+    return true;
+  }
+
+  const st = (subscriptionStatus ?? '').trim();
+  return STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO.has(st);
+}
+
 const STRIPE_SUBSCRIPTION_STATUSES_ENDED_FOR_FREE_TIER_CAP = new Set([
   'canceled',
   'incomplete_expired',

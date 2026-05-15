@@ -12,7 +12,10 @@ import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import { MediaService } from '@/features/media';
-import { isProAccess } from '@/features/pricing';
+import {
+  isProAccess,
+  isProAccessForPublicQuoteRequests,
+} from '@/features/pricing';
 import {
   maxPortfolioImagesForSubscription,
   type OwnerSubscriptionFieldsForPortfolio,
@@ -203,7 +206,13 @@ export default async function PublicProfilePage({
   };
 
   const showRequestQuoteCta =
-    ownerTier === 'pro' && displayProfile.accept_quote_req === true;
+    isProAccessForPublicQuoteRequests(
+      ownerSubscriptionRow?.subscription_tier,
+      ownerSubscriptionRow?.subscription_current_period_end,
+      ownerSubscriptionRow?.subscription_status,
+      ownerSubscriptionRow?.stripe_subscription_id,
+      ownerSubscriptionRow?.stripe_customer_id
+    ) && displayProfile.accept_quote_req === true;
 
   const profileIdForCap =
     (businessProfile as { profile_id?: string | null }).profile_id ?? null;

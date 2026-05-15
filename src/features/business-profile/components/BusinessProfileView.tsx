@@ -61,7 +61,7 @@ interface BusinessProfileViewProps {
   onboardingCompleteFromUrl?: boolean;
   /** Server-side, account-level flag for one-time Pro welcome helper modal. */
   showProfileWelcomeModalOnLoad?: boolean;
-  /** Pro + accept_quote_req: show Request quote on public / owner preview header. */
+  /** Pro quote gate + accept_quote_req: show Request quote on public / owner preview header. */
   showRequestQuoteCta?: boolean;
   /**
    * Public profile only: owner still has Pro — show “starting at” for services with price options.

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   isProAccess,
+  isProAccessForPublicQuoteRequests,
   needsPaidProResubscribeForDashboard,
 } from '../utils/isProAccess';
 
@@ -52,6 +53,58 @@ describe('isProAccess', () => {
   it('billed customer: empty or null status allows Pro (migration / sync gaps)', () => {
     expect(isProAccess('pro', null, null, BILLED, CUS)).toBe(true);
     expect(isProAccess('pro', null, '', BILLED, CUS)).toBe(true);
+  });
+});
+
+describe('isProAccessForPublicQuoteRequests', () => {
+  const futureEnd = new Date(Date.now() + 86400000).toISOString();
+  const BILLED = 'sub_test123';
+  const CUS = 'cus_test123';
+
+  it('matches isProAccess for manual / comped Pro', () => {
+    expect(
+      isProAccessForPublicQuoteRequests('pro', null, 'past_due', null, null)
+    ).toBe(true);
+  });
+
+  it('matches isProAccess for billed active/trialing', () => {
+    expect(
+      isProAccessForPublicQuoteRequests('pro', null, 'active', BILLED, CUS)
+    ).toBe(true);
+    expect(
+      isProAccessForPublicQuoteRequests(
+        'pro',
+        futureEnd,
+        'trialing',
+        BILLED,
+        CUS
+      )
+    ).toBe(true);
+  });
+
+  it('denies billed customer when subscription status is empty (unlike isProAccess)', () => {
+    expect(isProAccess('pro', null, null, BILLED, CUS)).toBe(true);
+    expect(
+      isProAccessForPublicQuoteRequests('pro', null, null, BILLED, CUS)
+    ).toBe(false);
+    expect(
+      isProAccessForPublicQuoteRequests('pro', null, '', BILLED, CUS)
+    ).toBe(false);
+  });
+
+  it('denies non-pro and canceled billed', () => {
+    expect(
+      isProAccessForPublicQuoteRequests('free', null, 'active', BILLED, CUS)
+    ).toBe(false);
+    expect(
+      isProAccessForPublicQuoteRequests(
+        'pro',
+        futureEnd,
+        'canceled',
+        BILLED,
+        CUS
+      )
+    ).toBe(false);
   });
 });
 
