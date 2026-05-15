@@ -51,17 +51,9 @@ export const EmailConfirmedScreen: React.FC = () => {
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
             {sessionReady ? (
-              <>
-                You&apos;re signed in. Continue to your dashboard to finish
-                setup, or open the app on this device — your profile is ready.
-              </>
+              <>You&apos;re signed in. Continue when you&apos;re ready.</>
             ) : (
-              <>
-                Your account is verified. If you opened the link on{' '}
-                <span className="text-zinc-200">another browser or device</span>
-                , sign in below with the same email and password you used to
-                sign up.
-              </>
+              <>Sign in with the same email and password you used to sign up.</>
             )}
           </p>
         </div>

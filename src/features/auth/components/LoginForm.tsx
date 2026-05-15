@@ -1,7 +1,8 @@
 'use client';
 
-import { Button, GoogleIcon, Input } from '@/components/shared';
+import { Button, GlassCard, GoogleIcon, Input } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -11,11 +12,6 @@ import { validateSignInForm } from '../utils/validation';
 const REDIRECT_ERROR_MESSAGES: Record<string, string> = {
   email_exists_use_password:
     'This email is already registered. Please sign in with your password.',
-};
-
-const LOGIN_NOTICE_MESSAGES: Record<string, string> = {
-  email_confirm_open_login:
-    'Your email is verified. Sign in below to continue on this device. If you opened the link on another browser than where you signed up, that is fine — sign in here with your email and password.',
 };
 
 export const LoginForm: React.FC<{
@@ -40,10 +36,7 @@ export const LoginForm: React.FC<{
     }
   }, [redirectError, router]);
 
-  const loginNoticeMessage =
-    loginNotice && LOGIN_NOTICE_MESSAGES[loginNotice]
-      ? LOGIN_NOTICE_MESSAGES[loginNotice]
-      : null;
+  const emailVerifiedLoginNotice = loginNotice === 'email_confirm_open_login';
 
   useEffect(() => {
     if (resetSuccess) router.replace(ROUTES.AUTH.LOGIN);
@@ -135,13 +128,24 @@ export const LoginForm: React.FC<{
         </div>
 
         <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
-          {loginNoticeMessage && (
-            <div className="rounded-xl border border-sky-500/25 bg-sky-500/10 p-4 sm:p-4">
-              <p className="text-sm leading-relaxed text-sky-100 sm:text-base">
-                {loginNoticeMessage}
-              </p>
-            </div>
-          )}
+          {emailVerifiedLoginNotice ? (
+            <GlassCard rounded="rounded-xl" padding="sm">
+              <div className="flex items-start gap-3">
+                <CheckCircleIcon
+                  className="h-5 w-5 shrink-0 text-emerald-400 mt-0.5"
+                  aria-hidden
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white tracking-tight">
+                    Email Verified
+                  </p>
+                  <p className="mt-0.5 text-xs leading-snug text-zinc-400 sm:text-sm">
+                    Sign in to continue.
+                  </p>
+                </div>
+              </div>
+            </GlassCard>
+          ) : null}
           {resetSuccess && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 sm:p-4">
               <p className="text-green-400 text-base sm:text-base">

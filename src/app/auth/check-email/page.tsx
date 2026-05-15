@@ -3,8 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Check your email - ServiceLink',
-  description:
-    'Confirm your email to finish creating your ServiceLink account.',
+  description: 'We sent a confirmation link. Check your inbox or spam folder.',
   robots: {
     index: false,
     follow: false,

@@ -82,24 +82,19 @@ export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
           <p className="mt-2 text-sm leading-relaxed text-gray-400 sm:text-base">
             {hasEmail ? (
               <>
-                We sent a link to{' '}
+                We sent a confirmation link to{' '}
                 <span className="font-medium text-zinc-200">{trimmed}</span>.
-                Open it to confirm your account — you’ll get a short success
-                screen, then you can jump into the app.
               </>
             ) : (
-              <>
-                We sent you a confirmation link. Open it for a success screen;
-                if you open it on another device, sign in here afterward.
-              </>
+              <>We sent a confirmation link to the email you used to sign up.</>
             )}
           </p>
-          <p className="mt-3 text-xs text-zinc-500 sm:text-sm">
-            Not seeing it? Check spam or promotions.
+          <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+            Not seeing it? Check your spam or promotions folder.
           </p>
 
           {hasEmail ? (
-            <div className="mt-4 space-y-2">
+            <div className="mt-5 space-y-2">
               <button
                 type="button"
                 onClick={handleResend}
@@ -116,20 +111,18 @@ export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
                 <p className="text-sm text-red-400">{resendError}</p>
               ) : null}
               {resendOk && !resendError ? (
-                <p className="text-sm text-emerald-400/90">
-                  Sent — check your inbox again.
-                </p>
+                <p className="text-sm text-emerald-400/90">Email sent again.</p>
               ) : null}
             </div>
           ) : (
-            <p className="mt-4 text-sm">
+            <p className="mt-5 text-sm text-zinc-400">
               <Link
                 href={ROUTES.AUTH.SIGNUP}
                 className="font-medium text-orange-400 hover:text-orange-300"
               >
                 Back to sign up
               </Link>{' '}
-              if you need to use a different email.
+              if you need a different address.
             </p>
           )}
         </div>
