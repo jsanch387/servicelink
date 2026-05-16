@@ -1,5 +1,7 @@
 # Contract: Mobile onboarding — Pro trial (Checkout or silent API)
 
+**Free tier step 5 (no Stripe trial):** use [`mobile-onboarding-complete.md`](./mobile-onboarding-complete.md) — `POST /api/onboarding-v2/complete`.
+
 ServiceLink **web API** (this repo) supports two ways to start the onboarding step 5 trial:
 
 1. **Stripe Checkout (legacy / fallback)** — `POST /api/stripe/create-checkout-session` returns a `url`; the app opens it; Stripe redirects back via deep link. **Subscription rows and trial dates live in Stripe**; the app should call **`POST /api/stripe/confirm-onboarding-trial`** after success so the response includes **`trial_confirmation`** (DB + Stripe) without racing the webhook alone.
