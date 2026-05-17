@@ -3,11 +3,16 @@
 import { Button, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
-import { CrownIcon } from '@/icons';
+import { CrownIcon, CrownOutlineIcon } from '@/icons';
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import { POST_ONBOARDING_PRO_NUDGE_FEATURES } from '../marketingPlanFeatures';
+import { PRO_WELCOME_MODAL_FEATURES } from '../marketingPlanFeatures';
 import { PricingPlanFeatureList } from './PricingPlanFeatureList';
+import {
+  PRICING_MODAL_CROWN_TILE_CLASS,
+  PRICING_MODAL_SUBTITLE_CLASS,
+  PRICING_MODAL_TITLE_ROW_CLASS,
+} from './pricingModalStyles';
 
 interface TryProPostOnboardingModalProps {
   isOpen: boolean;
@@ -51,42 +56,60 @@ export const TryProPostOnboardingModal: React.FC<
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={dismiss} title="" maxWidth="sm">
-      <div className="flex flex-col gap-6">
-        <div className="min-w-0">
-          <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
-            <CrownIcon className="h-6 w-6 shrink-0 text-amber-300" />
-            <span>Upgrade to Pro?</span>
+    <Modal
+      isOpen={isOpen}
+      onClose={dismiss}
+      title=""
+      maxWidth="sm"
+      uniformHorizontalPadding16
+      contentClassName="!pt-6 sm:!pt-7 !pb-6"
+    >
+      <div className="flex flex-col gap-7">
+        <header className="min-w-0">
+          <h2 className={PRICING_MODAL_TITLE_ROW_CLASS}>
+            <span className={PRICING_MODAL_CROWN_TILE_CLASS} aria-hidden>
+              <CrownOutlineIcon className="h-[1.125rem] w-[1.125rem] text-white" />
+            </span>
+            Upgrade to Pro?
           </h2>
-          <p className="mt-1.5 text-sm text-gray-400">
-            One plan—everything below.
+          <p className={PRICING_MODAL_SUBTITLE_CLASS}>
+            Here&apos;s what you unlock with Pro on your booking link.
           </p>
-        </div>
+        </header>
+
+        <div className="h-px w-full bg-white/10" aria-hidden />
 
         <PricingPlanFeatureList
-          items={POST_ONBOARDING_PRO_NUDGE_FEATURES}
+          items={PRO_WELCOME_MODAL_FEATURES}
           emphasizeHighlights
+          bulletVariant="neutral"
         />
 
-        <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-          <Button
-            type="button"
-            onClick={dismiss}
-            variant="ghost"
-            className="w-full text-gray-400 hover:text-white sm:w-auto"
-          >
-            Maybe later
-          </Button>
+        <div className="flex flex-col gap-3">
           <Button
             type="button"
             onClick={handleUpgrade}
             variant="inverse"
-            size="md"
-            className="w-full sm:w-auto sm:min-w-[12rem]"
-            icon={<CrownIcon className="h-5 w-5 shrink-0 text-neutral-900" />}
+            fullWidth
+            className="font-black tracking-tight"
+            icon={
+              <CrownIcon
+                className="h-5 w-5 shrink-0 text-neutral-900"
+                aria-hidden
+              />
+            }
             iconPosition="left"
           >
             Upgrade to Pro
+          </Button>
+          <Button
+            type="button"
+            onClick={dismiss}
+            variant="ghost"
+            fullWidth
+            className="text-zinc-500 hover:text-white"
+          >
+            Maybe later
           </Button>
         </div>
       </div>

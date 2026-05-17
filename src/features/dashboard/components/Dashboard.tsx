@@ -22,14 +22,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="dashboard-container min-h-screen flex bg-[var(--dashboard-bg)]">
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       <DashboardSidebar
         open={sidebarOpen}
         setOpen={setSidebarOpen}
@@ -37,7 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       />
       <div className="dashboard-content flex-1 flex flex-col lg:ml-64 min-w-0">
         {/* Sticky Header */}
-        <div className="sticky top-0 z-30 bg-[var(--dashboard-bg)]">
+        <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
           {showHeader ? (
             <DashboardHeader
               onMenuClick={() => setSidebarOpen(true)}

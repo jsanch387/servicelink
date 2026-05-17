@@ -10,9 +10,9 @@ import {
   ClockIcon,
   CogIcon,
   HomeIcon,
+  LinkIcon,
   RectangleStackIcon,
   UserGroupIcon,
-  UserIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -28,9 +28,9 @@ const allNavigationItems = [
     requiresOnboarding: false,
   },
   {
-    name: 'Business Profile',
+    name: 'Booking link',
     href: ROUTES.DASHBOARD.BUSINESS_PROFILE,
-    icon: UserIcon,
+    icon: LinkIcon,
     requiresOnboarding: true,
   },
   {
@@ -104,8 +104,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
       {/* Sidebar */}
       <div
-        className={`dashboard-sidebar fixed lg:fixed top-0 left-0 z-50 lg:z-auto w-64 h-screen bg-[var(--dashboard-bg)] border-r border-[var(--dashboard-border)] transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          open ? 'translate-x-0' : '-translate-x-full'
+        className={`dashboard-sidebar fixed top-0 left-0 z-50 h-screen w-64 border-r border-[var(--dashboard-border)] bg-[var(--dashboard-bg)] transition-transform duration-300 ease-in-out lg:z-auto lg:translate-x-0 ${
+          open
+            ? 'translate-x-0 pointer-events-auto'
+            : '-translate-x-full pointer-events-none lg:pointer-events-auto'
         }`}
       >
         <div className="flex h-full flex-col overflow-y-auto pb-24 lg:pb-6">

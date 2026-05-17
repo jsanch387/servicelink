@@ -49,3 +49,15 @@ export const POST_ONBOARDING_PRO_NUDGE_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Customer quote requests on your page' },
   { text: 'Multiple price options per service' },
 ];
+
+/** Post-upgrade welcome modal — core unlocks (no support line). */
+export const PRO_WELCOME_MODAL_FEATURES: readonly ProFeatureItem[] = [
+  { text: 'Unlimited bookings on your public page', highlight: true },
+  { text: 'Take payments through the app', highlight: true },
+  { text: 'Verified badge on your booking link' },
+  {
+    text: `Up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery images on your booking page`,
+  },
+  { text: 'Multiple price options per service' },
+  { text: 'Customer quote requests on your page' },
+];

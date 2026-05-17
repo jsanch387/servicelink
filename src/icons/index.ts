@@ -1,1 +1,1 @@
-export { CrownIcon } from './CrownIcon';
+export { CrownIcon, CrownOutlineIcon } from './CrownIcon';
