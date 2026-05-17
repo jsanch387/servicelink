@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, GlassCard, GoogleIcon, Input } from '@/components/shared';
+import { Button, GlassCard, Input } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -8,11 +8,21 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignInForm } from '../utils/validation';
+import {
+  AUTH_INPUT_CLASS,
+  AuthFormCard,
+  AuthOrDivider,
+  AuthScreenLayout,
+} from './AuthScreenLayout';
+import { AuthGoogleButton } from './AuthSocialButtons';
 
 const REDIRECT_ERROR_MESSAGES: Record<string, string> = {
   email_exists_use_password:
     'This email is already registered. Please sign in with your password.',
 };
+
+const authFooterLinkClass =
+  'font-semibold text-white hover:text-gray-200 transition-colors';
 
 export const LoginForm: React.FC<{
   redirectError?: string;
@@ -47,9 +57,7 @@ export const LoginForm: React.FC<{
     setGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-      if (result?.error) {
-        setAuthError(result.error);
-      }
+      if (result?.error) setAuthError(result.error);
     } finally {
       setGoogleLoading(false);
     }
@@ -57,12 +65,9 @@ export const LoginForm: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Clear previous errors
     setErrors({});
     setAuthError('');
 
-    // Validate form
     const validation = validateSignInForm(formData);
     if (!validation.isValid) {
       setErrors(validation.errors);
@@ -71,63 +76,40 @@ export const LoginForm: React.FC<{
 
     try {
       const result = await signIn(formData.email, formData.password);
-
       if (result.error) {
         setAuthError(result.error);
         return;
       }
-
-      // Redirect to dashboard after successful login
-      // Use router.refresh() to ensure middleware sees the updated session
       router.refresh();
-
-      // Small delay to ensure cookies are set before navigation
       await new Promise(resolve => setTimeout(resolve, 100));
-
       router.push(ROUTES.DASHBOARD.MAIN);
-    } catch (error) {
-      console.error('Login failed:', error);
+    } catch {
       setAuthError('An unexpected error occurred. Please try again.');
     }
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData({
-      ...formData,
-      [field]: value,
-    });
-
-    // Clear field error when user starts typing
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors({
-        ...errors,
-        [field]: '',
-      });
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  const inputSizeClass =
-    'py-3.5 px-4 text-base min-h-[48px] sm:min-h-[52px] rounded-xl';
-
   return (
-    <div className="min-h-[100dvh] bg-neutral-900 flex items-center justify-center py-6 px-4 pb-[env(safe-area-inset-bottom)] sm:py-8 sm:px-6 md:py-10 lg:py-12 lg:px-8">
-      <div className="w-full max-w-[min(100%,26rem)] sm:max-w-[28rem] md:max-w-[30rem] space-y-6 sm:space-y-8">
-        <div className="text-left">
-          <h1 className="text-2xl font-semibold text-white tracking-tight sm:text-3xl md:text-4xl">
-            Sign in to your account
-          </h1>
-          <p className="mt-2 text-base text-gray-400 sm:mt-2.5 sm:text-base">
-            Don&apos;t have an account?{' '}
-            <a
-              href={ROUTES.AUTH.SIGNUP}
-              className="font-medium text-orange-400 hover:text-orange-300"
-            >
-              Create one
-            </a>
-          </p>
-        </div>
-
-        <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit}>
+    <AuthScreenLayout
+      title="Welcome back"
+      subtitle="Log in to manage your business."
+      footer={
+        <>
+          New to ServiceLink?{' '}
+          <Link href={ROUTES.AUTH.SIGNUP} className={authFooterLinkClass}>
+            Create an account
+          </Link>
+        </>
+      }
+    >
+      <AuthFormCard>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           {emailVerifiedLoginNotice ? (
             <GlassCard rounded="rounded-xl" padding="sm">
               <div className="flex items-start gap-3">
@@ -137,7 +119,7 @@ export const LoginForm: React.FC<{
                 />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-white tracking-tight">
-                    Email Verified
+                    Email verified
                   </p>
                   <p className="mt-0.5 text-xs leading-snug text-zinc-400 sm:text-sm">
                     Sign in to continue.
@@ -146,94 +128,75 @@ export const LoginForm: React.FC<{
               </div>
             </GlassCard>
           ) : null}
+
           {resetSuccess && (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 sm:p-4">
-              <p className="text-green-400 text-base sm:text-base">
+            <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
+              <p className="text-sm text-green-400">
                 Your password has been updated. You can sign in now.
               </p>
             </div>
           )}
+
           {authError && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 sm:p-4">
-              <p className="text-red-400 text-base sm:text-base">{authError}</p>
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+              <p className="text-sm text-red-400">{authError}</p>
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            loading={googleLoading}
-            disabled={isLoading || googleLoading}
-            onClick={handleGoogleSignIn}
-            icon={<GoogleIcon className="h-5 w-5" />}
-            iconPosition="left"
-          >
-            {googleLoading ? 'Redirecting...' : 'Continue with Google'}
-          </Button>
+          <Input
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={value => handleChange('email', value)}
+            error={errors.email}
+            placeholder="you@company.com"
+            autoComplete="email"
+            required
+            inputClassName={AUTH_INPUT_CLASS}
+          />
 
-          <div className="relative">
-            <div
-              className="absolute inset-0 flex items-center"
-              aria-hidden="true"
+          <Input
+            label="Password"
+            type="password"
+            value={formData.password}
+            onChange={value => handleChange('password', value)}
+            error={errors.password}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            required
+            inputClassName={AUTH_INPUT_CLASS}
+          />
+
+          <div className="flex justify-end">
+            <Link
+              href={ROUTES.AUTH.FORGOT_PASSWORD}
+              className="text-sm font-medium text-white hover:text-gray-200 transition-colors"
             >
-              <div className="w-full border-t border-gray-600" />
-            </div>
-            <div className="relative flex justify-center text-sm sm:text-base">
-              <span className="bg-neutral-900 px-3 text-gray-400">
-                Or sign in with email
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-5 sm:space-y-6">
-            <Input
-              label="Email address"
-              type="email"
-              value={formData.email}
-              onChange={value => handleChange('email', value)}
-              error={errors.email}
-              placeholder="Enter your email"
-              autoComplete="email"
-              required
-              inputClassName={inputSizeClass}
-            />
-
-            <Input
-              label="Password"
-              type="password"
-              value={formData.password}
-              onChange={value => handleChange('password', value)}
-              error={errors.password}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              required
-              inputClassName={inputSizeClass}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-base">
-              <Link
-                href={ROUTES.AUTH.FORGOT_PASSWORD}
-                className="font-medium text-orange-400 hover:text-orange-300"
-              >
-                Forgot your password?
-              </Link>
-            </div>
+              Forgot password?
+            </Link>
           </div>
 
           <Button
             type="submit"
             variant="inverse"
             fullWidth
+            size="lg"
             loading={isLoading}
-            disabled={isLoading}
+            disabled={isLoading || googleLoading}
+            className="rounded-full"
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? 'Signing in…' : 'Login'}
           </Button>
         </form>
-      </div>
-    </div>
+      </AuthFormCard>
+
+      <AuthOrDivider />
+
+      <AuthGoogleButton
+        onGoogle={handleGoogleSignIn}
+        googleLoading={googleLoading}
+        disabled={isLoading}
+      />
+    </AuthScreenLayout>
   );
 };

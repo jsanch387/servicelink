@@ -17,7 +17,7 @@ export const PLANS: Record<PlanId, PlanInfo> = {
     name: 'Free',
     price: '$0',
     description:
-      'Perfect for new businesses and side hustles testing the waters.',
+      'Everything you need to launch—includes 5 online bookings and core tools.',
   },
   pro: {
     id: 'pro',

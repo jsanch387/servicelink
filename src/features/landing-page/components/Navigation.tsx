@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitialized } = useAuth();
   const pathname = usePathname();
   const isHome = pathname === '/';
 
@@ -76,8 +76,13 @@ export const Navigation: React.FC = () => {
         </div>
 
         {/* Desktop Auth Buttons — shared Button variants only */}
-        <div className="hidden md:flex items-center gap-3">
-          {isAuthenticated ? (
+        <div className="hidden md:flex items-center gap-3 min-w-[7.5rem] justify-end">
+          {!isInitialized ? (
+            <span
+              className="h-10 w-24 rounded-xl bg-white/5 animate-pulse"
+              aria-hidden
+            />
+          ) : isAuthenticated ? (
             <Button href={ROUTES.DASHBOARD.MAIN} variant="secondary">
               Dashboard
             </Button>
@@ -87,7 +92,7 @@ export const Navigation: React.FC = () => {
                 Login
               </Button>
               <Button href={ROUTES.AUTH.SIGNUP} variant="inverse">
-                Get Started
+                Sign up
               </Button>
             </>
           )}
@@ -160,37 +165,39 @@ export const Navigation: React.FC = () => {
             >
               Resources
             </a>
-            <div className="pt-5 mt-4 border-t border-[var(--dashboard-border)] space-y-3">
-              {isAuthenticated ? (
-                <Button
-                  href={ROUTES.DASHBOARD.MAIN}
-                  variant="secondary"
-                  fullWidth
-                  onClick={closeMobileMenu}
-                >
-                  Dashboard
-                </Button>
-              ) : (
-                <>
+            {isInitialized ? (
+              <div className="pt-5 mt-4 border-t border-[var(--dashboard-border)] space-y-3">
+                {isAuthenticated ? (
                   <Button
-                    href={ROUTES.AUTH.LOGIN}
+                    href={ROUTES.DASHBOARD.MAIN}
                     variant="secondary"
                     fullWidth
                     onClick={closeMobileMenu}
                   >
-                    Login
+                    Dashboard
                   </Button>
-                  <Button
-                    href={ROUTES.AUTH.SIGNUP}
-                    variant="inverse"
-                    fullWidth
-                    onClick={closeMobileMenu}
-                  >
-                    Get Started
-                  </Button>
-                </>
-              )}
-            </div>
+                ) : (
+                  <>
+                    <Button
+                      href={ROUTES.AUTH.LOGIN}
+                      variant="secondary"
+                      fullWidth
+                      onClick={closeMobileMenu}
+                    >
+                      Login
+                    </Button>
+                    <Button
+                      href={ROUTES.AUTH.SIGNUP}
+                      variant="inverse"
+                      fullWidth
+                      onClick={closeMobileMenu}
+                    >
+                      Sign up
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
       )}

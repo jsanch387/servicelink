@@ -36,7 +36,7 @@ export const useAuth = () => {
     supabaseUser,
     isLoading,
     isInitialized,
-    isAuthenticated: !!user,
+    isAuthenticated: Boolean(user ?? supabaseUser),
 
     // Actions
     signIn,

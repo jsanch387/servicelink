@@ -14,15 +14,54 @@ const initialState = {
   isInitialized: false,
 };
 
+async function startGoogleOAuthSignIn(
+  setLoading: (loading: boolean) => void
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  setLoading(true);
+
+  try {
+    const baseUrl = (
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '')
+    ).replace(/\/$/, '');
+    const redirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
+
+    if (error) {
+      setLoading(false);
+      return { error: error.message };
+    }
+
+    if (data?.url) {
+      window.location.href = data.url;
+      return {};
+    }
+
+    setLoading(false);
+    return { error: 'Could not start Google sign-in' };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    setLoading(false);
+    return { error: error.message || 'An error occurred during sign in' };
+  }
+}
+
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       ...initialState,
 
-      // Initialize auth state
+      // Initialize auth state (re-check session when persisted user is missing)
       initialize: async () => {
-        const { isLoading, isInitialized } = get();
-        if (isLoading || isInitialized) {
+        const { isLoading, isInitialized, user } = get();
+        if (isLoading) {
+          return;
+        }
+        if (isInitialized && user) {
           return;
         }
 
@@ -216,41 +255,8 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // Sign in with Google (OAuth redirect)
-      signInWithGoogle: async () => {
-        const supabase = createClient();
-        set({ isLoading: true });
-
-        try {
-          // Use explicit site URL in prod so redirect never goes to localhost
-          const baseUrl = (
-            process.env.NEXT_PUBLIC_SITE_URL ||
-            (typeof window !== 'undefined' ? window.location.origin : '')
-          ).replace(/\/$/, '');
-          const redirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}`;
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo },
-          });
-
-          if (error) {
-            set({ isLoading: false });
-            return { error: error.message };
-          }
-
-          if (data?.url) {
-            window.location.href = data.url;
-            return {};
-          }
-
-          set({ isLoading: false });
-          return { error: 'Could not start Google sign-in' };
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-          set({ isLoading: false });
-          return { error: error.message || 'An error occurred during sign in' };
-        }
-      },
+      signInWithGoogle: async () =>
+        startGoogleOAuthSignIn(loading => set({ isLoading: loading })),
 
       // Request password reset email (must use prod URL in prod so email link goes to app, not localhost)
       requestPasswordReset: async (email: string) => {

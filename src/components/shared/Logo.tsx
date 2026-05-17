@@ -11,11 +11,12 @@ import React from 'react';
 export type BrandingVariant = 'logo' | 'text' | 'full';
 
 interface BrandingProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: BrandingVariant;
   className?: string;
   href?: string;
-  logoSize?: 'sm' | 'md' | 'lg'; // Optional: separate size for logo image only
+  /** Separate size for the logo image only (when variant includes logo). */
+  logoSize?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export const Logo: React.FC<BrandingProps> = ({
@@ -42,6 +43,12 @@ export const Logo: React.FC<BrandingProps> = ({
       imageSize: 40,
       imageClass: 'h-10 w-10',
       textClass: 'text-2xl',
+      spacing: 'space-x-4',
+    },
+    xl: {
+      imageSize: 56,
+      imageClass: 'h-14 w-14',
+      textClass: 'text-3xl',
       spacing: 'space-x-4',
     },
   };

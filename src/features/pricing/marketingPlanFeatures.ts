@@ -7,12 +7,16 @@ import {
 
 /** Feature bullets for Free tier on marketing / upgrade plan cards. */
 export const MARKETING_FREE_PLAN_FEATURES: readonly ProFeatureItem[] = [
-  { text: `${FREE_BOOKINGS_LIMIT} lifetime bookings on Free` },
-  { text: `Up to ${FREE_MAX_PORTFOLIO_IMAGES} gallery images` },
-  { text: 'CRM, client notes, and visit history' },
-  { text: 'Email alerts for bookings and updates' },
-  { text: 'Booking page, services, and core dashboard tools' },
+  { text: `${FREE_BOOKINGS_LIMIT} online bookings`, highlight: true },
+  { text: 'Professional booking page & online scheduling' },
+  { text: 'Services, availability calendar & dashboard' },
+  { text: 'Client CRM, notes, and visit history' },
+  { text: 'Email notifications for new bookings' },
+  { text: `Up to ${FREE_MAX_PORTFOLIO_IMAGES} portfolio gallery images` },
 ];
+
+/** Same as marketing Free list — used on public `/pricing`. */
+export const PUBLIC_PRICING_FREE_PLAN_FEATURES = MARKETING_FREE_PLAN_FEATURES;
 
 /** Feature bullets for Pro tier on marketing / upgrade plan cards. */
 export const MARKETING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [

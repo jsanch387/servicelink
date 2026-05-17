@@ -13,7 +13,7 @@ export interface PricingPlanCardProps {
   priceSuffix?: string;
   features: readonly ProFeatureItem[];
   emphasizeFeatureHighlights?: boolean;
-  /** e.g. "Most popular" — only typical for Pro */
+  /** e.g. "Most popular" or "Current plan" */
   badgeLabel?: string;
   /** Primary actions row (buttons) at the bottom of the card */
   footer: React.ReactNode;
@@ -60,24 +60,23 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
       className={`${shell.outer} flex flex-col text-left ${className}`.trim()}
     >
       <div className={shell.accent} aria-hidden />
-      {variant === 'pro' ? (
-        <>
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.04] sm:rounded-[1.35rem]"
-            aria-hidden
-          />
-          {badgeLabel ? (
-            <div className="pointer-events-none absolute right-4 top-4 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-900 sm:right-5 sm:top-5 sm:text-[11px]">
-              {badgeLabel}
-            </div>
-          ) : null}
-        </>
-      ) : (
+      <div
+        className={`pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset sm:rounded-[1.35rem] ${
+          variant === 'pro' ? 'ring-white/[0.04]' : 'ring-white/[0.03]'
+        }`}
+        aria-hidden
+      />
+      {badgeLabel ? (
         <div
-          className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.03] sm:rounded-[1.35rem]"
-          aria-hidden
-        />
-      )}
+          className={`pointer-events-none absolute right-4 top-4 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider sm:right-5 sm:top-5 sm:text-[11px] ${
+            variant === 'pro'
+              ? 'bg-white text-zinc-900'
+              : 'border border-white/20 bg-white/10 text-zinc-200'
+          }`}
+        >
+          {badgeLabel}
+        </div>
+      ) : null}
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col text-left">
         <div className="mb-8 text-left">
           <h2 className="logo-text text-2xl font-semibold tracking-tight text-white sm:text-[1.65rem]">

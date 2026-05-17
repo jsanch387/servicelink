@@ -3,14 +3,17 @@
 import { Button } from '@/components/shared';
 import { API_ROUTES } from '@/constants/routes';
 import React, { useState } from 'react';
-import { PUBLIC_PRICING_PRO_PLAN_FEATURES } from '../marketingPlanFeatures';
+import {
+  PUBLIC_PRICING_FREE_PLAN_FEATURES,
+  PUBLIC_PRICING_PRO_PLAN_FEATURES,
+} from '../marketingPlanFeatures';
 import { PLANS } from '../types';
 import { PricingPlanCard } from './PricingPlanCard';
 
 export interface UpgradeContentProps {
   /** When true, user already has active Pro — show manage billing instead of checkout. */
   isProSubscriber?: boolean;
-  /** When true, user is locked out after trial/subscription and must reactivate. */
+  /** When true, user is locked out after subscription lapsed and must reactivate. */
   isBillingLocked?: boolean;
 }
 
@@ -18,6 +21,7 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
   isProSubscriber = false,
   isBillingLocked = false,
 }) => {
+  const free = PLANS.free;
   const pro = PLANS.pro;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -75,64 +79,92 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
     }
   };
 
+  const proCtaLabel = isBillingLocked ? 'Reactivate Pro' : 'Get Pro';
+
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
-      <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col items-center text-center">
-        <header className="mb-8 sm:mb-10 w-full max-w-xl">
+      <div className="mx-auto flex w-full max-w-4xl min-w-0 flex-col">
+        <header className="mb-8 sm:mb-10 text-center sm:text-left">
           <h1 className="text-3xl sm:text-4xl font-semibold text-white tracking-tight">
-            {isProSubscriber
-              ? "You're on Pro"
-              : isBillingLocked
-                ? 'Choose Pro'
-                : 'Pro'}
+            {isProSubscriber ? 'Your plan' : 'Upgrade'}
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base mt-2 leading-relaxed">
+          <p className="text-gray-400 text-sm sm:text-base mt-2 leading-relaxed max-w-2xl">
             {isProSubscriber
-              ? 'Update billing or cancel anytime below.'
+              ? 'You are on Pro. Manage billing below or review what is included on Free.'
               : isBillingLocked
-                ? "Tap below when you're ready to jump back in."
-                : 'One plan for your whole workflow.'}
+                ? 'Reactivate Pro to restore unlimited bookings and Pro features.'
+                : 'Upgrade to Pro to unlock unlimited bookings, payments, quotes, and more.'}
           </p>
         </header>
 
-        <div className="w-full max-w-xl">
+        {error ? (
+          <p
+            className="mb-6 text-rose-400 text-sm text-center sm:text-left"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+
+        <div className="grid gap-6 md:grid-cols-2 items-stretch">
+          <PricingPlanCard
+            variant="free"
+            title={free.name}
+            description={free.description}
+            price={free.price}
+            priceSuffix=" forever"
+            features={PUBLIC_PRICING_FREE_PLAN_FEATURES}
+            emphasizeFeatureHighlights
+            badgeLabel={isProSubscriber ? undefined : 'Current plan'}
+            footer={
+              isProSubscriber ? (
+                <p className="text-center text-sm text-zinc-500">
+                  Features on your previous Free plan
+                </p>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  disabled
+                >
+                  Current plan
+                </Button>
+              )
+            }
+          />
+
           <PricingPlanCard
             variant="pro"
             title={pro.name}
             description={pro.description}
             price={pro.price}
             features={PUBLIC_PRICING_PRO_PLAN_FEATURES}
+            badgeLabel={isProSubscriber ? 'Current plan' : 'Most popular'}
             footer={
-              <div className="space-y-3">
-                {error ? (
-                  <p className="text-rose-400 text-sm text-center" role="alert">
-                    {error}
-                  </p>
-                ) : null}
-                {isProSubscriber ? (
-                  <Button
-                    type="button"
-                    variant="inverse"
-                    className="w-full"
-                    onClick={handleManageSubscription}
-                    disabled={portalLoading}
-                    loading={portalLoading}
-                  >
-                    Manage subscription
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="inverse"
-                    className="w-full"
-                    onClick={handleUpgradeToPro}
-                    disabled={checkoutLoading}
-                    loading={checkoutLoading}
-                  >
-                    {isBillingLocked ? 'Reactivate Pro' : 'Upgrade to Pro'}
-                  </Button>
-                )}
-              </div>
+              isProSubscriber ? (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  className="w-full"
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                  loading={portalLoading}
+                >
+                  Manage subscription
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  className="w-full"
+                  onClick={handleUpgradeToPro}
+                  disabled={checkoutLoading}
+                  loading={checkoutLoading}
+                >
+                  {proCtaLabel}
+                </Button>
+              )
             }
           />
         </div>
