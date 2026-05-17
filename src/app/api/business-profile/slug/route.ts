@@ -8,7 +8,7 @@
  * GET /api/business-profile/slug/check/[slug] - Check slug availability
  */
 
-import { slugService } from '@/features/business-profile/services/slugService';
+import { SlugService } from '@/features/business-profile/services/slugService';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
     // Normalize to lowercase so we never store mixed-case slugs (e.g. EliteDetail → elitedetail)
     const normalizedInput = String(slugInput).trim().toLowerCase();
 
-    // Create the slug using the service (service also enforces lowercase and char limit)
-    const result = await slugService.createBusinessSlug(
+    const slugServiceForRequest = new SlugService(supabase);
+    const result = await slugServiceForRequest.createBusinessSlug(
       String(businessProfileId),
       normalizedInput
     );

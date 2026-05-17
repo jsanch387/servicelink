@@ -5,11 +5,15 @@
  * Returns whether a slug is available for use
  */
 
-import { slugService } from '@/features/business-profile/services/slugService';
+import { SlugService } from '@/features/business-profile/services/slugService';
+import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const slugServiceForRequest = new SlugService(supabase);
+
     const { searchParams } = new URL(request.url);
     const slug = searchParams.get('slug');
 
@@ -20,8 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate the slug format first
-    const validation = slugService.validateSlug(slug);
+    const validation = slugServiceForRequest.validateSlug(slug);
     if (!validation.isValid) {
       return NextResponse.json(
         { success: false, error: validation.error },
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check availability
-    const availability = await slugService.checkSlugAvailability(
+    const availability = await slugServiceForRequest.checkSlugAvailability(
       validation.cleanSlug!
     );
 

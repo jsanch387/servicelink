@@ -7,7 +7,6 @@
 
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { assertPublicTrackViewRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -50,10 +49,8 @@ export async function POST(request: NextRequest) {
     //   request.headers.get('x-real-ip') ||
     //   'unknown';
 
-    const supabase = await createSupabaseServerClient();
-
-    // Get business profile by slug
-    const { data: profileData, error: profileError } = await supabase
+    // Counters are server-owned (RLS trigger); use service role for read + increment.
+    const { data: profileData, error: profileError } = await admin
       .from('business_profiles')
       .select('id, profile_views, business_slug')
       .eq('business_slug', businessSlug)
@@ -71,10 +68,9 @@ export async function POST(request: NextRequest) {
     // TODO: Add deduplication logic here (Redis or database-based)
     // For MVP, we'll implement simple rate limiting
 
-    // Update profile views
     const { data: updatedProfileData, error: updateError } =
       await // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
+      (admin as any)
         .from('business_profiles')
         .update({
           profile_views: (profile.profile_views || 0) + 1,

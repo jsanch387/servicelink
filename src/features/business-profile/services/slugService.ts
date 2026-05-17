@@ -9,7 +9,9 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { SLUG_MAX_LENGTH } from '@/constants/slug';
+import type { Database } from '@/libs/supabase/client';
 import { createClient } from '@/libs/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const APP_DOMAIN = 'myservicelink.app';
 
@@ -42,7 +44,12 @@ export interface BusinessSlugData {
 }
 
 class SlugService {
-  private supabase = createClient();
+  private readonly supabase: SupabaseClient<Database>;
+
+  /** Pass the request-scoped server client from API routes so RLS sees the user session. */
+  constructor(supabase?: SupabaseClient<Database>) {
+    this.supabase = supabase ?? createClient();
+  }
 
   /**
    * Generate a URL-friendly slug from business name.
@@ -237,9 +244,17 @@ class SlugService {
         .single();
 
       if (error) {
+        console.error('[slugService] createBusinessSlug update failed', {
+          code: error.code,
+          message: error.message,
+          businessProfileId,
+        });
         return {
           success: false,
-          error: 'Failed to save your link. Please try again.',
+          error:
+            error.code === '42501'
+              ? 'Could not save your link. Please sign in again and retry.'
+              : 'Failed to save your link. Please try again.',
         };
       }
 
@@ -339,7 +354,7 @@ class SlugService {
   }
 }
 
-// Export singleton instance
+/** Browser / legacy default client — prefer `new SlugService(serverClient)` in API routes. */
 export const slugService = new SlugService();
 
 // Export for testing
