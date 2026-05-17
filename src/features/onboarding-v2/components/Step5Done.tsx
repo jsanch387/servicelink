@@ -7,10 +7,7 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { BoltIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import React, { useMemo, useState } from 'react';
-import {
-  ONBOARDING_STICKY_BACK_BAR_PAD_CLASS,
-  OnboardingStickyGoBackBar,
-} from './OnboardingStickyGoBackBar';
+import { OnboardingStepNav } from './OnboardingStepNav';
 
 interface Step5DoneProps {
   /** Slug for the public booking link path. */
@@ -45,7 +42,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
       const href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
 
       if (isOnboardingLegacyStripeTrialEnabled()) {
-        // Legacy: Stripe 7-day Pro trial (toggle via NEXT_PUBLIC_ONBOARDING_LEGACY_STRIPE_TRIAL).
         const res = await fetch(API_ROUTES.STRIPE_START_ONBOARDING_TRIAL, {
           method: 'POST',
         });
@@ -65,7 +61,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
         return;
       }
 
-      // New default: Free tier only — no Stripe; marks onboarding complete server-side.
       const res = await fetch(API_ROUTES.ONBOARDING_V2_COMPLETE, {
         method: 'POST',
       });
@@ -88,37 +83,39 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
   };
 
   return (
-    <>
-      <div className={`w-full ${ONBOARDING_STICKY_BACK_BAR_PAD_CLASS}`}>
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
-            Go live
-          </h1>
-          <p className="max-w-xl text-sm sm:text-base text-gray-400 leading-relaxed">
-            Your link goes live next.{' '}
-            <span className="font-semibold text-white">
-              Share it. Get booked.
-            </span>
-          </p>
-        </div>
+    <div className="w-full">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
+          Go live
+        </h1>
+        <p className="max-w-xl text-sm sm:text-base text-gray-400 leading-relaxed">
+          Your link goes live next.{' '}
+          <span className="font-semibold text-white">
+            Share it. Get booked.
+          </span>
+        </p>
+      </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/90 p-4 sm:p-5 shadow-sm shadow-black/20">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden p-4">
+        <div className="space-y-4">
           {error && (
-            <p className="text-red-400 text-sm mb-4" role="alert">
+            <p className="text-red-400 text-sm" role="alert">
               {error}
             </p>
           )}
 
-          <div>
-            <p className="text-xs text-gray-500">Your booking link</p>
-            <p className="mt-1 text-sm sm:text-base font-bold text-white font-mono break-all leading-snug">
+          <div className="space-y-1.5">
+            <p className="text-sm text-gray-200 font-medium">
+              Your booking link
+            </p>
+            <p className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm sm:text-base font-mono text-white break-all leading-snug">
               {bookingUrl}
             </p>
           </div>
 
-          <div className="mt-5 flex gap-3 rounded-xl border border-white/[0.06] bg-black/40 p-4">
+          <div className="flex gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4">
             <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white"
               aria-hidden
             >
               <BoltIcon className="h-5 w-5 text-neutral-900" />
@@ -134,7 +131,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
             </div>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-4 sm:mt-8">
             <Button
               onClick={handleActivateLink}
               variant="inverse"
@@ -150,7 +147,8 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
           </div>
         </div>
       </div>
-      <OnboardingStickyGoBackBar onBack={onBack} disabled={loading} />
-    </>
+
+      <OnboardingStepNav onBack={onBack} backDisabled={loading} />
+    </div>
   );
 };
