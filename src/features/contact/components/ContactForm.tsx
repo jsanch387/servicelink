@@ -1,40 +1,76 @@
 'use client';
 
 import { Button, Input, Select, TextArea } from '@/components/shared';
-import { API_ROUTES } from '@/constants/routes';
+import { API_ROUTES, ROUTES } from '@/constants/routes';
 import { useCallback, useState } from 'react';
 
 import { CONTACT_TOPIC_OPTIONS } from '../constants';
 import type { ContactTopic } from '../types';
-import { getContactFormFieldErrors } from '../utils/validateContactFormFields';
+import {
+  getAuthenticatedContactFormFieldErrors,
+  getContactFormFieldErrors,
+} from '../utils/validateContactFormFields';
 import { ContactFormSuccess } from './ContactFormSuccess';
 
-type FormState = {
-  name: string;
+type PublicFormState = {
   email: string;
   topic: ContactTopic | '';
   message: string;
   website: string;
 };
 
-const initialForm: FormState = {
-  name: '',
+type InAppFormState = {
+  topic: ContactTopic | '';
+  message: string;
+  website: string;
+};
+
+const initialPublicForm: PublicFormState = {
   email: '',
   topic: '',
   message: '',
   website: '',
 };
 
-export function ContactForm() {
-  const [form, setForm] = useState<FormState>(initialForm);
+const initialInAppForm: InAppFormState = {
+  topic: '',
+  message: '',
+  website: '',
+};
+
+export type ContactFormProps =
+  | { variant?: 'public' }
+  | { variant: 'inApp'; accountEmail: string };
+
+export function ContactForm(props: ContactFormProps = {}) {
+  const variant = props.variant ?? 'public';
+  const isInApp = variant === 'inApp';
+
+  const [publicForm, setPublicForm] =
+    useState<PublicFormState>(initialPublicForm);
+  const [inAppForm, setInAppForm] = useState<InAppFormState>(initialInAppForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const update = useCallback(
-    <K extends keyof FormState>(key: K, value: FormState[K]) => {
-      setForm(prev => ({ ...prev, [key]: value }));
+  const updatePublic = useCallback(
+    <K extends keyof PublicFormState>(key: K, value: PublicFormState[K]) => {
+      setPublicForm(prev => ({ ...prev, [key]: value }));
+      setFieldErrors(prev => {
+        if (!prev[key]) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      setSubmitError(null);
+    },
+    []
+  );
+
+  const updateInApp = useCallback(
+    <K extends keyof InAppFormState>(key: K, value: InAppFormState[K]) => {
+      setInAppForm(prev => ({ ...prev, [key]: value }));
       setFieldErrors(prev => {
         if (!prev[key]) return prev;
         const next = { ...prev };
@@ -50,7 +86,11 @@ export function ContactForm() {
     e.preventDefault();
     if (loading || submitted) return;
 
-    const clientErrors = getContactFormFieldErrors(form);
+    const formPayload = isInApp ? inAppForm : publicForm;
+    const clientErrors = isInApp
+      ? getAuthenticatedContactFormFieldErrors(formPayload)
+      : getContactFormFieldErrors(formPayload);
+
     if (clientErrors) {
       setFieldErrors(clientErrors);
       setSubmitError(null);
@@ -65,7 +105,8 @@ export function ContactForm() {
       const res = await fetch(API_ROUTES.CONTACT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        credentials: isInApp ? 'include' : 'same-origin',
+        body: JSON.stringify(formPayload),
       });
 
       const data = (await res.json()) as {
@@ -75,7 +116,9 @@ export function ContactForm() {
       };
 
       if (!res.ok || !data.success) {
-        const serverFieldErrors = getContactFormFieldErrors(form);
+        const serverFieldErrors = isInApp
+          ? getAuthenticatedContactFormFieldErrors(formPayload)
+          : getContactFormFieldErrors(formPayload);
         if (data.code === 'VALIDATION_ERROR' && serverFieldErrors) {
           setFieldErrors(serverFieldErrors);
         } else {
@@ -87,7 +130,11 @@ export function ContactForm() {
       }
 
       setSubmitted(true);
-      setForm(initialForm);
+      if (isInApp) {
+        setInAppForm(initialInAppForm);
+      } else {
+        setPublicForm(initialPublicForm);
+      }
     } catch {
       setSubmitError('Something went wrong. Please try again.');
     } finally {
@@ -96,8 +143,22 @@ export function ContactForm() {
   };
 
   if (submitted) {
-    return <ContactFormSuccess />;
+    return (
+      <ContactFormSuccess
+        doneHref={isInApp ? ROUTES.DASHBOARD.SETTINGS : undefined}
+      />
+    );
   }
+
+  const topic = isInApp ? inAppForm.topic : publicForm.topic;
+  const message = isInApp ? inAppForm.message : publicForm.message;
+  const website = isInApp ? inAppForm.website : publicForm.website;
+  const updateTopic = (value: ContactTopic | '') =>
+    isInApp ? updateInApp('topic', value) : updatePublic('topic', value);
+  const updateMessage = (value: string) =>
+    isInApp ? updateInApp('message', value) : updatePublic('message', value);
+  const updateWebsite = (value: string) =>
+    isInApp ? updateInApp('website', value) : updatePublic('website', value);
 
   return (
     <form
@@ -107,8 +168,8 @@ export function ContactForm() {
     >
       <Select
         label="What do you need help with?"
-        value={form.topic}
-        onChange={value => update('topic', value as ContactTopic | '')}
+        value={topic}
+        onChange={value => updateTopic(value as ContactTopic | '')}
         options={CONTACT_TOPIC_OPTIONS}
         placeholder="Select a topic"
         required
@@ -116,22 +177,12 @@ export function ContactForm() {
         name="topic"
       />
 
-      <div className="grid sm:grid-cols-2 gap-5">
-        <Input
-          label="Your name"
-          value={form.name}
-          onChange={value => update('name', value)}
-          placeholder="Jane Smith"
-          required
-          error={fieldErrors.name}
-          name="name"
-          autoComplete="name"
-        />
+      {!isInApp ? (
         <Input
           label="Your email"
           type="email"
-          value={form.email}
-          onChange={value => update('email', value)}
+          value={publicForm.email}
+          onChange={value => updatePublic('email', value)}
           placeholder="you@example.com"
           required
           error={fieldErrors.email}
@@ -139,21 +190,21 @@ export function ContactForm() {
           autoComplete="email"
           inputMode="email"
         />
-      </div>
+      ) : null}
 
       <TextArea
         label="Message"
-        value={form.message}
-        onChange={value => update('message', value)}
+        value={message}
+        onChange={updateMessage}
         placeholder="Tell us what you need — the more detail, the better we can help."
         required
         rows={6}
         maxLength={5000}
+        hideCharCount
         error={fieldErrors.message}
         name="message"
       />
 
-      {/* Honeypot — hidden from users, bots often fill it */}
       <div
         className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
         aria-hidden
@@ -165,8 +216,8 @@ export function ContactForm() {
           name="website"
           tabIndex={-1}
           autoComplete="off"
-          value={form.website}
-          onChange={e => update('website', e.target.value)}
+          value={website}
+          onChange={e => updateWebsite(e.target.value)}
         />
       </div>
 

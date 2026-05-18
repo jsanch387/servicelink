@@ -15,11 +15,25 @@ export type ContactFormFields = {
 
 export type ParsedContactFormBody = ContactFormFields;
 
-/** JSON body for POST /api/contact (web + mobile). */
-export type ContactFormSubmitBody = ContactFormFields & {
+/** JSON body for POST /api/contact (public web + mobile, unsigned). */
+export type ContactFormSubmitBody = {
+  email: string;
+  topic: ContactTopic;
+  message: string;
   /** Honeypot — must be empty. Mobile should omit or send `""`. */
   website?: string;
 };
+
+export type AuthenticatedContactFormFields = {
+  topic: ContactTopic;
+  message: string;
+};
+
+/** JSON body for POST /api/contact when the user is signed in (app). */
+export type AuthenticatedContactFormSubmitBody =
+  AuthenticatedContactFormFields & {
+    website?: string;
+  };
 
 export type ContactFormApiErrorCode =
   | 'INVALID_JSON'
@@ -28,7 +42,8 @@ export type ContactFormApiErrorCode =
   | 'PAYLOAD_TOO_LARGE'
   | 'EMAIL_SEND_FAILED'
   | 'SERVER_ERROR'
-  | 'METHOD_NOT_ALLOWED';
+  | 'METHOD_NOT_ALLOWED'
+  | 'UNAUTHORIZED';
 
 export type ContactFormSubmitSuccessResponse = {
   success: true;

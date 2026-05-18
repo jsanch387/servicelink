@@ -23,32 +23,48 @@ When a user submits the in-app contact form (feature request, bug report, or gen
 
 ## Authentication
 
-**None required.** This is a public endpoint (like `POST /api/public/quote-request`). Users may be signed in or not; the server does not check `Authorization`.
+**Optional.** Two modes share this endpoint:
 
-| Header | Value | Required |
-|--------|-------|----------|
-| `Content-Type` | `application/json` | **Yes** |
+| Mode | When | Headers |
+|------|------|---------|
+| **Public** | Marketing `/contact`, logged-out users | `Content-Type: application/json` only |
+| **Signed in** | In-app Settings → Contact (web cookies or mobile Bearer) | `Content-Type: application/json` + session (`Cookie` on web, `Authorization: Bearer <access_token>` on mobile) |
 
-Optional: send `Authorization: Bearer …` if you already attach it globally — it is **ignored** for this route.
+When a **valid** session is present, the server uses the account email (and display name from profile/business metadata). **Do not** send `name` or `email` in the body for signed-in submissions — they are ignored if present.
+
+If the client sends `Authorization: Bearer …` but the token is invalid or expired, the API returns **`401`** with `code: "UNAUTHORIZED"` (do not fall back to public mode).
 
 ---
 
 ## Request body (JSON)
 
+### Public (unsigned)
+
 | Field | Type | Required | Notes |
 |-------|------|----------|--------|
-| `name` | string | Yes | Max 120 characters after trim. |
-| `email` | string | Yes | Valid email; used as **Reply-To** on the support email. |
+| `email` | string | Yes | Valid email; used as **Reply-To** on the support email. Display name in the support email is derived from the local-part of this address. |
 | `topic` | string | Yes | One of: `feature_request`, `bug_report`, `other`. |
 | `message` | string | Yes | 10–5000 characters after trim. |
 | `website` | string | No | **Honeypot** — omit or send `""`. If non-empty, request is rejected. |
 
-### Example
+```json
+{
+  "email": "alex@example.com",
+  "topic": "bug_report",
+  "message": "The bookings list does not refresh after I approve a quote on iOS 18."
+}
+```
+
+### Signed in (app)
+
+| Field | Type | Required | Notes |
+|-------|------|----------|--------|
+| `topic` | string | Yes | One of: `feature_request`, `bug_report`, `other`. |
+| `message` | string | Yes | 10–5000 characters after trim. |
+| `website` | string | No | Honeypot — omit or `""`. |
 
 ```json
 {
-  "name": "Alex Rivera",
-  "email": "alex@example.com",
   "topic": "bug_report",
   "message": "The bookings list does not refresh after I approve a quote on iOS 18."
 }
@@ -81,7 +97,8 @@ All errors use:
 | HTTP | `code` | When |
 |------|--------|------|
 | `400` | `INVALID_JSON` | Body is not valid JSON. |
-| `400` | `VALIDATION_ERROR` | Missing/invalid fields or honeypot filled. |
+| `400` | `VALIDATION_ERROR` | Missing/invalid fields, honeypot filled, or signed-in account has no valid email. |
+| `401` | `UNAUTHORIZED` | Bearer token present but invalid/expired. |
 | `405` | `METHOD_NOT_ALLOWED` | Not `POST`. |
 | `413` | `PAYLOAD_TOO_LARGE` | Body larger than 12 KB. |
 | `429` | `RATE_LIMITED` | Too many submissions; see `Retry-After` header (seconds). |
@@ -103,7 +120,7 @@ On `429`, show the `error` string and respect `Retry-After` before retrying.
 
 ## Mobile implementation checklist
 
-1. `POST` to `{API_ORIGIN}/api/contact` with JSON body above.
+1. `POST` to `{API_ORIGIN}/api/contact` with the **signed-in** JSON body and `Authorization: Bearer <access_token>`.
 2. On `200` + `success: true`, show your in-app confirmation UI.
 3. On `429`, show rate-limit copy; do not auto-retry in a tight loop.
 4. On `503` / `500`, show `error` and optional fallback to `mailto:` support if you ship it in-app.

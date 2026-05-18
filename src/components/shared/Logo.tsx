@@ -82,7 +82,7 @@ export const Logo: React.FC<BrandingProps> = ({
     return (
       <Link
         href={href}
-        className="transition-opacity duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-neutral-800 rounded-lg"
+        className="transition-opacity duration-200 hover:opacity-90 focus:outline-none focus-visible:outline-none rounded-lg"
       >
         {logoContent}
       </Link>

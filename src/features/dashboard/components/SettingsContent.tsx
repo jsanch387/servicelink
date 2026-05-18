@@ -13,12 +13,15 @@ import { CompleteBusinessProfile } from '@/features/business-profile/types/busin
 import type { PlanId } from '@/features/pricing';
 import { PlanSection, ProWelcomeModal } from '@/features/pricing';
 import { PRO_WELCOME_MODAL_SEEN_KEY } from '@/features/pricing/types';
+import { ROUTES } from '@/constants/routes';
 import {
   ArrowRightStartOnRectangleIcon,
   ArrowTopRightOnSquareIcon,
+  ChevronRightIcon,
   ClipboardDocumentIcon,
   EnvelopeIcon,
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -380,20 +383,21 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
             <p className="text-sm text-gray-400 mt-1 mb-6">
               Questions or feedback? We reply within 24 hours.
             </p>
-            <a
-              href="mailto:app.servicelink@gmail.com"
+            <Link
+              href={ROUTES.DASHBOARD.CONTACT}
               className="inline-flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 w-full sm:w-auto hover:bg-white/[0.06] hover:border-white/15 transition-colors group"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 group-hover:bg-white/10">
                 <EnvelopeIcon className="h-4 w-4 text-gray-400 group-hover:text-white" />
               </div>
-              <div className="text-left min-w-0">
-                <p className="text-xs text-gray-500">Email</p>
-                <p className="text-sm font-medium text-white truncate">
-                  app.servicelink@gmail.com
+              <div className="text-left min-w-0 flex-1">
+                <p className="text-xs text-gray-500">Contact</p>
+                <p className="text-sm font-medium text-white">
+                  Send us a message
                 </p>
               </div>
-            </a>
+              <ChevronRightIcon className="h-4 w-4 shrink-0 text-gray-500 group-hover:text-white" />
+            </Link>
           </div>
 
           <div className="mt-10 pb-2 flex flex-col items-start gap-3">

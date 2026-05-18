@@ -67,6 +67,7 @@ export const ROUTES = {
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
     SETTINGS: '/dashboard/settings',
+    CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',
   },
 } as const;

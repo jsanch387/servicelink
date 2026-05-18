@@ -4,13 +4,20 @@
 
 import { sendContactFormSubmissionEmail } from '@/features/email/contact-form-submission/sendContactFormSubmissionEmail';
 import {
+  requestHasBearerAuth,
+  tryGetAuthenticatedUser,
+} from '@/libs/api/getAuthenticatedUser';
+import {
   assertContactFormRateLimits,
   assertReasonableJsonBodySize,
 } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
+import type { ParsedContactFormBody } from '../types';
+import { parseAuthenticatedContactFormBody } from '../utils/parseAuthenticatedContactFormBody';
 import { parseContactFormBody } from '../utils/parseContactFormBody';
 import { contactFormJsonResponse } from './contactFormJsonResponse';
+import { resolveContactSubmitterFromAuth } from './resolveContactSubmitterFromAuth';
 
 export const CONTACT_FORM_MAX_BODY_BYTES = 12_000;
 
@@ -56,7 +63,51 @@ export async function handleContactFormPost(
       );
     }
 
-    const parsed = parseContactFormBody(json);
+    const auth = await tryGetAuthenticatedUser(request);
+    if (requestHasBearerAuth(request) && !auth) {
+      return contactFormJsonResponse(
+        {
+          success: false,
+          error: 'Invalid or expired session',
+          code: 'UNAUTHORIZED',
+        },
+        401
+      );
+    }
+
+    let parsed:
+      | { ok: true; data: ParsedContactFormBody }
+      | { ok: false; error: string };
+
+    if (auth) {
+      const authParsed = parseAuthenticatedContactFormBody(json);
+      if (!authParsed.ok) {
+        parsed = authParsed;
+      } else {
+        const submitter = await resolveContactSubmitterFromAuth(
+          auth.supabase,
+          auth.user
+        );
+        if (!submitter) {
+          return contactFormJsonResponse(
+            {
+              success: false,
+              error:
+                'Your account does not have a valid email. Update your account email and try again.',
+              code: 'VALIDATION_ERROR',
+            },
+            400
+          );
+        }
+        parsed = {
+          ok: true,
+          data: { ...authParsed.data, ...submitter },
+        };
+      }
+    } else {
+      parsed = parseContactFormBody(json);
+    }
+
     if (!parsed.ok) {
       const isHoneypot = parsed.error === 'Invalid submission';
       return contactFormJsonResponse(

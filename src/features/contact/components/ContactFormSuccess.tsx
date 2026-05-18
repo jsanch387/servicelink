@@ -1,10 +1,17 @@
 'use client';
 
-import { GlassCard } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import React from 'react';
 
-export const ContactFormSuccess: React.FC = () => {
+export type ContactFormSuccessProps = {
+  /** When set, shows a full-width inverse “Done” button (e.g. back to Settings). */
+  doneHref?: string;
+};
+
+export const ContactFormSuccess: React.FC<ContactFormSuccessProps> = ({
+  doneHref,
+}) => {
   return (
     <div role="status" aria-live="polite" className="w-full">
       <GlassCard
@@ -19,6 +26,13 @@ export const ContactFormSuccess: React.FC = () => {
         <p className="text-sm text-gray-400 leading-relaxed">
           Thanks for reaching out. We typically reply within 24 hours.
         </p>
+        {doneHref ? (
+          <div className="mt-6">
+            <Button href={doneHref} variant="inverse" size="lg" fullWidth>
+              Done
+            </Button>
+          </div>
+        ) : null}
       </GlassCard>
     </div>
   );

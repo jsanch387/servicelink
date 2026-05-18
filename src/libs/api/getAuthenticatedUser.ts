@@ -64,3 +64,24 @@ export async function getAuthenticatedUser(
   }
   return { user: data.user, supabase, authMethod: 'cookie' };
 }
+
+/** True when the client sent `Authorization: Bearer …` (valid or not). */
+export function requestHasBearerAuth(request: Request): boolean {
+  const authHeader =
+    request.headers.get('authorization') ??
+    request.headers.get('Authorization');
+  return !!(authHeader && /^Bearer\s+/i.test(authHeader));
+}
+
+/**
+ * Returns the authenticated user when a valid session exists; otherwise `null`.
+ * Unlike `getAuthenticatedUser`, missing or cookie-only sessions without a user
+ * do not produce a 401 — callers use this for optional auth (e.g. contact form).
+ */
+export async function tryGetAuthenticatedUser(
+  request: Request
+): Promise<AuthenticatedRequestUser | null> {
+  const result = await getAuthenticatedUser(request);
+  if ('error' in result) return null;
+  return result;
+}

@@ -30,7 +30,11 @@ export const Navigation: React.FC = () => {
     closeMobileMenu();
   };
 
-  const navLinkClass = 'hover:text-white transition-colors';
+  const navLinkClass =
+    'hover:text-white transition-colors focus:outline-none focus-visible:outline-none';
+  const mobileNavLinkClass =
+    'text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5 focus:outline-none focus-visible:outline-none';
+  const navButtonClass = 'focus:ring-0 focus-visible:ring-0';
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
@@ -83,15 +87,27 @@ export const Navigation: React.FC = () => {
               aria-hidden
             />
           ) : isAuthenticated ? (
-            <Button href={ROUTES.DASHBOARD.MAIN} variant="secondary">
+            <Button
+              href={ROUTES.DASHBOARD.MAIN}
+              variant="secondary"
+              className={navButtonClass}
+            >
               Dashboard
             </Button>
           ) : (
             <>
-              <Button href={ROUTES.AUTH.LOGIN} variant="secondary">
+              <Button
+                href={ROUTES.AUTH.LOGIN}
+                variant="secondary"
+                className={navButtonClass}
+              >
                 Login
               </Button>
-              <Button href={ROUTES.AUTH.SIGNUP} variant="inverse">
+              <Button
+                href={ROUTES.AUTH.SIGNUP}
+                variant="inverse"
+                className={navButtonClass}
+              >
                 Sign up
               </Button>
             </>
@@ -102,7 +118,7 @@ export const Navigation: React.FC = () => {
         <div className="md:hidden flex items-center">
           <button
             onClick={toggleMobileMenu}
-            className="text-gray-300 hover:text-white p-2 rounded-md"
+            className="text-gray-300 hover:text-white p-2 rounded-md focus:outline-none focus-visible:outline-none"
             aria-label="Toggle mobile menu"
           >
             {isMobileMenuOpen ? (
@@ -122,13 +138,13 @@ export const Navigation: React.FC = () => {
               <>
                 <button
                   onClick={() => scrollToSection('how-it-works')}
-                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                  className={mobileNavLinkClass}
                 >
                   How it Works
                 </button>
                 <button
                   onClick={() => scrollToSection('problem')}
-                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                  className={mobileNavLinkClass}
                 >
                   The Problem
                 </button>
@@ -137,14 +153,14 @@ export const Navigation: React.FC = () => {
               <>
                 <Link
                   href="/#how-it-works"
-                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                  className={mobileNavLinkClass}
                   onClick={closeMobileMenu}
                 >
                   How it Works
                 </Link>
                 <Link
                   href="/#problem"
-                  className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+                  className={mobileNavLinkClass}
                   onClick={closeMobileMenu}
                 >
                   The Problem
@@ -153,14 +169,14 @@ export const Navigation: React.FC = () => {
             )}
             <a
               href={ROUTES.PRICING_PAGE}
-              className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+              className={mobileNavLinkClass}
               onClick={closeMobileMenu}
             >
               Pricing
             </a>
             <a
               href={ROUTES.RESOURCES}
-              className="text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5"
+              className={mobileNavLinkClass}
               onClick={closeMobileMenu}
             >
               Resources
@@ -172,6 +188,7 @@ export const Navigation: React.FC = () => {
                     href={ROUTES.DASHBOARD.MAIN}
                     variant="secondary"
                     fullWidth
+                    className={navButtonClass}
                     onClick={closeMobileMenu}
                   >
                     Dashboard
@@ -182,6 +199,7 @@ export const Navigation: React.FC = () => {
                       href={ROUTES.AUTH.LOGIN}
                       variant="secondary"
                       fullWidth
+                      className={navButtonClass}
                       onClick={closeMobileMenu}
                     >
                       Login
@@ -190,6 +208,7 @@ export const Navigation: React.FC = () => {
                       href={ROUTES.AUTH.SIGNUP}
                       variant="inverse"
                       fullWidth
+                      className={navButtonClass}
                       onClick={closeMobileMenu}
                     >
                       Sign up

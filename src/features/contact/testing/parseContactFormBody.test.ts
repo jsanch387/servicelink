@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { parseContactFormBody } from '../utils/parseContactFormBody';
 
 const validBody = {
-  name: 'Jane Smith',
   email: 'jane@example.com',
   topic: 'bug_report',
   message: 'The booking button does not load on mobile Safari.',
@@ -11,17 +10,28 @@ const validBody = {
 };
 
 describe('parseContactFormBody', () => {
-  it('accepts a valid payload', () => {
+  it('accepts a valid payload and derives display name from email', () => {
     const result = parseContactFormBody(validBody);
     expect(result).toEqual({
       ok: true,
       data: {
-        name: 'Jane Smith',
+        name: 'jane',
         email: 'jane@example.com',
         topic: 'bug_report',
         message: 'The booking button does not load on mobile Safari.',
       },
     });
+  });
+
+  it('ignores client-supplied name', () => {
+    const result = parseContactFormBody({
+      ...validBody,
+      name: 'Spoofed Name',
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.name).toBe('jane');
+    }
   });
 
   it('rejects honeypot when filled', () => {

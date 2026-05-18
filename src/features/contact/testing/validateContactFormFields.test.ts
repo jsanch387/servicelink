@@ -6,7 +6,6 @@ import {
 } from '../utils/validateContactFormFields';
 
 const validBody = {
-  name: 'Jane Smith',
   email: 'jane@example.com',
   topic: 'bug_report',
   message: 'The booking button does not load on mobile Safari.',
