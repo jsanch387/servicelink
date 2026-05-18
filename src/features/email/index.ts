@@ -48,3 +48,9 @@ export type {
   SendWelcomeLiveEmailResult,
   WelcomeLiveEmailPayload,
 } from './welcome-live/types';
+
+export { sendContactFormSubmissionEmail } from './contact-form-submission/sendContactFormSubmissionEmail';
+export type {
+  ContactFormSubmissionPayload,
+  SendContactFormSubmissionResult,
+} from './contact-form-submission/types';

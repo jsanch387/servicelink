@@ -6,9 +6,10 @@ export const ROUTES = {
   ABOUT: '#about',
   CONTACT: '#contact',
 
-  // Legal routes
+  // Legal & support routes
   TERMS: '/terms',
   PRIVACY: '/privacy',
+  CONTACT_PAGE: '/contact',
 
   // Pricing (dedicated page)
   PRICING_PAGE: '/pricing',
@@ -127,6 +128,8 @@ export const API_ROUTES = {
    * `Authorization: Bearer <supabase access token>` (mobile).
    */
   ACCOUNT: '/api/account',
+  /** Public contact form (landing /contact page). */
+  CONTACT: '/api/contact',
 } as const;
 
 export const PUBLIC_ROUTES = [

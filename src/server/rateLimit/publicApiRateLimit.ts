@@ -92,6 +92,12 @@ const calendarFeedLinkUserRl: { current: Ratelimit | null | undefined } = {
 const calendarFeedLinkIpRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
+const contactFormIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const contactFormEmailRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
 
 async function flushPending(result: { pending?: Promise<unknown> }) {
   try {
@@ -298,6 +304,39 @@ export async function assertCalendarFeedLinkRateLimits(
     '1 h'
   );
   const r2 = await consume(ipLimiter, `ip:${ip}`, 120, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+function safeEmailSegment(email: string): string {
+  return email.trim().toLowerCase().slice(0, 254) || 'invalid';
+}
+
+/** POST /api/contact — public support form (per IP + per submitter email). */
+export async function assertContactFormRateLimits(
+  request: NextRequest,
+  submitterEmail: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const emailKey = safeEmailSegment(submitterEmail);
+
+  const ipLimiter = createLimiter(
+    contactFormIpRl,
+    'public_api:contact:ip',
+    8,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 8, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const emailLimiter = createLimiter(
+    contactFormEmailRl,
+    'public_api:contact:email',
+    5,
+    '1 h'
+  );
+  const r2 = await consume(emailLimiter, `email:${emailKey}`, 5, MS_HOUR);
   if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;

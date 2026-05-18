@@ -1,5 +1,6 @@
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { MarketingBackButton } from '@/features/landing-page/components/MarketingBackButton';
 import { Navigation } from '@/features/landing-page/components/Navigation';
 import {
   FREE_BOOKINGS_LIMIT,
@@ -8,8 +9,6 @@ import {
   PUBLIC_PRICING_PRO_PLAN_FEATURES,
   PricingPlanCard,
 } from '@/features/pricing';
-import Link from 'next/link';
-
 export default function PricingPage() {
   const free = PLANS.free;
   const pro = PLANS.pro;
@@ -20,9 +19,14 @@ export default function PricingPage() {
       <div className="h-16 sm:h-20 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight text-center">
-          Pricing
-        </h1>
+        <div className="relative flex items-center justify-center mb-4 sm:mb-6 min-h-[44px]">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2">
+            <MarketingBackButton className="ml-0" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight text-center px-12 sm:px-14">
+            Pricing
+          </h1>
+        </div>
         <p className="text-gray-400 text-center mb-12 sm:mb-16 max-w-2xl mx-auto text-sm sm:text-base">
           Start on Free with {FREE_BOOKINGS_LIMIT} online bookings and core
           tools. Upgrade to Pro when you need unlimited bookings, payments,
@@ -103,15 +107,6 @@ export default function PricingPage() {
           </div>
         </section>
       </main>
-
-      <footer className="mt-16 sm:mt-20 py-8 px-4 border-t border-[var(--dashboard-border)] text-center">
-        <Link
-          href="/"
-          className="text-sm text-gray-500 hover:text-white transition-colors"
-        >
-          ← Back to Home
-        </Link>
-      </footer>
     </div>
   );
 }

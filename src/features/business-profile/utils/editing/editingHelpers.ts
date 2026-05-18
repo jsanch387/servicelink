@@ -5,6 +5,7 @@
  * Handles validation, data transformation, and API calls.
  */
 
+import { getBioLengthValidationError } from '../../constants/businessBio';
 import { BusinessProfileApi } from '../../services/businessProfileApi';
 import type { BookingLinkLocalesUiState } from '../bookingLinkLocales';
 import { bookingLinkLocalesPersistFromUi } from '../bookingLinkLocales';
@@ -75,6 +76,11 @@ export function validateEditingForm(
     formData.phone_number_call.length !== 10
   ) {
     errors.push('Phone number must be 10 digits');
+  }
+
+  const bioError = getBioLengthValidationError(formData.bio);
+  if (bioError) {
+    errors.push(bioError);
   }
 
   return {

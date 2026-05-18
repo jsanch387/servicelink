@@ -1,6 +1,7 @@
 'use client';
 
 import { Input, Select, TextArea } from '@/components/shared';
+import { BUSINESS_BIO_MAX_LENGTH } from '@/features/business-profile/constants/businessBio';
 import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
 import React from 'react';
@@ -142,8 +143,9 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
         placeholder="Briefly describe your business, services, and what makes you unique. This appears on your public profile and is often the first thing customers read."
         value={formData.bio}
         onChange={value => onInputChange('bio', value)}
-        rows={5}
-        maxLength={280}
+        rows={6}
+        maxLength={BUSINESS_BIO_MAX_LENGTH}
+        hideCharCount={formData.bio.length < BUSINESS_BIO_MAX_LENGTH}
       />
     </div>
   );

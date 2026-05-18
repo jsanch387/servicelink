@@ -27,6 +27,9 @@ export { BannerSection } from './components/edit/sections/BannerSection';
 export { ProfileImageSection } from './components/edit/sections/ProfileImageSection';
 export { PortfolioSection } from './components/edit/sections/PortfolioSection';
 
+// Constants
+export { BUSINESS_BIO_MAX_LENGTH } from './constants/businessBio';
+
 // Services
 export { BusinessProfileApi } from './services/businessProfileApi';
 

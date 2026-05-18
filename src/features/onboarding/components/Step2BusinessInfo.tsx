@@ -8,6 +8,7 @@ import {
   TextArea,
 } from '@/components/shared';
 import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
+import { BUSINESS_BIO_MAX_LENGTH } from '@/features/business-profile/constants/businessBio';
 import React, { useEffect, useState } from 'react';
 import { saveStepAndProgress } from '../utils/onboardingHelpers';
 
@@ -169,8 +170,9 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
             placeholder="Briefly describe your business, services, and what makes you unique. This will be the first thing customers read!"
             value={formData.bio}
             onChange={value => handleInputChange('bio', value)}
-            rows={5}
-            maxLength={280}
+            rows={6}
+            maxLength={BUSINESS_BIO_MAX_LENGTH}
+            hideCharCount={formData.bio.length < BUSINESS_BIO_MAX_LENGTH}
           />
 
           <div className="flex flex-col gap-4 pt-6 sm:pt-8">
