@@ -1,4 +1,8 @@
 import { ROUTES } from '@/constants/routes';
+import {
+  deriveSignupChannel,
+  parseSignupAttributionCookie,
+} from '@/features/analytics/signupAttribution';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
@@ -108,6 +112,24 @@ export async function GET(request: Request) {
       });
     if (insertError) {
       console.error('[auth/callback] profile insert failed:', insertError);
+    } else {
+      const attribution = parseSignupAttributionCookie(
+        request.headers.get('cookie')
+      );
+      if (attribution) {
+        const channel = deriveSignupChannel(attribution);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: attrError } = await (admin as any)
+          .from('profiles')
+          .update({
+            signup_attribution: attribution,
+            signup_channel: channel,
+          })
+          .eq('user_id', user.id);
+        if (attrError) {
+          console.warn('[auth/callback] signup attribution update:', attrError);
+        }
+      }
     }
     isNewOAuthSignup = true;
   }

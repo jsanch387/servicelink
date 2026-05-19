@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { SignupAttributionCapture } from '@/features/analytics/components/SignupAttributionCapture';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
@@ -179,6 +180,7 @@ export default function RootLayout({
             />
           </noscript>
         ) : null}
+        <SignupAttributionCapture />
         {children}
         <Analytics />
         <SpeedInsights />

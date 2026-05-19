@@ -43,6 +43,10 @@ export type Database = {
           subscription_current_period_end: string | null;
           subscription_cancel_at_period_end: boolean;
           profile_welcome_modal_seen: boolean;
+          /** First-touch UTM/referrer JSON; see signupAttribution.ts */
+          signup_attribution?: Record<string, unknown> | null;
+          /** Derived channel label for admin reporting */
+          signup_channel?: string | null;
         };
         Insert: {
           user_id: string;
@@ -58,6 +62,8 @@ export type Database = {
           subscription_current_period_end?: string | null;
           subscription_cancel_at_period_end?: boolean;
           profile_welcome_modal_seen?: boolean;
+          signup_attribution?: Record<string, unknown> | null;
+          signup_channel?: string | null;
         };
         Update: {
           user_id?: string;
@@ -73,6 +79,8 @@ export type Database = {
           subscription_current_period_end?: string | null;
           subscription_cancel_at_period_end?: boolean;
           profile_welcome_modal_seen?: boolean;
+          signup_attribution?: Record<string, unknown> | null;
+          signup_channel?: string | null;
         };
       };
       business_profiles: {

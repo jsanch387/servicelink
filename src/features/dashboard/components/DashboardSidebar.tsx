@@ -6,6 +6,7 @@ import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants'
 import {
   BanknotesIcon,
   CalendarIcon,
+  ChartBarSquareIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
   CogIcon,
@@ -26,6 +27,12 @@ const allNavigationItems = [
     href: ROUTES.DASHBOARD.MAIN,
     icon: HomeIcon,
     requiresOnboarding: false,
+  },
+  {
+    name: 'Admin',
+    href: ROUTES.DASHBOARD.ADMIN,
+    icon: ChartBarSquareIcon,
+    requiresOnboarding: true,
   },
   {
     name: 'Booking link',

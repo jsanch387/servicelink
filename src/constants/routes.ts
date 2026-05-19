@@ -46,6 +46,7 @@ export const ROUTES = {
   // Dashboard routes
   DASHBOARD: {
     MAIN: '/dashboard',
+    ADMIN: '/dashboard/admin',
     BUSINESS_PROFILE: '/dashboard/business-profile',
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',

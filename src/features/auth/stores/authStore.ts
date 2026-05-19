@@ -243,6 +243,12 @@ export const useAuthStore = create<AuthStore>()(
               supabaseUser: signedUpUser,
               isLoading: false,
             });
+
+            const { persistSignupAttributionToProfile } = await import(
+              '@/features/analytics/signupAttribution'
+            );
+            void persistSignupAttributionToProfile();
+
             return {};
           }
 
