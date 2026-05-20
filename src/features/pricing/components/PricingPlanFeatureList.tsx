@@ -20,7 +20,7 @@ function PricingPlanFeatureBullet({
 
   return (
     <span
-      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/[0.06] ring-1 ring-white/[0.06]"
+      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20"
       aria-hidden
     >
       <CheckIcon className="h-3 w-3 text-emerald-400/90" />
@@ -32,7 +32,7 @@ export interface PricingPlanFeatureListProps {
   items: readonly ProFeatureItem[];
   /** When false, highlight rows use the same body weight as other lines (e.g. Free tier). */
   emphasizeHighlights?: boolean;
-  /** Monochrome checkmarks (white on dark) for minimal modals. */
+  /** neutral = white checkmarks (Pro card / modals); default = emerald (Free card). */
   bulletVariant?: 'default' | 'neutral';
 }
 

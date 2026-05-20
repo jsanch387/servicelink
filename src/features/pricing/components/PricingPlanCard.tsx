@@ -20,21 +20,37 @@ export interface PricingPlanCardProps {
   className?: string;
 }
 
-const shellByVariant: Record<
+const variantStyles: Record<
   PricingPlanCardVariant,
-  { outer: string; accent: string }
+  {
+    shell: string;
+    topBar: string;
+    glow: string;
+    pricePanel: string;
+    priceText: string;
+    badge: string;
+    bulletVariant: 'default' | 'neutral';
+  }
 > = {
   free: {
-    outer:
-      'relative overflow-hidden rounded-2xl border border-white/[0.07] bg-zinc-950/40 p-6 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_20px_50px_-24px_rgba(0,0,0,0.65)] backdrop-blur-xl sm:rounded-[1.35rem] sm:p-8',
-    accent:
-      'pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent',
+    shell:
+      'border-white/10 bg-white/[0.03] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]',
+    topBar: 'from-transparent via-white/20 to-transparent',
+    glow: '',
+    pricePanel: 'border-white/[0.06] bg-white/[0.02]',
+    priceText: 'text-white',
+    badge: 'border border-white/15 bg-white/[0.06] text-zinc-300',
+    bulletVariant: 'default',
   },
   pro: {
-    outer:
-      'relative overflow-hidden rounded-2xl border border-white/[0.1] bg-gradient-to-b from-white/[0.06] via-zinc-950/50 to-zinc-950/80 p-6 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset,0_28px_64px_-28px_rgba(0,0,0,0.75)] backdrop-blur-xl sm:rounded-[1.35rem] sm:p-8',
-    accent:
-      'pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent',
+    shell:
+      'border-white/20 bg-gradient-to-b from-white/[0.08] via-white/[0.03] to-white/[0.02] shadow-[0_0_48px_-16px_rgba(255,255,255,0.12),inset_0_1px_0_0_rgba(255,255,255,0.08)]',
+    topBar: 'from-transparent via-white/40 to-transparent',
+    glow: 'bg-white/10',
+    pricePanel: 'border-white/15 bg-white/[0.05]',
+    priceText: 'text-white',
+    badge: 'bg-white text-zinc-900 shadow-sm',
+    bulletVariant: 'neutral',
   },
 };
 
@@ -54,56 +70,74 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
   footer,
   className = '',
 }) => {
-  const shell = shellByVariant[variant];
+  const styles = variantStyles[variant];
+  const isPro = variant === 'pro';
+
   return (
-    <div
-      className={`${shell.outer} flex flex-col text-left ${className}`.trim()}
+    <article
+      className={`group relative flex h-full flex-col overflow-hidden rounded-3xl border backdrop-blur-xl transition-colors duration-300 hover:border-white/15 sm:rounded-[1.75rem] ${styles.shell} ${className}`.trim()}
     >
-      <div className={shell.accent} aria-hidden />
+      {isPro ? (
+        <div
+          className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-[90px] ${styles.glow}`}
+          aria-hidden
+        />
+      ) : null}
+
       <div
-        className={`pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset sm:rounded-[1.35rem] ${
-          variant === 'pro' ? 'ring-white/[0.04]' : 'ring-white/[0.03]'
-        }`}
+        className={`pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r sm:inset-x-8 ${styles.topBar}`}
         aria-hidden
       />
-      {badgeLabel ? (
-        <div
-          className={`pointer-events-none absolute right-4 top-4 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider sm:right-5 sm:top-5 sm:text-[11px] ${
-            variant === 'pro'
-              ? 'bg-white text-zinc-900'
-              : 'border border-white/20 bg-white/10 text-zinc-200'
-          }`}
-        >
-          {badgeLabel}
-        </div>
-      ) : null}
-      <div className="relative z-[1] flex min-h-0 flex-1 flex-col text-left">
-        <div className="mb-8 text-left">
-          <h2 className="logo-text text-2xl font-semibold tracking-tight text-white sm:text-[1.65rem]">
-            {title}
-          </h2>
-          <p className="mt-2 max-w-md text-left text-sm leading-relaxed text-zinc-500 sm:text-[0.9375rem]">
-            {description}
-          </p>
-        </div>
 
-        <div className="mb-8 flex flex-wrap items-baseline justify-start gap-x-1.5 gap-y-1 border-b border-white/[0.06] pb-8 text-left">
-          <span className="logo-text text-[2.65rem] font-semibold leading-none tracking-tight text-white tabular-nums sm:text-5xl">
-            {price}
-          </span>
-          <span className="text-sm font-medium text-zinc-500 sm:text-base">
-            {priceSuffix}
-          </span>
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col p-6 sm:p-8">
+        <header className="mb-6 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+              {isPro ? 'Grow your business' : 'Get started'}
+            </p>
+            <h2 className="logo-text mt-1 text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">
+              {title}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:text-[0.9375rem]">
+              {description}
+            </p>
+          </div>
+          {badgeLabel ? (
+            <span
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${styles.badge}`}
+            >
+              {badgeLabel}
+            </span>
+          ) : null}
+        </header>
+
+        <div
+          className={`mb-6 rounded-2xl border px-5 py-4 sm:px-6 sm:py-5 ${styles.pricePanel}`}
+        >
+          <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
+            <span
+              className={`logo-text text-[2.75rem] font-bold leading-none tracking-tight tabular-nums sm:text-5xl ${styles.priceText}`}
+            >
+              {price}
+            </span>
+            <span className="pb-1.5 text-sm font-medium text-zinc-500 sm:text-base">
+              {priceSuffix}
+            </span>
+          </div>
         </div>
 
         <PricingPlanFeatureList
           items={features}
           emphasizeHighlights={emphasizeFeatureHighlights}
+          bulletVariant={styles.bulletVariant}
         />
 
-        <div className="min-h-10 flex-1" aria-hidden />
-        <div className="border-t border-white/[0.06] pt-8">{footer}</div>
+        <div className="mt-auto min-h-8 flex-1" aria-hidden />
+
+        <div className="mt-6 border-t border-white/[0.06] pt-6 sm:mt-8 sm:pt-8">
+          {footer}
+        </div>
       </div>
-    </div>
+    </article>
   );
 };

@@ -1,5 +1,6 @@
 export { FreeBookingsTracker } from './components/FreeBookingsTracker';
 export { PlanSection } from './components/PlanSection';
+export { PricingComparisonTable } from './components/PricingComparisonTable';
 export { PricingPlanCard } from './components/PricingPlanCard';
 export type {
   PricingPlanCardProps,
