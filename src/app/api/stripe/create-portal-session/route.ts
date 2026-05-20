@@ -2,25 +2,26 @@
  * POST /api/stripe/create-portal-session
  *
  * Creates a Stripe Customer Portal session so the user can manage or cancel
- * their subscription. Requires auth (cookies on web, `Authorization: Bearer`
- * from Expo) and a stored `profiles.stripe_customer_id`.
+ * their subscription. Requires auth (cookies on web) and a stored
+ * `profiles.stripe_customer_id`.
  *
  * Env: STRIPE_SECRET_KEY, NEXT_PUBLIC_SITE_URL (web `return_url`).
- * Mobile `return_url`: `MOBILE_BILLING_PORTAL_RETURN_URL` in
- * `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`.
+ *
+ * Mobile (iOS) no longer uses this route — see Stripe README.
  */
 
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
-import { MOBILE_BILLING_PORTAL_RETURN_URL } from '@/libs/stripe/mobileSubscriptionCheckoutRedirects';
 import { NextRequest, NextResponse } from 'next/server';
 
 type PortalRequestBody = {
-  /** When `mobile`, `return_url` uses the fixed Expo deep link constant. */
   client?: unknown;
 };
 
 const LOG = '[stripe:create-portal-session]';
+
+const MOBILE_BILLING_PORTAL_DISABLED =
+  'In-app billing portal is no longer available on mobile. Sign in at myservicelink.app to manage your subscription.';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +40,14 @@ export async function POST(request: NextRequest) {
     const { user, supabase } = auth;
 
     const body = (await request.json().catch(() => ({}))) as PortalRequestBody;
-    const isMobileClient = body.client === 'mobile';
+
+    if (body.client === 'mobile') {
+      console.warn(`${LOG} rejected mobile billing portal`);
+      return NextResponse.json(
+        { success: false, error: MOBILE_BILLING_PORTAL_DISABLED },
+        { status: 410 }
+      );
+    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -61,13 +69,7 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = getAppBaseUrl(request);
     const stripe = getStripePlatform();
-
-    let returnUrl: string;
-    if (isMobileClient) {
-      returnUrl = MOBILE_BILLING_PORTAL_RETURN_URL;
-    } else {
-      returnUrl = `${baseUrl}/dashboard/settings`;
-    }
+    const returnUrl = `${baseUrl}/dashboard/settings`;
 
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId.trim(),

@@ -93,12 +93,7 @@ export const API_ROUTES = {
    * Web: cookies. Mobile: `Authorization: Bearer`. See `docs/contracts/mobile-onboarding-complete.md`.
    */
   ONBOARDING_V2_COMPLETE: '/api/onboarding-v2/complete',
-  /**
-   * After onboarding Stripe Checkout (mobile): POST with optional `checkout_session_id`
-   * to sync profile and return `trial_confirmation` (DB + Stripe trial fields).
-   */
-  STRIPE_CONFIRM_ONBOARDING_TRIAL: '/api/stripe/confirm-onboarding-trial',
-  /** Authenticated: Stripe Checkout session URL for Pro (upgrade or rare onboarding fallback). */
+  /** Authenticated: Stripe Checkout session URL for Pro (web upgrade / billing). */
   STRIPE_CREATE_CHECKOUT_SESSION: '/api/stripe/create-checkout-session',
   /** Authenticated: Stripe Customer Portal session URL (manage subscription / payment method). */
   STRIPE_CREATE_PORTAL_SESSION: '/api/stripe/create-portal-session',

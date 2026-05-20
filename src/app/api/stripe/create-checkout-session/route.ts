@@ -3,7 +3,8 @@
  *
  * Creates a Stripe Checkout Session for the Pro plan and returns the session URL.
  * Requires auth (Supabase cookies on web, or `Authorization: Bearer <access_token>`
- * from the Expo app). User opens `url` in an in-app browser to complete payment.
+ * from the Expo app for Connect-only flows — not mobile subscription checkout).
+ * User opens `url` in browser to complete payment.
  *
  * When `profiles.stripe_subscription_id` points at a subscription that still
  * exists in Stripe (`past_due`, `unpaid`, `incomplete`, `paused`, or `active`/`trialing`
@@ -12,33 +13,29 @@
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
  *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs (web).
- *      Mobile Checkout return URLs: `src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`.
+ *
+ * Mobile (iOS) no longer uses this route for subscription checkout — see Stripe README.
  */
 
-import { API_ROUTES } from '@/constants/routes';
 import {
   findOpenInvoiceIdForSubscriptionResume,
   isSubscriptionResumableViaInvoice,
 } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
-import {
-  MOBILE_ONBOARDING_CHECKOUT_CANCEL_URL,
-  MOBILE_ONBOARDING_CHECKOUT_SUCCESS_URL,
-  MOBILE_UPGRADE_CHECKOUT_CANCEL_URL,
-  MOBILE_UPGRADE_CHECKOUT_SUCCESS_URL,
-} from '@/libs/stripe/mobileSubscriptionCheckoutRedirects';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
 type CheckoutRequestBody = {
   source?: unknown;
-  /** When `mobile`, success/cancel use fixed Expo deep links (see `mobileSubscriptionCheckoutRedirects`). */
   client?: unknown;
 };
 
 const LOG = '[stripe:create-checkout-session]';
+
+const MOBILE_SUBSCRIPTION_CHECKOUT_DISABLED =
+  'In-app subscription checkout is no longer available on mobile. Sign in at myservicelink.app to manage your plan.';
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,6 +51,18 @@ export async function POST(request: NextRequest) {
       );
     }
     const { user, supabase, authMethod } = auth;
+
+    const body = (await request
+      .json()
+      .catch(() => ({}))) as CheckoutRequestBody;
+
+    if (body.client === 'mobile') {
+      console.warn(`${LOG} rejected mobile subscription checkout`);
+      return NextResponse.json(
+        { success: false, error: MOBILE_SUBSCRIPTION_CHECKOUT_DISABLED },
+        { status: 410 }
+      );
+    }
 
     const priceId = process.env.STRIPE_PRO_PRICE_ID;
     if (!priceId) {
@@ -84,14 +93,10 @@ export async function POST(request: NextRequest) {
         ? profileRow.stripe_subscription_id.trim()
         : '';
 
-    const body = (await request
-      .json()
-      .catch(() => ({}))) as CheckoutRequestBody;
     const fromOnboarding =
       body &&
       typeof body === 'object' &&
       body.source === 'onboarding_trial_bridge';
-    const isMobileClient = body.client === 'mobile';
     /** 7-day trial only for first Stripe customer; returning `cus_…` skips trial (same as paywall upgrade). */
     const applyOnboardingTrial = fromOnboarding && !existingStripeCustomerId;
 
@@ -99,32 +104,18 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       authMethod,
       fromOnboarding,
-      isMobileClient,
       applyOnboardingTrial,
       existingStripeCustomerIdSuffix: existingStripeCustomerId
         ? existingStripeCustomerId.slice(-8)
         : null,
     });
 
-    let successUrl: string;
-    let cancelUrl: string;
-
-    if (isMobileClient) {
-      if (fromOnboarding) {
-        successUrl = MOBILE_ONBOARDING_CHECKOUT_SUCCESS_URL;
-        cancelUrl = MOBILE_ONBOARDING_CHECKOUT_CANCEL_URL;
-      } else {
-        successUrl = MOBILE_UPGRADE_CHECKOUT_SUCCESS_URL;
-        cancelUrl = MOBILE_UPGRADE_CHECKOUT_CANCEL_URL;
-      }
-    } else {
-      const successPath = fromOnboarding
-        ? '/dashboard/business-profile?onboarding=complete'
-        : '/dashboard/settings?checkout=success';
-      const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
-      successUrl = `${baseUrl}${successPath}`;
-      cancelUrl = `${baseUrl}${cancelPath}`;
-    }
+    const successPath = fromOnboarding
+      ? '/dashboard/business-profile?onboarding=complete'
+      : '/dashboard/settings?checkout=success';
+    const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
+    const successUrl = `${baseUrl}${successPath}`;
+    const cancelUrl = `${baseUrl}${cancelPath}`;
 
     /** Prefer paying an open invoice on the existing subscription (card failed, Link retry, etc.). */
     if (existingStripeSubscriptionId) {
@@ -168,7 +159,6 @@ export async function POST(request: NextRequest) {
             metadata: {
               userId: user.id,
               source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
-              ...(isMobileClient ? { client: 'mobile' } : {}),
             },
           } as unknown as Stripe.Checkout.SessionCreateParams);
 
@@ -198,19 +188,6 @@ export async function POST(request: NextRequest) {
             }
           );
 
-          if (fromOnboarding && isMobileClient) {
-            return NextResponse.json({
-              success: true,
-              url: resumeSession.url,
-              trial_checkout_followup: {
-                confirm_session: {
-                  method: 'POST' as const,
-                  path: API_ROUTES.STRIPE_CONFIRM_ONBOARDING_TRIAL,
-                  body_json_shape: { checkout_session_id: 'string' },
-                },
-              },
-            });
-          }
           return NextResponse.json({ success: true, url: resumeSession.url });
         }
       } catch (resumeErr) {
@@ -250,7 +227,6 @@ export async function POST(request: NextRequest) {
       metadata: {
         userId: user.id,
         source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
-        ...(isMobileClient ? { client: 'mobile' } : {}),
       },
     });
 
@@ -268,24 +244,8 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       sessionIdSuffix: session.id.slice(-8),
       fromOnboarding,
-      isMobileClient,
       applyOnboardingTrial,
     });
-
-    if (fromOnboarding && isMobileClient) {
-      return NextResponse.json({
-        success: true,
-        url: session.url,
-        trial_checkout_followup: {
-          confirm_session: {
-            method: 'POST' as const,
-            path: API_ROUTES.STRIPE_CONFIRM_ONBOARDING_TRIAL,
-            /** Pass the completed Checkout Session id (e.g. from `session_id` on your success URL). */
-            body_json_shape: { checkout_session_id: 'string' },
-          },
-        },
-      });
-    }
 
     return NextResponse.json({ success: true, url: session.url });
   } catch (err) {

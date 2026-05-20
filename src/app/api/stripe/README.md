@@ -4,6 +4,19 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 
 **Product summary (pricing strategy, trials, paywall, Free vs Pro):** see [`docs/pricing-strategy-and-model.md`](../../../../docs/pricing-strategy-and-model.md) and the full guide [`docs/subscription-and-pro-features.md`](../../../../docs/subscription-and-pro-features.md).
 
+## Mobile app (iOS) — subscription APIs removed
+
+**As of 2026-05-19**, the ServiceLink iOS app **no longer** calls subscription checkout, onboarding trial, or billing portal APIs. New mobile signups complete onboarding via **`POST /api/onboarding-v2/complete`** (free tier). Plan changes happen on web (`myservicelink.app`). Mobile **still** uses Stripe Connect for merchant payments (`POST /api/stripe/connect/onboard`, `sync`, `express-dashboard`).
+
+Removed / rejected for `client: "mobile"` or Bearer on trial routes:
+
+- `POST /api/stripe/create-checkout-session` with `{ "client": "mobile" }` → **410**
+- `POST /api/stripe/create-portal-session` with `{ "client": "mobile" }` → **410**
+- `POST /api/stripe/start-onboarding-trial` with Bearer token → **410**
+- `POST /api/stripe/confirm-onboarding-trial` — **route removed** (was mobile Checkout follow-up only)
+
+Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`](../../../../docs/contracts/mobile-onboarding-complete.md). Connect: [`docs/contracts/mobile-stripe-connect-onboarding.md`](../../../../docs/contracts/mobile-stripe-connect-onboarding.md).
+
 ## Environment variables
 
 | Variable                                       | Required                           | Description                                                                                                                                                                                                                                                     |
@@ -13,13 +26,12 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 | `STRIPE_WEBHOOK_SECRET`                        | Yes (for webhook)                  | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.                                                                                                                                          |
 | `STRIPE_CONNECT_WEBHOOK_SECRET`                | Yes (for Connect webhook)          | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments).                                                                                                                  |
 | `NEXT_PUBLIC_SITE_URL`                         | No                                 | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`.                                                                                                                                     |
-| _(not env)_                                    | —                                  | Expo deep links for **Checkout** (onboarding trial + paywall upgrade) and **Customer Portal** return are hardcoded in [`src/libs/stripe/mobileSubscriptionCheckoutRedirects.ts`](../../libs/stripe/mobileSubscriptionCheckoutRedirects.ts). Change there if the app scheme or paths change. |
 | `STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL`  | Yes for Expo Connect onboarding    | Stripe Connect **Account Link** `return_url` when `POST /api/stripe/connect/onboard` body includes `client: "mobile"`. Must be **`https://…`** or **`http://…`** (Stripe rejects custom schemes like `myapp://` — use an https bridge page that opens the app). |
 | `STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL` | Yes for Expo Connect onboarding    | Account Link `refresh_url` (expired link / resume). Same **http(s)** rule as return URL.                                                                                                                                                                        |
-| `STRIPE_MOBILE_CONNECT_DEEP_LINK_RETURN_URL`   | Optional                           | Deep link that the bridge route opens for Connect return. Default: `servicelinkmobile://payments/connect?connect=return`.                                                                                                                                       |
+| `STRIPE_MOBILE_CONNECT_DEEP_LINK_RETURN_URL`   | Optional                           | Deep link that the bridge route opens for Connect return. Default: `servicelinkmobile://payments/connect?connect=return`.                                                                                                                                      |
 | `STRIPE_MOBILE_CONNECT_DEEP_LINK_REFRESH_URL`  | Optional                           | Deep link that the bridge route opens for Connect refresh. Default: `servicelinkmobile://payments/connect?connect=refresh`.                                                                                                                                     |
 
-## Flow
+## Flow (web)
 
 1. User clicks **Get Pro** on `/dashboard/upgrade` (or the plan card links there first).
 2. Client calls `POST /api/stripe/create-checkout-session`.
@@ -30,39 +42,13 @@ Checkout for the Pro plan is handled by creating a Stripe Checkout Session and r
 7. Webhook verifies signature, records event id for idempotency, then updates `profiles`: `subscription_tier = 'pro'`, `subscription_status = 'active'`, `stripe_customer_id`, `stripe_subscription_id`, `subscription_current_period_end`.
 8. User is redirected to `{SITE_URL}/dashboard/settings?checkout=success`. They now have **unlimited bookings** (the Free plan cap no longer applies).
 
-**Debug:** Verbose **`[stripe:onboarding:…]`** `console.debug` lines are off by default. Set **`DEBUG_STRIPE_ONBOARDING=1`** to enable them (see [`docs/contracts/mobile-onboarding-stripe-checkout.md`](../../../../docs/contracts/mobile-onboarding-stripe-checkout.md) → Server debugging). Normal **`[stripe:…]`** `console.info` / `console.warn` / `console.error` lines stay on for success and failure.
+**Debug:** Verbose **`[stripe:onboarding:…]`** `console.debug` lines are off by default. Set **`DEBUG_STRIPE_ONBOARDING=1`** to enable them. Normal **`[stripe:…]`** `console.info` / `console.warn` / `console.error` lines stay on for success and failure.
 
 ## Onboarding step 5 (web) — silent trial (no Checkout redirect)
 
-The in-app **Activate my link** button calls **`POST /api/stripe/start-onboarding-trial`** (cookies or Bearer, same auth as Checkout). The server creates a Stripe **Customer** (if needed) and a **Subscription** with **`trial_period_days: 7`** and the same trial end behavior as Checkout (`missing_payment_method: cancel`), then updates `profiles` and completes onboarding (same helpers as the Checkout webhook path). **No Stripe-hosted page** — the user stays in ServiceLink; **`customer.subscription.*`** webhooks continue to sync status.
+When **`ONBOARDING_LEGACY_STRIPE_TRIAL`** is enabled, the in-app **Activate my link** button calls **`POST /api/stripe/start-onboarding-trial`** (session cookies only). The server creates a Stripe **Customer** (if needed) and a **Subscription** with **`trial_period_days: 7`** and the same trial end behavior as Checkout (`missing_payment_method: cancel`), then updates `profiles` and completes onboarding. **No Stripe-hosted page** — the user stays in ServiceLink.
 
-If Stripe rejects silent subscription creation, the API may respond with **`fallbackToCheckout: true`** (for clients that still open hosted billing) plus a neutral **`error`** message. The onboarding **Go live** step in this app does not surface that path.
-
-## Mobile app (Expo): onboarding step 5 — start free trial
-
-Mobile typically uses **`POST /api/stripe/create-checkout-session`** with `source: onboarding_trial_bridge` and `client: "mobile"`, then opens `url` in an in-app browser. Auth uses the Supabase **access token**, not cookies.
-
-1. **Request:** `POST /api/stripe/create-checkout-session` with header `Authorization: Bearer <supabase_access_token>` and JSON body:
-   ```json
-   { "source": "onboarding_trial_bridge", "client": "mobile" }
-   ```
-2. **Response:** `{ "success": true, "url": "https://checkout.stripe.com/...", "trial_checkout_followup": { ... } }` — open `url`. The **`trial_checkout_followup`** object points at **`POST /api/stripe/confirm-onboarding-trial`**, which returns **`trial_confirmation`** (profiles + Stripe trial dates) after Checkout completes.
-3. **Return URLs:** Success/cancel are defined in **`mobileSubscriptionCheckoutRedirects.ts`**. The onboarding success URL includes Stripe’s **`{CHECKOUT_SESSION_ID}`** placeholder so the app can call confirm with **`checkout_session_id`** ([Checkout success URL](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-success_url)).
-4. **After success:** Call **`POST /api/stripe/confirm-onboarding-trial`** with `{ "checkout_session_id": "<id from success URL>" }` until **`synced_from_checkout`** is true (or poll with `{}` if the webhook already synced). Use **`trial_confirmation`** in the JSON for immediate UI. Webhooks still run in parallel; confirm is idempotent with the webhook.
-
-**Optional:** same Bearer auth on **`POST /api/stripe/start-onboarding-trial`** skips Checkout and returns **`trial_confirmation`** immediately when Stripe allows silent subscription creation (see contract).
-
-Full contract: [`docs/contracts/mobile-onboarding-stripe-checkout.md`](../../../../docs/contracts/mobile-onboarding-stripe-checkout.md).
-
-## Mobile app (Expo): paywall — upgrade / resubscribe
-
-Use the same `POST /api/stripe/create-checkout-session` endpoint when the user is paywalled and taps **Upgrade to Pro** (trial ended, subscription canceled/unpaid, card failed, etc.). Do **not** send `source: "onboarding_trial_bridge"` for this flow.
-
-1. **Request body:** `{ "client": "mobile" }` — `client` must be `"mobile"` so upgrade deep links from **`mobileSubscriptionCheckoutRedirects.ts`** are used.
-2. **Return URLs:** Same module (`MOBILE_UPGRADE_CHECKOUT_*`).
-3. **Same Stripe Customer:** If `profiles.stripe_customer_id` is set, Checkout uses `customer: <id>` so returning users stay on one Customer; Stripe creates a **new** subscription for the new checkout (the old canceled subscription is not “reopened” — that is normal Stripe behavior). Webhook updates `stripe_subscription_id` from the completed session.
-
-Contract: [`docs/contracts/mobile-upgrade-stripe-checkout.md`](../../../../docs/contracts/mobile-upgrade-stripe-checkout.md).
+Otherwise step 5 uses **`POST /api/onboarding-v2/complete`** (free tier, no Stripe subscription).
 
 ## One Stripe Customer per profile (Checkout)
 
@@ -115,21 +101,11 @@ Why this split: production booking payments are created on connected accounts. W
    - destination #2 → `STRIPE_CONNECT_WEBHOOK_SECRET`
 5. Redeploy after env updates.
 
-## Customer portal (cancel / manage subscription)
+## Customer portal (cancel / manage subscription) — web
 
 Pro users see a **Manage subscription** button on Settings. It calls `POST /api/stripe/create-portal-session`, which creates a [Stripe Customer Portal](https://dashboard.stripe.com/settings/billing/portal) session and returns the URL. The user is redirected to Stripe’s hosted page where they can update payment method or **cancel subscription**. After they finish, Stripe sends them back to `/dashboard/settings`.
 
 Enable the Customer Portal in Stripe: [Dashboard → Settings → Billing → Customer portal](https://dashboard.stripe.com/settings/billing/portal). Configure what customers can do (e.g. cancel subscription).
-
-### Mobile app (Expo): manage subscription
-
-Same endpoint as web; auth uses `Authorization: Bearer <supabase_access_token>`.
-
-1. **Request:** `POST /api/stripe/create-portal-session` with headers `Authorization` and `Content-Type: application/json`, body `{ "client": "mobile" }`.
-2. **Response:** `{ "success": true, "url": "https://billing.stripe.com/..." }` — open `url` in the in-app browser.
-3. **`return_url`:** With `client: "mobile"`, Stripe uses the fixed deep link `MOBILE_BILLING_PORTAL_RETURN_URL` in **`mobileSubscriptionCheckoutRedirects.ts`** (Customer Portal has a single return URL, unlike Checkout).
-4. **Prerequisite:** `profiles.stripe_customer_id` must exist (same as web — typically after first successful Checkout). Otherwise the API returns **400** `No billing account found`.
-5. **State after return:** Subscription changes are driven by webhooks (`customer.subscription.updated`, etc.). Refetch profile / subscription fields after the portal session closes.
 
 ## Mobile app (Expo): Stripe Connect onboarding (payments / Express)
 

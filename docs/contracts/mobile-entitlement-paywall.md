@@ -103,7 +103,7 @@ showPaywall = onboardingComplete && hasBillingHistory && !hasAccess
 | Canceled / unpaid / past_due / … | `tier` may still be `pro` but `status` not in granting set | **Yes** |
 | Former subscriber, stale tier | `tier=pro`, `cus` set, `sub` empty | **Yes** (`isProAccess` false) |
 
-Web sends paywalled users to **`/dashboard/upgrade`**. Mobile should show your paywall UI and CTA to **checkout** (same as web upgrade flow).
+Web sends paywalled users to **`/dashboard/upgrade`**. Mobile should show your paywall UI and direct users to **sign in on web** (`myservicelink.app/login`) to upgrade or manage billing — the app no longer calls `create-checkout-session` or `create-portal-session` (see `src/app/api/stripe/README.md`).
 
 ---
 

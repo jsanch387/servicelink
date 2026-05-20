@@ -4,7 +4,7 @@ When the user finishes onboarding step 5 (“Activate my link”), call this API
 
 **Do not** send this email from the mobile app. **Do not** rely only on a local Supabase update unless you also call this endpoint (with the flag below).
 
-Related: Pro trial onboarding uses `POST /api/stripe/start-onboarding-trial` or Checkout + confirm — those paths send the same email via `runOnboardingTrialBridgeAfterSubscribe` and **do not** require this call.
+Mobile onboarding step 5 uses **only** this endpoint (free tier). Pro trial / Stripe subscription activation from the app is no longer supported (App Store 3.1.1); plan changes happen on web.
 
 ---
 
@@ -26,7 +26,7 @@ Related: Pro trial onboarding uses `POST /api/stripe/start-onboarding-trial` or 
 | `Authorization` | `Bearer <Supabase access_token>` | **Yes** (mobile) |
 | `Content-Type` | `application/json` | Optional (omit if no body) |
 
-Web uses Supabase session cookies instead of Bearer; mobile **must** send Bearer (same as `POST /api/stripe/create-checkout-session`).
+Web uses Supabase session cookies instead of Bearer; mobile **must** send Bearer.
 
 Use a **fresh** access token from `supabase.auth.getSession()` (refresh if expired).
 

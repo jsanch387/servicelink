@@ -36,6 +36,6 @@ Trials are included in “touched Stripe”: once they start a trial they have b
 | Dashboard paywall | `src/middleware.ts` (after onboarding complete) |
 | Profile sync from Stripe | `syncProfileFromSubscriptionUpdated.ts`, `downgradeProfileFromSubscriptionEnd.ts` |
 | Checkout & webhooks | `src/app/api/stripe/README.md` |
-| Mobile parity | `docs/contracts/mobile-entitlement-paywall.md`, `mobile-onboarding-stripe-checkout.md`, `mobile-upgrade-stripe-checkout.md` |
+| Mobile parity | `docs/contracts/mobile-entitlement-paywall.md`, `docs/contracts/mobile-onboarding-complete.md`, `src/app/api/stripe/README.md` (subscription APIs removed 2026-05-19) |
 
 Read **[subscription-and-pro-features.md](./subscription-and-pro-features.md)** next for the full feature matrix and engineer code map.

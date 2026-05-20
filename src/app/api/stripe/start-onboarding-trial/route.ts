@@ -5,7 +5,7 @@
  * Stripe Checkout when eligible. Response includes `trial_confirmation` (DB +
  * Stripe trial fields) for mobile and web.
  *
- * Auth: Supabase cookies (web) or `Authorization: Bearer` (mobile / same as checkout).
+ * Auth: Supabase session cookies (web onboarding step 5 only).
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID
  */
@@ -25,6 +25,9 @@ import Stripe from 'stripe';
 
 const LOG = '[stripe:start-onboarding-trial]';
 
+const MOBILE_ONBOARDING_TRIAL_DISABLED =
+  'In-app Pro trial activation is no longer available on mobile. Complete onboarding in the app, then manage your plan at myservicelink.app if needed.';
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await getAuthenticatedUser(request);
@@ -39,6 +42,14 @@ export async function POST(request: NextRequest) {
       );
     }
     const { user, supabase, authMethod } = auth;
+
+    if (authMethod === 'bearer') {
+      console.warn(`${LOG} rejected bearer (mobile) onboarding trial`);
+      return NextResponse.json(
+        { success: false, error: MOBILE_ONBOARDING_TRIAL_DISABLED },
+        { status: 410 }
+      );
+    }
 
     if (!isOnboardingLegacyStripeTrialEnabled()) {
       return NextResponse.json(

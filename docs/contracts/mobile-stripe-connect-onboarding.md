@@ -33,7 +33,7 @@ After Stripe redirects back, the app must **sync** local state from Stripe (same
 | `Authorization` | `Bearer <Supabase access_token>` |
 | `Content-Type`  | `application/json`               |
 
-Same JWT as other mobile billing calls (`create-checkout-session`, `create-portal-session`) for **onboard** and **sync**.
+Same JWT as other authenticated mobile API calls for **onboard** and **sync**. Subscription checkout and billing portal are **not** available on mobile (see `src/app/api/stripe/README.md`).
 
 **`POST /api/payments/servicelink/enable`:** today the handler uses **cookie session only** (`createSupabaseServerClient` + `getUser`). For full mobile parity, either open that URL in an **authenticated WebView** with cookies, or extend the route to accept Bearer the same way as onboard/sync (recommended follow-up).
 
