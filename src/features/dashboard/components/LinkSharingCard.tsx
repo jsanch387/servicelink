@@ -1,91 +1,67 @@
 /**
- * LinkSharingCard - Copyable public link in a glass morphism card
+ * LinkSharingCard - Quick access to copy your booking link
  */
 
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
-import { ClipboardDocumentIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/shared';
+import { DashboardGlassCard } from './DashboardGlassCard';
+import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import React, { useCallback, useState } from 'react';
 
 interface LinkSharingCardProps {
   fullLink: string;
-  slug: string;
-  appDomain: string;
 }
 
 export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
   fullLink,
-  slug,
-  appDomain,
 }) => {
   const [copied, setCopied] = useState(false);
-
-  const handleCopyLink = useCallback(() => {
-    if (!fullLink) return;
-    const shareableLink = fullLink.startsWith('http')
-      ? fullLink
-      : `https://${fullLink}`;
-    const textarea = document.createElement('textarea');
-    textarea.value = shareableLink;
-    document.body.appendChild(textarea);
-    textarea.select();
-    try {
-      const successful = document.execCommand('copy');
-      if (successful) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    } catch (err) {
-      console.error('[ACTION] Could not copy text:', err);
-    } finally {
-      document.body.removeChild(textarea);
-    }
-  }, [fullLink]);
 
   const copyLink = fullLink.startsWith('http')
     ? fullLink
     : `https://${fullLink}`;
   const displayLink = copyLink.replace(/^https?:\/\//, '');
 
+  const handleCopyLink = useCallback(async () => {
+    if (!copyLink) return;
+    try {
+      await navigator.clipboard.writeText(copyLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = copyLink;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('[ACTION] Could not copy text:', err);
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+  }, [copyLink]);
+
   return (
-    <GlassCard
-      padding="none"
-      rounded="rounded-2xl"
-      blurColor="bg-zinc-500"
-      showBlur={true}
-      className="w-full min-w-0 p-4"
-    >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.08] flex-shrink-0">
-          <LinkIcon className="h-5 w-5 sm:h-6 sm:w-6 text-white/80" />
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-lg sm:text-xl font-bold text-white truncate">
-            Your Public ServiceLink
-          </h2>
-          <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
-            Share with customers — live and ready.
-          </p>
-        </div>
-      </div>
-      {/* Link + Copy: stacked on mobile, inline on desktop */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex-1 min-w-0 rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-3 sm:px-4 sm:py-3">
-          <p
-            className="font-mono text-xs sm:text-sm text-gray-300 truncate"
-            title={copyLink}
-          >
-            {displayLink}
-          </p>
-        </div>
+    <DashboardGlassCard fillGridCell={false} className="w-full min-w-0">
+      <p className="text-sm text-zinc-400 mb-3">Your booking link</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:gap-3">
+        <p
+          className="flex-1 min-w-0 truncate rounded-[10px] border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 lg:py-3 font-mono text-sm text-zinc-200"
+          title={copyLink}
+        >
+          {displayLink}
+        </p>
         <Button
           type="button"
           onClick={handleCopyLink}
           variant="inverse"
-          fullWidth
-          className="sm:w-auto sm:flex-shrink-0 sm:min-w-[100px] sm:flex-initial"
+          className="w-full shrink-0 sm:w-auto sm:min-w-[88px]"
           icon={
             copied ? (
               <CheckIcon className="h-4 w-4 text-emerald-600" />
@@ -97,7 +73,7 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
           {copied ? 'Copied' : 'Copy'}
         </Button>
       </div>
-    </GlassCard>
+    </DashboardGlassCard>
   );
 };
 

@@ -34,8 +34,6 @@ export const Navigation: React.FC = () => {
     'hover:text-white transition-colors focus:outline-none focus-visible:outline-none';
   const mobileNavLinkClass =
     'text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5 focus:outline-none focus-visible:outline-none';
-  const navButtonClass = 'focus:ring-0 focus-visible:ring-0';
-
   return (
     <nav className="fixed top-0 w-full z-50 bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
@@ -79,35 +77,23 @@ export const Navigation: React.FC = () => {
           </a>
         </div>
 
-        {/* Desktop Auth Buttons — shared Button variants only */}
+        {/* Desktop auth — shared Button */}
         <div className="hidden md:flex items-center gap-3 min-w-[7.5rem] justify-end">
           {!isInitialized ? (
             <span
-              className="h-10 w-24 rounded-xl bg-white/5 animate-pulse"
+              className="h-[42px] w-[11.5rem] rounded-[10px] bg-white/5 animate-pulse"
               aria-hidden
             />
           ) : isAuthenticated ? (
-            <Button
-              href={ROUTES.DASHBOARD.MAIN}
-              variant="secondary"
-              className={navButtonClass}
-            >
+            <Button href={ROUTES.DASHBOARD.MAIN} variant="secondary" size="sm">
               Dashboard
             </Button>
           ) : (
             <>
-              <Button
-                href={ROUTES.AUTH.LOGIN}
-                variant="secondary"
-                className={navButtonClass}
-              >
+              <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="sm">
                 Login
               </Button>
-              <Button
-                href={ROUTES.AUTH.SIGNUP}
-                variant="inverse"
-                className={navButtonClass}
-              >
+              <Button href={ROUTES.AUTH.SIGNUP} variant="inverse" size="sm">
                 Sign up
               </Button>
             </>
@@ -187,8 +173,8 @@ export const Navigation: React.FC = () => {
                   <Button
                     href={ROUTES.DASHBOARD.MAIN}
                     variant="secondary"
+                    size="sm"
                     fullWidth
-                    className={navButtonClass}
                     onClick={closeMobileMenu}
                   >
                     Dashboard
@@ -198,8 +184,8 @@ export const Navigation: React.FC = () => {
                     <Button
                       href={ROUTES.AUTH.LOGIN}
                       variant="secondary"
+                      size="sm"
                       fullWidth
-                      className={navButtonClass}
                       onClick={closeMobileMenu}
                     >
                       Login
@@ -207,8 +193,8 @@ export const Navigation: React.FC = () => {
                     <Button
                       href={ROUTES.AUTH.SIGNUP}
                       variant="inverse"
+                      size="sm"
                       fullWidth
-                      className={navButtonClass}
                       onClick={closeMobileMenu}
                     >
                       Sign up

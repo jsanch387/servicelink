@@ -8,6 +8,7 @@ import type { DashboardHeaderProps } from '../types/dashboard';
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onMenuClick,
+  sidebarOpen = false,
   showNotifications = true,
 }) => {
   return (
@@ -19,7 +20,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           onClick={onMenuClick}
           variant="ghost"
           className="lg:hidden"
-          aria-label="Open sidebar"
+          aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         />
 
         {/* Empty space */}

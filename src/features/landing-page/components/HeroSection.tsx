@@ -3,7 +3,7 @@
 import { ROUTES } from '@/constants/routes';
 import Image from 'next/image';
 import React from 'react';
-import { Button } from '../../../components/shared/Button';
+import { Button } from '@/components/shared';
 
 export const HeroSection: React.FC = () => {
   return (
@@ -36,7 +36,8 @@ export const HeroSection: React.FC = () => {
               <Button
                 href={ROUTES.AUTH.SIGNUP}
                 variant="inverse"
-                className="px-8 sm:px-10 py-3.5 sm:py-4 rounded-xl font-black whitespace-nowrap text-base sm:text-lg w-full sm:w-auto"
+                size="lg"
+                className="w-full sm:w-auto font-bold"
               >
                 Get Started
               </Button>

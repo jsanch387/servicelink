@@ -1,24 +1,30 @@
 /**
  * Analytics Hook
  *
- * Custom hook for managing analytics data and view tracking.
- * Provides easy integration with React components.
+ * Dashboard link view stats from public_analytics_events (default: last 24h).
  */
 
 'use client';
 
+import {
+  ANALYTICS_PERIOD_LABELS,
+  DEFAULT_ANALYTICS_PERIOD,
+  type AnalyticsPeriod,
+  type DashboardLinkViewsPeriod,
+} from '@/features/analytics/constants';
 import { useCallback, useEffect, useState } from 'react';
 import { AnalyticsApi } from '../services/analyticsApi';
-import { DashboardAnalytics, ProfileViewAnalytics } from '../types/analytics';
+import type { DashboardAnalytics, LinkViewsSummary } from '../types/analytics';
+import { formatLastVisit } from '../utils/formatLastVisit';
 
-export const useAnalytics = (businessProfileId?: string) => {
-  const [analytics, setAnalytics] = useState<ProfileViewAnalytics | null>(null);
+export const useAnalytics = (
+  businessProfileId?: string,
+  period: AnalyticsPeriod | DashboardLinkViewsPeriod = DEFAULT_ANALYTICS_PERIOD
+) => {
+  const [summary, setSummary] = useState<LinkViewsSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Fetch analytics data
-   */
   const fetchAnalytics = useCallback(async () => {
     if (!businessProfileId) return;
 
@@ -26,10 +32,13 @@ export const useAnalytics = (businessProfileId?: string) => {
     setError(null);
 
     try {
-      const result = await AnalyticsApi.getProfileAnalytics(businessProfileId);
+      const result = await AnalyticsApi.getLinkViewsSummary(
+        businessProfileId,
+        period
+      );
 
       if (result.success && result.data) {
-        setAnalytics(result.data);
+        setSummary(result.data);
       } else {
         setError(result.error || 'Failed to fetch analytics');
       }
@@ -38,45 +47,25 @@ export const useAnalytics = (businessProfileId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [businessProfileId]);
+  }, [businessProfileId, period]);
 
-  /**
-   * Format analytics for dashboard display
-   */
-  const getDashboardAnalytics = useCallback((): DashboardAnalytics | null => {
-    if (!analytics) return null;
+  const dashboardAnalytics: DashboardAnalytics | null = summary
+    ? {
+        views: summary.views,
+        period: summary.period,
+        periodLabel: ANALYTICS_PERIOD_LABELS[summary.period],
+        lastViewedAt: summary.lastViewedAt,
+        lastViewedFormatted: formatLastVisit(summary.lastViewedAt),
+      }
+    : null;
 
-    const formatLastViewed = (lastViewed: string | null): string => {
-      if (!lastViewed) return 'Never';
-
-      const date = new Date(lastViewed);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffHours / 24);
-
-      if (diffHours < 1) return 'Just now';
-      if (diffHours < 24) return `${diffHours}h ago`;
-      if (diffDays < 7) return `${diffDays}d ago`;
-
-      return date.toLocaleDateString();
-    };
-
-    return {
-      profileViews: analytics.profileViews,
-      lastViewedAt: analytics.lastViewedAt,
-      lastViewedFormatted: formatLastViewed(analytics.lastViewedAt),
-    };
-  }, [analytics]);
-
-  // Fetch analytics on mount and when businessProfileId changes
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
 
   return {
-    analytics,
-    dashboardAnalytics: getDashboardAnalytics(),
+    summary,
+    dashboardAnalytics,
     loading,
     error,
     refetch: fetchAnalytics,

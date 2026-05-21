@@ -5,15 +5,13 @@
 
 'use client';
 
-import {
-  Button,
-  CrownIcon,
-  GlassCard,
-  Switch,
-  WarningCallout,
-} from '@/components/shared';
+import { Button, CrownIcon } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { useAnalytics } from '@/features/analytics';
+import {
+  DEFAULT_ANALYTICS_PERIOD,
+  useAnalytics,
+  type DashboardLinkViewsPeriod,
+} from '@/features/analytics';
 import {
   CreateLinkCard,
   LinkSharingCard,
@@ -23,10 +21,9 @@ import {
   UpcomingBookingsCard,
 } from '@/features/dashboard';
 import { FREE_BOOKINGS_LIMIT } from '@/features/pricing';
-import { QuoteRequestsSettingsCard } from '@/features/quotes';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface DashboardData {
   businessProfile: {
@@ -62,10 +59,8 @@ interface DashboardData {
   upcomingBookingsCount: number;
   /** Free plan: public bookings used toward lifetime cap (shown on dashboard + from `free_bookings_count`). */
   freeBookingsUsed?: number;
-  /** When true, show free-tier upgrade CTA (and quote card in grid). */
+  /** When true, show free-tier upgrade CTA. */
   isFreeTier?: boolean;
-  /** From `business_profiles.accept_quote_req` (quote-requests card when free). */
-  acceptQuoteRequests?: boolean;
 }
 
 interface DashboardContentProps {
@@ -81,30 +76,40 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     dashboardData.isFreeTier === true &&
     freeBookingsUsed >= FREE_BOOKINGS_LIMIT;
 
+  const isFreeTier = dashboardData.isFreeTier === true;
+
+  const [linkViewsPeriod, setLinkViewsPeriod] =
+    useState<DashboardLinkViewsPeriod>(DEFAULT_ANALYTICS_PERIOD);
+
+  useEffect(() => {
+    if (isFreeTier && linkViewsPeriod !== '24h') {
+      setLinkViewsPeriod('24h');
+    }
+  }, [isFreeTier, linkViewsPeriod]);
+
   const { dashboardAnalytics, loading: analyticsLoading } = useAnalytics(
-    businessProfile.id
+    businessProfile.id,
+    linkViewsPeriod
   );
 
-  const APP_DOMAIN = 'myservicelink.app';
-
   return (
-    <main className="flex-1 pt-6 pb-24 sm:pt-8 sm:pb-8 lg:pt-10 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+    <main className="flex-1 pt-5 pb-24 sm:pt-6 sm:pb-8 lg:pt-8 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
       <div className="max-w-6xl mx-auto w-full min-w-0">
         {/* Header */}
-        <div className="mb-6 sm:mb-8 lg:mb-10">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-            Welcome, {businessProfile.business_name}
+        <div className="mb-5 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight truncate">
+            {businessProfile.business_name}
           </h1>
-          <p className="text-sm sm:text-base text-gray-400 mt-1">
-            {slugData?.hasSlug
-              ? 'Manage your link, views, and bookings in one place.'
-              : 'Create your public link to start sharing with customers.'}
-          </p>
+          {!slugData?.hasSlug ? (
+            <p className="text-sm text-zinc-500 mt-0.5">
+              Set up your booking link to get started
+            </p>
+          ) : null}
         </div>
 
         {dashboardData.isFreeTier ? (
           <div
-            className={`mb-6 sm:mb-8 rounded-xl border px-4 py-3 sm:px-5 sm:py-3.5 ${
+            className={`mb-5 sm:mb-6 rounded-2xl border px-4 py-3 ${
               atFreeBookingCap
                 ? 'border-amber-500/30 bg-amber-500/[0.07]'
                 : 'border-white/10 bg-white/[0.04]'
@@ -145,66 +150,49 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           </div>
         ) : null}
 
-        <div className="space-y-6 sm:space-y-8 w-full min-w-0">
+        <div className="space-y-5 sm:space-y-6 w-full min-w-0">
           {/* Link card or Create link CTA */}
           {slugData?.hasSlug ? (
-            <LinkSharingCard
-              fullLink={slugData.fullLink || ''}
-              slug={slugData.slug || ''}
-              appDomain={APP_DOMAIN}
-            />
+            <LinkSharingCard fullLink={slugData.fullLink || ''} />
           ) : (
             <CreateLinkCard businessProfileId={businessProfile.id} />
           )}
 
           {/* Nudge: availability booking is off – set schedule so customers can book */}
           {!dashboardData.useAvailabilityBooking && (
-            <GlassCard
-              padding="none"
-              rounded="rounded-2xl"
-              blurColor="bg-amber-500"
-              showBlur={true}
-              className="w-full min-w-0 p-4 text-left"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-2 min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5 text-amber-400 flex-shrink-0" />
-                  Availability booking is off
-                </h2>
-                <Switch
-                  checked={false}
-                  onCheckedChange={() => {}}
-                  disabled
-                  size="md"
-                  aria-label="Availability booking is off"
-                  className="flex-shrink-0"
-                />
-              </div>
-              <div className="mt-3 mb-4 min-w-0">
-                <WarningCallout>
-                  Set your schedule and turn on availability so customers can
-                  book appointments directly. Until then, they can&apos;t pick a
-                  time from your calendar.
-                </WarningCallout>
+            <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <ClockIcon className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-zinc-200">
+                    Online booking is off
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-0.5 leading-snug">
+                    Set your schedule so customers can pick a time from your
+                    calendar.
+                  </p>
+                </div>
               </div>
               <Button
                 href={ROUTES.DASHBOARD.AVAILABILITY}
                 variant="inverse"
-                className="w-full sm:w-auto"
-                icon={<ClockIcon className="h-4 w-4" />}
+                size="sm"
+                className="w-full shrink-0 sm:w-auto"
               >
                 Set availability
               </Button>
-            </GlassCard>
+            </div>
           )}
 
-          {/* Stats + actions grid: Profile views (if slug), V1 pending requests or V2 upcoming, Quick actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 min-w-0">
             {slugData?.hasSlug && (
               <PerformanceCard
-                profileViews={dashboardAnalytics?.profileViews ?? 0}
+                views={dashboardAnalytics?.views ?? 0}
+                period={linkViewsPeriod}
+                onPeriodChange={setLinkViewsPeriod}
                 lastViewed={dashboardAnalytics?.lastViewedFormatted}
                 loading={analyticsLoading}
+                isFreeTier={isFreeTier}
               />
             )}
             {dashboardData.useAvailabilityBooking ||
@@ -217,12 +205,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 pendingCount={dashboardData.pendingRequestsCount}
               />
             )}
-            {dashboardData.isFreeTier ? (
-              <QuoteRequestsSettingsCard
-                isFreeTier
-                acceptQuoteRequests={dashboardData.acceptQuoteRequests ?? false}
-              />
-            ) : null}
             <QuickActionsCard />
           </div>
         </div>

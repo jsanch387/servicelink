@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignInForm } from '../utils/validation';
 import {
+  AUTH_FORM_CLASS,
   AUTH_INPUT_CLASS,
   AuthFormCard,
   AuthOrDivider,
@@ -109,7 +110,7 @@ export const LoginForm: React.FC<{
       }
     >
       <AuthFormCard>
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form className={AUTH_FORM_CLASS} onSubmit={handleSubmit}>
           {emailVerifiedLoginNotice ? (
             <GlassCard rounded="rounded-xl" padding="sm">
               <div className="flex items-start gap-3">
@@ -155,25 +156,26 @@ export const LoginForm: React.FC<{
             inputClassName={AUTH_INPUT_CLASS}
           />
 
-          <Input
-            label="Password"
-            type="password"
-            value={formData.password}
-            onChange={value => handleChange('password', value)}
-            error={errors.password}
-            placeholder="Enter your password"
-            autoComplete="current-password"
-            required
-            inputClassName={AUTH_INPUT_CLASS}
-          />
-
-          <div className="flex justify-end">
-            <Link
-              href={ROUTES.AUTH.FORGOT_PASSWORD}
-              className="text-sm font-medium text-white hover:text-gray-200 transition-colors"
-            >
-              Forgot password?
-            </Link>
+          <div className="space-y-1.5">
+            <Input
+              label="Password"
+              type="password"
+              value={formData.password}
+              onChange={value => handleChange('password', value)}
+              error={errors.password}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              required
+              inputClassName={AUTH_INPUT_CLASS}
+            />
+            <div className="flex justify-end">
+              <Link
+                href={ROUTES.AUTH.FORGOT_PASSWORD}
+                className="text-sm sm:text-base font-medium text-white hover:text-gray-200 transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <Button
@@ -183,7 +185,7 @@ export const LoginForm: React.FC<{
             size="lg"
             loading={isLoading}
             disabled={isLoading || googleLoading}
-            className="rounded-full"
+            className="sm:min-h-[56px] sm:text-base"
           >
             {isLoading ? 'Signing in…' : 'Login'}
           </Button>

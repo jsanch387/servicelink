@@ -1,17 +1,12 @@
 /**
- * CreateLinkCard - Inline create-link form with same urgency as Settings
- * Shown on dashboard when user has no share link (Required pill + amber callout)
+ * CreateLinkCard - Create booking link when none exists yet
  */
 
 'use client';
 
 import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
-import {
-  Button,
-  GlassCard,
-  RequiredLabel,
-  WarningCallout,
-} from '@/components/shared';
+import { Button, RequiredLabel, WarningCallout } from '@/components/shared';
+import { DashboardGlassCard } from './DashboardGlassCard';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
@@ -55,25 +50,19 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
   };
 
   return (
-    <GlassCard
-      padding="none"
-      rounded="rounded-2xl"
-      blurColor="bg-zinc-500"
-      showBlur={true}
-      className="text-left w-full min-w-0 p-4"
-    >
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 min-w-0">
-        <h2 className="text-lg sm:text-xl font-bold text-white">Your Link</h2>
-        <RequiredLabel title="Add a link to share your profile" />
+    <DashboardGlassCard fillGridCell={false} className="w-full min-w-0">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <p className="text-sm text-zinc-400">Booking link</p>
+        <RequiredLabel title="Add a booking link for customers" />
       </div>
-      <div className="mt-3 mb-6 min-w-0">
-        <WarningCallout>
-          You need a link so customers can find and book you. Create one below.
-        </WarningCallout>
-      </div>
-      <div className="space-y-4 min-w-0">
-        <div className="flex flex-col sm:flex-row rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden focus-within:border-white/30 focus-within:ring-1 focus-within:ring-white/20 min-w-0">
-          <span className="py-2.5 px-4 sm:py-3 text-gray-500 font-mono text-xs sm:text-sm border-b border-white/10 sm:border-b-0 sm:border-r flex-shrink-0">
+
+      <WarningCallout className="mb-4">
+        Choose a URL so customers can book you.
+      </WarningCallout>
+
+      <div className="space-y-3 min-w-0">
+        <div className="flex flex-col sm:flex-row rounded-[10px] border border-white/[0.08] bg-white/[0.03] overflow-hidden focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 min-w-0">
+          <span className="py-2.5 px-3 text-zinc-500 font-mono text-xs sm:text-sm border-b border-white/[0.08] sm:border-b-0 sm:border-r flex-shrink-0">
             {APP_DOMAIN}/
           </span>
           <input
@@ -85,8 +74,8 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
             placeholder="my-business"
             disabled={isUpdating}
             maxLength={SLUG_MAX_LENGTH}
-            className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
-            aria-label="Your link slug"
+            className="flex-1 min-w-0 py-2.5 px-3 bg-transparent text-white font-mono text-sm outline-none placeholder:text-zinc-600"
+            aria-label="Booking link slug"
           />
         </div>
         {slugError && <p className="text-sm text-red-400">{slugError}</p>}
@@ -97,10 +86,10 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
           disabled={isUpdating || !sanitizeSlugInput(customSlugInput)}
           className="w-full sm:w-auto"
         >
-          {isUpdating ? 'Creating…' : 'Create link'}
+          {isUpdating ? 'Creating…' : 'Create booking link'}
         </Button>
       </div>
-    </GlassCard>
+    </DashboardGlassCard>
   );
 };
 

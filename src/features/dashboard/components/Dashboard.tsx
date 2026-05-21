@@ -32,7 +32,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
           {showHeader ? (
             <DashboardHeader
-              onMenuClick={() => setSidebarOpen(true)}
+              onMenuClick={() => setSidebarOpen(open => !open)}
+              sidebarOpen={sidebarOpen}
               showNotifications={isOnboardingCompleted}
             />
           ) : (
@@ -41,9 +42,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex h-16 items-center px-4">
                 <IconButton
                   icon={<Bars3Icon />}
-                  onClick={() => setSidebarOpen(true)}
+                  onClick={() => setSidebarOpen(open => !open)}
                   variant="ghost"
-                  aria-label="Open sidebar"
+                  aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
                 />
               </div>
             </div>

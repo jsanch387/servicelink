@@ -5,7 +5,7 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import React from 'react';
-import { Button } from '../../../components/shared/Button';
+import { Button } from '@/components/shared';
 
 const benefits = [
   {
@@ -168,8 +168,9 @@ export const BenefitsSection: React.FC = () => {
 
                 <Button
                   href={ROUTES.AUTH.SIGNUP}
-                  variant="primary"
-                  className="px-8 py-4 text-lg font-bold shadow-lg transform transition-all duration-300 hover:scale-105 active:scale-95"
+                  variant="inverse"
+                  size="lg"
+                  className="font-bold"
                 >
                   Get Your Business Profile
                 </Button>

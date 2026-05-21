@@ -8,8 +8,9 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignUpForm } from '../utils/validation';
 import {
-  AuthFormCard,
+  AUTH_FORM_CLASS,
   AUTH_INPUT_CLASS,
+  AuthFormCard,
   AuthOrDivider,
   AuthScreenLayout,
 } from './AuthScreenLayout';
@@ -100,7 +101,7 @@ export const SignupForm: React.FC = () => {
       }
     >
       <AuthFormCard>
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <form className={AUTH_FORM_CLASS} onSubmit={handleSubmit}>
           {authError && (
             <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
               <p className="text-sm text-red-400">{authError}</p>
@@ -150,12 +151,12 @@ export const SignupForm: React.FC = () => {
             size="lg"
             loading={isLoading}
             disabled={isLoading || googleLoading}
-            className="rounded-full"
+            className="sm:min-h-[56px] sm:text-base"
           >
             {isLoading ? 'Creating account…' : 'Sign up'}
           </Button>
 
-          <p className="text-xs text-gray-500 leading-relaxed text-center">
+          <p className="text-xs sm:text-sm text-gray-500 leading-relaxed text-center">
             By creating an account, you agree to our{' '}
             <Link
               href="/terms"

@@ -2,7 +2,7 @@
 
 import { ROUTES } from '@/constants/routes';
 import { useState } from 'react';
-import { Button } from '../../../components/shared/Button';
+import { Button } from '@/components/shared';
 
 export const PricingCTASection: React.FC = () => {
   const [slugInput, setSlugInput] = useState('');
@@ -48,7 +48,8 @@ export const PricingCTASection: React.FC = () => {
             <Button
               href={ROUTES.AUTH.SIGNUP}
               variant="primary"
-              className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-black"
+              size="xs"
+              className="shrink-0 font-bold"
             >
               Start
             </Button>
@@ -57,8 +58,9 @@ export const PricingCTASection: React.FC = () => {
           {/* Main CTA Button */}
           <Button
             href={ROUTES.AUTH.SIGNUP}
-            variant="primary"
-            className="w-full max-w-sm py-3 sm:py-4 md:py-5 bg-white text-black rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl hover:scale-105 transition-all shadow-2xl"
+            variant="inverse"
+            size="lg"
+            className="w-full max-w-sm font-bold"
           >
             Get Started
           </Button>

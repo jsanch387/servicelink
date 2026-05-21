@@ -1,51 +1,43 @@
 /**
- * QuickActionsCard - Quick profile actions in a glass morphism card
+ * QuickActionsCard - Shortcuts related to your booking link
  */
 
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
+import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { EyeIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { dashboardCardButtonClass } from '../utils/dashboardCardStyles';
+import { DashboardGlassCard } from './DashboardGlassCard';
 
 export const QuickActionsCard: React.FC = () => {
   return (
-    <GlassCard
-      padding="md"
-      rounded="rounded-2xl"
-      blurColor="bg-zinc-500"
-      showBlur={true}
-      className="h-full flex flex-col"
-    >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-          <PencilSquareIcon className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-400" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-semibold text-white">
-          Quick Actions
-        </h3>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:gap-3 mt-auto">
+    <DashboardGlassCard>
+      <p className="text-sm text-zinc-400 mb-3">Shortcuts</p>
+      <div className="flex flex-1 flex-col justify-center gap-2">
         <Button
-          variant="secondary"
-          fullWidth
           href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=view`}
-          icon={<EyeIcon className="h-4 w-4" />}
+          variant="ghost"
+          fullWidth
+          className={`justify-start ${dashboardCardButtonClass}`}
+          icon={<EyeIcon className="h-4 w-4 text-zinc-400" aria-hidden />}
         >
-          View Your Profile
+          View booking link
         </Button>
         <Button
-          variant="secondary"
-          fullWidth
           href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=edit`}
-          icon={<PencilSquareIcon className="h-4 w-4" />}
+          variant="ghost"
+          fullWidth
+          className={`justify-start ${dashboardCardButtonClass}`}
+          icon={
+            <PencilSquareIcon className="h-4 w-4 text-zinc-400" aria-hidden />
+          }
         >
-          Edit Business Details
+          Edit booking link
         </Button>
       </div>
-    </GlassCard>
+    </DashboardGlassCard>
   );
 };
 

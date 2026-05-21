@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
   isOpen: boolean;
@@ -25,6 +26,11 @@ interface ModalProps {
   uniformHorizontalPadding16?: boolean;
   /** When true, tapping the overlay does not dismiss (e.g. during async submit). */
   preventClose?: boolean;
+  /**
+   * `sheet` — bottom sheet on all screen sizes (slides up from bottom).
+   * `default` — centered dialog from sm breakpoint up.
+   */
+  presentation?: 'default' | 'sheet';
 }
 
 /**
@@ -46,7 +52,15 @@ export const Modal: React.FC<ModalProps> = ({
   titleClassName = '',
   uniformHorizontalPadding16 = false,
   preventClose = false,
+  presentation = 'default',
 }) => {
+  const isSheet = presentation === 'sheet';
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -96,7 +110,7 @@ export const Modal: React.FC<ModalProps> = ({
     e.stopPropagation();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const headerPaddingClass = uniformHorizontalPadding16
     ? 'px-4 py-4 sm:px-4 sm:py-4'
@@ -114,9 +128,27 @@ export const Modal: React.FC<ModalProps> = ({
     '2xl': 'max-w-full sm:max-w-2xl',
   };
 
-  return (
+  const overlayAlignClass = isSheet
+    ? 'items-end justify-center p-0'
+    : 'items-end sm:items-center justify-center p-0 sm:p-4';
+
+  const panelRoundedClass = fullScreenMobile
+    ? 'rounded-none h-full sm:rounded-3xl sm:h-auto'
+    : isSheet
+      ? 'rounded-t-3xl'
+      : 'rounded-t-3xl sm:rounded-3xl';
+
+  const panelMaxHeightClass = fullScreenMobile
+    ? 'max-h-screen'
+    : isSheet
+      ? 'max-h-[min(420px,85dvh)] sm:max-h-[min(480px,90dvh)]'
+      : 'max-h-[95vh] sm:max-h-[90vh]';
+
+  const overlay = (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-sm overscroll-none transition-opacity duration-300"
+      className={`fixed inset-0 z-[100] flex ${overlayAlignClass} bg-black/85 backdrop-blur-sm overscroll-none transition-opacity duration-300`}
+      role="dialog"
+      aria-modal="true"
       style={{
         animation: 'fadeIn 0.3s ease-out',
       }}
@@ -130,13 +162,7 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-[var(--dashboard-bg)] border border-white/10 ${
-          fullScreenMobile
-            ? 'rounded-none h-full sm:rounded-3xl sm:h-auto'
-            : 'rounded-t-3xl sm:rounded-3xl'
-        } w-full min-w-0 ${maxWidthClasses[maxWidth]} mx-auto ${
-          fullScreenMobile ? 'max-h-screen' : 'max-h-[95vh] sm:max-h-[90vh]'
-        } flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out ${panelClassName}`}
+        className={`bg-[var(--dashboard-bg)] border border-white/10 ${panelRoundedClass} w-full min-w-0 ${maxWidthClasses[maxWidth]} mx-auto ${panelMaxHeightClass} flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out ${panelClassName}`}
         style={{
           transform: 'translateY(0)',
           animation: 'slideUp 0.3s ease-out',
@@ -167,4 +193,6 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 };

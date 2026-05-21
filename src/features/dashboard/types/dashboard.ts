@@ -35,6 +35,7 @@ export interface DashboardContentProps {
 
 export interface DashboardHeaderProps {
   onMenuClick: () => void;
+  sidebarOpen?: boolean;
   /** Hide notification bell when false (e.g. during onboarding to avoid routing to not-ready experiences) */
   showNotifications?: boolean;
 }
