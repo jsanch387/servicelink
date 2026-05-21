@@ -90,25 +90,27 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
       />
 
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col p-6 sm:p-8">
-        <header className="mb-6 flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-              {isPro ? 'Grow your business' : 'Get started'}
-            </p>
-            <h2 className="logo-text mt-1 text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">
-              {title}
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:text-[0.9375rem]">
-              {description}
-            </p>
+        <header className="mb-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                {isPro ? 'Grow your business' : 'Get started'}
+              </p>
+              <h2 className="logo-text mt-1 text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">
+                {title}
+              </h2>
+            </div>
+            {badgeLabel ? (
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${styles.badge}`}
+              >
+                {badgeLabel}
+              </span>
+            ) : null}
           </div>
-          {badgeLabel ? (
-            <span
-              className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${styles.badge}`}
-            >
-              {badgeLabel}
-            </span>
-          ) : null}
+          <p className="mt-3 w-full min-h-[2.75rem] text-sm leading-relaxed text-zinc-500 sm:min-h-[3rem] sm:text-[0.9375rem]">
+            {description}
+          </p>
         </header>
 
         <div

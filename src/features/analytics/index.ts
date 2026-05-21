@@ -9,10 +9,22 @@
 export type {
   AnalyticsApiResponse,
   DashboardAnalytics,
+  LinkViewsSummary,
   ProfileViewAnalytics,
   TrackViewRequest,
   TrackViewResponse,
 } from './types/analytics';
+
+export {
+  ANALYTICS_PERIOD_LABELS,
+  DASHBOARD_LINK_VIEWS_PERIODS,
+  DEFAULT_ANALYTICS_PERIOD,
+  FREE_TIER_ANALYTICS_PERIOD,
+  isProOnlyLinkViewsPeriod,
+  resolveLinkViewsPeriodForAccess,
+  type AnalyticsPeriod,
+  type DashboardLinkViewsPeriod,
+} from './constants';
 
 // Services
 export { AnalyticsApi } from './services/analyticsApi';

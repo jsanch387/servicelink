@@ -2,84 +2,43 @@
  * Analytics API Service
  *
  * Handles all analytics-related API calls.
- * Clean, modular API operations for analytics feature.
  */
 
-import { createClient } from '@/libs/supabase';
-import { AnalyticsApiResponse, ProfileViewAnalytics } from '../types/analytics';
+import {
+  DEFAULT_ANALYTICS_PERIOD,
+  type AnalyticsPeriod,
+} from '@/features/analytics/constants';
+import type {
+  LinkViewsSummary,
+  LinkViewsSummaryResponse,
+} from '../types/analytics';
 
 export class AnalyticsApi {
   /**
-   * Gets analytics data for a business profile
+   * Link view counts for the dashboard (from public_analytics_events).
    */
-  static async getProfileAnalytics(
-    businessProfileId: string
-  ): Promise<AnalyticsApiResponse> {
+  static async getLinkViewsSummary(
+    businessProfileId: string,
+    period: AnalyticsPeriod = DEFAULT_ANALYTICS_PERIOD
+  ): Promise<LinkViewsSummaryResponse> {
     try {
-      const supabase = createClient();
+      const params = new URLSearchParams({
+        businessProfileId,
+        period,
+      });
+      const response = await fetch(`/api/analytics/summary?${params}`);
+      const result = (await response.json()) as LinkViewsSummaryResponse;
 
-      const { data: profile, error } = await supabase
-        .from('business_profiles')
-        .select('profile_views, last_viewed_at, id')
-        .eq('id', businessProfileId)
-        .single();
-
-      if (error || !profile) {
-        console.error('Error fetching analytics:', error);
+      if (!response.ok || !result.success) {
         return {
           success: false,
-          error: error?.message || 'Failed to fetch analytics data',
+          error: result.error || 'Failed to fetch link analytics',
         };
       }
 
-      const analytics: ProfileViewAnalytics = {
-        profileViews: (profile as any).profile_views || 0,
-        lastViewedAt: (profile as any).last_viewed_at,
-        businessProfileId: (profile as any).id,
-      };
-
-      return { success: true, data: analytics };
+      return result;
     } catch (error) {
-      console.error('Error in getProfileAnalytics:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
-
-  /**
-   * Gets analytics data by business slug (for public profiles)
-   */
-  static async getAnalyticsBySlug(
-    businessSlug: string
-  ): Promise<AnalyticsApiResponse> {
-    try {
-      const supabase = createClient();
-
-      const { data: profile, error } = await supabase
-        .from('business_profiles')
-        .select('profile_views, last_viewed_at, id')
-        .eq('business_slug', businessSlug)
-        .single();
-
-      if (error || !profile) {
-        console.error('Error fetching analytics by slug:', error);
-        return {
-          success: false,
-          error: error?.message || 'Failed to fetch analytics data',
-        };
-      }
-
-      const analytics: ProfileViewAnalytics = {
-        profileViews: (profile as any).profile_views || 0,
-        lastViewedAt: (profile as any).last_viewed_at,
-        businessProfileId: (profile as any).id,
-      };
-
-      return { success: true, data: analytics };
-    } catch (error) {
-      console.error('Error in getAnalyticsBySlug:', error);
+      console.error('Error in getLinkViewsSummary:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -87,3 +46,5 @@ export class AnalyticsApi {
     }
   }
 }
+
+export type { LinkViewsSummary };

@@ -7,7 +7,11 @@
 
 import { Button, CrownIcon } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { useAnalytics } from '@/features/analytics';
+import {
+  DEFAULT_ANALYTICS_PERIOD,
+  useAnalytics,
+  type DashboardLinkViewsPeriod,
+} from '@/features/analytics';
 import {
   CreateLinkCard,
   LinkSharingCard,
@@ -19,7 +23,7 @@ import {
 import { FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface DashboardData {
   businessProfile: {
@@ -72,8 +76,20 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     dashboardData.isFreeTier === true &&
     freeBookingsUsed >= FREE_BOOKINGS_LIMIT;
 
+  const isFreeTier = dashboardData.isFreeTier === true;
+
+  const [linkViewsPeriod, setLinkViewsPeriod] =
+    useState<DashboardLinkViewsPeriod>(DEFAULT_ANALYTICS_PERIOD);
+
+  useEffect(() => {
+    if (isFreeTier && linkViewsPeriod !== '24h') {
+      setLinkViewsPeriod('24h');
+    }
+  }, [isFreeTier, linkViewsPeriod]);
+
   const { dashboardAnalytics, loading: analyticsLoading } = useAnalytics(
-    businessProfile.id
+    businessProfile.id,
+    linkViewsPeriod
   );
 
   return (
@@ -171,9 +187,12 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 min-w-0">
             {slugData?.hasSlug && (
               <PerformanceCard
-                profileViews={dashboardAnalytics?.profileViews ?? 0}
+                views={dashboardAnalytics?.views ?? 0}
+                period={linkViewsPeriod}
+                onPeriodChange={setLinkViewsPeriod}
                 lastViewed={dashboardAnalytics?.lastViewedFormatted}
                 loading={analyticsLoading}
+                isFreeTier={isFreeTier}
               />
             )}
             {dashboardData.useAvailabilityBooking ||
