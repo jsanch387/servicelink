@@ -52,7 +52,7 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
       <p className="text-sm text-zinc-400 mb-3">Your booking link</p>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:gap-3">
         <p
-          className="flex-1 min-w-0 truncate rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 lg:py-3 font-mono text-sm text-zinc-200"
+          className="flex-1 min-w-0 truncate rounded-[10px] border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 lg:py-3 font-mono text-sm text-zinc-200"
           title={copyLink}
         >
           {displayLink}
@@ -61,7 +61,7 @@ export const LinkSharingCard: React.FC<LinkSharingCardProps> = ({
           type="button"
           onClick={handleCopyLink}
           variant="inverse"
-          className="w-full shrink-0 sm:w-auto sm:min-w-[88px] !rounded-lg"
+          className="w-full shrink-0 sm:w-auto sm:min-w-[88px]"
           icon={
             copied ? (
               <CheckIcon className="h-4 w-4 text-emerald-600" />

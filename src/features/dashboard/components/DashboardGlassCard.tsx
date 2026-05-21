@@ -22,7 +22,7 @@ export const DashboardGlassCard: React.FC<DashboardGlassCardProps> = ({
 }) => {
   return (
     <GlassCard
-      rounded="rounded-xl"
+      rounded="rounded-2xl"
       padding={padding}
       showBlur={false}
       className={`${fillGridCell ? dashboardGlassCardLayout : ''} lg:p-5 ${className}`.trim()}

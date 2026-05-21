@@ -2,8 +2,9 @@
  * DashboardMetricCard - Stat card for dashboard metrics (GlassCard)
  */
 
+import { Button } from '@/components/shared';
+import { dashboardCardButtonClass } from '../utils/dashboardCardStyles';
 import { DashboardGlassCard } from './DashboardGlassCard';
-import Link from 'next/link';
 import React from 'react';
 
 interface DashboardMetricCardProps {
@@ -36,12 +37,14 @@ export const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({
         <p className="mt-auto pt-3 text-xs text-zinc-600">{meta}</p>
       ) : null}
       {action ? (
-        <Link
+        <Button
           href={action.href}
-          className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+          variant="ghost"
+          fullWidth
+          className={`mt-3 ${dashboardCardButtonClass}`}
         >
           {action.label}
-        </Link>
+        </Button>
       ) : null}
     </DashboardGlassCard>
   );

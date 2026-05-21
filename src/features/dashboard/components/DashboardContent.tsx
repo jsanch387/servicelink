@@ -93,7 +93,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
         {dashboardData.isFreeTier ? (
           <div
-            className={`mb-5 sm:mb-6 rounded-xl border px-4 py-3 ${
+            className={`mb-5 sm:mb-6 rounded-2xl border px-4 py-3 ${
               atFreeBookingCap
                 ? 'border-amber-500/30 bg-amber-500/[0.07]'
                 : 'border-white/10 bg-white/[0.04]'
@@ -144,7 +144,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
           {/* Nudge: availability booking is off – set schedule so customers can book */}
           {!dashboardData.useAvailabilityBooking && (
-            <div className="flex flex-col gap-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/[0.05] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-start gap-3">
                 <ClockIcon className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
                 <div className="min-w-0">

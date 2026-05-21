@@ -61,7 +61,7 @@ export const CreateLinkCard: React.FC<CreateLinkCardProps> = ({
       </WarningCallout>
 
       <div className="space-y-3 min-w-0">
-        <div className="flex flex-col sm:flex-row rounded-lg border border-white/[0.08] bg-white/[0.03] overflow-hidden focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 min-w-0">
+        <div className="flex flex-col sm:flex-row rounded-[10px] border border-white/[0.08] bg-white/[0.03] overflow-hidden focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 min-w-0">
           <span className="py-2.5 px-3 text-zinc-500 font-mono text-xs sm:text-sm border-b border-white/[0.08] sm:border-b-0 sm:border-r flex-shrink-0">
             {APP_DOMAIN}/
           </span>
