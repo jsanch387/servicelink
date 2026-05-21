@@ -1,6 +1,6 @@
 'use client';
 
-import { Logo } from '@/components/shared';
+import { Logo, MarketingGalaxyBackground } from '@/components/shared';
 import React from 'react';
 
 /** Shared input styling for login / signup screens */
@@ -56,28 +56,31 @@ export function AuthScreenLayout({
   children,
 }: AuthScreenLayoutProps) {
   return (
-    <div className="min-h-[100dvh] bg-[var(--dashboard-bg,#0a0a0a)] flex items-center justify-center px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6">
-      <div className="w-full max-w-[26rem] sm:max-w-[30rem] flex flex-col">
-        <header className="flex flex-col items-center text-center mb-6 sm:mb-8 pt-7 sm:pt-8">
-          <Logo
-            variant="logo"
-            size="xl"
-            logoSize="xl"
-            className="mb-2 sm:mb-3 justify-center"
-          />
-          <h1 className="text-2xl sm:text-[2rem] sm:leading-tight font-bold text-white tracking-tight">
-            {title}
-          </h1>
-          <p className="mt-2 text-sm sm:text-lg text-gray-400 max-w-sm">
-            {subtitle}
-          </p>
-        </header>
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[var(--dashboard-bg,#0a0a0a)]">
+      <MarketingGalaxyBackground showStreaks={false} />
+      <div className="relative z-10 flex min-h-[100dvh] items-center justify-center px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6">
+        <div className="flex w-full max-w-[26rem] flex-col sm:max-w-[30rem]">
+          <header className="mb-6 flex flex-col items-center pt-7 text-center sm:mb-8 sm:pt-8">
+            <Logo
+              variant="logo"
+              size="xl"
+              logoSize="xl"
+              className="mb-2 justify-center sm:mb-3"
+            />
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-[2rem] sm:leading-tight">
+              {title}
+            </h1>
+            <p className="mt-2 max-w-sm text-sm text-gray-400 sm:text-lg">
+              {subtitle}
+            </p>
+          </header>
 
-        <div className="flex flex-col gap-5 sm:gap-6">{children}</div>
+          <div className="flex flex-col gap-5 sm:gap-6">{children}</div>
 
-        <footer className="mt-5 sm:mt-6 text-center text-sm sm:text-base text-gray-400">
-          {footer}
-        </footer>
+          <footer className="mt-5 text-center text-sm text-gray-400 sm:mt-6 sm:text-base">
+            {footer}
+          </footer>
+        </div>
       </div>
     </div>
   );

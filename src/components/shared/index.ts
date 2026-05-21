@@ -29,6 +29,7 @@ export { ImageWithFallback } from './ImageWithFallback';
 export { LoadingSpinner } from './LoadingSpinner';
 export { Logo } from './Logo';
 export { LogoPlaceholder } from './LogoPlaceholder';
+export { MarketingGalaxyBackground } from './MarketingGalaxyBackground';
 export { Modal } from './Modal';
 export { ModernLoadingSpinner } from './ModernLoadingSpinner';
 export { nativeCheckboxSmClassName } from './nativeCheckboxClasses';

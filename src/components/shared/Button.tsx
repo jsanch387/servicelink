@@ -109,6 +109,7 @@ export const Button: React.FC<ButtonProps> = ({
       <Link
         href={href}
         className={classes}
+        onClick={onClick}
         aria-label={ariaLabel}
         title={title}
       >
