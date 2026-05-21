@@ -1,51 +1,42 @@
 /**
- * QuickActionsCard - Quick profile actions in a glass morphism card
+ * QuickActionsCard - Shortcuts related to your booking link
  */
 
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { DashboardGlassCard } from './DashboardGlassCard';
 import { EyeIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import React from 'react';
+
+const shortcutLinkClass =
+  'flex items-center gap-2.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 lg:py-3 text-sm font-medium text-zinc-200 transition-colors hover:border-white/15 hover:bg-white/[0.06] hover:text-white';
 
 export const QuickActionsCard: React.FC = () => {
   return (
-    <GlassCard
-      padding="md"
-      rounded="rounded-2xl"
-      blurColor="bg-zinc-500"
-      showBlur={true}
-      className="h-full flex flex-col"
-    >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-          <PencilSquareIcon className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-400" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-semibold text-white">
-          Quick Actions
-        </h3>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:gap-3 mt-auto">
-        <Button
-          variant="secondary"
-          fullWidth
+    <DashboardGlassCard>
+      <p className="text-sm text-zinc-400 mb-3">Shortcuts</p>
+      <div className="flex flex-1 flex-col justify-center gap-2">
+        <Link
           href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=view`}
-          icon={<EyeIcon className="h-4 w-4" />}
+          className={shortcutLinkClass}
         >
-          View Your Profile
-        </Button>
-        <Button
-          variant="secondary"
-          fullWidth
+          <EyeIcon className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
+          View booking link
+        </Link>
+        <Link
           href={`${ROUTES.DASHBOARD.BUSINESS_PROFILE}?mode=edit`}
-          icon={<PencilSquareIcon className="h-4 w-4" />}
+          className={shortcutLinkClass}
         >
-          Edit Business Details
-        </Button>
+          <PencilSquareIcon
+            className="h-4 w-4 shrink-0 text-zinc-500"
+            aria-hidden
+          />
+          Edit booking link
+        </Link>
       </div>
-    </GlassCard>
+    </DashboardGlassCard>
   );
 };
 

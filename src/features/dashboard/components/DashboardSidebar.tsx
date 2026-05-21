@@ -8,10 +8,10 @@ import {
   CalendarIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
-  CogIcon,
-  HomeIcon,
+  AdjustmentsHorizontalIcon,
   LinkIcon,
   RectangleStackIcon,
+  Squares2X2Icon,
   UserGroupIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -24,7 +24,7 @@ const allNavigationItems = [
   {
     name: 'Dashboard',
     href: ROUTES.DASHBOARD.MAIN,
-    icon: HomeIcon,
+    icon: Squares2X2Icon,
     requiresOnboarding: false,
   },
   {
@@ -173,7 +173,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     : 'text-gray-300 hover:text-white hover:bg-neutral-700'
                 }`}
               >
-                <CogIcon
+                <AdjustmentsHorizontalIcon
                   className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
                     pathname === ROUTES.DASHBOARD.SETTINGS
                       ? 'text-gray-300'

@@ -1,21 +1,18 @@
 'use client';
 
-import { Button, CrownIcon, GlassCard, Switch } from '@/components/shared';
+import { Button, CrownIcon, Switch } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { ProFeatureLabel } from '@/features/dashboard';
-import { InboxIcon } from '@heroicons/react/24/outline';
+import { DashboardGlassCard, ProFeatureLabel } from '@/features/dashboard';
+import Link from 'next/link';
 import React from 'react';
 
 export interface QuoteRequestsSettingsCardProps {
-  /** When true, quote requests are a Pro-only feature — toggle is disabled and upgrade CTA is shown. */
   isFreeTier?: boolean;
-  /** From `business_profiles.accept_quote_req`. */
   acceptQuoteRequests?: boolean;
 }
 
 /**
- * Dashboard card: opt-in copy for public “Request quote” on profile (Pro).
- * Toggle reflects DB when locked (free tier); Pro users use Quotes → Requests to change.
+ * Dashboard card: opt-in for public “Request quote” on booking link (Pro).
  */
 export const QuoteRequestsSettingsCard: React.FC<
   QuoteRequestsSettingsCardProps
@@ -23,29 +20,16 @@ export const QuoteRequestsSettingsCard: React.FC<
   const locked = isFreeTier;
 
   return (
-    <GlassCard
-      padding="md"
-      rounded="rounded-2xl"
-      blurColor="bg-violet-500"
-      showBlur={true}
-      className={`flex h-full flex-col ${locked ? 'opacity-95' : ''}`}
-    >
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-2">
-            <InboxIcon
-              className="h-5 w-5 text-violet-400 sm:h-6 sm:w-6"
-              aria-hidden
-            />
+    <DashboardGlassCard className={locked ? 'opacity-95' : ''}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-zinc-400">Quote requests</p>
+            {isFreeTier ? <ProFeatureLabel /> : null}
           </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-semibold text-white sm:text-xl">
-                Quote requests
-              </h3>
-              {isFreeTier ? <ProFeatureLabel /> : null}
-            </div>
-          </div>
+          <p className="mt-2 text-xs leading-snug text-zinc-500">
+            Let customers request a price from your booking link
+          </p>
         </div>
         <Switch
           checked={acceptQuoteRequests}
@@ -55,15 +39,15 @@ export const QuoteRequestsSettingsCard: React.FC<
           aria-label={
             locked
               ? 'Quote requests — upgrade to Pro to enable'
-              : 'Accept quote requests on your public profile'
+              : 'Accept quote requests on your booking link'
           }
           className="shrink-0"
         />
       </div>
 
-      <p className="mb-4 flex-1 text-sm text-gray-400">
-        Puts <span className="text-gray-300">Request quote</span> on your
-        booking page. They ask for a price; you send the quote from Quotes.
+      <p className="mt-3 flex-1 text-xs leading-relaxed text-zinc-500">
+        Adds <span className="text-zinc-300">Request quote</span> — you respond
+        from Quotes.
       </p>
 
       {locked ? (
@@ -72,11 +56,19 @@ export const QuoteRequestsSettingsCard: React.FC<
           variant="inverse"
           size="md"
           fullWidth
+          className="mt-3"
           icon={<CrownIcon className="h-4 w-4" />}
         >
           Upgrade to Pro
         </Button>
-      ) : null}
-    </GlassCard>
+      ) : (
+        <Link
+          href={ROUTES.DASHBOARD.QUOTES}
+          className="mt-3 text-xs font-medium text-zinc-400 transition-colors hover:text-zinc-200"
+        >
+          Manage in Quotes →
+        </Link>
+      )}
+    </DashboardGlassCard>
   );
 };
