@@ -9,13 +9,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { RESOURCES_NAV_LINKS } from '../constants/resourcesNavLinks';
 
 const navLinkClass =
-  'hover:text-white transition-colors focus:outline-none focus-visible:outline-none';
+  'cursor-pointer hover:text-white transition-colors focus:outline-none focus-visible:outline-none';
 
 const mobileNavLinkClass =
-  'text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5 focus:outline-none focus-visible:outline-none';
+  'cursor-pointer text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5 focus:outline-none focus-visible:outline-none';
 
 const mobileSubLinkClass =
-  'text-gray-400 hover:text-white block w-full text-left py-2.5 pl-4 pr-2 text-sm font-medium transition-colors rounded-lg active:bg-white/5';
+  'cursor-pointer text-gray-400 hover:text-white block w-full text-left py-2.5 pl-4 pr-2 text-sm font-medium transition-colors rounded-lg active:bg-white/5';
 
 function isResourcesActive(pathname: string): boolean {
   return (
@@ -79,7 +79,7 @@ export function ResourcesNavMenuDesktop() {
                 key={item.href}
                 href={item.href}
                 role="menuitem"
-                className="block px-4 py-3 hover:bg-white/5 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                className="block cursor-pointer px-4 py-3 hover:bg-white/5 transition-colors first:rounded-t-xl last:rounded-b-xl"
                 onClick={() => setOpen(false)}
               >
                 <span className="block text-sm font-medium text-white">

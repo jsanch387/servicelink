@@ -4,6 +4,7 @@ import { ROUTES } from '@/constants/routes';
 import Image from 'next/image';
 import React from 'react';
 import { Button } from '@/components/shared';
+import { AppStoreComingSoonBadge } from './AppStoreComingSoonBadge';
 
 export const HeroSection: React.FC = () => {
   return (
@@ -31,17 +32,16 @@ export const HeroSection: React.FC = () => {
           </p>
 
           {/* Hero CTA Buttons */}
-          <div className="mb-6 sm:mb-8 md:mb-10 max-w-lg">
-            <div className="flex">
-              <Button
-                href={ROUTES.AUTH.SIGNUP}
-                variant="inverse"
-                size="lg"
-                className="w-full sm:w-auto font-bold"
-              >
-                Get Started
-              </Button>
-            </div>
+          <div className="max-w-lg">
+            <Button
+              href={ROUTES.AUTH.SIGNUP}
+              variant="inverse"
+              size="lg"
+              className="w-full sm:w-auto font-bold"
+            >
+              Get Started
+            </Button>
+            <AppStoreComingSoonBadge />
           </div>
         </div>
 
