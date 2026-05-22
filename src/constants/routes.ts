@@ -19,6 +19,9 @@ export const ROUTES = {
   /** Path for a single guide; use getResourceGuidePath(slug) for links. */
   RESOURCE_GUIDE: (slug: string) => `/resources/${slug}`,
 
+  /** Free ads masterclass — dedicated page (linked from landing nav/hero/footer). */
+  WORKSHOP_RUN_ADS: '/workshop/run-ads',
+
   // Authentication routes
   AUTH: {
     LOGIN: '/login',

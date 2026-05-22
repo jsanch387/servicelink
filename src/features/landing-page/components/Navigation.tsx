@@ -8,6 +8,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useState } from 'react';
 
+import {
+  ResourcesNavMenuDesktop,
+  ResourcesNavMenuMobile,
+} from './ResourcesNavMenu';
+
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, isInitialized } = useAuth();
@@ -72,9 +77,7 @@ export const Navigation: React.FC = () => {
           <a href={ROUTES.PRICING_PAGE} className={navLinkClass}>
             Pricing
           </a>
-          <a href={ROUTES.RESOURCES} className={navLinkClass}>
-            Resources
-          </a>
+          <ResourcesNavMenuDesktop />
         </div>
 
         {/* Desktop auth — shared Button */}
@@ -160,13 +163,7 @@ export const Navigation: React.FC = () => {
             >
               Pricing
             </a>
-            <a
-              href={ROUTES.RESOURCES}
-              className={mobileNavLinkClass}
-              onClick={closeMobileMenu}
-            >
-              Resources
-            </a>
+            <ResourcesNavMenuMobile onNavigate={closeMobileMenu} />
             {isInitialized ? (
               <div className="pt-5 mt-4 border-t border-[var(--dashboard-border)] space-y-3">
                 {isAuthenticated ? (

@@ -145,11 +145,9 @@ export default async function ResourceGuidePage({
         }}
       />
       <Navigation />
-      {/* Spacer: matches fixed nav height so content starts below it */}
       <div className="h-16 sm:h-20 shrink-0" aria-hidden />
-      {/* Visible gap between nav and content */}
-      <div className="h-12 sm:h-16 shrink-0" aria-hidden />
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
+      <div className="h-4 sm:h-6 shrink-0" aria-hidden />
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 pb-12">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
           <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <li>
@@ -197,16 +195,6 @@ export default async function ResourceGuidePage({
           )}
         </article>
       </main>
-
-      {/* Footer */}
-      <footer className="mt-16 sm:mt-20 py-8 px-4 border-t border-[var(--dashboard-border)] text-center">
-        <Link
-          href={ROUTES.RESOURCES}
-          className="text-sm text-gray-500 hover:text-white transition-colors"
-        >
-          ← Back to Resources
-        </Link>
-      </footer>
     </div>
   );
 }
