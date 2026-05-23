@@ -126,9 +126,13 @@ export default async function DashboardPaymentsPage({
   const stripeConnectResume =
     hasProAccess &&
     !stripeConnectReady &&
-    !!paymentAccount?.stripe_account_id &&
-    (paymentAccount.onboarding_status === 'in_progress' ||
-      paymentAccount.onboarding_status === 'restricted');
+    !!paymentAccount?.stripe_account_id?.trim();
+
+  const stripeConnectRestricted =
+    paymentAccount?.onboarding_status === 'restricted';
+
+  const priorPaymentsSetup =
+    hasPaymentSettingsRow || !!paymentAccount?.stripe_account_id?.trim();
 
   return (
     <PaymentsPage
@@ -136,6 +140,8 @@ export default async function DashboardPaymentsPage({
       stripeConnectReady={stripeConnectReady}
       servicelinkPaymentsEnabled={servicelinkPaymentsEnabled}
       stripeConnectResume={stripeConnectResume}
+      stripeConnectRestricted={stripeConnectRestricted}
+      priorPaymentsSetup={priorPaymentsSetup}
       paymentSettings={paymentSettingsForDashboard}
       stripeExpressAccountId={paymentAccount?.stripe_account_id?.trim() ?? null}
     />

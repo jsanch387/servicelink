@@ -3,10 +3,15 @@
 import React from 'react';
 import {
   FREE_PAYMENTS_UPSELL_DESCRIPTION_MAIN,
+  FREE_PAYMENTS_UPSELL_DESCRIPTION_RESTORE,
   FREE_PAYMENTS_UPSELL_TITLE,
+  FREE_PAYMENTS_UPSELL_TITLE_RESTORE,
   FreePaymentPreview,
 } from '../free-payment-preview';
 import {
+  PAYMENTS_PAGE_DESCRIPTION_FINISH_SETUP,
+  PAYMENTS_PAGE_DESCRIPTION_SETUP_PENDING,
+  PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY,
   ProPaymentsSetupExperience,
   ProServicelinkPaymentsGate,
 } from '../payments-setup';
@@ -27,10 +32,14 @@ export interface PaymentsPageProps {
    * When true, primary CTA should read “continue” (saved `acct_…`, onboarding incomplete).
    */
   stripeConnectResume?: boolean;
+  /** Stripe flagged the Connect account (e.g. outstanding requirements). */
+  stripeConnectRestricted?: boolean;
   /** Loaded from `payment_settings` when the Pro payments dashboard is shown. */
   paymentSettings?: PaymentSettingsDashboardInitial | null;
   /** Connected Stripe account id (`acct_…`) for Express Dashboard login link. */
   stripeExpressAccountId?: string | null;
+  /** Had Connect and/or `payment_settings` before losing Pro (churned / downgraded). */
+  priorPaymentsSetup?: boolean;
 }
 
 export const PaymentsPage: React.FC<PaymentsPageProps> = ({
@@ -38,14 +47,28 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
   stripeConnectReady = false,
   servicelinkPaymentsEnabled = false,
   stripeConnectResume = false,
+  stripeConnectRestricted = false,
   paymentSettings = null,
   stripeExpressAccountId = null,
+  priorPaymentsSetup = false,
 }) => {
   const showProPaymentsDashboard =
     hasProAccess && stripeConnectReady && paymentSettings != null;
   const showServicelinkGate =
     hasProAccess && stripeConnectReady && paymentSettings == null;
   const showStripeConnectSetup = hasProAccess && !stripeConnectReady;
+
+  const pageDescription = showProPaymentsDashboard
+    ? servicelinkPaymentsEnabled
+      ? undefined
+      : PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY
+    : showServicelinkGate
+      ? PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY
+      : showStripeConnectSetup
+        ? stripeConnectResume
+          ? PAYMENTS_PAGE_DESCRIPTION_FINISH_SETUP
+          : PAYMENTS_PAGE_DESCRIPTION_SETUP_PENDING
+        : undefined;
 
   const dashboardSettings: PaymentSettingsDashboardInitial =
     paymentSettings ?? {
@@ -59,7 +82,10 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
       <div className="max-w-6xl mx-auto w-full min-w-0">
-        <PaymentsPageHeader showProUpsellLabel={!hasProAccess} />
+        <PaymentsPageHeader
+          showProUpsellLabel={!hasProAccess}
+          description={pageDescription}
+        />
         {showProPaymentsDashboard ? (
           <>
             <div className="space-y-4 sm:space-y-6">
@@ -96,11 +122,22 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
         ) : showServicelinkGate ? (
           <ProServicelinkPaymentsGate />
         ) : showStripeConnectSetup ? (
-          <ProPaymentsSetupExperience resumeConnect={stripeConnectResume} />
+          <ProPaymentsSetupExperience
+            resumeConnect={stripeConnectResume}
+            stripeRestricted={stripeConnectRestricted}
+          />
         ) : (
           <FreePaymentPreview
-            upsellTitle={FREE_PAYMENTS_UPSELL_TITLE}
-            upsellDescription={FREE_PAYMENTS_UPSELL_DESCRIPTION_MAIN}
+            upsellTitle={
+              priorPaymentsSetup
+                ? FREE_PAYMENTS_UPSELL_TITLE_RESTORE
+                : FREE_PAYMENTS_UPSELL_TITLE
+            }
+            upsellDescription={
+              priorPaymentsSetup
+                ? FREE_PAYMENTS_UPSELL_DESCRIPTION_RESTORE
+                : FREE_PAYMENTS_UPSELL_DESCRIPTION_MAIN
+            }
           />
         )}
       </div>

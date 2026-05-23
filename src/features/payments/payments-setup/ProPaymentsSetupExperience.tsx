@@ -9,14 +9,21 @@ import {
   PAYMENTS_SETUP_BENEFITS,
   PAYMENTS_SETUP_CTA_CONNECT_STRIPE,
   PAYMENTS_SETUP_CTA_CONTINUE_STRIPE,
+  PAYMENTS_SETUP_FINISH_BENEFITS,
+  PAYMENTS_SETUP_FINISH_HERO_TITLE,
+  PAYMENTS_SETUP_FINISH_LEAD,
+  PAYMENTS_SETUP_FINISH_TEASE_OVERLINE,
   PAYMENTS_SETUP_HERO_TITLE,
   PAYMENTS_SETUP_LEAD,
+  PAYMENTS_SETUP_RESTRICTED_LEAD,
   PAYMENTS_SETUP_TEASE_OVERLINE,
 } from './paymentsSetupCopy';
 
 export type ProPaymentsSetupExperienceProps = {
-  /** Saved Connect account exists; show “Continue” instead of first-time “Connect”. */
+  /** Saved Connect account exists; show finish-setup copy and “Continue” CTA. */
   resumeConnect?: boolean;
+  /** Stripe account restricted (e.g. outstanding requirements). */
+  stripeRestricted?: boolean;
 };
 
 /**
@@ -24,9 +31,24 @@ export type ProPaymentsSetupExperienceProps = {
  */
 export const ProPaymentsSetupExperience: React.FC<
   ProPaymentsSetupExperienceProps
-> = ({ resumeConnect = false }) => {
+> = ({ resumeConnect = false, stripeRestricted = false }) => {
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
+
+  const heroTitle = resumeConnect
+    ? PAYMENTS_SETUP_FINISH_HERO_TITLE
+    : PAYMENTS_SETUP_HERO_TITLE;
+  const lead = resumeConnect
+    ? stripeRestricted
+      ? PAYMENTS_SETUP_RESTRICTED_LEAD
+      : PAYMENTS_SETUP_FINISH_LEAD
+    : PAYMENTS_SETUP_LEAD;
+  const benefits = resumeConnect
+    ? PAYMENTS_SETUP_FINISH_BENEFITS
+    : PAYMENTS_SETUP_BENEFITS;
+  const teaseOverline = resumeConnect
+    ? PAYMENTS_SETUP_FINISH_TEASE_OVERLINE
+    : PAYMENTS_SETUP_TEASE_OVERLINE;
 
   const startStripeConnect = useCallback(async () => {
     setConnectError(null);
@@ -75,10 +97,10 @@ export const ProPaymentsSetupExperience: React.FC<
         className="w-full max-w-2xl shrink-0"
       >
         <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-          {PAYMENTS_SETUP_HERO_TITLE}
+          {heroTitle}
         </h2>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-gray-400">
-          {PAYMENTS_SETUP_LEAD}
+          {lead}
         </p>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -103,7 +125,7 @@ export const ProPaymentsSetupExperience: React.FC<
         ) : null}
 
         <ul className="mt-6 max-w-xl space-y-3 border-t border-white/[0.08] pt-6 text-left">
-          {PAYMENTS_SETUP_BENEFITS.map(({ id, text }) => (
+          {benefits.map(({ id, text }) => (
             <li
               key={id}
               className="flex gap-3 text-sm leading-relaxed text-gray-300"
@@ -121,7 +143,7 @@ export const ProPaymentsSetupExperience: React.FC<
       </GlassCard>
 
       <p className="mt-8 max-w-md text-left text-sm text-gray-500">
-        {PAYMENTS_SETUP_TEASE_OVERLINE}
+        {teaseOverline}
       </p>
 
       <FreePaymentPreviewLockedDashboard className="mt-8 w-full sm:mt-10" />
