@@ -1,15 +1,28 @@
 /**
  * ModernLoadingSpinner - Sleek, modern loading spinner
- * Clean orange animated spinner with smooth animations
  */
 
 import React from 'react';
+
+type ModernLoadingSpinnerVariant = 'orange' | 'white';
 
 interface ModernLoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   text?: string;
   className?: string;
+  /** Accent color for the animated ring. Defaults to orange. */
+  variant?: ModernLoadingSpinnerVariant;
 }
+
+const variantRingClasses: Record<ModernLoadingSpinnerVariant, string> = {
+  orange: 'border-t-orange-400 border-r-orange-400',
+  white: 'border-t-white border-r-white',
+};
+
+const variantGlowClasses: Record<ModernLoadingSpinnerVariant, string> = {
+  orange: 'border-orange-400/20',
+  white: 'border-white/20',
+};
 
 const sizeClasses = {
   sm: 'w-6 h-6',
@@ -22,6 +35,7 @@ export const ModernLoadingSpinner: React.FC<ModernLoadingSpinnerProps> = ({
   size = 'lg',
   text = 'Loading...',
   className = '',
+  variant = 'orange',
 }) => {
   return (
     <div
@@ -33,13 +47,11 @@ export const ModernLoadingSpinner: React.FC<ModernLoadingSpinnerProps> = ({
         <div
           className={`${sizeClasses[size]} border-2 border-neutral-700 rounded-full`}
         />
-        {/* Animated orange ring */}
         <div
-          className={`${sizeClasses[size]} border-2 border-transparent border-t-orange-400 border-r-orange-400 rounded-full animate-spin absolute top-0 left-0`}
+          className={`${sizeClasses[size]} border-2 border-transparent ${variantRingClasses[variant]} rounded-full animate-spin absolute top-0 left-0`}
         />
-        {/* Inner glow effect */}
         <div
-          className={`${sizeClasses[size]} border border-orange-400/20 rounded-full absolute top-0 left-0 animate-pulse`}
+          className={`${sizeClasses[size]} border ${variantGlowClasses[variant]} rounded-full absolute top-0 left-0 animate-pulse`}
         />
       </div>
 

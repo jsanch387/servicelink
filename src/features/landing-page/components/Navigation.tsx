@@ -5,14 +5,16 @@ import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import React, { useState } from 'react';
+
+import {
+  ResourcesNavMenuDesktop,
+  ResourcesNavMenuMobile,
+} from './ResourcesNavMenu';
 
 export const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, isInitialized } = useAuth();
-  const pathname = usePathname();
-  const isHome = pathname === '/';
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -22,62 +24,25 @@ export const Navigation: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const scrollToSection = (sectionId: string) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
-    }
-    closeMobileMenu();
-  };
-
   const navLinkClass =
     'hover:text-white transition-colors focus:outline-none focus-visible:outline-none';
   const mobileNavLinkClass =
     'text-gray-300 hover:text-white block w-full text-left py-3 px-2 text-base font-medium transition-colors rounded-lg active:bg-white/5 focus:outline-none focus-visible:outline-none';
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-[var(--dashboard-bg)] border-b border-[var(--dashboard-border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center">
           <Logo size="md" logoSize="lg" href="/" className="sm:scale-110" />
         </div>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
-          {isHome ? (
-            <>
-              <button
-                onClick={() => scrollToSection('how-it-works')}
-                className={navLinkClass}
-              >
-                How it Works
-              </button>
-              <button
-                onClick={() => scrollToSection('problem')}
-                className={navLinkClass}
-              >
-                The Problem
-              </button>
-            </>
-          ) : (
-            <>
-              <Link href="/#how-it-works" className={navLinkClass}>
-                How it Works
-              </Link>
-              <Link href="/#problem" className={navLinkClass}>
-                The Problem
-              </Link>
-            </>
-          )}
-          <a href={ROUTES.PRICING_PAGE} className={navLinkClass}>
+          <Link href={ROUTES.PRICING_PAGE} className={navLinkClass}>
             Pricing
-          </a>
-          <a href={ROUTES.RESOURCES} className={navLinkClass}>
-            Resources
-          </a>
+          </Link>
+          <ResourcesNavMenuDesktop />
         </div>
 
-        {/* Desktop auth — shared Button */}
         <div className="hidden md:flex items-center gap-3 min-w-[7.5rem] justify-end">
           {!isInitialized ? (
             <span
@@ -100,7 +65,6 @@ export const Navigation: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile menu button */}
         <div className="md:hidden flex items-center">
           <button
             onClick={toggleMobileMenu}
@@ -116,57 +80,17 @@ export const Navigation: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Navigation Menu - touch-friendly buttons matching auth pages */}
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]">
           <div className="px-4 py-5 space-y-1">
-            {isHome ? (
-              <>
-                <button
-                  onClick={() => scrollToSection('how-it-works')}
-                  className={mobileNavLinkClass}
-                >
-                  How it Works
-                </button>
-                <button
-                  onClick={() => scrollToSection('problem')}
-                  className={mobileNavLinkClass}
-                >
-                  The Problem
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/#how-it-works"
-                  className={mobileNavLinkClass}
-                  onClick={closeMobileMenu}
-                >
-                  How it Works
-                </Link>
-                <Link
-                  href="/#problem"
-                  className={mobileNavLinkClass}
-                  onClick={closeMobileMenu}
-                >
-                  The Problem
-                </Link>
-              </>
-            )}
-            <a
+            <Link
               href={ROUTES.PRICING_PAGE}
               className={mobileNavLinkClass}
               onClick={closeMobileMenu}
             >
               Pricing
-            </a>
-            <a
-              href={ROUTES.RESOURCES}
-              className={mobileNavLinkClass}
-              onClick={closeMobileMenu}
-            >
-              Resources
-            </a>
+            </Link>
+            <ResourcesNavMenuMobile onNavigate={closeMobileMenu} />
             {isInitialized ? (
               <div className="pt-5 mt-4 border-t border-[var(--dashboard-border)] space-y-3">
                 {isAuthenticated ? (

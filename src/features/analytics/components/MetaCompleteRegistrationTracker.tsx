@@ -1,5 +1,6 @@
 'use client';
 
+import { completeWorkshopSignupTracking } from '@/features/ads-workshop/utils/completeWorkshopSignupTracking';
 import { useEffect } from 'react';
 
 declare global {
@@ -28,6 +29,7 @@ export const MetaCompleteRegistrationTracker = () => {
     if (typeof window.fbq !== 'function') return;
 
     window.fbq('track', 'CompleteRegistration');
+    completeWorkshopSignupTracking();
     window.sessionStorage.removeItem(SIGNUP_PIXEL_FLAG_KEY);
 
     if (shouldTrackFromOAuth && params) {
