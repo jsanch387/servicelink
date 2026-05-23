@@ -17,7 +17,7 @@ export const Footer: React.FC = () => {
 
         <div className="flex items-center justify-center gap-4 sm:gap-6 flex-wrap text-xs sm:text-sm text-gray-400">
           <Link
-            href={ROUTES.WORKSHOP_RUN_ADS}
+            href={ROUTES.WORKSHOP}
             className="hover:text-white transition-colors"
           >
             Workshop

@@ -1,7 +1,7 @@
 import {
   WORKSHOP_CANONICAL_URL,
   WORKSHOP_CURRICULUM_TOPICS,
-  WORKSHOP_HERO,
+  WORKSHOP_PAGE_METADATA,
 } from '../data/workshopSeoContent';
 
 const SITE_URL =
@@ -16,7 +16,7 @@ export function AdsWorkshopStructuredData() {
       {
         '@type': 'ListItem',
         position: 2,
-        name: 'Run Local Ads Workshop',
+        name: 'Free Facebook Ads Masterclass',
         item: WORKSHOP_CANONICAL_URL,
       },
     ],
@@ -27,13 +27,13 @@ export function AdsWorkshopStructuredData() {
     '@type': 'WebPage',
     '@id': `${WORKSHOP_CANONICAL_URL}#webpage`,
     url: WORKSHOP_CANONICAL_URL,
-    name: WORKSHOP_HERO.title,
-    description: WORKSHOP_HERO.subtitle,
+    name: WORKSHOP_PAGE_METADATA.title,
+    description: WORKSHOP_PAGE_METADATA.description,
     inLanguage: 'en-US',
     isPartOf: { '@type': 'WebSite', name: 'ServiceLink', url: SITE_URL },
     about: {
       '@type': 'Thing',
-      name: 'Facebook and Instagram advertising for local service businesses',
+      name: 'Facebook ads for mobile detailing and local service businesses',
     },
     publisher: {
       '@type': 'Organization',
@@ -45,8 +45,8 @@ export function AdsWorkshopStructuredData() {
   const courseSchema = {
     '@context': 'https://schema.org',
     '@type': 'Course',
-    name: WORKSHOP_HERO.title,
-    description: WORKSHOP_HERO.subtitle,
+    name: WORKSHOP_PAGE_METADATA.title,
+    description: WORKSHOP_PAGE_METADATA.description,
     url: WORKSHOP_CANONICAL_URL,
     inLanguage: 'en-US',
     isAccessibleForFree: true,
@@ -60,14 +60,14 @@ export function AdsWorkshopStructuredData() {
     hasCourseInstance: {
       '@type': 'CourseInstance',
       courseMode: 'online',
-      courseWorkload: 'PT15M',
+      courseWorkload: 'PT20M',
     },
   };
 
   const itemListSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'What is covered in the Run Local Ads workshop',
+    name: 'What is covered in the free Facebook ads masterclass',
     itemListElement: WORKSHOP_CURRICULUM_TOPICS.map((topic, index) => ({
       '@type': 'ListItem',
       position: index + 1,

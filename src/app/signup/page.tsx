@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import { SignupForm } from '@/features/auth';
 
 export const metadata: Metadata = {
@@ -12,5 +13,9 @@ export const metadata: Metadata = {
 };
 
 export default function SignupPage() {
-  return <SignupForm />;
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
+  );
 }

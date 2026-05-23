@@ -1,30 +1,30 @@
 'use client';
 
-import { Button } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { AdsWorkshopPlaybookBridge } from './AdsWorkshopPlaybookBridge';
+import { AdsWorkshopPostVideoHook } from './AdsWorkshopPostVideoHook';
+import { AdsWorkshopProductOffer } from './AdsWorkshopProductOffer';
+import { AdsWorkshopSocialProof } from './AdsWorkshopSocialProof';
 import { AdsWorkshopVideoPlayer } from './AdsWorkshopVideoPlayer';
+import { WORKSHOP_WATCH_INTRO } from '../data/workshopWatchContent';
 
 export function AdsWorkshopContent() {
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-gray-400 text-center sm:text-left">
-        You are in. Press play on the full{' '}
-        <span className="text-white font-medium">15-minute</span> class below.
+    <div className="space-y-8 sm:space-y-10">
+      <p className="text-sm text-gray-400 text-center leading-relaxed px-1 text-pretty">
+        {WORKSHOP_WATCH_INTRO}
       </p>
-      <AdsWorkshopVideoPlayer />
-      <div className="flex flex-col items-center gap-2 pt-2">
-        <Button
-          href={ROUTES.AUTH.SIGNUP}
-          variant="inverse"
-          size="lg"
-          className="w-full sm:w-auto min-w-[240px] font-bold"
-        >
-          Create your ServiceLink
-        </Button>
-        <p className="text-xs text-gray-500 text-center max-w-sm">
-          One booking link for services, quotes, and payments — free to start.
-        </p>
-      </div>
+
+      <AdsWorkshopVideoPlayer compact />
+
+      <AdsWorkshopPostVideoHook />
+
+      <div className="h-px bg-white/[0.06]" aria-hidden />
+
+      <AdsWorkshopPlaybookBridge />
+
+      <AdsWorkshopSocialProof />
+
+      <AdsWorkshopProductOffer />
     </div>
   );
 }

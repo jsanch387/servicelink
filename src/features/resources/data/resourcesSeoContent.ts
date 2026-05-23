@@ -47,7 +47,7 @@ export const RESOURCES_WORKSHOP_CARD = {
   title: 'Paid ads & workshops',
   description:
     'Meta ad fundamentals for service businesses, including our free on-demand workshop on running local Facebook and Instagram ads.',
-  href: ROUTES.WORKSHOP_RUN_ADS,
+  href: ROUTES.WORKSHOP,
 } as const;
 
 export const RESOURCES_FAQS: readonly { question: string; answer: string }[] = [

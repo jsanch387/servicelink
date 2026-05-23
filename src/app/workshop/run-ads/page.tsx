@@ -1,16 +1,7 @@
-import {
-  AdsWorkshopScreen,
-  AdsWorkshopStructuredData,
-} from '@/features/ads-workshop';
-import { getWorkshopPageMetadata } from '@/features/ads-workshop/data/workshopSeoContent';
+import { ROUTES } from '@/constants/routes';
+import { redirect } from 'next/navigation';
 
-export const metadata = getWorkshopPageMetadata();
-
-export default function RunAdsWorkshopPage() {
-  return (
-    <>
-      <AdsWorkshopStructuredData />
-      <AdsWorkshopScreen />
-    </>
-  );
+/** Legacy URL → current workshop gate. */
+export default function RunAdsWorkshopRedirectPage() {
+  redirect(ROUTES.WORKSHOP);
 }

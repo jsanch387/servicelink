@@ -21,6 +21,8 @@ function isResourcesActive(pathname: string): boolean {
   return (
     pathname === ROUTES.RESOURCES ||
     pathname.startsWith(`${ROUTES.RESOURCES}/`) ||
+    pathname === ROUTES.WORKSHOP ||
+    pathname === ROUTES.WORKSHOP_WATCH ||
     pathname === ROUTES.WORKSHOP_RUN_ADS
   );
 }

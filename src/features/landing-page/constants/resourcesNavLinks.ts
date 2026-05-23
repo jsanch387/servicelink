@@ -8,7 +8,7 @@ export const RESOURCES_NAV_LINKS = [
   },
   {
     label: 'Free ads workshop',
-    href: ROUTES.WORKSHOP_RUN_ADS,
+    href: ROUTES.WORKSHOP,
     description: 'How to run local Meta ads that book jobs',
   },
 ] as const;

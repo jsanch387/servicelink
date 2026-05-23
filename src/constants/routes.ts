@@ -19,8 +19,14 @@ export const ROUTES = {
   /** Path for a single guide; use getResourceGuidePath(slug) for links. */
   RESOURCE_GUIDE: (slug: string) => `/resources/${slug}`,
 
-  /** Free ads masterclass — dedicated page (linked from landing nav/hero/footer). */
+  /** Free ads masterclass — email gate (landing). */
+  WORKSHOP: '/workshop',
+  /** Gated workshop video. */
+  WORKSHOP_WATCH: '/workshop/watch',
+  /** @deprecated Use `ROUTES.WORKSHOP` — redirects to `/workshop`. */
   WORKSHOP_RUN_ADS: '/workshop/run-ads',
+  /** Signup with workshop funnel attribution (`?from=workshop`). */
+  WORKSHOP_SIGNUP: '/signup?from=workshop',
 
   // Authentication routes
   AUTH: {
@@ -129,6 +135,12 @@ export const API_ROUTES = {
   ACCOUNT: '/api/account',
   /** Public contact form (landing /contact page). */
   CONTACT: '/api/contact',
+  /** Public: capture email for `/workshop` gate access. */
+  WORKSHOP_REGISTER: '/api/workshop/register',
+  /** Public: record funnel step for a workshop lead (video view, signup click). */
+  WORKSHOP_TRACK: '/api/workshop/track',
+  /** Public: mark workshop lead as signed up (matched by email). */
+  WORKSHOP_CONVERTED: '/api/workshop/converted',
 } as const;
 
 export const PUBLIC_ROUTES = [

@@ -1,11 +1,13 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { completeWorkshopSignupTracking } from '@/features/ads-workshop/utils/completeWorkshopSignupTracking';
+import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
 import { ROUTES } from '@/constants/routes';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 function safeNextPath(raw: string | null): string {
@@ -37,6 +39,17 @@ export const EmailConfirmedScreen: React.FC = () => {
       : nextPath;
 
   const sessionReady = isInitialized && !isLoading && !!user;
+  const workshopSignupTracked = useRef(false);
+
+  useEffect(() => {
+    captureWorkshopAttributionFromUrl(searchParams);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!sessionReady || workshopSignupTracked.current) return;
+    workshopSignupTracked.current = true;
+    completeWorkshopSignupTracking(user.email ?? undefined, user.id);
+  }, [sessionReady, user]);
 
   return (
     <div className="min-h-[100dvh] bg-neutral-900 flex items-center justify-center py-6 px-4 pb-[env(safe-area-inset-bottom)] sm:py-8 sm:px-6">

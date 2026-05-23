@@ -1,10 +1,12 @@
 'use client';
 
 import { Button, Input } from '@/components/shared';
+import { completeWorkshopSignupTracking } from '@/features/ads-workshop/utils/completeWorkshopSignupTracking';
+import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
 import { ROUTES } from '@/constants/routes';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignUpForm } from '../utils/validation';
 import {
@@ -23,6 +25,7 @@ const authFooterLinkClass =
 
 export const SignupForm: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signUp, signInWithGoogle, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -32,6 +35,10 @@ export const SignupForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [authError, setAuthError] = useState<string>('');
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    captureWorkshopAttributionFromUrl(searchParams);
+  }, [searchParams]);
 
   const handleGoogleSignIn = async () => {
     setAuthError('');
@@ -73,6 +80,7 @@ export const SignupForm: React.FC = () => {
 
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));
+      completeWorkshopSignupTracking(formData.email);
       window.sessionStorage.setItem(SIGNUP_PIXEL_FLAG_KEY, '1');
       router.push(ROUTES.DASHBOARD.MAIN);
     } catch {

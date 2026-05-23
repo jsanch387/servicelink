@@ -1,5 +1,9 @@
-export { AdsWorkshopFlow } from './components/AdsWorkshopFlow';
-export { AdsWorkshopScreen } from './components/AdsWorkshopScreen';
 export { AdsWorkshopStructuredData } from './components/AdsWorkshopStructuredData';
-export { ADS_WORKSHOP_VIDEO } from './constants';
+export { WorkshopGatePage } from './components/WorkshopGatePage';
+export { WorkshopWatchPage } from './components/WorkshopWatchPage';
+export {
+  HAS_WORKSHOP_ACCESS_STORAGE_KEY,
+  WORKSHOP_YOUTUBE_EMBED_SRC,
+} from './constants';
 export { getWorkshopPageMetadata } from './data/workshopSeoContent';
+export { grantWorkshopAccess, hasWorkshopAccess } from './utils/accessStorage';
