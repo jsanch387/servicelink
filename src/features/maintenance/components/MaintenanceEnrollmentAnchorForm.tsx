@@ -1,8 +1,9 @@
 'use client';
 
-import { Button, NativeScheduleDateRow, TimeSelect } from '@/components/shared';
+import { Button, ScheduleDatePickerField, TimeSelect } from '@/components/shared';
+import { maintenanceAnchorMinSelectableDate } from '@/features/maintenance/utils/maintenanceAnchorDate';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface MaintenanceEnrollmentAnchorFormProps {
   token: string;
@@ -16,6 +17,8 @@ export function MaintenanceEnrollmentAnchorForm({
   const [anchorTime, setAnchorTime] = useState('10:00');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const minAnchorDate = useMemo(() => maintenanceAnchorMinSelectableDate(), []);
 
   const save = async () => {
     if (loading) return;
@@ -52,22 +55,17 @@ export function MaintenanceEnrollmentAnchorForm({
         No date chosen yet. Choose a date and time that work for your
         maintenance detail.
       </p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label
-            htmlFor="maint-anchor-date"
-            className="mb-1.5 block text-xs font-medium text-gray-400"
-          >
-            Maintenance date
-          </label>
-          <NativeScheduleDateRow
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="min-w-0 sm:col-span-2">
+          <ScheduleDatePickerField
             id="maint-anchor-date"
             value={anchorDate}
             onChange={setAnchorDate}
+            minDate={minAnchorDate}
             aria-label="Maintenance visit date"
           />
         </div>
-        <div>
+        <div className="min-w-0 sm:col-span-2">
           <label
             htmlFor="maint-anchor-time"
             className="mb-1.5 block text-xs font-medium text-gray-400"

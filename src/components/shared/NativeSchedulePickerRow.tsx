@@ -16,51 +16,55 @@ function formatDateRowLabel(iso: string): string {
 }
 
 const rowShell =
-  'relative min-h-[48px] w-full rounded-lg border border-white/10 bg-white/5 focus-within:border-white/30 focus-within:ring-2 focus-within:ring-white/20 lg:rounded-xl';
-
-const inputOverlay =
-  'absolute inset-0 z-20 min-h-[48px] w-full cursor-pointer border-0 bg-transparent p-0 text-base opacity-0';
-
-const fauxRow =
-  'pointer-events-none absolute inset-0 z-10 flex min-h-[48px] items-center gap-2.5 px-3.5';
+  'relative flex h-12 min-h-[48px] w-full min-w-0 max-w-full items-center overflow-hidden rounded-lg border border-white/10 bg-white/5 px-3.5 focus-within:border-white/30 focus-within:ring-2 focus-within:ring-white/20 lg:rounded-xl [color-scheme:dark]';
 
 export type NativeScheduleDateRowProps = {
   id: string;
   value: string;
   onChange: (value: string) => void;
   'aria-label': string;
+  min?: string;
 };
 
 /**
- * Native `<input type="date">` with a visible row + calendar icon. The real
- * input covers the row at full size (opacity 0) so iOS Safari opens the system
- * picker reliably instead of styling broken inline chrome.
+ * Visible native `<input type="date">` with calendar icon. Avoids opacity-0 overlays
+ * that fail inside modals (overflow clipping, dead clicks on desktop).
  */
 export function NativeScheduleDateRow({
   id,
   value,
   onChange,
   'aria-label': ariaLabel,
+  min,
 }: NativeScheduleDateRowProps) {
   return (
     <div className={rowShell}>
-      <div className={fauxRow} aria-hidden>
-        <CalendarDaysIcon className="h-5 w-5 shrink-0 text-white" />
-        <span
-          className={`min-w-0 truncate text-base font-medium ${value ? 'text-white' : 'text-gray-500'}`}
-        >
-          {formatDateRowLabel(value)}
-        </span>
-      </div>
+      <CalendarDaysIcon
+        className="pointer-events-none mr-2.5 h-5 w-5 shrink-0 text-white"
+        aria-hidden
+      />
       <input
         id={id}
         type="date"
         value={value}
+        min={min}
         onChange={e => onChange(e.target.value)}
         autoComplete="off"
         aria-label={ariaLabel}
-        className={inputOverlay}
+        className="
+          min-h-0 min-w-0 flex-1 cursor-pointer border-0 bg-transparent py-0
+          text-base font-medium text-white shadow-none outline-none ring-0
+          focus:outline-none focus:ring-0
+          [&::-webkit-calendar-picker-indicator]:ml-1 [&::-webkit-calendar-picker-indicator]:shrink-0
+          [&::-webkit-calendar-picker-indicator]:cursor-pointer
+          [&::-webkit-datetime-edit-fields-wrapper]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0
+        "
       />
+      {!value ? (
+        <span className="pointer-events-none absolute left-11 text-base font-medium text-gray-500">
+          {formatDateRowLabel('')}
+        </span>
+      ) : null}
     </div>
   );
 }

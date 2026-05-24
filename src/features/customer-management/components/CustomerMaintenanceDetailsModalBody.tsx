@@ -20,11 +20,6 @@ function formatPriceWhole(cents: number): string {
   }).format(cents / 100);
 }
 
-function frequencyLabel(weeks: number): string {
-  if (weeks <= 1) return 'Every week';
-  return `Every ${weeks} weeks`;
-}
-
 function paymentLine(e: CustomerMaintenanceEnrollmentSummary): string {
   if (
     e.status === 'enrolled_pending_customer' &&
@@ -112,14 +107,7 @@ export function CustomerMaintenanceDetailsModalBody({
         <DetailRow label="Status" value={statusLine} />
         <div className="h-px bg-white/[0.06]" />
         <DetailRow label="Service" value={enrollment.serviceNameSnapshot} />
-        <DetailRow
-          label="Price per visit"
-          value={formatPriceWhole(enrollment.priceCents)}
-        />
-        <DetailRow
-          label="Frequency"
-          value={frequencyLabel(enrollment.frequencyWeeks)}
-        />
+        <DetailRow label="Price" value={formatPriceWhole(enrollment.priceCents)} />
         <DetailRow
           label="Visit length"
           value={formatDurationMinutes(enrollment.durationMinutes)}

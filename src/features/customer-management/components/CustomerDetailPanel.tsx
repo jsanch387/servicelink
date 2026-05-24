@@ -623,7 +623,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
         isOpen={enrollMaintenanceOpen}
         onClose={() => setEnrollMaintenanceOpen(false)}
         title="Maintenance detail invite"
-        maxWidth="lg"
+        maxWidth="2xl"
         panelClassName="sm:ring-1 sm:ring-inset sm:ring-white/10 sm:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.55)]"
         headerClassName="lg:px-10 lg:py-6 lg:border-white/[0.08]"
         titleClassName="lg:text-xl lg:tracking-tight"

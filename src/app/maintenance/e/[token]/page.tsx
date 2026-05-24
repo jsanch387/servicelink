@@ -58,11 +58,6 @@ function formatTime12FromDb(timeVal: string): string {
     : `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-function frequencyLabel(weeks: number): string {
-  if (weeks === 1) return 'Every week';
-  return `Every ${weeks} weeks`;
-}
-
 function customerInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
@@ -316,21 +311,14 @@ export default async function PublicMaintenanceEnrollmentPage({
               ) : null}
 
               {firstVisitScheduled || isEnrollmentAccepted ? (
-                <div className="grid gap-5 sm:grid-cols-2 sm:gap-6">
-                  <div>
-                    <p className="text-sm font-semibold leading-snug text-white">
-                      {formatDateLong(String(enrollment.anchor_date ?? ''))}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Preferred time{' '}
-                      {formatTime12FromDb(String(enrollment.anchor_time ?? ''))}
-                    </p>
-                  </div>
-                  <div className="sm:text-right">
-                    <p className="text-sm font-semibold text-white">
-                      {frequencyLabel(Number(enrollment.frequency_weeks ?? 0))}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-sm font-semibold leading-snug text-white">
+                    {formatDateLong(String(enrollment.anchor_date ?? ''))}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Preferred time{' '}
+                    {formatTime12FromDb(String(enrollment.anchor_time ?? ''))}
+                  </p>
                 </div>
               ) : null}
             </div>

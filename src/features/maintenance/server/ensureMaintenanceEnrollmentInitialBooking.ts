@@ -126,8 +126,7 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
   const serviceName = maintenanceCalendarBookingServiceTitle(
     enrollment.service_name_snapshot
   );
-  const freq = Math.max(1, Math.round(Number(enrollment.frequency_weeks ?? 1)));
-  const bookingCustomerNotes = `Maintenance detail (first visit). Repeats every ${freq} week(s).`;
+  const bookingCustomerNotes = 'Maintenance detail (first visit).';
 
   const slotCheck = await checkMaintenanceAnchorAgainstCalendar(supabase, {
     businessId: enrollment.business_id,
