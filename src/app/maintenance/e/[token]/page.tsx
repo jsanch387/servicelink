@@ -1,4 +1,8 @@
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { MaintenanceEnrollmentAnchorForm } from '@/features/maintenance/components/MaintenanceEnrollmentAnchorForm';
 import { MaintenanceEnrollmentPaymentActions } from '@/features/maintenance/components/MaintenanceEnrollmentPaymentActions';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
@@ -8,6 +12,7 @@ import {
   maintenanceCustomerPaymentOptions,
   type MaintenanceLivePaymentFlags,
 } from '@/features/maintenance/server/maintenancePaymentEligibility';
+import { coerceMaintenanceWeeklySchedule } from '@/features/maintenance/utils/maintenanceAnchorSlots';
 import { maintenanceDetailServiceLabel } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
@@ -134,6 +139,7 @@ export default async function PublicMaintenanceEnrollmentPage({
 
   const [
     { data: businessRow },
+    availabilityRow,
     { data: customerRow },
     ownerHasPro,
     { data: settingsRow, error: settingsError },
@@ -141,9 +147,10 @@ export default async function PublicMaintenanceEnrollmentPage({
   ] = await Promise.all([
     db
       .from('business_profiles')
-      .select('business_name, business_type')
+      .select('business_name, business_type, business_slug')
       .eq('id', businessId)
       .maybeSingle(),
+    getAvailabilityForBusiness(supabase, businessId),
     db
       .from('customers')
       .select('full_name, email')
@@ -198,6 +205,24 @@ export default async function PublicMaintenanceEnrollmentPage({
     (
       businessRow as { business_type?: string | null } | null
     )?.business_type?.trim() ?? '';
+  const businessSlug = (
+    businessRow as { business_slug?: string | null } | null
+  )?.business_slug?.trim();
+  const schedulingReady = hasAvailabilityConfigured(availabilityRow);
+  const weeklySchedule = coerceMaintenanceWeeklySchedule(
+    availabilityRow?.weekly_schedule as WeeklySchedule | null | undefined
+  );
+  const timeOffBlocks = parseStoredTimeOffBlocks(
+    availabilityRow?.time_off_blocks
+  ).map(b => ({
+    date: b.date,
+    startTime: b.startTime,
+    endTime: b.endTime,
+  }));
+  const maintenanceDurationMinutes = Math.max(
+    1,
+    Math.round(Number(enrollment.duration_minutes ?? 60))
+  );
   const customerName =
     (customerRow as { full_name?: string | null } | null)?.full_name?.trim() ||
     'Customer';
@@ -221,7 +246,7 @@ export default async function PublicMaintenanceEnrollmentPage({
           <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-3xl">
             Your maintenance detail
           </h1>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-400 md:max-w-lg">
+          <p className="max-w-md text-sm leading-relaxed text-gray-400 md:max-w-lg">
             Here is your maintenance detail.
           </p>
         </header>
@@ -307,7 +332,15 @@ export default async function PublicMaintenanceEnrollmentPage({
               <div className="h-px bg-white/[0.06]" />
 
               {!isEnrollmentAccepted && !firstVisitScheduled ? (
-                <MaintenanceEnrollmentAnchorForm token={token.trim()} />
+                <MaintenanceEnrollmentAnchorForm
+                  token={token.trim()}
+                  businessSlug={businessSlug ?? ''}
+                  businessDisplayName={businessName}
+                  durationMinutes={maintenanceDurationMinutes}
+                  weeklySchedule={weeklySchedule}
+                  timeOffBlocks={timeOffBlocks}
+                  schedulingReady={schedulingReady && Boolean(businessSlug)}
+                />
               ) : null}
 
               {firstVisitScheduled || isEnrollmentAccepted ? (

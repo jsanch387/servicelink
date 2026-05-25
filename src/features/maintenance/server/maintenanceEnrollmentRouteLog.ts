@@ -11,7 +11,14 @@ const ALLOWED_LOG_META = new Set([
   'code',
   'supabaseCode',
   'emailSent',
+  'detail',
 ]);
+
+function truncateLogDetail(value: string, max = 72): string {
+  const t = value.trim();
+  if (!t) return '';
+  return t.length <= max ? t : `${t.slice(0, max)}…`;
+}
 
 export function getMaintenanceEnrollmentRequestId(
   request: Pick<NextRequest, 'headers'>
@@ -40,8 +47,7 @@ export function logMaintenanceEnrollmentPost(
   reason: string,
   meta?: Record<string, unknown>
 ): void {
-  const outcome =
-    level === 'info' ? 'OK' : level === 'warn' ? 'FAIL' : 'ERROR';
+  const outcome = level === 'info' ? 'OK' : level === 'warn' ? 'FAIL' : 'ERROR';
   const parts = [
     ROUTE_PREFIX,
     outcome,
@@ -54,7 +60,10 @@ export function logMaintenanceEnrollmentPost(
       if (value === undefined || value === null || !ALLOWED_LOG_META.has(key)) {
         continue;
       }
-      parts.push(`${key}=${String(value)}`);
+      const str =
+        key === 'detail' ? truncateLogDetail(String(value)) : String(value);
+      if (!str) continue;
+      parts.push(`${key}=${str}`);
     }
   }
 

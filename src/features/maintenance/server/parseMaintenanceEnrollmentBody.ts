@@ -64,10 +64,8 @@ export function parseMaintenanceEnrollmentBody(json: unknown): ParseResult {
     return { ok: false, error: 'Visit duration is required', status: 400 };
   }
 
-  const anchorDate =
-    typeof body.anchorDate === 'string' ? body.anchorDate : '';
-  const anchorTime =
-    typeof body.anchorTime === 'string' ? body.anchorTime : '';
+  const anchorDate = typeof body.anchorDate === 'string' ? body.anchorDate : '';
+  const anchorTime = typeof body.anchorTime === 'string' ? body.anchorTime : '';
   const anchorDateTrimmed = anchorDate.trim();
   const anchorTimeTrimmed = anchorTime.trim().slice(0, 5);
   const hasAnchorDate = anchorDateTrimmed.length > 0;

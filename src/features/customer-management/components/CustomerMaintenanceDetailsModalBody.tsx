@@ -107,7 +107,10 @@ export function CustomerMaintenanceDetailsModalBody({
         <DetailRow label="Status" value={statusLine} />
         <div className="h-px bg-white/[0.06]" />
         <DetailRow label="Service" value={enrollment.serviceNameSnapshot} />
-        <DetailRow label="Price" value={formatPriceWhole(enrollment.priceCents)} />
+        <DetailRow
+          label="Price"
+          value={formatPriceWhole(enrollment.priceCents)}
+        />
         <DetailRow
           label="Visit length"
           value={formatDurationMinutes(enrollment.durationMinutes)}

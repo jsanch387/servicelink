@@ -1,5 +1,4 @@
 import { getPublicMaintenanceEnrollmentPath } from '@/constants/routes';
-import { logMaintenanceEnrollmentPost } from '@/features/maintenance/server/maintenanceEnrollmentRouteLog';
 import { sendMaintenanceEnrollmentSentEmail } from '@/features/email/maintenance-enrollment-sent/sendMaintenanceEnrollmentSentEmail';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import {
@@ -10,6 +9,7 @@ import {
   MAINTENANCE_ANCHOR_PLACEHOLDER_DATE,
   MAINTENANCE_ANCHOR_PLACEHOLDER_TIME,
 } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
+import { logMaintenanceEnrollmentPost } from '@/features/maintenance/server/maintenanceEnrollmentRouteLog';
 import { maintenanceOwnerPaymentModeFromCheckout } from '@/features/maintenance/server/maintenanceOwnerPaymentMode';
 import type { ParsedMaintenanceEnrollmentBody } from '@/features/maintenance/server/parseMaintenanceEnrollmentBody';
 import { maintenanceDetailServiceLabel } from '@/features/maintenance/utils/maintenanceDetailServiceLabel';
@@ -21,6 +21,17 @@ import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
+export type CreateMaintenanceEnrollmentFailReason =
+  | 'customer_load_failed'
+  | 'customer_not_found'
+  | 'pending_check_failed'
+  | 'pending_invite_exists'
+  | 'business_load_failed'
+  | 'payment_settings_failed'
+  | 'payment_account_failed'
+  | 'slot_unavailable'
+  | 'insert_failed';
+
 export type CreateMaintenanceEnrollmentForOwnerResult =
   | {
       ok: true;
@@ -30,7 +41,13 @@ export type CreateMaintenanceEnrollmentForOwnerResult =
       notifiedEmail?: string;
       emailError?: string | null;
     }
-  | { ok: false; error: string; status: number };
+  | {
+      ok: false;
+      error: string;
+      status: number;
+      logReason: CreateMaintenanceEnrollmentFailReason;
+      supabaseCode?: string;
+    };
 
 export async function createMaintenanceEnrollmentForOwner(params: {
   supabase: SupabaseClient<Database>;
@@ -70,6 +87,8 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       ok: false,
       error: customerError.message || 'Failed to load customer',
       status: 500,
+      logReason: 'customer_load_failed',
+      supabaseCode: customerError.code,
     };
   }
 
@@ -78,6 +97,7 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       ok: false,
       error: 'Customer not found for this business',
       status: 404,
+      logReason: 'customer_not_found',
     };
   }
 
@@ -100,6 +120,8 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       ok: false,
       error: pendingError.message || 'Failed to check existing invites',
       status: 500,
+      logReason: 'pending_check_failed',
+      supabaseCode: pendingError.code,
     };
   }
 
@@ -109,6 +131,7 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       error:
         'This customer already has a pending maintenance invite. View details to copy the link or wait until they respond.',
       status: 409,
+      logReason: 'pending_invite_exists',
     };
   }
 
@@ -123,6 +146,8 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       ok: false,
       error: businessError.message || 'Failed to load business profile',
       status: 500,
+      logReason: 'business_load_failed',
+      supabaseCode: businessError.code,
     };
   }
 
@@ -143,12 +168,14 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       ok: false,
       error: settingsError.message || 'Failed to load payment settings',
       status: 500,
+      logReason: 'payment_settings_failed',
+      supabaseCode: settingsError.code,
     };
   }
 
   const paymentsEnabled =
-    (settingsRow as { payments_enabled?: boolean } | null)
-      ?.payments_enabled === true;
+    (settingsRow as { payments_enabled?: boolean } | null)?.payments_enabled ===
+    true;
   const checkoutMode = checkoutModeFromDb(
     (settingsRow as { checkout_mode?: string | null } | null)?.checkout_mode
   );
@@ -165,6 +192,8 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       ok: false,
       error: accountError.message || 'Failed to load payment account',
       status: 500,
+      logReason: 'payment_account_failed',
+      supabaseCode: accountError.code,
     };
   }
 
@@ -193,6 +222,7 @@ export async function createMaintenanceEnrollmentForOwner(params: {
         ok: false,
         error: maintenanceSlotAvailabilityUserMessage(slotCheck.reason),
         status: 409,
+        logReason: 'slot_unavailable',
       };
     }
   }
@@ -221,6 +251,8 @@ export async function createMaintenanceEnrollmentForOwner(params: {
       ok: false,
       error: error?.message || 'Failed to create maintenance enrollment',
       status: 500,
+      logReason: 'insert_failed',
+      supabaseCode: error?.code,
     };
   }
 
@@ -232,26 +264,22 @@ export async function createMaintenanceEnrollmentForOwner(params: {
     customerRow as { email?: string | null; full_name?: string | null }
   ).email?.trim();
   const customerName =
-    (customerRow as { full_name?: string | null }).full_name?.trim() ||
-    'there';
+    (customerRow as { full_name?: string | null }).full_name?.trim() || 'there';
 
   let emailSent = false;
   let emailError: string | null = null;
 
   if (customerEmail) {
-    const sendResult = await sendMaintenanceEnrollmentSentEmail(
-      customerEmail,
-      {
-        customerName,
-        businessName,
-        serviceName: maintenanceDetailServiceLabel(serviceNameSnapshot),
-        priceCents,
-        durationMinutes,
-        anchorDate: anchorDateForDb,
-        anchorTime: anchorTimeForDb,
-        publicEnrollmentUrl: customerViewUrl,
-      }
-    );
+    const sendResult = await sendMaintenanceEnrollmentSentEmail(customerEmail, {
+      customerName,
+      businessName,
+      serviceName: maintenanceDetailServiceLabel(serviceNameSnapshot),
+      priceCents,
+      durationMinutes,
+      anchorDate: anchorDateForDb,
+      anchorTime: anchorTimeForDb,
+      publicEnrollmentUrl: customerViewUrl,
+    });
     emailSent = sendResult.sent;
     emailError = sendResult.sent ? null : sendResult.error;
   } else {
@@ -268,9 +296,14 @@ export async function createMaintenanceEnrollmentForOwner(params: {
 
   if (updateError) {
     if (requestId) {
-      logMaintenanceEnrollmentPost(requestId, 'warn', 'notification_update_failed', {
-        supabaseCode: updateError.code,
-      });
+      logMaintenanceEnrollmentPost(
+        requestId,
+        'warn',
+        'notification_update_failed',
+        {
+          supabaseCode: updateError.code,
+        }
+      );
     } else {
       console.warn(
         '[maintenance-enrollment] FAIL notification_update_failed',

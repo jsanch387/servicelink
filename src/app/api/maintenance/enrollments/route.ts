@@ -73,9 +73,14 @@ export async function POST(request: NextRequest) {
 
       const resolved = await resolveCurrentBusinessId(supabase);
       if (!resolved.ok) {
-        logMaintenanceEnrollmentPost(requestId, 'warn', 'business_resolve_failed', {
-          status: resolved.status,
-        });
+        logMaintenanceEnrollmentPost(
+          requestId,
+          'warn',
+          'business_resolve_failed',
+          {
+            status: resolved.status,
+          }
+        );
         return maintenanceEnrollmentJsonResponse(
           requestId,
           { success: false, error: resolved.error },
@@ -122,9 +127,14 @@ export async function POST(request: NextRequest) {
           slugRow as { business_slug?: string | null }
         ).business_slug?.trim();
         if (dbSlug && dbSlug !== body.businessSlug) {
-          logMaintenanceEnrollmentPost(requestId, 'warn', 'business_slug_mismatch', {
-            status: 400,
-          });
+          logMaintenanceEnrollmentPost(
+            requestId,
+            'warn',
+            'business_slug_mismatch',
+            {
+              status: 400,
+            }
+          );
           return maintenanceEnrollmentJsonResponse(
             requestId,
             { success: false, error: 'Invalid request' },
@@ -137,9 +147,14 @@ export async function POST(request: NextRequest) {
     } else {
       const resolved = await resolveCurrentBusinessId(supabase);
       if (!resolved.ok) {
-        logMaintenanceEnrollmentPost(requestId, 'warn', 'business_resolve_failed', {
-          status: resolved.status,
-        });
+        logMaintenanceEnrollmentPost(
+          requestId,
+          'warn',
+          'business_resolve_failed',
+          {
+            status: resolved.status,
+          }
+        );
         return maintenanceEnrollmentJsonResponse(
           requestId,
           { success: false, error: resolved.error },
@@ -157,8 +172,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.ok) {
-      logMaintenanceEnrollmentPost(requestId, 'warn', 'create_failed', {
+      logMaintenanceEnrollmentPost(requestId, 'warn', result.logReason, {
         status: result.status,
+        ...(result.supabaseCode ? { supabaseCode: result.supabaseCode } : {}),
       });
       return maintenanceEnrollmentJsonResponse(
         requestId,
@@ -190,6 +206,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     logMaintenanceEnrollmentPost(requestId, 'error', 'unexpected_error', {
       status: 500,
+      detail: err instanceof Error ? err.message : 'unknown_error',
     });
     return maintenanceEnrollmentJsonResponse(
       requestId,

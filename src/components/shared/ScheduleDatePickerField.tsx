@@ -40,6 +40,8 @@ export type ScheduleDatePickerFieldProps = {
   value: string;
   onChange: (isoDate: string) => void;
   minDate?: Date;
+  /** Same semantics as shared `Calendar` (e.g. no open slots that day). */
+  isDateDisabled?: (date: Date) => boolean;
   placeholder?: string;
   'aria-label'?: string;
   /** When true, calendar panel starts expanded. */
@@ -55,6 +57,7 @@ export function ScheduleDatePickerField({
   value,
   onChange,
   minDate,
+  isDateDisabled,
   placeholder = 'Choose date',
   'aria-label': ariaLabel = 'Choose date',
   defaultOpen = false,
@@ -93,6 +96,7 @@ export function ScheduleDatePickerField({
             value={selectedDate}
             onChange={date => onChange(isoFromLocalDate(date))}
             minDate={minDate}
+            isDateDisabled={isDateDisabled}
           />
         </div>
       ) : null}
