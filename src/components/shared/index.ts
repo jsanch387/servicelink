@@ -34,6 +34,7 @@ export { Modal } from './Modal';
 export { ModernLoadingSpinner } from './ModernLoadingSpinner';
 export { nativeCheckboxSmClassName } from './nativeCheckboxClasses';
 export { NativeScheduleDateRow } from './NativeSchedulePickerRow';
+export { ScheduleDatePickerField } from './ScheduleDatePickerField';
 export { RequiredLabel } from './RequiredLabel';
 export { SectionTitle } from './SectionTitle';
 export { SERVICE_DURATION_HOURS_OPTIONS } from './ServiceDurationOptions';

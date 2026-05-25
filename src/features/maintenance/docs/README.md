@@ -40,7 +40,7 @@ Run: `npm run test`. API routes, Stripe webhooks, and Supabase-backed flows are 
 ### A. Business owner (CRM)
 
 1. Open a customer → **Send maintenance invite** (inverse CTA).
-2. Enter price, frequency, visit duration; optionally **first visit date/time** (or leave blank so the customer picks on the link).
+2. Enter price, visit duration; optionally **first visit date/time** (or leave blank so the customer picks on the link).
 3. Submit → `POST /api/maintenance/enrollments` creates a `maintenance_enrollments` row, stores a **hashed** link token and (when migrated) a **server-side copy** of the raw token for “copy link again,” emails the customer when an email exists, and returns the public URL for manual copy.
 4. While the invite is **pending** and a stored invite token exists, **Send maintenance invite** is disabled to avoid overlapping invites; **View details** exposes **Copy invite link** for SMS / no-email customers.
 5. After the customer completes the flow, CRM shows status (pending → confirmed, payment line, etc.).

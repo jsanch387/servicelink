@@ -9,6 +9,7 @@ import {
   DUPLICATE_CUSTOMER_MESSAGE,
   parseCreateCustomerBody,
 } from '@/features/customer-management/utils/parseCreateCustomerBody';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
@@ -119,9 +120,17 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      return NextResponse.json(
+        { success: false, error: auth.error, code: auth.code },
+        { status: auth.status }
+      );
+    }
+
+    const { supabase } = auth;
     const resolved = await resolveCurrentBusinessId(supabase);
 
     if (!resolved.ok) {

@@ -3,7 +3,6 @@ export interface MaintenanceEnrollmentSentPayload {
   businessName: string;
   serviceName: string;
   priceCents: number;
-  frequencyWeeks: number;
   durationMinutes: number;
   /** `YYYY-MM-DD` when the owner set a first visit; otherwise null. */
   anchorDate: string | null;

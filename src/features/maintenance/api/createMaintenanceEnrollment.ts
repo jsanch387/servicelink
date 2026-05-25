@@ -4,7 +4,6 @@ export interface CreateMaintenanceEnrollmentPayload {
   customerId: string;
   serviceNameSnapshot: string;
   priceCents: number;
-  frequencyWeeks: number;
   durationMinutes: number;
   /** Omit or leave empty so the customer picks date/time on the public link. */
   anchorDate?: string;
