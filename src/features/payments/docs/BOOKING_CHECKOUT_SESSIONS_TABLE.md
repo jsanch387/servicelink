@@ -29,24 +29,24 @@ Without this table, webhook processing depends on fragile metadata-only payloads
 
 ## Proposed columns
 
-| Column | Type | Nullable | Notes |
-|---|---|---:|---|
-| `id` | `uuid` | no | PK, default `gen_random_uuid()` |
-| `business_id` | `uuid` | no | FK -> `business_profiles(id)` |
-| `business_slug` | `text` | no | slug snapshot for context/debug |
-| `stripe_checkout_session_id` | `text` | yes | unique once created |
-| `stripe_payment_intent_id` | `text` | yes | optional; available after payment intent creation |
-| `status` | `text` | no | `created`, `completed`, `expired`, `failed`, `canceled` |
-| `payment_kind` | `text` | no | `deposit` or `full` |
-| `selected_payment_method` | `text` | no | `pay_now`, `pay_in_person`, `none` |
-| `currency` | `text` | no | lowercase ISO-3 |
-| `expected_amount_cents` | `int4` | no | server-computed amount expected for this session |
-| `actual_amount_cents` | `int4` | yes | amount reported after payment completion |
-| `booking_payload` | `jsonb` | no | full booking snapshot for webhook processing |
-| `booking_id` | `uuid` | yes | FK -> `bookings(id)` after booking is created |
-| `completed_at` | `timestamptz` | yes | set when session reaches completed |
-| `created_at` | `timestamptz` | no | default `now()` |
-| `updated_at` | `timestamptz` | no | default `now()`, trigger-maintained |
+| Column                       | Type          | Nullable | Notes                                                   |
+| ---------------------------- | ------------- | -------: | ------------------------------------------------------- |
+| `id`                         | `uuid`        |       no | PK, default `gen_random_uuid()`                         |
+| `business_id`                | `uuid`        |       no | FK -> `business_profiles(id)`                           |
+| `business_slug`              | `text`        |       no | slug snapshot for context/debug                         |
+| `stripe_checkout_session_id` | `text`        |      yes | unique once created                                     |
+| `stripe_payment_intent_id`   | `text`        |      yes | optional; available after payment intent creation       |
+| `status`                     | `text`        |       no | `created`, `completed`, `expired`, `failed`, `canceled` |
+| `payment_kind`               | `text`        |       no | `deposit` or `full`                                     |
+| `selected_payment_method`    | `text`        |       no | `pay_now`, `pay_in_person`, `none`                      |
+| `currency`                   | `text`        |       no | lowercase ISO-3                                         |
+| `expected_amount_cents`      | `int4`        |       no | server-computed amount expected for this session        |
+| `actual_amount_cents`        | `int4`        |      yes | amount reported after payment completion                |
+| `booking_payload`            | `jsonb`       |       no | full booking snapshot for webhook processing            |
+| `booking_id`                 | `uuid`        |      yes | FK -> `bookings(id)` after booking is created           |
+| `completed_at`               | `timestamptz` |      yes | set when session reaches completed                      |
+| `created_at`                 | `timestamptz` |       no | default `now()`                                         |
+| `updated_at`                 | `timestamptz` |       no | default `now()`, trigger-maintained                     |
 
 ## Suggested constraints
 

@@ -8,10 +8,10 @@ Add-ons are optional extras (e.g. wax, rush delivery) that customers can add whe
 
 ### Two-table design
 
-| Table | Purpose |
-|-------|---------|
-| `service_addons` | **Pool** – add-on definitions (name, price, optional **duration**). One row per add-on, scoped by `business_id`. No service link here. |
-| `service_addon_assignments` | **Junction** – which add-ons each service offers. Links `service_id` ↔ `addon_id`. |
+| Table                       | Purpose                                                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `service_addons`            | **Pool** – add-on definitions (name, price, optional **duration**). One row per add-on, scoped by `business_id`. No service link here. |
+| `service_addon_assignments` | **Junction** – which add-ons each service offers. Links `service_id` ↔ `addon_id`.                                                    |
 
 ### Why two tables?
 
@@ -26,26 +26,26 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 
 ### `service_addons` (pool)
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | uuid | Primary key |
-| `business_id` | uuid | FK → business_profiles. Scopes add-ons to a business. |
-| `name` | text | Add-on name (e.g. "Extra polish") |
-| `price_cents` | integer | Price in cents |
+| Column             | Type              | Purpose                                                                                                                                                                                                   |
+| ------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | uuid              | Primary key                                                                                                                                                                                               |
+| `business_id`      | uuid              | FK → business_profiles. Scopes add-ons to a business.                                                                                                                                                     |
+| `name`             | text              | Add-on name (e.g. "Extra polish")                                                                                                                                                                         |
+| `price_cents`      | integer           | Price in cents                                                                                                                                                                                            |
 | `duration_minutes` | integer, nullable | **Optional** extra appointment time when this add-on is selected. Null/omit = price-only (no change to slot length). Same **30-minute grid** as services (see `addOnDurationForm.ts` + `timeOptions.ts`). |
-| `created_at` | timestamptz | Set on insert |
-| `updated_at` | timestamptz | Auto-updated via trigger |
+| `created_at`       | timestamptz       | Set on insert                                                                                                                                                                                             |
+| `updated_at`       | timestamptz       | Auto-updated via trigger                                                                                                                                                                                  |
 
 **Index:** `idx_service_addons_business_id` for listing add-ons by business.
 
 ### `service_addon_assignments` (junction)
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `service_id` | uuid | FK → business_services |
-| `addon_id` | uuid | FK → service_addons |
-| `created_at` | timestamptz | When the assignment was made |
-| *PK* | (service_id, addon_id) | Composite primary key |
+| Column       | Type                   | Purpose                      |
+| ------------ | ---------------------- | ---------------------------- |
+| `service_id` | uuid                   | FK → business_services       |
+| `addon_id`   | uuid                   | FK → service_addons          |
+| `created_at` | timestamptz            | When the assignment was made |
+| _PK_         | (service_id, addon_id) | Composite primary key        |
 
 **Indexes:** `idx_service_addon_assignments_service_id`, `idx_service_addon_assignments_addon_id`.
 

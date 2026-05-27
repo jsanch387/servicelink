@@ -10,7 +10,7 @@ export type PresetKey =
 
 interface QuickPresetsSectionProps {
   selectedPreset: PresetKey | null;
-  // eslint-disable-next-line no-unused-vars
+
   onSelectPreset: (_preset: PresetKey) => void;
   disabled?: boolean;
 }

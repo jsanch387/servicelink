@@ -6,7 +6,7 @@ import type { NotificationDisplay } from '../types/notification';
 
 interface NotificationItemProps {
   notification: NotificationDisplay;
-  // eslint-disable-next-line no-unused-vars -- param name is for type documentation
+
   onMarkAsRead: (id: string) => void;
   onClose: () => void;
 }

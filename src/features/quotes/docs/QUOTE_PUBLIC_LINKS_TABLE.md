@@ -32,22 +32,22 @@ Design goals:
 
 Table: `public.quote_public_links`
 
-| Column | Type | Nullable | Notes |
-|---|---|---:|---|
-| `id` | uuid | no | PK, default `gen_random_uuid()` |
-| `quote_id` | uuid | no | FK -> `quotes(id)` `ON DELETE CASCADE` |
-| `token_hash` | text | no | Hashed token (never store raw token) |
-| `is_active` | boolean | no | Default `true` |
-| `expires_at` | timestamptz | no | Link expiry |
-| `revoked_at` | timestamptz | yes | Set when revoked |
-| `revoked_reason` | text | yes | Optional reason |
-| `view_count` | integer | no | Default `0`, non-negative |
-| `first_viewed_at` | timestamptz | yes | First open timestamp |
-| `last_viewed_at` | timestamptz | yes | Most recent open timestamp |
-| `response_status` | text | yes | `approved` or `declined` |
-| `responded_at` | timestamptz | yes | Set when response recorded |
-| `created_at` | timestamptz | no | Default `now()` |
-| `updated_at` | timestamptz | no | Default `now()`, trigger-maintained |
+| Column            | Type        | Nullable | Notes                                  |
+| ----------------- | ----------- | -------: | -------------------------------------- |
+| `id`              | uuid        |       no | PK, default `gen_random_uuid()`        |
+| `quote_id`        | uuid        |       no | FK -> `quotes(id)` `ON DELETE CASCADE` |
+| `token_hash`      | text        |       no | Hashed token (never store raw token)   |
+| `is_active`       | boolean     |       no | Default `true`                         |
+| `expires_at`      | timestamptz |       no | Link expiry                            |
+| `revoked_at`      | timestamptz |      yes | Set when revoked                       |
+| `revoked_reason`  | text        |      yes | Optional reason                        |
+| `view_count`      | integer     |       no | Default `0`, non-negative              |
+| `first_viewed_at` | timestamptz |      yes | First open timestamp                   |
+| `last_viewed_at`  | timestamptz |      yes | Most recent open timestamp             |
+| `response_status` | text        |      yes | `approved` or `declined`               |
+| `responded_at`    | timestamptz |      yes | Set when response recorded             |
+| `created_at`      | timestamptz |       no | Default `now()`                        |
+| `updated_at`      | timestamptz |       no | Default `now()`, trigger-maintained    |
 
 ---
 
@@ -138,4 +138,3 @@ No direct public/anon row access is needed for token flows; public endpoints sho
 ## Related docs
 
 - `src/features/quotes/docs/QUOTES_TABLE.md`
-

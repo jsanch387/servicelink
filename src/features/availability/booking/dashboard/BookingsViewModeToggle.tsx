@@ -4,7 +4,7 @@ export type BookingsLayoutMode = 'list' | 'planner';
 
 export interface BookingsViewModeToggleProps {
   value: BookingsLayoutMode;
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (value: BookingsLayoutMode) => void;
   className?: string;
 }

@@ -15,7 +15,7 @@ interface UseAvailabilityResult {
   loading: boolean;
   error: string | null;
   /** Update cache from a successful POST save (avoids refetch). */
-  // eslint-disable-next-line no-unused-vars
+
   updateFromSave: (row: BusinessAvailabilityRow) => void;
   /** Force a fresh fetch (e.g. when cache should be invalidated). */
   refetch: () => Promise<void>;

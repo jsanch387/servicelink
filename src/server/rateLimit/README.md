@@ -20,26 +20,26 @@ Rate limits are **not** used for authentication or identity—they only reduce a
 
 Every protected route applies **two** checks when relevant:
 
-| Tier | Purpose |
-|------|--------|
-| **Per IP** | Caps total volume from one network path (bot farms still distributed, but casual abuse is blocked). |
-| **Per IP + slug** | Caps targeting of a **specific** business slug from one IP (reduces harassment of one profile). |
+| Tier              | Purpose                                                                                             |
+| ----------------- | --------------------------------------------------------------------------------------------------- |
+| **Per IP**        | Caps total volume from one network path (bot farms still distributed, but casual abuse is blocked). |
+| **Per IP + slug** | Caps targeting of a **specific** business slug from one IP (reduces harassment of one profile).     |
 
 Slugs are normalized to **128 characters** for keys (see `safeSlugSegment` in `publicApiRateLimit.ts`).
 
 ### Distributed vs in-process
 
-| Mode | When | Behavior |
-|------|------|----------|
-| **Upstash (Redis)** | `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set | [Upstash Ratelimit](https://upstash.com/docs/oss/sdks/ts/ratelimit/overview) sliding windows; counts are **shared across all serverless instances**. **Use this in production** on Vercel (or any multi-instance host). |
-| **Memory fallback** | Env vars missing | `SlidingMemoryLimiter` keeps a sliding window **per Node isolate**. Effective on a single instance or for local dev; **under heavy parallel traffic each instance has its own counters**, so limits are softer globally. |
+| Mode                | When                                                            | Behavior                                                                                                                                                                                                                 |
+| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Upstash (Redis)** | `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set | [Upstash Ratelimit](https://upstash.com/docs/oss/sdks/ts/ratelimit/overview) sliding windows; counts are **shared across all serverless instances**. **Use this in production** on Vercel (or any multi-instance host).  |
+| **Memory fallback** | Env vars missing                                                | `SlidingMemoryLimiter` keeps a sliding window **per Node isolate**. Effective on a single instance or for local dev; **under heavy parallel traffic each instance has its own counters**, so limits are softer globally. |
 
 ### Client IP
 
 `getClientIp.ts` derives a stable string for rate-limit keys from (in order):
 
-1. `x-forwarded-for` — first hop only  
-2. `x-real-ip`  
+1. `x-forwarded-for` — first hop only
+2. `x-real-ip`
 3. `cf-connecting-ip` (Cloudflare)
 
 Values are lightly **sanitized** for use as key material only. **Misconfigured reverse proxies** can make `x-forwarded-for` untrustworthy; fix proxy headers in infrastructure rather than relying on IP for security decisions.
@@ -50,19 +50,19 @@ Values are lightly **sanitized** for use as key material only. **Misconfigured r
 
 Defined in `publicApiRateLimit.ts` (tune there if product needs change).
 
-| Route | Check | Limit | Window |
-|-------|--------|-------|--------|
-| `POST /api/public/quote-request` | Per IP | 45 | 1 hour |
-| `POST /api/public/quote-request` | Per IP + slug | 10 | 1 hour |
-| `POST /api/analytics/track-view` | Per IP | 400 | 1 hour |
-| `POST /api/analytics/track-view` | Per IP + slug | 120 | 15 minutes |
-| `GET /api/public/profile/[slug]` | Per IP | 360 | 1 hour |
-| `GET /api/public/profile/[slug]` | Per IP + slug | 150 | 15 minutes |
-| `GET /api/calendar/feed/[token]` | Per IP | 300 | 1 hour |
-| `GET /api/calendar/feed/[token]` | Per IP + token (prefix) | 120 | 15 minutes |
-| `GET /api/calendar/feed/link` | Per IP (probe, all requests) | 180 | 1 hour |
-| `GET /api/calendar/feed/link` | Per user (after auth) | 45 | 1 hour |
-| `GET /api/calendar/feed/link` | Per IP (after auth) | 120 | 1 hour |
+| Route                            | Check                        | Limit | Window     |
+| -------------------------------- | ---------------------------- | ----- | ---------- |
+| `POST /api/public/quote-request` | Per IP                       | 45    | 1 hour     |
+| `POST /api/public/quote-request` | Per IP + slug                | 10    | 1 hour     |
+| `POST /api/analytics/track-view` | Per IP                       | 400   | 1 hour     |
+| `POST /api/analytics/track-view` | Per IP + slug                | 120   | 15 minutes |
+| `GET /api/public/profile/[slug]` | Per IP                       | 360   | 1 hour     |
+| `GET /api/public/profile/[slug]` | Per IP + slug                | 150   | 15 minutes |
+| `GET /api/calendar/feed/[token]` | Per IP                       | 300   | 1 hour     |
+| `GET /api/calendar/feed/[token]` | Per IP + token (prefix)      | 120   | 15 minutes |
+| `GET /api/calendar/feed/link`    | Per IP (probe, all requests) | 180   | 1 hour     |
+| `GET /api/calendar/feed/link`    | Per user (after auth)        | 45    | 1 hour     |
+| `GET /api/calendar/feed/link`    | Per IP (after auth)          | 120   | 1 hour     |
 
 ### Additional hardening (quote POST)
 
@@ -73,7 +73,7 @@ Defined in `publicApiRateLimit.ts` (tune there if product needs change).
 
 ## HTTP behavior when limited
 
-- **429 Too Many Requests** — JSON body: `{ "success": false, "error": "Too many requests. Please try again in a few minutes." }`  
+- **429 Too Many Requests** — JSON body: `{ "success": false, "error": "Too many requests. Please try again in a few minutes." }`
 - Headers: **`Retry-After`** (seconds), **`Cache-Control: no-store`**.
 
 Clients (e.g. public quote form) should surface `error` to the user and respect backoff when possible.
@@ -82,10 +82,10 @@ Clients (e.g. public quote form) should surface `error` to the user and respect 
 
 ## Environment variables
 
-| Variable | Required for distributed limits | Description |
-|----------|----------------------------------|-------------|
-| `UPSTASH_REDIS_REST_URL` | Yes, together with token | Upstash Redis REST URL |
-| `UPSTASH_REDIS_REST_TOKEN` | Yes, together with URL | Upstash Redis REST token |
+| Variable                   | Required for distributed limits | Description              |
+| -------------------------- | ------------------------------- | ------------------------ |
+| `UPSTASH_REDIS_REST_URL`   | Yes, together with token        | Upstash Redis REST URL   |
+| `UPSTASH_REDIS_REST_TOKEN` | Yes, together with URL          | Upstash Redis REST token |
 
 Create a Redis database in the [Upstash console](https://console.upstash.com/), then add both variables to Vercel (or your host). Without them, the **memory limiter** still runs.
 
@@ -93,27 +93,27 @@ Create a Redis database in the [Upstash console](https://console.upstash.com/), 
 
 ## Implementation map
 
-| File | Role |
-|------|------|
-| `getClientIp.ts` | Resolve client IP string from `NextRequest` headers. |
-| `slidingMemoryLimiter.ts` | In-process sliding window; bounded map size. |
-| `publicApiRateLimit.ts` | Upstash vs memory wiring, exported `assert*` helpers and body-size guard. |
+| File                      | Role                                                                      |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `getClientIp.ts`          | Resolve client IP string from `NextRequest` headers.                      |
+| `slidingMemoryLimiter.ts` | In-process sliding window; bounded map size.                              |
+| `publicApiRateLimit.ts`   | Upstash vs memory wiring, exported `assert*` helpers and body-size guard. |
 
 ### Call sites
 
-| API route | What runs |
-|-----------|-----------|
-| `app/api/public/quote-request/route.ts` | Body size (if `Content-Length` present) → parse/validate → `assertPublicQuoteRequestRateLimits` → business rules → insert. |
-| `app/api/analytics/track-view/route.ts` | Slug validation → `assertPublicTrackViewRateLimits` → DB update. |
-| `app/api/public/profile/[slug]/route.ts` | `assertPublicProfileGetRateLimits` → Supabase reads. |
-| `app/api/calendar/feed/[token]/route.ts` | `assertCalendarFeedIcsRateLimits` → verify token → DB → ICS. |
-| `app/api/calendar/feed/link/route.ts` | `assertCalendarFeedLinkProbeRateLimits` → Supabase auth → `assertCalendarFeedLinkRateLimits` → JSON. |
+| API route                                | What runs                                                                                                                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/public/quote-request/route.ts`  | Body size (if `Content-Length` present) → parse/validate → `assertPublicQuoteRequestRateLimits` → business rules → insert. |
+| `app/api/analytics/track-view/route.ts`  | Slug validation → `assertPublicTrackViewRateLimits` → DB update.                                                           |
+| `app/api/public/profile/[slug]/route.ts` | `assertPublicProfileGetRateLimits` → Supabase reads.                                                                       |
+| `app/api/calendar/feed/[token]/route.ts` | `assertCalendarFeedIcsRateLimits` → verify token → DB → ICS.                                                               |
+| `app/api/calendar/feed/link/route.ts`    | `assertCalendarFeedLinkProbeRateLimits` → Supabase auth → `assertCalendarFeedLinkRateLimits` → JSON.                       |
 
 ---
 
 ## What is not rate limited here
 
-- **SSR public profile page** (`app/[business-slug]/page.tsx`) — served as HTML; caching/CDN is the primary lever. Abuse of *writes* and *analytics* is what this stack targets.
+- **SSR public profile page** (`app/[business-slug]/page.tsx`) — served as HTML; caching/CDN is the primary lever. Abuse of _writes_ and _analytics_ is what this stack targets.
 - **Other public POST routes** (e.g. `POST /api/public/bookings`) — not part of this module yet; add similar helpers if needed.
 
 ---

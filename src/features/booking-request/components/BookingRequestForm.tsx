@@ -9,7 +9,7 @@ interface BookingRequestFormProps {
   businessName: string;
   serviceName?: string;
   servicePrice?: number;
-  // eslint-disable-next-line no-unused-vars
+
   onSubmit: (_data: BookingRequestFormData) => void;
   isLoading?: boolean;
 }

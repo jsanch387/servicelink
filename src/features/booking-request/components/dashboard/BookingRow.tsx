@@ -13,7 +13,7 @@ import { useState } from 'react';
 
 interface BookingRowProps {
   booking: BookingRequest;
-  // eslint-disable-next-line no-unused-vars
+
   onAction?: (_id: string, _action: 'approved' | 'declined') => void;
   isUpdating?: boolean;
 }

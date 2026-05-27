@@ -50,19 +50,19 @@ src/features/services/
 
 **Table:** `business_services`
 
-| Column             | Purpose |
-|--------------------|--------|
-| `id`               | UUID, primary key |
-| `business_id`       | FK to business (scope for all queries) |
-| `name`              | Service name |
-| `description`       | Optional text |
-| `price_cents`       | Nullable (e.g. “Contact for quote”) |
+| Column              | Purpose                                                                                                                                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | UUID, primary key                                                                                                                                                                                                             |
+| `business_id`       | FK to business (scope for all queries)                                                                                                                                                                                        |
+| `name`              | Service name                                                                                                                                                                                                                  |
+| `description`       | Optional text                                                                                                                                                                                                                 |
+| `price_cents`       | Nullable (e.g. “Contact for quote”)                                                                                                                                                                                           |
 | `duration_minutes`  | Nullable; **appointment length in minutes** for V2 booking (slot generation, `bookings.duration_minutes` when no add-on time). UI pickers use **30-minute steps** from 30m through 10h 30m (`TimeSelect` + `timeOptions.ts`). |
-| `hours_to_complete` | Legacy; prefer `duration_minutes` (still read as fallback on public book page) |
-| `is_active`         | If false, hidden on public profile |
-| `sort_order`       | Integer; display order. Null until user uses “Sort order” on dashboard |
-| `created_at`        | Set on insert |
-| `updated_at`        | Set on update |
+| `hours_to_complete` | Legacy; prefer `duration_minutes` (still read as fallback on public book page)                                                                                                                                                |
+| `is_active`         | If false, hidden on public profile                                                                                                                                                                                            |
+| `sort_order`        | Integer; display order. Null until user uses “Sort order” on dashboard                                                                                                                                                        |
+| `created_at`        | Set on insert                                                                                                                                                                                                                 |
+| `updated_at`        | Set on update                                                                                                                                                                                                                 |
 
 **Ordering when loading:**  
 `ORDER BY sort_order ASC NULLS LAST, created_at ASC`  
@@ -72,18 +72,18 @@ So: explicit order first, then creation order for rows with no `sort_order`.
 
 This table stores multiple price choices for one service (for example: Sedan, SUV, Truck).
 
-| Column | Purpose |
-|---|---|
-| `id` | UUID primary key |
-| `service_id` | FK to `business_services.id` (**ON DELETE CASCADE**) |
-| `business_id` | FK to `business_profiles.id` (used for ownership/RLS + fast filtering) |
-| `label` | Option name shown to customers (e.g. "Sedan") |
-| `price_cents` | Price in cents (>= 0) |
-| `duration_minutes` | Duration in minutes (> 0) |
-| `sort_order` | Display order within one service |
-| `is_active` | Soft visibility toggle for booking |
-| `created_at` | Set on insert |
-| `updated_at` | Updated by trigger |
+| Column             | Purpose                                                                |
+| ------------------ | ---------------------------------------------------------------------- |
+| `id`               | UUID primary key                                                       |
+| `service_id`       | FK to `business_services.id` (**ON DELETE CASCADE**)                   |
+| `business_id`      | FK to `business_profiles.id` (used for ownership/RLS + fast filtering) |
+| `label`            | Option name shown to customers (e.g. "Sedan")                          |
+| `price_cents`      | Price in cents (>= 0)                                                  |
+| `duration_minutes` | Duration in minutes (> 0)                                              |
+| `sort_order`       | Display order within one service                                       |
+| `is_active`        | Soft visibility toggle for booking                                     |
+| `created_at`       | Set on insert                                                          |
+| `updated_at`       | Updated by trigger                                                     |
 
 **Notes**
 

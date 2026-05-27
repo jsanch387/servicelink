@@ -9,6 +9,7 @@ import {
   ClipboardDocumentListIcon,
   ClockIcon,
   AdjustmentsHorizontalIcon,
+  BoltIcon,
   LinkIcon,
   RectangleStackIcon,
   Squares2X2Icon,
@@ -64,6 +65,14 @@ const allNavigationItems = [
     icon: BanknotesIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/payments',
+    isNew: true,
+  },
+  {
+    name: 'Automation',
+    href: ROUTES.DASHBOARD.AUTOMATION,
+    icon: BoltIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/automation',
     isNew: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED

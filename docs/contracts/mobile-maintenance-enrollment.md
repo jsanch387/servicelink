@@ -13,21 +13,21 @@ Use this when the **signed-in business owner** sends a **maintenance detail invi
 
 ## Endpoint
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/api/maintenance/enrollments` |
+|                |                                                                                                 |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| **Method**     | `POST`                                                                                          |
+| **Path**       | `/api/maintenance/enrollments`                                                                  |
 | **Production** | `https://myservicelink.app/api/maintenance/enrollments` (or your `NEXT_PUBLIC_SITE_URL` + path) |
-| **Local** | `http://localhost:3000/api/maintenance/enrollments` |
+| **Local**      | `http://localhost:3000/api/maintenance/enrollments`                                             |
 
 ---
 
 ## Authentication (required)
 
-| Header | Value |
-|--------|--------|
+| Header          | Value                                    |
+| --------------- | ---------------------------------------- |
 | `Authorization` | `Bearer <Supabase session access_token>` |
-| `Content-Type` | `application/json` |
+| `Content-Type`  | `application/json`                       |
 
 The access token is the same JWT the Expo app already uses for other authenticated API routes (e.g. owner booking, Stripe Connect).
 
@@ -54,26 +54,26 @@ Server echoes the id in structured logs (`req=…`) and response header **`X-Req
 
 ### Required fields (all clients)
 
-| Field | Type | Notes |
-|-------|------|--------|
-| `customerId` | string | UUID of an existing `customers` row for this business. |
-| `priceCents` | number | Integer ≥ 0. Price in cents (e.g. `10000` = $100). |
-| `durationMinutes` | number | Integer ≥ 30. Visit length in minutes. |
+| Field             | Type   | Notes                                                  |
+| ----------------- | ------ | ------------------------------------------------------ |
+| `customerId`      | string | UUID of an existing `customers` row for this business. |
+| `priceCents`      | number | Integer ≥ 0. Price in cents (e.g. `10000` = $100).     |
+| `durationMinutes` | number | Integer ≥ 30. Visit length in minutes.                 |
 
 ### Optional fields (all clients)
 
-| Field | Type | Notes |
-|-------|------|--------|
-| `serviceNameSnapshot` | string | Defaults to `"Maintenance"`. Stored on the enrollment row. |
-| `durationHHmm` | string | Alternative to `durationMinutes` (e.g. `"02:00"` → 120 min). Ignored when `durationMinutes` is a valid number. |
-| `anchorDate` | string | `YYYY-MM-DD`. First visit date. Omit both date and time so the customer picks on the link. |
-| `anchorTime` | string | `HH:mm` (24h). Required when `anchorDate` is set; must be omitted when date is omitted. |
+| Field                 | Type   | Notes                                                                                                          |
+| --------------------- | ------ | -------------------------------------------------------------------------------------------------------------- |
+| `serviceNameSnapshot` | string | Defaults to `"Maintenance"`. Stored on the enrollment row.                                                     |
+| `durationHHmm`        | string | Alternative to `durationMinutes` (e.g. `"02:00"` → 120 min). Ignored when `durationMinutes` is a valid number. |
+| `anchorDate`          | string | `YYYY-MM-DD`. First visit date. Omit both date and time so the customer picks on the link.                     |
+| `anchorTime`          | string | `HH:mm` (24h). Required when `anchorDate` is set; must be omitted when date is omitted.                        |
 
 ### Mobile-only fields (Bearer auth)
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| `businessId` | string | **Yes** | UUID of `business_profiles.id`. Must equal the authenticated owner’s business. |
+| Field          | Type   | Required    | Notes                                                                                                     |
+| -------------- | ------ | ----------- | --------------------------------------------------------------------------------------------------------- |
+| `businessId`   | string | **Yes**     | UUID of `business_profiles.id`. Must equal the authenticated owner’s business.                            |
 | `businessSlug` | string | Recommended | When present, must match the slug on the business row (consistency check, same pattern as owner booking). |
 
 ### Example (mobile)
@@ -123,13 +123,13 @@ Response headers: **`X-Request-ID`**, **`Cache-Control: no-store`**.
 }
 ```
 
-| Field | Notes |
-|-------|--------|
-| `id` | New enrollment row id. |
-| `customerViewUrl` | Full public URL — share via SMS when email was not sent. **Treat as secret.** |
-| `emailSent` | `true` when Resend accepted the invite email. |
-| `notifiedEmail` | Present only when `emailSent` is true. |
-| `emailError` | Present when email was not sent (no inbox, Resend failure, etc.). Enrollment is still created. |
+| Field             | Notes                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| `id`              | New enrollment row id.                                                                         |
+| `customerViewUrl` | Full public URL — share via SMS when email was not sent. **Treat as secret.**                  |
+| `emailSent`       | `true` when Resend accepted the invite email.                                                  |
+| `notifiedEmail`   | Present only when `emailSent` is true.                                                         |
+| `emailError`      | Present when email was not sent (no inbox, Resend failure, etc.). Enrollment is still created. |
 
 **Server side effects:**
 
@@ -175,12 +175,12 @@ Mobile does **not** need to implement the customer link flow. After `POST /api/m
 
 Use the **201 response** immediately:
 
-| Response field | Mobile UI suggestion |
-|----------------|----------------------|
-| `data.id` | Store as enrollment id; use after refresh to match `maintenanceEnrollment.enrollmentId`. |
+| Response field         | Mobile UI suggestion                                                                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data.id`              | Store as enrollment id; use after refresh to match `maintenanceEnrollment.enrollmentId`.                                                      |
 | `data.customerViewUrl` | Show on success screen when `emailSent` is false, or as **Copy link** fallback when email failed (`emailError`). Do not persist in analytics. |
-| `data.emailSent` | `true` → “Invite sent” + optional masked inbox hint from `notifiedEmail`. |
-| `data.emailError` | Show when email did not send; enrollment still exists — prompt owner to copy link. |
+| `data.emailSent`       | `true` → “Invite sent” + optional masked inbox hint from `notifiedEmail`.                                                                     |
+| `data.emailError`      | Show when email did not send; enrollment still exists — prompt owner to copy link.                                                            |
 
 Then **reload customer data** (e.g. `GET /api/customers` or your existing customer-detail fetch) so the profile shows the new maintenance block. Web does the same via client refresh after modal success.
 
@@ -209,16 +209,16 @@ When a customer has at least one enrollment, `GET /api/customers` attaches the *
 }
 ```
 
-| Field | Notes |
-|-------|--------|
-| `enrollmentId` | Same as `data.id` from create response. |
-| `status` | Primary lifecycle (see table below). |
-| `paymentStatus` | `pending`, `paid` (card), `pay_in_person`, etc. |
-| `serviceNameSnapshot` | Display label (server normalizes to “Maintenance detail” when applicable). |
-| `priceCents` / `durationMinutes` | Plan snapshot from invite. |
-| `frequencyWeeks` | Legacy column; currently `0` for new invites (not shown in web UI). |
-| `anchorDate` / `anchorTime` | First visit when set; placeholder sentinel rows show as **Not set yet** in UI helpers. |
-| `inviteToken` | Present on new invites — rebuild public URL as `{SITE_URL}/maintenance/e/{inviteToken}` for **Copy invite link** only. `null` on older rows. |
+| Field                            | Notes                                                                                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enrollmentId`                   | Same as `data.id` from create response.                                                                                                      |
+| `status`                         | Primary lifecycle (see table below).                                                                                                         |
+| `paymentStatus`                  | `pending`, `paid` (card), `pay_in_person`, etc.                                                                                              |
+| `serviceNameSnapshot`            | Display label (server normalizes to “Maintenance detail” when applicable).                                                                   |
+| `priceCents` / `durationMinutes` | Plan snapshot from invite.                                                                                                                   |
+| `frequencyWeeks`                 | Legacy column; currently `0` for new invites (not shown in web UI).                                                                          |
+| `anchorDate` / `anchorTime`      | First visit when set; placeholder sentinel rows show as **Not set yet** in UI helpers.                                                       |
+| `inviteToken`                    | Present on new invites — rebuild public URL as `{SITE_URL}/maintenance/e/{inviteToken}` for **Copy invite link** only. `null` on older rows. |
 
 Also on the customer record: `maintenanceVisitsCompleted` (integer) — completed maintenance-plan visits tracked on the `customers` row, independent of the latest enrollment card.
 
@@ -230,14 +230,14 @@ Also on the customer record: `maintenanceVisitsCompleted` (integer) — complete
 
 Map `status` + `paymentStatus` to owner-facing copy (see `customerMaintenanceEnrollmentLabels.ts`):
 
-| `status` | Typical subtitle / chip | Owner actions |
-|----------|-------------------------|---------------|
-| `enrolled_pending_customer` | **Waiting on customer** · chip **Pending** | **Send invite** disabled if `inviteToken` present; **View details** → copy link |
-| `accepted` + `paymentStatus` `paid` | **Paid · card** · chip **Confirmed** | New invite allowed when prior invite is no longer pending |
-| `accepted` + `pay_in_person` | **Confirmed · pay in person** | Same |
-| `accepted` (other payment) | **Confirmed** | Same |
-| `visit_completed` | **Visit completed · send another…** | **Send invite** enabled again |
-| `cancelled` | **Cancelled** | Product-specific; new invite may be allowed |
+| `status`                            | Typical subtitle / chip                    | Owner actions                                                                   |
+| ----------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
+| `enrolled_pending_customer`         | **Waiting on customer** · chip **Pending** | **Send invite** disabled if `inviteToken` present; **View details** → copy link |
+| `accepted` + `paymentStatus` `paid` | **Paid · card** · chip **Confirmed**       | New invite allowed when prior invite is no longer pending                       |
+| `accepted` + `pay_in_person`        | **Confirmed · pay in person**              | Same                                                                            |
+| `accepted` (other payment)          | **Confirmed**                              | Same                                                                            |
+| `visit_completed`                   | **Visit completed · send another…**        | **Send invite** enabled again                                                   |
+| `cancelled`                         | **Cancelled**                              | Product-specific; new invite may be allowed                                     |
 
 **Pending guard (matches server 409):** Treat as blocking a new invite when `inviteToken` is set **and** status is still `enrolled_pending_customer` (same as `maintenanceEnrollmentBlocksNewOwnerInvite` on web).
 
@@ -269,40 +269,40 @@ Body shape:
 }
 ```
 
-| HTTP | Typical cause |
-|------|----------------|
-| `400` | Invalid JSON, missing fields, anchor date/time mismatch, slug mismatch. |
-| `401` | Missing/invalid Bearer token (`code: "UNAUTHORIZED"` when using Bearer). |
-| `403` | Authenticated user is not the owner of `businessId`. |
-| `404` | Customer not found for this business, or business not found. |
+| HTTP  | Typical cause                                                                                           |
+| ----- | ------------------------------------------------------------------------------------------------------- |
+| `400` | Invalid JSON, missing fields, anchor date/time mismatch, slug mismatch.                                 |
+| `401` | Missing/invalid Bearer token (`code: "UNAUTHORIZED"` when using Bearer).                                |
+| `403` | Authenticated user is not the owner of `businessId`.                                                    |
+| `404` | Customer not found for this business, or business not found.                                            |
 | `409` | Calendar slot unavailable for anchor, or customer already has a **pending** invite with a stored token. |
-| `500` | Unexpected failure (DB, payment settings load, etc.). |
+| `500` | Unexpected failure (DB, payment settings load, etc.).                                                   |
 
 ---
 
 ## Security checklist
 
-| Requirement | Detail |
-|-------------|--------|
-| **HTTPS** | All production calls must use TLS. |
-| **Auth** | Bearer access token only from mobile — never service role key. |
-| **Business ownership** | `businessId` must match owner’s `business_profiles` row. |
-| **Customer scope** | `customerId` must belong to the same `business_id`. |
-| **Secrets** | Do not log or persist `customerViewUrl` in analytics; store enrollment `id` instead. |
+| Requirement              | Detail                                                                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| **HTTPS**                | All production calls must use TLS.                                                            |
+| **Auth**                 | Bearer access token only from mobile — never service role key.                                |
+| **Business ownership**   | `businessId` must match owner’s `business_profiles` row.                                      |
+| **Customer scope**       | `customerId` must belong to the same `business_id`.                                           |
+| **Secrets**              | Do not log or persist `customerViewUrl` in analytics; store enrollment `id` instead.          |
 | **Pending invite guard** | Server rejects a second invite while one is still pending (matches web CRM disable behavior). |
 
 ---
 
 ## Related code
 
-| Piece | Location |
-|-------|----------|
-| Route handler | `src/app/api/maintenance/enrollments/route.ts` |
-| Customer list + enrollment attach | `GET /api/customers` → `loadLatestMaintenanceEnrollmentByCustomerIds` |
-| CRM labels / pending guard | `src/features/customer-management/utils/customerMaintenanceEnrollmentLabels.ts` |
-| Customer detail UI (web reference) | `src/features/customer-management/components/CustomerDetailPanel.tsx` |
-| Auth helper | `src/libs/api/getAuthenticatedUser.ts` |
-| Owner business resolution | `src/server/resolveCurrentBusinessId.ts` |
-| Customer public flow (after link) | `src/app/maintenance/e/[token]/page.tsx` |
-| Feature overview | `src/features/maintenance/docs/README.md` |
-| Similar mobile contract | `docs/contracts/mobile-owner-create-booking.md` |
+| Piece                              | Location                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------- |
+| Route handler                      | `src/app/api/maintenance/enrollments/route.ts`                                  |
+| Customer list + enrollment attach  | `GET /api/customers` → `loadLatestMaintenanceEnrollmentByCustomerIds`           |
+| CRM labels / pending guard         | `src/features/customer-management/utils/customerMaintenanceEnrollmentLabels.ts` |
+| Customer detail UI (web reference) | `src/features/customer-management/components/CustomerDetailPanel.tsx`           |
+| Auth helper                        | `src/libs/api/getAuthenticatedUser.ts`                                          |
+| Owner business resolution          | `src/server/resolveCurrentBusinessId.ts`                                        |
+| Customer public flow (after link)  | `src/app/maintenance/e/[token]/page.tsx`                                        |
+| Feature overview                   | `src/features/maintenance/docs/README.md`                                       |
+| Similar mobile contract            | `docs/contracts/mobile-owner-create-booking.md`                                 |

@@ -26,10 +26,10 @@ If no email is found, the email is skipped and a warning is logged; the booking 
 
 ## Environment variables
 
-| Variable               | Required | Description |
-|------------------------|----------|-------------|
-| `RESEND_API_KEY`       | Yes      | Resend API key (from Resend dashboard). |
-| `RESEND_FROM_EMAIL`    | No       | Sender address, e.g. `Bookings <bookings@yourdomain.com>`. Defaults to Resend’s onboarding address if unset. |
+| Variable               | Required | Description                                                                                                      |
+| ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`       | Yes      | Resend API key (from Resend dashboard).                                                                          |
+| `RESEND_FROM_EMAIL`    | No       | Sender address, e.g. `Bookings <bookings@yourdomain.com>`. Defaults to Resend’s onboarding address if unset.     |
 | `NEXT_PUBLIC_SITE_URL` | No       | Base URL for the app (used for the “View bookings” link). Falls back to `VERCEL_URL` or `http://localhost:3000`. |
 
 ## Usage

@@ -25,12 +25,12 @@ Related docs:
 
 ## Preconditions (gates)
 
-| Gate | Where enforced | Failure behavior |
-|------|----------------|------------------|
-| Business accepts availability bookings | Book page / `business_availability` | User does not reach paid checkout |
-| `payment_settings.payments_enabled` | Client + `POST /api/public/booking-checkout` | Payment step hidden or API 400 |
-| Connect account ready (`payment_accounts`, `charges_enabled`, Stripe account id) | `POST /api/public/booking-checkout` | API returns error asking owner to finish Stripe setup |
-| Valid slot + payload (dates, customer, totals) | Client validation + API body parse | 400 from API |
+| Gate                                                                             | Where enforced                               | Failure behavior                                      |
+| -------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
+| Business accepts availability bookings                                           | Book page / `business_availability`          | User does not reach paid checkout                     |
+| `payment_settings.payments_enabled`                                              | Client + `POST /api/public/booking-checkout` | Payment step hidden or API 400                        |
+| Connect account ready (`payment_accounts`, `charges_enabled`, Stripe account id) | `POST /api/public/booking-checkout`          | API returns error asking owner to finish Stripe setup |
+| Valid slot + payload (dates, customer, totals)                                   | Client validation + API body parse           | 400 from API                                          |
 
 Environment (typical):
 
@@ -76,14 +76,14 @@ Stripe → POST /api/stripe/webhook  (checkout.session.completed)
 
 ## Client implementation
 
-| Piece | Location | Role |
-|-------|----------|------|
-| Payment step, amounts, CTA | `src/features/availability/booking/components/AvailabilityBookingPage.tsx` | Computes `amountDueNowCents`, calls checkout API, handles cancel/success query params |
-| Resume draft | `src/features/availability/booking/utils/bookingCheckoutResumeStorage.ts` | Persists step/customer/date/time across redirect so cancel can restore |
-| Return URLs | `src/features/availability/booking/utils/bookingCheckoutReturnUrl.ts` | Builds `/[slug]/book?checkout=success|cancel&…`; appends `session_id={CHECKOUT_SESSION_ID}` **without** `URLSearchParams` so Stripe’s placeholder is not percent-encoded |
-| Success loading | Same `AvailabilityBookingPage` | If `checkout=success` and session id present but summary not loaded yet → spinner (avoids flashing calendar) |
-| Success UI | `src/features/availability/booking/components/BookingPaymentSuccess.tsx` | Glass card + payment breakdown from summary API |
-| API route constants | `src/constants/routes.ts` — `API_ROUTES.PUBLIC_BOOKING_CHECKOUT`, `PUBLIC_BOOKING_CHECKOUT_SUMMARY` | Single source for paths |
+| Piece                      | Location                                                                                            | Role                                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Payment step, amounts, CTA | `src/features/availability/booking/components/AvailabilityBookingPage.tsx`                          | Computes `amountDueNowCents`, calls checkout API, handles cancel/success query params                        |
+| Resume draft               | `src/features/availability/booking/utils/bookingCheckoutResumeStorage.ts`                           | Persists step/customer/date/time across redirect so cancel can restore                                       |
+| Return URLs                | `src/features/availability/booking/utils/bookingCheckoutReturnUrl.ts`                               | Builds `/[slug]/book?checkout=success                                                                        | cancel&…`; appends `session_id={CHECKOUT_SESSION_ID}`**without**`URLSearchParams` so Stripe’s placeholder is not percent-encoded |
+| Success loading            | Same `AvailabilityBookingPage`                                                                      | If `checkout=success` and session id present but summary not loaded yet → spinner (avoids flashing calendar) |
+| Success UI                 | `src/features/availability/booking/components/BookingPaymentSuccess.tsx`                            | Glass card + payment breakdown from summary API                                                              |
+| API route constants        | `src/constants/routes.ts` — `API_ROUTES.PUBLIC_BOOKING_CHECKOUT`, `PUBLIC_BOOKING_CHECKOUT_SUMMARY` | Single source for paths                                                                                      |
 
 Server book page passes **`stripeCheckoutSessionId`** when `?checkout=success&session_id=…` is present (`src/app/[business-slug]/book/page.tsx` → `BookFlowSwitch` → `AvailabilityBookingPage`) so the first paint can show the loading state without waiting only on `useSearchParams`.
 
@@ -172,13 +172,13 @@ Tables are documented in `BOOKING_CHECKOUT_SESSIONS_TABLE.md` and `BOOKING_PAYME
 
 ## Failure and edge behavior (v1)
 
-| Situation | Behavior |
-|-----------|----------|
-| Customer abandons Checkout | No booking row; `booking_checkout_sessions` may remain `created` until cleanup job (future) or manual review |
-| Amount mismatch (webhook vs expected) | Session marked failed; no booking |
-| Webhook duplicate | `stripe_webhook_events` unique violation → no double booking |
-| Summary API before webhook | 404 until row exists; client may end on calendar after URL strip (retry UX is a future improvement) |
-| `GET` summary wrong slug | 404 |
+| Situation                             | Behavior                                                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Customer abandons Checkout            | No booking row; `booking_checkout_sessions` may remain `created` until cleanup job (future) or manual review |
+| Amount mismatch (webhook vs expected) | Session marked failed; no booking                                                                            |
+| Webhook duplicate                     | `stripe_webhook_events` unique violation → no double booking                                                 |
+| Summary API before webhook            | 404 until row exists; client may end on calendar after URL strip (retry UX is a future improvement)          |
+| `GET` summary wrong slug              | 404                                                                                                          |
 
 ---
 
@@ -186,12 +186,12 @@ Tables are documented in `BOOKING_CHECKOUT_SESSIONS_TABLE.md` and `BOOKING_PAYME
 
 Focused tests live under `src/features/**/testing/` (see `vitest.config.ts`):
 
-| Area | File |
-|------|------|
-| Stripe return URL (`{CHECKOUT_SESSION_ID}` not encoded) | `src/features/availability/booking/testing/bookingCheckoutReturnUrl.test.ts` |
+| Area                                                                                  | File                                                                         |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Stripe return URL (`{CHECKOUT_SESSION_ID}` not encoded)                               | `src/features/availability/booking/testing/bookingCheckoutReturnUrl.test.ts` |
 | Confirmation email HTML (price vs payment blocks, Stripe footnotes customer vs owner) | `src/features/email/testing/availabilityBookingNotificationTemplate.test.ts` |
-| Post-checkout UI (`BookingPaymentSuccess`) | `src/features/availability/booking/testing/bookingPaymentSuccess.test.tsx` |
-| Calendar step navigation (existing) | `src/features/availability/booking/testing/availabilityBookingFlow.test.tsx` |
+| Post-checkout UI (`BookingPaymentSuccess`)                                            | `src/features/availability/booking/testing/bookingPaymentSuccess.test.tsx`   |
+| Calendar step navigation (existing)                                                   | `src/features/availability/booking/testing/availabilityBookingFlow.test.tsx` |
 
 API routes (`booking-checkout`, webhook) are not integration-tested here; rely on manual/staging verification until a Stripe mock harness is added.
 
@@ -210,13 +210,13 @@ When changing checkout behavior, update:
 
 ## File index (quick jump)
 
-| Area | Path |
-|------|------|
-| Checkout API | `src/app/api/public/booking-checkout/route.ts` |
-| Summary API | `src/app/api/public/booking-checkout-summary/route.ts` |
-| Webhook | `src/app/api/stripe/webhook/route.ts` |
-| Public booking (no checkout) | `src/app/api/public/bookings/route.ts` |
-| Booking create service | `src/features/availability/services/bookingService.ts` |
-| Owner notify | `src/features/availability/services/notifyOwnerForAvailabilityBookingCreated.ts` |
-| Book page (props + flow switch) | `src/app/[business-slug]/book/page.tsx`, `BookFlowSwitch.tsx` |
-| Return URL helper | `src/features/availability/booking/utils/bookingCheckoutReturnUrl.ts` |
+| Area                            | Path                                                                             |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| Checkout API                    | `src/app/api/public/booking-checkout/route.ts`                                   |
+| Summary API                     | `src/app/api/public/booking-checkout-summary/route.ts`                           |
+| Webhook                         | `src/app/api/stripe/webhook/route.ts`                                            |
+| Public booking (no checkout)    | `src/app/api/public/bookings/route.ts`                                           |
+| Booking create service          | `src/features/availability/services/bookingService.ts`                           |
+| Owner notify                    | `src/features/availability/services/notifyOwnerForAvailabilityBookingCreated.ts` |
+| Book page (props + flow switch) | `src/app/[business-slug]/book/page.tsx`, `BookFlowSwitch.tsx`                    |
+| Return URL helper               | `src/features/availability/booking/utils/bookingCheckoutReturnUrl.ts`            |

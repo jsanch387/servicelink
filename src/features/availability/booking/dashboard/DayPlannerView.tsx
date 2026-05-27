@@ -69,12 +69,12 @@ function statusAccentClass(
 
 export interface DayPlannerViewProps {
   dateKey: string;
-  // eslint-disable-next-line no-unused-vars
+
   onDateKeyChange: (next: string) => void;
   dayBookings: AvailabilityBookingDisplay[];
   /** Time off on this calendar day (from availability). */
   dayTimeOffBlocks?: BlockTimeEntry[];
-  // eslint-disable-next-line no-unused-vars
+
   onSelectBooking: (booking: AvailabilityBookingDisplay) => void;
 }
 

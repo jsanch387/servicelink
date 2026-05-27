@@ -78,6 +78,7 @@ export const ROUTES = {
     SETTINGS: '/dashboard/settings',
     CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',
+    AUTOMATION: '/dashboard/automation',
   },
 } as const;
 
@@ -141,6 +142,10 @@ export const API_ROUTES = {
   WORKSHOP_TRACK: '/api/workshop/track',
   /** Public: mark workshop lead as signed up (matched by email). */
   WORKSHOP_CONVERTED: '/api/workshop/converted',
+  /** Dashboard: start Facebook OAuth for Instagram DM automation. */
+  META_INSTAGRAM_CONNECT: '/api/meta/instagram/connect',
+  /** Dashboard: disconnect Instagram DM automation. */
+  META_INSTAGRAM_DISCONNECT: '/api/meta/instagram/disconnect',
 } as const;
 
 export const PUBLIC_ROUTES = [

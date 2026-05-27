@@ -25,25 +25,25 @@ This document defines the `booking_payments` table for availability bookings wit
 
 ## Proposed columns
 
-| Column | Type | Nullable | Notes |
-|---|---|---:|---|
-| `id` | `uuid` | no | PK, default `gen_random_uuid()` |
-| `booking_id` | `uuid` | no | FK -> `bookings(id)`, `UNIQUE`, `ON DELETE CASCADE` |
-| `business_id` | `uuid` | no | FK -> `business_profiles(id)` |
-| `provider` | `text` | no | `none` or `stripe` |
-| `payment_status` | `text` | no | `not_required`, `awaiting_payment`, `deposit_paid`, `paid_full`, `failed` |
-| `payment_method_selected` | `text` | no | `none`, `pay_in_person`, `pay_now` |
-| `currency` | `text` | no | lowercase ISO-3 (e.g. `usd`) |
-| `total_amount_cents` | `int4` | no | Total booking price snapshot |
-| `required_online_amount_cents` | `int4` | no | Amount required online to secure booking |
-| `paid_online_amount_cents` | `int4` | no | Amount actually paid online |
-| `remaining_amount_cents` | `int4` | no | Amount still owed in person/later |
-| `deposit_type` | `text` | yes | `fixed` / `percent` when deposit config applied |
-| `deposit_value` | `int4` | yes | cents if fixed, whole percent if percent |
-| `last_checkout_session_id` | `text` | yes | Stripe checkout session id used for latest successful/attempted checkout |
-| `paid_at` | `timestamptz` | yes | Timestamp when online payment succeeded |
-| `created_at` | `timestamptz` | no | default `now()` |
-| `updated_at` | `timestamptz` | no | default `now()`, trigger-maintained |
+| Column                         | Type          | Nullable | Notes                                                                     |
+| ------------------------------ | ------------- | -------: | ------------------------------------------------------------------------- |
+| `id`                           | `uuid`        |       no | PK, default `gen_random_uuid()`                                           |
+| `booking_id`                   | `uuid`        |       no | FK -> `bookings(id)`, `UNIQUE`, `ON DELETE CASCADE`                       |
+| `business_id`                  | `uuid`        |       no | FK -> `business_profiles(id)`                                             |
+| `provider`                     | `text`        |       no | `none` or `stripe`                                                        |
+| `payment_status`               | `text`        |       no | `not_required`, `awaiting_payment`, `deposit_paid`, `paid_full`, `failed` |
+| `payment_method_selected`      | `text`        |       no | `none`, `pay_in_person`, `pay_now`                                        |
+| `currency`                     | `text`        |       no | lowercase ISO-3 (e.g. `usd`)                                              |
+| `total_amount_cents`           | `int4`        |       no | Total booking price snapshot                                              |
+| `required_online_amount_cents` | `int4`        |       no | Amount required online to secure booking                                  |
+| `paid_online_amount_cents`     | `int4`        |       no | Amount actually paid online                                               |
+| `remaining_amount_cents`       | `int4`        |       no | Amount still owed in person/later                                         |
+| `deposit_type`                 | `text`        |      yes | `fixed` / `percent` when deposit config applied                           |
+| `deposit_value`                | `int4`        |      yes | cents if fixed, whole percent if percent                                  |
+| `last_checkout_session_id`     | `text`        |      yes | Stripe checkout session id used for latest successful/attempted checkout  |
+| `paid_at`                      | `timestamptz` |      yes | Timestamp when online payment succeeded                                   |
+| `created_at`                   | `timestamptz` |       no | default `now()`                                                           |
+| `updated_at`                   | `timestamptz` |       no | default `now()`, trigger-maintained                                       |
 
 ## Suggested constraints
 

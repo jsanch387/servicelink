@@ -11,10 +11,10 @@ Broader schema context snapshot: **`SUPABASE_SCHEMA_CONTEXT.md`**.
 
 ## Overview
 
-| Table               | Cardinality         | Purpose |
-|---------------------|---------------------|---------|
-| `payment_accounts`  | One row per business | Stripe Connect account id (`acct_…`) and capability / onboarding flags. |
-| `payment_settings`  | One row per business | ServiceLink checkout: **payments on/off**, **checkout mode** (how customers pay), **deposits**, currency. |
+| Table              | Cardinality          | Purpose                                                                                                   |
+| ------------------ | -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `payment_accounts` | One row per business | Stripe Connect account id (`acct_…`) and capability / onboarding flags.                                   |
+| `payment_settings` | One row per business | ServiceLink checkout: **payments on/off**, **checkout mode** (how customers pay), **deposits**, currency. |
 
 Both tables reference **`business_profiles(id)`** (tenant root). The owner is `business_profiles.profile_id` → `auth.users`.
 
@@ -28,21 +28,21 @@ Both tables reference **`business_profiles(id)`** (tenant root). The owner is `b
 
 ### Columns (Supabase order)
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | `uuid` | no | Primary key. |
-| `business_id` | `uuid` | no | FK → `business_profiles(id)`. **Unique** per business. |
-| `provider` | `text` | no | e.g. `stripe`. |
-| `stripe_account_id` | `text` | no | Stripe Connect account id (`acct_…`). **Unique** globally. |
-| `onboarding_status` | `text` | no | App enums include `not_started`, `in_progress`, `complete`, `restricted` (align with your CHECK). |
-| `charges_enabled` | `bool` | no | From Stripe; card payments when true (subject to product rules). |
-| `payouts_enabled` | `bool` | no | From Stripe. |
-| `details_submitted` | `bool` | no | From Stripe. |
-| `requirements_status` | `text` | yes | Optional snapshot (e.g. outstanding requirements). |
-| `connected_at` | `timestamptz` | yes | When the account was first considered linked (product-defined). |
-| `last_synced_at` | `timestamptz` | yes | Last successful sync from Stripe (return handler / webhook). |
-| `created_at` | `timestamptz` | no | Created at. |
-| `updated_at` | `timestamptz` | no | Updated at (trigger-maintained if configured). |
+| Column                | Type          | Nullable | Description                                                                                       |
+| --------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`        | no       | Primary key.                                                                                      |
+| `business_id`         | `uuid`        | no       | FK → `business_profiles(id)`. **Unique** per business.                                            |
+| `provider`            | `text`        | no       | e.g. `stripe`.                                                                                    |
+| `stripe_account_id`   | `text`        | no       | Stripe Connect account id (`acct_…`). **Unique** globally.                                        |
+| `onboarding_status`   | `text`        | no       | App enums include `not_started`, `in_progress`, `complete`, `restricted` (align with your CHECK). |
+| `charges_enabled`     | `bool`        | no       | From Stripe; card payments when true (subject to product rules).                                  |
+| `payouts_enabled`     | `bool`        | no       | From Stripe.                                                                                      |
+| `details_submitted`   | `bool`        | no       | From Stripe.                                                                                      |
+| `requirements_status` | `text`        | yes      | Optional snapshot (e.g. outstanding requirements).                                                |
+| `connected_at`        | `timestamptz` | yes      | When the account was first considered linked (product-defined).                                   |
+| `last_synced_at`      | `timestamptz` | yes      | Last successful sync from Stripe (return handler / webhook).                                      |
+| `created_at`          | `timestamptz` | no       | Created at.                                                                                       |
+| `updated_at`          | `timestamptz` | no       | Updated at (trigger-maintained if configured).                                                    |
 
 ### Constraints (intent)
 
@@ -65,30 +65,30 @@ Both tables reference **`business_profiles(id)`** (tenant root). The owner is `b
 
 ### Columns (Supabase order)
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | `uuid` | no | Primary key. |
-| `business_id` | `uuid` | no | FK → `business_profiles(id)`. **Unique** per business. |
-| `payment_account_id` | `uuid` | yes | Optional FK → `payment_accounts(id)` (link row to the Connect account used when payments were enabled). |
-| `checkout_mode` | `text` | yes | **Checkout mode** — how the customer pays; see next section. `NULL` until the owner saves a choice. |
-| `deposits_enabled` | `bool` | no | Whether deposits are used for bookings. |
-| `deposit_type` | `text` | no | `fixed` (amount in cents) or `percent` (0–100). |
-| `deposit_value` | `int4` | no | Interpretation depends on `deposit_type`. |
-| `collect_remaining_balance` | `bool` | no | Whether remaining balance is collected later in the flow. |
-| `currency` | `text` | no | Lowercase ISO currency (e.g. `usd`). |
-| `updated_by` | `uuid` | yes | Optional `auth.users` id for audit. |
-| `created_at` | `timestamptz` | no | Created at. |
-| `updated_at` | `timestamptz` | no | Updated at. |
-| `payments_enabled` | `bool` | no | When **true**, ServiceLink checkout is active on the booking experience; Stripe can stay connected while this is **false**. |
+| Column                      | Type          | Nullable | Description                                                                                                                 |
+| --------------------------- | ------------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`        | no       | Primary key.                                                                                                                |
+| `business_id`               | `uuid`        | no       | FK → `business_profiles(id)`. **Unique** per business.                                                                      |
+| `payment_account_id`        | `uuid`        | yes      | Optional FK → `payment_accounts(id)` (link row to the Connect account used when payments were enabled).                     |
+| `checkout_mode`             | `text`        | yes      | **Checkout mode** — how the customer pays; see next section. `NULL` until the owner saves a choice.                         |
+| `deposits_enabled`          | `bool`        | no       | Whether deposits are used for bookings.                                                                                     |
+| `deposit_type`              | `text`        | no       | `fixed` (amount in cents) or `percent` (0–100).                                                                             |
+| `deposit_value`             | `int4`        | no       | Interpretation depends on `deposit_type`.                                                                                   |
+| `collect_remaining_balance` | `bool`        | no       | Whether remaining balance is collected later in the flow.                                                                   |
+| `currency`                  | `text`        | no       | Lowercase ISO currency (e.g. `usd`).                                                                                        |
+| `updated_by`                | `uuid`        | yes      | Optional `auth.users` id for audit.                                                                                         |
+| `created_at`                | `timestamptz` | no       | Created at.                                                                                                                 |
+| `updated_at`                | `timestamptz` | no       | Updated at.                                                                                                                 |
+| `payments_enabled`          | `bool`        | no       | When **true**, ServiceLink checkout is active on the booking experience; Stripe can stay connected while this is **false**. |
 
 ### Deposits: `deposit_type` + `deposit_value` (one amount, two shapes)
 
 The row stores **one** deposit amount; `deposit_type` says how to read `deposit_value`:
 
-| `deposit_type` | `deposit_value` means |
-|------------------|------------------------|
-| `fixed` | Amount in **cents** (e.g. `5000` = $50.00). |
-| `percent` | Whole **percent** of the service price (e.g. `10` = 10%). |
+| `deposit_type` | `deposit_value` means                                     |
+| -------------- | --------------------------------------------------------- |
+| `fixed`        | Amount in **cents** (e.g. `5000` = $50.00).               |
+| `percent`      | Whole **percent** of the service price (e.g. `10` = 10%). |
 
 **Why not separate `deposit_dollars` and `deposit_percentage` columns?** You can, but you then need a rule in SQL (e.g. CHECK) that **only one** is used when deposits are on, and you still carry a “mode” or infer from nullability. The **type + single integer** pattern is common, avoids two live numbers disagreeing, and keeps the row small. **Conflicts** only appear if code writes `deposit_value` for the wrong unit; prevent that by **always updating `deposit_type` and `deposit_value` together** on save (as the app API does). Optional hardening: a Postgres CHECK that `deposit_type = 'percent'` implies `deposit_value` between 0 and 100, and `fixed` implies non-negative.
 
@@ -96,11 +96,11 @@ The row stores **one** deposit amount; `deposit_type` says how to read `deposit_
 
 **Allowed values:** `NULL` **or** exactly one of:
 
-| Value | Meaning |
-|-------|---------|
-| `in_person` | **In person only** — owner collects when they meet the customer; no card checkout in the app for that path. |
-| `in_app` | **In the app only** — customer pays **in full by card in the app** when booking online. |
-| `customer_choice` | **Customer chooses at checkout** — card in app or pay owner in person. |
+| Value             | Meaning                                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `in_person`       | **In person only** — owner collects when they meet the customer; no card checkout in the app for that path. |
+| `in_app`          | **In the app only** — customer pays **in full by card in the app** when booking online.                     |
+| `customer_choice` | **Customer chooses at checkout** — card in app or pay owner in person.                                      |
 
 Canonical SQL: **`src/features/payments/docs/sql/payment_settings_checkout_mode_constraint.sql`**
 

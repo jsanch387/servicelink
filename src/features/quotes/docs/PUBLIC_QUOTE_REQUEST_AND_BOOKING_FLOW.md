@@ -6,11 +6,11 @@ This document describes how the **public quote request** path relates to **avail
 
 ## 1. Two different “public customer” flows
 
-| Flow | Entry (examples) | Auth | Primary API | Outcome |
-|------|------------------|------|-------------|---------|
-| **Availability booking** | `/:slug/book`, public book UI | Customer (often anon) | `POST /api/public/bookings` | `bookings` row + customer upsert + owner notify (same family as dashboard booking) |
-| **Quote request** | `/:businessSlug/quote` (e.g. `src/app/[business-slug]/quote/page.tsx`) | None | `POST /api/public/quote-request` | `quotes` row only: `source = customer_requested`, `status = requested`, **no** public link yet |
-| **Quoted job (after owner sends)** | Email/link ` /q/[token] ` | Token | `GET` page + `POST /api/quotes/respond` | Quote lifecycle; on **approve** → **same booking stack** as public booking (see §6) |
+| Flow                               | Entry (examples)                                                       | Auth                  | Primary API                             | Outcome                                                                                        |
+| ---------------------------------- | ---------------------------------------------------------------------- | --------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Availability booking**           | `/:slug/book`, public book UI                                          | Customer (often anon) | `POST /api/public/bookings`             | `bookings` row + customer upsert + owner notify (same family as dashboard booking)             |
+| **Quote request**                  | `/:businessSlug/quote` (e.g. `src/app/[business-slug]/quote/page.tsx`) | None                  | `POST /api/public/quote-request`        | `quotes` row only: `source = customer_requested`, `status = requested`, **no** public link yet |
+| **Quoted job (after owner sends)** | Email/link `/q/[token]`                                                | Token                 | `GET` page + `POST /api/quotes/respond` | Quote lifecycle; on **approve** → **same booking stack** as public booking (see §6)            |
 
 Quotes and bookings are **separate tables**. A quote becomes a booking only after the customer **approves** and server-side effects run successfully.
 
@@ -59,11 +59,11 @@ sequenceDiagram
 
 ### 3.2 Server
 
-| Step | File / function | Responsibility |
-|------|-----------------|----------------|
-| Validate body | `public-request/validatePublicQuoteRequestBody.ts` | `businessSlug`, contact, `serviceRequested`, optional vehicle, `timeline`, `details`, etc. |
-| Resolve business | `src/app/api/public/quote-request/route.ts` | `business_profiles` by `business_slug` → `businessId` |
-| Insert row | `public-request/server/insertCustomerQuoteRequest.ts` | Admin client insert into `quotes` |
+| Step             | File / function                                       | Responsibility                                                                             |
+| ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Validate body    | `public-request/validatePublicQuoteRequestBody.ts`    | `businessSlug`, contact, `serviceRequested`, optional vehicle, `timeline`, `details`, etc. |
+| Resolve business | `src/app/api/public/quote-request/route.ts`           | `business_profiles` by `business_slug` → `businessId`                                      |
+| Insert row       | `public-request/server/insertCustomerQuoteRequest.ts` | Admin client insert into `quotes`                                                          |
 
 ### 3.3 What gets stored on insert
 
@@ -84,12 +84,12 @@ sequenceDiagram
 
 ## 4. Owner dashboard flow (request → create quote → send)
 
-| UI | Data |
-|----|------|
-| `QuoteRequestsDashboardPage` | Lists `customer_requested` + `requested` (see `pendingCustomerQuoteRequests.ts`) |
-| `QuoteRequestDetailScreen` | Detail for one open request; `QuoteDetailContent` shows customer vs owner fields from `request_message` / `note` |
-| `CreateQuoteScreen` `mode="edit"` | Hydrates **customer notes** from `request_message`, **Notes** field → `quotes.note`; schedule step can show **preferred timing** callout |
-| First send | `POST` `API_ROUTES.QUOTE_SEND_EXISTING(quoteId)` → `/api/quotes/[id]/send` → `sendExistingQuoteAsSent`: sets `sent`, link, email; does **not** overwrite `request_message` |
+| UI                                | Data                                                                                                                                                                       |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `QuoteRequestsDashboardPage`      | Lists `customer_requested` + `requested` (see `pendingCustomerQuoteRequests.ts`)                                                                                           |
+| `QuoteRequestDetailScreen`        | Detail for one open request; `QuoteDetailContent` shows customer vs owner fields from `request_message` / `note`                                                           |
+| `CreateQuoteScreen` `mode="edit"` | Hydrates **customer notes** from `request_message`, **Notes** field → `quotes.note`; schedule step can show **preferred timing** callout                                   |
+| First send                        | `POST` `API_ROUTES.QUOTE_SEND_EXISTING(quoteId)` → `/api/quotes/[id]/send` → `sendExistingQuoteAsSent`: sets `sent`, link, email; does **not** overwrite `request_message` |
 
 Subsequent edits to an already-sent quote use **`PATCH /api/quotes/[id]`** (owner `note` and other fields); `request_message` stays immutable in normal flows.
 
@@ -131,11 +131,11 @@ Booking **notes** can combine labeled **Customer note** + **Your notes** from th
 
 ## 8. Quick reference: routes & constants
 
-| Concern | Location |
-|---------|----------|
-| Dashboard paths | `ROUTES.DASHBOARD.QUOTES_*`, `QUOTE_REQUEST_DETAIL`, etc. — `src/constants/routes.ts` |
-| Public quote request API | `API_ROUTES.PUBLIC_QUOTE_REQUEST` |
-| Send existing quote | `API_ROUTES.QUOTE_SEND_EXISTING(id)` → `/api/quotes/[id]/send` |
+| Concern                  | Location                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| Dashboard paths          | `ROUTES.DASHBOARD.QUOTES_*`, `QUOTE_REQUEST_DETAIL`, etc. — `src/constants/routes.ts` |
+| Public quote request API | `API_ROUTES.PUBLIC_QUOTE_REQUEST`                                                     |
+| Send existing quote      | `API_ROUTES.QUOTE_SEND_EXISTING(id)` → `/api/quotes/[id]/send`                        |
 
 ---
 

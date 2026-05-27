@@ -14,7 +14,7 @@ const OPTIONS: { value: MinimumNoticeValue; label: string }[] = [
 
 interface MinimumNoticeSectionProps {
   value: MinimumNoticeValue;
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (value: MinimumNoticeValue) => void;
   disabled?: boolean;
 }
