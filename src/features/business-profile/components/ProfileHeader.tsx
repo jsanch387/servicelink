@@ -5,8 +5,9 @@ import {
 } from '@/constants/routes';
 import { normalizePublicBookingOfferedLocales } from '@/libs/bookingFlowLocale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import { PhoneIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { CheckBadgeIcon } from '@heroicons/react/24/solid';
+import { ProfileRatingSummary } from '../reviews';
 import { PublicBookingLanguageToggle } from './PublicBookingLanguageToggle';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
@@ -23,11 +24,8 @@ interface ProfileHeaderProps {
   onSave: (_data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
   isPublic?: boolean;
-  /** When true, show verified badge on logo (derived from owner subscription_tier === 'pro'). */
   showVerifiedBadge?: boolean;
-  /** When true with `isPublic` + slug, show Request quote CTA (Pro quote gate + accept_quote_req). */
   showRequestQuoteCta?: boolean;
-  /** Public / owner preview: resolved booking-funnel locale (query → cookie → DB default). */
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -45,11 +43,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     !!slugTrimmed &&
     (isPublic || showRequestQuoteCta) &&
     (showRequestQuoteCta || !!phoneTrimmed);
+  const serviceArea = businessProfile.service_area?.trim() || null;
 
   return (
     <>
-      {/* Cover Photo - High-end visual depth with gradient overlay */}
-      <div className="relative h-48 sm:h-56 md:h-64 w-full overflow-hidden bg-[#0f0f0f]">
+      <div className="relative h-44 sm:h-52 md:h-56 w-full overflow-hidden bg-[#0f0f0f]">
         {businessProfile.cover_image_url ? (
           <ImageWithFallback
             src={businessProfile.cover_image_url}
@@ -57,7 +55,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             width={1200}
             height={400}
             className="w-full h-full object-cover object-center"
-            fallbackLabel="COVER PHOTO"
+            fallbackLabel="Cover photo"
             fallbackSize={{ w: 1200, h: 400 }}
             priority
             sizes="100vw"
@@ -80,23 +78,20 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             />
           </div>
         ) : null}
-        {/* Gradient overlay at the bottom edge only for seamless blending */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-[#0f0f0f] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-b from-transparent to-[#0f0f0f] pointer-events-none" />
       </div>
 
-      {/* Profile Section - Centered content with professional hierarchy */}
-      <div className="relative px-6 -mt-16 z-10 flex flex-col items-center text-center">
-        {/* Signature Logo Frame */}
-        <div className="inline-block relative mb-6">
-          <div className="p-1 rounded-[2.8rem] bg-neutral-700 shadow-2xl">
+      <div className="relative z-10 flex flex-col items-center px-4 sm:px-8 -mt-14 text-center">
+        <div className="relative mb-5">
+          <div className="rounded-[2rem] bg-zinc-800/80 p-1 shadow-xl ring-1 ring-white/10">
             {businessProfile.logo_url ? (
               <ImageWithFallback
-                className="w-32 h-32 rounded-[2.4rem] border-4 border-[#0f0f0f] object-cover bg-neutral-800"
+                className="h-28 w-28 rounded-[1.75rem] border-2 border-[#0f0f0f] object-cover bg-zinc-900 sm:h-32 sm:w-32"
                 src={businessProfile.logo_url}
                 alt={`${businessProfile.business_name} logo`}
                 width={256}
                 height={256}
-                fallbackLabel="LOGO"
+                fallbackLabel="Logo"
                 fallbackSize={{ w: 256, h: 256 }}
                 priority
                 sizes="128px"
@@ -108,38 +103,36 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               />
             )}
           </div>
-          {showVerifiedBadge && (
+          {showVerifiedBadge ? (
             <span
-              className="absolute -bottom-0.5 -right-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-[#0f0f0f] border-2 border-neutral-600 shadow-lg"
+              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f0f0f] ring-2 ring-zinc-700"
               aria-label="Verified business"
             >
-              <CheckBadgeIcon className="h-5 w-5 text-blue-400" />
+              <CheckBadgeIcon className="h-4 w-4 text-blue-400" />
             </span>
-          )}
+          ) : null}
         </div>
 
-        {/* Business Title */}
-        <div className="w-full max-w-2xl mx-auto px-2">
-          <h1 className="text-3xl font-extrabold text-gray-50 tracking-tight text-center break-words">
+        <div className="w-full max-w-lg space-y-1.5">
+          <h1 className="text-2xl font-black tracking-tight text-white sm:text-[1.65rem] sm:leading-tight">
             {businessProfile.business_name}
           </h1>
+
+          {serviceArea ? (
+            <p className="flex items-center justify-center gap-1.5 text-sm leading-snug text-zinc-400">
+              <MapPinIcon
+                className="h-4 w-4 shrink-0 text-zinc-500"
+                aria-hidden
+              />
+              <span>{serviceArea}</span>
+            </p>
+          ) : null}
+
+          <ProfileRatingSummary bookingFlowLocale={bookingFlowLocale} />
         </div>
 
-        {/* Category Badge Styling */}
-        <p className="text-gray-400 text-[13px] font-bold uppercase tracking-[0.2em] mt-2">
-          {businessProfile.business_type}
-        </p>
-
-        {/* Service Location */}
-        <div className="flex items-center justify-center gap-2 mt-4 text-gray-400">
-          <span className="text-sm font-semibold tracking-wide">
-            {businessProfile.service_area}
-          </span>
-        </div>
-
-        {/* Public CTAs: quote on → Request Quote + compact call; quote off → Contact (tel) */}
         {showCtaRow ? (
-          <div className="mt-6 flex w-full max-w-sm items-center justify-center gap-3">
+          <div className="mt-5 flex w-full max-w-sm items-center justify-center gap-3">
             {showRequestQuoteCta ? (
               <>
                 <Button

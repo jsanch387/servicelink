@@ -6,8 +6,9 @@ import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { ProfileHeader } from './ProfileHeader';
 import { ServicesList } from './ServicesList';
+import { ProfileBioSection } from './ProfileBioSection';
+import { ReviewsSection } from '../reviews';
 import { WorkShowcase } from './WorkShowcase';
-// import { ReviewsSection } from './ReviewsSection'; // Will be used later
 import {
   Button,
   GlassCard,
@@ -29,7 +30,7 @@ import {
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
-type TabType = 'services' | 'gallery' | 'bio';
+type TabType = 'services' | 'gallery' | 'bio' | 'reviews';
 
 interface SlugData {
   hasSlug: boolean;
@@ -456,7 +457,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
               {/* Tabs Navigation */}
               <div className="px-4 sm:px-8 mt-8 border-b border-white/[0.06]">
-                <div className="flex gap-6">
+                <div className="flex gap-6 overflow-x-auto scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <button
                     onClick={() => setActiveTab('services')}
                     className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
@@ -493,6 +494,19 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   >
                     {bookingUi.profile.bioTab}
                     {activeTab === 'bio' && (
+                      <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('reviews')}
+                    className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
+                      activeTab === 'reviews'
+                        ? 'text-white'
+                        : 'text-zinc-500 hover:text-zinc-400'
+                    }`}
+                  >
+                    {bookingUi.profile.reviewsTab}
+                    {activeTab === 'reviews' && (
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
                   </button>
@@ -539,18 +553,15 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   onSave={handleSave}
                   onCancel={handleCancel}
                 />
-              ) : (
+              ) : activeTab === 'bio' ? (
                 <section className="px-4 py-6 sm:px-8 sm:py-8">
-                  {(businessProfile.bio?.trim() ?? '') ? (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-400 sm:text-[15px]">
-                      {businessProfile.bio}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-zinc-500">
-                      {bookingUi.profile.noBioYet}
-                    </p>
-                  )}
+                  <ProfileBioSection
+                    businessProfile={businessProfile}
+                    bookingFlowLocale={bookingFlowLocale}
+                  />
                 </section>
+              ) : (
+                <ReviewsSection bookingFlowLocale={bookingFlowLocale} />
               )}
 
               {/* Sticky Edit Profile button - view mode, authenticated users only */}
@@ -585,7 +596,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                         href="/"
                         className="group inline-flex items-center gap-2 text-gray-500 hover:text-gray-300 transition-colors"
                       >
-                        <span className="text-[11px] uppercase tracking-wider">
+                        <span className="text-xs text-gray-500">
                           Powered by
                         </span>
                         <Image

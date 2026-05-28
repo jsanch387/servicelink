@@ -204,8 +204,15 @@ export const publicBookingUiEn: PublicBookingUi = {
     servicesTab: 'Services',
     galleryTab: 'Gallery',
     bioTab: 'Bio',
+    reviewsTab: 'Reviews',
     noBioYet: 'No bio added yet.',
     notTakingBookingsRightNow:
       'Not taking bookings through ServiceLink right now.',
+    reviewCountLabel: count =>
+      count === 1 ? '1 review' : `${count} reviews`,
+    ratingAriaLabel: average => `${average} out of 5 stars`,
+    reviewsSectionTitle: 'Customer reviews',
+    ownerReplyLabel: 'Response from the business',
+    reviewsShowingSample: 'Showing recent reviews',
   },
 };

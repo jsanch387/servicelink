@@ -185,8 +185,14 @@ export type PublicBookingUi = {
     servicesTab: string;
     galleryTab: string;
     bioTab: string;
+    reviewsTab: string;
     noBioYet: string;
     /** Public profile: free cap — clarify bookings are paused via ServiceLink only. */
     notTakingBookingsRightNow: string;
+    reviewCountLabel: (count: number) => string;
+    ratingAriaLabel: (average: string) => string;
+    reviewsSectionTitle: string;
+    ownerReplyLabel: string;
+    reviewsShowingSample: string;
   };
 };
