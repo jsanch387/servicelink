@@ -51,7 +51,7 @@ export const DeleteAccountSection: React.FC<DeleteAccountSectionProps> = ({
         </h2>
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <p className="text-sm leading-snug text-zinc-500">
-            Permanently remove your account, business profile, and a l l
+            Permanently remove your account, business profile, and all
             associated data. This cannot be undone.
           </p>
           <Button
