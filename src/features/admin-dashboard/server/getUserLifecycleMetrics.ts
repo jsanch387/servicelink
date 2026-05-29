@@ -208,7 +208,7 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
       supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_status, subscription_current_period_end, stripe_subscription_id'
+          'user_id, subscription_tier, subscription_status, subscription_current_period_end, stripe_subscription_id'
         )
         .eq('subscription_tier', 'pro')
         .not('stripe_subscription_id', 'is', null)
@@ -275,6 +275,7 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
       null;
 
     type SubscriptionRow = {
+      user_id: string;
       subscription_tier: string | null;
       subscription_status: string | null;
       subscription_current_period_end: string | null;
@@ -284,6 +285,7 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
       []) as SubscriptionRow[];
     let payingActiveSubscribers = 0;
     let proTrialSubscribers = 0;
+    const payingActiveUserIds: string[] = [];
     for (const row of subscriptionRows) {
       if (
         !row.stripe_subscription_id?.trim() ||
@@ -295,9 +297,15 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
         continue;
       }
       const status = row.subscription_status?.trim().toLowerCase();
-      if (status === 'active') payingActiveSubscribers += 1;
-      else if (status === 'trialing') proTrialSubscribers += 1;
+      if (status === 'active') {
+        payingActiveSubscribers += 1;
+        if (row.user_id?.trim()) payingActiveUserIds.push(row.user_id);
+      } else if (status === 'trialing') proTrialSubscribers += 1;
     }
+    const payingActiveSubscriberEmails =
+      payingActiveUserIds.length > 0
+        ? await fetchAuthEmailsForUserIds(supabase, payingActiveUserIds)
+        : [];
 
     type UsageRow = {
       profile_id: string;
@@ -435,6 +443,7 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
         bookingsLast7Days: bookings7dResult.count ?? 0,
         bookingsLast30Days: bookings30dResult.count ?? 0,
         payingActiveSubscribers,
+        payingActiveSubscriberEmails,
         proTrialSubscribers,
         generatedAtIso,
         usersWithCreatedService,
@@ -468,6 +477,7 @@ export async function getUserLifecycleMetrics(): Promise<UserLifecycleMetricsRes
         bookingsLast7Days: 0,
         bookingsLast30Days: 0,
         payingActiveSubscribers: 0,
+        payingActiveSubscriberEmails: [],
         proTrialSubscribers: 0,
         generatedAtIso,
         usersWithCreatedService: 0,

@@ -12,6 +12,8 @@ export interface UserLifecycleMetrics {
   bookingsLast30Days: number;
   /** Pro users with Stripe `active` status, valid period, and a subscription id (excludes trialing and tier-only). */
   payingActiveSubscribers: number;
+  /** Sign-in emails for {@link payingActiveSubscribers}. */
+  payingActiveSubscriberEmails: string[];
   /** Pro users on Stripe free trial (`trialing`) with valid period and subscription id. */
   proTrialSubscribers: number;
   generatedAtIso: string;

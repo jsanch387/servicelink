@@ -130,6 +130,37 @@ export function AdminDashboardPage({
               subtitle="Stripe status trialing with valid access window"
             />
           </div>
+
+          {metrics.payingActiveSubscriberEmails.length > 0 ? (
+            <GlassCard
+              padding="md"
+              rounded="rounded-2xl"
+              blurColor="bg-indigo-500"
+              showBlur={true}
+              className="min-w-0"
+            >
+              <h3 className="text-lg font-semibold text-white">
+                Paying Pro (active) — sign-in emails
+              </h3>
+              <p className="mt-1 text-xs text-gray-400">
+                Pro tier with Stripe status active and a linked subscription (
+                {metrics.payingActiveSubscriberEmails.length}{' '}
+                {metrics.payingActiveSubscriberEmails.length === 1
+                  ? 'address'
+                  : 'addresses'}
+                , {metrics.payingActiveSubscribers} subscriber
+                {metrics.payingActiveSubscribers === 1 ? '' : 's'}). Comma-separated
+                — select all and copy.
+              </p>
+              <textarea
+                readOnly
+                value={metrics.payingActiveSubscriberEmails.join(', ')}
+                rows={4}
+                className="mt-4 w-full min-h-[7rem] max-h-56 resize-y rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-gray-200 outline-none focus:ring-2 focus:ring-indigo-500/40"
+                spellCheck={false}
+              />
+            </GlassCard>
+          ) : null}
         </section>
 
         <section className="space-y-4 sm:space-y-6 mt-8">
