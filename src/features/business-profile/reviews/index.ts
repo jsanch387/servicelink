@@ -4,11 +4,11 @@
  */
 
 export { ReviewsSection } from './components/ReviewsSection';
-export { ProfileRatingSummary } from './components/ProfileRatingSummary';
-export { ProfileReviewCard } from './components/ProfileReviewCard';
-export { ProfileReviewsSummary } from './components/ProfileReviewsSummary';
-export { StarRatingDisplay } from './components/StarRatingDisplay';
-export type { StarRatingDisplaySize } from './components/StarRatingDisplay';
+export { ProfileRatingSummary } from './components/summary/ProfileRatingSummary';
+export { ProfileReviewCard } from './components/list/ProfileReviewCard';
+export { ProfileReviewsSummary } from './components/summary/ProfileReviewsSummary';
+export { StarRatingDisplay } from './components/display/StarRatingDisplay';
+export type { StarRatingDisplaySize } from './components/display/StarRatingDisplay';
 
 export {
   MOCK_PROFILE_REVIEWS,

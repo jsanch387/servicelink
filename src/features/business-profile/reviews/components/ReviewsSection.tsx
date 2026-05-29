@@ -3,9 +3,12 @@
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
-import { MOCK_PROFILE_REVIEWS, MOCK_PROFILE_REVIEW_SUMMARY } from '../constants/mockProfileReviews';
-import { ProfileReviewCard } from './ProfileReviewCard';
-import { ProfileReviewsSummary } from './ProfileReviewsSummary';
+import {
+  MOCK_PROFILE_REVIEWS,
+  MOCK_PROFILE_REVIEW_SUMMARY,
+} from '../constants/mockProfileReviews';
+import { ProfileReviewCard } from './list/ProfileReviewCard';
+import { ProfileReviewsSummary } from './summary/ProfileReviewsSummary';
 
 interface ReviewsSectionProps {
   bookingFlowLocale?: PublicBookingFlowLocale;

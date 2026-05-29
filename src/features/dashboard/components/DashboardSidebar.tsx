@@ -12,6 +12,7 @@ import {
   LinkIcon,
   RectangleStackIcon,
   Squares2X2Icon,
+  StarIcon,
   UserGroupIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -44,6 +45,13 @@ const allNavigationItems = [
     href: ROUTES.DASHBOARD.BOOKINGS,
     icon: CalendarIcon,
     requiresOnboarding: true,
+  },
+  {
+    name: 'Reviews',
+    href: ROUTES.DASHBOARD.REVIEWS,
+    icon: StarIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/reviews',
   },
   {
     name: 'Quotes',

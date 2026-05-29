@@ -6,10 +6,10 @@ import React from 'react';
 import {
   MOCK_PROFILE_RATING_BREAKDOWN,
   MOCK_PROFILE_REVIEW_SUMMARY,
-} from '../constants/mockProfileReviews';
-import { PROFILE_REVIEW_STAR_COLOR } from '../constants/reviewStars';
-import { formatAverageRating } from '../utils/reviewDisplay';
-import { StarRatingDisplay } from './StarRatingDisplay';
+} from '../../constants/mockProfileReviews';
+import { PROFILE_REVIEW_STAR_COLOR } from '../../constants/reviewStars';
+import { formatAverageRating } from '../../utils/reviewDisplay';
+import { StarRatingDisplay } from '../display/StarRatingDisplay';
 
 interface ProfileReviewsSummaryProps {
   bookingFlowLocale?: PublicBookingFlowLocale;

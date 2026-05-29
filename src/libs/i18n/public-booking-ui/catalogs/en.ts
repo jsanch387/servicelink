@@ -208,8 +208,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     noBioYet: 'No bio added yet.',
     notTakingBookingsRightNow:
       'Not taking bookings through ServiceLink right now.',
-    reviewCountLabel: count =>
-      count === 1 ? '1 review' : `${count} reviews`,
+    reviewCountLabel: count => (count === 1 ? '1 review' : `${count} reviews`),
     ratingAriaLabel: average => `${average} out of 5 stars`,
     reviewsSectionTitle: 'Customer reviews',
     ownerReplyLabel: 'Response from the business',

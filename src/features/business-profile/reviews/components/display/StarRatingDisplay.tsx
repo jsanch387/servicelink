@@ -3,7 +3,7 @@
 import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import React from 'react';
-import { profileReviewStarTextClass } from '../constants/reviewStars';
+import { profileReviewStarTextClass } from '../../constants/reviewStars';
 
 const SIZE_CLASS = {
   sm: 'h-3.5 w-3.5',

@@ -19,9 +19,7 @@ export const ProfileBioSection: React.FC<ProfileBioSectionProps> = ({
   const bio = businessProfile.bio?.trim() || null;
 
   if (!businessType && !bio) {
-    return (
-      <p className="text-sm text-zinc-500">{ui.profile.noBioYet}</p>
-    );
+    return <p className="text-sm text-zinc-500">{ui.profile.noBioYet}</p>;
   }
 
   return (

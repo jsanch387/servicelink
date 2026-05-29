@@ -1,11 +1,14 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import { bcp47ForBookingLocale, publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import {
+  bcp47ForBookingLocale,
+  publicBookingUi,
+} from '@/libs/i18n/publicBookingUi';
 import React from 'react';
-import type { MockProfileReview } from '../constants/mockProfileReviews';
-import { formatReviewDate } from '../utils/reviewDisplay';
-import { StarRatingDisplay } from './StarRatingDisplay';
+import type { MockProfileReview } from '../../constants/mockProfileReviews';
+import { formatReviewDate } from '../../utils/reviewDisplay';
+import { StarRatingDisplay } from '../display/StarRatingDisplay';
 
 interface ProfileReviewCardProps {
   review: MockProfileReview;
