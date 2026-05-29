@@ -25,6 +25,8 @@ Tables included in the provided snapshot:
 - `profiles`
 - `quote_public_links`
 - `quotes`
+- `review_invites`
+- `reviews`
 - `service_addon_assignments`
 - `service_addons`
 - `service_price_options`
@@ -68,6 +70,13 @@ Tables included in the provided snapshot:
 
 - `quotes`
 - `quote_public_links`
+
+### Reviews (post-booking feedback)
+
+- `review_invites` — one hashed magic link per completed `bookings` row; email/SMS invite
+- `reviews` — customer rating + body; optional owner reply; `is_hidden` for public profile
+
+Full reference: `src/features/reviews/docs/DATABASE.md`
 
 ### Notifications
 
@@ -121,13 +130,17 @@ auth.users
          ├─ service_addons(business_id)
          ├─ customers(business_id)
          ├─ bookings(business_id, service_id?, customer_id?)
-         │  └─ booking_payments(booking_id UNIQUE, business_id)
+         │  ├─ booking_payments(booking_id UNIQUE, business_id)
+         │  ├─ review_invites(booking_id UNIQUE)
+         │  └─ reviews(booking_id UNIQUE, review_invite_id UNIQUE)
          ├─ booking_requests(business_id, service_id?)
          ├─ booking_checkout_sessions(business_id, booking_id?)
          ├─ payment_accounts(business_id)
          ├─ payment_settings(business_id, payment_account_id?)
          └─ quotes(business_id)
 ```
+
+Reviews lifecycle: `src/features/reviews/docs/DATABASE.md`
 
 ## Payment behavior context from existing schema
 
