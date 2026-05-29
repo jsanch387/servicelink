@@ -25,6 +25,7 @@ export { FramedCtaButton } from './FramedCtaButton';
 export { GlassCard } from './GlassCard';
 export { GoogleIcon } from './GoogleIcon';
 export { IconButton } from './IconButton';
+export { IosAppStoreButton } from './IosAppStoreButton';
 export { ImageWithFallback } from './ImageWithFallback';
 export { LoadingSpinner } from './LoadingSpinner';
 export { Logo } from './Logo';

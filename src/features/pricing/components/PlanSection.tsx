@@ -60,15 +60,9 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   };
 
   return (
-    <GlassCard
-      padding="none"
-      rounded="rounded-2xl"
-      blurColor="bg-zinc-500"
-      showBlur={true}
-      className="w-full min-w-0 p-4 text-left"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-bold text-white">
+    <section className="w-full min-w-0">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
+        <h2 className="text-lg sm:text-xl font-semibold text-white">
           Subscription plan
         </h2>
         {isPro && subscriptionCancelAtPeriodEnd ? (
@@ -78,79 +72,87 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 mt-4">
-        <div className="flex min-h-[2.5rem] flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <p className="inline-flex items-center gap-1.5 font-semibold leading-none text-white">
-            {isPro ? (
+      <GlassCard
+        padding="none"
+        rounded="rounded-2xl"
+        blurColor="bg-zinc-500"
+        showBlur={true}
+        className="w-full min-w-0 p-4 text-left"
+      >
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="flex min-h-[2.5rem] flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <p className="inline-flex items-center gap-1.5 font-semibold leading-none text-white">
+              {isPro ? (
+                <>
+                  <span>{displayPlanName}</span>
+                  <CrownIcon className="h-5 w-5 shrink-0 translate-y-[3px] text-amber-300" />
+                </>
+              ) : (
+                plan.name
+              )}
+            </p>
+            {isPro && isTrialing ? (
+              <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-emerald-300">
+                Free trial
+              </p>
+            ) : (
+              <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-white tabular-nums">
+                {plan.price}
+                <span className="text-sm font-normal leading-none text-gray-400">
+                  /month
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {isPro && renewalDateLabel ? (
+          <p className="mt-2 text-left text-xs text-zinc-500 leading-relaxed">
+            {isTrialing ? (
               <>
-                <span>{displayPlanName}</span>
-                <CrownIcon className="h-5 w-5 shrink-0 translate-y-[3px] text-amber-300" />
+                Trial ends on{' '}
+                <span className="text-zinc-400 tabular-nums">
+                  {renewalDateLabel}
+                </span>
+              </>
+            ) : subscriptionCancelAtPeriodEnd ? (
+              <>
+                Pro access until{' '}
+                <span className="text-zinc-400 tabular-nums">
+                  {renewalDateLabel}
+                </span>
               </>
             ) : (
-              plan.name
+              <>Renews on {renewalDateLabel}</>
             )}
           </p>
-          {isPro && isTrialing ? (
-            <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-emerald-300">
-              Free trial
-            </p>
-          ) : (
-            <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-white tabular-nums">
-              {plan.price}
-              <span className="text-sm font-normal leading-none text-gray-400">
-                /month
-              </span>
-            </p>
-          )}
-        </div>
-      </div>
+        ) : null}
 
-      {isPro && renewalDateLabel ? (
-        <p className="mt-2 text-left text-xs text-zinc-500 leading-relaxed">
-          {isTrialing ? (
-            <>
-              Trial ends on{' '}
-              <span className="text-zinc-400 tabular-nums">
-                {renewalDateLabel}
-              </span>
-            </>
-          ) : subscriptionCancelAtPeriodEnd ? (
-            <>
-              Pro access until{' '}
-              <span className="text-zinc-400 tabular-nums">
-                {renewalDateLabel}
-              </span>
-            </>
-          ) : (
-            <>Renews on {renewalDateLabel}</>
-          )}
-        </p>
-      ) : null}
-
-      {isPro ? (
-        <div className="mt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full sm:w-auto"
-            onClick={handleManageSubscription}
-            disabled={portalLoading}
-            loading={portalLoading}
-          >
-            Manage subscription
-          </Button>
-        </div>
-      ) : (
-        <div className="mt-4">
-          <Button
-            href={ROUTES.DASHBOARD.UPGRADE}
-            variant="secondary"
-            className="w-full sm:w-auto"
-          >
-            View plans & upgrade
-          </Button>
-        </div>
-      )}
-    </GlassCard>
+        {isPro ? (
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={handleManageSubscription}
+              disabled={portalLoading}
+              loading={portalLoading}
+            >
+              Manage subscription
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-4">
+            <Button
+              href={ROUTES.DASHBOARD.UPGRADE}
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
+              View plans & upgrade
+            </Button>
+          </div>
+        )}
+      </GlassCard>
+    </section>
   );
 };

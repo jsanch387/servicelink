@@ -1,9 +1,9 @@
 'use client';
 
+import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import React from 'react';
-import { Button } from '@/components/shared';
-import { AppStoreComingSoonBadge } from './AppStoreComingSoonBadge';
+import { AppStoreDownloadBadge } from './AppStoreDownloadBadge';
 import { LandingPageDisplayImage } from './LandingPageDisplayImage';
 
 export const HeroSection: React.FC = () => {
@@ -31,8 +31,7 @@ export const HeroSection: React.FC = () => {
             follow-up from one dashboard.
           </p>
 
-          {/* Hero CTA Buttons */}
-          <div className="max-w-lg">
+          <div className="max-w-lg flex flex-col items-start gap-5 lg:gap-[150px]">
             <Button
               href={ROUTES.AUTH.SIGNUP}
               variant="inverse"
@@ -41,7 +40,7 @@ export const HeroSection: React.FC = () => {
             >
               Get Started
             </Button>
-            <AppStoreComingSoonBadge />
+            <AppStoreDownloadBadge />
           </div>
         </div>
 

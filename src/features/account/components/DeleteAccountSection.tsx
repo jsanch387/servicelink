@@ -1,7 +1,7 @@
 'use client';
 
+import { Button } from '@/components/shared';
 import { useAuth } from '@/features/auth';
-import { TrashIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useState } from 'react';
 import { ConfirmDeleteAccountModal } from './ConfirmDeleteAccountModal';
@@ -44,14 +44,27 @@ export const DeleteAccountSection: React.FC<DeleteAccountSectionProps> = ({
         accountEmail={accountEmail}
         onDeleted={handleDeleted}
       />
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="group inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl px-1 py-2 text-sm font-medium text-red-300/80 transition-colors hover:text-red-200"
-      >
-        <TrashIcon className="h-5 w-5 shrink-0 text-red-400/70 transition-colors group-hover:text-red-300" />
-        Delete account
-      </button>
+
+      <section className="w-full min-w-0">
+        <h2 className="mb-3 text-lg sm:text-xl font-semibold text-red-300">
+          Delete account
+        </h2>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="text-sm leading-snug text-zinc-500">
+            Permanently remove your account, business profile, and a l l
+            associated data. This cannot be undone.
+          </p>
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={() => setOpen(true)}
+            className="mt-4 w-full sm:w-auto"
+          >
+            Delete account
+          </Button>
+        </div>
+      </section>
     </>
   );
 };

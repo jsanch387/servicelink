@@ -14,6 +14,7 @@ import {
 } from '@/features/analytics';
 import {
   CreateLinkCard,
+  IosAppLiveBanner,
   LinkSharingCard,
   PendingRequestsCard,
   PerformanceCard,
@@ -106,6 +107,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             </p>
           ) : null}
         </div>
+
+        <IosAppLiveBanner />
 
         {dashboardData.isFreeTier ? (
           <div

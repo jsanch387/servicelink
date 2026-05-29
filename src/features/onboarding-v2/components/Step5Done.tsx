@@ -2,11 +2,13 @@
 
 import { Button } from '@/components/shared';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
+import { IOS_APP_STORE_URL } from '@/constants/appStore';
 import { isOnboardingLegacyStripeTrialEnabled } from '@/features/pricing/config/onboardingLegacyStripeTrial';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { BoltIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { OnboardingIosAppStep } from './OnboardingIosAppStep';
 import { OnboardingStepNav } from './OnboardingStepNav';
 
 interface Step5DoneProps {
@@ -28,6 +30,7 @@ function publicBookingHost(): string {
 
 export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
   const router = useRouter();
+  const [phase, setPhase] = useState<'activate' | 'app-promo'>('activate');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,12 +38,17 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
   const bookingHost = useMemo(() => publicBookingHost(), []);
   const bookingUrl = `${bookingHost}/${slugDisplay}`;
 
+  const redirectToProfile = useCallback(() => {
+    const href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
+    router.prefetch(href);
+    router.push(href);
+    void router.refresh();
+  }, [router]);
+
   const handleActivateLink = async () => {
     setError(null);
     setLoading(true);
     try {
-      const href = `${ROUTES.DASHBOARD.BUSINESS_PROFILE}?onboarding=complete`;
-
       if (isOnboardingLegacyStripeTrialEnabled()) {
         const res = await fetch(API_ROUTES.STRIPE_START_ONBOARDING_TRIAL, {
           method: 'POST',
@@ -51,9 +59,11 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
         };
 
         if (res.ok && data.success) {
-          router.prefetch(href);
-          router.push(href);
-          await router.refresh();
+          if (IOS_APP_STORE_URL) {
+            setPhase('app-promo');
+          } else {
+            redirectToProfile();
+          }
           return;
         }
 
@@ -70,9 +80,11 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
       };
 
       if (res.ok && data.success) {
-        router.prefetch(href);
-        router.push(href);
-        await router.refresh();
+        if (IOS_APP_STORE_URL) {
+          setPhase('app-promo');
+        } else {
+          redirectToProfile();
+        }
         return;
       }
 
@@ -81,6 +93,10 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
       setLoading(false);
     }
   };
+
+  if (phase === 'app-promo') {
+    return <OnboardingIosAppStep onContinue={redirectToProfile} />;
+  }
 
   return (
     <div className="w-full">
