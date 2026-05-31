@@ -58,4 +58,13 @@ describe('public booking UI catalogs', () => {
     expect(publicBookingUi('en').profile.reviewsTab).toBe('Reviews');
     expect(publicBookingUi('es').profile.reviewsTab).toBe('Reseñas');
   });
+
+  it('profile review strings are localized', () => {
+    expect(publicBookingUi('es').profile.reviewsLoadError).toContain('reseñas');
+    expect(publicBookingUi('es').profile.reviewsRetry).toBe('Reintentar');
+    expect(publicBookingUi('es').profile.reviewsLoadingAriaLabel).toBe(
+      'Cargando reseñas'
+    );
+    expect(publicBookingUi('es').serviceCard.seeMore).toBe('Ver más');
+  });
 });

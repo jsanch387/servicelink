@@ -1,13 +1,9 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { deriveReviewsSummary } from '@/features/reviews/utils/deriveReviewsSummary';
 import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  MOCK_DASHBOARD_RATING_BREAKDOWN,
-  MOCK_DASHBOARD_REVIEWS,
-  MOCK_DASHBOARD_REVIEW_SUMMARY,
-} from '../constants/mockDashboardReviews';
 import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
 import {
   countReviewsNeedingReply,
@@ -30,10 +26,10 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
 }) => {
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
   const [filter, setFilter] = useState<ReviewsDashboardFilterId>('all');
-  const [reviews, setReviews] = useState<DashboardReview[]>(
-    () => MOCK_DASHBOARD_REVIEWS
-  );
+  const [reviews, setReviews] = useState<DashboardReview[]>([]);
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
+
+  const summary = useMemo(() => deriveReviewsSummary(reviews), [reviews]);
 
   const filtered = useMemo(
     () => reviews.filter(r => reviewMatchesFilter(r, filter)),
@@ -75,18 +71,19 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
       <ReviewsDashboardHeader needsReplyCount={needsReplyCount} />
 
       <div className="mb-6 space-y-4 sm:mb-8">
-        <ReviewsSummaryCard
-          averageRating={MOCK_DASHBOARD_REVIEW_SUMMARY.averageRating}
-          reviewCount={MOCK_DASHBOARD_REVIEW_SUMMARY.reviewCount}
-          breakdown={MOCK_DASHBOARD_RATING_BREAKDOWN}
-        />
+        {hasAnyReviews ? (
+          <ReviewsSummaryCard
+            summary={summary}
+            bookingFlowLocale={bookingFlowLocale}
+          />
+        ) : null}
         <ReviewsCollectCard />
       </div>
 
       {hasAnyReviews ? (
         <div className="mb-4">
           <ReviewsFilterPills value={filter} onChange={setFilter} />
-          <p className="mt-3 text-xs text-gray-500">
+          <p className="mt-3 text-xs text-zinc-500">
             Showing {sorted.length} of {reviews.length} reviews
           </p>
         </div>
@@ -101,6 +98,7 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
               <ReviewListRow
                 review={review}
                 locale={locale}
+                bookingFlowLocale={bookingFlowLocale}
                 isReplyOpen={openReplyId === review.id}
                 onToggleReply={() => handleToggleReply(review.id)}
                 onSendReply={handleSendReply}

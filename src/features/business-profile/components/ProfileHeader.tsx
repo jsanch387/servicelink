@@ -8,6 +8,7 @@ import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { MapPinIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import { CheckBadgeIcon } from '@heroicons/react/24/solid';
 import { ProfileRatingSummary } from '../reviews';
+import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicBookingLanguageToggle } from './PublicBookingLanguageToggle';
 import React from 'react';
 import { ImageWithFallback } from '../../../components';
@@ -27,6 +28,8 @@ interface ProfileHeaderProps {
   showVerifiedBadge?: boolean;
   showRequestQuoteCta?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** When null/undefined or empty count, header star rating is hidden. */
+  publicReviewSummary?: PublicProfileReviewsSummary | null;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -35,6 +38,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   showVerifiedBadge = false,
   showRequestQuoteCta = false,
   bookingFlowLocale = 'en',
+  publicReviewSummary = null,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const slugTrimmed = businessProfile.business_slug?.trim();
@@ -128,7 +132,10 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </p>
           ) : null}
 
-          <ProfileRatingSummary bookingFlowLocale={bookingFlowLocale} />
+          <ProfileRatingSummary
+            bookingFlowLocale={bookingFlowLocale}
+            summary={publicReviewSummary}
+          />
         </div>
 
         {showCtaRow ? (

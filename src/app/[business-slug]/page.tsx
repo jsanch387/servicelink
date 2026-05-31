@@ -11,6 +11,10 @@ import { BusinessProfileView } from '@/features/business-profile/components/Busi
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
+import {
+  loadPublicReviewSummary,
+  publicReviewSummaryFromLoadResult,
+} from '@/features/reviews';
 import { MediaService } from '@/features/media';
 import {
   isProAccess,
@@ -225,6 +229,14 @@ export default async function PublicProfilePage({
       freeBookingsCount,
     });
 
+  const publicReviewSummaryResult = await loadPublicReviewSummary(
+    adminGate,
+    businessProfile.id
+  );
+  const publicReviewSummary = publicReviewSummaryFromLoadResult(
+    publicReviewSummaryResult
+  );
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
@@ -242,6 +254,8 @@ export default async function PublicProfilePage({
         publicOwnerHasProForPriceOptions={ownerTier === 'pro'}
         publicFreeBookingsCapReached={publicFreeBookingsCapReached}
         bookingFlowLocale={bookingFlowLocale}
+        publicReviewSummary={publicReviewSummary}
+        publicProfileSlug={slug}
       />
     </div>
   );

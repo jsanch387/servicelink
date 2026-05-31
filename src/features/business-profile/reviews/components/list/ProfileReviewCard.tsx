@@ -1,15 +1,19 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
+import type { PublicProfileReview } from '@/features/reviews';
+import {
+  bcp47ForBookingLocale,
+  publicBookingUi,
+} from '@/libs/i18n/publicBookingUi';
 import React from 'react';
-import type { MockProfileReview } from '../../constants/mockProfileReviews';
-import { formatReviewDate } from '../../utils/reviewDisplay';
+import { reviewBodyTextClass } from '../../constants/reviewTypography';
+import { ReviewCardHeader } from '../display/ReviewCardHeader';
+import { ReviewExpandableText } from '../display/ReviewExpandableText';
 import { ReviewOwnerReplyDisplay } from '../display/ReviewOwnerReplyDisplay';
-import { StarRatingDisplay } from '../display/StarRatingDisplay';
 
 interface ProfileReviewCardProps {
-  review: MockProfileReview;
+  review: PublicProfileReview;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -17,34 +21,39 @@ export const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({
   review,
   bookingFlowLocale = 'en',
 }) => {
+  const ui = publicBookingUi(bookingFlowLocale);
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
+  const expandLabels = {
+    seeMore: ui.serviceCard.seeMore,
+    seeLess: ui.serviceCard.seeLess,
+  };
 
   return (
     <article>
-      <header className="flex items-center justify-between gap-3">
-        <p className="min-w-0 text-[15px] font-semibold leading-snug text-zinc-100">
-          {review.authorDisplayName}
-        </p>
-        <StarRatingDisplay
-          rating={review.rating}
-          size="sm"
-          className="shrink-0"
+      <ReviewCardHeader
+        authorDisplayName={review.authorDisplayName}
+        createdAt={review.createdAt}
+        rating={review.rating}
+        locale={locale}
+      />
+
+      <div className="mt-3 sm:mt-4">
+        <ReviewExpandableText
+          text={review.body}
+          variant="reviewBody"
+          className={reviewBodyTextClass}
+          seeMoreLabel={expandLabels.seeMore}
+          seeLessLabel={expandLabels.seeLess}
         />
-      </header>
-
-      <p className="mt-4 text-[15px] leading-relaxed text-zinc-300">
-        {review.body}
-      </p>
-
-      <time
-        className="mt-3 block text-[11px] text-zinc-600 tabular-nums"
-        dateTime={review.createdAt}
-      >
-        {formatReviewDate(review.createdAt, locale)}
-      </time>
+      </div>
 
       {review.ownerReply ? (
-        <ReviewOwnerReplyDisplay body={review.ownerReply.body} />
+        <ReviewOwnerReplyDisplay
+          body={review.ownerReply.body}
+          className="mt-4 sm:mt-5"
+          seeMoreLabel={expandLabels.seeMore}
+          seeLessLabel={expandLabels.seeLess}
+        />
       ) : null}
     </article>
   );

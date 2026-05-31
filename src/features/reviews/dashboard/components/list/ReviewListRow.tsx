@@ -1,11 +1,14 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import {
-  formatReviewDate,
+  reviewBodyTextClass,
+  ReviewCardHeader,
+  ReviewExpandableText,
   ReviewOwnerReplyDisplay,
-  StarRatingDisplay,
 } from '@/features/business-profile/reviews';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
 import type { DashboardReview } from '../../types';
 import { ReviewReplyForm } from './ReviewReplyForm';
@@ -13,6 +16,7 @@ import { ReviewReplyForm } from './ReviewReplyForm';
 interface ReviewListRowProps {
   review: DashboardReview;
   locale: string;
+  bookingFlowLocale?: PublicBookingFlowLocale;
   isReplyOpen: boolean;
   onToggleReply: () => void;
   onSendReply: (reviewId: string, body: string) => void;
@@ -21,11 +25,17 @@ interface ReviewListRowProps {
 export const ReviewListRow: React.FC<ReviewListRowProps> = ({
   review,
   locale,
+  bookingFlowLocale = 'en',
   isReplyOpen,
   onToggleReply,
   onSendReply,
 }) => {
   const hasReply = Boolean(review.ownerReply?.body?.trim());
+  const ui = publicBookingUi(bookingFlowLocale);
+  const expandLabels = {
+    seeMore: ui.serviceCard.seeMore,
+    seeLess: ui.serviceCard.seeLess,
+  };
 
   return (
     <GlassCard
@@ -34,31 +44,32 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
       className="border-white/[0.06] bg-white/[0.02]"
       padding="none"
     >
-      <div className="p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="min-w-0 flex-1 truncate text-base font-bold text-white">
-            {review.authorDisplayName}
-          </h3>
-          <StarRatingDisplay
-            rating={review.rating}
-            size="sm"
-            className="shrink-0"
+      <div className="p-3.5 sm:p-5">
+        <ReviewCardHeader
+          authorDisplayName={review.authorDisplayName}
+          createdAt={review.createdAt}
+          rating={review.rating}
+          locale={locale}
+          authorAs="h3"
+        />
+
+        <div className="mt-3 sm:mt-4">
+          <ReviewExpandableText
+            text={review.body}
+            variant="reviewBody"
+            className={reviewBodyTextClass}
+            seeMoreLabel={expandLabels.seeMore}
+            seeLessLabel={expandLabels.seeLess}
           />
         </div>
 
-        <p className="mt-4 text-[15px] leading-relaxed text-zinc-300">
-          {review.body}
-        </p>
-
-        <time
-          className="mt-3 block text-[11px] text-zinc-600 tabular-nums"
-          dateTime={review.createdAt}
-        >
-          {formatReviewDate(review.createdAt, locale)}
-        </time>
-
         {hasReply && review.ownerReply ? (
-          <ReviewOwnerReplyDisplay body={review.ownerReply.body} />
+          <ReviewOwnerReplyDisplay
+            body={review.ownerReply.body}
+            className="mt-4 sm:mt-5"
+            seeMoreLabel={expandLabels.seeMore}
+            seeLessLabel={expandLabels.seeLess}
+          />
         ) : null}
 
         {!hasReply && !isReplyOpen ? (

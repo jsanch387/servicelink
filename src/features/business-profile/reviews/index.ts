@@ -1,26 +1,42 @@
 /**
- * Public profile reviews — UI components, mock data, and shared utilities.
- * Replace mock constants with API/DB when the reviews backend ships.
+ * Public profile reviews — UI components and shared utilities.
  */
 
 export { ReviewsSection } from './components/ReviewsSection';
+export { LazyPublicReviewsSection } from './components/LazyPublicReviewsSection';
+export { ProfileReviewsList } from './components/list/ProfileReviewsList';
 export { ProfileRatingSummary } from './components/summary/ProfileRatingSummary';
 export { ProfileReviewCard } from './components/list/ProfileReviewCard';
 export { ProfileReviewsSummary } from './components/summary/ProfileReviewsSummary';
+export { ReviewsRatingSummary } from './components/summary/ReviewsRatingSummary';
+export { ReviewCardHeader } from './components/display/ReviewCardHeader';
 export { StarRatingDisplay } from './components/display/StarRatingDisplay';
 export type { StarRatingDisplaySize } from './components/display/StarRatingDisplay';
 export { ReviewOwnerReplyDisplay } from './components/display/ReviewOwnerReplyDisplay';
-
-export {
-  MOCK_PROFILE_REVIEWS,
-  MOCK_PROFILE_REVIEW_SUMMARY,
-  MOCK_PROFILE_RATING_BREAKDOWN,
-} from './constants/mockProfileReviews';
-export type { MockProfileReview } from './constants/mockProfileReviews';
+export { ReviewExpandableText } from './components/display/ReviewExpandableText';
 
 export {
   PROFILE_REVIEW_STAR_COLOR,
   profileReviewStarTextClass,
 } from './constants/reviewStars';
 
-export { formatAverageRating, formatReviewDate } from './utils/reviewDisplay';
+export {
+  reviewAuthorNameClass,
+  reviewBodyTextClass,
+  reviewDateClass,
+  reviewExpandToggleClass,
+  reviewReplyTextClass,
+} from './constants/reviewTypography';
+
+export {
+  formatAverageRating,
+  formatReviewDate,
+  roundAverageRating,
+} from './utils/reviewDisplay';
+
+export {
+  reviewCollapsedMaxChars,
+  reviewTextNeedsExpand,
+  truncateReviewText,
+} from './utils/reviewTextDisplay';
+export type { ReviewExpandableTextVariant } from './utils/reviewTextDisplay';

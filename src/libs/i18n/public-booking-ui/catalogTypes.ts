@@ -193,5 +193,8 @@ export type PublicBookingUi = {
     ratingAriaLabel: (average: string) => string;
     reviewsSectionTitle: string;
     reviewsShowingSample: string;
+    reviewsLoadError: string;
+    reviewsRetry: string;
+    reviewsLoadingAriaLabel: string;
   };
 };

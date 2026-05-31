@@ -2,9 +2,6 @@ export {
   ReviewsDashboardPage,
   ReviewDetailPage,
   ReviewsDashboardSkeleton,
-  MOCK_DASHBOARD_REVIEWS,
-  MOCK_DASHBOARD_REVIEW_SUMMARY,
-  MOCK_DASHBOARD_RATING_BREAKDOWN,
 } from './dashboard';
 
 export type {
@@ -14,3 +11,29 @@ export type {
   DashboardReviewSummary,
   RatingBreakdownRow,
 } from './dashboard';
+
+export {
+  computeRatingBreakdown,
+  loadPublicBusinessReviews,
+  loadPublicReviewSummary,
+  mapReviewRowToPublicProfile,
+  publicReviewSummaryFromLoadResult,
+  publicReviewsDataFromLoadResult,
+  tryMapReviewRowToPublicProfile,
+} from './server';
+export type { ReviewRowForPublicProfile } from './server';
+export type {
+  LoadPublicBusinessReviewsResult,
+  LoadPublicReviewSummaryResult,
+} from './types/loadResults';
+export { getPublicProfileReviewsApiPath } from './utils/getPublicProfileReviewsApiPath';
+export { deriveReviewsSummary } from './utils/deriveReviewsSummary';
+export { buildReviewInviteCustomerUrl } from './utils/buildReviewInviteCustomerUrl';
+export { getPublicReviewPath } from '@/constants/routes';
+
+export type {
+  PublicProfileReview,
+  PublicProfileReviewsData,
+  PublicProfileReviewsSummary,
+  PublicProfileRatingBreakdownRow,
+} from './types/publicProfile';

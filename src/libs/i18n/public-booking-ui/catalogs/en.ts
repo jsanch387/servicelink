@@ -212,5 +212,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     ratingAriaLabel: average => `${average} out of 5 stars`,
     reviewsSectionTitle: 'Customer reviews',
     reviewsShowingSample: 'Showing recent reviews',
+    reviewsLoadError: 'Reviews could not be loaded. Please try again.',
+    reviewsRetry: 'Try again',
+    reviewsLoadingAriaLabel: 'Loading reviews',
   },
 };

@@ -1,24 +1,22 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import type { PublicProfileReviewsData } from '@/features/reviews';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
-import {
-  MOCK_PROFILE_REVIEWS,
-  MOCK_PROFILE_REVIEW_SUMMARY,
-} from '../constants/mockProfileReviews';
-import { ProfileReviewCard } from './list/ProfileReviewCard';
+import { ProfileReviewsList } from './list/ProfileReviewsList';
 import { ProfileReviewsSummary } from './summary/ProfileReviewsSummary';
 
 interface ReviewsSectionProps {
+  data: PublicProfileReviewsData;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
+  data,
   bookingFlowLocale = 'en',
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
-  const { averageRating, reviewCount } = MOCK_PROFILE_REVIEW_SUMMARY;
 
   return (
     <section
@@ -27,20 +25,12 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     >
       <ProfileReviewsSummary
         bookingFlowLocale={bookingFlowLocale}
-        averageRating={averageRating}
-        reviewCount={reviewCount}
+        summary={data.summary}
       />
-
-      <ul className="-mx-4 divide-y divide-white/[0.06] border-t border-white/[0.06] sm:-mx-8">
-        {MOCK_PROFILE_REVIEWS.map(review => (
-          <li key={review.id} className="px-4 py-8 sm:px-8">
-            <ProfileReviewCard
-              review={review}
-              bookingFlowLocale={bookingFlowLocale}
-            />
-          </li>
-        ))}
-      </ul>
+      <ProfileReviewsList
+        reviews={data.reviews}
+        bookingFlowLocale={bookingFlowLocale}
+      />
     </section>
   );
 };

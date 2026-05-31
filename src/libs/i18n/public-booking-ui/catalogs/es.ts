@@ -214,5 +214,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     ratingAriaLabel: average => `${average} de 5 estrellas`,
     reviewsSectionTitle: 'Reseñas de clientes',
     reviewsShowingSample: 'Mostrando reseñas recientes',
+    reviewsLoadError: 'No se pudieron cargar las reseñas. Vuelve a intentarlo.',
+    reviewsRetry: 'Reintentar',
+    reviewsLoadingAriaLabel: 'Cargando reseñas',
   },
 };

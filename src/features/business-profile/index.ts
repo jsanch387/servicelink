@@ -19,14 +19,11 @@ export {
   ProfileReviewCard,
   ProfileReviewsSummary,
   StarRatingDisplay,
-  MOCK_PROFILE_REVIEWS,
-  MOCK_PROFILE_REVIEW_SUMMARY,
-  MOCK_PROFILE_RATING_BREAKDOWN,
   PROFILE_REVIEW_STAR_COLOR,
   formatAverageRating,
   formatReviewDate,
 } from './reviews';
-export type { MockProfileReview, StarRatingDisplaySize } from './reviews';
+export type { StarRatingDisplaySize } from './reviews';
 export { ServiceCard } from './components/ServiceCard';
 export { ServicesList } from './components/ServicesList';
 export { WorkShowcase } from './components/WorkShowcase';

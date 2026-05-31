@@ -52,7 +52,7 @@ export const StarRatingDisplay: React.FC<StarRatingDisplayProps> = ({
           return (
             <StarSolidIcon
               key={starKey}
-              className={`${iconClass} ${profileReviewStarTextClass}`}
+              className={`${iconClass} shrink-0 ${profileReviewStarTextClass}`}
               aria-hidden
             />
           );
@@ -60,7 +60,10 @@ export const StarRatingDisplay: React.FC<StarRatingDisplayProps> = ({
 
         if (fill > 0) {
           return (
-            <span key={starKey} className={`relative ${iconClass}`}>
+            <span
+              key={starKey}
+              className={`relative inline-flex shrink-0 ${iconClass}`}
+            >
               <StarOutlineIcon
                 className={`${iconClass} text-zinc-600`}
                 aria-hidden
@@ -82,7 +85,7 @@ export const StarRatingDisplay: React.FC<StarRatingDisplayProps> = ({
         return (
           <StarOutlineIcon
             key={starKey}
-            className={`${iconClass} text-zinc-600`}
+            className={`${iconClass} shrink-0 text-zinc-600`}
             aria-hidden
           />
         );

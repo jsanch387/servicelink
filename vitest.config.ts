@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     /** jsdom supports RTL tests; pure logic tests run fine here too. */
     environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
     include: [
       'src/features/**/testing/**/*.test.ts',
       'src/features/**/testing/**/*.test.tsx',

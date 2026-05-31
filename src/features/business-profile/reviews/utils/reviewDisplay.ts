@@ -1,6 +1,12 @@
+/** Round to one decimal for averages (e.g. 4.46 → 4.5). */
+export function roundAverageRating(rating: number): number {
+  if (!Number.isFinite(rating)) return 0;
+  return Math.round(rating * 10) / 10;
+}
+
+/** Profile display: always one decimal — `5.0`, `4.5`, not `5`. */
 export function formatAverageRating(rating: number): string {
-  if (!Number.isFinite(rating)) return '0';
-  return rating % 1 === 0 ? String(Math.round(rating)) : rating.toFixed(1);
+  return roundAverageRating(rating).toFixed(1);
 }
 
 export function formatReviewDate(iso: string, locale: string): string {
