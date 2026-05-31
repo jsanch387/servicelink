@@ -28,7 +28,7 @@ Public profile UI: `src/features/business-profile/reviews/`
 | Piece | Status |
 |--------|--------|
 | Dashboard + profile UI (mock data) | Done |
-| `review_invites` + `reviews` in Supabase | Migrations in `docs/migrations/` |
+| `review_invites` + `reviews` in Supabase | Run `docs/migrations/003_one_review_per_customer.sql` after base tables |
 | Database documentation | `docs/DATABASE.md` |
 | `GET /review/[token]` + submit API | Not started |
 | Email on booking complete | Not started |
@@ -37,5 +37,5 @@ Public profile UI: `src/features/business-profile/reviews/`
 ## Product policy
 
 - No owner copy/share review link.
-- One review per completed visit.
+- **One review per customer** on the public profile (invite still tied to a completed visit).
 - Invites: email now, SMS later.

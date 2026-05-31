@@ -13,8 +13,8 @@ export const ReviewsDashboardHeader: React.FC<ReviewsDashboardHeaderProps> = ({
         Reviews
       </h1>
       <p className="mt-1 text-sm text-gray-500">
-        Reviews arrive by email after completed visits. Reply here in a few
-        taps.
+        See what customers are saying about their visits and reply from this
+        page.
       </p>
       {needsReplyCount > 0 ? (
         <p className="mt-2 text-sm font-medium text-amber-200/90">

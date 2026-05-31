@@ -8,8 +8,9 @@ Published feedback lives in [`REVIEWS_TABLE.md](./REVIEWS_TABLE.md).
 
 ## Purpose
 
-- One **invite per booking** (`booking_id` unique).
-- Stores **hashed** link token only (`link_token_hash`); raw token exists only in the email URL.
+- One **invite row per booking** (`booking_id` unique) when the visit is eligible.
+- **Do not create** a new invite if the customer already has a review or a pending invite for this business (see [DATABASE.md](./DATABASE.md)).
+- Stores **hashed** link token only; raw token exists only in the email URL.
 - Tracks lifecycle (`pending` → `submitted` / `expired` / `cancelled`) and email delivery.
 
 ---
@@ -73,6 +74,7 @@ Table: `public.review_invites`
 | `review_invites_link_token_hash_key` | unique | Token lookup |
 | `review_invites_business_id_created_at_idx` | btree | Lists by business |
 | `review_invites_expires_at_idx` | partial (`pending`) | Expiry jobs |
+| `review_invites_business_customer_pending_key` | partial (`pending`, migration 003) | One pending invite per customer |
 
 ---
 
@@ -101,6 +103,7 @@ Run **before** `002_reviews.sql`.
 
 ## App wiring (planned)
 
-1. Booking **completed** → insert row, send email with `/review/{rawToken}`.
+1. Booking **completed** → if eligible, insert row and send email with `/review/{rawToken}`.
 2. `GET /review/[token]` → hash token, load pending non-expired invite.
 3. Submit → insert `reviews`, update invite to `submitted`.
+4. Later completed visits for same `customer_id` → no new invite (customer already reviewed).

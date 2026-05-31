@@ -2,20 +2,34 @@
 
 Human-readable schema and behavior for **`review_invites`** and **`reviews`**. Use this for implementation, AI context, and onboarding.
 
-- **Migrations (run in order):** [`migrations/001_review_invites.sql`](./migrations/001_review_invites.sql) → [`migrations/002_reviews.sql`](./migrations/002_reviews.sql)
+- **Migrations (run in order):** `001_review_invites` → `002_reviews` → [`003_one_review_per_customer.sql`](./migrations/003_one_review_per_customer.sql)
 - **Per-table detail:** [`REVIEW_INVITES_TABLE.md`](./REVIEW_INVITES_TABLE.md), [`REVIEWS_TABLE.md`](./REVIEWS_TABLE.md)
 
 ---
 
-## Product rules (data model implications)
+## Product rules (v1)
 
-| Rule | How the DB enforces it |
-|------|-------------------------|
-| One review per completed visit | `review_invites.booking_id` unique; `reviews.booking_id` unique |
-| No owner-shareable review URL | Only `link_token_hash` stored; raw token never in DB |
-| Customer submits via email link only | Invite row + token hash; no open form on `/{slug}` |
-| Owner cannot edit customer text (v1) | No owner `UPDATE` on `rating` / `body` in API (RLS allows update — restrict in app) |
+| Rule | Enforcement |
+|------|-------------|
+| **One review per customer** on the public profile | Partial unique `(business_id, customer_id)` on `reviews` when `customer_id` is set; app skips invite if review exists |
+| Invite tied to a **completed booking** | `review_invites.booking_id` unique (one invite row per visit) |
+| **No repeat invite emails** while one is pending | Partial unique pending invite per `(business_id, customer_id)` |
+| No owner-shareable review URL | Only `link_token_hash` in DB |
+| Customer submits via email link only | `/review/{token}` + service role |
+| Owner cannot edit customer text (v1) | Restrict in API (RLS allows `UPDATE` on owner fields only) |
 | Hide from public, keep in inbox | `reviews.is_hidden = true` |
+
+**App logic (on booking complete):** create/send invite only if:
+
+1. Booking is `completed` and customer has an email.
+2. `customer_id` is set (recommended — link booking to CRM customer).
+3. No existing `reviews` row for `(business_id, customer_id)`.
+4. No existing `pending` invite for `(business_id, customer_id)`.
+5. No invite/review already for this `booking_id`.
+
+Repeat customers who already reviewed are skipped silently (no second email, no second profile review). The `booking_id` on their review row remains the visit where they first submitted.
+
+**Edge case:** bookings without `customer_id` cannot use the per-customer unique index — dedupe by normalized email in app when you wire invites (documented for later).
 
 ---
 
@@ -36,9 +50,10 @@ Both tables scope to **`business_profiles`** via `business_id` and tie to **`boo
 erDiagram
   business_profiles ||--o{ review_invites : has
   business_profiles ||--o{ reviews : has
-  bookings ||--o| review_invites : "one invite"
-  bookings ||--o| reviews : "one review"
-  review_invites ||--o| reviews : "one review"
+  bookings ||--o| review_invites : "one invite per booking"
+  bookings ||--o| reviews : "review links to first visit"
+  review_invites ||--o| reviews : "one submit"
+  customers ||--o| reviews : "at most one per business"
   customers ||--o{ review_invites : optional
   customers ||--o{ reviews : optional
 
@@ -85,10 +100,9 @@ erDiagram
 ```text
 1. Owner marks booking status = completed (API)
         ↓
-2. INSERT review_invites (service role)
-   - Generate raw token (server only)
-   - Store SHA-256 hex as link_token_hash
-   - status = pending, expires_at = now + 90d (app default)
+2. If eligible → INSERT review_invites (service role)
+   - Skip if customer already has a review or a pending invite
+   - Generate raw token (server only), store hash, status = pending, expires_at ≈ +90d
    - Email customer: https://{site}/review/{rawToken}
         ↓
 3. Customer opens /review/{token}
@@ -175,13 +189,15 @@ Requires existing function **`public.set_updated_at()`** (used by quotes).
 | `review_invites_link_token_hash_key` (unique) | Public token lookup |
 | `review_invites_business_id_created_at_idx` | Owner/debug lists |
 | `review_invites_expires_at_idx` (partial, `pending`) | Expiry cleanup jobs |
+| `review_invites_business_customer_pending_key` (partial, migration 003) | One pending invite per customer |
 
 **`reviews`**
 
 | Index | Use |
 |-------|-----|
-| `reviews_booking_id_key` (unique) | One review per visit |
+| `reviews_booking_id_key` (unique) | Which visit produced the review |
 | `reviews_review_invite_id_key` (unique) | Join invite → review |
+| `reviews_business_customer_key` (partial, migration 003) | **One review per customer per business** |
 | `reviews_business_id_created_at_idx` | Dashboard inbox (newest first) |
 | `reviews_business_id_public_idx` (partial, `is_hidden = false`) | Public profile tab + aggregates |
 
@@ -243,6 +259,21 @@ from public.review_invites
 where link_token_hash = $1
   and status = 'pending'
   and expires_at > now();
+```
+
+**Should we send an invite? (booking just completed)**
+
+```sql
+-- Replace $2 with booking.customer_id; return no row → eligible
+select 1
+from public.reviews r
+where r.business_id = $1 and r.customer_id = $2
+union all
+select 1
+from public.review_invites i
+where i.business_id = $1
+  and i.customer_id = $2
+  and i.status = 'pending';
 ```
 
 **Aggregate rating (public)**

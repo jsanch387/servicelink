@@ -213,7 +213,6 @@ export const publicBookingUiEs: PublicBookingUi = {
     reviewCountLabel: count => (count === 1 ? '1 reseña' : `${count} reseñas`),
     ratingAriaLabel: average => `${average} de 5 estrellas`,
     reviewsSectionTitle: 'Reseñas de clientes',
-    ownerReplyLabel: 'Respuesta del negocio',
     reviewsShowingSample: 'Mostrando reseñas recientes',
   },
 };

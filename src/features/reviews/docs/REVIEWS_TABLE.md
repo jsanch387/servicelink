@@ -8,7 +8,8 @@ Invites: [`REVIEW_INVITES_TABLE.md`](./REVIEW_INVITES_TABLE.md).
 
 ## Purpose
 
-- **One review per completed visit** (`booking_id` and `review_invite_id` unique).
+- **One review per customer per business** on the public profile (`reviews_business_customer_key` when `customer_id` is set).
+- Each row still links to the **booking** and **invite** that earned it (`booking_id` / `review_invite_id` unique).
 - Powers **owner dashboard** (inbox, reply, hide) and **public profile** (non-hidden rows).
 - **`author_display_name`** snapshot at submit (stable if CRM name changes).
 
@@ -62,8 +63,9 @@ Table: `public.reviews`
 
 | Index | Type | Purpose |
 |-------|------|---------|
-| `reviews_booking_id_key` | unique | One review per visit |
+| `reviews_booking_id_key` | unique | Visit that produced this review |
 | `reviews_review_invite_id_key` | unique | One review per invite |
+| `reviews_business_customer_key` | unique partial | One review per customer per business |
 | `reviews_business_id_created_at_idx` | btree | Dashboard inbox sort |
 | `reviews_business_id_public_idx` | partial (`not is_hidden`) | Public profile lists |
 
@@ -95,11 +97,10 @@ Policies: `reviews_owner_select`, `reviews_owner_update`
 
 ---
 
-## Migration
+## Migrations
 
-[`migrations/002_reviews.sql`](./migrations/002_reviews.sql)
-
-Requires `001_review_invites.sql` applied first.
+1. `migrations/002_reviews.sql`
+2. [`migrations/003_one_review_per_customer.sql`](./migrations/003_one_review_per_customer.sql) — per-customer unique indexes
 
 ---
 

@@ -3,11 +3,11 @@
 import { Button, GlassCard } from '@/components/shared';
 import {
   formatReviewDate,
+  ReviewOwnerReplyDisplay,
   StarRatingDisplay,
 } from '@/features/business-profile/reviews';
 import React from 'react';
 import type { DashboardReview } from '../../types';
-import { ReviewOwnerReplyBlock } from './ReviewOwnerReplyBlock';
 import { ReviewReplyForm } from './ReviewReplyForm';
 
 interface ReviewListRowProps {
@@ -26,7 +26,6 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
   onSendReply,
 }) => {
   const hasReply = Boolean(review.ownerReply?.body?.trim());
-  const needsReply = !hasReply;
 
   return (
     <GlassCard
@@ -36,25 +35,14 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
       padding="none"
     >
       <div className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate text-base font-bold text-white">
-              {review.authorDisplayName}
-            </h3>
-            {needsReply ? (
-              <span className="mt-1 inline-flex rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-200/90 ring-1 ring-inset ring-amber-500/20">
-                Needs reply
-              </span>
-            ) : (
-              <span className="mt-1 inline-flex text-xs font-medium text-zinc-500">
-                Replied
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="min-w-0 flex-1 truncate text-base font-bold text-white">
+            {review.authorDisplayName}
+          </h3>
           <StarRatingDisplay
             rating={review.rating}
             size="sm"
-            className="shrink-0 pt-0.5"
+            className="shrink-0"
           />
         </div>
 
@@ -70,11 +58,7 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
         </time>
 
         {hasReply && review.ownerReply ? (
-          <ReviewOwnerReplyBlock
-            body={review.ownerReply.body}
-            repliedAt={review.ownerReply.repliedAt}
-            locale={locale}
-          />
+          <ReviewOwnerReplyDisplay body={review.ownerReply.body} />
         ) : null}
 
         {!hasReply && !isReplyOpen ? (

@@ -192,7 +192,6 @@ export type PublicBookingUi = {
     reviewCountLabel: (count: number) => string;
     ratingAriaLabel: (average: string) => string;
     reviewsSectionTitle: string;
-    ownerReplyLabel: string;
     reviewsShowingSample: string;
   };
 };

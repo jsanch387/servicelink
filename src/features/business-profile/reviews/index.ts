@@ -9,6 +9,7 @@ export { ProfileReviewCard } from './components/list/ProfileReviewCard';
 export { ProfileReviewsSummary } from './components/summary/ProfileReviewsSummary';
 export { StarRatingDisplay } from './components/display/StarRatingDisplay';
 export type { StarRatingDisplaySize } from './components/display/StarRatingDisplay';
+export { ReviewOwnerReplyDisplay } from './components/display/ReviewOwnerReplyDisplay';
 
 export {
   MOCK_PROFILE_REVIEWS,

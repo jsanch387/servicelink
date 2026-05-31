@@ -20,12 +20,14 @@ export const DashboardGlassCard: React.FC<DashboardGlassCardProps> = ({
   padding = 'md',
   fillGridCell = true,
 }) => {
+  const responsivePadding = padding === 'none' ? '' : 'lg:p-5';
+
   return (
     <GlassCard
       rounded="rounded-2xl"
       padding={padding}
       showBlur={false}
-      className={`${fillGridCell ? dashboardGlassCardLayout : ''} lg:p-5 ${className}`.trim()}
+      className={`${fillGridCell ? dashboardGlassCardLayout : ''} ${responsivePadding} ${className}`.trim()}
     >
       {children}
     </GlassCard>

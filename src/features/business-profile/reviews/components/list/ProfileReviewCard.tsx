@@ -1,13 +1,11 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import {
-  bcp47ForBookingLocale,
-  publicBookingUi,
-} from '@/libs/i18n/publicBookingUi';
+import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
 import type { MockProfileReview } from '../../constants/mockProfileReviews';
 import { formatReviewDate } from '../../utils/reviewDisplay';
+import { ReviewOwnerReplyDisplay } from '../display/ReviewOwnerReplyDisplay';
 import { StarRatingDisplay } from '../display/StarRatingDisplay';
 
 interface ProfileReviewCardProps {
@@ -19,7 +17,6 @@ export const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({
   review,
   bookingFlowLocale = 'en',
 }) => {
-  const ui = publicBookingUi(bookingFlowLocale);
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
 
   return (
@@ -47,14 +44,7 @@ export const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({
       </time>
 
       {review.ownerReply ? (
-        <figure className="mt-5 border-l border-zinc-700 pl-4">
-          <figcaption className="text-xs text-zinc-500">
-            {ui.profile.ownerReplyLabel}
-          </figcaption>
-          <blockquote className="mt-2 text-sm leading-relaxed text-zinc-400">
-            {review.ownerReply.body}
-          </blockquote>
-        </figure>
+        <ReviewOwnerReplyDisplay body={review.ownerReply.body} />
       ) : null}
     </article>
   );
