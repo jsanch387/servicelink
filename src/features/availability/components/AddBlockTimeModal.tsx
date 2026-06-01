@@ -30,7 +30,6 @@ function defaultEndAfterStart(start: string): string {
 interface AddBlockTimeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  // eslint-disable-next-line no-unused-vars
   onAdd: (entry: Omit<BlockTimeEntry, 'id'>) => void;
   disabled?: boolean;
 }

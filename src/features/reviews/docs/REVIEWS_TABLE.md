@@ -54,7 +54,14 @@ Table: `public.reviews`
 - `reviews_rating_check` — `rating` between 1 and 5
 - `reviews_body_length_check` — trimmed body 1–2000 chars
 - `reviews_author_display_name_check` — 1–120 chars
-- `reviews_owner_reply_consistency_check` — reply body and `owner_replied_at` both set or both null
+- `reviews_owner_reply_consistency_check` — reply body and `owner_replied_at` both set or both null. To **remove** a reply in SQL, clear **both** columns in one update (setting only `owner_reply_body` to null will fail):
+
+```sql
+UPDATE reviews
+SET owner_reply_body = NULL,
+    owner_replied_at = NULL
+WHERE id = '<review-uuid>';
+```
 - Trigger `reviews_enforce_relationships` — IDs align with `review_invites` and `bookings`
 
 ---

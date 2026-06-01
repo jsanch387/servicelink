@@ -20,7 +20,7 @@ export class MediaStorage {
   static async uploadFile(
     file: File,
     storagePath: string,
-    onProgress?: (_progress: number) => void
+    _onProgress?: (_progress: number) => void
   ): Promise<UploadResult> {
     try {
       console.log('📤 Uploading file:', {
@@ -224,14 +224,9 @@ export class MediaStorage {
       const file = processResult.processedFiles[i];
       const storagePath = generateStoragePath(businessId, mediaType, file);
 
-      const result = await this.uploadFileDirect(
-        file,
-        storagePath,
-        progress => {
-          onProgress?.(i, progress);
-        }
-      );
+      const result = await this.uploadFileDirect(file, storagePath);
 
+      onProgress?.(i, 100);
       results.push(result);
     }
 
@@ -244,8 +239,7 @@ export class MediaStorage {
    */
   private static async uploadFileDirect(
     file: File,
-    storagePath: string,
-    onProgress?: (_progress: number) => void
+    storagePath: string
   ): Promise<UploadResult> {
     try {
       // Validate file

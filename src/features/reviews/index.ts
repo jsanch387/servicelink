@@ -2,6 +2,8 @@ export {
   ReviewsDashboardPage,
   ReviewDetailPage,
   ReviewsDashboardSkeleton,
+  useDashboardReviews,
+  loadDashboardReviews,
 } from './dashboard';
 
 export type {

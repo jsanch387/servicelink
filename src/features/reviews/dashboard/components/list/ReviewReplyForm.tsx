@@ -6,7 +6,7 @@ import React, { useCallback, useId, useState } from 'react';
 const REPLY_MAX_LENGTH = 1000;
 
 interface ReviewReplyFormProps {
-  onSend: (body: string) => void;
+  onSend: (body: string) => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -17,14 +17,24 @@ export const ReviewReplyForm: React.FC<ReviewReplyFormProps> = ({
   const replyFieldId = useId();
   const [replyDraft, setReplyDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     const trimmed = replyDraft.trim();
     if (!trimmed || sending) return;
+
     setSending(true);
-    onSend(trimmed);
-    setReplyDraft('');
-    setSending(false);
+    setSendError(null);
+    try {
+      await onSend(trimmed);
+      setReplyDraft('');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to send reply';
+      setSendError(message);
+    } finally {
+      setSending(false);
+    }
   }, [replyDraft, sending, onSend]);
 
   return (
@@ -38,7 +48,13 @@ export const ReviewReplyForm: React.FC<ReviewReplyFormProps> = ({
         maxLength={REPLY_MAX_LENGTH}
         hideCharCount={replyDraft.length < REPLY_MAX_LENGTH - 80}
         name={`reply-${replyFieldId}`}
+        disabled={sending}
       />
+      {sendError ? (
+        <p className="text-sm text-red-300" role="alert">
+          {sendError}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button
           type="button"
@@ -55,10 +71,11 @@ export const ReviewReplyForm: React.FC<ReviewReplyFormProps> = ({
           variant="inverse"
           size="sm"
           className="w-full sm:w-auto"
-          onClick={handleSend}
-          disabled={!replyDraft.trim() || sending}
+          onClick={() => void handleSend()}
+          disabled={!replyDraft.trim()}
+          loading={sending}
         >
-          Send reply
+          {sending ? 'Sending' : 'Send reply'}
         </Button>
       </div>
     </div>

@@ -5,8 +5,10 @@ import type {
 
 export type ReviewsDashboardFilterId = 'all' | 'needs_reply' | 'replied';
 
-/** Same shape as public profile reviews — one type for customer-visible content. */
-export type DashboardReview = PublicProfileReview;
+/** Owner inbox review — includes visibility flag (hidden rows stay in dashboard). */
+export type DashboardReview = PublicProfileReview & {
+  isHidden: boolean;
+};
 
 export type DashboardReviewSummary = {
   averageRating: number;

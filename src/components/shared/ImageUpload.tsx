@@ -5,7 +5,6 @@ import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 
 interface ImageUploadProps {
-  // eslint-disable-next-line no-unused-vars
   onImageSelect: (_file: File) => void;
   disabled?: boolean;
   className?: string;

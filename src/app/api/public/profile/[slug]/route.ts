@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Public API Endpoint: Get Business Profile by Slug
  *
@@ -9,8 +10,8 @@
 
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { resolveMaxPortfolioImagesForBusiness } from '@/features/business-profile/server/resolveMaxPortfolioImagesForBusiness';
-import type { Database } from '@/libs/supabase/client';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import type { Database } from '@/libs/supabase/client';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { assertPublicProfileGetRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';

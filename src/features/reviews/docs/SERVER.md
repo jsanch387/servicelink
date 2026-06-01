@@ -14,12 +14,20 @@ How review data is loaded today and where API routes will live.
 | `utils/deriveReviewsSummary.ts` | Average + breakdown from review list |
 | `types/loadResults.ts` | `LoadPublicBusinessReviewsResult` (`ok` \| `empty` \| `error`) |
 
-**Not built yet (follow quotes pattern):**
+**Owner dashboard (wired):**
+
+| Piece | Path |
+|-------|------|
+| `loadDashboardReviews` | `dashboard/server/loadDashboardReviews.ts` — all reviews for business (incl. hidden) |
+| `mapReviewRowToDashboardReview` | `dashboard/server/mapReviewRowToDashboardReview.ts` |
+| `GET /api/reviews` | `app/api/reviews/route.ts` |
+| `useDashboardReviews` | `dashboard/hooks/useDashboardReviews.ts` |
+
+**Not built yet:**
 
 | Planned | Pattern |
 |---------|---------|
-| `dashboard/server/loadDashboardReviews.ts` | `resolveCurrentBusinessId` + scoped query |
-| `app/api/reviews/route.ts` | GET list, PATCH hide/reply |
+| `PATCH /api/reviews/[id]` | Owner reply (`ownerReplyBody` string or `null` to clear) + `is_hidden` (later) |
 | `app/api/public/reviews/submit/route.ts` | Service role, invite token |
 | `server/createReviewInviteIfEligible.ts` | Booking-complete hook |
 
@@ -42,4 +50,4 @@ Wired in `src/app/[business-slug]/page.tsx` via admin Supabase client.
 
 ## Dashboard today
 
-`src/app/dashboard/reviews/page.tsx` only checks auth + onboarding. **`ReviewsDashboardPage` is client-only with an empty list** until `GET /api/reviews` and `loadDashboardReviews` are added. Use the same `{ ok, error, status }` result shape as quotes when implementing.
+`ReviewsDashboardPage` loads via `useDashboardReviews` → `GET /api/reviews` → `loadDashboardReviews` (authenticated Supabase + RLS). Replies persist via `PATCH /api/reviews/[id]` with `{ ownerReplyBody: "..." }` or `{ ownerReplyBody: null }` to clear (both DB columns nulled).

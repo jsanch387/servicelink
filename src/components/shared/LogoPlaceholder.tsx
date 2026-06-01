@@ -15,7 +15,6 @@ interface LogoPlaceholderProps {
 }
 
 export const LogoPlaceholder: React.FC<LogoPlaceholderProps> = ({
-  businessName,
   className = '',
   size = 'md',
   isEditMode = false,
