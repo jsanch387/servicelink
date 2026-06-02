@@ -23,13 +23,24 @@ How review data is loaded today and where API routes will live.
 | `GET /api/reviews` | `app/api/reviews/route.ts` |
 | `useDashboardReviews` | `dashboard/hooks/useDashboardReviews.ts` |
 
+**Booking complete + public submit (wired):**
+
+| Piece | Path |
+|-------|------|
+| `createReviewInviteIfEligible` | `server/createReviewInviteIfEligible.ts` — invite row + review email |
+| `applyReviewInviteOnBookingCompleted` | `server/applyReviewInviteOnBookingCompleted.ts` — called from `PATCH /api/availability/bookings/[id]` |
+| Review invite email | `features/email/review-invite/` |
+| `loadPublicReviewInviteByToken` | `server/loadPublicReviewInviteByToken.ts` |
+| `submitPublicReview` | `server/submitPublicReview.ts` |
+| `POST /api/public/reviews/submit` | `app/api/public/reviews/submit/route.ts` |
+| `app/review/[token]/page.tsx` | Customer review form + success/error states |
+
 **Not built yet:**
 
 | Planned | Pattern |
 |---------|---------|
-| `PATCH /api/reviews/[id]` | Owner reply (`ownerReplyBody` string or `null` to clear) + `is_hidden` (later) |
-| `app/api/public/reviews/submit/route.ts` | Service role, invite token |
-| `server/createReviewInviteIfEligible.ts` | Booking-complete hook |
+| `is_hidden` toggle on dashboard | `PATCH /api/reviews/[id]` extension |
+| Receipt / invoice on complete | Combined or separate email (deferred) |
 
 See `src/features/quotes/dashboard/server/` and `src/app/api/quotes/` for reference.
 

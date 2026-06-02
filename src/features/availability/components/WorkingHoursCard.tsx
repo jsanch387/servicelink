@@ -9,10 +9,8 @@ import { WeeklyScheduleGrid } from './WeeklyScheduleGrid';
 
 interface WorkingHoursCardProps {
   schedule: WeeklySchedule;
-  // eslint-disable-next-line no-unused-vars -- callback type
   onScheduleChange: (schedule: WeeklySchedule) => void;
   selectedPreset: PresetKey | null;
-  // eslint-disable-next-line no-unused-vars -- callback type
   onSelectPreset: (preset: PresetKey) => void;
   disabled?: boolean;
 }

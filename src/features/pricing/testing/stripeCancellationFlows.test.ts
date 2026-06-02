@@ -10,7 +10,6 @@ type MockProfilesUpdateResult = {
 
 function buildSupabaseMock(result: MockProfilesUpdateResult) {
   const select = async () => result;
-  const eq = () => ({ select });
   const update = (updates: Record<string, unknown>) => ({
     eq: (_field: string, _value: string) => {
       void _field;

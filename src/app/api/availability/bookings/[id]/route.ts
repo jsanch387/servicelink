@@ -12,6 +12,7 @@ import {
   type BookingStatusUpdate,
 } from '@/features/availability/services/bookingService';
 import { applyMaintenanceVisitCompletedFromBooking } from '@/features/maintenance/server/applyMaintenanceVisitCompletedFromBooking';
+import { applyReviewInviteOnBookingCompleted } from '@/features/reviews/server/applyReviewInviteOnBookingCompleted';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -160,8 +161,8 @@ export async function PATCH(
     }
 
     if (status === 'completed') {
+      const admin = createSupabaseAdminClient();
       try {
-        const admin = createSupabaseAdminClient();
         await applyMaintenanceVisitCompletedFromBooking(admin, {
           id: updated.id,
           business_id: updated.business_id,
@@ -173,6 +174,7 @@ export async function PATCH(
           sideErr
         );
       }
+      await applyReviewInviteOnBookingCompleted(admin, updated);
     }
 
     return NextResponse.json({

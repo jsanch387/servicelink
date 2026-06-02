@@ -31,14 +31,7 @@ export async function notifyOwnerForAvailabilityBookingCreated(
     emailPayload: AvailabilityBookingNotificationPayload;
   }
 ): Promise<void> {
-  const {
-    correlationId,
-    profileId,
-    bookingId,
-    customerName,
-    serviceSummaryLine,
-    scheduledDate,
-  } = params;
+  const { correlationId, profileId, bookingId, customerName } = params;
 
   if (!profileId) {
     logAvailabilityOwnerNotify(

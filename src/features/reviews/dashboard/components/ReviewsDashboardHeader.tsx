@@ -1,12 +1,6 @@
 import React from 'react';
 
-interface ReviewsDashboardHeaderProps {
-  needsReplyCount: number;
-}
-
-export const ReviewsDashboardHeader: React.FC<ReviewsDashboardHeaderProps> = ({
-  needsReplyCount,
-}) => {
+export const ReviewsDashboardHeader: React.FC = () => {
   return (
     <header className="mb-6 sm:mb-8">
       <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
@@ -16,13 +10,6 @@ export const ReviewsDashboardHeader: React.FC<ReviewsDashboardHeaderProps> = ({
         See what customers are saying about their visits and reply from this
         page.
       </p>
-      {needsReplyCount > 0 ? (
-        <p className="mt-2 text-sm font-medium text-amber-200/90">
-          {needsReplyCount === 1
-            ? '1 review needs your reply'
-            : `${needsReplyCount} reviews need your reply`}
-        </p>
-      ) : null}
     </header>
   );
 };

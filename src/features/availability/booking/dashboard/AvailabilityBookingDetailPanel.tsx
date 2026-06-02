@@ -92,6 +92,7 @@ export function AvailabilityBookingDetailPanel({
   existingBookingsForSlotGrid,
 }: AvailabilityBookingDetailPanelProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -126,6 +127,8 @@ export function AvailabilityBookingDetailPanel({
 
   const customerEmailTrimmed = (booking.customerEmail ?? '').trim();
   const hasEmail = customerEmailTrimmed.length > 0;
+  const customerAlreadyReviewed = booking.customerAlreadyReviewed === true;
+  const showReviewInviteMessage = hasEmail && !customerAlreadyReviewed;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
@@ -179,7 +182,16 @@ export function AvailabilityBookingDetailPanel({
     // Panel closes when parent's handleCancel succeeds (setSelectedBooking(null))
   };
 
+  const closeCompleteConfirm = () => {
+    if (isUpdating) return;
+    setShowCompleteConfirm(false);
+  };
+
   const handleMarkCompletedClick = () => {
+    setShowCompleteConfirm(true);
+  };
+
+  const handleCompleteConfirm = () => {
     onMarkCompleted(booking.id);
     // Panel closes when parent's handleMarkCompleted succeeds (setSelectedBooking(null))
   };
@@ -710,6 +722,68 @@ export function AvailabilityBookingDetailPanel({
             </div>
           </>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={showCompleteConfirm}
+        onClose={closeCompleteConfirm}
+        title="Complete appointment?"
+        maxWidth="sm"
+        uniformHorizontalPadding16
+        titleClassName="font-bold"
+        contentClassName="!pt-4 sm:!pt-5 !pb-4 sm:!pb-5"
+        preventClose={isUpdating}
+      >
+        <div className="flex flex-col items-start gap-3">
+          <CheckCircleSolidIcon
+            className="h-9 w-9 shrink-0 text-emerald-400"
+            aria-hidden
+          />
+          <p className="text-left text-sm leading-relaxed text-gray-300">
+            {showReviewInviteMessage ? (
+              <>
+                This wraps up the appointment. We&apos;ll email{' '}
+                <span className="font-medium text-gray-200">
+                  {customerEmailTrimmed}
+                </span>{' '}
+                a link to leave a review.
+              </>
+            ) : (
+              <>Are you sure you want to mark this appointment complete?</>
+            )}
+          </p>
+        </div>
+        {updateError && showCompleteConfirm && (
+          <p className="mt-4 text-sm text-rose-400" role="alert">
+            {updateError}
+          </p>
+        )}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="w-full sm:w-auto"
+            disabled={isUpdating}
+            onClick={closeCompleteConfirm}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="inverse"
+            size="sm"
+            className="w-full sm:w-auto"
+            disabled={isUpdating}
+            loading={isUpdating}
+            onClick={handleCompleteConfirm}
+            aria-label={
+              isUpdating ? 'Marking appointment complete' : 'Mark as complete'
+            }
+          >
+            Complete
+          </Button>
+        </div>
       </Modal>
 
       {/* Cancel confirmation dialog */}

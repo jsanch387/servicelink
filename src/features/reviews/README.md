@@ -30,7 +30,8 @@ Public profile UI: `src/features/business-profile/reviews/`
 | Dashboard + profile UI (mock data) | Done |
 | `review_invites` + `reviews` in Supabase | Run `docs/migrations/003_one_review_per_customer.sql` after base tables |
 | Database documentation | `docs/DATABASE.md` |
-| `GET /review/[token]` + submit API | Not started |
+| `GET /review/[token]` + submit API | Wired |
+| Review email on booking complete | Wired (`PATCH` availability booking) |
 | Email on booking complete | Not started |
 | Wire dashboard + profile to DB | Not started |
 

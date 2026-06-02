@@ -7,18 +7,15 @@ import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useDashboardReviews } from '../hooks/useDashboardReviews';
 import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
-import {
-  countReviewsNeedingReply,
-  reviewMatchesFilter,
-} from '../utils/reviewFilters';
+import { reviewMatchesFilter } from '../utils/reviewFilters';
+import { ReviewsDashboardHeader } from './ReviewsDashboardHeader';
+import { ReviewsDashboardShell } from './ReviewsDashboardShell';
 import { ReviewsCollectCard } from './cards/ReviewsCollectCard';
 import { ReviewsSummaryCard } from './cards/ReviewsSummaryCard';
 import { ReviewListRow } from './list/ReviewListRow';
-import { ReviewsDashboardHeader } from './ReviewsDashboardHeader';
-import { ReviewsDashboardShell } from './ReviewsDashboardShell';
+import { ReviewsDashboardSkeleton } from './list/ReviewsDashboardSkeleton';
 import { ReviewsFilterPills } from './list/ReviewsFilterPills';
 import { ReviewsListEmptyState } from './list/ReviewsListEmptyState';
-import { ReviewsDashboardSkeleton } from './list/ReviewsDashboardSkeleton';
 
 export interface ReviewsDashboardPageProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
@@ -49,11 +46,6 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     [filtered]
   );
 
-  const needsReplyCount = useMemo(
-    () => countReviewsNeedingReply(reviews),
-    [reviews]
-  );
-
   const handleSendReply = useCallback(
     async (reviewId: string, body: string) => {
       const response = await fetch(`/api/reviews/${reviewId}`, {
@@ -81,14 +73,13 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     setOpenReplyId(prev => (prev === reviewId ? null : reviewId));
   }, []);
 
-  const isReady = loadStatus === 'ready';
   const hasAnyReviews = reviews.length > 0;
   /** Full skeleton only on first load — avoids flashing over existing data on retry. */
   const showLoadingSkeleton = loadStatus === 'loading' && !hasAnyReviews;
 
   return (
     <ReviewsDashboardShell>
-      <ReviewsDashboardHeader needsReplyCount={isReady ? needsReplyCount : 0} />
+      <ReviewsDashboardHeader />
 
       <div className="mb-6">
         <ReviewsCollectCard />
