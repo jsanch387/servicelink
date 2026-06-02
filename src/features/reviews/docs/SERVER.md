@@ -37,12 +37,14 @@ How review data is loaded today and where API routes will live.
 
 **Not built yet:**
 
-| Planned | Pattern |
-|---------|---------|
-| `is_hidden` toggle on dashboard | `PATCH /api/reviews/[id]` extension |
-| Receipt / invoice on complete | Combined or separate email (deferred) |
+| Planned | Notes |
+|---------|--------|
+| Owner resend invite | — |
+| Dashboard hide-review UI | `PATCH` may support `is_hidden`; UI TBD |
+| Receipt / invoice on complete | Review email only today |
+| SMS invite | Email only v1 |
 
-See `src/features/quotes/dashboard/server/` and `src/app/api/quotes/` for reference.
+See [FLOWS.md](./FLOWS.md) for full E2E reference. Pattern for similar features: `src/features/quotes/dashboard/server/`.
 
 ## Public profile loading strategy
 

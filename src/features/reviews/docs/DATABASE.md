@@ -2,6 +2,7 @@
 
 Human-readable schema and behavior for **`review_invites`** and **`reviews`**. Use this for implementation, AI context, and onboarding.
 
+- **End-to-end flows (start here for product):** [FLOWS.md](./FLOWS.md)
 - **Migrations (run in order):** `001_review_invites` → `002_reviews` → [`003_one_review_per_customer.sql`](./migrations/003_one_review_per_customer.sql)
 - **Per-table detail:** [`REVIEW_INVITES_TABLE.md`](./REVIEW_INVITES_TABLE.md), [`REVIEWS_TABLE.md`](./REVIEWS_TABLE.md)
 

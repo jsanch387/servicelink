@@ -1,28 +1,37 @@
 # Reviews — documentation index
 
-Database and product reference for the reviews feature. Start here when wiring APIs or regenerating types.
+Start with **[FLOWS.md](./FLOWS.md)** for how the feature works end-to-end. Use the database docs when writing SQL, migrations, or RLS.
 
-## Database (Supabase)
+## Product & architecture
 
 | Doc | When to read |
 |-----|----------------|
-| **[DATABASE.md](./DATABASE.md)** | **Start here** — ER diagram, lifecycle, RLS, tokens, queries, UI mapping |
+| **[FLOWS.md](./FLOWS.md)** | **Start here** — E2E flows, APIs, UI, types, what each loader SELECTs |
+| [SERVER.md](./SERVER.md) | Server module map, lazy-load strategy, error handling |
+| [DATABASE.md](./DATABASE.md) | ER diagram, lifecycle, RLS, tokens, example queries |
+
+## Database tables
+
+| Doc | When to read |
+|-----|----------------|
 | [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` column reference |
 | [REVIEWS_TABLE.md](./REVIEWS_TABLE.md) | `reviews` column reference |
-| [migrations/001_review_invites.sql](./migrations/001_review_invites.sql) | SQL migration (table 1) |
-| [migrations/002_reviews.sql](./migrations/002_reviews.sql) | SQL migration (table 2) |
-| [migrations/003_one_review_per_customer.sql](./migrations/003_one_review_per_customer.sql) | Per-customer unique indexes |
+
+Migration SQL is referenced in DATABASE.md; run migrations in Supabase in order (`review_invites` → `reviews` → per-customer unique indexes).
 
 ## App code
 
 | Path | Role |
 |------|------|
-| `../dashboard/` | Owner inbox UI (`/dashboard/reviews`) |
+| `../dashboard/` | Owner inbox (`/dashboard/reviews`) |
+| `../public/` | Customer review page (`/review/[token]`) |
 | `../../business-profile/reviews/` | Public profile Reviews tab |
-| `../README.md` | Feature status and product policy |
+| `../../email/review-invite/` | Transactional invite email |
+| `../README.md` | Feature README + status |
 
 ## Product policy (short)
 
-- Invites emailed after **completed** bookings — no owner copy/share review link.
-- One review per customer per business (repeat visits do not add another public review).
-- Public profile shows non-hidden `reviews` only.
+- Invites after **completed** bookings — no owner share link.
+- **One review per customer** per business (`customer_id` from CRM dedupe at booking).
+- Links expire in **90 days**; single submit per link.
+- Public profile: `is_hidden = false` only.

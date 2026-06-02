@@ -1,15 +1,15 @@
 # Reviews feature
 
-Owner dashboard inbox + public profile display. Customer submits via **email invite** after a completed booking (no shareable review URL).
+Owner dashboard inbox, public profile display, and customer submit via **email invite** after a completed booking. No owner-shareable review URL.
 
-## Documentation
+## Start here
 
 | Doc | Contents |
 |-----|----------|
-| **[docs/DATABASE.md](./docs/DATABASE.md)** | **Database reference** — tables, lifecycle, RLS, tokens, queries |
-| [docs/README.md](./docs/README.md) | Doc index |
-| [docs/REVIEW_INVITES_TABLE.md](./docs/REVIEW_INVITES_TABLE.md) | `review_invites` columns |
-| [docs/REVIEWS_TABLE.md](./docs/REVIEWS_TABLE.md) | `reviews` columns |
+| **[docs/FLOWS.md](./docs/FLOWS.md)** | **End-to-end flows** — product rules, identity, APIs, UI, data shapes |
+| [docs/DATABASE.md](./docs/DATABASE.md) | Schema, lifecycle, RLS, tokens, SQL |
+| [docs/SERVER.md](./docs/SERVER.md) | Server modules and loading strategy |
+| [docs/README.md](./docs/README.md) | Full documentation index |
 
 ## Folder layout
 
@@ -17,26 +17,37 @@ Owner dashboard inbox + public profile display. Customer submits via **email inv
 reviews/
   index.ts
   README.md
-  docs/                    # Database & migrations
-  dashboard/               # /dashboard/reviews UI
+  docs/                    # Feature + database reference
+  server/                  # Invites, submit, public loaders
+  dashboard/               # /dashboard/reviews UI + APIs
+  public/                  # /review/[token] customer UI
+  types/                   # Shared TS types
+  utils/
 ```
 
-Public profile UI: `src/features/business-profile/reviews/`
+Public profile UI lives in `src/features/business-profile/reviews/`.  
+Review invite email lives in `src/features/email/review-invite/`.
 
 ## Implementation status
 
 | Piece | Status |
-|--------|--------|
-| Dashboard + profile UI (mock data) | Done |
-| `review_invites` + `reviews` in Supabase | Run `docs/migrations/003_one_review_per_customer.sql` after base tables |
-| Database documentation | `docs/DATABASE.md` |
-| `GET /review/[token]` + submit API | Wired |
-| Review email on booking complete | Wired (`PATCH` availability booking) |
-| Email on booking complete | Not started |
-| Wire dashboard + profile to DB | Not started |
+|-------|--------|
+| `review_invites` + `reviews` tables | Required in Supabase (see `docs/DATABASE.md`) |
+| Mark complete → review invite email | Wired |
+| Customer `/review/[token]` + submit API | Wired |
+| Owner dashboard inbox + reply | Wired |
+| Public profile reviews tab (lazy load) | Wired |
+| Booking list: invite eligibility flags | Wired |
+| Complete appointment confirmation modal | Wired |
+| Owner resend invite | Not built |
+| SMS invites | Not built |
+| Receipt on complete | Not built |
+| Dashboard hide-review UI | Not built |
 
-## Product policy
+## Product policy (short)
 
+- Invites emailed after **completed** bookings only.
+- **One review per customer** per business (`customer_id`).
+- Link valid **90 days**, **one-time use**.
+- Public profile shows non-hidden reviews only.
 - No owner copy/share review link.
-- **One review per customer** on the public profile (invite still tied to a completed visit).
-- Invites: email now, SMS later.
