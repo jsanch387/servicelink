@@ -53,6 +53,10 @@ export function notificationMinimalDisplayTitle(
     return 'New quote';
   }
 
+  if (blob.includes('review')) {
+    return 'New review';
+  }
+
   if (blob.includes('cancel')) return 'Appointment canceled';
   if (blob.includes('reschedule') || blob.includes('rescheduled')) {
     return 'Appointment updated';

@@ -15,6 +15,9 @@ describe('notificationMinimalDisplayTitle', () => {
     expect(notificationMinimalDisplayTitle('quote_request', 'quote', '')).toBe(
       'New quote request'
     );
+    expect(
+      notificationMinimalDisplayTitle('review_submitted', 'review', '')
+    ).toBe('New review');
   });
 
   it('payment failed before generic payment', () => {

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadPublicReviewInviteByToken } from './loadPublicReviewInviteByToken';
+import { notifyOwnerForReviewSubmitted } from './notifyOwnerForReviewSubmitted';
 import type { SubmitReviewBody } from './validateSubmitReviewBody';
 export type SubmitPublicReviewResult =
   | { ok: true }
@@ -41,7 +42,7 @@ export async function submitPublicReview(
   const now = new Date().toISOString();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: reviewError } = await (supabase as any)
+  const { data: reviewRow, error: reviewError } = await (supabase as any)
     .from('reviews')
     .insert({
       business_id: context.businessId,
@@ -52,7 +53,9 @@ export async function submitPublicReview(
       body: body.body,
       author_display_name: authorName,
       is_hidden: false,
-    });
+    })
+    .select('id')
+    .single();
 
   if (reviewError) {
     console.error('[reviews] submitPublicReview insert failed', reviewError);
@@ -68,6 +71,15 @@ export async function submitPublicReview(
       ok: false,
       status: 500,
       error: reviewError.message || 'Failed to save review',
+    };
+  }
+
+  const reviewId = String((reviewRow as { id?: string }).id ?? '').trim();
+  if (!reviewId) {
+    return {
+      ok: false,
+      status: 500,
+      error: 'Review saved but id could not be read',
     };
   }
 
@@ -91,6 +103,16 @@ export async function submitPublicReview(
       status: 500,
       error: 'Review saved but invite could not be finalized',
     };
+  }
+
+  try {
+    await notifyOwnerForReviewSubmitted(supabase, {
+      businessId: context.businessId,
+      reviewId,
+      customerName: authorName,
+    });
+  } catch {
+    // Best-effort after successful submit
   }
 
   return { ok: true };
