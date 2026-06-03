@@ -12,6 +12,7 @@ import {
   LinkIcon,
   RectangleStackIcon,
   Squares2X2Icon,
+  StarIcon,
   UserGroupIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -46,6 +47,14 @@ const allNavigationItems = [
     requiresOnboarding: true,
   },
   {
+    name: 'Reviews',
+    href: ROUTES.DASHBOARD.REVIEWS,
+    icon: StarIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/reviews',
+    isNew: true,
+  },
+  {
     name: 'Quotes',
     href: ROUTES.DASHBOARD.QUOTES,
     icon: ClipboardDocumentListIcon,
@@ -64,7 +73,6 @@ const allNavigationItems = [
     icon: BanknotesIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/payments',
-    isNew: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [

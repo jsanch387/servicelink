@@ -49,6 +49,12 @@ export type {
   WelcomeLiveEmailPayload,
 } from './welcome-live/types';
 
+export { sendReviewInviteEmail } from './review-invite/sendReviewInviteEmail';
+export type {
+  ReviewInviteEmailPayload,
+  SendReviewInviteEmailResult,
+} from './review-invite/types';
+
 export { sendContactFormSubmissionEmail } from './contact-form-submission/sendContactFormSubmissionEmail';
 export type {
   ContactFormSubmissionPayload,

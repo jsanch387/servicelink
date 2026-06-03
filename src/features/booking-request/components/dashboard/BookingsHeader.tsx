@@ -15,10 +15,8 @@ interface BookingsHeaderProps {
 }
 
 export function BookingsHeader({
-  businessName,
   statusFilter,
   onStatusFilterChange,
-  statusCounts,
 }: BookingsHeaderProps) {
   const filters = [
     { id: 'all' as const, label: 'All' },

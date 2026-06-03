@@ -4,6 +4,13 @@ import { ROUTES } from '@/constants/routes';
 import Link from 'next/link';
 import type { NotificationDisplay } from '../types/notification';
 
+function notificationHref(notification: NotificationDisplay): string {
+  if (notification.type === 'review_submitted') {
+    return ROUTES.DASHBOARD.REVIEWS;
+  }
+  return ROUTES.DASHBOARD.BOOKINGS;
+}
+
 interface NotificationItemProps {
   notification: NotificationDisplay;
   // eslint-disable-next-line no-unused-vars -- param name is for type documentation
@@ -37,7 +44,7 @@ export function NotificationItem({
 
   return (
     <Link
-      href={ROUTES.DASHBOARD.BOOKINGS}
+      href={notificationHref(notification)}
       onClick={handleClick}
       className={`block px-4 py-3 text-left transition-colors hover:bg-neutral-700/50 ${
         isUnread ? 'bg-neutral-800/80' : ''

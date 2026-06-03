@@ -1,13 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
-import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
-import { ProfileHeader } from './ProfileHeader';
-import { ServicesList } from './ServicesList';
-import { WorkShowcase } from './WorkShowcase';
-// import { ReviewsSection } from './ReviewsSection'; // Will be used later
 import {
   Button,
   GlassCard,
@@ -19,6 +11,7 @@ import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
 import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
+import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   ArrowRightIcon,
@@ -26,10 +19,19 @@ import {
   InformationCircleIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
+import { LazyPublicReviewsSection } from '../reviews/components/LazyPublicReviewsSection';
+import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import { ProfileBioSection } from './ProfileBioSection';
+import { ProfileHeader } from './ProfileHeader';
+import { ServicesList } from './ServicesList';
+import { WorkShowcase } from './WorkShowcase';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
-type TabType = 'services' | 'gallery' | 'bio';
+type TabType = 'services' | 'gallery' | 'bio' | 'reviews';
 
 interface SlugData {
   hasSlug: boolean;
@@ -73,6 +75,10 @@ interface BusinessProfileViewProps {
   publicFreeBookingsCapReached?: boolean;
   /** Resolved booking-funnel locale for public profile + service links. */
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** Ratings summary for header + Reviews tab; full list loads on tab click. */
+  publicReviewSummary?: PublicProfileReviewsSummary | null;
+  /** Slug for lazy reviews API (public profile + booking-link preview). */
+  publicProfileSlug?: string;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -88,7 +94,14 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicOwnerHasProForPriceOptions = false,
   publicFreeBookingsCapReached = false,
   bookingFlowLocale = 'en',
+  publicReviewSummary = null,
+  publicProfileSlug,
 }) => {
+  const showReviewsTab = Boolean(
+    publicReviewSummary &&
+      publicReviewSummary.reviewCount > 0 &&
+      publicProfileSlug
+  );
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
     useState<CompleteBusinessProfile>(initialBusinessProfile);
@@ -100,6 +113,13 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     useState(false);
   const { city, state } = parseCityState(businessProfile.service_area);
   const bookingUi = publicBookingUi(bookingFlowLocale);
+
+  useEffect(() => {
+    if (activeTab === 'reviews' && !showReviewsTab) {
+      setActiveTab('services');
+    }
+  }, [activeTab, showReviewsTab]);
+
   const completionChecks = [
     {
       label: 'Cover photo',
@@ -452,11 +472,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 showVerifiedBadge={showVerifiedBadge}
                 showRequestQuoteCta={showRequestQuoteCta}
                 bookingFlowLocale={bookingFlowLocale}
+                publicReviewSummary={publicReviewSummary}
               />
 
               {/* Tabs Navigation */}
               <div className="px-4 sm:px-8 mt-8 border-b border-white/[0.06]">
-                <div className="flex gap-6">
+                <div className="flex gap-6 overflow-x-auto scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <button
                     onClick={() => setActiveTab('services')}
                     className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
@@ -496,6 +517,21 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
                   </button>
+                  {showReviewsTab ? (
+                    <button
+                      onClick={() => setActiveTab('reviews')}
+                      className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
+                        activeTab === 'reviews'
+                          ? 'text-white'
+                          : 'text-zinc-500 hover:text-zinc-400'
+                      }`}
+                    >
+                      {bookingUi.profile.reviewsTab}
+                      {activeTab === 'reviews' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
+                      )}
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
@@ -539,19 +575,21 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   onSave={handleSave}
                   onCancel={handleCancel}
                 />
-              ) : (
+              ) : activeTab === 'bio' ? (
                 <section className="px-4 py-6 sm:px-8 sm:py-8">
-                  {(businessProfile.bio?.trim() ?? '') ? (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-400 sm:text-[15px]">
-                      {businessProfile.bio}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-zinc-500">
-                      {bookingUi.profile.noBioYet}
-                    </p>
-                  )}
+                  <ProfileBioSection
+                    businessProfile={businessProfile}
+                    bookingFlowLocale={bookingFlowLocale}
+                  />
                 </section>
-              )}
+              ) : showReviewsTab && publicReviewSummary && publicProfileSlug ? (
+                <LazyPublicReviewsSection
+                  businessSlug={publicProfileSlug}
+                  summary={publicReviewSummary}
+                  bookingFlowLocale={bookingFlowLocale}
+                  isActive={activeTab === 'reviews'}
+                />
+              ) : null}
 
               {/* Sticky Edit Profile button - view mode, authenticated users only */}
               {!isPublic && editMode === 'view' && (
@@ -585,7 +623,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                         href="/"
                         className="group inline-flex items-center gap-2 text-gray-500 hover:text-gray-300 transition-colors"
                       >
-                        <span className="text-[11px] uppercase tracking-wider">
+                        <span className="text-xs text-gray-500">
                           Powered by
                         </span>
                         <Image

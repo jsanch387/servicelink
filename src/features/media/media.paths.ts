@@ -33,17 +33,6 @@ export function generateStoragePath(
 }
 
 /**
- * Extracts file extension from filename
- */
-function getFileExtension(filename: string): string {
-  const lastDot = filename.lastIndexOf('.');
-  if (lastDot === -1) {
-    throw new Error(`File ${filename} has no extension`);
-  }
-  return filename.substring(lastDot + 1).toLowerCase();
-}
-
-/**
  * Gets file extension from MIME type
  */
 function getExtensionFromMimeType(mimeType: string): string {

@@ -12,7 +12,6 @@ interface TimeSlotGridProps {
   existingBookings: ExistingBooking[];
   timeOffBlocks: TimeOffInterval[];
   selectedTime: string | null;
-  // eslint-disable-next-line no-unused-vars
   onSelectTime: (time: string) => void;
   /** When false, omit the heading (parent supplies section title). */
   showHeading?: boolean;

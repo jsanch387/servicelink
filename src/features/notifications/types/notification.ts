@@ -7,7 +7,8 @@ import type { Json } from '@/libs/supabase/client';
 export type NotificationType =
   | 'booking_request'
   | 'availability_booking'
-  | 'quote_request';
+  | 'quote_request'
+  | 'review_submitted';
 
 /** Row from notifications table (API/DB) */
 export interface Notification {

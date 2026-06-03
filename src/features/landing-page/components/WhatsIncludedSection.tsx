@@ -1,7 +1,7 @@
 import {
-  DevicePhoneMobileIcon,
-  BoltIcon,
   AtSymbolIcon,
+  BoltIcon,
+  DevicePhoneMobileIcon,
 } from '@heroicons/react/24/outline';
 import React from 'react';
 
@@ -20,8 +20,9 @@ export const WhatsIncludedSection: React.FC = () => {
               in one clean link.
             </h2>
             <p className="text-gray-400 text-base sm:text-lg mb-6 sm:mb-8 md:mb-10">
-              When you sign up for Service Link, you aren't just getting a
-              page—you're getting a conversion machine built for the mobile age.
+              When you sign up for Service Link, you aren&apos;t just getting a
+              page—you&apos;re getting a conversion machine built for the mobile
+              age.
             </p>
 
             <div className="space-y-6 sm:space-y-8">
@@ -51,8 +52,9 @@ export const WhatsIncludedSection: React.FC = () => {
                     The Action Dashboard
                   </h4>
                   <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
-                    Direct 'Call', 'Text', and 'Booking' buttons that bypass the
-                    inbox and get you on the phone with customers immediately.
+                    Direct &apos;Call&apos;, &apos;Text&apos;, and
+                    &apos;Booking&apos; buttons that bypass the inbox and get
+                    you on the phone with customers immediately.
                   </p>
                 </div>
               </div>

@@ -50,6 +50,10 @@ export interface AvailabilityBookingDisplay {
   address: AvailabilityBookingAddress;
   notes: string;
   createdAt: string;
+  /** True when this customer already left a review for the business (from list API). */
+  customerAlreadyReviewed?: boolean;
+  /** True when completing will send a review invite email (from list API). */
+  willSendReviewInviteOnComplete?: boolean;
   /** Present when booking has payment summary data. */
   payment?: BookingPaymentSummaryDisplay | null;
 }

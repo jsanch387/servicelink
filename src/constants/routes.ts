@@ -59,6 +59,10 @@ export const ROUTES = {
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
+    REVIEWS: '/dashboard/reviews',
+    /** Single review (owner dashboard). Pass UUID from your data layer. */
+    REVIEW_DETAIL: (reviewId: string) =>
+      `/dashboard/reviews/${encodeURIComponent(reviewId.trim())}`,
     QUOTES: '/dashboard/quotes',
     /** Pending customer quote requests (not full quotes until you create one). */
     QUOTES_REQUESTS: '/dashboard/quotes/requests',
@@ -352,4 +356,14 @@ export function getPublicMaintenanceEnrollmentPath(token: string): string {
   const t = token.trim();
   if (!t) return '/maintenance/e';
   return `/maintenance/e/${encodeURIComponent(t)}`;
+}
+
+/**
+ * Customer-facing review form (raw URL-safe token in path).
+ * Server resolves `review_invites.link_token_hash` = SHA-256 hex of the raw token.
+ */
+export function getPublicReviewPath(token: string): string {
+  const t = token.trim();
+  if (!t) return '/review';
+  return `/review/${encodeURIComponent(t)}`;
 }

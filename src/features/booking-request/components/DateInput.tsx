@@ -24,7 +24,6 @@ export const DateInput: React.FC<DateInputProps> = ({
   className = '',
   name,
 }) => {
-  const [showPicker, setShowPicker] = useState(false);
   const [displayValue, setDisplayValue] = useState('');
 
   // Format date as MM/DD/YYYY

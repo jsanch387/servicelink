@@ -12,7 +12,18 @@ export { BusinessProfileView } from './components/BusinessProfileView';
 export { EmptyState } from './components/EmptyState';
 export { ProfileHeader } from './components/ProfileHeader';
 export { QuoteButton } from './components/QuoteButton';
-export { ReviewsSection } from './components/ReviewsSection';
+export { ProfileBioSection } from './components/ProfileBioSection';
+export {
+  ReviewsSection,
+  ProfileRatingSummary,
+  ProfileReviewCard,
+  ProfileReviewsSummary,
+  StarRatingDisplay,
+  PROFILE_REVIEW_STAR_COLOR,
+  formatAverageRating,
+  formatReviewDate,
+} from './reviews';
+export type { StarRatingDisplaySize } from './reviews';
 export { ServiceCard } from './components/ServiceCard';
 export { ServicesList } from './components/ServicesList';
 export { WorkShowcase } from './components/WorkShowcase';

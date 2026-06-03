@@ -122,7 +122,6 @@ SmartImagePreview.displayName = 'SmartImagePreview';
 
 // Enhanced Upload Component with Better UX
 const EnhancedImageUpload: React.FC<{
-  // eslint-disable-next-line no-unused-vars
   onImageSelect: (file: File) => void;
   disabled: boolean;
   imageCount: number;

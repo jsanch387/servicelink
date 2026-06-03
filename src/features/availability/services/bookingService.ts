@@ -8,6 +8,11 @@ import {
   validateOwnerBookingSlot,
 } from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
+import {
+  customerAlreadyReviewedForBooking,
+  loadReviewInviteEligibilityContext,
+  willSendReviewInviteOnBookingComplete,
+} from '@/features/reviews/server/reviewInviteEligibility';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -401,6 +406,10 @@ export async function listBookingsForBusiness(
 
   const rows = (data ?? []) as BookingRow[];
   const bookingIds = rows.map(r => r.id);
+  const reviewInviteEligibilityContext =
+    rows.length > 0
+      ? await loadReviewInviteEligibilityContext(supabase, businessId, rows)
+      : null;
   const paymentByBookingId = new Map<
     string,
     {
@@ -441,11 +450,25 @@ export async function listBookingsForBusiness(
   return rows.map(row => {
     const display = mapBookingRowToDisplay(row);
     const payment = paymentByBookingId.get(row.id);
+    const willSendReviewInviteOnComplete = reviewInviteEligibilityContext
+      ? willSendReviewInviteOnBookingComplete(
+          row,
+          reviewInviteEligibilityContext
+        )
+      : false;
+    const customerAlreadyReviewed = reviewInviteEligibilityContext
+      ? customerAlreadyReviewedForBooking(row, reviewInviteEligibilityContext)
+      : false;
+    const withReviewFlag = {
+      ...display,
+      customerAlreadyReviewed,
+      willSendReviewInviteOnComplete,
+    };
     if (!payment) {
-      return display;
+      return withReviewFlag;
     }
     return {
-      ...display,
+      ...withReviewFlag,
       payment: {
         paymentStatus: payment.payment_status ?? 'not_required',
         paymentMethodSelected: String(
