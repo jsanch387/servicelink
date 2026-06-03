@@ -52,6 +52,7 @@ const allNavigationItems = [
     icon: StarIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/reviews',
+    isNew: true,
   },
   {
     name: 'Quotes',
@@ -72,7 +73,6 @@ const allNavigationItems = [
     icon: BanknotesIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/payments',
-    isNew: true,
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [
