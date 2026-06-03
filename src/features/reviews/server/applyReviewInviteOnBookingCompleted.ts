@@ -16,7 +16,7 @@ function logResult(
     logReviewInviteFinished(trace, { kind: 'failed', error: result.error });
     return;
   }
-  if ('skipped' in result && result.skipped) {
+  if (result.skipped) {
     logReviewInviteFinished(trace, {
       kind: 'skipped',
       reason: result.reason,

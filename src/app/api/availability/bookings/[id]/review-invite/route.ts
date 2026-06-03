@@ -100,12 +100,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         kind: 'skipped',
         reason: result.reason,
       });
-      return reviewInviteJsonResponse(requestId, {
-        success: true,
-        sent: false,
-        skipped: true,
-        reason: result.reason,
-      });
+      return reviewInviteJsonResponse(
+        requestId,
+        {
+          success: true,
+          sent: false,
+          skipped: true,
+          reason: result.reason,
+        },
+        200
+      );
     }
 
     if (!result.sent) {
@@ -121,12 +125,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       });
     }
 
-    return reviewInviteJsonResponse(requestId, {
-      success: true,
-      sent: result.sent,
-      skipped: false,
-      inviteId: result.inviteId,
-    });
+    return reviewInviteJsonResponse(
+      requestId,
+      {
+        success: true,
+        sent: result.sent,
+        skipped: false,
+        inviteId: result.inviteId,
+      },
+      200
+    );
   } catch (err) {
     logReviewInviteFinished(buildReviewInviteTrace(requestId, 'mobile_api'), {
       kind: 'failed',

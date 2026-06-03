@@ -38,7 +38,7 @@ function mapCreateResult(
   if (!result.ok) {
     return { ok: false, status: 500, error: result.error };
   }
-  if ('skipped' in result && result.skipped) {
+  if (result.skipped) {
     return {
       ok: true,
       sent: false,

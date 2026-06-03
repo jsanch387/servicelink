@@ -42,20 +42,21 @@ export async function GET(
     }
 
     const supabase = await createSupabaseServerClient();
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('business_profiles')
       .select('id')
       .eq('business_slug', trimmedSlug)
       .maybeSingle();
+    const businessId = (profileData as { id?: string } | null)?.id?.trim();
 
-    if (profileError || !profile?.id) {
+    if (profileError || !businessId) {
       return NextResponse.json(
         { success: false, error: 'Business profile not found' },
         { status: 404 }
       );
     }
 
-    const result = await loadPublicBusinessReviews(admin, profile.id);
+    const result = await loadPublicBusinessReviews(admin, businessId);
     const data = publicReviewsDataFromLoadResult(result);
 
     if (!data) {

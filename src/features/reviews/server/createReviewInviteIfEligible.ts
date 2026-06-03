@@ -9,7 +9,13 @@ import type { BookingRow } from '@/features/availability/booking/dashboard/utils
 const INVITE_EXPIRY_DAYS = 90;
 
 export type CreateReviewInviteResult =
-  | { ok: true; sent: boolean; inviteId: string; emailErrorHint?: string }
+  | {
+      ok: true;
+      skipped: false;
+      sent: boolean;
+      inviteId: string;
+      emailErrorHint?: string;
+    }
   | { ok: true; skipped: true; reason: string }
   | { ok: false; error: string };
 
@@ -202,7 +208,7 @@ export async function createReviewInviteIfEligible(
       })
       .eq('id', inviteId);
 
-    return { ok: true, sent: true, inviteId };
+    return { ok: true, skipped: false, sent: true, inviteId };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -213,6 +219,7 @@ export async function createReviewInviteIfEligible(
 
   return {
     ok: true,
+    skipped: false,
     sent: false,
     inviteId,
     emailErrorHint: emailResult.error,

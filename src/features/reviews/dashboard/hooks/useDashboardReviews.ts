@@ -34,7 +34,9 @@ export function useDashboardReviews(): UseDashboardReviewsResult {
         .catch(() => null)) as ReviewsListResponse | null;
 
       if (!response.ok || !json?.success) {
-        throw new Error(json?.error || 'Failed to load reviews');
+        const message =
+          json && !json.success ? json.error : 'Failed to load reviews';
+        throw new Error(message);
       }
 
       setReviews(Array.isArray(json.reviews) ? json.reviews : []);

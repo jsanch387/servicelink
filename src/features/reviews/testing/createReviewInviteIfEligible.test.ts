@@ -138,7 +138,12 @@ describe('createReviewInviteIfEligible', () => {
       mockSupabase({ insertId: 'inv-99' }),
       baseBooking()
     );
-    expect(result).toEqual({ ok: true, sent: true, inviteId: 'inv-99' });
+    expect(result).toEqual({
+      ok: true,
+      skipped: false,
+      sent: true,
+      inviteId: 'inv-99',
+    });
     expect(sendReviewInviteEmail).toHaveBeenCalledWith(
       'jane@example.com',
       expect.objectContaining({
