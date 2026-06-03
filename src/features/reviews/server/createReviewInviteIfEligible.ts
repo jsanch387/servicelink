@@ -9,7 +9,7 @@ import type { BookingRow } from '@/features/availability/booking/dashboard/utils
 const INVITE_EXPIRY_DAYS = 90;
 
 export type CreateReviewInviteResult =
-  | { ok: true; sent: boolean; inviteId: string }
+  | { ok: true; sent: boolean; inviteId: string; emailErrorHint?: string }
   | { ok: true; skipped: true; reason: string }
   | { ok: false; error: string };
 
@@ -171,7 +171,6 @@ export async function createReviewInviteIfEligible(
     .single();
 
   if (insertError || !inserted?.id) {
-    console.error('[reviews] createReviewInvite insert failed', insertError);
     return {
       ok: false,
       error: insertError?.message ?? 'Failed to create review invite',
@@ -212,10 +211,10 @@ export async function createReviewInviteIfEligible(
     .update({ last_notification_error: emailResult.error })
     .eq('id', inviteId);
 
-  console.error('[reviews] review invite email failed', {
-    bookingId,
-    error: emailResult.error,
-  });
-
-  return { ok: true, sent: false, inviteId };
+  return {
+    ok: true,
+    sent: false,
+    inviteId,
+    emailErrorHint: emailResult.error,
+  };
 }

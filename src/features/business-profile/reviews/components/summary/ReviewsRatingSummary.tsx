@@ -4,7 +4,7 @@ import type { PublicBookingFlowLocale } from '@/constants/routes';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
-import { PROFILE_REVIEW_STAR_COLOR } from '../../constants/reviewStars';
+import { REVIEW_STAR_COLOR } from '@/icons';
 import { formatAverageRating } from '../../utils/reviewDisplay';
 import { StarRatingDisplay } from '../display/StarRatingDisplay';
 
@@ -29,16 +29,16 @@ export const ReviewsRatingSummary: React.FC<ReviewsRatingSummaryProps> = ({
       className={`flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between sm:gap-10 ${className}`}
     >
       <div
-        className="flex items-start gap-3 sm:gap-4"
+        className="flex items-center gap-3 sm:gap-4"
         aria-label={`${ui.profile.ratingAriaLabel(formattedAverage)}. ${ui.profile.reviewCountLabel(reviewCount)}`}
       >
         <p
-          className="text-5xl font-semibold tabular-nums leading-none tracking-tight text-white"
+          className="text-5xl font-bold tabular-nums leading-none tracking-tight text-white"
           aria-hidden
         >
           {formattedAverage}
         </p>
-        <div className="flex flex-col gap-1.5 pt-2" aria-hidden>
+        <div className="flex flex-col gap-1.5" aria-hidden>
           <StarRatingDisplay rating={summary.averageRating} size="md" />
           <p className="text-sm leading-snug text-zinc-500">
             {ui.profile.reviewCountLabel(reviewCount)}
@@ -61,7 +61,7 @@ export const ReviewsRatingSummary: React.FC<ReviewsRatingSummaryProps> = ({
                 className="h-full rounded-full transition-[width] duration-300 ease-out"
                 style={{
                   width: `${percent}%`,
-                  backgroundColor: PROFILE_REVIEW_STAR_COLOR,
+                  backgroundColor: REVIEW_STAR_COLOR,
                 }}
               />
             </div>

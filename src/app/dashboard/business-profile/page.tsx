@@ -9,10 +9,15 @@ import {
   isProAccessForPublicQuoteRequests,
 } from '@/features/pricing';
 import {
+  loadPublicReviewSummary,
+  publicReviewSummaryFromLoadResult,
+} from '@/features/reviews';
+import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
   normalizePublicBookingOfferedLocales,
   resolvePublicBookingFlowLocale,
 } from '@/libs/bookingFlowLocale';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -162,6 +167,17 @@ export default async function BusinessProfilePage({
   const showProfileWelcomeModalOnLoad =
     onboardingComplete && userProfile?.profile_welcome_modal_seen !== true;
 
+  const admin = createSupabaseAdminClient();
+  const publicReviewSummaryResult = await loadPublicReviewSummary(
+    admin,
+    businessProfileData.id
+  );
+  const publicReviewSummary = publicReviewSummaryFromLoadResult(
+    publicReviewSummaryResult
+  );
+  const publicProfileSlug =
+    businessProfileData.business_slug?.trim() || undefined;
+
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <BusinessProfileView
@@ -174,6 +190,8 @@ export default async function BusinessProfilePage({
         showProfileWelcomeModalOnLoad={showProfileWelcomeModalOnLoad}
         showRequestQuoteCta={showRequestQuoteCta}
         bookingFlowLocale={bookingFlowLocale}
+        publicReviewSummary={publicReviewSummary}
+        publicProfileSlug={publicProfileSlug}
       />
     </div>
   );

@@ -75,9 +75,9 @@ interface BusinessProfileViewProps {
   publicFreeBookingsCapReached?: boolean;
   /** Resolved booking-funnel locale for public profile + service links. */
   bookingFlowLocale?: PublicBookingFlowLocale;
-  /** Public profile: ratings summary for header + tab; full list loads on tab click. */
+  /** Ratings summary for header + Reviews tab; full list loads on tab click. */
   publicReviewSummary?: PublicProfileReviewsSummary | null;
-  /** Slug for lazy reviews API (public profile only). */
+  /** Slug for lazy reviews API (public profile + booking-link preview). */
   publicProfileSlug?: string;
 }
 
@@ -98,7 +98,9 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicProfileSlug,
 }) => {
   const showReviewsTab = Boolean(
-    publicReviewSummary && publicReviewSummary.reviewCount > 0
+    publicReviewSummary &&
+      publicReviewSummary.reviewCount > 0 &&
+      publicProfileSlug
   );
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =

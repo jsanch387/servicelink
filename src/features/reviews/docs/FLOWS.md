@@ -110,6 +110,7 @@ Validation: `loadPublicReviewInviteByToken` — hash token, require `status = pe
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | `PATCH` | `/api/availability/bookings/[id]` | Owner | `status: completed` → `applyReviewInviteOnBookingCompleted` |
+| `POST` | `/api/availability/bookings/[id]/review-invite` | Owner | Create invite + send email for a **completed** booking (mobile) |
 | `GET` | `/api/availability/bookings` | Owner | Bookings list incl. `customerAlreadyReviewed`, `willSendReviewInviteOnComplete` |
 | `GET` | `/api/reviews` | Owner | Dashboard inbox list |
 | `PATCH` | `/api/reviews/[id]` | Owner | `{ ownerReplyBody }` or `null` to clear reply |
@@ -264,6 +265,46 @@ Batch for all bookings on load:
 
 ---
 
+## Mobile — review invite email
+
+Mobile updates bookings directly in Supabase. After marking a booking **completed**, call this API when your local eligibility checks pass (same rules as web: customer email, `customer_id`, no existing review).
+
+**`POST /api/availability/bookings/{bookingId}/review-invite`**
+
+- **Auth:** Owner session (same JWT as other dashboard APIs)
+- **Precondition:** Booking `status = completed` (returns 400 otherwise)
+- **Idempotent:** Safe to call if web already sent on PATCH complete — skips with `reason`
+
+**Success — email sent**
+
+```json
+{ "success": true, "sent": true, "skipped": false, "inviteId": "uuid" }
+```
+
+**Success — skipped (not eligible or already invited)**
+
+```json
+{ "success": true, "sent": false, "skipped": true, "reason": "customer_already_reviewed" }
+```
+
+`reason` values: `no_customer_email` | `no_customer_id` | `invite_already_exists` | `customer_already_reviewed` | `pending_invite_exists`
+
+**Success — invite created, email failed (best-effort)**
+
+```json
+{ "success": true, "sent": false, "skipped": false, "inviteId": "uuid" }
+```
+
+**Errors:** `401` / `404` / `500` → `{ "success": false, "error": "..." }`
+
+Responses include **`X-Request-ID`** for tracing. Structured logs use prefix **`[review-invite]`** (`reviewInviteRouteLog.ts`).
+
+Server helper: `requestReviewInviteForBooking` in `src/features/reviews/server/`.
+
+**Mobile integration contract (copy to Expo AI):** [docs/contracts/mobile-review-invite-on-complete.md](../../../docs/contracts/mobile-review-invite-on-complete.md)
+
+---
+
 ## Environment
 
 | Variable | Used for |
@@ -278,7 +319,7 @@ Batch for all bookings on load:
 ```
 src/features/reviews/
   docs/           ← you are here
-  server/         createReviewInviteIfEligible, submit, public loaders
+  server/         createReviewInviteIfEligible, requestReviewInviteForBooking, submit, public loaders
   dashboard/      owner UI + loadDashboardReviews, PATCH reply
   public/         customer /review UI
   utils/          token hash, summary, API paths

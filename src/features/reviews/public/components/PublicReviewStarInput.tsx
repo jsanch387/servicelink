@@ -1,8 +1,6 @@
 'use client';
 
-import { profileReviewStarTextClass } from '@/features/business-profile/reviews/constants/reviewStars';
-import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import { StarIcon, StarOutlineIcon, reviewStarFilledClass } from '@/icons';
 
 const STAR_SIZE = 'h-11 w-11 sm:h-12 sm:w-12';
 
@@ -42,8 +40,8 @@ export function PublicReviewStarInput({
             role="radio"
           >
             {filled ? (
-              <StarSolidIcon
-                className={`${STAR_SIZE} shrink-0 ${profileReviewStarTextClass}`}
+              <StarIcon
+                className={`${STAR_SIZE} shrink-0 ${reviewStarFilledClass}`}
                 aria-hidden
               />
             ) : (

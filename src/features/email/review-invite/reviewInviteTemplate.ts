@@ -1,8 +1,8 @@
+import { REVIEW_STAR_COLOR } from '@/icons';
 import { escapeHtml } from '../utils/escapeHtml';
 import type { ReviewInviteEmailPayload } from './types';
 
 const DASHBOARD_BG = '#0f0f0f';
-const GOLD_STAR = '#E5C358';
 
 function formatDateLong(dateStr: string): string {
   const d = new Date(`${dateStr}T12:00:00`);
@@ -97,7 +97,7 @@ export function buildReviewInviteEmailHtml(
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="left" style="padding-bottom:24px;">
-                    <div style="width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background-color:rgba(255,255,255,0.06);text-align:center;line-height:48px;font-size:22px;color:${GOLD_STAR};">&#9733;</div>
+                    <div style="width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background-color:rgba(255,255,255,0.06);text-align:center;line-height:48px;font-size:22px;color:${REVIEW_STAR_COLOR};">&#9733;</div>
                   </td>
                 </tr>
                 <tr>

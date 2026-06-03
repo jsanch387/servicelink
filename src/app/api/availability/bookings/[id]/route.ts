@@ -13,6 +13,10 @@ import {
 } from '@/features/availability/services/bookingService';
 import { applyMaintenanceVisitCompletedFromBooking } from '@/features/maintenance/server/applyMaintenanceVisitCompletedFromBooking';
 import { applyReviewInviteOnBookingCompleted } from '@/features/reviews/server/applyReviewInviteOnBookingCompleted';
+import {
+  buildReviewInviteTrace,
+  getReviewInviteRequestId,
+} from '@/features/reviews/server/reviewInviteRouteLog';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -174,7 +178,12 @@ export async function PATCH(
           sideErr
         );
       }
-      await applyReviewInviteOnBookingCompleted(admin, updated);
+      const requestId = getReviewInviteRequestId(request);
+      const reviewTrace = buildReviewInviteTrace(requestId, 'web_patch', {
+        businessId: updated.business_id,
+        bookingId: updated.id,
+      });
+      await applyReviewInviteOnBookingCompleted(admin, updated, reviewTrace);
     }
 
     return NextResponse.json({

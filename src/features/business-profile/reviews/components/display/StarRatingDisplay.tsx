@@ -1,9 +1,7 @@
 'use client';
 
-import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import { StarIcon, StarOutlineIcon, reviewStarFilledClass } from '@/icons';
 import React from 'react';
-import { profileReviewStarTextClass } from '../../constants/reviewStars';
 
 const SIZE_CLASS = {
   sm: 'h-3.5 w-3.5',
@@ -50,9 +48,9 @@ export const StarRatingDisplay: React.FC<StarRatingDisplayProps> = ({
 
         if (fill >= 1) {
           return (
-            <StarSolidIcon
+            <StarIcon
               key={starKey}
-              className={`${iconClass} shrink-0 ${profileReviewStarTextClass}`}
+              className={`${iconClass} shrink-0 ${reviewStarFilledClass}`}
               aria-hidden
             />
           );
@@ -73,8 +71,8 @@ export const StarRatingDisplay: React.FC<StarRatingDisplayProps> = ({
                 style={{ width: `${fill * 100}%` }}
                 aria-hidden
               >
-                <StarSolidIcon
-                  className={`${iconClass} ${profileReviewStarTextClass}`}
+                <StarIcon
+                  className={`${iconClass} ${reviewStarFilledClass}`}
                   aria-hidden
                 />
               </span>
