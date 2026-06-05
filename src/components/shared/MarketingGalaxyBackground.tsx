@@ -1,55 +1,64 @@
 import React from 'react';
 
 interface MarketingGalaxyBackgroundProps {
-  /** Diagonal light streaks (landing page). Auth screens typically omit these. */
+  /** Soft atmospheric accents on landing page. Hidden on mobile. */
   showStreaks?: boolean;
 }
 
 /**
- * Fixed galaxy glows (+ optional light streaks) behind marketing and auth screens.
+ * Fixed smoky glows behind marketing and auth screens.
  */
 export const MarketingGalaxyBackground: React.FC<
   MarketingGalaxyBackgroundProps
 > = ({ showStreaks = true }) => (
-  <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
+  <div
+    className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+    aria-hidden
+  >
+    <div className="absolute inset-x-0 top-0 h-[40vh] bg-gradient-to-b from-[var(--dashboard-bg)] via-[var(--dashboard-bg)]/35 to-transparent" />
+
     <div
-      className="absolute -top-[20%] -right-[10%] h-[70vmax] w-[70vmax] rounded-full"
+      className="absolute -top-[24%] -right-[8%] h-[66vmax] w-[66vmax] rounded-full"
       style={{
         background:
-          'radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(200,220,255,0.03) 40%, transparent 70%)',
+          'radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(190,190,190,0.04) 40%, transparent 72%)',
       }}
     />
     <div
-      className="absolute -bottom-[30%] -left-[15%] h-[60vmax] w-[60vmax] rounded-full"
+      className="absolute -bottom-[30%] -left-[16%] h-[60vmax] w-[60vmax] rounded-full"
       style={{
         background:
-          'radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(220,200,255,0.025) 50%, transparent 70%)',
+          'radial-gradient(circle, rgba(255,255,255,0.065) 0%, rgba(150,150,150,0.035) 45%, transparent 74%)',
       }}
     />
+
     <div
-      className="absolute top-1/2 left-1/2 h-[80vmin] w-[100vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"
+      className="absolute top-[30%] left-1/2 h-[44vmax] w-[82vmax] -translate-x-1/2 rounded-full blur-[100px]"
       style={{
         background:
-          'radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, transparent 60%)',
+          'radial-gradient(ellipse, rgba(255,255,255,0.1) 0%, rgba(175,175,175,0.05) 42%, transparent 70%)',
       }}
     />
+
     {showStreaks ? (
-      <>
+      <div className="hidden sm:block">
         <div
-          className="absolute top-[15%] -left-[10%] h-[2px] w-[120%] rotate-[-25deg] blur-[1px]"
+          className="absolute top-[6%] -left-[12%] h-[38vmax] w-[72vmax] origin-top-left rotate-[28deg] blur-3xl opacity-70 animate-marketing-streak-pulse"
           style={{
+            animationDelay: '0s',
             background:
-              'linear-gradient(90deg, transparent 0%, transparent 25%, rgba(255,255,255,0.35) 40%, rgba(255,255,255,0.12) 55%, transparent 75%, transparent 100%)',
+              'linear-gradient(118deg, rgba(255,255,255,0.16) 0%, rgba(210,210,210,0.09) 28%, transparent 68%)',
           }}
         />
         <div
-          className="absolute top-[52%] right-[-20%] h-[2px] w-[80%] rotate-[-20deg] blur-[1px]"
+          className="absolute top-[54%] -right-[10%] h-[30vmax] w-[58vmax] -rotate-[14deg] blur-3xl opacity-60 animate-marketing-streak-pulse"
           style={{
+            animationDelay: '3s',
             background:
-              'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 35%, rgba(255,255,255,0.08) 55%, transparent 100%)',
+              'linear-gradient(250deg, transparent 0%, rgba(255,255,255,0.13) 38%, rgba(185,185,185,0.07) 58%, transparent 88%)',
           }}
         />
-      </>
+      </div>
     ) : null}
   </div>
 );

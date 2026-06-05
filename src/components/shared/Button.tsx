@@ -47,25 +47,25 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   // Modern rectangular rounded buttons — consistent across the app
   const baseClasses =
-    'inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0f0f0f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer select-none';
+    'inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer select-none';
 
   const variantClasses = {
     primary:
-      'bg-orange-500 hover:bg-orange-600 text-white shadow-sm focus:ring-orange-500',
+      'bg-orange-500 hover:bg-orange-600 text-white shadow-sm focus-visible:ring-orange-500',
     secondary:
-      'border border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30 focus:ring-white/40 backdrop-blur-sm',
+      'border border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30 focus-visible:ring-white/40 backdrop-blur-sm',
     outline:
-      'border border-orange-500/50 text-orange-400 bg-transparent hover:bg-orange-500/10 hover:border-orange-400 focus:ring-orange-500',
+      'border border-orange-500/50 text-orange-400 bg-transparent hover:bg-orange-500/10 hover:border-orange-400 focus-visible:ring-orange-500',
     ghost:
-      'text-gray-300 hover:text-white hover:bg-white/5 focus:ring-neutral-500',
+      'text-gray-300 hover:text-white hover:bg-white/5 focus-visible:ring-neutral-500',
     inverse:
-      'bg-white text-neutral-900 hover:bg-gray-100 shadow-sm focus:ring-neutral-400',
+      'bg-white text-neutral-900 hover:bg-gray-100 shadow-sm focus-visible:ring-neutral-400',
     danger:
-      'border border-red-400/30 bg-red-500/12 text-red-200 hover:bg-red-500/18 hover:border-red-400/45 focus:ring-red-400/40 backdrop-blur-sm',
+      'border border-red-400/30 bg-red-500/12 text-red-200 hover:bg-red-500/18 hover:border-red-400/45 focus-visible:ring-red-400/40 backdrop-blur-sm',
     success:
-      'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:ring-emerald-500',
+      'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus-visible:ring-emerald-500',
     warning:
-      'bg-amber-500 hover:bg-amber-600 text-black shadow-sm focus:ring-amber-500',
+      'bg-amber-500 hover:bg-amber-600 text-black shadow-sm focus-visible:ring-amber-500',
   };
 
   // Generous touch targets, clear hierarchy

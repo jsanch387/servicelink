@@ -20,10 +20,10 @@ export const LandingPage: React.FC = () => {
         <Navigation />
         <main id="main-content" aria-label="Main content">
           <HeroSection />
+          <TestimonialsSection />
           <TrustedByStripSection />
           <DetailerFeaturesSection />
           <HowItWorksSection />
-          <TestimonialsSection />
           <ProblemSolutionSection />
           <FAQSection />
         </main>
