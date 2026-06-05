@@ -1,7 +1,16 @@
-import { GlassCard } from '@/components/shared';
-import React from 'react';
+'use client';
 
-const testimonials = [
+import { GlassCard } from '@/components/shared';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+type Testimonial = {
+  name: string;
+  business: string;
+  initials: string;
+  content: string;
+};
+
+const testimonials: Testimonial[] = [
   {
     name: 'Mike A.',
     business: 'Precision Auto Detailing',
@@ -23,15 +32,204 @@ const testimonials = [
     content:
       'Finally looks professional without paying for a full website. Exactly what I needed.',
   },
+  {
+    name: 'James R.',
+    business: 'Revive Mobile Detail',
+    initials: 'JR',
+    content:
+      'Customers book straight from my link. I spend less time texting and more time detailing.',
+  },
 ];
+
+function GoogleReviewBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
+      <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5">
+        <path
+          fill="#EA4335"
+          d="M12 10.2v3.92h5.45c-.24 1.26-.95 2.33-2.01 3.05l3.24 2.52c1.89-1.74 2.98-4.31 2.98-7.37 0-.72-.06-1.41-.2-2.08H12z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 21.5c2.7 0 4.97-.89 6.63-2.41l-3.24-2.52c-.9.61-2.05.97-3.39.97-2.61 0-4.82-1.76-5.61-4.13H3.04v2.6A9.99 9.99 0 0012 21.5z"
+        />
+        <path
+          fill="#4A90E2"
+          d="M6.39 13.41A5.99 5.99 0 016.08 12c0-.49.11-.97.31-1.41v-2.6H3.04A9.99 9.99 0 002 12c0 1.61.39 3.14 1.04 4.59l3.35-2.6z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M12 6.46c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 3.47 14.69 2.5 12 2.5A9.99 9.99 0 003.04 7.99l3.35 2.6C7.18 8.22 9.39 6.46 12 6.46z"
+        />
+      </svg>
+      Google Review
+    </span>
+  );
+}
+
+function StarRating() {
+  return (
+    <div
+      className="flex gap-px text-amber-400 flex-shrink-0"
+      aria-label="5 star rating"
+    >
+      {[...Array(5)].map((_, i) => (
+        <svg
+          key={i}
+          className="w-4 h-4"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          aria-hidden
+        >
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+function TestimonialCard({
+  testimonial,
+  className = '',
+}: {
+  testimonial: Testimonial;
+  className?: string;
+}) {
+  return (
+    <GlassCard
+      padding="md"
+      rounded="rounded-2xl"
+      showBlur={false}
+      className={`h-full min-h-[200px] md:min-h-[220px] flex flex-col group hover:border-white/15 transition-colors duration-300 !pt-4 !px-5 sm:!px-6 md:!px-7 !pb-5 md:!pb-6 ${className}`}
+    >
+      <div className="flex flex-col flex-1 min-h-0">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <GoogleReviewBadge />
+          <StarRating />
+        </div>
+        <p className="text-gray-300 text-[15px] sm:text-base leading-[1.6] mb-5 flex-1 min-h-0">
+          {testimonial.content}
+        </p>
+        <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.08] flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center font-semibold text-gray-400 text-sm tracking-tight">
+              {testimonial.initials}
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium text-white text-sm truncate">
+                {testimonial.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate mt-0.5">
+                {testimonial.business}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
+function MobileTestimonialsScroller() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+
+    const slides = root.querySelectorAll('[data-testimonial-slide]');
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
+            const index = Number(
+              (entry.target as HTMLElement).dataset.testimonialSlide
+            );
+            if (!Number.isNaN(index)) setActiveIndex(index);
+          }
+        });
+      },
+      { root, threshold: [0.55, 0.75] }
+    );
+
+    slides.forEach(slide => observer.observe(slide));
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToIndex = useCallback((index: number) => {
+    const root = scrollRef.current;
+    const slide = root?.querySelector(
+      `[data-testimonial-slide="${index}"]`
+    ) as HTMLElement | null;
+    slide?.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center',
+      block: 'nearest',
+    });
+    setActiveIndex(index);
+  }, []);
+
+  return (
+    <div className="md:hidden">
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide -mx-4 px-3 pb-1 touch-pan-x overscroll-x-contain"
+        aria-label="Customer reviews"
+        aria-roledescription="carousel"
+      >
+        {testimonials.map((testimonial, index) => (
+          <div
+            key={testimonial.name}
+            data-testimonial-slide={index}
+            className="w-[calc(100vw-1.5rem)] shrink-0 snap-center"
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`Review ${index + 1} of ${testimonials.length}`}
+          >
+            <TestimonialCard
+              testimonial={testimonial}
+              className="min-h-[220px] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div
+        className="mt-5 flex items-center justify-center gap-2"
+        role="tablist"
+        aria-label="Review navigation"
+      >
+        {testimonials.map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            role="tab"
+            aria-selected={activeIndex === index}
+            aria-label={`Go to review ${index + 1}`}
+            onClick={() => scrollToIndex(index)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              activeIndex === index
+                ? 'w-6 bg-white'
+                : 'w-2 bg-white/25 hover:bg-white/40'
+            }`}
+          />
+        ))}
+      </div>
+
+      <p className="mt-3 text-center text-[11px] uppercase tracking-[0.18em] text-gray-500">
+        Swipe to read more
+      </p>
+    </div>
+  );
+}
 
 export const TestimonialsSection: React.FC = () => {
   return (
     <section
       id="testimonials"
-      className="relative py-12 sm:py-8 px-4 sm:px-6 overflow-hidden border-t border-b border-white/[0.08]"
+      className="relative py-12 sm:py-8 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-b border-white/[0.08]"
     >
-      {/* Subtle background texture */}
       <div
         className="absolute inset-0 -z-10 opacity-[0.015]"
         style={{
@@ -45,7 +243,7 @@ export const TestimonialsSection: React.FC = () => {
         aria-hidden
       />
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-screen-2xl mx-auto w-full">
         <header className="text-center mb-8 sm:mb-10">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
             Testimonials
@@ -55,79 +253,11 @@ export const TestimonialsSection: React.FC = () => {
           </h2>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 items-stretch">
+        <MobileTestimonialsScroller />
+
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6 xl:gap-7 items-stretch">
           {testimonials.map((testimonial, index) => (
-            <GlassCard
-              key={index}
-              padding="md"
-              rounded="rounded-2xl"
-              showBlur={false}
-              className="h-full min-h-[200px] flex flex-col group hover:border-white/15 transition-colors duration-300 !pt-4 !px-5 sm:!px-6 !pb-5"
-            >
-              <div className="flex flex-col flex-1 min-h-0">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
-                    <svg
-                      viewBox="0 0 24 24"
-                      aria-hidden
-                      className="h-3.5 w-3.5"
-                    >
-                      <path
-                        fill="#EA4335"
-                        d="M12 10.2v3.92h5.45c-.24 1.26-.95 2.33-2.01 3.05l3.24 2.52c1.89-1.74 2.98-4.31 2.98-7.37 0-.72-.06-1.41-.2-2.08H12z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 21.5c2.7 0 4.97-.89 6.63-2.41l-3.24-2.52c-.9.61-2.05.97-3.39.97-2.61 0-4.82-1.76-5.61-4.13H3.04v2.6A9.99 9.99 0 0012 21.5z"
-                      />
-                      <path
-                        fill="#4A90E2"
-                        d="M6.39 13.41A5.99 5.99 0 016.08 12c0-.49.11-.97.31-1.41v-2.6H3.04A9.99 9.99 0 002 12c0 1.61.39 3.14 1.04 4.59l3.35-2.6z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M12 6.46c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 3.47 14.69 2.5 12 2.5A9.99 9.99 0 003.04 7.99l3.35 2.6C7.18 8.22 9.39 6.46 12 6.46z"
-                      />
-                    </svg>
-                    Google Review
-                  </span>
-                  <div
-                    className="flex gap-px text-amber-400 flex-shrink-0"
-                    aria-label="5 star rating"
-                  >
-                    {[...Array(5)].map((_, i) => (
-                      <svg
-                        key={i}
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        aria-hidden
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                </div>
-                <p className="text-gray-300 text-[15px] sm:text-base leading-[1.6] mb-5 flex-1 min-h-0">
-                  {testimonial.content}
-                </p>
-                <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.08] flex-shrink-0">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center font-semibold text-gray-400 text-sm tracking-tight">
-                      {testimonial.initials}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-white text-sm truncate">
-                        {testimonial.name}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate mt-0.5">
-                        {testimonial.business}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
+            <TestimonialCard key={index} testimonial={testimonial} />
           ))}
         </div>
       </div>

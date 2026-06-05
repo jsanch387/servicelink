@@ -8,45 +8,65 @@ export type LandingPageDisplayImageProps = {
   className?: string;
 };
 
+const DISPLAY_ASSETS = {
+  hero: {
+    src: '/landing-page-mock.png',
+    alt: 'ServiceLink mobile app and customer booking profile side by side',
+    width: 2400,
+    height: 1600,
+    sizes:
+      '(max-width: 640px) 640px, (max-width: 768px) 680px, (max-width: 1024px) 860px, (max-width: 1280px) 1020px, 1180px',
+    maxWidthClass:
+      'w-full sm:max-w-[680px] md:max-w-[860px] lg:max-w-[1020px] xl:max-w-[1180px]',
+    wrapperClass: 'max-sm:mb-[30vw] max-sm:overflow-visible',
+    imageClass: 'mx-auto max-sm:scale-[1.48] max-sm:origin-[center_top]',
+    glowClass:
+      'w-96 h-64 sm:w-[28rem] sm:h-[19rem] md:w-[36rem] md:h-96 lg:w-[42rem] lg:h-[28rem]',
+  },
+  compact: {
+    src: '/landing-page-display.png',
+    alt: 'ServiceLink booking profile on mobile',
+    width: 450,
+    height: 900,
+    sizes: '(max-width: 640px) 340px, 380px',
+    maxWidthClass: 'max-w-[min(100%,340px)] sm:max-w-[380px]',
+    wrapperClass: '',
+    imageClass: '',
+    glowClass: 'w-56 h-56 sm:w-64 sm:h-64',
+  },
+} as const;
+
 export function LandingPageDisplayImage({
   variant = 'hero',
   showFloatingCards = true,
   className = '',
 }: LandingPageDisplayImageProps) {
   const isCompact = variant === 'compact';
+  const asset = DISPLAY_ASSETS[variant];
+  const shouldShowFloatingCards = showFloatingCards && isCompact;
 
   return (
     <div className={`relative flex justify-center ${className}`.trim()}>
       <div
-        className={`absolute -z-10 bg-white/[0.03] blur-[100px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${
-          isCompact ? 'w-56 h-56 sm:w-64 sm:h-64' : 'w-64 h-64 sm:w-72 sm:h-72'
-        }`}
+        className={`absolute -z-10 bg-white/[0.03] blur-[100px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${asset.glowClass}`}
         aria-hidden
       />
 
       <div
-        className={`relative w-full ${
-          isCompact
-            ? 'max-w-[min(100%,340px)] sm:max-w-[380px]'
-            : 'max-w-[300px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[480px] lg:-ml-4'
-        }`}
+        className={`relative w-full ${asset.wrapperClass} ${asset.maxWidthClass}`}
       >
         <Image
-          src="/landing-page-display.png"
-          alt="ServiceLink booking profile on mobile"
-          width={450}
-          height={900}
-          className="w-full h-auto object-contain"
+          src={asset.src}
+          alt={asset.alt}
+          width={asset.width}
+          height={asset.height}
+          className={`w-full h-auto object-contain ${asset.imageClass}`}
           priority={!isCompact}
           quality={90}
-          sizes={
-            isCompact
-              ? '(max-width: 640px) 340px, 380px'
-              : '(max-width: 640px) 300px, (max-width: 768px) 380px, (max-width: 1024px) 420px, 480px'
-          }
+          sizes={asset.sizes}
         />
 
-        {showFloatingCards ? (
+        {shouldShowFloatingCards ? (
           <>
             <div
               className={`absolute animate-subtle-float ${

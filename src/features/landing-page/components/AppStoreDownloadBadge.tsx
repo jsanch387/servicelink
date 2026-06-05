@@ -26,7 +26,7 @@ export function AppStoreDownloadBadge({
         alt="Download on the App Store"
         width={135}
         height={45}
-        className="h-10 w-auto sm:h-11 opacity-90 transition-opacity duration-200 group-hover:opacity-100"
+        className="h-12 w-auto object-contain sm:h-14 opacity-90 transition-opacity duration-200 group-hover:opacity-100"
         unoptimized
       />
     </a>

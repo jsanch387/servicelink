@@ -65,6 +65,47 @@ body {
   animation: subtle-float 3s ease-in-out infinite;
 }
 
+@keyframes hero-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-hero-float-in {
+  animation: hero-float-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hero-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+.animate-hero-live-pulse {
+  animation: hero-live-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes hero-connector-flow {
+  to {
+    stroke-dashoffset: -6.4;
+  }
+}
+
+.animate-hero-connector-flow {
+  animation: hero-connector-flow 10s linear infinite;
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0);
@@ -80,6 +121,20 @@ body {
 
 .animate-marquee-premium {
   animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+
+@keyframes marquee-ltr {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-marquee-premium-ltr {
+  animation: marquee-ltr 32s linear infinite;
   will-change: transform;
 }
 
@@ -102,6 +157,26 @@ body {
 
 .animate-strip-sheen {
   animation: strip-sheen 6.5s ease-in-out infinite;
+}
+
+@keyframes marketing-streak-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-marketing-streak-pulse {
+  animation: marketing-streak-pulse 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marketing-streak-pulse {
+    animation: none;
+  }
 }
 
 /* ServiceLink Logo Text Font - Plus Jakarta Sans (Modern, Clean SaaS Font) */
