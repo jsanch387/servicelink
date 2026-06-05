@@ -6,15 +6,18 @@ import {
   FREE_MAX_SERVICES,
   FREE_TIER_SERVICE_LIMIT_USER_MESSAGE,
 } from '@/features/pricing/types';
+import type { ServiceCategoryRow } from '@/features/services/components/categories/categoryTypes';
+import { groupServicesByCategory } from '@/features/services/components/categories/groupServicesByCategory';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
   ArrowsUpDownIcon,
+  FolderIcon,
   InformationCircleIcon,
   PlusIcon,
   RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { createServiceAction } from '../actions/createService';
 import { deleteServiceAction } from '../actions/deleteService';
 import { saveServicesOrderAction } from '../actions/saveServicesOrder';
@@ -33,6 +36,17 @@ export interface ServicesContentProps {
   addOnCounts?: Record<string, number>;
   /** When false, Free-plan service cap applies (derived with live list length). */
   hasProAccess?: boolean;
+  /** Available service categories (UI state until backend). */
+  categories?: ServiceCategoryRow[];
+  /** Map of service ID → category ID. */
+  serviceCategoryIds?: Record<string, string | null>;
+  /** Called when a service is assigned a category on create. */
+  onServiceCategoryAssign?: (
+    serviceId: string,
+    categoryId: string | null
+  ) => void;
+  /** Switch to the Categories tab. */
+  onManageCategories?: () => void;
 }
 
 /**
@@ -44,6 +58,10 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
   fetchError = null,
   addOnCounts,
   hasProAccess = true,
+  categories = [],
+  serviceCategoryIds = {},
+  onServiceCategoryAssign,
+  onManageCategories,
 }) => {
   const [services, setServices] = useState<ServiceRow[]>(initialServices);
   const [isReorderMode, setIsReorderMode] = useState(false);
@@ -62,6 +80,18 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
 
   const freeTierServiceCapReached =
     !hasProAccess && services.length >= FREE_MAX_SERVICES;
+
+  const hasCategories = categories.length > 0;
+
+  const serviceGroups = useMemo(
+    () =>
+      hasCategories && !isReorderMode
+        ? groupServicesByCategory(services, categories, serviceCategoryIds)
+        : [{ category: null, services }],
+    [services, categories, serviceCategoryIds, hasCategories, isReorderMode]
+  );
+
+  const flatServicesForReorder = services;
 
   const handleFinishSorting = useCallback(async () => {
     setOrderError(null);
@@ -148,6 +178,9 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         });
         setIsSavingEdit(false);
         if (result.success && result.data) {
+          if (data.category_id) {
+            onServiceCategoryAssign?.(result.data.id, data.category_id);
+          }
           setServices(prev => [...prev, result.data!]);
           setIsAddServiceOpen(false);
         } else {
@@ -155,7 +188,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         }
       }
     },
-    [hasProAccess, services]
+    [hasProAccess, services, onServiceCategoryAssign]
   );
 
   const handleAddService = useCallback(() => {
@@ -338,6 +371,26 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
               </div>
             ) : null}
 
+            {!hasCategories ? (
+              <button
+                type="button"
+                onClick={onManageCategories}
+                className="w-full mb-6 flex items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3.5 text-left hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] transition-all cursor-pointer touch-manipulation"
+              >
+                <div className="rounded-xl bg-white/5 p-2 shrink-0">
+                  <FolderIcon className="h-5 w-5 text-emerald-500/80" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white">
+                    Organize with categories
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Group services like Residential, Commercial, or Packages.
+                  </p>
+                </div>
+              </button>
+            ) : null}
+
             {toggleError && (
               <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
                 {toggleError}
@@ -358,40 +411,72 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
               </>
             )}
 
-            {/* Services list — draggable in reorder mode */}
-            <ul className="space-y-3 sm:space-y-4 list-none p-0 m-0">
-              {services.map((service, index) => (
-                <li
-                  key={`${service.id}-${index}`}
-                  onDragOver={isReorderMode ? handleDragOver : undefined}
-                  onDrop={
-                    isReorderMode
-                      ? (e: React.DragEvent) => handleDrop(e, index)
-                      : undefined
-                  }
-                  className={
-                    isReorderMode && draggedIndex === index
-                      ? 'opacity-60 scale-[0.98] transition-all'
-                      : ''
-                  }
-                >
-                  <ServiceManagementCard
-                    service={service}
-                    index={index}
-                    isReorderMode={isReorderMode}
-                    onToggleActive={handleToggleActive}
-                    onDelete={handleDelete}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onMoveUp={handleMoveUp}
-                    onMoveDown={handleMoveDown}
-                    totalCount={services.length}
-                    draggable={isReorderMode}
-                    addOnCount={addOnCounts?.[service.id]}
-                  />
-                </li>
-              ))}
-            </ul>
+            {/* Services list — flat when reordering, grouped by category otherwise */}
+            {isReorderMode ? (
+              <ul className="space-y-3 sm:space-y-4 list-none p-0 m-0">
+                {flatServicesForReorder.map((service, index) => (
+                  <li
+                    key={`${service.id}-${index}`}
+                    onDragOver={handleDragOver}
+                    onDrop={(e: React.DragEvent) => handleDrop(e, index)}
+                    className={
+                      draggedIndex === index
+                        ? 'opacity-60 scale-[0.98] transition-all'
+                        : ''
+                    }
+                  >
+                    <ServiceManagementCard
+                      service={service}
+                      index={index}
+                      isReorderMode={isReorderMode}
+                      onToggleActive={handleToggleActive}
+                      onDelete={handleDelete}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onMoveUp={handleMoveUp}
+                      onMoveDown={handleMoveDown}
+                      totalCount={services.length}
+                      draggable
+                      addOnCount={addOnCounts?.[service.id]}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="space-y-8">
+                {serviceGroups.map(group => (
+                  <section key={group.category?.id ?? 'uncategorized'}>
+                    {hasCategories && group.category ? (
+                      <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 px-0.5">
+                        {group.category.name}
+                      </h2>
+                    ) : hasCategories && !group.category ? (
+                      <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 px-0.5">
+                        Uncategorized
+                      </h2>
+                    ) : null}
+                    <ul className="space-y-3 sm:space-y-4 list-none p-0 m-0">
+                      {group.services.map(service => {
+                        const index = services.findIndex(s => s.id === service.id);
+                        return (
+                          <li key={service.id}>
+                            <ServiceManagementCard
+                              service={service}
+                              index={index}
+                              isReorderMode={false}
+                              onToggleActive={handleToggleActive}
+                              onDelete={handleDelete}
+                              totalCount={services.length}
+                              addOnCount={addOnCounts?.[service.id]}
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -399,6 +484,7 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
           service={null}
           showAddForm={isAddServiceOpen}
           saveError={saveError}
+          categories={categories}
           onClose={handleCloseEdit}
           onSave={handleSaveEdit}
           isSaving={isSavingEdit}

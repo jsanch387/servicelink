@@ -77,6 +77,7 @@ export default async function ServicesPage() {
 
   return (
     <ServicesWithAddOnsView
+      businessId={businessProfile.id}
       initialServices={services}
       fetchError={servicesResult.success ? null : servicesResult.error}
       addOnCounts={addOnCounts}

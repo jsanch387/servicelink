@@ -5,9 +5,11 @@ import {
   Input,
   Modal,
   PriceInput,
+  Select,
   TextArea,
   TimeSelect,
 } from '@/components/shared';
+import type { ServiceCategoryRow } from '@/features/services/components/categories/categoryTypes';
 import {
   SERVICE_DESCRIPTION_MAX_LENGTH,
   insertServiceDescriptionBullet,
@@ -27,6 +29,10 @@ export interface EditServiceModalProps {
   showAddForm?: boolean;
   /** Server/save error to show above the form (e.g. service unavailable). */
   saveError?: string | null;
+  /** Available categories for assignment (add flow). */
+  categories?: ServiceCategoryRow[];
+  /** Initial category when editing or adding. */
+  initialCategoryId?: string | null;
   onClose: () => void;
   /** For edit: serviceId is set. For add: serviceId is undefined. */
 
@@ -39,6 +45,7 @@ export interface EditServiceFormData {
   description: string;
   price_cents: number | null;
   duration_minutes: number | null;
+  category_id: string | null;
 }
 
 function serviceToForm(service: ServiceRow): {
@@ -63,6 +70,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   service,
   showAddForm = false,
   saveError = null,
+  categories = [],
+  initialCategoryId = null,
   onClose,
   onSave,
   isSaving = false,
@@ -72,6 +81,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [durationHHmm, setDurationHHmm] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const isAddMode = showAddForm && !service;
@@ -84,15 +94,25 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setDescription(form.description);
       setPrice(form.price);
       setDurationHHmm(form.durationHHmm);
+      setCategoryId(initialCategoryId ?? '');
       setError(null);
     } else if (showAddForm) {
       setName('');
       setDescription('');
       setPrice('');
       setDurationHHmm('');
+      setCategoryId('');
       setError(null);
     }
-  }, [service, showAddForm]);
+  }, [service, showAddForm, initialCategoryId]);
+
+  const categoryOptions = [
+    { value: '__none__', label: 'No category' },
+    ...categories.map(c => ({
+      value: c.id,
+      label: c.name,
+    })),
+  ];
 
   const handleInsertDescriptionBullet = useCallback(() => {
     const el = descriptionTextareaRef.current;
@@ -143,6 +163,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         description: descriptionTrim,
         price_cents: Math.round(priceNum * 100),
         duration_minutes: durationResult.durationMinutes,
+        category_id: categoryId || null,
       };
       if (service) {
         onSave(service.id, data);
@@ -150,7 +171,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         onSave(undefined, data);
       }
     },
-    [service, name, description, price, durationHHmm, onSave]
+    [service, name, description, price, durationHHmm, categoryId, onSave]
   );
 
   if (!isOpen) return null;
@@ -184,6 +205,18 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
           onChange={setName}
           required
         />
+
+        {isAddMode && categories.length > 0 ? (
+          <Select
+            label="Category (optional)"
+            value={categoryId || '__none__'}
+            onChange={value =>
+              setCategoryId(value === '__none__' ? '' : value)
+            }
+            options={categoryOptions}
+            placeholder="No category"
+          />
+        ) : null}
 
         <TextArea
           ref={descriptionTextareaRef}

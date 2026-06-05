@@ -64,6 +64,8 @@ export interface ServiceManagementCardProps {
   draggable?: boolean;
   /** Number of add-ons assigned to this service (quick glance). */
   addOnCount?: number;
+  /** Category label shown on the card when not grouped by section. */
+  categoryName?: string | null;
 }
 
 export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
@@ -79,6 +81,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   totalCount = 0,
   draggable = false,
   addOnCount,
+  categoryName,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
@@ -132,9 +135,16 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
         <div className="flex-1 min-w-0">
           {/* Header: name + price — same as public ServiceCard */}
           <div className="flex justify-between items-start gap-2 mb-2 min-w-0">
-            <h3 className="text-lg font-black text-white tracking-tight flex-1 min-w-0 truncate">
-              {service.name}
-            </h3>
+            <div className="flex-1 min-w-0">
+              {categoryName ? (
+                <span className="inline-block mb-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/90">
+                  {categoryName}
+                </span>
+              ) : null}
+              <h3 className="text-lg font-black text-white tracking-tight truncate">
+                {service.name}
+              </h3>
+            </div>
             <div className="text-right flex-shrink-0">
               {service.price_options_enabled === true &&
               service.price_cents != null &&

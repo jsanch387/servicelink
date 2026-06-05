@@ -42,6 +42,8 @@ import {
   SERVICE_DESCRIPTION_MAX_LENGTH,
   insertServiceDescriptionBullet,
 } from '@/features/business-profile/utils/serviceDescriptionDisplay';
+import { ServiceCategoryPickerSection } from './categories/ServiceCategoryPickerSection';
+import { useServiceCategoriesUiState } from './categories/useServiceCategoriesUiState';
 import { EditAddOnModal } from './add-ons/EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
 
@@ -69,6 +71,7 @@ function serviceToForm(service: ServiceRow): {
 }
 
 export interface ServiceEditScreenProps {
+  businessId: string;
   service: ServiceRow;
   /** Service price options rows (read-only hydration for now). */
   initialPriceOptions?: ServicePriceOptionRow[];
@@ -87,6 +90,7 @@ export interface ServiceEditScreenProps {
  * Service details form + add-ons selection; Save updates service and assignments.
  */
 export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
+  businessId,
   service,
   initialPriceOptions = [],
   initialAddOns = [],
@@ -95,6 +99,15 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   canUsePriceOptions = false,
 }) => {
   const router = useRouter();
+  const {
+    categories,
+    serviceCategoryIds,
+    assignServiceCategory,
+    hydrated: categoriesHydrated,
+  } = useServiceCategoriesUiState(businessId);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
+  );
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -138,6 +151,19 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   useEffect(() => {
     setAddOnsPool(initialAddOns);
   }, [initialAddOns]);
+
+  useEffect(() => {
+    if (!categoriesHydrated) return;
+    setSelectedCategoryId(serviceCategoryIds[service.id] ?? null);
+  }, [categoriesHydrated, service.id, serviceCategoryIds]);
+
+  const handleCategorySelect = useCallback(
+    (categoryId: string | null) => {
+      setSelectedCategoryId(categoryId);
+      assignServiceCategory(service.id, categoryId);
+    },
+    [assignServiceCategory, service.id]
+  );
 
   const handleAddOnToggle = useCallback((addOnId: string) => {
     setSelectedAddOnIds(prev => {
@@ -455,6 +481,12 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
               </form>
             )}
           </section>
+
+          <ServiceCategoryPickerSection
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            onSelect={handleCategorySelect}
+          />
 
           <ServicePriceOptionsSection
             service={service}

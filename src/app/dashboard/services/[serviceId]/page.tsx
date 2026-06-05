@@ -79,6 +79,7 @@ export default async function ServiceEditPage({
 
   return (
     <ServiceEditScreen
+      businessId={businessProfile.id}
       service={service}
       initialAddOns={addOns}
       initialSelectedAddOnIds={initialSelectedAddOnIds}
