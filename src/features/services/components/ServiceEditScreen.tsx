@@ -19,13 +19,14 @@ import type {
   ServicePriceOptionSaveInput,
   ServiceRow,
 } from '@/features/services/types/services';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import {
   parseServiceEditDurationForSave,
   serviceEditDurationPickerValue,
 } from '@/features/services/utils/serviceEditForm';
 import {
-  ArrowLeftIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
   ChevronUpIcon,
   ListBulletIcon,
   PlusIcon,
@@ -43,7 +44,6 @@ import {
   insertServiceDescriptionBullet,
 } from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import { ServiceCategoryPickerSection } from './categories/ServiceCategoryPickerSection';
-import { useServiceCategoriesUiState } from './categories/useServiceCategoriesUiState';
 import { EditAddOnModal } from './add-ons/EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
 
@@ -71,8 +71,9 @@ function serviceToForm(service: ServiceRow): {
 }
 
 export interface ServiceEditScreenProps {
-  businessId: string;
   service: ServiceRow;
+  /** Service categories from database. */
+  initialCategories?: ServiceCategoryRow[];
   /** Service price options rows (read-only hydration for now). */
   initialPriceOptions?: ServicePriceOptionRow[];
   /** Add-ons from the business pool (fetched on the page). */
@@ -90,8 +91,8 @@ export interface ServiceEditScreenProps {
  * Service details form + add-ons selection; Save updates service and assignments.
  */
 export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
-  businessId,
   service,
+  initialCategories = [],
   initialPriceOptions = [],
   initialAddOns = [],
   initialSelectedAddOnIds = [],
@@ -99,14 +100,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   canUsePriceOptions = false,
 }) => {
   const router = useRouter();
-  const {
-    categories,
-    serviceCategoryIds,
-    assignServiceCategory,
-    hydrated: categoriesHydrated,
-  } = useServiceCategoriesUiState(businessId);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null
+    () => service.category_id ?? null
   );
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [name, setName] = useState('');
@@ -142,6 +137,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     setPrice(form.price);
     setDurationHHmm(form.durationHHmm);
     setPriceOptionsEnabled(service.price_options_enabled === true);
+    setSelectedCategoryId(service.category_id ?? null);
   }, [service]);
 
   useEffect(() => {
@@ -152,18 +148,9 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     setAddOnsPool(initialAddOns);
   }, [initialAddOns]);
 
-  useEffect(() => {
-    if (!categoriesHydrated) return;
-    setSelectedCategoryId(serviceCategoryIds[service.id] ?? null);
-  }, [categoriesHydrated, service.id, serviceCategoryIds]);
-
-  const handleCategorySelect = useCallback(
-    (categoryId: string | null) => {
-      setSelectedCategoryId(categoryId);
-      assignServiceCategory(service.id, categoryId);
-    },
-    [assignServiceCategory, service.id]
-  );
+  const handleCategorySelect = useCallback((categoryId: string | null) => {
+    setSelectedCategoryId(categoryId);
+  }, []);
 
   const handleAddOnToggle = useCallback((addOnId: string) => {
     setSelectedAddOnIds(prev => {
@@ -308,6 +295,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
         description: descriptionTrim,
         price_cents: priceCents,
         duration_minutes: durationMinutes,
+        category_id: selectedCategoryId,
         // Users without access can still edit service details, but cannot change this setting.
         price_options_enabled: canUsePriceOptions
           ? priceOptionsEnabled
@@ -352,6 +340,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     durationHHmm,
     selectedAddOnIds,
     addOnsPool,
+    selectedCategoryId,
     priceOptionsEnabled,
     priceOptionsDraft,
     service.id,
@@ -370,10 +359,10 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
         <Link
           href={backHref}
           className="inline-flex items-center gap-2 min-h-[44px] py-2 -ml-2 pl-2 pr-2 text-gray-400 hover:text-white active:text-white transition-colors mb-4 touch-manipulation"
-          aria-label="Back to services"
+          aria-label="Services"
         >
-          <ArrowLeftIcon className="h-5 w-5 flex-shrink-0" />
-          <span className="text-sm font-medium">Back to services</span>
+          <ChevronLeftIcon className="h-5 w-5 flex-shrink-0" />
+          <span className="text-sm font-medium">Services</span>
         </Link>
         <div className="max-w-2xl mx-auto w-full min-w-0 pt-0 sm:pt-6">
           <h1 className="text-xl font-bold text-white mb-4 sm:mb-6">
@@ -483,7 +472,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
           </section>
 
           <ServiceCategoryPickerSection
-            categories={categories}
+            categories={initialCategories}
             selectedCategoryId={selectedCategoryId}
             onSelect={handleCategorySelect}
           />
@@ -642,7 +631,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
             disabled={isSaving}
             className="w-full sm:flex-1"
           >
-            {isSaving ? 'Saving…' : 'Save changes'}
+            {isSaving ? 'Saving' : 'Save changes'}
           </Button>
         </div>
       </div>

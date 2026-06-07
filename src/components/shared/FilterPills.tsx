@@ -26,7 +26,7 @@ export function FilterPills<T extends string = string>({
 }: FilterPillsProps<T>) {
   return (
     <div
-      className={`-mx-1 flex gap-1 overflow-x-auto pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible ${className}`}
+      className={`-mx-1 flex gap-1 overflow-x-auto scrollbar-hide pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible ${className}`}
       role="tablist"
       aria-label={ariaLabel}
     >

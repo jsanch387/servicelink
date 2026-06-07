@@ -6,6 +6,9 @@
  */
 
 import { resolveMaxPortfolioImagesForBusiness } from '@/features/business-profile/server/resolveMaxPortfolioImagesForBusiness';
+import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
+import type { ServiceRow } from '@/features/services/types/services';
 import { MediaService } from '@/features/media';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from '@/libs/supabase';
@@ -42,17 +45,29 @@ export class BusinessProfileApi {
         };
       }
 
-      // Get services (order by sort_order then created_at for consistent display)
-      const { data: services, error: servicesError } = await supabase
-        .from('business_services')
-        .select('*')
-        .eq('business_id', businessId)
-        .order('sort_order', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: true });
+      // Get services and categories (bucket-scoped sort applied in app)
+      const [servicesResult, categoriesResult] = await Promise.all([
+        supabase
+          .from('business_services')
+          .select('*')
+          .eq('business_id', businessId)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('service_categories')
+          .select('*')
+          .eq('business_id', businessId)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true }),
+      ]);
 
-      if (servicesError) {
+      if (servicesResult.error) {
         // Error fetching services
       }
+
+      const services = sortServicesForDisplay(
+        (servicesResult.data ?? []) as ServiceRow[],
+        (categoriesResult.data ?? []) as ServiceCategoryRow[]
+      );
 
       // Get images
       const { data: images, error: imagesError } = await supabase

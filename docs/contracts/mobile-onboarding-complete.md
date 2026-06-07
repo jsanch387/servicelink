@@ -10,21 +10,21 @@ Mobile onboarding step 5 uses **only** this endpoint (free tier). Pro trial / St
 
 ## Endpoint
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/api/onboarding-v2/complete` |
+|                |                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| **Method**     | `POST`                                                                                                  |
+| **Path**       | `/api/onboarding-v2/complete`                                                                           |
 | **Production** | `https://myservicelink.app/api/onboarding-v2/complete` (or your deployed `NEXT_PUBLIC_SITE_URL` + path) |
-| **Local** | `http://localhost:3000/api/onboarding-v2/complete` |
+| **Local**      | `http://localhost:3000/api/onboarding-v2/complete`                                                      |
 
 ---
 
 ## Authentication
 
-| Header | Value | Required |
-|--------|-------|----------|
-| `Authorization` | `Bearer <Supabase access_token>` | **Yes** (mobile) |
-| `Content-Type` | `application/json` | Optional (omit if no body) |
+| Header          | Value                            | Required                   |
+| --------------- | -------------------------------- | -------------------------- |
+| `Authorization` | `Bearer <Supabase access_token>` | **Yes** (mobile)           |
+| `Content-Type`  | `application/json`               | Optional (omit if no body) |
 
 Web uses Supabase session cookies instead of Bearer; mobile **must** send Bearer.
 
@@ -34,8 +34,8 @@ Use a **fresh** access token from `supabase.auth.getSession()` (refresh if expir
 
 ## Optional tracing header (recommended)
 
-| Header | Value |
-|--------|-------|
+| Header                               | Value                                        |
+| ------------------------------------ | -------------------------------------------- |
 | `X-Request-ID` or `X-Correlation-ID` | UUID from the app (e.g. `UUID().uuidString`) |
 
 If set, the same id is echoed in the JSON response as `request_id` and appears in server logs — use it when contacting support.
@@ -67,8 +67,8 @@ Call **once** with:
 }
 ```
 
-| Field | Type | Default | Notes |
-|-------|------|---------|-------|
+| Field                               | Type      | Default | Notes                                                                                                                                   |
+| ----------------------------------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `sendWelcomeEvenIfAlreadyCompleted` | `boolean` | `false` | When `true`, welcome email is still attempted if status was already `completed`. **Do not** call repeatedly — risk of duplicate emails. |
 
 ---
@@ -106,12 +106,12 @@ Call **once** with:
 
 **Skipped — not an error for onboarding:**
 
-| `welcome_email` | Meaning | Mobile action |
-|-----------------|---------|----------------|
+| `welcome_email`                                                 | Meaning                                                  | Mobile action                                                                                             |
+| --------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `{ "attempted": false, "reason": "already_completed_no_flag" }` | Profile was already `completed` and flag was not `true`. | Retry once with `sendWelcomeEvenIfAlreadyCompleted: true`, or fix flow to call API before local complete. |
-| `{ "attempted": false, "reason": "no_owner_email" }` | Auth user has no email. | Rare; user must have email at sign-up. |
-| `{ "attempted": false, "reason": "no_business_profile" }` | No `business_profiles` row for this user. | Finish steps 1–4 (business + slug) first. |
-| `{ "attempted": false, "reason": "no_business_slug" }` | Business exists but `business_slug` empty. | Complete step 4 (claim link) before step 5. |
+| `{ "attempted": false, "reason": "no_owner_email" }`            | Auth user has no email.                                  | Rare; user must have email at sign-up.                                                                    |
+| `{ "attempted": false, "reason": "no_business_profile" }`       | No `business_profiles` row for this user.                | Finish steps 1–4 (business + slug) first.                                                                 |
+| `{ "attempted": false, "reason": "no_business_slug" }`          | Business exists but `business_slug` empty.               | Complete step 4 (claim link) before step 5.                                                               |
 
 **Treat `success: true` as “onboarding complete on server.”** Email is best-effort; log `welcome_email` in non-prod or support builds.
 
@@ -119,11 +119,11 @@ Call **once** with:
 
 ## Error responses
 
-| HTTP | `success` | Typical `error` | Mobile action |
-|------|-----------|-----------------|---------------|
-| `401` | `false` | `Authentication required` / `Invalid or expired session` | Refresh session; re-login |
-| `400` | `false` | Supabase update message | Show error; do not advance UI |
-| `500` | `false` | `Something went wrong` | Retry with backoff; include `request_id` in support |
+| HTTP  | `success` | Typical `error`                                          | Mobile action                                       |
+| ----- | --------- | -------------------------------------------------------- | --------------------------------------------------- |
+| `401` | `false`   | `Authentication required` / `Invalid or expired session` | Refresh session; re-login                           |
+| `400` | `false`   | Supabase update message                                  | Show error; do not advance UI                       |
+| `500` | `false`   | `Something went wrong`                                   | Retry with backoff; include `request_id` in support |
 
 All error bodies include `request_id` when the handler assigned one:
 
@@ -204,16 +204,16 @@ curl -sS -X POST 'https://myservicelink.app/api/onboarding-v2/complete' \
 
 Search for **`[onboarding:activate]`**. Simple transactional lines only (no user ids or emails).
 
-| Line | When |
-|------|------|
-| `complete request started` | Request accepted |
-| `welcome email sent` | Resend accepted the welcome-live send |
-| `welcome email skipped (<reason>)` | No send — see reason code in parentheses |
-| `complete succeeded` | Onboarding marked complete |
-| `auth failed` | 401 |
-| `complete failed` | Could not update profile |
-| `welcome email failed` | Resend error — see `welcome_email` in API response |
-| `unexpected error` | 500 |
+| Line                               | When                                               |
+| ---------------------------------- | -------------------------------------------------- |
+| `complete request started`         | Request accepted                                   |
+| `welcome email sent`               | Resend accepted the welcome-live send              |
+| `welcome email skipped (<reason>)` | No send — see reason code in parentheses           |
+| `complete succeeded`               | Onboarding marked complete                         |
+| `auth failed`                      | 401                                                |
+| `complete failed`                  | Could not update profile                           |
+| `welcome email failed`             | Resend error — see `welcome_email` in API response |
+| `unexpected error`                 | 500                                                |
 
 Use `request_id` from the JSON response (or `X-Request-ID`) to match a single activation in your log host’s request grouping, if available.
 
@@ -221,14 +221,14 @@ Use `request_id` from the JSON response (or `X-Request-ID`) to match a single ac
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| `401` | Expired token or wrong project URL/anon key | Refresh session; verify Supabase env matches API host |
-| `welcome_email.reason = already_completed_no_flag` | App set `completed` in Supabase before API without flag | Call API with `sendWelcomeEvenIfAlreadyCompleted: true` once, or stop pre-writing status |
-| `welcome_email.reason = no_business_slug` | Step 4 slug not saved | Persist slug via step 4 API before step 5 |
-| `welcome_email.sent = false`, `error` mentions Resend | `RESEND_API_KEY` / domain | Fix server env (ops); onboarding still complete |
-| No email, `welcome_email.sent = true` in response | Deliverability / spam | Check inbox + spam; verify Resend dashboard |
-| Duplicate emails | Multiple calls with `sendWelcomeEvenIfAlreadyCompleted: true` | Call once on step 5 |
+| Symptom                                               | Likely cause                                                  | Fix                                                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `401`                                                 | Expired token or wrong project URL/anon key                   | Refresh session; verify Supabase env matches API host                                    |
+| `welcome_email.reason = already_completed_no_flag`    | App set `completed` in Supabase before API without flag       | Call API with `sendWelcomeEvenIfAlreadyCompleted: true` once, or stop pre-writing status |
+| `welcome_email.reason = no_business_slug`             | Step 4 slug not saved                                         | Persist slug via step 4 API before step 5                                                |
+| `welcome_email.sent = false`, `error` mentions Resend | `RESEND_API_KEY` / domain                                     | Fix server env (ops); onboarding still complete                                          |
+| No email, `welcome_email.sent = true` in response     | Deliverability / spam                                         | Check inbox + spam; verify Resend dashboard                                              |
+| Duplicate emails                                      | Multiple calls with `sendWelcomeEvenIfAlreadyCompleted: true` | Call once on step 5                                                                      |
 
 ---
 
@@ -246,6 +246,6 @@ Before calling this endpoint:
 
 ## Changelog
 
-| Date | Note |
-|------|------|
+| Date    | Note                                                                                                                                     |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-05 | Bearer auth, `sendWelcomeEvenIfAlreadyCompleted`, `welcome_email` + `request_id` in response, `[onboarding:activate]` transactional logs |

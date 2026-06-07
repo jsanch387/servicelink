@@ -12,10 +12,10 @@ Use this when the **signed-in business owner** books an appointment **on behalf 
 
 ## Endpoint
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/api/public/bookings` |
+|                     |                                           |
+| ------------------- | ----------------------------------------- |
+| **Method**          | `POST`                                    |
+| **Path**            | `/api/public/bookings`                    |
 | **Example (local)** | `https://<your-host>/api/public/bookings` |
 
 Use your production API origin in release builds.
@@ -24,10 +24,10 @@ Use your production API origin in release builds.
 
 ## Authentication (required for owner flow)
 
-| Header | Value |
-|--------|--------|
+| Header          | Value                                    |
+| --------------- | ---------------------------------------- |
 | `Authorization` | `Bearer <Supabase session access_token>` |
-| `Content-Type` | `application/json` |
+| `Content-Type`  | `application/json`                       |
 
 The access token is the same JWT the Expo app already uses for other authenticated API routes (e.g. Stripe, dashboard).
 
@@ -41,38 +41,38 @@ Set **`ownerManualBooking`** to **`true`** so the route treats this as an owner 
 
 ### Top-level fields
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| `businessSlug` | string | Yes | Must match the business’s public slug (used with `businessId` for consistency checks). |
-| `businessId` | string | Yes | UUID of `business_profiles.id` for this business. Must equal the slug’s business **and** the authenticated owner’s business. |
-| `serviceName` | string | Yes | Base service name. |
-| `serviceId` | string | No | Optional service id if you have it. |
-| `servicePriceOptionLabel` | string | No | If the owner picked a multi-price option, send the label; server stores `"{serviceName} — {label}"`. |
-| `servicePriceCents` | number | No | Omit or `0` when free; used for totals / email / `booking_payments`. |
-| `selectedAddOns` | array | No | Each item: `{ "id", "name", "priceCents", "durationMinutes"? }`. |
-| `durationMinutes` | number | Yes | Total appointment length (service + add-on time as computed in UI). Integer ≥ 1. |
-| `scheduledDate` | string | Yes | `YYYY-MM-DD`. |
-| `startTime` | string | Yes | `H:mm` or `HH:mm` (24h), e.g. `9:30` or `09:30`. |
-| `customer` | object | Yes | See **Customer object** below. |
-| `paymentMethodSelected` | string | No | Owner web flow does **not** collect card on this POST; send **`"none"`** (same as dashboard owner confirm). Omit is also treated as unset downstream. |
-| `ownerManualBooking` | boolean | Yes | Must be **`true`** for this contract. |
+| Field                     | Type    | Required | Notes                                                                                                                                                 |
+| ------------------------- | ------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `businessSlug`            | string  | Yes      | Must match the business’s public slug (used with `businessId` for consistency checks).                                                                |
+| `businessId`              | string  | Yes      | UUID of `business_profiles.id` for this business. Must equal the slug’s business **and** the authenticated owner’s business.                          |
+| `serviceName`             | string  | Yes      | Base service name.                                                                                                                                    |
+| `serviceId`               | string  | No       | Optional service id if you have it.                                                                                                                   |
+| `servicePriceOptionLabel` | string  | No       | If the owner picked a multi-price option, send the label; server stores `"{serviceName} — {label}"`.                                                  |
+| `servicePriceCents`       | number  | No       | Omit or `0` when free; used for totals / email / `booking_payments`.                                                                                  |
+| `selectedAddOns`          | array   | No       | Each item: `{ "id", "name", "priceCents", "durationMinutes"? }`.                                                                                      |
+| `durationMinutes`         | number  | Yes      | Total appointment length (service + add-on time as computed in UI). Integer ≥ 1.                                                                      |
+| `scheduledDate`           | string  | Yes      | `YYYY-MM-DD`.                                                                                                                                         |
+| `startTime`               | string  | Yes      | `H:mm` or `HH:mm` (24h), e.g. `9:30` or `09:30`.                                                                                                      |
+| `customer`                | object  | Yes      | See **Customer object** below.                                                                                                                        |
+| `paymentMethodSelected`   | string  | No       | Owner web flow does **not** collect card on this POST; send **`"none"`** (same as dashboard owner confirm). Omit is also treated as unset downstream. |
+| `ownerManualBooking`      | boolean | Yes      | Must be **`true`** for this contract.                                                                                                                 |
 
 ### Customer object (`customer`)
 
 All keys are **strings** in JSON (server coerces missing keys to empty string, then validates).
 
-| Field | Required | Notes |
-|-------|----------|--------|
-| `fullName` | Yes | Non-empty after trim; max 120 chars. |
-| `email` | No | If empty, no customer confirmation email is sent. If non-empty, must be valid format; max 254 chars. |
-| `phone` | Yes | Non-empty after trim. |
-| `streetAddress` | Yes | Non-empty; max 200 chars. |
-| `unitApt` | No | Max 50 chars. |
-| `city` | Yes | Max 100 chars. |
-| `state` | Yes | Stored uppercased, 2-letter region code. |
-| `zip` | Yes | US: **5** digits or **9** digits (ZIP+4, no hyphen). |
+| Field                                        | Required    | Notes                                                                                                              |
+| -------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| `fullName`                                   | Yes         | Non-empty after trim; max 120 chars.                                                                               |
+| `email`                                      | No          | If empty, no customer confirmation email is sent. If non-empty, must be valid format; max 254 chars.               |
+| `phone`                                      | Yes         | Non-empty after trim.                                                                                              |
+| `streetAddress`                              | Yes         | Non-empty; max 200 chars.                                                                                          |
+| `unitApt`                                    | No          | Max 50 chars.                                                                                                      |
+| `city`                                       | Yes         | Max 100 chars.                                                                                                     |
+| `state`                                      | Yes         | Stored uppercased, 2-letter region code.                                                                           |
+| `zip`                                        | Yes         | US: **5** digits or **9** digits (ZIP+4, no hyphen).                                                               |
 | `vehicleYear`, `vehicleMake`, `vehicleModel` | Conditional | If **any** of the three is non-empty, **all three** are required; year must be 4 digits (1900 … current year + 1). |
-| `notes` | No | Max length matches `CUSTOMER_NOTE_MAX_LENGTH` (see `bookingCustomerFieldLimits.ts`). |
+| `notes`                                      | No          | Max length matches `CUSTOMER_NOTE_MAX_LENGTH` (see `bookingCustomerFieldLimits.ts`).                               |
 
 ### Example (minimal owner booking)
 
@@ -141,14 +141,14 @@ Body shape is generally:
 }
 ```
 
-| HTTP | Typical `error` / cause |
-|------|-------------------------|
-| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch). |
-| `401` | Missing/invalid Bearer token or no session (owner mode). |
+| HTTP  | Typical `error` / cause                                                                                                          |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch).                                |
+| `401` | Missing/invalid Bearer token or no session (owner mode).                                                                         |
 | `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`). |
-| `404` | Unknown slug or business not publicly visible. |
-| `409` | Slot overlaps owner **time off** for that business. |
-| `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back). |
+| `404` | Unknown slug or business not publicly visible.                                                                                   |
+| `409` | Slot overlaps owner **time off** for that business.                                                                              |
+| `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back).                                         |
 
 ---
 
@@ -166,9 +166,9 @@ Owner manual booking in the **web** app does not open Stripe Checkout on confirm
 
 ## Related code
 
-| Piece | Location |
-|-------|-----------|
-| Route handler | `src/app/api/public/bookings/route.ts` |
-| Auth helper | `src/libs/api/getAuthenticatedUser.ts` |
-| Owner business resolution | `src/server/resolveCurrentBusinessId.ts` |
-| Customer email | `sendAvailabilityBookingCustomerConfirmationEmail` (availability booking template) |
+| Piece                     | Location                                                                           |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| Route handler             | `src/app/api/public/bookings/route.ts`                                             |
+| Auth helper               | `src/libs/api/getAuthenticatedUser.ts`                                             |
+| Owner business resolution | `src/server/resolveCurrentBusinessId.ts`                                           |
+| Customer email            | `sendAvailabilityBookingCustomerConfirmationEmail` (availability booking template) |

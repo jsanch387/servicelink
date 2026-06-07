@@ -54,6 +54,7 @@ export async function createService(
       description: payload.description.trim() || null,
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes,
+      category_id: payload.category_id ?? null,
       is_active: true,
     };
 

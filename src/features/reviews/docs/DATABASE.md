@@ -10,15 +10,15 @@ Human-readable schema and behavior for **`review_invites`** and **`reviews`**. U
 
 ## Product rules (v1)
 
-| Rule | Enforcement |
-|------|-------------|
+| Rule                                              | Enforcement                                                                                                           |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | **One review per customer** on the public profile | Partial unique `(business_id, customer_id)` on `reviews` when `customer_id` is set; app skips invite if review exists |
-| Invite tied to a **completed booking** | `review_invites.booking_id` unique (one invite row per visit) |
-| **No repeat invite emails** while one is pending | Partial unique pending invite per `(business_id, customer_id)` |
-| No owner-shareable review URL | Only `link_token_hash` in DB |
-| Customer submits via email link only | `/review/{token}` + service role |
-| Owner cannot edit customer text (v1) | Restrict in API (RLS allows `UPDATE` on owner fields only) |
-| Hide from public, keep in inbox | `reviews.is_hidden = true` |
+| Invite tied to a **completed booking**            | `review_invites.booking_id` unique (one invite row per visit)                                                         |
+| **No repeat invite emails** while one is pending  | Partial unique pending invite per `(business_id, customer_id)`                                                        |
+| No owner-shareable review URL                     | Only `link_token_hash` in DB                                                                                          |
+| Customer submits via email link only              | `/review/{token}` + service role                                                                                      |
+| Owner cannot edit customer text (v1)              | Restrict in API (RLS allows `UPDATE` on owner fields only)                                                            |
+| Hide from public, keep in inbox                   | `reviews.is_hidden = true`                                                                                            |
 
 **App logic (on booking complete):** create/send invite only if:
 
@@ -36,10 +36,10 @@ Repeat customers who already reviewed are skipped silently (no second email, no 
 
 ## Tables at a glance
 
-| Table | Role | Created by |
-|-------|------|------------|
+| Table            | Role                                            | Created by                                     |
+| ---------------- | ----------------------------------------------- | ---------------------------------------------- |
 | `review_invites` | One-time magic link per booking; email + expiry | Service role when booking marked **completed** |
-| `reviews` | Stars + comment + optional owner reply | Service role when customer **submits** form |
+| `reviews`        | Stars + comment + optional owner reply          | Service role when customer **submits** form    |
 
 Both tables scope to **`business_profiles`** via `business_id` and tie to **`bookings`**.
 
@@ -121,12 +121,12 @@ erDiagram
 
 **Terminal invite states**
 
-| `review_invites.status` | Meaning |
-|-------------------------|---------|
-| `pending` | Link valid (if not expired); no review row yet |
-| `submitted` | Customer submitted; `submitted_at` set; `reviews` row exists |
-| `expired` | Past `expires_at` or set by job/app |
-| `cancelled` | Voided without submit (rare; app-defined) |
+| `review_invites.status` | Meaning                                                      |
+| ----------------------- | ------------------------------------------------------------ |
+| `pending`               | Link valid (if not expired); no review row yet               |
+| `submitted`             | Customer submitted; `submitted_at` set; `reviews` row exists |
+| `expired`               | Past `expires_at` or set by job/app                          |
+| `cancelled`             | Voided without submit (rare; app-defined)                    |
 
 ---
 
@@ -134,11 +134,11 @@ erDiagram
 
 Same pattern as **`quote_public_links`** and **`maintenance_enrollments`**:
 
-| Layer | Value |
-|-------|--------|
-| Email / SMS URL | Raw token in path: `/review/{rawToken}` |
-| Database | `link_token_hash` only (64-char lowercase hex) |
-| Resolver | `resolveQuoteTokenHash(raw)` in `src/features/quotes/shared/utils/resolveQuoteTokenHash.ts` |
+| Layer           | Value                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Email / SMS URL | Raw token in path: `/review/{rawToken}`                                                     |
+| Database        | `link_token_hash` only (64-char lowercase hex)                                              |
+| Resolver        | `resolveQuoteTokenHash(raw)` in `src/features/quotes/shared/utils/resolveQuoteTokenHash.ts` |
 
 **Do not** store raw tokens in `review_invites`. **Do not** log raw tokens in production.
 
@@ -146,10 +146,10 @@ Same pattern as **`quote_public_links`** and **`maintenance_enrollments`**:
 
 ## Row Level Security (summary)
 
-| Table | `authenticated` (owner) | `anon` | `service_role` |
-|-------|-------------------------|--------|----------------|
-| `review_invites` | SELECT | — | ALL (create invite, token lookup, mark submitted) |
-| `reviews` | SELECT, UPDATE | — | ALL (insert on submit, public profile read) |
+| Table            | `authenticated` (owner) | `anon` | `service_role`                                    |
+| ---------------- | ----------------------- | ------ | ------------------------------------------------- |
+| `review_invites` | SELECT                  | —      | ALL (create invite, token lookup, mark submitted) |
+| `reviews`        | SELECT, UPDATE          | —      | ALL (insert on submit, public profile read)       |
 
 Owner scope for both:
 
@@ -169,12 +169,12 @@ exists (
 
 ## Triggers & integrity
 
-| Trigger | Table | Purpose |
-|---------|-------|---------|
-| `trg_review_invites_booking_business` | `review_invites` | `booking_id` must belong to `business_id` |
-| `trg_review_invites_set_updated_at` | `review_invites` | `updated_at = now()` on update |
-| `trg_reviews_enforce_relationships` | `reviews` | `review_invite_id` matches `business_id` + `booking_id`; booking matches business |
-| `trg_reviews_set_updated_at` | `reviews` | `updated_at = now()` on update |
+| Trigger                               | Table            | Purpose                                                                           |
+| ------------------------------------- | ---------------- | --------------------------------------------------------------------------------- |
+| `trg_review_invites_booking_business` | `review_invites` | `booking_id` must belong to `business_id`                                         |
+| `trg_review_invites_set_updated_at`   | `review_invites` | `updated_at = now()` on update                                                    |
+| `trg_reviews_enforce_relationships`   | `reviews`        | `review_invite_id` matches `business_id` + `booking_id`; booking matches business |
+| `trg_reviews_set_updated_at`          | `reviews`        | `updated_at = now()` on update                                                    |
 
 Requires existing function **`public.set_updated_at()`** (used by quotes).
 
@@ -184,23 +184,23 @@ Requires existing function **`public.set_updated_at()`** (used by quotes).
 
 **`review_invites`**
 
-| Index | Use |
-|-------|-----|
-| `review_invites_booking_id_key` (unique) | One invite per booking |
-| `review_invites_link_token_hash_key` (unique) | Public token lookup |
-| `review_invites_business_id_created_at_idx` | Owner/debug lists |
-| `review_invites_expires_at_idx` (partial, `pending`) | Expiry cleanup jobs |
+| Index                                                                   | Use                             |
+| ----------------------------------------------------------------------- | ------------------------------- |
+| `review_invites_booking_id_key` (unique)                                | One invite per booking          |
+| `review_invites_link_token_hash_key` (unique)                           | Public token lookup             |
+| `review_invites_business_id_created_at_idx`                             | Owner/debug lists               |
+| `review_invites_expires_at_idx` (partial, `pending`)                    | Expiry cleanup jobs             |
 | `review_invites_business_customer_pending_key` (partial, migration 003) | One pending invite per customer |
 
 **`reviews`**
 
-| Index | Use |
-|-------|-----|
-| `reviews_booking_id_key` (unique) | Which visit produced the review |
-| `reviews_review_invite_id_key` (unique) | Join invite → review |
-| `reviews_business_customer_key` (partial, migration 003) | **One review per customer per business** |
-| `reviews_business_id_created_at_idx` | Dashboard inbox (newest first) |
-| `reviews_business_id_public_idx` (partial, `is_hidden = false`) | Public profile tab + aggregates |
+| Index                                                           | Use                                      |
+| --------------------------------------------------------------- | ---------------------------------------- |
+| `reviews_booking_id_key` (unique)                               | Which visit produced the review          |
+| `reviews_review_invite_id_key` (unique)                         | Join invite → review                     |
+| `reviews_business_customer_key` (partial, migration 003)        | **One review per customer per business** |
+| `reviews_business_id_created_at_idx`                            | Dashboard inbox (newest first)           |
+| `reviews_business_id_public_idx` (partial, `is_hidden = false`) | Public profile tab + aggregates          |
 
 ---
 
@@ -208,24 +208,24 @@ Requires existing function **`public.set_updated_at()`** (used by quotes).
 
 Dashboard mock/UI (`src/features/reviews/dashboard/types.ts`) maps to SQL as follows:
 
-| UI / TypeScript | Database column | Notes |
-|-----------------|-----------------|-------|
-| `id` | `reviews.id` | |
-| `authorDisplayName` | `reviews.author_display_name` | Set at submit from booking/customer |
-| `rating` | `reviews.rating` | `smallint` 1–5 |
-| `body` | `reviews.body` | Max 2000 chars |
-| `createdAt` | `reviews.created_at` | ISO string in API |
-| `ownerReply.body` | `reviews.owner_reply_body` | Max 1000 chars |
-| `ownerReply.repliedAt` | `reviews.owner_replied_at` | |
+| UI / TypeScript        | Database column               | Notes                               |
+| ---------------------- | ----------------------------- | ----------------------------------- |
+| `id`                   | `reviews.id`                  |                                     |
+| `authorDisplayName`    | `reviews.author_display_name` | Set at submit from booking/customer |
+| `rating`               | `reviews.rating`              | `smallint` 1–5                      |
+| `body`                 | `reviews.body`                | Max 2000 chars                      |
+| `createdAt`            | `reviews.created_at`          | ISO string in API                   |
+| `ownerReply.body`      | `reviews.owner_reply_body`    | Max 1000 chars                      |
+| `ownerReply.repliedAt` | `reviews.owner_replied_at`    |                                     |
 
 Invite fields used server-side only (not in current dashboard mock):
 
-| Database column | Typical use |
-|-----------------|-------------|
-| `link_token_hash` | Resolve `/review/[token]` |
-| `email_sent_at` | Whether invite email succeeded |
-| `last_notification_error` | Resend / support debugging |
-| `expires_at` | Reject stale links |
+| Database column           | Typical use                    |
+| ------------------------- | ------------------------------ |
+| `link_token_hash`         | Resolve `/review/[token]`      |
+| `email_sent_at`           | Whether invite email succeeded |
+| `last_notification_error` | Resend / support debugging     |
+| `expires_at`              | Reject stale links             |
 
 ---
 
@@ -291,12 +291,12 @@ where business_id = $1
 
 ## UI surfaces that consume this data
 
-| Surface | Data source | Filter |
-|---------|-------------|--------|
-| `/dashboard/reviews` | `reviews` | All rows for business; client filters needs reply |
-| Public profile Reviews tab | `reviews` | `is_hidden = false` |
-| Profile header rating | `reviews` aggregate | `is_hidden = false` |
-| `/review/[token]` form | `review_invites` + booking snapshot | Valid pending invite |
+| Surface                    | Data source                         | Filter                                            |
+| -------------------------- | ----------------------------------- | ------------------------------------------------- |
+| `/dashboard/reviews`       | `reviews`                           | All rows for business; client filters needs reply |
+| Public profile Reviews tab | `reviews`                           | `is_hidden = false`                               |
+| Profile header rating      | `reviews` aggregate                 | `is_hidden = false`                               |
+| `/review/[token]` form     | `review_invites` + booking snapshot | Valid pending invite                              |
 
 Code (UI only today; mocks until API wired):
 
@@ -307,11 +307,11 @@ Code (UI only today; mocks until API wired):
 
 ## Related platform tables
 
-| Table | Relationship |
-|-------|----------------|
-| `bookings` | Invite created when `status` → `completed`; customer name/email snapshots for invite email |
-| `customers` | Optional `customer_id` on both tables for CRM joins |
-| `business_profiles` | Tenancy root; `profile_id = auth.uid()` for RLS |
+| Table               | Relationship                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `bookings`          | Invite created when `status` → `completed`; customer name/email snapshots for invite email |
+| `customers`         | Optional `customer_id` on both tables for CRM joins                                        |
+| `business_profiles` | Tenancy root; `profile_id = auth.uid()` for RLS                                            |
 
 Comparable patterns elsewhere:
 
@@ -332,9 +332,9 @@ Comparable patterns elsewhere:
 
 ## Doc index
 
-| File | Contents |
-|------|----------|
-| [DATABASE.md](./DATABASE.md) | This file — overview, flows, RLS, queries |
-| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns & constraints |
-| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md) | `reviews` columns & owner update rules |
-| [../README.md](../README.md) | Feature folder + implementation status |
+| File                                                 | Contents                                  |
+| ---------------------------------------------------- | ----------------------------------------- |
+| [DATABASE.md](./DATABASE.md)                         | This file — overview, flows, RLS, queries |
+| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns & constraints    |
+| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` columns & owner update rules    |
+| [../README.md](../README.md)                         | Feature folder + implementation status    |

@@ -259,15 +259,15 @@ export function ServicePriceOptionsSection({
             {isLocked ? (
               <p className="text-sm text-gray-400 mb-3 leading-snug max-w-prose">
                 {lockedHasSavedOptions
-                  ? 'Your saved pricing options are not shown to customers until you upgrade to Pro. Edit and publish them after upgrading.'
-                  : 'Preview mode. Upgrade to Pro to edit and publish pricing options.'}
+                  ? "Your options are saved, but customers won't see them until you upgrade to Pro."
+                  : 'Upgrade to Pro to add different prices for this service.'}
               </p>
             ) : null}
 
             {!displayedEnabled ? (
               <p className="text-sm text-gray-400 mb-3 leading-snug max-w-prose">
-                Use this when the same service costs different amounts for
-                different vehicles. They choose the right one at checkout.
+                Same service, different prices? Turn this on and customers pick
+                one when they book.
               </p>
             ) : null}
 
@@ -300,9 +300,9 @@ export function ServicePriceOptionsSection({
                   </p>
                 ) : null}
                 <p className="text-sm text-gray-400 mb-4 leading-snug">
-                  The price and time at the top should be your{' '}
-                  <span className="text-gray-300">lowest</span> one. That&apos;s
-                  your &quot;starting at&quot; on your page.
+                  Set the price in Service details to your cheapest option.
+                  That&apos;s what shows as &quot;starting at&quot; on your
+                  page.
                 </p>
 
                 <Button
@@ -322,8 +322,7 @@ export function ServicePriceOptionsSection({
                 {displayedOptions.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-6 text-center">
                     <p className="text-sm text-gray-400 leading-snug">
-                      Multiple prices are on, but no options were found for this
-                      service yet.
+                      No options yet. Tap Add option above.
                     </p>
                   </div>
                 ) : (
@@ -506,7 +505,7 @@ export function ServicePriceOptionsSection({
                   className="!border-dashed border-white/20 !bg-white/[0.02] py-6 sm:py-7 text-center"
                 >
                   <p className="text-sm text-gray-400 leading-snug">
-                    One price only—what you set in Service details above.
+                    One price — whatever you set in Service details above.
                   </p>
                 </GlassCard>
               </div>

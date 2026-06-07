@@ -12,12 +12,12 @@ When a user submits the in-app contact form (feature request, bug report, or gen
 
 ## Endpoint
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/api/contact` |
+|                |                                                                                 |
+| -------------- | ------------------------------------------------------------------------------- |
+| **Method**     | `POST`                                                                          |
+| **Path**       | `/api/contact`                                                                  |
 | **Production** | `https://myservicelink.app/api/contact` (or your `NEXT_PUBLIC_SITE_URL` + path) |
-| **Local** | `http://localhost:3000/api/contact` |
+| **Local**      | `http://localhost:3000/api/contact`                                             |
 
 ---
 
@@ -25,9 +25,9 @@ When a user submits the in-app contact form (feature request, bug report, or gen
 
 **Optional.** Two modes share this endpoint:
 
-| Mode | When | Headers |
-|------|------|---------|
-| **Public** | Marketing `/contact`, logged-out users | `Content-Type: application/json` only |
+| Mode          | When                                                     | Headers                                                                                                        |
+| ------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Public**    | Marketing `/contact`, logged-out users                   | `Content-Type: application/json` only                                                                          |
 | **Signed in** | In-app Settings → Contact (web cookies or mobile Bearer) | `Content-Type: application/json` + session (`Cookie` on web, `Authorization: Bearer <access_token>` on mobile) |
 
 When a **valid** session is present, the server uses the account email (and display name from profile/business metadata). **Do not** send `name` or `email` in the body for signed-in submissions — they are ignored if present.
@@ -40,12 +40,12 @@ If the client sends `Authorization: Bearer …` but the token is invalid or expi
 
 ### Public (unsigned)
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| `email` | string | Yes | Valid email; used as **Reply-To** on the support email. Display name in the support email is derived from the local-part of this address. |
-| `topic` | string | Yes | One of: `feature_request`, `bug_report`, `other`. |
-| `message` | string | Yes | 10–5000 characters after trim. |
-| `website` | string | No | **Honeypot** — omit or send `""`. If non-empty, request is rejected. |
+| Field     | Type   | Required | Notes                                                                                                                                     |
+| --------- | ------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `email`   | string | Yes      | Valid email; used as **Reply-To** on the support email. Display name in the support email is derived from the local-part of this address. |
+| `topic`   | string | Yes      | One of: `feature_request`, `bug_report`, `other`.                                                                                         |
+| `message` | string | Yes      | 10–5000 characters after trim.                                                                                                            |
+| `website` | string | No       | **Honeypot** — omit or send `""`. If non-empty, request is rejected.                                                                      |
 
 ```json
 {
@@ -57,11 +57,11 @@ If the client sends `Authorization: Bearer …` but the token is invalid or expi
 
 ### Signed in (app)
 
-| Field | Type | Required | Notes |
-|-------|------|----------|--------|
-| `topic` | string | Yes | One of: `feature_request`, `bug_report`, `other`. |
-| `message` | string | Yes | 10–5000 characters after trim. |
-| `website` | string | No | Honeypot — omit or `""`. |
+| Field     | Type   | Required | Notes                                             |
+| --------- | ------ | -------- | ------------------------------------------------- |
+| `topic`   | string | Yes      | One of: `feature_request`, `bug_report`, `other`. |
+| `message` | string | Yes      | 10–5000 characters after trim.                    |
+| `website` | string | No       | Honeypot — omit or `""`.                          |
 
 ```json
 {
@@ -94,24 +94,24 @@ All errors use:
 }
 ```
 
-| HTTP | `code` | When |
-|------|--------|------|
-| `400` | `INVALID_JSON` | Body is not valid JSON. |
-| `400` | `VALIDATION_ERROR` | Missing/invalid fields, honeypot filled, or signed-in account has no valid email. |
-| `401` | `UNAUTHORIZED` | Bearer token present but invalid/expired. |
-| `405` | `METHOD_NOT_ALLOWED` | Not `POST`. |
-| `413` | `PAYLOAD_TOO_LARGE` | Body larger than 12 KB. |
-| `429` | `RATE_LIMITED` | Too many submissions; see `Retry-After` header (seconds). |
-| `503` | `EMAIL_SEND_FAILED` | Resend unavailable or rejected (e.g. missing `RESEND_API_KEY`). |
-| `500` | `SERVER_ERROR` | Unexpected failure. |
+| HTTP  | `code`               | When                                                                              |
+| ----- | -------------------- | --------------------------------------------------------------------------------- |
+| `400` | `INVALID_JSON`       | Body is not valid JSON.                                                           |
+| `400` | `VALIDATION_ERROR`   | Missing/invalid fields, honeypot filled, or signed-in account has no valid email. |
+| `401` | `UNAUTHORIZED`       | Bearer token present but invalid/expired.                                         |
+| `405` | `METHOD_NOT_ALLOWED` | Not `POST`.                                                                       |
+| `413` | `PAYLOAD_TOO_LARGE`  | Body larger than 12 KB.                                                           |
+| `429` | `RATE_LIMITED`       | Too many submissions; see `Retry-After` header (seconds).                         |
+| `503` | `EMAIL_SEND_FAILED`  | Resend unavailable or rejected (e.g. missing `RESEND_API_KEY`).                   |
+| `500` | `SERVER_ERROR`       | Unexpected failure.                                                               |
 
 ### Rate limits
 
 Applied **after** validation (sliding window; shared across server instances when Upstash Redis is configured):
 
-| Bucket | Limit | Window |
-|--------|-------|--------|
-| Per **client IP** | 8 submissions | 1 hour |
+| Bucket                               | Limit         | Window |
+| ------------------------------------ | ------------- | ------ |
+| Per **client IP**                    | 8 submissions | 1 hour |
 | Per **submitter email** (lowercased) | 5 submissions | 1 hour |
 
 On `429`, show the `error` string and respect `Retry-After` before retrying.

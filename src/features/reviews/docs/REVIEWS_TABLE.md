@@ -31,21 +31,21 @@ review_invites (1) ──► reviews (0..1 until submit, then 1)
 
 Table: `public.reviews`
 
-| Column | Type | Nullable | Default | Notes |
-|--------|------|----------|---------|--------|
-| `id` | uuid | no | `gen_random_uuid()` | PK |
-| `business_id` | uuid | no | — | FK → `business_profiles` CASCADE |
-| `booking_id` | uuid | no | — | FK → `bookings` CASCADE, **unique** |
-| `review_invite_id` | uuid | no | — | FK → `review_invites` CASCADE, **unique** |
-| `customer_id` | uuid | yes | — | FK → `customers` SET NULL |
-| `rating` | smallint | no | — | 1–5 |
-| `body` | text | no | — | Trimmed length 1–2000 |
-| `author_display_name` | text | no | — | Length 1–120 |
-| `owner_reply_body` | text | yes | — | Length 1–1000 when set |
-| `owner_replied_at` | timestamptz | yes | — | Required with reply body |
-| `is_hidden` | boolean | no | `false` | Hidden from public profile only |
-| `created_at` | timestamptz | no | `now()` | Customer submit time |
-| `updated_at` | timestamptz | no | `now()` | Trigger-maintained |
+| Column                | Type        | Nullable | Default             | Notes                                     |
+| --------------------- | ----------- | -------- | ------------------- | ----------------------------------------- |
+| `id`                  | uuid        | no       | `gen_random_uuid()` | PK                                        |
+| `business_id`         | uuid        | no       | —                   | FK → `business_profiles` CASCADE          |
+| `booking_id`          | uuid        | no       | —                   | FK → `bookings` CASCADE, **unique**       |
+| `review_invite_id`    | uuid        | no       | —                   | FK → `review_invites` CASCADE, **unique** |
+| `customer_id`         | uuid        | yes      | —                   | FK → `customers` SET NULL                 |
+| `rating`              | smallint    | no       | —                   | 1–5                                       |
+| `body`                | text        | no       | —                   | Trimmed length 1–2000                     |
+| `author_display_name` | text        | no       | —                   | Length 1–120                              |
+| `owner_reply_body`    | text        | yes      | —                   | Length 1–1000 when set                    |
+| `owner_replied_at`    | timestamptz | yes      | —                   | Required with reply body                  |
+| `is_hidden`           | boolean     | no       | `false`             | Hidden from public profile only           |
+| `created_at`          | timestamptz | no       | `now()`             | Customer submit time                      |
+| `updated_at`          | timestamptz | no       | `now()`             | Trigger-maintained                        |
 
 ---
 
@@ -62,30 +62,31 @@ SET owner_reply_body = NULL,
     owner_replied_at = NULL
 WHERE id = '<review-uuid>';
 ```
+
 - Trigger `reviews_enforce_relationships` — IDs align with `review_invites` and `bookings`
 
 ---
 
 ## Indexes
 
-| Index | Type | Purpose |
-|-------|------|---------|
-| `reviews_booking_id_key` | unique | Visit that produced this review |
-| `reviews_review_invite_id_key` | unique | One review per invite |
-| `reviews_business_customer_key` | unique partial | One review per customer per business |
-| `reviews_business_id_created_at_idx` | btree | Dashboard inbox sort |
-| `reviews_business_id_public_idx` | partial (`not is_hidden`) | Public profile lists |
+| Index                                | Type                      | Purpose                              |
+| ------------------------------------ | ------------------------- | ------------------------------------ |
+| `reviews_booking_id_key`             | unique                    | Visit that produced this review      |
+| `reviews_review_invite_id_key`       | unique                    | One review per invite                |
+| `reviews_business_customer_key`      | unique partial            | One review per customer per business |
+| `reviews_business_id_created_at_idx` | btree                     | Dashboard inbox sort                 |
+| `reviews_business_id_public_idx`     | partial (`not is_hidden`) | Public profile lists                 |
 
 ---
 
 ## RLS
 
-| Operation | `authenticated` | `anon` | `service_role` |
-|-----------|-------------------|--------|----------------|
-| SELECT | Own `business_id` | denied | allowed |
-| INSERT | denied | denied | allowed (customer submit) |
-| UPDATE | Own `business_id` | denied | allowed |
-| DELETE | denied | denied | allowed |
+| Operation | `authenticated`   | `anon` | `service_role`            |
+| --------- | ----------------- | ------ | ------------------------- |
+| SELECT    | Own `business_id` | denied | allowed                   |
+| INSERT    | denied            | denied | allowed (customer submit) |
+| UPDATE    | Own `business_id` | denied | allowed                   |
+| DELETE    | denied            | denied | allowed                   |
 
 Policies: `reviews_owner_select`, `reviews_owner_update`
 
@@ -124,8 +125,8 @@ Single logical transaction (service role):
 ## Public vs dashboard visibility
 
 | `is_hidden` | Dashboard | Public profile |
-|-------------|-----------|----------------|
-| `false` | visible | visible |
-| `true` | visible | **hidden** |
+| ----------- | --------- | -------------- |
+| `false`     | visible   | visible        |
+| `true`      | visible   | **hidden**     |
 
 Aggregates (average rating, count) should use `is_hidden = false` only.

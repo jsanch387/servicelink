@@ -82,8 +82,6 @@ Billing behavior, Stripe webhooks, and the full **Free vs Pro** feature matrix (
 
 Create a `.env.local` file based on `env.example`:
 
-
-
 ## 🎨 Customization
 
 ### Styling

@@ -10,6 +10,9 @@
 
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { resolveMaxPortfolioImagesForBusiness } from '@/features/business-profile/server/resolveMaxPortfolioImagesForBusiness';
+import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
+import type { ServiceRow } from '@/features/services/types/services';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database } from '@/libs/supabase/client';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -54,18 +57,30 @@ export async function GET(
       );
     }
 
-    // Get services
-    const { data: services, error: servicesError } = await supabase
-      .from('business_services')
-      .select('*')
-      .eq('business_id', profile.id)
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: true });
+    // Get services and categories (bucket-scoped sort applied in app)
+    const [servicesResult, categoriesResult] = await Promise.all([
+      supabase
+        .from('business_services')
+        .select('*')
+        .eq('business_id', profile.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('service_categories')
+        .select('*')
+        .eq('business_id', profile.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true }),
+    ]);
 
-    if (servicesError) {
+    if (servicesResult.error) {
       // Services fetch failed, continue with empty array
     }
+
+    const services = sortServicesForDisplay(
+      (servicesResult.data ?? []) as ServiceRow[],
+      (categoriesResult.data ?? []) as ServiceCategoryRow[]
+    );
 
     // Get portfolio images
     const { data: images, error: imagesError } = await supabase
@@ -87,7 +102,7 @@ export async function GET(
     // Construct complete business profile response
     const completeProfile = {
       ...profile,
-      services: services || [],
+      services,
       images: imagesForResponse,
     };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Input, Modal } from '@/components/shared';
+import { Button, Input, Modal } from '@/components/shared';
 import React, { useCallback, useEffect, useState } from 'react';
 import type { EditCategoryFormData, ServiceCategoryRow } from './categoryTypes';
 
@@ -74,7 +74,7 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 
         <Input
           label="Category name"
-          placeholder="e.g., Residential, Commercial, Packages"
+          placeholder="e.g., Basic, Premium, Add-ons"
           value={name}
           onChange={setName}
           required
@@ -85,26 +85,29 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
         </p>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all cursor-pointer"
+            variant="secondary"
+            className="w-full sm:w-auto"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="inverse"
+            loading={isSaving}
             disabled={!isValid || isSaving}
-            className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-white hover:bg-gray-100 text-black transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:flex-1"
           >
             {isSaving
               ? isAddMode
-                ? 'Adding…'
-                : 'Saving…'
+                ? 'Adding'
+                : 'Saving'
               : isAddMode
                 ? 'Add category'
                 : 'Save changes'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

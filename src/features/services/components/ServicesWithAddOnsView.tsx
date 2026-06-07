@@ -1,8 +1,8 @@
 'use client';
 
 import type { AddOnRow } from '@/features/services/components/add-ons/addOnTypes';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import { CategoriesContent } from '@/features/services/components/categories';
-import { useServiceCategoriesUiState } from '@/features/services/components/categories/useServiceCategoriesUiState';
 import type { ServiceRow } from '@/features/services/types/services';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -22,18 +22,13 @@ function isTabKey(value: string | null): value is TabKey {
 }
 
 export interface ServicesWithAddOnsViewProps {
-  businessId: string;
   initialServices: ServiceRow[];
+  initialCategories?: ServiceCategoryRow[];
   fetchError?: string | null;
-  /** Map of service ID → add-on count. */
+  categoriesFetchError?: string | null;
   addOnCounts?: Record<string, number>;
-  /** Add-ons from database (for Add-ons tab). */
   initialAddOns?: AddOnRow[];
-  /** Error from add-ons fetch. */
   addOnsFetchError?: string | null;
-  /**
-   * When false, Free-plan service cap is enforced in the UI from live service count.
-   */
   hasProAccess?: boolean;
 }
 
@@ -41,9 +36,10 @@ export interface ServicesWithAddOnsViewProps {
  * Services dashboard with tabs for Services, Categories, and Add-ons.
  */
 export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
-  businessId,
   initialServices,
+  initialCategories = [],
   fetchError,
+  categoriesFetchError,
   addOnCounts,
   initialAddOns = [],
   addOnsFetchError,
@@ -51,14 +47,6 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
 }) => {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>('services');
-
-  const {
-    categories,
-    setCategories,
-    serviceCategoryIds,
-    assignServiceCategory,
-    clearCategoryAssignments,
-  } = useServiceCategoriesUiState(businessId);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -69,9 +57,9 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
 
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="flex-shrink-0 border-b border-white/10 bg-[var(--dashboard-bg)]">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-          <div className="flex w-full p-1.5 rounded-xl bg-white/[0.04] border border-white/10">
+      <div className="flex-shrink-0 bg-[var(--dashboard-bg)] px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-3">
+        <div className="max-w-2xl mx-auto w-full min-w-0">
+          <div className="flex w-full p-1.5 rounded-xl border border-white/10">
             {TABS.map(({ key, label }) => (
               <button
                 key={key}
@@ -96,17 +84,13 @@ export const ServicesWithAddOnsView: React.FC<ServicesWithAddOnsViewProps> = ({
           fetchError={fetchError}
           addOnCounts={addOnCounts}
           hasProAccess={hasProAccess}
-          categories={categories}
-          serviceCategoryIds={serviceCategoryIds}
-          onServiceCategoryAssign={assignServiceCategory}
-          onManageCategories={() => setActiveTab('categories')}
+          categories={initialCategories}
         />
       ) : activeTab === 'categories' ? (
         <CategoriesContent
-          categories={categories}
-          onCategoriesChange={setCategories}
-          serviceCategoryIds={serviceCategoryIds}
-          onCategoryDeleted={clearCategoryAssignments}
+          initialCategories={initialCategories}
+          initialServices={initialServices}
+          fetchError={categoriesFetchError}
         />
       ) : (
         <AddOnsContent

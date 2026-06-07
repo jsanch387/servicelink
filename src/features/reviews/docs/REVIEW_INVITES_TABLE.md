@@ -31,29 +31,29 @@ business_profiles
 
 Table: `public.review_invites`
 
-| Column | Type | Nullable | Default | Notes |
-|--------|------|----------|---------|--------|
-| `id` | uuid | no | `gen_random_uuid()` | PK |
-| `business_id` | uuid | no | — | FK → `business_profiles(id)` ON DELETE CASCADE |
-| `booking_id` | uuid | no | — | FK → `bookings(id)` ON DELETE CASCADE, **unique** |
-| `customer_id` | uuid | yes | — | FK → `customers(id)` ON DELETE SET NULL |
-| `link_token_hash` | text | no | — | 64-char SHA-256 hex, **unique** |
-| `status` | text | no | `'pending'` | See status enum below |
-| `expires_at` | timestamptz | no | — | App sets e.g. `now() + 90 days` |
-| `submitted_at` | timestamptz | yes | — | Required when `status = submitted` |
-| `email_sent_at` | timestamptz | yes | — | Successful invite email |
-| `last_notification_error` | text | yes | — | Last email failure message |
-| `created_at` | timestamptz | no | `now()` | |
-| `updated_at` | timestamptz | no | `now()` | Trigger-maintained |
+| Column                    | Type        | Nullable | Default             | Notes                                             |
+| ------------------------- | ----------- | -------- | ------------------- | ------------------------------------------------- |
+| `id`                      | uuid        | no       | `gen_random_uuid()` | PK                                                |
+| `business_id`             | uuid        | no       | —                   | FK → `business_profiles(id)` ON DELETE CASCADE    |
+| `booking_id`              | uuid        | no       | —                   | FK → `bookings(id)` ON DELETE CASCADE, **unique** |
+| `customer_id`             | uuid        | yes      | —                   | FK → `customers(id)` ON DELETE SET NULL           |
+| `link_token_hash`         | text        | no       | —                   | 64-char SHA-256 hex, **unique**                   |
+| `status`                  | text        | no       | `'pending'`         | See status enum below                             |
+| `expires_at`              | timestamptz | no       | —                   | App sets e.g. `now() + 90 days`                   |
+| `submitted_at`            | timestamptz | yes      | —                   | Required when `status = submitted`                |
+| `email_sent_at`           | timestamptz | yes      | —                   | Successful invite email                           |
+| `last_notification_error` | text        | yes      | —                   | Last email failure message                        |
+| `created_at`              | timestamptz | no       | `now()`             |                                                   |
+| `updated_at`              | timestamptz | no       | `now()`             | Trigger-maintained                                |
 
 ### Status values
 
-| Value | `submitted_at` | Typical meaning |
-|-------|----------------|-----------------|
-| `pending` | null | Awaiting customer submit |
-| `submitted` | set | Customer posted review |
-| `expired` | null | Link no longer valid |
-| `cancelled` | null | Invite voided without review |
+| Value       | `submitted_at` | Typical meaning              |
+| ----------- | -------------- | ---------------------------- |
+| `pending`   | null           | Awaiting customer submit     |
+| `submitted` | set            | Customer posted review       |
+| `expired`   | null           | Link no longer valid         |
+| `cancelled` | null           | Invite voided without review |
 
 ---
 
@@ -68,24 +68,24 @@ Table: `public.review_invites`
 
 ## Indexes
 
-| Index | Type | Purpose |
-|-------|------|---------|
-| `review_invites_booking_id_key` | unique | One invite per booking |
-| `review_invites_link_token_hash_key` | unique | Token lookup |
-| `review_invites_business_id_created_at_idx` | btree | Lists by business |
-| `review_invites_expires_at_idx` | partial (`pending`) | Expiry jobs |
+| Index                                          | Type                               | Purpose                         |
+| ---------------------------------------------- | ---------------------------------- | ------------------------------- |
+| `review_invites_booking_id_key`                | unique                             | One invite per booking          |
+| `review_invites_link_token_hash_key`           | unique                             | Token lookup                    |
+| `review_invites_business_id_created_at_idx`    | btree                              | Lists by business               |
+| `review_invites_expires_at_idx`                | partial (`pending`)                | Expiry jobs                     |
 | `review_invites_business_customer_pending_key` | partial (`pending`, migration 003) | One pending invite per customer |
 
 ---
 
 ## RLS
 
-| Operation | `authenticated` | `anon` | `service_role` |
-|-----------|-------------------|--------|----------------|
-| SELECT | Own `business_id` | denied | allowed |
-| INSERT | denied | denied | allowed |
-| UPDATE | denied | denied | allowed |
-| DELETE | denied | denied | allowed |
+| Operation | `authenticated`   | `anon` | `service_role` |
+| --------- | ----------------- | ------ | -------------- |
+| SELECT    | Own `business_id` | denied | allowed        |
+| INSERT    | denied            | denied | allowed        |
+| UPDATE    | denied            | denied | allowed        |
+| DELETE    | denied            | denied | allowed        |
 
 Policy: `review_invites_owner_select`
 

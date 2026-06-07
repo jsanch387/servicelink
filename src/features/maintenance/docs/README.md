@@ -23,15 +23,15 @@ Run: `npm run test`. API routes, Stripe webhooks, and Supabase-backed flows are 
 
 ## Where the code lives
 
-| Area | Location |
-|------|----------|
-| Feature entry (UI + server helpers) | `src/features/maintenance/` |
-| Owner enroll API | `src/app/api/maintenance/enrollments/route.ts` |
-| Customer public APIs | `src/app/api/public/maintenance-enrollment/*` |
-| Customer page | `src/app/maintenance/e/[token]/page.tsx` |
-| Stripe maintenance branch | `src/app/api/stripe/webhook/route.ts` (metadata-driven branch) |
-| CRM wiring | `src/features/customer-management/` (loads latest enrollment per customer) |
-| Invite / confirmation emails | `src/features/email/maintenance-enrollment-*` |
+| Area                                | Location                                                                   |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| Feature entry (UI + server helpers) | `src/features/maintenance/`                                                |
+| Owner enroll API                    | `src/app/api/maintenance/enrollments/route.ts`                             |
+| Customer public APIs                | `src/app/api/public/maintenance-enrollment/*`                              |
+| Customer page                       | `src/app/maintenance/e/[token]/page.tsx`                                   |
+| Stripe maintenance branch           | `src/app/api/stripe/webhook/route.ts` (metadata-driven branch)             |
+| CRM wiring                          | `src/features/customer-management/` (loads latest enrollment per customer) |
+| Invite / confirmation emails        | `src/features/email/maintenance-enrollment-*`                              |
 
 ---
 
@@ -60,19 +60,19 @@ Run: `npm run test`. API routes, Stripe webhooks, and Supabase-backed flows are 
 
 The app expects a row per “invite” (latest per customer is what CRM loads). Important fields (names may vary slightly by migration; align with Supabase):
 
-| Concern | Purpose |
-|--------|---------|
-| `business_id`, `customer_id` | Ownership and CRM join. |
-| `status` | e.g. pending customer vs accepted vs terminal states. |
-| `payment_status`, `customer_selected_payment` | Card vs pay-in-person vs pending. |
-| `service_name_snapshot`, `price_cents`, `duration_minutes`, `frequency_weeks` | Plan snapshot. |
-| `anchor_date`, `anchor_time` | First visit; placeholder sentinel used when DB required NOT NULL but no real date yet (`hasMaintenanceAnchorScheduled.ts`). |
-| `customer_link_token_hash` | Public lookup from URL token (hash only in DB). |
-| `customer_invite_token` | Optional: raw token for owner “copy link again” (run migration if missing). |
-| `stripe_checkout_session_id` | Last Checkout session written by checkout API (see **Follow-ups**). |
-| `initial_booking_id` | Idempotent link to first `bookings` row after acceptance. |
-| `confirmation_email_sent_at` | Dedupes post-acceptance confirmation email (`sql/add_maintenance_enrollment_confirmation_email_sent_at.sql`). |
-| `email_sent_at`, `last_notification_error` | Invite email telemetry. |
+| Concern                                                                       | Purpose                                                                                                                     |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `business_id`, `customer_id`                                                  | Ownership and CRM join.                                                                                                     |
+| `status`                                                                      | e.g. pending customer vs accepted vs terminal states.                                                                       |
+| `payment_status`, `customer_selected_payment`                                 | Card vs pay-in-person vs pending.                                                                                           |
+| `service_name_snapshot`, `price_cents`, `duration_minutes`, `frequency_weeks` | Plan snapshot.                                                                                                              |
+| `anchor_date`, `anchor_time`                                                  | First visit; placeholder sentinel used when DB required NOT NULL but no real date yet (`hasMaintenanceAnchorScheduled.ts`). |
+| `customer_link_token_hash`                                                    | Public lookup from URL token (hash only in DB).                                                                             |
+| `customer_invite_token`                                                       | Optional: raw token for owner “copy link again” (run migration if missing).                                                 |
+| `stripe_checkout_session_id`                                                  | Last Checkout session written by checkout API (see **Follow-ups**).                                                         |
+| `initial_booking_id`                                                          | Idempotent link to first `bookings` row after acceptance.                                                                   |
+| `confirmation_email_sent_at`                                                  | Dedupes post-acceptance confirmation email (`sql/add_maintenance_enrollment_confirmation_email_sent_at.sql`).               |
+| `email_sent_at`, `last_notification_error`                                    | Invite email telemetry.                                                                                                     |
 
 **Related tables:** `bookings`, `booking_payments` (first visit), `customers`, `business_profiles`, payment settings / accounts (read for eligibility).
 
