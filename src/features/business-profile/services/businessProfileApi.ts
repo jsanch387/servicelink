@@ -68,6 +68,8 @@ export class BusinessProfileApi {
         (servicesResult.data ?? []) as ServiceRow[],
         (categoriesResult.data ?? []) as ServiceCategoryRow[]
       );
+      const serviceCategories = (categoriesResult.data ??
+        []) as ServiceCategoryRow[];
 
       // Get images
       const { data: images, error: imagesError } = await supabase
@@ -99,6 +101,7 @@ export class BusinessProfileApi {
       const completeProfile: CompleteBusinessProfile = {
         ...(profile as any),
         services: services || [],
+        serviceCategories,
         images: imagesWithUrls || [],
         logo_url: logoUrl,
         cover_image_url: bannerUrl,

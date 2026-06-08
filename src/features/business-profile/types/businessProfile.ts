@@ -6,6 +6,7 @@
  */
 
 import { Database } from '@/libs/supabase/client';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 
 // Database types
 export type BusinessProfileRow =
@@ -62,6 +63,8 @@ export interface PortfolioImageFormData {
 // Complete business profile with related data
 export interface CompleteBusinessProfile extends BusinessProfileRow {
   services: BusinessServiceRow[];
+  /** Present when loaded from profile APIs; used for public category filters. */
+  serviceCategories?: ServiceCategoryRow[];
   images: (BusinessImageRow & { preview_url?: string })[];
   logo_url?: string | null;
   cover_image_url?: string | null;

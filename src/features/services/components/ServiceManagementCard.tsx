@@ -1,6 +1,11 @@
 'use client';
 
 import { GlassCard, Switch } from '@/components/shared';
+import {
+  serviceListingNameClassName,
+  serviceListingPriceClassName,
+  serviceListingStartingAtClassName,
+} from '@/components/shared/serviceListingTypography';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
@@ -86,6 +91,11 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   const isFirst = index === 0;
   const isLast = index === totalCount - 1;
 
+  const showStartingAt =
+    service.price_options_enabled === true &&
+    service.price_cents != null &&
+    service.price_cents > 0;
+
   const cardContent = (
     <>
       <div className="flex items-start gap-3 sm:gap-4">
@@ -124,51 +134,53 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
         )}
 
         <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-start gap-3 min-w-0">
-            <div className="min-w-0 flex-1">
-              {categoryName ? (
-                <span className="inline-block mb-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/90">
-                  {categoryName}
-                </span>
-              ) : null}
-              <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
+          <div className="min-w-0">
+            {categoryName ? (
+              <span className="inline-block mb-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/90">
+                {categoryName}
+              </span>
+            ) : null}
+            <div
+              className={`flex justify-between gap-3 min-w-0 ${
+                showStartingAt ? 'items-start' : 'items-baseline'
+              }`}
+            >
+              <h3 className={`${serviceListingNameClassName} min-w-0 flex-1`}>
                 {service.name}
               </h3>
-              {(duration || (addOnCount != null && addOnCount > 0)) && (
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
-                  {duration ? (
-                    <div className="flex items-center gap-1 text-zinc-500">
-                      <ClockIcon className="h-3 w-3 flex-shrink-0" />
-                      <span className="text-[10px] font-medium tracking-wide">
-                        {duration}
-                      </span>
-                    </div>
-                  ) : null}
-                  {duration && addOnCount != null && addOnCount > 0 ? (
-                    <span className="text-zinc-500 text-[10px]" aria-hidden>
-                      ·
-                    </span>
-                  ) : null}
-                  {addOnCount != null && addOnCount > 0 ? (
-                    <span className="text-[10px] font-medium tracking-wide text-zinc-500">
-                      {addOnCount} add-on{addOnCount === 1 ? '' : 's'}
-                    </span>
-                  ) : null}
-                </div>
-              )}
-            </div>
-            <div className="text-right flex-shrink-0">
-              {service.price_options_enabled === true &&
-              service.price_cents != null &&
-              service.price_cents > 0 ? (
-                <span className="block text-[10px] font-medium text-zinc-400 mb-0.5 leading-none">
-                  Starting at
+              <span className="text-right leading-none flex-shrink-0">
+                {showStartingAt ? (
+                  <span className={serviceListingStartingAtClassName}>
+                    Starting at
+                  </span>
+                ) : null}
+                <span className={serviceListingPriceClassName}>
+                  {formatPrice(service.price_cents)}
                 </span>
-              ) : null}
-              <span className="text-lg sm:text-xl font-black text-white leading-none tabular-nums">
-                {formatPrice(service.price_cents)}
               </span>
             </div>
+            {(duration || (addOnCount != null && addOnCount > 0)) && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                {duration ? (
+                  <div className="flex items-center gap-1 text-zinc-500">
+                    <ClockIcon className="h-3 w-3 flex-shrink-0" />
+                    <span className="text-[10px] font-medium tracking-wide">
+                      {duration}
+                    </span>
+                  </div>
+                ) : null}
+                {duration && addOnCount != null && addOnCount > 0 ? (
+                  <span className="text-zinc-500 text-[10px]" aria-hidden>
+                    ·
+                  </span>
+                ) : null}
+                {addOnCount != null && addOnCount > 0 ? (
+                  <span className="text-[10px] font-medium tracking-wide text-zinc-500">
+                    {addOnCount} add-on{addOnCount === 1 ? '' : 's'}
+                  </span>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {!isReorderMode && (

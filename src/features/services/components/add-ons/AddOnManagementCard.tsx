@@ -1,6 +1,10 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import {
+  serviceListingNameClassName,
+  serviceListingPriceClassName,
+} from '@/components/shared/serviceListingTypography';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
@@ -40,7 +44,7 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
         {/* Name + price row, with optional extra duration under the name */}
         <div className="flex items-start justify-between gap-3 min-w-0">
           <div className="min-w-0 flex-1">
-            <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
+            <h3 className={`${serviceListingNameClassName} min-w-0`}>
               {addOn.name}
             </h3>
             {durationLabel ? (
@@ -49,7 +53,7 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
               </p>
             ) : null}
           </div>
-          <span className="text-lg sm:text-xl font-black text-white leading-none flex-shrink-0 tabular-nums">
+          <span className={`${serviceListingPriceClassName} flex-shrink-0`}>
             {formatPrice(addOn.price_cents)}
           </span>
         </div>

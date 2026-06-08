@@ -1,9 +1,16 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import React from 'react';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import {
+  buildPublicServiceCategoryOptions,
+  shouldShowPublicServiceCategoryFilters,
+} from '@/features/services/categories/utils/buildPublicServiceCategoryOptions';
+import { filterServicesByCategoryFilter } from '@/features/services/categories/utils/filterServicesByCategoryFilter';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { EmptyState } from './EmptyState';
+import { PublicServiceCategoryFilters } from './PublicServiceCategoryFilters';
 import { ServiceCard } from './ServiceCard';
 
 interface ServicesListProps {
@@ -37,8 +44,51 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   compactTopPadding = false,
   bookingFlowLocale = 'en',
 }) => {
+  const bookingUi = publicBookingUi(bookingFlowLocale);
   const services = businessProfile.services || [];
-  const hasServices = services && services.length > 0;
+  const categories = businessProfile.serviceCategories ?? [];
+  const hasServices = services.length > 0;
+  const showCategoryFilters = shouldShowPublicServiceCategoryFilters(
+    categories,
+    services
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      showCategoryFilters
+        ? buildPublicServiceCategoryOptions(
+            categories,
+            services,
+            bookingUi.profile.serviceCategoryOther
+          )
+        : [],
+    [
+      showCategoryFilters,
+      categories,
+      services,
+      bookingUi.profile.serviceCategoryOther,
+    ]
+  );
+
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState('');
+
+  useEffect(() => {
+    if (categoryOptions.length === 0) {
+      setActiveCategoryFilter('');
+      return;
+    }
+    setActiveCategoryFilter(prev =>
+      categoryOptions.some(option => option.id === prev)
+        ? prev
+        : categoryOptions[0].id
+    );
+  }, [categoryOptions]);
+
+  const displayServices = useMemo(() => {
+    if (!showCategoryFilters || !activeCategoryFilter) return services;
+    return filterServicesByCategoryFilter(services, activeCategoryFilter);
+  }, [services, showCategoryFilters, activeCategoryFilter]);
+
   const businessSlug =
     'business_slug' in businessProfile
       ? businessProfile.business_slug || ''
@@ -53,28 +103,45 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   return (
     <section className={`px-4 sm:px-8 ${sectionY}`}>
       {hasServices ? (
-        <div className="grid grid-cols-1 gap-4">
-          {services.map(service => (
-            <ServiceCard
-              key={service.id}
-              service={{
-                id: service.id,
-                name: service.name,
-                description: service.description || '',
-                price: service.price_cents || 0,
-                hours_to_complete: service.hours_to_complete || null,
-                duration_minutes: service.duration_minutes ?? null,
-                priceOptionsEnabled:
-                  service.price_options_enabled === true &&
-                  allowPriceOptionSignals,
-              }}
-              isEditable={false}
-              isPublic={isPublic}
-              businessSlug={businessSlug}
-              hideBookLink={publicHideBookLinks}
-              bookingFlowLocale={bookingFlowLocale}
+        <div className="space-y-4">
+          {showCategoryFilters ? (
+            <PublicServiceCategoryFilters
+              options={categoryOptions}
+              value={activeCategoryFilter}
+              onChange={setActiveCategoryFilter}
+              ariaLabel={bookingUi.profile.serviceCategoriesAriaLabel}
             />
-          ))}
+          ) : null}
+
+          {displayServices.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {displayServices.map(service => (
+                <ServiceCard
+                  key={service.id}
+                  service={{
+                    id: service.id,
+                    name: service.name,
+                    description: service.description || '',
+                    price: service.price_cents || 0,
+                    hours_to_complete: service.hours_to_complete || null,
+                    duration_minutes: service.duration_minutes ?? null,
+                    priceOptionsEnabled:
+                      service.price_options_enabled === true &&
+                      allowPriceOptionSignals,
+                  }}
+                  isEditable={false}
+                  isPublic={isPublic}
+                  businessSlug={businessSlug}
+                  hideBookLink={publicHideBookLinks}
+                  bookingFlowLocale={bookingFlowLocale}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500 text-center py-8">
+              {bookingUi.profile.noServicesInCategory}
+            </p>
+          )}
         </div>
       ) : (
         <EmptyState type="services" showEditButton={false} />

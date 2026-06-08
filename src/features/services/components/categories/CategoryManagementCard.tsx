@@ -1,6 +1,7 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import { serviceListingNameClassName } from '@/components/shared/serviceListingTypography';
 import {
   Bars3Icon,
   ChevronDownIcon,
@@ -101,7 +102,7 @@ export const CategoryManagementCard: React.FC<CategoryManagementCardProps> = ({
             ) : null}
 
             <div className="flex-1 min-w-0">
-              <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">
+              <h3 className={`${serviceListingNameClassName} truncate`}>
                 {category.name}
               </h3>
               <p className="mt-0.5 text-[10px] font-medium tracking-wide text-zinc-500">

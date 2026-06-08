@@ -161,7 +161,7 @@ export const SignupForm: React.FC = () => {
             disabled={isLoading || googleLoading}
             className="sm:min-h-[56px] sm:text-base"
           >
-            {isLoading ? 'Creating account…' : 'Sign up'}
+            {isLoading ? 'Creating account' : 'Sign up'}
           </Button>
 
           <p className="text-xs sm:text-sm text-gray-500 leading-relaxed text-center">

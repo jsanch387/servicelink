@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { horizontalScrollStripClassName } from './horizontalScrollStrip';
 
 export interface FilterPillOption<T extends string = string> {
   id: T;
@@ -14,6 +15,8 @@ interface FilterPillsProps<T extends string = string> {
   ariaLabel?: string;
   className?: string;
   compactOnMobile?: boolean;
+  /** Keep a single scrollable row (no wrap) when many options. */
+  horizontalScroll?: boolean;
 }
 
 export function FilterPills<T extends string = string>({
@@ -23,10 +26,15 @@ export function FilterPills<T extends string = string>({
   ariaLabel = 'Filters',
   className = '',
   compactOnMobile = false,
+  horizontalScroll = false,
 }: FilterPillsProps<T>) {
   return (
     <div
-      className={`-mx-1 flex gap-1 overflow-x-auto scrollbar-hide pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible ${className}`}
+      className={
+        horizontalScroll
+          ? `-mx-1 flex gap-1 px-1 pb-1 ${horizontalScrollStripClassName} ${className}`.trim()
+          : `-mx-1 flex gap-1 overflow-x-auto scrollbar-hide pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible ${className}`.trim()
+      }
       role="tablist"
       aria-label={ariaLabel}
     >

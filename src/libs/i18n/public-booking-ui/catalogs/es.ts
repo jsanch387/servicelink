@@ -217,5 +217,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     reviewsLoadError: 'No se pudieron cargar las reseñas. Vuelve a intentarlo.',
     reviewsRetry: 'Reintentar',
     reviewsLoadingAriaLabel: 'Cargando reseñas',
+    serviceCategoryOther: 'Otros servicios',
+    serviceCategoriesAriaLabel: 'Ver servicios por categoría',
+    noServicesInCategory: 'No hay servicios en esta categoría.',
   },
 };

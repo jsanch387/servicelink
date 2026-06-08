@@ -9,6 +9,7 @@ import {
   type BookDetailsStepQuery,
 } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { ServiceDescriptionFormatted } from '@/features/business-profile/components/ServiceDescriptionFormatted';
 import type {
   AddOnForBooking,
   PriceOptionForBooking,
@@ -263,9 +264,10 @@ export function ServiceDetailsScreen({
                 )}
               </div>
             </div>
-            <p className="text-sm text-zinc-500 leading-relaxed whitespace-pre-line break-words">
-              {service.description}
-            </p>
+            <ServiceDescriptionFormatted
+              description={service.description}
+              className="text-sm text-zinc-500"
+            />
           </section>
 
           {phase === 'price' && needsPriceStep && (

@@ -19,6 +19,7 @@ export const ServicesCategoryFilterPills: React.FC<
       onChange={onChange}
       ariaLabel="Filter services by category"
       compactOnMobile
+      horizontalScroll
       className="mb-0"
     />
   );

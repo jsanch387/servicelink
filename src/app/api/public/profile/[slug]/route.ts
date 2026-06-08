@@ -81,6 +81,8 @@ export async function GET(
       (servicesResult.data ?? []) as ServiceRow[],
       (categoriesResult.data ?? []) as ServiceCategoryRow[]
     );
+    const serviceCategories = (categoriesResult.data ??
+      []) as ServiceCategoryRow[];
 
     // Get portfolio images
     const { data: images, error: imagesError } = await supabase
@@ -103,6 +105,7 @@ export async function GET(
     const completeProfile = {
       ...profile,
       services,
+      serviceCategories,
       images: imagesForResponse,
     };
 

@@ -1,6 +1,11 @@
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
+import {
+  serviceListingNameClassName,
+  serviceListingPriceClassName,
+  serviceListingStartingAtClassName,
+} from '@/components/shared/serviceListingTypography';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { getBusinessBookDetailsPath } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -13,7 +18,9 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useState } from 'react';
-import { serviceDescriptionNeedsSeeMore } from '../utils/serviceDescriptionDisplay';
+import { ServiceDescriptionFormatted } from './ServiceDescriptionFormatted';
+import { useServiceDescriptionClamp } from '../hooks/useServiceDescriptionClamp';
+import { SERVICE_CARD_DESCRIPTION_CLAMP_CLASS } from '../utils/serviceDescriptionDisplay';
 
 interface Service {
   id?: string;
@@ -62,7 +69,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const description = service.description || '';
-  const isLongDescription = serviceDescriptionNeedsSeeMore(description);
+  const { ref: descriptionRef, isTruncatable } = useServiceDescriptionClamp(
+    description,
+    isDescriptionExpanded
+  );
+  const shouldClampDescription =
+    !isDescriptionExpanded && description.length > 0;
 
   const effectiveDurationMinutes =
     service.duration_minutes != null && service.duration_minutes > 0
@@ -106,18 +118,23 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       className="group"
       padding="md"
     >
-      {/* Header: mobile ~16px title / ~18px price; sm+ matches denser “poster” scale */}
-      <div className="flex justify-between items-start gap-2 mb-2.5 sm:gap-3 sm:mb-3">
-        <h3 className="text-base font-bold text-white tracking-tight flex-1 min-w-0 pr-1 sm:pr-2 sm:text-lg sm:font-black">
+      <div
+        className={`flex justify-between gap-2 mb-2.5 sm:gap-3 sm:mb-3 ${
+          showStartingAt ? 'items-start' : 'items-baseline'
+        }`}
+      >
+        <h3
+          className={`${serviceListingNameClassName} flex-1 min-w-0 pr-1 sm:pr-2`}
+        >
           {service.name}
         </h3>
         <span className="text-right leading-none flex-shrink-0">
           {showStartingAt ? (
-            <span className="block text-xs font-medium text-zinc-400 mb-0.5 leading-none sm:mb-1 sm:text-[11px]">
+            <span className={serviceListingStartingAtClassName}>
               {ui.serviceCard.startingAt}
             </span>
           ) : null}
-          <span className="text-lg font-bold text-white leading-none tabular-nums sm:text-xl sm:font-black">
+          <span className={serviceListingPriceClassName}>
             {formatPrice(service.price)}
           </span>
         </span>
@@ -127,14 +144,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
       {/* Description — fixed min-height so all cards align; long text is collapsible */}
       <div className="mb-0 min-h-[4rem] sm:min-h-[4.5rem]">
-        <p
-          className={`text-zinc-400 text-[15px] leading-relaxed whitespace-pre-line break-words sm:text-sm ${
-            isLongDescription && !isDescriptionExpanded ? 'line-clamp-5' : ''
+        <div
+          ref={descriptionRef}
+          className={`text-zinc-400 text-[15px] sm:text-sm ${
+            shouldClampDescription ? SERVICE_CARD_DESCRIPTION_CLAMP_CLASS : ''
           }`}
         >
-          {description}
-        </p>
-        {isLongDescription && (
+          <ServiceDescriptionFormatted description={description} />
+        </div>
+        {isTruncatable && (
           <button
             type="button"
             onClick={() => setIsDescriptionExpanded(prev => !prev)}

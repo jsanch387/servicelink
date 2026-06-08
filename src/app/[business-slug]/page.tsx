@@ -103,6 +103,8 @@ async function fetchBusinessProfileBySlug(
       (servicesResult.data ?? []) as ServiceRow[],
       (categoriesResult.data ?? []) as ServiceCategoryRow[]
     );
+    const serviceCategories = (categoriesResult.data ??
+      []) as ServiceCategoryRow[];
     const images = imagesResult.data || [];
 
     // Add preview URLs to images
@@ -131,6 +133,7 @@ async function fetchBusinessProfileBySlug(
     const completeProfile = {
       ...profile,
       services,
+      serviceCategories,
       images: imagesWithUrls,
       logo_url: logoUrl,
       cover_image_url: bannerUrl,
