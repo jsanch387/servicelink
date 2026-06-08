@@ -1,4 +1,4 @@
-import { SettingsContent } from '@/features/dashboard/components/SettingsContent';
+import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -95,6 +95,10 @@ export default async function SettingsPage({
     );
     const planId = hasProAccess ? ('pro' as const) : ('free' as const);
 
+    const signedInWithGoogle = !(user.identities ?? []).some(
+      identity => identity.provider === 'email'
+    );
+
     const settingsData = {
       businessProfile: {
         id: businessProfile.id,
@@ -121,6 +125,7 @@ export default async function SettingsPage({
       subscriptionCancelAtPeriodEnd:
         profileRow?.subscription_cancel_at_period_end === true,
       accountEmail: user.email ?? '',
+      signedInWithGoogle,
     };
 
     return (

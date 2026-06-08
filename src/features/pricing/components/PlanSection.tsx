@@ -27,6 +27,8 @@ interface PlanSectionProps {
   subscriptionCancelAtPeriodEnd?: boolean;
   /** From `profiles.subscription_status` (e.g. trialing, active). */
   subscriptionStatus?: string | null;
+  /** Hide the section heading when a parent group label is shown (e.g. Settings billing). */
+  hideHeading?: boolean;
 }
 
 export const PlanSection: React.FC<PlanSectionProps> = ({
@@ -34,6 +36,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   subscriptionCurrentPeriodEnd = null,
   subscriptionCancelAtPeriodEnd = false,
   subscriptionStatus = null,
+  hideHeading = false,
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
@@ -61,16 +64,26 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
 
   return (
     <section className="w-full min-w-0">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-semibold text-white">
-          Subscription plan
-        </h2>
-        {isPro && subscriptionCancelAtPeriodEnd ? (
-          <span className="inline-flex shrink-0 items-center rounded-md border border-zinc-600/40 bg-zinc-800/40 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-            Canceled
-          </span>
-        ) : null}
-      </div>
+      {hideHeading ? (
+        isPro && subscriptionCancelAtPeriodEnd ? (
+          <div className="mb-3 flex justify-end">
+            <span className="inline-flex shrink-0 items-center rounded-md border border-zinc-600/40 bg-zinc-800/40 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
+              Canceled
+            </span>
+          </div>
+        ) : null
+      ) : (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-white">
+            Subscription plan
+          </h2>
+          {isPro && subscriptionCancelAtPeriodEnd ? (
+            <span className="inline-flex shrink-0 items-center rounded-md border border-zinc-600/40 bg-zinc-800/40 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
+              Canceled
+            </span>
+          ) : null}
+        </div>
+      )}
 
       <GlassCard
         padding="none"
