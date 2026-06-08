@@ -13,15 +13,15 @@ There is **no** `requires_upgrade` (or similar) column. Entitlement is **derived
 
 ## 1. Columns to read from `profiles` (by `user_id`)
 
-| Column | Required for gating | Role |
-|--------|----------------------|------|
-| `onboarding_status` | **Yes** | Web blocks dashboard navigation until `completed` (except onboarding flow). |
-| `subscription_tier` | **Yes** | Must be `'pro'` for any Pro entitlement path. |
-| `subscription_status` | **Yes** (when billed) | Stripe subscription status string; drives access for users with a `stripe_subscription_id`. |
-| `stripe_subscription_id` | **Yes** | If set, user is on the **billed** path; status rules apply. If empty, user may be **manual / comped Pro** (no Stripe). |
-| `stripe_customer_id` | **Yes** | Used with `stripe_subscription_id` to detect **manual Pro** vs **former Stripe customer** edge case. |
-| `subscription_current_period_end` | **No** (access) | **Not** used to grant or revoke Pro for billed users in `isProAccess`. Use for **UI copy** only (“renews”, “trial ends”, “access until”). |
-| `subscription_cancel_at_period_end` | **No** (access) | Web uses this in Settings UI; **middleware paywall does not read it**. Access while cancel is pending comes from Stripe still sending `active` (or empty status grace). |
+| Column                              | Required for gating   | Role                                                                                                                                                                    |
+| ----------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `onboarding_status`                 | **Yes**               | Web blocks dashboard navigation until `completed` (except onboarding flow).                                                                                             |
+| `subscription_tier`                 | **Yes**               | Must be `'pro'` for any Pro entitlement path.                                                                                                                           |
+| `subscription_status`               | **Yes** (when billed) | Stripe subscription status string; drives access for users with a `stripe_subscription_id`.                                                                             |
+| `stripe_subscription_id`            | **Yes**               | If set, user is on the **billed** path; status rules apply. If empty, user may be **manual / comped Pro** (no Stripe).                                                  |
+| `stripe_customer_id`                | **Yes**               | Used with `stripe_subscription_id` to detect **manual Pro** vs **former Stripe customer** edge case.                                                                    |
+| `subscription_current_period_end`   | **No** (access)       | **Not** used to grant or revoke Pro for billed users in `isProAccess`. Use for **UI copy** only (“renews”, “trial ends”, “access until”).                               |
+| `subscription_cancel_at_period_end` | **No** (access)       | Web uses this in Settings UI; **middleware paywall does not read it**. Access while cancel is pending comes from Stripe still sending `active` (or empty status grace). |
 
 ---
 
@@ -48,7 +48,7 @@ isProAccess(
 When `stripe_subscription_id` is **null/empty**:
 
 - If `stripe_customer_id` is **non-empty** → **no Pro access**  
-  (Guards against stale `subscription_tier = 'pro'` after someone had Stripe; web treats this as *not* manual comped Pro.)
+  (Guards against stale `subscription_tier = 'pro'` after someone had Stripe; web treats this as _not_ manual comped Pro.)
 - If `stripe_customer_id` is **null/empty** → **Pro access**  
   (Manual Pro you set in the app: Pro with **no** `cus_…` and **no** `sub_…`. `subscription_status` is ignored here.)
 
@@ -94,14 +94,14 @@ hasAccess            = isProAccess(...)
 showPaywall = onboardingComplete && hasBillingHistory && !hasAccess
 ```
 
-| Scenario | Typical profile signals | Paywall? |
-|----------|-------------------------|----------|
-| Manual Pro (you set Pro, no Stripe) | `tier=pro`, empty `cus`/`sub` | **No** |
-| Free user, never Stripe | empty `cus`/`sub`/status | **No** |
-| Pro trial (Stripe) | `tier=pro`, `sub` set, `status=trialing` | **No** |
-| Active paid | `tier=pro`, `sub` set, `status=active` | **No** |
-| Canceled / unpaid / past_due / … | `tier` may still be `pro` but `status` not in granting set | **Yes** |
-| Former subscriber, stale tier | `tier=pro`, `cus` set, `sub` empty | **Yes** (`isProAccess` false) |
+| Scenario                            | Typical profile signals                                    | Paywall?                      |
+| ----------------------------------- | ---------------------------------------------------------- | ----------------------------- |
+| Manual Pro (you set Pro, no Stripe) | `tier=pro`, empty `cus`/`sub`                              | **No**                        |
+| Free user, never Stripe             | empty `cus`/`sub`/status                                   | **No**                        |
+| Pro trial (Stripe)                  | `tier=pro`, `sub` set, `status=trialing`                   | **No**                        |
+| Active paid                         | `tier=pro`, `sub` set, `status=active`                     | **No**                        |
+| Canceled / unpaid / past_due / …    | `tier` may still be `pro` but `status` not in granting set | **Yes**                       |
+| Former subscriber, stale tier       | `tier=pro`, `cus` set, `sub` empty                         | **Yes** (`isProAccess` false) |
 
 Web sends paywalled users to **`/dashboard/upgrade`**. Mobile should show your paywall UI and direct users to **sign in on web** (`myservicelink.app/login`) to upgrade or manage billing — the app no longer calls `create-checkout-session` or `create-portal-session` (see `src/app/api/stripe/README.md`).
 
@@ -115,12 +115,12 @@ Until `onboarding_status === 'completed'`, web keeps users in the **onboarding f
 
 ## 6. Web parity reference (for engineers)
 
-| Concern | File / export |
-|---------|----------------|
-| Pro access boolean | `isProAccess` in `src/features/pricing/utils/isProAccess.ts` |
-| “Has Stripe billing history” | `hasStripeBillingHistory` in same file |
-| Dashboard redirect to upgrade | `src/middleware.ts` (block when `ownerHasStripeBillingHistory && !isProAccess`) |
-| Server-side reuse | `getHasProAccessForPayments` / `ownerHasProAccessForBusiness` also call `isProAccess` with the **same column list** |
+| Concern                       | File / export                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Pro access boolean            | `isProAccess` in `src/features/pricing/utils/isProAccess.ts`                                                        |
+| “Has Stripe billing history”  | `hasStripeBillingHistory` in same file                                                                              |
+| Dashboard redirect to upgrade | `src/middleware.ts` (block when `ownerHasStripeBillingHistory && !isProAccess`)                                     |
+| Server-side reuse             | `getHasProAccessForPayments` / `ownerHasProAccessForBusiness` also call `isProAccess` with the **same column list** |
 
 ---
 

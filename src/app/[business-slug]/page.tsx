@@ -20,6 +20,9 @@ import {
   isProAccess,
   isProAccessForPublicQuoteRequests,
 } from '@/features/pricing';
+import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
+import type { ServiceRow } from '@/features/services/types/services';
 import {
   maxPortfolioImagesForSubscription,
   type OwnerSubscriptionFieldsForPortfolio,
@@ -75,14 +78,19 @@ async function fetchBusinessProfileBySlug(
 
     const profile = profileData as PublicBusinessProfileRow;
 
-    // Fetch services and images in parallel for better performance
-    const [servicesResult, imagesResult] = await Promise.all([
+    // Fetch services, categories, and images in parallel
+    const [servicesResult, categoriesResult, imagesResult] = await Promise.all([
       supabase
         .from('business_services')
         .select('*')
         .eq('business_id', profile.id)
         .eq('is_active', true)
-        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('service_categories')
+        .select('*')
+        .eq('business_id', profile.id)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true }),
       supabase
         .from('business_images')
@@ -91,7 +99,12 @@ async function fetchBusinessProfileBySlug(
         .order('position', { ascending: true }),
     ]);
 
-    const services = servicesResult.data || [];
+    const services = sortServicesForDisplay(
+      (servicesResult.data ?? []) as ServiceRow[],
+      (categoriesResult.data ?? []) as ServiceCategoryRow[]
+    );
+    const serviceCategories = (categoriesResult.data ??
+      []) as ServiceCategoryRow[];
     const images = imagesResult.data || [];
 
     // Add preview URLs to images
@@ -120,6 +133,7 @@ async function fetchBusinessProfileBySlug(
     const completeProfile = {
       ...profile,
       services,
+      serviceCategories,
       images: imagesWithUrls,
       logo_url: logoUrl,
       cover_image_url: bannerUrl,

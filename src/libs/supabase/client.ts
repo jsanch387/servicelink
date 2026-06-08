@@ -220,6 +220,32 @@ export type Database = {
           created_at?: string;
         };
       };
+      service_categories: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          name: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          name?: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       service_price_options: {
         Row: {
           id: string;
@@ -270,6 +296,7 @@ export type Database = {
           price_options_enabled: boolean;
           is_active: boolean;
           sort_order: number | null;
+          category_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -284,6 +311,7 @@ export type Database = {
           price_options_enabled?: boolean;
           is_active?: boolean;
           sort_order?: number | null;
+          category_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -298,6 +326,7 @@ export type Database = {
           price_options_enabled?: boolean;
           is_active?: boolean;
           sort_order?: number | null;
+          category_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

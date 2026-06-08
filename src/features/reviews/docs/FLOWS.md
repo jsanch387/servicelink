@@ -4,12 +4,12 @@ Human-readable reference for how the reviews feature works today: product rules,
 
 **Related docs**
 
-| Doc | Use when |
-|-----|----------|
-| [DATABASE.md](./DATABASE.md) | Schema, RLS, tokens, SQL examples |
-| [SERVER.md](./SERVER.md) | Server modules and loading strategy |
-| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns |
-| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md) | `reviews` columns |
+| Doc                                                  | Use when                            |
+| ---------------------------------------------------- | ----------------------------------- |
+| [DATABASE.md](./DATABASE.md)                         | Schema, RLS, tokens, SQL examples   |
+| [SERVER.md](./SERVER.md)                             | Server modules and loading strategy |
+| [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns            |
+| [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` columns                   |
 
 ---
 
@@ -45,24 +45,24 @@ sequenceDiagram
 
 ## Product rules (v1)
 
-| Rule | Behavior |
-|------|----------|
+| Rule                                     | Behavior                                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | **One review per customer per business** | At most one public review row per `(business_id, customer_id)`. Repeat completes do not send another invite if they already reviewed. |
-| **One invite per booking** | `review_invites.booking_id` is unique. |
-| **No duplicate pending invites** | At most one `pending` invite per `(business_id, customer_id)`. |
-| **Email required to invite** | No customer email → invite skipped (booking can still complete). |
-| **`customer_id` required to invite** | Booking must link to a `customers` row (set at booking create). |
-| **No owner copy/share link** | Only hashed token in DB; raw token in email URL only. |
-| **Owner cannot edit customer text** | Dashboard can reply and (future) hide; not edit body. |
-| **Public profile** | Only `reviews` where `is_hidden = false`. |
+| **One invite per booking**               | `review_invites.booking_id` is unique.                                                                                                |
+| **No duplicate pending invites**         | At most one `pending` invite per `(business_id, customer_id)`.                                                                        |
+| **Email required to invite**             | No customer email → invite skipped (booking can still complete).                                                                      |
+| **`customer_id` required to invite**     | Booking must link to a `customers` row (set at booking create).                                                                       |
+| **No owner copy/share link**             | Only hashed token in DB; raw token in email URL only.                                                                                 |
+| **Owner cannot edit customer text**      | Dashboard can reply and (future) hide; not edit body.                                                                                 |
+| **Public profile**                       | Only `reviews` where `is_hidden = false`.                                                                                             |
 
 **Invite eligibility** (server: `createReviewInviteIfEligible`, preview: `reviewInviteEligibility.ts`):
 
-1. Valid normalized customer email on booking  
-2. `customer_id` on booking  
-3. No existing `reviews` row for `(business_id, customer_id)`  
-4. No existing `pending` invite for `(business_id, customer_id)`  
-5. No existing invite row for this `booking_id`  
+1. Valid normalized customer email on booking
+2. `customer_id` on booking
+3. No existing `reviews` row for `(business_id, customer_id)`
+4. No existing `pending` invite for `(business_id, customer_id)`
+5. No existing invite row for this `booking_id`
 
 Invite creation is **best-effort** on complete — failure does not roll back booking completion.
 
@@ -74,17 +74,17 @@ Invite creation is **best-effort** on complete — failure does not roll back bo
 
 When a V2 booking is created, `upsertCustomerForBooking` (`customer-management/server/upsertCustomerForBooking.ts`):
 
-1. Find customer by **normalized phone** (digits) for this business, if phone present  
-2. Else find by **normalized email** (`lower(trim(email))`)  
-3. Else insert new `customers` row  
+1. Find customer by **normalized phone** (digits) for this business, if phone present
+2. Else find by **normalized email** (`lower(trim(email))`)
+3. Else insert new `customers` row
 
 That ID is stored on `bookings.customer_id`. Review invites and reviews reference the same ID.
 
 **Dashboard complete modal** uses two flags from `GET /api/availability/bookings`:
 
-| Field | Meaning |
-|-------|---------|
-| `customerAlreadyReviewed` | `reviews` exists for this booking’s `customer_id` |
+| Field                            | Meaning                                                      |
+| -------------------------------- | ------------------------------------------------------------ |
+| `customerAlreadyReviewed`        | `reviews` exists for this booking’s `customer_id`            |
 | `willSendReviewInviteOnComplete` | Full server eligibility (email, id, no pending invite, etc.) |
 
 Modal copy: show review-email message when `!customerAlreadyReviewed && hasEmail`; simple confirm when customer already reviewed.
@@ -93,13 +93,13 @@ Modal copy: show review-email message when `!customerAlreadyReviewed && hasEmail
 
 ## Review link lifecycle
 
-| Setting | Value |
-|---------|--------|
-| Expiry | **90 days** from invite create (`INVITE_EXPIRY_DAYS` in `createReviewInviteIfEligible.ts`) |
-| Auth | Possession of email link (raw token in URL); no OTP |
-| Uses | **One** — after submit, invite `status = submitted` |
-| Expired UX | Public error card: “Link expired” |
-| Already submitted UX | “Already submitted” |
+| Setting              | Value                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| Expiry               | **90 days** from invite create (`INVITE_EXPIRY_DAYS` in `createReviewInviteIfEligible.ts`) |
+| Auth                 | Possession of email link (raw token in URL); no OTP                                        |
+| Uses                 | **One** — after submit, invite `status = submitted`                                        |
+| Expired UX           | Public error card: “Link expired”                                                          |
+| Already submitted UX | “Already submitted”                                                                        |
 
 Validation: `loadPublicReviewInviteByToken` — hash token, require `status = pending`, `expires_at > now()`.
 
@@ -107,24 +107,24 @@ Validation: `loadPublicReviewInviteByToken` — hash token, require `status = pe
 
 ## API routes
 
-| Method | Path | Auth | Purpose |
-|--------|------|------|---------|
-| `PATCH` | `/api/availability/bookings/[id]` | Owner | `status: completed` → `applyReviewInviteOnBookingCompleted` |
-| `POST` | `/api/availability/bookings/[id]/review-invite` | Owner | Create invite + send email for a **completed** booking (mobile) |
-| `GET` | `/api/availability/bookings` | Owner | Bookings list incl. `customerAlreadyReviewed`, `willSendReviewInviteOnComplete` |
-| `GET` | `/api/reviews` | Owner | Dashboard inbox list |
-| `PATCH` | `/api/reviews/[id]` | Owner | `{ ownerReplyBody }` or `null` to clear reply |
-| `POST` | `/api/public/reviews/submit` | Public (token in body) | Customer submit `{ token, rating, body }` |
-| `GET` | `/api/public/profile/[slug]/reviews` | Public | Full visible reviews (lazy tab) |
+| Method  | Path                                            | Auth                   | Purpose                                                                         |
+| ------- | ----------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------- |
+| `PATCH` | `/api/availability/bookings/[id]`               | Owner                  | `status: completed` → `applyReviewInviteOnBookingCompleted`                     |
+| `POST`  | `/api/availability/bookings/[id]/review-invite` | Owner                  | Create invite + send email for a **completed** booking (mobile)                 |
+| `GET`   | `/api/availability/bookings`                    | Owner                  | Bookings list incl. `customerAlreadyReviewed`, `willSendReviewInviteOnComplete` |
+| `GET`   | `/api/reviews`                                  | Owner                  | Dashboard inbox list                                                            |
+| `PATCH` | `/api/reviews/[id]`                             | Owner                  | `{ ownerReplyBody }` or `null` to clear reply                                   |
+| `POST`  | `/api/public/reviews/submit`                    | Public (token in body) | Customer submit `{ token, rating, body }`                                       |
+| `GET`   | `/api/public/profile/[slug]/reviews`            | Public                 | Full visible reviews (lazy tab)                                                 |
 
 **Pages**
 
-| Route | Role |
-|-------|------|
-| `/dashboard/reviews` | Owner inbox |
-| `/dashboard/reviews/[reviewId]` | Owner detail (if routed) |
-| `/review/[token]` | Customer invite form + success/error |
-| `/[business-slug]` | Public profile; Reviews tab lazy-loads list |
+| Route                           | Role                                        |
+| ------------------------------- | ------------------------------------------- |
+| `/dashboard/reviews`            | Owner inbox                                 |
+| `/dashboard/reviews/[reviewId]` | Owner detail (if routed)                    |
+| `/review/[token]`               | Customer invite form + success/error        |
+| `/[business-slug]`              | Public profile; Reviews tab lazy-loads list |
 
 ---
 
@@ -132,29 +132,29 @@ Validation: `loadPublicReviewInviteByToken` — hash token, require `status = pe
 
 ### Owner dashboard (`src/features/reviews/dashboard/`)
 
-- **`ReviewsDashboardPage`** — summary card, filter pills (All / Needs reply / Replied), list + inline reply  
-- **`GET /api/reviews`** via `useDashboardReviews`  
-- Loads **all** reviews including `is_hidden = true`  
-- Reply: `PATCH /api/reviews/[id]`  
+- **`ReviewsDashboardPage`** — summary card, filter pills (All / Needs reply / Replied), list + inline reply
+- **`GET /api/reviews`** via `useDashboardReviews`
+- Loads **all** reviews including `is_hidden = true`
+- Reply: `PATCH /api/reviews/[id]`
 
 ### Public profile (`src/features/business-profile/reviews/`)
 
-- **SSR:** `loadPublicReviewSummary` — ratings only for header + tab visibility  
-- **Tab click:** `LazyPublicReviewsSection` → `GET /api/public/profile/[slug]/reviews`  
-- Loads **`is_hidden = false`** only  
-- Summary: average, count, star breakdown via `deriveReviewsSummary`  
+- **SSR:** `loadPublicReviewSummary` — ratings only for header + tab visibility
+- **Tab click:** `LazyPublicReviewsSection` → `GET /api/public/profile/[slug]/reviews`
+- Loads **`is_hidden = false`** only
+- Summary: average, count, star breakdown via `deriveReviewsSummary`
 
 ### Customer review page (`src/features/reviews/public/`)
 
-- **`PublicReviewPageShell`** — form → success card  
-- **`POST /api/public/reviews/submit`**  
-- Copy: `public/copy/publicReviewCopy.ts`  
+- **`PublicReviewPageShell`** — form → success card
+- **`POST /api/public/reviews/submit`**
+- Copy: `public/copy/publicReviewCopy.ts`
 
 ### Email (`src/features/email/review-invite/`)
 
-- Template: dark glass card, gold star, white CTA  
-- Subject: `How was your visit with {businessName}?`  
-- Sent via Resend when invite is created (best-effort)  
+- Template: dark glass card, gold star, white CTA
+- Subject: `How was your visit with {businessName}?`
+- Sent via Resend when invite is created (best-effort)
 
 ---
 
@@ -225,10 +225,10 @@ No bodies — cheap header/tab gate.
 
 Batch for all bookings on load:
 
-- `reviews.customer_id` for business → `customerAlreadyReviewed` per booking  
-- Pending `review_invites` per customer  
-- Existing invites per `booking_id`  
-- Composed into `willSendReviewInviteOnComplete` per row  
+- `reviews.customer_id` for business → `customerAlreadyReviewed` per booking
+- Pending `review_invites` per customer
+- Existing invites per `booking_id`
+- Composed into `willSendReviewInviteOnComplete` per row
 
 ---
 
@@ -284,7 +284,12 @@ Mobile updates bookings directly in Supabase. After marking a booking **complete
 **Success — skipped (not eligible or already invited)**
 
 ```json
-{ "success": true, "sent": false, "skipped": true, "reason": "customer_already_reviewed" }
+{
+  "success": true,
+  "sent": false,
+  "skipped": true,
+  "reason": "customer_already_reviewed"
+}
 ```
 
 `reason` values: `no_customer_email` | `no_customer_id` | `invite_already_exists` | `customer_already_reviewed` | `pending_invite_exists`
@@ -307,9 +312,9 @@ Server helper: `requestReviewInviteForBooking` in `src/features/reviews/server/`
 
 ## Environment
 
-| Variable | Used for |
-|----------|----------|
-| `RESEND_API_KEY` | Review invite email |
+| Variable                            | Used for                            |
+| ----------------------------------- | ----------------------------------- |
+| `RESEND_API_KEY`                    | Review invite email                 |
 | `SITE_URL` / `NEXT_PUBLIC_SITE_URL` | Absolute `/review/{token}` in email |
 
 ---
@@ -339,24 +344,24 @@ src/app/api/availability/bookings/[id]/  complete → invite hook
 
 ## Not built / deferred
 
-| Item | Notes |
-|------|--------|
-| Owner resend invite | Manual workaround: contact customer with support |
-| SMS invite | Email only v1 |
-| Receipt + review combined email | Complete sends review invite only |
-| `is_hidden` toggle in dashboard UI | API may support; UI TBD |
-| Background job to set `review_invites.status = expired` | Expiry enforced at read time via `expires_at` |
-| OTP / code before review | Magic link only; likely unnecessary friction |
+| Item                                                    | Notes                                            |
+| ------------------------------------------------------- | ------------------------------------------------ |
+| Owner resend invite                                     | Manual workaround: contact customer with support |
+| SMS invite                                              | Email only v1                                    |
+| Receipt + review combined email                         | Complete sends review invite only                |
+| `is_hidden` toggle in dashboard UI                      | API may support; UI TBD                          |
+| Background job to set `review_invites.status = expired` | Expiry enforced at read time via `expires_at`    |
+| OTP / code before review                                | Magic link only; likely unnecessary friction     |
 
 ---
 
 ## Testing (entry points)
 
-| Area | Tests |
-|------|--------|
+| Area               | Tests                                                                             |
+| ------------------ | --------------------------------------------------------------------------------- |
 | Invite eligibility | `testing/reviewInviteEligibility.test.ts`, `createReviewInviteIfEligible.test.ts` |
-| Submit validation | `testing/validateSubmitReviewBody.test.ts` |
-| Email template | `features/email/testing/reviewInviteTemplate.test.ts` |
-| Dashboard API | `dashboard/testing/reviewsRouteGet.test.ts`, `reviewsRoutePatch.test.ts` |
-| Public form | `public/testing/PublicReviewForm.test.ts` |
-| Complete modal | `availability/booking/testing/availabilityBookingDetailPanelComplete.test.ts` |
+| Submit validation  | `testing/validateSubmitReviewBody.test.ts`                                        |
+| Email template     | `features/email/testing/reviewInviteTemplate.test.ts`                             |
+| Dashboard API      | `dashboard/testing/reviewsRouteGet.test.ts`, `reviewsRoutePatch.test.ts`          |
+| Public form        | `public/testing/PublicReviewForm.test.ts`                                         |
+| Complete modal     | `availability/booking/testing/availabilityBookingDetailPanelComplete.test.ts`     |

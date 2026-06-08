@@ -12,13 +12,13 @@ No Vercel Analytics Pro is required. Meta Pixel still receives custom events for
 
 ## Routes & APIs
 
-| Path | Purpose |
-|------|---------|
-| `/workshop` | Email gate (SEO landing) |
-| `/workshop/watch` | Gated video + conversion page (`noindex`) |
-| `/signup?from=workshop` | Signup with workshop attribution |
-| `POST /api/workshop/register` | Save lead + UTMs → returns `{ leadId }` |
-| `POST /api/workshop/track` | `{ leadId, event: 'video_view' \| 'signup_click' }` |
+| Path                           | Purpose                                              |
+| ------------------------------ | ---------------------------------------------------- |
+| `/workshop`                    | Email gate (SEO landing)                             |
+| `/workshop/watch`              | Gated video + conversion page (`noindex`)            |
+| `/signup?from=workshop`        | Signup with workshop attribution                     |
+| `POST /api/workshop/register`  | Save lead + UTMs → returns `{ leadId }`              |
+| `POST /api/workshop/track`     | `{ leadId, event: 'video_view' \| 'signup_click' }`  |
 | `POST /api/workshop/converted` | `{ email?, userId?, leadId? }` → sets `signed_up_at` |
 
 **Auth:** All writes use the Supabase **service role** in API routes. RLS is enabled with **no** anon/authenticated policies.
@@ -75,18 +75,18 @@ create index if not exists workshop_leads_signed_up_at_idx
 
 ## Column reference
 
-| Column | Set when | Notes |
-|--------|----------|--------|
-| `id` | Email capture | UUID; returned to browser as `leadId` |
-| `email` / `email_normalized` | Email capture | Unique on `email_normalized` |
-| `created_at` | Email capture | Lead created |
-| `utm_*`, `fbclid`, `landing_path` | First landing with params | **First-touch** — not overwritten on duplicate email |
-| `video_first_viewed_at` | First video view on watch page | |
-| `video_view_count` | Each tracked view | Increments |
-| `signup_first_clicked_at` | First signup CTA click | |
-| `signup_click_count` | Each CTA click | Increments |
-| `signed_up_at` | Account created | Matched by `leadId` and/or email |
-| `signed_up_user_id` | Account created | Supabase auth user id when known |
+| Column                            | Set when                       | Notes                                                |
+| --------------------------------- | ------------------------------ | ---------------------------------------------------- |
+| `id`                              | Email capture                  | UUID; returned to browser as `leadId`                |
+| `email` / `email_normalized`      | Email capture                  | Unique on `email_normalized`                         |
+| `created_at`                      | Email capture                  | Lead created                                         |
+| `utm_*`, `fbclid`, `landing_path` | First landing with params      | **First-touch** — not overwritten on duplicate email |
+| `video_first_viewed_at`           | First video view on watch page |                                                      |
+| `video_view_count`                | Each tracked view              | Increments                                           |
+| `signup_first_clicked_at`         | First signup CTA click         |                                                      |
+| `signup_click_count`              | Each CTA click                 | Increments                                           |
+| `signed_up_at`                    | Account created                | Matched by `leadId` and/or email                     |
+| `signed_up_user_id`               | Account created                | Supabase auth user id when known                     |
 
 ---
 
@@ -289,16 +289,16 @@ order by created_at desc;
 
 ## Code map
 
-| Area | Location |
-|------|----------|
-| Migrations | `supabase/migrations/20260521120000_*.sql`, `20260521130000_*.sql` |
-| One-shot SQL | `supabase/scripts/workshop_leads_setup_and_upgrade.sql` |
-| Save / update lead | `src/features/ads-workshop/server/` |
-| UTM capture (client) | `utils/workshopUtmCapture.ts` |
-| Lead id in browser | `utils/workshopLeadSession.ts` |
-| API tracking (client) | `utils/workshopLeadTracking.ts` |
-| Meta custom events | `utils/workshopAnalytics.ts` |
-| Signup attribution | `utils/workshopAttribution.ts`, `utils/completeWorkshopSignupTracking.ts` |
+| Area                  | Location                                                                  |
+| --------------------- | ------------------------------------------------------------------------- |
+| Migrations            | `supabase/migrations/20260521120000_*.sql`, `20260521130000_*.sql`        |
+| One-shot SQL          | `supabase/scripts/workshop_leads_setup_and_upgrade.sql`                   |
+| Save / update lead    | `src/features/ads-workshop/server/`                                       |
+| UTM capture (client)  | `utils/workshopUtmCapture.ts`                                             |
+| Lead id in browser    | `utils/workshopLeadSession.ts`                                            |
+| API tracking (client) | `utils/workshopLeadTracking.ts`                                           |
+| Meta custom events    | `utils/workshopAnalytics.ts`                                              |
+| Signup attribution    | `utils/workshopAttribution.ts`, `utils/completeWorkshopSignupTracking.ts` |
 
 ---
 

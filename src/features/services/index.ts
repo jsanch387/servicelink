@@ -12,6 +12,12 @@ export { saveServicesOrderAction } from './actions/saveServicesOrder';
 export { updateServiceAction } from './actions/updateService';
 export { updateServiceIsActiveAction } from './actions/updateServiceIsActive';
 export { getAddOns } from './add-ons/api/getAddOns';
+export { getServiceCategories } from './categories/api/getServiceCategories';
+export {
+  createServiceCategoryAction,
+  deleteServiceCategoryAction,
+  updateServiceCategoryAction,
+} from './categories';
 export { getAddOnCounts } from './api/getAddOnCounts';
 export { getServiceAddOnIds } from './api/getServiceAddOnIds';
 export { saveServicePriceOptions } from './api/saveServicePriceOptions';
@@ -20,6 +26,7 @@ export { getServices } from './api/getServices';
 export { ServicesContent } from './components/ServicesContent';
 export { ServicesWithAddOnsView } from './components/ServicesWithAddOnsView';
 export { ServiceEditScreen } from './components/ServiceEditScreen';
+export { ServiceEditLoadingSkeleton } from './components/ServiceEditLoadingSkeleton';
 export { ServicesLoadingSkeleton } from './components/ServicesLoadingSkeleton';
 export type {
   CreateServicePayload,
@@ -36,4 +43,8 @@ export type {
   UpdateServiceResult,
 } from './types/services';
 export type { GetAddOnsResult } from './add-ons/api/getAddOns';
+export type {
+  GetServiceCategoriesResult,
+  ServiceCategoryRow,
+} from './categories/types/serviceCategories';
 export type { GetServicePriceOptionsResult } from './api/getServicePriceOptions';

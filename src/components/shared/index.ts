@@ -21,6 +21,7 @@ export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';
 export { CrownIcon } from './CrownIcon';
 export { FilterPills } from './FilterPills';
 export type { FilterPillOption } from './FilterPills';
+export { horizontalScrollStripClassName } from './horizontalScrollStrip';
 export { FramedCtaButton } from './FramedCtaButton';
 export { GlassCard } from './GlassCard';
 export { GoogleIcon } from './GoogleIcon';
@@ -34,6 +35,11 @@ export { MarketingGalaxyBackground } from './MarketingGalaxyBackground';
 export { Modal } from './Modal';
 export { ModernLoadingSpinner } from './ModernLoadingSpinner';
 export { nativeCheckboxSmClassName } from './nativeCheckboxClasses';
+export {
+  serviceListingNameClassName,
+  serviceListingPriceClassName,
+  serviceListingStartingAtClassName,
+} from './serviceListingTypography';
 export { NativeScheduleDateRow } from './NativeSchedulePickerRow';
 export { ScheduleDatePickerField } from './ScheduleDatePickerField';
 export { RequiredLabel } from './RequiredLabel';

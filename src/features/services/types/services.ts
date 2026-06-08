@@ -27,6 +27,7 @@ export interface UpdateServicePayload {
   price_cents: number | null;
   duration_minutes: number | null;
   price_options_enabled?: boolean;
+  category_id?: string | null;
 }
 
 /** Result of updating a single service. */
@@ -42,6 +43,7 @@ export interface CreateServicePayload {
   description: string;
   price_cents: number | null;
   duration_minutes: number | null;
+  category_id?: string | null;
 }
 
 /** Result of creating a single service. */

@@ -187,7 +187,7 @@ export const LoginForm: React.FC<{
             disabled={isLoading || googleLoading}
             className="sm:min-h-[56px] sm:text-base"
           >
-            {isLoading ? 'Signing in…' : 'Login'}
+            {isLoading ? 'Signing in' : 'Login'}
           </Button>
         </form>
       </AuthFormCard>

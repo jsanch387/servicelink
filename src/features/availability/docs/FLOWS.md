@@ -98,7 +98,7 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 
 - **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, **`durationMinutes`** (total appointment minutes), **`selectedAddOns`** (optional), `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).
 - API resolves business by **slug**, loads **`time_off_blocks`** from `business_availability`, and **rejects** the request with **409** if the requested window overlaps any time-off block for that date.
-    - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
+  - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
 
 ---
 
@@ -121,20 +121,20 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 
 ## 4. Summary: key files and tables
 
-| What | Where |
-|------|--------|
-| Owner availability table | `business_availability` (see [DATABASE.md](./DATABASE.md)) — includes `time_off_blocks` |
-| V2 bookings table | `bookings` (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md)) |
-| Owner availability API | GET/POST `/api/availability` (body includes `timeOffBlocks`) |
-| Time-off parse/validate | `types/blockTime.ts`, `utils/timeOffBlocksPayload.ts` |
-| Public blocked slots (bookings only) | GET `/api/public/bookings/blocked/[slug]` |
-| Public create booking | POST `/api/public/bookings` (validates vs `time_off_blocks`) |
-| Dashboard list/update bookings | GET `/api/availability/bookings`, PATCH `/api/availability/bookings/[id]` |
-| Slot generation (schedule + bookings + time off) | `features/availability/booking/utils/slotGeneration.ts` |
-| Price/duration breakdown (calendar + review step) | `features/availability/booking/components/BookingPriceBreakdown.tsx` |
-| Service + add-ons for booking (server) | `features/services/api/getServiceWithAddOnsForBooking.ts`, `getAddOnsByIdsForBooking.ts` |
-| Blocked slots hook | `features/availability/booking/hooks/usePublicBlockedSlots.ts` |
-| Planner time-off overlay | `features/availability/booking/dashboard/DayPlannerView.tsx` |
-| Create booking (server) | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`) |
+| What                                              | Where                                                                                                                  |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Owner availability table                          | `business_availability` (see [DATABASE.md](./DATABASE.md)) — includes `time_off_blocks`                                |
+| V2 bookings table                                 | `bookings` (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md))                                                              |
+| Owner availability API                            | GET/POST `/api/availability` (body includes `timeOffBlocks`)                                                           |
+| Time-off parse/validate                           | `types/blockTime.ts`, `utils/timeOffBlocksPayload.ts`                                                                  |
+| Public blocked slots (bookings only)              | GET `/api/public/bookings/blocked/[slug]`                                                                              |
+| Public create booking                             | POST `/api/public/bookings` (validates vs `time_off_blocks`)                                                           |
+| Dashboard list/update bookings                    | GET `/api/availability/bookings`, PATCH `/api/availability/bookings/[id]`                                              |
+| Slot generation (schedule + bookings + time off)  | `features/availability/booking/utils/slotGeneration.ts`                                                                |
+| Price/duration breakdown (calendar + review step) | `features/availability/booking/components/BookingPriceBreakdown.tsx`                                                   |
+| Service + add-ons for booking (server)            | `features/services/api/getServiceWithAddOnsForBooking.ts`, `getAddOnsByIdsForBooking.ts`                               |
+| Blocked slots hook                                | `features/availability/booking/hooks/usePublicBlockedSlots.ts`                                                         |
+| Planner time-off overlay                          | `features/availability/booking/dashboard/DayPlannerView.tsx`                                                           |
+| Create booking (server)                           | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`) |
 
 Keeping **time in minutes** everywhere (DB, APIs, slot logic) and converting to human-readable duration only in the UI (`formatDurationMinutes`, etc.) keeps the data model simple and avoids timezone/format issues. **Booked slot length** is always the **total** minutes (service + selected add-on time).

@@ -1,13 +1,16 @@
 'use client';
 
 import {
+  Button,
   IconButton,
   Input,
   Modal,
   PriceInput,
+  Select,
   TextArea,
   TimeSelect,
 } from '@/components/shared';
+import type { ServiceCategoryRow } from '@/features/services/components/categories/categoryTypes';
 import {
   SERVICE_DESCRIPTION_MAX_LENGTH,
   insertServiceDescriptionBullet,
@@ -27,6 +30,10 @@ export interface EditServiceModalProps {
   showAddForm?: boolean;
   /** Server/save error to show above the form (e.g. service unavailable). */
   saveError?: string | null;
+  /** Available categories for assignment (add flow). */
+  categories?: ServiceCategoryRow[];
+  /** Initial category when editing or adding. */
+  initialCategoryId?: string | null;
   onClose: () => void;
   /** For edit: serviceId is set. For add: serviceId is undefined. */
 
@@ -39,6 +46,7 @@ export interface EditServiceFormData {
   description: string;
   price_cents: number | null;
   duration_minutes: number | null;
+  category_id: string | null;
 }
 
 function serviceToForm(service: ServiceRow): {
@@ -63,6 +71,8 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   service,
   showAddForm = false,
   saveError = null,
+  categories = [],
+  initialCategoryId = null,
   onClose,
   onSave,
   isSaving = false,
@@ -72,6 +82,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [durationHHmm, setDurationHHmm] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const isAddMode = showAddForm && !service;
@@ -84,15 +95,25 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
       setDescription(form.description);
       setPrice(form.price);
       setDurationHHmm(form.durationHHmm);
+      setCategoryId(initialCategoryId ?? '');
       setError(null);
     } else if (showAddForm) {
       setName('');
       setDescription('');
       setPrice('');
       setDurationHHmm('');
+      setCategoryId(initialCategoryId ?? '');
       setError(null);
     }
-  }, [service, showAddForm]);
+  }, [service, showAddForm, initialCategoryId]);
+
+  const categoryOptions = [
+    { value: '__none__', label: 'No category' },
+    ...categories.map(c => ({
+      value: c.id,
+      label: c.name,
+    })),
+  ];
 
   const handleInsertDescriptionBullet = useCallback(() => {
     const el = descriptionTextareaRef.current;
@@ -143,6 +164,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         description: descriptionTrim,
         price_cents: Math.round(priceNum * 100),
         duration_minutes: durationResult.durationMinutes,
+        category_id: categoryId || null,
       };
       if (service) {
         onSave(service.id, data);
@@ -150,7 +172,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         onSave(undefined, data);
       }
     },
-    [service, name, description, price, durationHHmm, onSave]
+    [service, name, description, price, durationHHmm, categoryId, onSave]
   );
 
   if (!isOpen) return null;
@@ -179,11 +201,21 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
         <Input
           label="Service name"
-          placeholder="e.g., House Cleaning, Logo Design"
+          placeholder="e.g., Full Exterior, Interior Detail"
           value={name}
           onChange={setName}
           required
         />
+
+        {isAddMode && categories.length > 0 ? (
+          <Select
+            label="Category"
+            value={categoryId || '__none__'}
+            onChange={value => setCategoryId(value === '__none__' ? '' : value)}
+            options={categoryOptions}
+            placeholder="No category"
+          />
+        ) : null}
 
         <TextArea
           ref={descriptionTextareaRef}
@@ -230,26 +262,29 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/10 transition-all cursor-pointer"
+            variant="secondary"
+            className="w-full sm:w-auto"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="inverse"
+            loading={isSaving}
             disabled={!isValid || isSaving}
-            className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-white hover:bg-gray-100 text-black transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:flex-1"
           >
             {isSaving
               ? isAddMode
-                ? 'Adding…'
-                : 'Saving…'
+                ? 'Adding'
+                : 'Saving'
               : isAddMode
                 ? 'Add service'
                 : 'Save changes'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

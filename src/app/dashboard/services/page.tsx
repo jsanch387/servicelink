@@ -10,9 +10,11 @@ import { isProAccess } from '@/features/pricing';
 import {
   getAddOnCounts,
   getAddOns,
+  getServiceCategories,
   getServices,
   ServicesWithAddOnsView,
 } from '@/features/services';
+import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -40,8 +42,15 @@ export default async function ServicesPage() {
     redirect('/dashboard');
   }
 
-  const servicesResult = await getServices(businessProfile.id);
-  const services = servicesResult.data ?? [];
+  const [servicesResult, categoriesResult] = await Promise.all([
+    getServices(businessProfile.id),
+    getServiceCategories(businessProfile.id),
+  ]);
+  const services = sortServicesForDisplay(
+    servicesResult.data ?? [],
+    categoriesResult.data ?? []
+  );
+  const categories = categoriesResult.data ?? [];
 
   const { data: profileRow } = await supabase
     .from('profiles')
@@ -78,7 +87,11 @@ export default async function ServicesPage() {
   return (
     <ServicesWithAddOnsView
       initialServices={services}
+      initialCategories={categories}
       fetchError={servicesResult.success ? null : servicesResult.error}
+      categoriesFetchError={
+        categoriesResult.success ? null : categoriesResult.error
+      }
       addOnCounts={addOnCounts}
       initialAddOns={addOnsResult.data ?? []}
       addOnsFetchError={addOnsResult.success ? null : addOnsResult.error}

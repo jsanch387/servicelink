@@ -16,5 +16,5 @@ export { UpcomingBookingsCard } from './components/UpcomingBookingsCard';
 export { PerformanceCard } from './components/PerformanceCard';
 export { ProFeatureLabel } from './components/ProFeatureLabel';
 export { QuickActionsCard } from './components/QuickActionsCard';
-export { SettingsContent } from './components/SettingsContent';
+export { SettingsContent } from '@/features/settings';
 export { ShareProfileCard } from './components/ShareProfileCard';

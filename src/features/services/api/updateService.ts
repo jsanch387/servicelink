@@ -32,6 +32,9 @@ export async function updateService(
       ...(payload.price_options_enabled != null
         ? { price_options_enabled: payload.price_options_enabled }
         : {}),
+      ...(payload.category_id !== undefined
+        ? { category_id: payload.category_id }
+        : {}),
       updated_at: new Date().toISOString(),
     };
 

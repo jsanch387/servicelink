@@ -16,18 +16,18 @@ Reference for **database shape**, **API**, and **app behavior** for `/dashboard/
 
 Intended schema (create/migrate in Supabase SQL editor or migrations):
 
-| Column | Type | Notes |
-|--------|------|--------|
-| `id` | `uuid` | Primary key, default `gen_random_uuid()`. |
-| `business_id` | `uuid` | FK → `business_profiles(id)`, **required**. Multi-tenant scope. |
-| `full_name` | `text` | Required display name. |
-| `phone` | `text` | Nullable display phone. |
-| `email` | `text` | Nullable display email. |
-| `phone_normalized` | `text` | Nullable; digits-only (or E.164) for dedupe on booking submit. |
-| `email_normalized` | `text` | Nullable; `lower(trim(email))` for dedupe. |
-| `notes` | `text` | Nullable; internal notes (maps to UI `note`). |
-| `created_at` | `timestamptz` | Default `now()`. |
-| `updated_at` | `timestamptz` | Maintain via trigger or app updates. |
+| Column             | Type          | Notes                                                           |
+| ------------------ | ------------- | --------------------------------------------------------------- |
+| `id`               | `uuid`        | Primary key, default `gen_random_uuid()`.                       |
+| `business_id`      | `uuid`        | FK → `business_profiles(id)`, **required**. Multi-tenant scope. |
+| `full_name`        | `text`        | Required display name.                                          |
+| `phone`            | `text`        | Nullable display phone.                                         |
+| `email`            | `text`        | Nullable display email.                                         |
+| `phone_normalized` | `text`        | Nullable; digits-only (or E.164) for dedupe on booking submit.  |
+| `email_normalized` | `text`        | Nullable; `lower(trim(email))` for dedupe.                      |
+| `notes`            | `text`        | Nullable; internal notes (maps to UI `note`).                   |
+| `created_at`       | `timestamptz` | Default `now()`.                                                |
+| `updated_at`       | `timestamptz` | Maintain via trigger or app updates.                            |
 
 **Recommended indexes (dedupe):**
 
@@ -46,18 +46,18 @@ Intended schema (create/migrate in Supabase SQL editor or migrations):
 
 Both of these product flows hit that same endpoint and therefore share customer logic automatically:
 
-| Flow | How it reaches `createBooking` |
-|------|--------------------------------|
-| **Public profile** | Customer completes book flow → client `POST /api/public/bookings`. |
+| Flow                          | How it reaches `createBooking`                                                               |
+| ----------------------------- | -------------------------------------------------------------------------------------------- |
+| **Public profile**            | Customer completes book flow → client `POST /api/public/bookings`.                           |
 | **Owner booking for someone** | Dashboard opens book flow with `?for=owner` → same submit → **`POST /api/public/bookings`**. |
 
 There is **no second insert path** for V2 bookings today; if you add another API that inserts into `bookings`, call **`upsertCustomerForBooking`** the same way (or always route through **`createBooking`**).
 
 ### Server helpers (this feature)
 
-| File | Role |
-|------|------|
-| **`server/normalizeCustomerContact.ts`** | `normalizeEmailForLookup`, `normalizePhoneForLookup` (digits-only phone). |
+| File                                     | Role                                                                                                                                                                                                                       |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`server/normalizeCustomerContact.ts`** | `normalizeEmailForLookup`, `normalizePhoneForLookup` (digits-only phone).                                                                                                                                                  |
 | **`server/upsertCustomerForBooking.ts`** | **`upsertCustomerForBooking(supabase, businessId, input)`** — find-or-create `customers` row. Uses a small internal cast for `.from('customers')` until the repo’s `Database` type matches Supabase client generics fully. |
 
 ### Dedupe rules
@@ -88,16 +88,16 @@ Row type alias used in the feature: **`CustomerDbRow`** → `src/features/custom
 
 Defined in **`src/features/customer-management/types.ts`**. Used by list, detail panel, and API JSON.
 
-| Field | Source today | Notes |
-|-------|----------------|-------|
-| `id`, `name`, `phone`, `note` | DB | `name` ← `full_name`, `note` ← `customers.notes` (profile only). |
-| `email` | DB | Shown as **normalized** (`email_normalized` preferred) so the UI has a single canonical address. |
-| `lastService`, `lastBookingAddOns` | **`bookings`** | From the **latest `completed`** booking for this `customer_id` (add-on **names** from `addon_details`). |
-| `lastVisitDate`, `lastVisitDaysAgo` | **`bookings`** | **Last completed** visit calendar date; “days ago” from local midnight. |
-| `nextAppointmentDate`, `nextAppointmentDaysUntil`, `nextAppointment*` | **`bookings`** | **Earliest upcoming `confirmed`** booking whose slot is still in the future (local date + time). |
-| `totalVisits`, `totalSpent` | **`bookings`** | **`completed` only:** visit count and sum of **service_price_cents + add-on `priceCents`**. `totalSpent` is dollars in the JSON. |
-| `status` | **`bookings`** | `returning` if more than one **completed** visit, else `new`. |
-| Fallback (no linked bookings) | Customer row | visits/spent `0`, schedule fields `null`, last service `—`. |
+| Field                                                                 | Source today   | Notes                                                                                                                            |
+| --------------------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `name`, `phone`, `note`                                         | DB             | `name` ← `full_name`, `note` ← `customers.notes` (profile only).                                                                 |
+| `email`                                                               | DB             | Shown as **normalized** (`email_normalized` preferred) so the UI has a single canonical address.                                 |
+| `lastService`, `lastBookingAddOns`                                    | **`bookings`** | From the **latest `completed`** booking for this `customer_id` (add-on **names** from `addon_details`).                          |
+| `lastVisitDate`, `lastVisitDaysAgo`                                   | **`bookings`** | **Last completed** visit calendar date; “days ago” from local midnight.                                                          |
+| `nextAppointmentDate`, `nextAppointmentDaysUntil`, `nextAppointment*` | **`bookings`** | **Earliest upcoming `confirmed`** booking whose slot is still in the future (local date + time).                                 |
+| `totalVisits`, `totalSpent`                                           | **`bookings`** | **`completed` only:** visit count and sum of **service_price_cents + add-on `priceCents`**. `totalSpent` is dollars in the JSON. |
+| `status`                                                              | **`bookings`** | `returning` if more than one **completed** visit, else `new`.                                                                    |
+| Fallback (no linked bookings)                                         | Customer row   | visits/spent `0`, schedule fields `null`, last service `—`.                                                                      |
 
 **Stats row** (`CustomerListStats`): Computed in the client from the loaded `CustomerRecord[]` (totals, returning count, revenue sum).
 
@@ -155,14 +155,14 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 
 ### Feature layout (folders)
 
-| Area | Role |
-|------|------|
-| `components/` | Page sections, table, cards, drawer, modal body, skeletons, empty states |
-| `hooks/` | `useCustomerManagement` |
-| `api/` | Client fetch, response typing, DB row type, `mapCustomerRowToRecord` |
-| `server/` | `resolveCurrentBusinessId`, `normalizeCustomerContact`, `upsertCustomerForBooking`, `aggregateBookingsPerCustomer` |
-| `constants/` | `CUSTOMER_STATUS_FILTERS` |
-| `utils/` | Formatting, search match, date helpers |
+| Area          | Role                                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `components/` | Page sections, table, cards, drawer, modal body, skeletons, empty states                                           |
+| `hooks/`      | `useCustomerManagement`                                                                                            |
+| `api/`        | Client fetch, response typing, DB row type, `mapCustomerRowToRecord`                                               |
+| `server/`     | `resolveCurrentBusinessId`, `normalizeCustomerContact`, `upsertCustomerForBooking`, `aggregateBookingsPerCustomer` |
+| `constants/`  | `CUSTOMER_STATUS_FILTERS`                                                                                          |
+| `utils/`      | Formatting, search match, date helpers                                                                             |
 
 **Public exports:** `src/features/customer-management/index.ts` (page, hook, types).
 
@@ -176,4 +176,4 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 
 ---
 
-*Last updated to match the codebase in this repo; adjust this file when schema or routes change.*
+_Last updated to match the codebase in this repo; adjust this file when schema or routes change._

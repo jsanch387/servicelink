@@ -16,14 +16,14 @@ This document plans how **ServiceLink** and **Supabase** stay in sync from the m
 
 ### Glossary (terms that sound alike but are different)
 
-| Term | What it is |
-|------|----------------|
-| **Stripe Connect account** | The **merchant account** Stripe created for this business, identified by **`acct_…`**. Think: “their Stripe business.” It persists whether onboarding is half-done or done. |
-| **`payment_accounts` (our table)** | **Our** row that says “this `business_id` is linked to **`stripe_account_id` `acct_…`**” plus flags we copy from Stripe (`charges_enabled`, onboarding state, etc.). One row per business. |
-| **Account Link** | A **temporary URL** Stripe gives us that **opens the onboarding wizard** for **one** `acct_…`. It **expires**. If they need to continue later, we ask Stripe for a **new** Account Link for the **same** `acct_…`—we do **not** need a brand-new merchant account every time. |
-| **Reuse `stripe_account_id`** | On the **second** click of Connect, we **do not** call “create a new Stripe account” again. We read the id we already saved, mint a **new Account Link**, and send them to Stripe again. Same locker, new key. |
-| **`return_url`** | URL on **our** domain Stripe redirects to after onboarding **for that session** ends (finished or “I’m done for now”). **On return** = we handle that request and sync DB. |
-| **`refresh_url`** | If the **Account Link session** expired while they were on Stripe, Stripe can send them here so **our** app can issue a **fresh** Account Link (still same `acct_…`). |
+| Term                               | What it is                                                                                                                                                                                                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stripe Connect account**         | The **merchant account** Stripe created for this business, identified by **`acct_…`**. Think: “their Stripe business.” It persists whether onboarding is half-done or done.                                                                                                   |
+| **`payment_accounts` (our table)** | **Our** row that says “this `business_id` is linked to **`stripe_account_id` `acct_…`**” plus flags we copy from Stripe (`charges_enabled`, onboarding state, etc.). One row per business.                                                                                    |
+| **Account Link**                   | A **temporary URL** Stripe gives us that **opens the onboarding wizard** for **one** `acct_…`. It **expires**. If they need to continue later, we ask Stripe for a **new** Account Link for the **same** `acct_…`—we do **not** need a brand-new merchant account every time. |
+| **Reuse `stripe_account_id`**      | On the **second** click of Connect, we **do not** call “create a new Stripe account” again. We read the id we already saved, mint a **new Account Link**, and send them to Stripe again. Same locker, new key.                                                                |
+| **`return_url`**                   | URL on **our** domain Stripe redirects to after onboarding **for that session** ends (finished or “I’m done for now”). **On return** = we handle that request and sync DB.                                                                                                    |
+| **`refresh_url`**                  | If the **Account Link session** expired while they were on Stripe, Stripe can send them here so **our** app can issue a **fresh** Account Link (still same `acct_…`).                                                                                                         |
 
 ---
 
@@ -42,11 +42,11 @@ So “user exited halfway” does **not** automatically mean “start from zero 
 
 **Goal:** Create (or reuse) exactly **one** Stripe Connect account per `business_id`, persist it immediately, then open onboarding.
 
-| Step | Stripe | Our DB (`payment_accounts`) |
-|------|--------|-----------------------------|
-| Ensure row exists | — | Upsert row for `business_id` if missing. |
-| Create account (if no `stripe_account_id`) | `accounts.create` (Express) | Set `stripe_account_id`, set `onboarding_status = 'in_progress'`, clear or set booleans from initial retrieve if you call it. |
-| Create link | `accountLinks.create` (`account_onboarding`) | Optionally set `last_synced_at` after link creation (optional). |
+| Step                                       | Stripe                                       | Our DB (`payment_accounts`)                                                                                                   |
+| ------------------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Ensure row exists                          | —                                            | Upsert row for `business_id` if missing.                                                                                      |
+| Create account (if no `stripe_account_id`) | `accounts.create` (Express)                  | Set `stripe_account_id`, set `onboarding_status = 'in_progress'`, clear or set booleans from initial retrieve if you call it. |
+| Create link                                | `accountLinks.create` (`account_onboarding`) | Optionally set `last_synced_at` after link creation (optional).                                                               |
 
 **Important:** Avoid creating a **new** `acct_…` on every click once a row exists. Reuse `stripe_account_id` and only create a **new Account Link**.
 

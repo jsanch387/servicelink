@@ -26,23 +26,23 @@ So: **nothing pushes from our app to your phone.** Your phone **pulls** the link
 
 ## What lives in this feature
 
-| Area | Role |
-|------|------|
-| `server/calendarFeedSecret.ts` | Signing secret (`CALENDAR_FEED_SECRET` or derived from Supabase service key). |
-| `server/calendarFeedToken.ts` | HMAC token `{businessId}.{sig}`; verifies public feed requests. |
-| `server/buildBookingsIcs.ts` | Builds RFC 5545 ICS text (`VEVENT`, `UID`, `DTSTART`/`DTEND`, etc.). |
+| Area                                      | Role                                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------------------- |
+| `server/calendarFeedSecret.ts`            | Signing secret (`CALENDAR_FEED_SECRET` or derived from Supabase service key).     |
+| `server/calendarFeedToken.ts`             | HMAC token `{businessId}.{sig}`; verifies public feed requests.                   |
+| `server/buildBookingsIcs.ts`              | Builds RFC 5545 ICS text (`VEVENT`, `UID`, `DTSTART`/`DTEND`, etc.).              |
 | `services/listBookingsForCalendarFeed.ts` | Loads `confirmed` + `cancelled` rows for a business (service role on feed route). |
-| `components/SyncBookingsCtaCard.tsx` | Bookings header CTA. |
-| `components/SyncBookingsConfirmModal.tsx` | Explain → confirm (Pro) or Upgrade to Pro (free) → open subscribe URL / close. |
-| `testing/*.test.ts` | Token + ICS helpers. |
+| `components/SyncBookingsCtaCard.tsx`      | Bookings header CTA.                                                              |
+| `components/SyncBookingsConfirmModal.tsx` | Explain → confirm (Pro) or Upgrade to Pro (free) → open subscribe URL / close.    |
+| `testing/*.test.ts`                       | Token + ICS helpers.                                                              |
 
 ---
 
 ## API routes (see `src/constants/routes.ts` → `API_ROUTES`)
 
-| Route | Who | What |
-|-------|-----|------|
-| `GET /api/calendar/feed/link` | Logged-in owner | Returns `httpsUrl` + `webcalUrl` for **their** business (session). |
+| Route                            | Who                   | What                                                                                                            |
+| -------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `GET /api/calendar/feed/link`    | Logged-in owner       | Returns `httpsUrl` + `webcalUrl` for **their** business (session).                                              |
 | `GET /api/calendar/feed/[token]` | Public (signed token) | Returns `text/calendar` ICS for that business. Calendar servers call this **without** logging into ServiceLink. |
 
 The **token** is a **bearer secret**: anyone with the full URL can read that feed. Treat it like an unlisted link.
@@ -75,7 +75,6 @@ The **token** is a **bearer secret**: anyone with the full URL can read that fee
    ```
 
 2. **Add it as a server environment variable** (must **not** use the `NEXT_PUBLIC_` prefix—this must never ship to the browser):
-
    - **Vercel (or similar):** Project → Settings → Environment Variables → name `CALENDAR_FEED_SECRET`, paste the value. Enable it for **Production** (required for real users). Add it to **Preview** too if anyone tests calendar subscribe on preview URLs. **Redeploy** after saving so serverless functions pick it up.
    - **Local:** Add to `.env.local` (keep this file **gitignored**; never commit the value):
 
@@ -96,7 +95,7 @@ This applies when:
 - **`CALENDAR_FEED_SECRET`** is set, changed, cleared, or pasted wrong after a deploy.
 - **`CALENDAR_FEED_SECRET` is unset** and **`SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_SECRET_KEY`** is rotated (derived signing input changed, so all tokens change).
 
-**When debugging later (“calendar sync used to work”):** ask first: *Did `CALENDAR_FEED_SECRET` or the Supabase service key change? Did someone redeploy with different env vars?* That rules out a whole class of issues before digging into app bugs.
+**When debugging later (“calendar sync used to work”):** ask first: _Did `CALENDAR_FEED_SECRET` or the Supabase service key change? Did someone redeploy with different env vars?_ That rules out a whole class of issues before digging into app bugs.
 
 ### When you change or remove it
 
@@ -118,11 +117,11 @@ This applies when:
 
 Vitest specs live under **`testing/`** (see repo `vitest.config.ts` include pattern).
 
-| File | What it covers |
-|------|------------------|
+| File                                 | What it covers                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `testing/calendarFeedSecret.test.ts` | `CALENDAR_FEED_SECRET` wins over Supabase keys; stable derivation from service role; key priority; throws when nothing is configured. |
-| `testing/calendarFeedToken.test.ts` | Sign + verify token round-trip; invalid tokens rejected. |
-| `testing/buildBookingsIcs.test.ts` | ICS escaping / folding; address formatting; full `buildBookingsIcs` output for confirmed + cancelled events; escaped `LOCATION`. |
+| `testing/calendarFeedToken.test.ts`  | Sign + verify token round-trip; invalid tokens rejected.                                                                              |
+| `testing/buildBookingsIcs.test.ts`   | ICS escaping / folding; address formatting; full `buildBookingsIcs` output for confirmed + cancelled events; escaped `LOCATION`.      |
 
 Run this feature’s tests:
 

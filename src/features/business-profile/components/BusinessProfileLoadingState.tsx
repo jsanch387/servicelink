@@ -1,60 +1,59 @@
 /**
- * BusinessProfileLoadingState - Skeleton for business profile view
- * Matches BusinessProfileView layout: cover, profile section, tabs, content grid.
- * Used by dashboard business-profile and public [business-slug] routes.
+ * BusinessProfileLoadingState - Minimal skeleton for public + dashboard booking link.
+ * Matches BusinessProfileView: cover, header, tabs, service cards (no category row).
  */
 
 import React from 'react';
+
+const bar = 'rounded bg-white/[0.06] animate-pulse';
+const SERVICE_SKELETON_COUNT = 4;
+
+function ServiceCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className={`h-5 w-36 max-w-[55%] ${bar}`} />
+        <div className={`h-6 w-14 shrink-0 ${bar}`} />
+      </div>
+      <div className="my-3 border-t border-white/[0.04]" />
+      <div className="mb-4 min-h-[3.5rem] space-y-2">
+        <div className={`h-3 w-full ${bar}`} />
+        <div className={`h-3 w-4/5 ${bar}`} />
+      </div>
+      <div className="flex items-center justify-between pt-1">
+        <div className={`h-3 w-16 ${bar}`} />
+        <div className={`h-4 w-12 ${bar}`} />
+      </div>
+    </div>
+  );
+}
 
 export const BusinessProfileLoadingState: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <div className="max-w-4xl mx-auto">
-        {/* Cover Photo Skeleton */}
-        <div className="relative h-48 sm:h-56 md:h-64 w-full bg-neutral-800 animate-pulse" />
+        <div className={`relative h-44 sm:h-52 md:h-56 w-full ${bar}`} />
 
-        {/* Profile Section Skeleton – centered */}
-        <div className="relative px-6 -mt-16 z-10 flex flex-col items-center text-center">
-          <div className="w-32 h-32 rounded-[2.4rem] bg-neutral-700 mb-6 animate-pulse" />
-          <div className="h-9 bg-neutral-700 rounded-lg w-64 mb-2 animate-pulse" />
-          <div className="h-4 bg-neutral-700 rounded w-32 mb-4 animate-pulse" />
-          <div className="h-4 bg-neutral-700 rounded w-40 mb-6 animate-pulse" />
-          <div className="space-y-2 mb-10">
-            <div className="h-4 bg-neutral-700 rounded w-96 max-w-full animate-pulse" />
-            <div className="h-4 bg-neutral-700 rounded w-80 max-w-full animate-pulse" />
-          </div>
-          <div className="grid grid-cols-2 gap-4 w-full max-w-sm px-2">
-            <div className="h-12 bg-neutral-700 rounded-xl animate-pulse" />
-            <div className="h-12 bg-neutral-700 rounded-xl animate-pulse" />
+        <div className="relative z-10 -mt-14 flex flex-col items-center px-4 sm:px-8 text-center">
+          <div
+            className={`mb-5 h-28 w-28 rounded-[1.75rem] sm:h-32 sm:w-32 ${bar} ring-1 ring-white/10`}
+          />
+          <div className={`mb-2 h-7 w-48 max-w-[80%] ${bar}`} />
+          <div className={`h-4 w-32 ${bar}`} />
+        </div>
+
+        <div className="mt-8 border-b border-white/[0.06] px-4 sm:px-8">
+          <div className="flex gap-6 pb-3">
+            <div className={`h-4 w-16 ${bar}`} />
+            <div className={`h-4 w-14 ${bar}`} />
+            <div className={`h-4 w-10 ${bar}`} />
           </div>
         </div>
 
-        {/* Tabs Skeleton */}
-        <div className="px-4 sm:px-8 mt-8 border-b border-neutral-700">
-          <div className="flex justify-center gap-8">
-            <div className="h-6 bg-neutral-700 rounded w-20 animate-pulse" />
-            <div className="h-6 bg-neutral-700 rounded w-24 animate-pulse" />
-          </div>
-        </div>
-
-        {/* Services / Content Skeleton – grid of cards */}
-        <div className="px-4 sm:px-8 py-8">
-          <div className="grid grid-cols-1 gap-4">
-            {[1, 2, 3].map(i => (
-              <div
-                key={i}
-                className="bg-neutral-800 rounded-2xl border border-neutral-700/50 p-5 animate-pulse"
-              >
-                <div className="flex justify-between mb-3">
-                  <div className="h-6 bg-neutral-700 rounded w-48" />
-                  <div className="h-6 bg-neutral-700 rounded w-16" />
-                </div>
-                <div className="h-4 bg-neutral-700 rounded w-full mb-4" />
-                <div className="h-4 bg-neutral-700 rounded w-3/4 mb-4" />
-                <div className="h-6 bg-neutral-700 rounded w-24" />
-              </div>
-            ))}
-          </div>
+        <div className="space-y-4 px-4 py-6 sm:px-8 sm:py-8">
+          {Array.from({ length: SERVICE_SKELETON_COUNT }, (_, i) => (
+            <ServiceCardSkeleton key={i} />
+          ))}
         </div>
       </div>
     </div>

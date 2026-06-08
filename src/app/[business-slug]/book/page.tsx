@@ -27,6 +27,9 @@ import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
+import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
+import type { ServiceRow } from '@/features/services/types/services';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
   normalizePublicBookingOfferedLocales,
@@ -85,6 +88,9 @@ type ServiceRowForPicker = {
   price_options_enabled: boolean | null;
   hours_to_complete: number | null;
   duration_minutes: number | null;
+  category_id?: string | null;
+  sort_order?: number | null;
+  created_at?: string;
 };
 
 type PaymentSettingsRowForBooking = {
@@ -285,27 +291,38 @@ export default async function BookingRequestPage({
 
   let availabilityPickerServices: BookServicePickerItem[] = [];
   if (showAvailabilityServicePicker) {
-    const { data: serviceRows, error: pickerServicesError } = await adminClient
-      .from('business_services')
-      .select(
-        'id, name, description, price_cents, price_options_enabled, hours_to_complete, duration_minutes'
-      )
-      .eq('business_id', businessProfile.id)
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: true });
+    const [servicesQuery, categoriesQuery] = await Promise.all([
+      adminClient
+        .from('business_services')
+        .select(
+          'id, name, description, price_cents, price_options_enabled, hours_to_complete, duration_minutes, category_id, sort_order, created_at'
+        )
+        .eq('business_id', businessProfile.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true }),
+      adminClient
+        .from('service_categories')
+        .select('*')
+        .eq('business_id', businessProfile.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true }),
+    ]);
 
-    if (pickerServicesError) {
+    if (servicesQuery.error) {
       console.error(
         'Error fetching services for book picker:',
-        pickerServicesError
+        servicesQuery.error
       );
     }
 
-    availabilityPickerServices =
-      (serviceRows as ServiceRowForPicker[] | null)
-        ?.map(row => mapRowToPickerItem(row, ownerHasPro))
-        .filter(s => s.id && s.name) ?? [];
+    const sortedPickerRows = sortServicesForDisplay(
+      (servicesQuery.data ?? []) as ServiceRow[],
+      (categoriesQuery.data ?? []) as ServiceCategoryRow[]
+    );
+
+    availabilityPickerServices = sortedPickerRows
+      .map(row => mapRowToPickerItem(row, ownerHasPro))
+      .filter(s => s.id && s.name);
 
     if (availabilityPickerServices.length === 1) {
       redirect(

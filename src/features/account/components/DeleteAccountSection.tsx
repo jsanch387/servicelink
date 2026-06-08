@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import { useAuth } from '@/features/auth';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useState } from 'react';
@@ -9,6 +9,8 @@ import { ConfirmDeleteAccountModal } from './ConfirmDeleteAccountModal';
 export interface DeleteAccountSectionProps {
   /** Auth user's email — used to validate the typed confirmation. */
   accountEmail: string;
+  /** When true, renders without the section heading (parent provides group label). */
+  embedded?: boolean;
 }
 
 /**
@@ -17,6 +19,7 @@ export interface DeleteAccountSectionProps {
  */
 export const DeleteAccountSection: React.FC<DeleteAccountSectionProps> = ({
   accountEmail,
+  embedded = false,
 }) => {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -45,12 +48,20 @@ export const DeleteAccountSection: React.FC<DeleteAccountSectionProps> = ({
         onDeleted={handleDeleted}
       />
 
-      <section className="w-full min-w-0">
-        <h2 className="mb-3 text-lg sm:text-xl font-semibold text-red-300">
-          Delete account
-        </h2>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-sm leading-snug text-zinc-500">
+      <section className="w-full min-w-0 space-y-4">
+        {!embedded ? (
+          <h2 className="text-lg sm:text-xl font-semibold text-white">
+            Delete account
+          </h2>
+        ) : null}
+        <GlassCard
+          padding="none"
+          rounded="rounded-2xl"
+          blurColor="bg-zinc-500"
+          showBlur
+          className="w-full min-w-0 p-4 text-left"
+        >
+          <p className="text-sm leading-relaxed text-gray-400">
             Permanently remove your account, business profile, and all
             associated data. This cannot be undone.
           </p>
@@ -63,7 +74,7 @@ export const DeleteAccountSection: React.FC<DeleteAccountSectionProps> = ({
           >
             Delete account
           </Button>
-        </div>
+        </GlassCard>
       </section>
     </>
   );

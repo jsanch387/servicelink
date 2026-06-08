@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next out dist"
+    "clean": "rm -rf .next out dist",
+    "script:update-user-email": "tsx --env-file=.env.local scripts/update-user-email.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -49,6 +50,7 @@
     "jsdom": "^29.0.1",
     "prettier": "^3.6.2",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }

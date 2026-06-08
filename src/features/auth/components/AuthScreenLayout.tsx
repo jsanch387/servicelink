@@ -29,15 +29,12 @@ export function AuthFormCard({
 
 export function AuthOrDivider() {
   return (
-    <div className="relative py-1 sm:py-2">
-      <div className="absolute inset-0 flex items-center" aria-hidden="true">
-        <div className="w-full border-t border-white/10" />
-      </div>
-      <div className="relative flex justify-center">
-        <span className="bg-[var(--dashboard-bg,#0a0a0a)] px-3 text-xs font-medium uppercase tracking-wider text-gray-500">
-          Or
-        </span>
-      </div>
+    <div className="flex items-center gap-3 py-1 sm:gap-4 sm:py-2">
+      <div className="h-px flex-1 bg-white/10" aria-hidden="true" />
+      <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-gray-500">
+        Or
+      </span>
+      <div className="h-px flex-1 bg-white/10" aria-hidden="true" />
     </div>
   );
 }

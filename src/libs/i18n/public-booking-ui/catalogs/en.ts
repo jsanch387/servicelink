@@ -215,5 +215,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     reviewsLoadError: 'Reviews could not be loaded. Please try again.',
     reviewsRetry: 'Try again',
     reviewsLoadingAriaLabel: 'Loading reviews',
+    serviceCategoryOther: 'Other services',
+    serviceCategoriesAriaLabel: 'Browse services by category',
+    noServicesInCategory: 'No services in this category.',
   },
 };

@@ -7,9 +7,13 @@ import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { UpdateServicesOrderResult } from '../types/services';
 
+import { sortOrderForBucketIndex } from '../categories/utils/sortServicesForDisplay';
+
 /**
- * Updates sort_order for each service to match the given order.
- * orderedIds[0] gets sort_order 0, orderedIds[1] gets 1, etc.
+ * Updates sort_order for each service in the active bucket.
+ * orderedIds[0] gets sort_order 0, orderedIds[1] gets 10, etc.
+ * Only pass ids from the bucket being reordered — never the full business list
+ * when categories are in use.
  */
 export async function updateServicesOrder(
   supabase: SupabaseClient<Database>,
@@ -22,7 +26,7 @@ export async function updateServicesOrder(
 
     for (let i = 0; i < orderedIds.length; i++) {
       const payload: TableUpdate = {
-        sort_order: i,
+        sort_order: sortOrderForBucketIndex(i),
         updated_at: new Date().toISOString(),
       };
 

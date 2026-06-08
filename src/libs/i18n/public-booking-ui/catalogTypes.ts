@@ -196,5 +196,11 @@ export type PublicBookingUi = {
     reviewsLoadError: string;
     reviewsRetry: string;
     reviewsLoadingAriaLabel: string;
+    /** Public profile: uncategorized services tab label. */
+    serviceCategoryOther: string;
+    /** Public profile: category filter tablist label. */
+    serviceCategoriesAriaLabel: string;
+    /** Public profile: empty state when a category has no services. */
+    noServicesInCategory: string;
   };
 };

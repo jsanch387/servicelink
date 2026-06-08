@@ -1,6 +1,11 @@
 'use client';
 
 import { GlassCard, Switch } from '@/components/shared';
+import {
+  serviceListingNameClassName,
+  serviceListingPriceClassName,
+  serviceListingStartingAtClassName,
+} from '@/components/shared/serviceListingTypography';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import type { ServiceRow } from '@/features/services/types/services';
 import {
@@ -11,9 +16,8 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import { serviceDescriptionNeedsSeeMore } from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React from 'react';
 
 function formatPrice(priceCents: number | null): string {
   if (priceCents == null) return 'Contact for quote';
@@ -64,6 +68,8 @@ export interface ServiceManagementCardProps {
   draggable?: boolean;
   /** Number of add-ons assigned to this service (quick glance). */
   addOnCount?: number;
+  /** Category label shown on the card when not grouped by section. */
+  categoryName?: string | null;
 }
 
 export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
@@ -79,23 +85,22 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
   totalCount = 0,
   draggable = false,
   addOnCount,
+  categoryName,
 }) => {
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
-  const description = service.description || '';
-  const isLongDescription = serviceDescriptionNeedsSeeMore(description);
-
   const duration = formatDuration(service);
   const isFirst = index === 0;
   const isLast = index === totalCount - 1;
 
+  const showStartingAt =
+    service.price_options_enabled === true &&
+    service.price_cents != null &&
+    service.price_cents > 0;
+
   const cardContent = (
     <>
-      <div className="flex items-start gap-4">
-        {/* Reorder controls — only in sort mode: drag handle (desktop) + up/down (tap, mobile-friendly) */}
+      <div className="flex items-start gap-3 sm:gap-4">
         {isReorderMode && (
           <div className="flex flex-col items-center flex-shrink-0">
-            {/* Up / number / down — evenly spaced; number centered in line with arrows */}
             <div className="flex flex-col items-center justify-between gap-3 sm:gap-0.5 w-[44px] sm:w-auto">
               <button
                 type="button"
@@ -119,7 +124,6 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
                 <ChevronDownIcon className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
               </button>
             </div>
-            {/* Drag handle — visible on desktop for mouse drag */}
             <div
               className="hidden sm:block mt-1 p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 cursor-grab active:cursor-grabbing touch-none"
               aria-label="Drag to reorder"
@@ -130,88 +134,61 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
         )}
 
         <div className="flex-1 min-w-0">
-          {/* Header: name + price — same as public ServiceCard */}
-          <div className="flex justify-between items-start gap-2 mb-2 min-w-0">
-            <h3 className="text-lg font-black text-white tracking-tight flex-1 min-w-0 truncate">
-              {service.name}
-            </h3>
-            <div className="text-right flex-shrink-0">
-              {service.price_options_enabled === true &&
-              service.price_cents != null &&
-              service.price_cents > 0 ? (
-                <span className="block text-[11px] font-medium text-zinc-400 mb-1 leading-none">
-                  Starting at
-                </span>
-              ) : null}
-              <span className="text-xl font-black text-white leading-none">
-                {formatPrice(service.price_cents)}
+          <div className="min-w-0">
+            {categoryName ? (
+              <span className="inline-block mb-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-[10px] font-semibold uppercase tracking-wide text-emerald-400/90">
+                {categoryName}
               </span>
-            </div>
-          </div>
-          <div className="border-t border-white/[0.04] mb-4" />
-
-          {/* Duration + add-on count (only show add-ons when count > 0) */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
-            {duration && (
-              <div className="flex items-center gap-1.5 text-zinc-500">
-                <ClockIcon className="h-3 w-3 flex-shrink-0" />
-                <span className="text-[10px] font-medium tracking-wide">
-                  {duration}
-                </span>
-              </div>
-            )}
-            {duration && addOnCount != null && addOnCount > 0 && (
-              <span className="text-zinc-500 text-[10px]" aria-hidden>
-                ·
-              </span>
-            )}
-            {addOnCount != null && addOnCount > 0 && (
-              <span className="text-[10px] font-medium tracking-wide text-zinc-500">
-                {addOnCount} add-on{addOnCount === 1 ? '' : 's'}
-              </span>
-            )}
-          </div>
-
-          {/* Description — collapsible like public ServiceCard for uniform card height */}
-          <div className="mb-0 min-h-[4.5rem]">
-            <p
-              className={`text-zinc-500 text-sm leading-relaxed whitespace-pre-line break-words ${
-                isLongDescription && !isDescriptionExpanded
-                  ? 'line-clamp-5'
-                  : ''
+            ) : null}
+            <div
+              className={`flex justify-between gap-3 min-w-0 ${
+                showStartingAt ? 'items-start' : 'items-baseline'
               }`}
             >
-              {description}
-            </p>
-            {isLongDescription && (
-              <button
-                type="button"
-                onClick={() => setIsDescriptionExpanded(prev => !prev)}
-                className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-white active:text-white transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
-                aria-expanded={isDescriptionExpanded}
-              >
-                {isDescriptionExpanded ? (
-                  <>
-                    <ChevronUpIcon className="h-3.5 w-3.5" />
-                    See less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDownIcon className="h-3.5 w-3.5" />
-                    See more
-                  </>
-                )}
-              </button>
+              <h3 className={`${serviceListingNameClassName} min-w-0 flex-1`}>
+                {service.name}
+              </h3>
+              <span className="text-right leading-none flex-shrink-0">
+                {showStartingAt ? (
+                  <span className={serviceListingStartingAtClassName}>
+                    Starting at
+                  </span>
+                ) : null}
+                <span className={serviceListingPriceClassName}>
+                  {formatPrice(service.price_cents)}
+                </span>
+              </span>
+            </div>
+            {(duration || (addOnCount != null && addOnCount > 0)) && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                {duration ? (
+                  <div className="flex items-center gap-1 text-zinc-500">
+                    <ClockIcon className="h-3 w-3 flex-shrink-0" />
+                    <span className="text-[10px] font-medium tracking-wide">
+                      {duration}
+                    </span>
+                  </div>
+                ) : null}
+                {duration && addOnCount != null && addOnCount > 0 ? (
+                  <span className="text-zinc-500 text-[10px]" aria-hidden>
+                    ·
+                  </span>
+                ) : null}
+                {addOnCount != null && addOnCount > 0 ? (
+                  <span className="text-[10px] font-medium tracking-wide text-zinc-500">
+                    {addOnCount} add-on{addOnCount === 1 ? '' : 's'}
+                  </span>
+                ) : null}
+              </div>
             )}
           </div>
 
-          {/* Action row: Edit, Delete, Switch — outlined style */}
           {!isReorderMode && (
-            <div className="flex items-center justify-between pt-0">
+            <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/[0.06]">
               <div className="flex gap-2 w-auto sm:w-full sm:max-w-[240px]">
                 <Link
                   href={`/dashboard/services/${service.id}`}
-                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all active:scale-95 cursor-pointer"
                   aria-label="Edit service"
                 >
                   <PencilSquareIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-emerald-500 flex-shrink-0" />
@@ -220,7 +197,7 @@ export const ServiceManagementCard: React.FC<ServiceManagementCardProps> = ({
                 <button
                   type="button"
                   onClick={() => onDelete?.(service.id)}
-                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2.5 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-400 transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center justify-center gap-2 min-w-[80px] sm:min-w-0 px-4 py-2 sm:px-5 sm:py-2.5 sm:flex-1 text-white text-sm font-medium rounded-xl sm:rounded-2xl border border-white/20 hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-400 transition-all active:scale-95 cursor-pointer"
                   aria-label="Delete service"
                 >
                   <TrashIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-red-500 flex-shrink-0" />

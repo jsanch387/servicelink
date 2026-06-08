@@ -9,6 +9,7 @@ import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelper
 import {
   getAddOns,
   getServiceAddOnIds,
+  getServiceCategories,
   getServicePriceOptions,
   getServices,
   ServiceEditScreen,
@@ -48,13 +49,19 @@ export default async function ServiceEditPage({
     redirect('/dashboard');
   }
 
-  const [servicesResult, addOnsResult, assignedResult, optionsResult] =
-    await Promise.all([
-      getServices(businessProfile.id),
-      getAddOns(businessProfile.id),
-      getServiceAddOnIds(serviceId),
-      getServicePriceOptions(serviceId, businessProfile.id),
-    ]);
+  const [
+    servicesResult,
+    addOnsResult,
+    assignedResult,
+    optionsResult,
+    categoriesResult,
+  ] = await Promise.all([
+    getServices(businessProfile.id),
+    getAddOns(businessProfile.id),
+    getServiceAddOnIds(serviceId),
+    getServicePriceOptions(serviceId, businessProfile.id),
+    getServiceCategories(businessProfile.id),
+  ]);
 
   const canUsePriceOptions = await hasPriceOptionsAccess({
     supabase,
@@ -76,10 +83,15 @@ export default async function ServiceEditPage({
     assignedResult.success && assignedResult.data ? assignedResult.data : [];
   const initialPriceOptions =
     optionsResult.success && optionsResult.data ? optionsResult.data : [];
+  const initialCategories =
+    categoriesResult.success && categoriesResult.data
+      ? categoriesResult.data
+      : [];
 
   return (
     <ServiceEditScreen
       service={service}
+      initialCategories={initialCategories}
       initialAddOns={addOns}
       initialSelectedAddOnIds={initialSelectedAddOnIds}
       initialPriceOptions={initialPriceOptions}

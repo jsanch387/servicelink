@@ -6,17 +6,17 @@ Use this when the **signed-in business owner** marks an availability booking **c
 
 **Do not** use a server endpoint to mark the booking complete. Use:
 
-| Method | Path | Purpose |
-|--------|------|---------|
+| Method | Path                                                   | Purpose                                                  |
+| ------ | ------------------------------------------------------ | -------------------------------------------------------- |
 | `POST` | `/api/availability/bookings/{bookingId}/review-invite` | Create invite row + send email (after Supabase complete) |
 
 **Implementation**
 
-| Piece | Path |
-|-------|------|
-| Review invite API | `src/app/api/availability/bookings/[id]/review-invite/route.ts` |
-| Server helper | `src/features/reviews/server/requestReviewInviteForBooking.ts` |
-| Eligibility (client-side mirror) | `src/features/reviews/server/reviewInviteEligibility.ts` |
+| Piece                            | Path                                                            |
+| -------------------------------- | --------------------------------------------------------------- |
+| Review invite API                | `src/app/api/availability/bookings/[id]/review-invite/route.ts` |
+| Server helper                    | `src/features/reviews/server/requestReviewInviteForBooking.ts`  |
+| Eligibility (client-side mirror) | `src/features/reviews/server/reviewInviteEligibility.ts`        |
 
 ---
 
@@ -33,21 +33,21 @@ If eligibility is false, **skip the API call** entirely.
 
 ## Endpoint
 
-| | |
-|---|---|
-| **Method** | `POST` |
-| **Path** | `/api/availability/bookings/{bookingId}/review-invite` |
-| **Request body** | None |
-| **Example** | `POST https://<api-origin>/api/availability/bookings/{bookingId}/review-invite` |
+|                  |                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Method**       | `POST`                                                                          |
+| **Path**         | `/api/availability/bookings/{bookingId}/review-invite`                          |
+| **Request body** | None                                                                            |
+| **Example**      | `POST https://<api-origin>/api/availability/bookings/{bookingId}/review-invite` |
 
 ---
 
 ## Authentication (required)
 
-| Header | Value |
-|--------|--------|
-| `Authorization` | `Bearer <Supabase session access_token>` |
-| `Content-Type` | `application/json` (optional; no body required) |
+| Header          | Value                                           |
+| --------------- | ----------------------------------------------- |
+| `Authorization` | `Bearer <Supabase session access_token>`        |
+| `Content-Type`  | `application/json` (optional; no body required) |
 
 Same JWT the Expo app already uses for other owner dashboard API routes.
 
@@ -63,10 +63,10 @@ Same JWT the Expo app already uses for other owner dashboard API routes.
 
 You need **two separate decisions** — same as web dashboard:
 
-| Decision | Used for | Rule |
-|----------|----------|------|
-| **Modal copy** | Confirm dialog before complete | `hasEmail && !customerAlreadyReviewed` |
-| **Call review-invite API?** | After Supabase `status = completed` | `willSendReviewInviteOnComplete` |
+| Decision                    | Used for                            | Rule                                   |
+| --------------------------- | ----------------------------------- | -------------------------------------- |
+| **Modal copy**              | Confirm dialog before complete      | `hasEmail && !customerAlreadyReviewed` |
+| **Call review-invite API?** | After Supabase `status = completed` | `willSendReviewInviteOnComplete`       |
 
 `hasEmail` = `customer_email` non-empty after trim (web does not require valid format for modal copy).  
 `customerAlreadyReviewed` = row in `reviews` for this `customer_id` at this business.  
@@ -85,11 +85,11 @@ WHERE id = :bookingId;
 
 **2. Eligibility context** — batch-load once per bookings screen (or just for the booking you are completing):
 
-| Set | Query | Meaning |
-|-----|-------|---------|
-| `reviewedCustomerIds` | `reviews` where `business_id = :businessId` and `customer_id IN (:customerIds)` → select `customer_id` | Customer already left a review |
-| `pendingInviteCustomerIds` | `review_invites` where `business_id = :businessId`, `status = 'pending'`, `customer_id IN (:customerIds)` → select `customer_id` | Open invite link not used yet |
-| `bookingIdsWithInvite` | `review_invites` where `booking_id IN (:bookingIds)` → select `booking_id` | Invite already created for this booking |
+| Set                        | Query                                                                                                                            | Meaning                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `reviewedCustomerIds`      | `reviews` where `business_id = :businessId` and `customer_id IN (:customerIds)` → select `customer_id`                           | Customer already left a review          |
+| `pendingInviteCustomerIds` | `review_invites` where `business_id = :businessId`, `status = 'pending'`, `customer_id IN (:customerIds)` → select `customer_id` | Open invite link not used yet           |
+| `bookingIdsWithInvite`     | `review_invites` where `booking_id IN (:bookingIds)` → select `booking_id`                                                       | Invite already created for this booking |
 
 `:businessId` = `business_profiles.id` where `profile_id = auth.uid()`.  
 `:customerIds` / `:bookingIds` = deduped ids from the booking(s) on screen.
@@ -121,25 +121,25 @@ AFTER Supabase UPDATE status = 'completed':
 
 All must be true:
 
-| # | Check | Source |
-|---|-------|--------|
-| 1 | `customer_email` trim + valid format (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`) | `bookings.customer_email` |
-| 2 | `customer_id` non-empty UUID | `bookings.customer_id` |
-| 3 | No row in `reviews` for `(business_id, customer_id)` | `ctx.reviewedCustomerIds` |
-| 4 | No pending invite for customer at business | `ctx.pendingInviteCustomerIds` |
-| 5 | No invite row for this `booking_id` | `ctx.bookingIdsWithInvite` |
+| #   | Check                                                                 | Source                         |
+| --- | --------------------------------------------------------------------- | ------------------------------ |
+| 1   | `customer_email` trim + valid format (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`) | `bookings.customer_email`      |
+| 2   | `customer_id` non-empty UUID                                          | `bookings.customer_id`         |
+| 3   | No row in `reviews` for `(business_id, customer_id)`                  | `ctx.reviewedCustomerIds`      |
+| 4   | No pending invite for customer at business                            | `ctx.pendingInviteCustomerIds` |
+| 5   | No invite row for this `booking_id`                                   | `ctx.bookingIdsWithInvite`     |
 
 If any fail → **do not call** review-invite (server would return `skipped: true` anyway).
 
 ### Example: modal vs API
 
-| Booking | Modal says “email will be sent”? | Call review-invite after complete? |
-|---------|----------------------------------|-------------------------------------|
-| Has email, never reviewed, has `customer_id` | Yes | Yes |
-| Has email, customer already reviewed | No (simple confirm) | No |
-| No email | No | No |
-| Has email, no `customer_id` | Yes (has email, not reviewed) | No (missing `customer_id`) |
-| Has email, pending invite for same customer | Yes | No |
+| Booking                                      | Modal says “email will be sent”? | Call review-invite after complete? |
+| -------------------------------------------- | -------------------------------- | ---------------------------------- |
+| Has email, never reviewed, has `customer_id` | Yes                              | Yes                                |
+| Has email, customer already reviewed         | No (simple confirm)              | No                                 |
+| No email                                     | No                               | No                                 |
+| Has email, no `customer_id`                  | Yes (has email, not reviewed)    | No (missing `customer_id`)         |
+| Has email, pending invite for same customer  | Yes                              | No                                 |
 
 Row 4–5: modal is optimistic (email only + not reviewed); API uses stricter rules.
 
@@ -164,7 +164,9 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function normalizedCustomerEmail(raw: string | null | undefined): string | null {
+function normalizedCustomerEmail(
+  raw: string | null | undefined
+): string | null {
   const s = (raw ?? '').trim();
   return s && isValidEmail(s) ? s : null;
 }
@@ -255,7 +257,11 @@ async function loadReviewEligibilityContext(
     }
   }
 
-  return { reviewedCustomerIds, pendingInviteCustomerIds, bookingIdsWithInvite };
+  return {
+    reviewedCustomerIds,
+    pendingInviteCustomerIds,
+    bookingIdsWithInvite,
+  };
 }
 ```
 
@@ -265,10 +271,10 @@ async function loadReviewEligibilityContext(
 
 Before confirming complete, show the appropriate modal using **DB-derived flags** (no API call):
 
-| Condition | Modal |
-|-----------|--------|
-| `hasEmail && !customerAlreadyReviewed` | Mention that a **review request email** will be sent to the customer |
-| Customer already reviewed **or** no email | Simple “Mark complete?” confirm (no email mention) |
+| Condition                                 | Modal                                                                |
+| ----------------------------------------- | -------------------------------------------------------------------- |
+| `hasEmail && !customerAlreadyReviewed`    | Mention that a **review request email** will be sent to the customer |
+| Customer already reviewed **or** no email | Simple “Mark complete?” confirm (no email mention)                   |
 
 `hasEmail` and `customerAlreadyReviewed` come from the booking row + `loadReviewEligibilityContext` (see above).
 
@@ -318,13 +324,13 @@ Before confirming complete, show the appropriate modal using **DB-derived flags*
 }
 ```
 
-| `reason` | Meaning |
-|----------|---------|
-| `no_customer_email` | Missing or invalid `customer_email` on booking |
-| `no_customer_id` | Missing `customer_id` on booking |
-| `invite_already_exists` | `review_invites` row already exists for this `booking_id` |
-| `customer_already_reviewed` | `reviews` row exists for `(business_id, customer_id)` |
-| `pending_invite_exists` | Another pending invite exists for this customer at this business |
+| `reason`                    | Meaning                                                          |
+| --------------------------- | ---------------------------------------------------------------- |
+| `no_customer_email`         | Missing or invalid `customer_email` on booking                   |
+| `no_customer_id`            | Missing `customer_id` on booking                                 |
+| `invite_already_exists`     | `review_invites` row already exists for this `booking_id`        |
+| `customer_already_reviewed` | `reviews` row exists for `(business_id, customer_id)`            |
+| `pending_invite_exists`     | Another pending invite exists for this customer at this business |
 
 ### Success — invite created, email failed (best-effort)
 
@@ -343,13 +349,13 @@ Invite row exists; Resend failed server-side. Do not retry complete; optional fu
 
 ### Errors
 
-| Status | Body | When |
-|--------|------|------|
+| Status  | Body                                                                                        | When                               |
+| ------- | ------------------------------------------------------------------------------------------- | ---------------------------------- |
 | **400** | `{ "success": false, "error": "Booking must be completed before sending a review invite" }` | Called before `status = completed` |
-| **400** | `{ "success": false, "error": "Booking ID required" }` | Bad path param |
-| **401** | `{ "success": false, "error": "Unauthorized" }` | Missing/invalid Bearer |
-| **404** | `{ "success": false, "error": "Booking not found" }` | Wrong id or not owner’s business |
-| **500** | `{ "success": false, "error": "..." }` | Server/DB failure |
+| **400** | `{ "success": false, "error": "Booking ID required" }`                                      | Bad path param                     |
+| **401** | `{ "success": false, "error": "Unauthorized" }`                                             | Missing/invalid Bearer             |
+| **404** | `{ "success": false, "error": "Booking not found" }`                                        | Wrong id or not owner’s business   |
+| **500** | `{ "success": false, "error": "..." }`                                                      | Server/DB failure                  |
 
 ---
 
@@ -388,7 +394,9 @@ type ReviewInviteErrorResponse = {
   error: string;
 };
 
-type ReviewInviteResponse = ReviewInviteSuccessResponse | ReviewInviteErrorResponse;
+type ReviewInviteResponse =
+  | ReviewInviteSuccessResponse
+  | ReviewInviteErrorResponse;
 ```
 
 ---
@@ -424,13 +432,13 @@ X-Request-ID: mobile-complete-20260601-abc
 [review-invite] finished req=<id> source=mobile_api outcome=failed error=<truncated>
 ```
 
-| `outcome` | Level | Meaning |
-|-----------|-------|---------|
-| `sent` | info | Invite created + email delivered |
-| `skipped` | info | Not eligible (expected; includes `reason`) |
-| `invite_no_email` | warn | Invite row exists; Resend failed |
-| `rejected` | warn | Auth, not found, not completed, validation |
-| `failed` | error | DB/uncaught error |
+| `outcome`         | Level | Meaning                                    |
+| ----------------- | ----- | ------------------------------------------ |
+| `sent`            | info  | Invite created + email delivered           |
+| `skipped`         | info  | Not eligible (expected; includes `reason`) |
+| `invite_no_email` | warn  | Invite row exists; Resend failed           |
+| `rejected`        | warn  | Auth, not found, not completed, validation |
+| `failed`          | error | DB/uncaught error                          |
 
 Filter: `[review-invite] finished` + match `req=` to response header `X-Request-ID`.
 
@@ -486,7 +494,10 @@ async function completeBookingWithReviewInvite(
   booking: BookingForReviewEligibility,
   eligibilityCtx: ReviewEligibilityContext
 ): Promise<{ completed: boolean; reviewInviteSent: boolean }> {
-  const shouldSendInvite = willSendReviewInviteOnComplete(booking, eligibilityCtx);
+  const shouldSendInvite = willSendReviewInviteOnComplete(
+    booking,
+    eligibilityCtx
+  );
 
   const { error: updateError } = await supabase
     .from('bookings')
@@ -545,16 +556,16 @@ async function completeBookingWithReviewInvite(
 
 ## QA checklist (staging)
 
-| Check | Expected |
-|-------|----------|
-| Complete booking, eligible customer | **200**, `sent: true`, customer receives email |
-| Complete booking, no `customer_email` | Skip API locally; if called anyway → **200** `skipped`, `reason: no_customer_email` |
-| Complete booking, no `customer_id` | Skip API locally; if called anyway → **200** `skipped`, `reason: no_customer_id` |
-| Customer already reviewed | Skip API locally; if called → **200** `skipped`, `reason: customer_already_reviewed` |
-| Call before `status = completed` | **400** |
-| No Bearer token | **401** |
-| Wrong `bookingId` | **404** |
-| Complete on web, then mobile calls same endpoint | **200** `skipped`, `reason: invite_already_exists` |
+| Check                                            | Expected                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Complete booking, eligible customer              | **200**, `sent: true`, customer receives email                                       |
+| Complete booking, no `customer_email`            | Skip API locally; if called anyway → **200** `skipped`, `reason: no_customer_email`  |
+| Complete booking, no `customer_id`               | Skip API locally; if called anyway → **200** `skipped`, `reason: no_customer_id`     |
+| Customer already reviewed                        | Skip API locally; if called → **200** `skipped`, `reason: customer_already_reviewed` |
+| Call before `status = completed`                 | **400**                                                                              |
+| No Bearer token                                  | **401**                                                                              |
+| Wrong `bookingId`                                | **404**                                                                              |
+| Complete on web, then mobile calls same endpoint | **200** `skipped`, `reason: invite_already_exists`                                   |
 
 ---
 

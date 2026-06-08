@@ -4,45 +4,45 @@ How review data is loaded today and where API routes will live.
 
 ## Layout
 
-| Path | Role |
-|------|------|
-| `server/loadPublicReviewSummary.ts` | SSR: ratings only → header + tab visibility |
-| `server/loadPublicBusinessReviews.ts` | Full reviews (API on tab click) |
-| `app/api/public/profile/[slug]/reviews/route.ts` | `GET` — lazy tab fetch |
-| `server/mapReviewRowToPublicProfile.ts` | DB row → `PublicProfileReview` (+ safe `tryMap*`) |
-| `server/computeRatingBreakdown.ts` | Star breakdown percents |
-| `utils/deriveReviewsSummary.ts` | Average + breakdown from review list |
-| `types/loadResults.ts` | `LoadPublicBusinessReviewsResult` (`ok` \| `empty` \| `error`) |
+| Path                                             | Role                                                           |
+| ------------------------------------------------ | -------------------------------------------------------------- |
+| `server/loadPublicReviewSummary.ts`              | SSR: ratings only → header + tab visibility                    |
+| `server/loadPublicBusinessReviews.ts`            | Full reviews (API on tab click)                                |
+| `app/api/public/profile/[slug]/reviews/route.ts` | `GET` — lazy tab fetch                                         |
+| `server/mapReviewRowToPublicProfile.ts`          | DB row → `PublicProfileReview` (+ safe `tryMap*`)              |
+| `server/computeRatingBreakdown.ts`               | Star breakdown percents                                        |
+| `utils/deriveReviewsSummary.ts`                  | Average + breakdown from review list                           |
+| `types/loadResults.ts`                           | `LoadPublicBusinessReviewsResult` (`ok` \| `empty` \| `error`) |
 
 **Owner dashboard (wired):**
 
-| Piece | Path |
-|-------|------|
-| `loadDashboardReviews` | `dashboard/server/loadDashboardReviews.ts` — all reviews for business (incl. hidden) |
-| `mapReviewRowToDashboardReview` | `dashboard/server/mapReviewRowToDashboardReview.ts` |
-| `GET /api/reviews` | `app/api/reviews/route.ts` |
-| `useDashboardReviews` | `dashboard/hooks/useDashboardReviews.ts` |
+| Piece                           | Path                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| `loadDashboardReviews`          | `dashboard/server/loadDashboardReviews.ts` — all reviews for business (incl. hidden) |
+| `mapReviewRowToDashboardReview` | `dashboard/server/mapReviewRowToDashboardReview.ts`                                  |
+| `GET /api/reviews`              | `app/api/reviews/route.ts`                                                           |
+| `useDashboardReviews`           | `dashboard/hooks/useDashboardReviews.ts`                                             |
 
 **Booking complete + public submit (wired):**
 
-| Piece | Path |
-|-------|------|
-| `createReviewInviteIfEligible` | `server/createReviewInviteIfEligible.ts` — invite row + review email |
+| Piece                                 | Path                                                                                                  |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `createReviewInviteIfEligible`        | `server/createReviewInviteIfEligible.ts` — invite row + review email                                  |
 | `applyReviewInviteOnBookingCompleted` | `server/applyReviewInviteOnBookingCompleted.ts` — called from `PATCH /api/availability/bookings/[id]` |
-| Review invite email | `features/email/review-invite/` |
-| `loadPublicReviewInviteByToken` | `server/loadPublicReviewInviteByToken.ts` |
-| `submitPublicReview` | `server/submitPublicReview.ts` |
-| `POST /api/public/reviews/submit` | `app/api/public/reviews/submit/route.ts` |
-| `app/review/[token]/page.tsx` | Customer review form + success/error states |
+| Review invite email                   | `features/email/review-invite/`                                                                       |
+| `loadPublicReviewInviteByToken`       | `server/loadPublicReviewInviteByToken.ts`                                                             |
+| `submitPublicReview`                  | `server/submitPublicReview.ts`                                                                        |
+| `POST /api/public/reviews/submit`     | `app/api/public/reviews/submit/route.ts`                                                              |
+| `app/review/[token]/page.tsx`         | Customer review form + success/error states                                                           |
 
 **Not built yet:**
 
-| Planned | Notes |
-|---------|--------|
-| Owner resend invite | — |
-| Dashboard hide-review UI | `PATCH` may support `is_hidden`; UI TBD |
-| Receipt / invoice on complete | Review email only today |
-| SMS invite | Email only v1 |
+| Planned                       | Notes                                   |
+| ----------------------------- | --------------------------------------- |
+| Owner resend invite           | —                                       |
+| Dashboard hide-review UI      | `PATCH` may support `is_hidden`; UI TBD |
+| Receipt / invoice on complete | Review email only today                 |
+| SMS invite                    | Email only v1                           |
 
 See [FLOWS.md](./FLOWS.md) for full E2E reference. Pattern for similar features: `src/features/quotes/dashboard/server/`.
 
