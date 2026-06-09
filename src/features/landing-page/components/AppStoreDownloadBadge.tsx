@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import { IOS_APP_STORE_URL } from '@/constants/appStore';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
+import Image from 'next/image';
 
-const APP_STORE_BADGE_SRC = '/appstore-sticker.svg';
+const APP_STORE_BADGE_SRC = MARKETING_IMAGES.store.appStoreSticker;
 
 type AppStoreDownloadBadgeProps = {
   className?: string;

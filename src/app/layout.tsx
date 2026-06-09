@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import type { Metadata } from 'next';
 import {
   Geist,
@@ -74,12 +75,26 @@ export const metadata: Metadata = {
     'Create a professional booking link for your service business. Share one link—myservicelink.app/yourbusiness—and let customers see your services and book instantly. Built for detailers, pressure washers, lawn care, and service pros.',
   icons: {
     icon: [
-      { url: '/favicon.png', sizes: '192x192', type: 'image/png' },
-      { url: '/favicon.png', sizes: '512x512', type: 'image/png' },
-      { url: '/favicon.ico', sizes: 'any' },
+      {
+        url: MARKETING_IMAGES.brand.favicon,
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        url: MARKETING_IMAGES.brand.favicon,
+        sizes: '512x512',
+        type: 'image/png',
+      },
+      { url: MARKETING_IMAGES.brand.faviconIco, sizes: 'any' },
     ],
-    shortcut: [{ url: '/favicon.png', type: 'image/png' }],
-    apple: [{ url: '/favicon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: [{ url: MARKETING_IMAGES.brand.favicon, type: 'image/png' }],
+    apple: [
+      {
+        url: MARKETING_IMAGES.brand.favicon,
+        sizes: '180x180',
+        type: 'image/png',
+      },
+    ],
   },
   keywords: [
     'booking link for business',
@@ -108,7 +123,7 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  // Link previews: public/open-graph.png must exist and be 1200×630px (1.91:1) for optimal ratio.
+  // Link previews: brand/open-graph.png must exist and be 1200×630px (1.91:1) for optimal ratio.
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -119,7 +134,7 @@ export const metadata: Metadata = {
       'Create a professional booking link. Share one link and let customers see your services and book instantly. Built for service pros.',
     images: [
       {
-        url: '/open-graph.png',
+        url: MARKETING_IMAGES.brand.openGraph,
         width: 1200,
         height: 630,
         alt: 'ServiceLink — Your business, ready to book.',
@@ -132,7 +147,7 @@ export const metadata: Metadata = {
     title: 'ServiceLink | One Link. Your Services. Get Booked.',
     description:
       'Create a professional booking link. Share one link and let customers see your services and book instantly.',
-    images: ['/open-graph.png'],
+    images: [MARKETING_IMAGES.brand.openGraph],
   },
   alternates: {
     canonical: siteUrl,

@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import type { Metadata } from 'next';
 
 const SITE_URL =
@@ -96,7 +97,7 @@ export function getResourcesPageMetadata(): Metadata {
       locale: 'en_US',
       images: [
         {
-          url: '/open-graph.png',
+          url: MARKETING_IMAGES.brand.openGraph,
           width: 1200,
           height: 630,
           alt: 'ServiceLink Resources for service businesses',

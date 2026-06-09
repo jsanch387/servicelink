@@ -1,3 +1,4 @@
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
@@ -408,7 +409,7 @@ export default async function PublicMaintenanceEnrollmentPage({
                   Powered by
                 </span>
                 <Image
-                  src="/favicon.png"
+                  src={MARKETING_IMAGES.brand.favicon}
                   alt=""
                   width={14}
                   height={14}

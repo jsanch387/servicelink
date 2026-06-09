@@ -1,7 +1,8 @@
 import { GOOGLE_PLAY_STORE_URL } from '@/constants/appStore';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import Image from 'next/image';
 
-const GOOGLE_PLAY_BADGE_SRC = '/google-play.png';
+const GOOGLE_PLAY_BADGE_SRC = MARKETING_IMAGES.store.googlePlay;
 
 const BADGE_IMAGE_CLASS = 'h-12 w-auto object-contain sm:h-14';
 

@@ -37,6 +37,9 @@ export const Navigation: React.FC = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
+          <Link href={ROUTES.FEATURES_PAGE} className={navLinkClass}>
+            Features
+          </Link>
           <Link href={ROUTES.PRICING_PAGE} className={navLinkClass}>
             Pricing
           </Link>
@@ -83,6 +86,13 @@ export const Navigation: React.FC = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]">
           <div className="px-4 py-5 space-y-1">
+            <Link
+              href={ROUTES.FEATURES_PAGE}
+              className={mobileNavLinkClass}
+              onClick={closeMobileMenu}
+            >
+              Features
+            </Link>
             <Link
               href={ROUTES.PRICING_PAGE}
               className={mobileNavLinkClass}

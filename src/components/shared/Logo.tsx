@@ -4,6 +4,7 @@
  * Uses Space Grotesk for clean, modern SaaS typography
  */
 
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
@@ -62,7 +63,7 @@ export const Logo: React.FC<BrandingProps> = ({
     <div className={`flex items-center ${className}`}>
       {showLogo && (
         <Image
-          src="/service-link-logo.png"
+          src={MARKETING_IMAGES.brand.logo}
           alt="ServiceLink Logo"
           width={logoConfig.imageSize}
           height={logoConfig.imageSize}

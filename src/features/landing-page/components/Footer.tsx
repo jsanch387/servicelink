@@ -24,6 +24,13 @@ export const Footer: React.FC = () => {
           </Link>
           <span className="text-gray-600">•</span>
           <Link
+            href={ROUTES.FEATURES_PAGE}
+            className="hover:text-white transition-colors"
+          >
+            Features
+          </Link>
+          <span className="text-gray-600">•</span>
+          <Link
             href={ROUTES.PRICING_PAGE}
             className="hover:text-white transition-colors"
           >

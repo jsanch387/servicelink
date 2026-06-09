@@ -139,6 +139,18 @@ ${GUIDES.map(
     <priority>0.4</priority>
   </url>
   <url>
+    <loc>${baseUrl}/features</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/pricing</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
     <loc>${baseUrl}/workshop</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>

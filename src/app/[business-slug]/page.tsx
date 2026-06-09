@@ -6,6 +6,7 @@
  */
 
 import { StructuredData } from '@/components/shared';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -381,7 +382,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
             url:
               businessProfile.cover_image_url ||
               businessProfile.logo_url ||
-              '/service-link-logo.png',
+              MARKETING_IMAGES.brand.logo,
             width: 1200,
             height: 630,
             alt: `${businessName} - ${businessType}`,
@@ -395,7 +396,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
         images: [
           businessProfile.cover_image_url ||
             businessProfile.logo_url ||
-            '/service-link-logo.png',
+            MARKETING_IMAGES.brand.logo,
         ],
         site: '@servicelink',
         creator: '@servicelink',

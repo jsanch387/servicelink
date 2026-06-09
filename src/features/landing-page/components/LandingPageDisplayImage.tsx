@@ -1,3 +1,4 @@
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import Image from 'next/image';
 
 export type LandingPageDisplayImageProps = {
@@ -10,7 +11,7 @@ export type LandingPageDisplayImageProps = {
 
 const DISPLAY_ASSETS = {
   hero: {
-    src: '/landing-page-mock.png',
+    src: MARKETING_IMAGES.landing.heroMock,
     alt: 'ServiceLink mobile app and customer booking profile side by side',
     width: 2400,
     height: 1600,
@@ -24,7 +25,7 @@ const DISPLAY_ASSETS = {
       'w-96 h-64 sm:w-[28rem] sm:h-[19rem] md:w-[36rem] md:h-96 lg:w-[42rem] lg:h-[28rem]',
   },
   compact: {
-    src: '/landing-page-display.png',
+    src: MARKETING_IMAGES.landing.display,
     alt: 'ServiceLink booking profile on mobile',
     width: 450,
     height: 900,

@@ -1,6 +1,7 @@
 // Landing Page Components
 export { BenefitsSection } from './components/BenefitsSection';
 export { DisplayCard } from './components/DisplayCard';
+export { FeaturesPage } from './components/FeaturesPage';
 export { FeaturesSection } from './components/FeaturesSection';
 export { Footer } from './components/Footer';
 export { HeroSection } from './components/HeroSection';

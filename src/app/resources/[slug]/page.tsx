@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { Navigation } from '@/features/landing-page/components/Navigation';
 import { getGuideBySlug } from '@/features/resources';
 import { getGuideContentComponent } from '@/features/resources/content';
@@ -49,7 +50,12 @@ export async function generateMetadata({
       type: 'article',
       locale: 'en_US',
       images: [
-        { url: '/open-graph.png', width: 1200, height: 630, alt: guide.title },
+        {
+          url: MARKETING_IMAGES.brand.openGraph,
+          width: 1200,
+          height: 630,
+          alt: guide.title,
+        },
       ],
     },
     twitter: {

@@ -11,7 +11,8 @@ export const ROUTES = {
   PRIVACY: '/privacy',
   CONTACT_PAGE: '/contact',
 
-  // Pricing (dedicated page)
+  // Marketing pages
+  FEATURES_PAGE: '/features',
   PRICING_PAGE: '/pricing',
 
   // Public content (guides, blogs, SEO)

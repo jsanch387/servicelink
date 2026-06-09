@@ -1,3 +1,4 @@
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ROUTES } from '@/constants/routes';
 import Image from 'next/image';
 import React from 'react';
@@ -16,14 +17,14 @@ const steps = [
     title: 'List your services.',
     description:
       'Customers can clearly see what you offer and choose the service they need. From there, they move straight into booking on your schedule.',
-    image: '/services-landing-mock.png',
+    image: MARKETING_IMAGES.features.services,
     imageAlt: 'Services list with prices and Book now button',
   },
   {
     title: 'Handle payments in the app.',
     description:
       'Customers can pay directly in the app, and you can require a deposit to lock in serious bookings.',
-    image: '/payment-landing.png',
+    image: MARKETING_IMAGES.features.payments,
     imageAlt: 'Payment screen with deposit and pay-in-app options',
   },
 ];

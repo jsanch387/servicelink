@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
@@ -97,7 +98,7 @@ export function getWorkshopPageMetadata(): Metadata {
       locale: 'en_US',
       images: [
         {
-          url: '/open-graph.png',
+          url: MARKETING_IMAGES.brand.openGraph,
           width: 1200,
           height: 630,
           alt: 'Free Masterclass — Facebook Ads for Mobile Detailing | ServiceLink',

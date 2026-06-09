@@ -7,6 +7,7 @@ import {
   RequiredLabel,
   WarningCallout,
 } from '@/components/shared';
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
 import { TryProPostOnboardingModal } from '@/features/pricing';
@@ -627,7 +628,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                           Powered by
                         </span>
                         <Image
-                          src="/favicon.png"
+                          src={MARKETING_IMAGES.brand.favicon}
                           alt=""
                           width={14}
                           height={14}

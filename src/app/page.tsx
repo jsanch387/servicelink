@@ -1,3 +1,4 @@
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { LandingPage } from '@/features/landing-page';
 import type { Metadata } from 'next';
 
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
       'Create a professional booking link. Share one link and let customers see your services and book instantly.',
     images: [
       {
-        url: '/open-graph.png',
+        url: MARKETING_IMAGES.brand.openGraph,
         width: 1200,
         height: 630,
         alt: 'ServiceLink — Your business, ready to book.',
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
     title: 'ServiceLink | One Link. Your Services. Get Booked.',
     description:
       'Create a professional booking link. Share one link and let customers see your services and book instantly.',
-    images: ['/open-graph.png'],
+    images: [MARKETING_IMAGES.brand.openGraph],
   },
   alternates: {
     canonical: siteUrl,
