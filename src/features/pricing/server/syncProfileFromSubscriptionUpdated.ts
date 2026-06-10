@@ -15,6 +15,13 @@ export interface SyncProfileFromSubscriptionUpdatedParams {
   currentPeriodEndUnix: number | null;
   /** Stripe `cancel_at_period_end` — subscription stays active until period end but will not renew. */
   cancelAtPeriodEnd: boolean;
+  /**
+   * Clear `payment_failed_email_sent_at` when the status grants Pro (i.e. the
+   * subscription recovered). Default `true`. Pass `false` from the
+   * `invoice.payment_failed` path so a transient `active` status during a failed
+   * charge can't wipe the once-per-episode guard and allow a duplicate email.
+   */
+  resetPaymentFailedFlagOnGrant?: boolean;
 }
 
 /**
@@ -35,6 +42,7 @@ export async function syncProfileFromSubscriptionUpdated(
     subscriptionStatus,
     currentPeriodEndUnix,
     cancelAtPeriodEnd,
+    resetPaymentFailedFlagOnGrant = true,
   } = params;
 
   if (!stripeSubscriptionId?.trim()) {
@@ -42,16 +50,22 @@ export async function syncProfileFromSubscriptionUpdated(
   }
 
   const normalizedStatus = subscriptionStatus?.trim() || '';
+  const grantsPro =
+    STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO.has(normalizedStatus);
   const updates: Record<string, unknown> = {
     subscription_status: normalizedStatus || null,
-    subscription_tier: STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO.has(
-      normalizedStatus
-    )
-      ? 'pro'
-      : 'free',
+    subscription_tier: grantsPro ? 'pro' : 'free',
     subscription_cancel_at_period_end: Boolean(cancelAtPeriodEnd),
     updated_at: new Date().toISOString(),
   };
+
+  // Subscription recovered to an active/granting state — clear the payment-failed
+  // notification flag so a future, separate failure can notify the owner again.
+  // Skipped on the invoice.payment_failed path (resetPaymentFailedFlagOnGrant=false)
+  // so a transient `active` status mid-failure can't wipe the guard.
+  if (grantsPro && resetPaymentFailedFlagOnGrant) {
+    updates.payment_failed_email_sent_at = null;
+  }
 
   if (currentPeriodEndUnix != null) {
     updates.subscription_current_period_end = new Date(

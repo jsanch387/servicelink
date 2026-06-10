@@ -23,17 +23,21 @@ email/
 ├── trial-ending-soon/        (trial reminder before first charge)
 │   ├── types.ts
 │   └── sendTrialEndingSoonEmail.ts
-└── quote-sent-to-customer/   (owner sent quote → customer email)
-    ├── README.md
+├── quote-sent-to-customer/   (owner sent quote → customer email)
+│   ├── README.md
+│   ├── types.ts
+│   ├── quoteSentToCustomerTemplate.ts
+│   └── sendQuoteSentToCustomerEmail.ts
+└── pro-welcome/              (first paid Pro upgrade → owner email, links to ads workshop)
     ├── types.ts
-    ├── quoteSentToCustomerTemplate.ts
-    └── sendQuoteSentToCustomerEmail.ts
+    ├── proWelcomeTemplate.ts
+    └── sendProWelcomeEmail.ts
 ```
 
 - **`services/`** – shared Resend client and URL/from helpers used by all email types.
 - **`utils/`** – shared helpers (e.g. escaping for HTML).
 - **`booking-notification/`** – one subfolder per “email use case”; each can have its own README, types, template, and send function.
-- **`subscription-payment-failed/`** – `sendSubscriptionPaymentFailedEmail` exists for reuse/manual sends; **`invoice.payment_failed` does not send email** (in-app Settings handles payment issues).
+- **`subscription-payment-failed/`** – `sendSubscriptionPaymentFailedEmail`, sent once per failure episode from `invoice.payment_failed` via `notifyPaymentFailedOnce` (in-app Settings still handles the actual fix).
 - **`trial-ending-soon/`** – sends a pre-charge reminder (triggered from Stripe trial ending webhook flow).
 
 ## Billing/trial email flow
@@ -45,12 +49,18 @@ These emails are orchestrated from `src/app/api/stripe/webhook/route.ts`:
   - Current implementation uses Stripe event timing (simple/reliable baseline).
   - Email CTA goes to Dashboard Settings (`/dashboard/settings`) so users can manage billing details.
 
+- **`checkout.session.completed` / `customer.subscription.updated` (first paid Pro)**
+  - Triggers `sendProWelcomeEmail` via `sendProWelcomeIfFirstPaidPro` (in `@/features/pricing/server`).
+  - Sends **once, ever**: only on the user's first **paid, active** Pro upgrade (trials are skipped until they convert). Guarded by an atomic claim on `profiles.pro_welcome_email_sent_at`, so renewals and cancel → resubscribe never re-send. See `src/app/api/stripe/README.md` for the column + backfill SQL.
+  - CTA links to the Meta ads workshop gate (`/workshop`).
+
 - **`invoice.payment_failed`**
-  - **No Resend email.** Updates the profile via subscription sync only (`past_due` / etc.) so the Settings banner and portal flow stay correct.
+  - Syncs the profile via subscription sync (`past_due` / etc.) **and** sends a single "payment failed" email via `notifyPaymentFailedOnce` → `sendSubscriptionPaymentFailedEmail`.
+  - Stripe retries fire this event repeatedly, so sending is guarded by an atomic claim on `profiles.payment_failed_email_sent_at` (one email per failure episode). The flag clears when the subscription recovers. See `src/app/api/stripe/README.md` for the column SQL.
 
 ### Why this design
 
-- Trial email stays on Stripe’s `trial_will_end` + Resend; payment failures are surfaced in-app to avoid duplicate or mistimed mail (e.g. retries after cancel).
+- Trial email stays on Stripe’s `trial_will_end` + Resend. We send our **own** payment-failed email (not Stripe's) so the owner gets exactly one on-brand heads-up per failure instead of one per retry; the Settings banner + portal still handle the in-app fix.
 
 ## Stripe events required in production
 

@@ -43,6 +43,8 @@ export async function updateProfileFromCheckout(
     subscription_tier: 'pro',
     subscription_status: subscriptionStatus?.trim() || 'active',
     subscription_cancel_at_period_end: false,
+    // Fresh paid/active subscription — reset any prior payment-failed notification.
+    payment_failed_email_sent_at: null,
     updated_at: new Date().toISOString(),
   };
 

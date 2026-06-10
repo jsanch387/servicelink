@@ -79,6 +79,38 @@ ALTER TABLE stripe_webhook_events
   ADD COLUMN IF NOT EXISTS event_type text;
 ```
 
+## Pro welcome email (first paid upgrade only)
+
+When a user reaches a **paid, active** Pro subscription for the **first time**, the webhook sends a one-time "Welcome to Pro" email (links to the Meta ads workshop). It fires from `checkout.session.completed` (direct paid checkout) and from `customer.subscription.updated` (trial → paid conversion), via `sendProWelcomeIfFirstPaidPro`.
+
+Once-only is enforced by an **atomic claim** on `profiles.pro_welcome_email_sent_at`: the timestamp is set only where it is still `NULL`. Renewals, status changes, and cancel → resubscribe (we always keep `stripe_customer_id`) can never re-send because the column is never cleared on downgrade. A send failure releases the claim so a later event can retry.
+
+Add the column and **backfill existing Pro users** so only future first-time upgrades get the email:
+
+```sql
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS pro_welcome_email_sent_at timestamptz;
+
+-- Suppress the email for everyone who is already Pro today.
+UPDATE profiles
+  SET pro_welcome_email_sent_at = now()
+  WHERE pro_welcome_email_sent_at IS NULL
+    AND subscription_tier = 'pro';
+```
+
+## Payment failed email (once per failure episode)
+
+When a recurring charge fails, the webhook (`invoice.payment_failed`) now sends a single "your payment failed" email to the owner via `notifyPaymentFailedOnce` → `sendSubscriptionPaymentFailedEmail`. Stripe fires `invoice.payment_failed` on **every** retry attempt, so the email is guarded by an **atomic claim** on `profiles.payment_failed_email_sent_at`: it's set only where still `NULL`, so retries of the same failure can't re-send.
+
+The flag is **cleared when the subscription recovers** to an active/granting state (`syncProfileFromSubscriptionUpdated`, `updateProfileFromCheckout`), so a later, separate failure can notify the owner again.
+
+Add the column (no backfill — currently-failing users will get one heads-up on their next retry):
+
+```sql
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS payment_failed_email_sent_at timestamptz;
+```
+
 ## Configuring webhooks in Stripe
 
 We use **two** webhook destinations with different account scopes:
@@ -160,6 +192,6 @@ When a recurring payment fails (card declined, expired, etc.), Stripe sends `inv
 
 - Records the event for idempotency.
 - Retrieves the subscription from Stripe and updates `subscription_status` and `subscription_current_period_end` on the profile (same as `customer.subscription.updated`), so failed payments are reflected in the database even if the update event is missed or ordered differently.
-- Does **not** send email from ServiceLink for failed charges (avoids mail after cancel, odd retry timing, or overlap with Stripe’s own notifications if enabled).
+- Sends **one** ServiceLink "payment failed" email per failure episode via `notifyPaymentFailedOnce` (see **Payment failed email** above). Keep Stripe's own failed-payment customer email **off** to avoid duplicates — we send our on-brand one instead.
 
 Stripe will retry automatically. The app also shows an in-app banner on Settings when `subscription_status` is `past_due` or `unpaid`, with an “Update payment method” button that opens the Customer Portal.

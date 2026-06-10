@@ -60,3 +60,9 @@ export type {
   ContactFormSubmissionPayload,
   SendContactFormSubmissionResult,
 } from './contact-form-submission/types';
+
+export { sendProWelcomeEmail } from './pro-welcome/sendProWelcomeEmail';
+export type {
+  ProWelcomeEmailPayload,
+  SendProWelcomeEmailResult,
+} from './pro-welcome/types';

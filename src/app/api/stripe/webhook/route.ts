@@ -36,6 +36,8 @@ import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
+import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
+import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/trialConfirmationPayload';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
@@ -844,6 +846,12 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // First paid Pro upgrade only (direct paid checkout — no trial). Best-effort;
+    // the atomic claim inside guarantees once-only across retries/resubscribes.
+    void sendProWelcomeIfFirstPaidPro(supabase, { userId }).catch(err => {
+      console.error('[stripe:webhook] pro welcome email (checkout)', err);
+    });
   }
 
   // Subscription updated (renewal, status change to past_due/unpaid, etc.)
@@ -921,6 +929,17 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Covers trial -> paid conversion (status becomes `active`). First-time only:
+    // the atomic claim ensures renewals and cancel->resubscribe never re-send.
+    void sendProWelcomeIfFirstPaidPro(supabase, {
+      stripeSubscriptionId: subId,
+    }).catch(err => {
+      console.error(
+        '[stripe:webhook] pro welcome email (subscription.updated)',
+        err
+      );
+    });
   }
 
   // When subscription ends (user cancelled and period ended, or payment failed etc.)
@@ -1014,6 +1033,9 @@ export async function POST(request: NextRequest) {
           currentPeriodEndUnix: periodEnd ?? null,
           cancelAtPeriodEnd:
             subscriptionIsScheduledCancelWithoutRenewal(subscription),
+          // Don't let a transient `active` status here clear the failure guard —
+          // recovery is handled by the `customer.subscription.updated` path.
+          resetPaymentFailedFlagOnGrant: false,
         });
         if (!syncResult.success) {
           console.error(
@@ -1027,6 +1049,19 @@ export async function POST(request: NextRequest) {
           e
         );
       }
+
+      // Tell the owner once per failure episode (Stripe retries fire this event
+      // repeatedly; the atomic claim inside guards against re-sending).
+      const invoiceCustomerEmail =
+        typeof invoice.customer_email === 'string'
+          ? invoice.customer_email
+          : null;
+      void notifyPaymentFailedOnce(supabase, {
+        stripeSubscriptionId: subscriptionId,
+        invoiceCustomerEmail,
+      }).catch(err => {
+        console.error('[stripe:webhook] payment failed email', err);
+      });
     } else {
       console.warn(
         '[Stripe webhook] invoice.payment_failed no subscription on invoice',
