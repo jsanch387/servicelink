@@ -35,6 +35,7 @@ import {
   type AvailabilityBookingPaymentSummary,
 } from '@/features/email';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
@@ -436,6 +437,24 @@ export async function POST(request: NextRequest) {
               : String(emailErr).slice(0, 72),
         });
       }
+    }
+
+    if (sanitizedCustomer.phone) {
+      await sendAndRecordSms({
+        admin: supabase,
+        businessId,
+        bookingId: result.id,
+        customerId: result.customerId,
+        type: 'booking_confirmation',
+        to: sanitizedCustomer.phone,
+        message: buildBookingConfirmedSms({
+          businessName: businessDisplayName,
+          scheduledDate: body.scheduledDate,
+          startTime: body.startTime.trim(),
+        }),
+        dedupeKey: `${result.id}:booking_confirmation`,
+        correlationId: requestId,
+      });
     }
 
     logBookingTransaction(requestId, 'info', 'created', {

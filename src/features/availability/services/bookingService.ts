@@ -97,7 +97,7 @@ export async function createBooking(
     startTime: string;
     customer: CustomerFormData;
   }
-): Promise<{ id: string }> {
+): Promise<{ id: string; customerId: string }> {
   const addonDetails =
     payload.selectedAddOns?.length && payload.selectedAddOns.length > 0
       ? payload.selectedAddOns
@@ -144,7 +144,7 @@ export async function createBooking(
     );
   }
 
-  return { id: data.id };
+  return { id: data.id, customerId: data.customer_id as string };
 }
 
 /** Address / vehicle snapshot from the customer's most recent booking, if any. */

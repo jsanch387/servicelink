@@ -34,6 +34,7 @@ import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenanc
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
+import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
@@ -649,6 +650,23 @@ export async function POST(request: NextRequest) {
             bookingId: createdBooking.id,
           });
         }
+      }
+      if (bookingPayload.customer.phone) {
+        await sendAndRecordSms({
+          admin: supabase,
+          businessId: bookingPayload.businessId,
+          bookingId: createdBooking.id,
+          customerId: createdBooking.customerId,
+          type: 'booking_confirmation',
+          to: bookingPayload.customer.phone,
+          message: buildBookingConfirmedSms({
+            businessName: businessDisplayName,
+            scheduledDate: bookingPayload.scheduledDate,
+            startTime: bookingPayload.startTime,
+          }),
+          dedupeKey: `${createdBooking.id}:booking_confirmation`,
+          correlationId: event.id,
+        });
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
