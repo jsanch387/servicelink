@@ -11,12 +11,8 @@ import {
   updateBookingStatus,
   type BookingStatusUpdate,
 } from '@/features/availability/services/bookingService';
-import { applyMaintenanceVisitCompletedFromBooking } from '@/features/maintenance/server/applyMaintenanceVisitCompletedFromBooking';
-import { applyReviewInviteOnBookingCompleted } from '@/features/reviews/server/applyReviewInviteOnBookingCompleted';
-import {
-  buildReviewInviteTrace,
-  getReviewInviteRequestId,
-} from '@/features/reviews/server/reviewInviteRouteLog';
+import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
+import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -151,39 +147,33 @@ export async function PATCH(
       );
     }
 
-    const updated = await updateBookingStatus(
-      supabase,
-      bookingId,
-      status as BookingStatusUpdate
-    );
+    // Completion runs the shared lifecycle path (status + maintenance + the
+    // single SMS-first/email-fallback completion notification) so web and the
+    // mobile `job_completed` action behave identically.
+    const updated =
+      status === 'completed'
+        ? ((
+            await completeBookingWithSideEffects(
+              supabase,
+              createSupabaseAdminClient(),
+              bookingId,
+              {
+                requestId: getReviewInviteRequestId(request),
+                source: 'web_patch',
+              }
+            )
+          )?.booking ?? null)
+        : await updateBookingStatus(
+            supabase,
+            bookingId,
+            status as BookingStatusUpdate
+          );
 
     if (!updated) {
       return NextResponse.json(
         { success: false, error: 'Booking not found' },
         { status: 404 }
       );
-    }
-
-    if (status === 'completed') {
-      const admin = createSupabaseAdminClient();
-      try {
-        await applyMaintenanceVisitCompletedFromBooking(admin, {
-          id: updated.id,
-          business_id: updated.business_id,
-          customer_id: updated.customer_id,
-        });
-      } catch (sideErr) {
-        console.error(
-          '[API] PATCH booking maintenance completion side effects',
-          sideErr
-        );
-      }
-      const requestId = getReviewInviteRequestId(request);
-      const reviewTrace = buildReviewInviteTrace(requestId, 'web_patch', {
-        businessId: updated.business_id,
-        bookingId: updated.id,
-      });
-      await applyReviewInviteOnBookingCompleted(admin, updated, reviewTrace);
     }
 
     return NextResponse.json({

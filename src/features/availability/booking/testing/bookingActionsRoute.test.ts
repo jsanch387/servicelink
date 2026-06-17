@@ -7,11 +7,13 @@ const {
   assertOwnerSmsSendRateLimitsMock,
   sendAndRecordSmsMock,
   createSupabaseAdminClientMock,
+  completeBookingWithSideEffectsMock,
 } = vi.hoisted(() => ({
   getAuthenticatedUserMock: vi.fn(),
   assertOwnerSmsSendRateLimitsMock: vi.fn(),
   sendAndRecordSmsMock: vi.fn(),
   createSupabaseAdminClientMock: vi.fn(),
+  completeBookingWithSideEffectsMock: vi.fn(),
 }));
 
 vi.mock('@/libs/api/getAuthenticatedUser', () => ({
@@ -25,6 +27,13 @@ vi.mock('@/server/rateLimit/ownerSmsSendRateLimit', () => ({
 vi.mock('@/libs/supabase/admin', () => ({
   createSupabaseAdminClient: createSupabaseAdminClientMock,
 }));
+
+vi.mock(
+  '@/features/availability/services/completeBookingWithSideEffects',
+  () => ({
+    completeBookingWithSideEffects: completeBookingWithSideEffectsMock,
+  })
+);
 
 // Keep the real registry + message builders; only the send orchestrator is mocked.
 vi.mock('@/features/sms', async importOriginal => {
@@ -124,6 +133,18 @@ beforeEach(() => {
   assertOwnerSmsSendRateLimitsMock.mockResolvedValue({ ok: true });
   sendAndRecordSmsMock.mockResolvedValue({ sent: true, messageId: 'msg-1' });
   createSupabaseAdminClientMock.mockReturnValue({});
+  completeBookingWithSideEffectsMock.mockResolvedValue({
+    booking: { id: 'booking-1', status: 'completed' },
+    notification: {
+      review: {
+        requested: true,
+        sent: true,
+        channel: 'sms',
+        inviteId: 'inv-1',
+      },
+      sms: { sent: true, messageId: 'msg-1' },
+    },
+  });
 });
 
 describe('POST /api/availability/bookings/[id]/actions', () => {
@@ -258,6 +279,9 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(json.action).toBe('on_the_way');
     expect(json.jobStatus).toBe('on_the_way');
     expect(json.sms).toEqual({ sent: true, messageId: 'msg-1' });
+    // on_the_way does NOT complete the booking lifecycle.
+    expect(completeBookingWithSideEffectsMock).not.toHaveBeenCalled();
+    expect(json.bookingStatus).toBeUndefined();
     expect(sendAndRecordSmsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         businessId: 'biz-1',
@@ -269,7 +293,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     );
   });
 
-  it('200 job_completed transitions to completed', async () => {
+  it('200 job_completed transitions job_status AND completes the booking lifecycle + side effects', async () => {
     getAuthenticatedUserMock.mockResolvedValue(
       authOk(
         makeSupabase({
@@ -283,9 +307,98 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     const json = await res.json();
     expect(res.status).toBe(200);
     expect(json.jobStatus).toBe('completed');
-    expect(sendAndRecordSmsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'job_completed' })
+    // Marks the booking complete via the shared lifecycle helper (status +
+    // maintenance + the single SMS-first/email-fallback completion notice),
+    // surfacing bookingStatus + the review outcome to the app.
+    expect(completeBookingWithSideEffectsMock).toHaveBeenCalledTimes(1);
+    expect(completeBookingWithSideEffectsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'booking-1',
+      expect.objectContaining({ source: 'mobile_api' })
     );
+    expect(json.bookingStatus).toBe('completed');
+    // The completion notification is owned by the shared helper — the route must
+    // NOT also fire a generic action SMS (no double-text).
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    expect(json.sms).toEqual({ sent: true, messageId: 'msg-1' });
+    expect(json.review).toEqual({
+      requested: true,
+      sent: true,
+      channel: 'sms',
+      inviteId: 'inv-1',
+    });
+  });
+
+  it('200 job_completed still succeeds (state changed) when the completion SMS fails', async () => {
+    completeBookingWithSideEffectsMock.mockResolvedValue({
+      booking: { id: 'booking-1', status: 'completed' },
+      notification: {
+        review: {
+          requested: true,
+          sent: false,
+          channel: 'none',
+          inviteId: 'inv-1',
+        },
+        sms: { sent: false, reason: 'error' },
+      },
+    });
+    getAuthenticatedUserMock.mockResolvedValue(
+      authOk(
+        makeSupabase({
+          business,
+          booking: { ...baseBooking, job_status: 'in_progress' },
+          transition: { job_status: 'completed' },
+        })
+      )
+    );
+    const res = await POST(postRequest('job_completed'), params());
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.jobStatus).toBe('completed');
+    expect(json.bookingStatus).toBe('completed');
+    expect(completeBookingWithSideEffectsMock).toHaveBeenCalledTimes(1);
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    expect(json.sms).toEqual({ sent: false, reason: 'error' });
+  });
+
+  it('200 job_completed reports email-channel review when the customer has no phone', async () => {
+    completeBookingWithSideEffectsMock.mockResolvedValue({
+      booking: { id: 'booking-1', status: 'completed' },
+      notification: {
+        review: {
+          requested: true,
+          sent: true,
+          channel: 'email',
+          inviteId: 'inv-1',
+        },
+        // No SMS attempted (emailed instead).
+      },
+    });
+    getAuthenticatedUserMock.mockResolvedValue(
+      authOk(
+        makeSupabase({
+          business,
+          booking: {
+            ...baseBooking,
+            job_status: 'in_progress',
+            customer_phone: null,
+          },
+          transition: { job_status: 'completed' },
+        })
+      )
+    );
+    const res = await POST(postRequest('job_completed'), params());
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.review).toEqual({
+      requested: true,
+      sent: true,
+      channel: 'email',
+      inviteId: 'inv-1',
+    });
+    // No SMS was attempted; the SMS field reflects that.
+    expect(json.sms).toEqual({ sent: false, reason: 'no_phone' });
   });
 
   it('409 when the race-safe transition affects no rows (concurrent update)', async () => {

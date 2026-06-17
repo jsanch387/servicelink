@@ -25,24 +25,25 @@ How review data is loaded today and where API routes will live.
 
 **Booking complete + public submit (wired):**
 
-| Piece                                 | Path                                                                                                  |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `createReviewInviteIfEligible`        | `server/createReviewInviteIfEligible.ts` — invite row + review email                                  |
-| `applyReviewInviteOnBookingCompleted` | `server/applyReviewInviteOnBookingCompleted.ts` — called from `PATCH /api/availability/bookings/[id]` |
-| Review invite email                   | `features/email/review-invite/`                                                                       |
-| `loadPublicReviewInviteByToken`       | `server/loadPublicReviewInviteByToken.ts`                                                             |
-| `submitPublicReview`                  | `server/submitPublicReview.ts`                                                                        |
-| `POST /api/public/reviews/submit`     | `app/api/public/reviews/submit/route.ts`                                                              |
-| `app/review/[token]/page.tsx`         | Customer review form + success/error states                                                           |
+| Piece                                 | Path                                                                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `createReviewInviteIfEligible`        | `server/createReviewInviteIfEligible.ts` — invite row + delivery (SMS-first, email fallback)                                        |
+| `applyReviewInviteOnBookingCompleted` | `server/applyReviewInviteOnBookingCompleted.ts` — called from `completeBookingWithSideEffects` (web PATCH + mobile `job_completed`) |
+| Review invite SMS                     | `features/sms/messages/bookingSms.ts` (`buildReviewRequestSms`)                                                                     |
+| Review invite email (fallback)        | `features/email/review-invite/`                                                                                                     |
+| `loadPublicReviewInviteByToken`       | `server/loadPublicReviewInviteByToken.ts`                                                                                           |
+| `submitPublicReview`                  | `server/submitPublicReview.ts`                                                                                                      |
+| `POST /api/public/reviews/submit`     | `app/api/public/reviews/submit/route.ts`                                                                                            |
+| `app/review/[token]/page.tsx`         | Customer review form + success/error states                                                                                         |
 
 **Not built yet:**
 
-| Planned                       | Notes                                   |
-| ----------------------------- | --------------------------------------- |
-| Owner resend invite           | —                                       |
-| Dashboard hide-review UI      | `PATCH` may support `is_hidden`; UI TBD |
-| Receipt / invoice on complete | Review email only today                 |
-| SMS invite                    | Email only v1                           |
+| Planned                         | Notes                                   |
+| ------------------------------- | --------------------------------------- |
+| Owner resend invite             | —                                       |
+| Dashboard hide-review UI        | `PATCH` may support `is_hidden`; UI TBD |
+| Receipt / invoice on complete   | —                                       |
+| Owner resend invite (SMS/email) | —                                       |
 
 See [FLOWS.md](./FLOWS.md) for full E2E reference. Pattern for similar features: `src/features/quotes/dashboard/server/`.
 

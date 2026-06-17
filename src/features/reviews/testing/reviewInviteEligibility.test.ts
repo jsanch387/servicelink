@@ -75,13 +75,28 @@ describe('willSendReviewInviteOnBookingComplete', () => {
     ).toBe(false);
   });
 
-  it('returns false when there is no customer email', () => {
+  it('returns true with only a phone (no email) — SMS-first', () => {
     expect(
       willSendReviewInviteOnBookingComplete(
         {
           id: 'booking-1',
           customer_id: 'cust-1',
           customer_email: '',
+          customer_phone: '5807545207',
+        },
+        emptyContext()
+      )
+    ).toBe(true);
+  });
+
+  it('returns false when there is no phone and no email', () => {
+    expect(
+      willSendReviewInviteOnBookingComplete(
+        {
+          id: 'booking-1',
+          customer_id: 'cust-1',
+          customer_email: '',
+          customer_phone: null,
         },
         emptyContext()
       )

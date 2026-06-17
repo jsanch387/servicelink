@@ -92,10 +92,12 @@ describe('requestReviewInviteForBooking', () => {
     });
   });
 
-  it('returns sent when invite email succeeds', async () => {
+  it('returns sent + channel when the invite is delivered (SMS-first)', async () => {
     createReviewInviteIfEligibleMock.mockResolvedValue({
       ok: true,
       sent: true,
+      skipped: false,
+      channel: 'sms',
       inviteId: 'inv-1',
     });
 
@@ -109,6 +111,7 @@ describe('requestReviewInviteForBooking', () => {
       ok: true,
       sent: true,
       skipped: false,
+      channel: 'sms',
       inviteId: 'inv-1',
     });
     expect(createReviewInviteIfEligibleMock).toHaveBeenCalledOnce();

@@ -19,6 +19,7 @@ export {
   buildJobCompletedSms,
   buildJobStartedSms,
   buildOnMyWaySms,
+  buildReviewRequestSms,
 } from './messages/bookingSms';
 export type { BookingSmsContext } from './messages/bookingSms';
 

@@ -48,10 +48,22 @@ export function buildOnMyWaySms(ctx: { businessName: string }): string {
 
 /** Sent when the business marks the job as started / in progress. */
 export function buildJobStartedSms(ctx: { businessName: string }): string {
-  return `${ctx.businessName} has started your appointment. ${OPT_OUT}`;
+  return `${ctx.businessName} has started your service. ${OPT_OUT}`;
 }
 
 /** Sent when the business marks the job complete. */
 export function buildJobCompletedSms(ctx: { businessName: string }): string {
   return `${ctx.businessName} has completed your appointment. Thank you! ${OPT_OUT}`;
+}
+
+/**
+ * Sent on completion when the customer is eligible to leave a review. This is
+ * the single, priority completion notification — it folds the thank-you into a
+ * review ask with the one-time review link (no separate "completed" text).
+ */
+export function buildReviewRequestSms(ctx: {
+  businessName: string;
+  reviewUrl: string;
+}): string {
+  return `Thank you for choosing ${ctx.businessName}! Could you leave us a quick review? ${ctx.reviewUrl} ${OPT_OUT}`;
 }

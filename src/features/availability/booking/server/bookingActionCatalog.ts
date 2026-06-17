@@ -11,23 +11,13 @@
  * outcome; the SMS is a best-effort notification sent after the transition.
  */
 
-import {
-  buildJobCompletedSms,
-  buildJobStartedSms,
-  buildOnMyWaySms,
-} from '@/features/sms';
+import { buildJobStartedSms, buildOnMyWaySms } from '@/features/sms';
 import type { JobStatus } from '../jobStatus';
 
 export type BookingActionType = 'on_the_way' | 'job_started' | 'job_completed';
 
-export interface BookingActionConfig {
+interface BaseBookingActionConfig {
   type: BookingActionType;
-  /** `sms_messages.type` value for the logged message. */
-  smsType: string;
-  /** Builds the customer SMS body. */
-  buildMessage: (ctx: { businessName: string }) => string;
-  /** When true, dedupe SMS with key `"<bookingId>:<smsType>"`. */
-  oncePerBooking: boolean;
   /** Job status this action moves the booking to. */
   jobStatus: JobStatus;
   /** Current job statuses this action is allowed from. */
@@ -35,6 +25,35 @@ export interface BookingActionConfig {
   /** Human label for error messages, e.g. "on the way". */
   label: string;
 }
+
+/**
+ * Notify-only action: the route sends a single best-effort customer SMS after
+ * the `job_status` transition.
+ */
+export interface NotifyBookingActionConfig extends BaseBookingActionConfig {
+  completesBooking?: false;
+  /** `sms_messages.type` value for the logged message. */
+  smsType: string;
+  /** Builds the customer SMS body. */
+  buildMessage: (ctx: { businessName: string }) => string;
+  /** When true, dedupe SMS with key `"<bookingId>:<smsType>"`. */
+  oncePerBooking: boolean;
+}
+
+/**
+ * Completing action: besides the `job_status` move, it completes the booking
+ * lifecycle (`bookings.status = 'completed'`) and runs the shared completion
+ * side effects. The customer notification (review-link SMS first, email
+ * fallback, or a plain thank-you SMS) is owned by `completeBookingWithSideEffects`,
+ * so there are no `smsType`/`buildMessage` fields here.
+ */
+export interface CompletingBookingActionConfig extends BaseBookingActionConfig {
+  completesBooking: true;
+}
+
+export type BookingActionConfig =
+  | NotifyBookingActionConfig
+  | CompletingBookingActionConfig;
 
 export const BOOKING_ACTIONS: Record<BookingActionType, BookingActionConfig> = {
   on_the_way: {
@@ -57,12 +76,10 @@ export const BOOKING_ACTIONS: Record<BookingActionType, BookingActionConfig> = {
   },
   job_completed: {
     type: 'job_completed',
-    smsType: 'job_completed',
-    buildMessage: buildJobCompletedSms,
-    oncePerBooking: true,
     jobStatus: 'completed',
     allowedFromJobStatus: ['not_started', 'on_the_way', 'in_progress'],
     label: 'completed',
+    completesBooking: true,
   },
 };
 

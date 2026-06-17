@@ -58,13 +58,13 @@ sequenceDiagram
 
 **Invite eligibility** (server: `createReviewInviteIfEligible`, preview: `reviewInviteEligibility.ts`):
 
-1. Valid normalized customer email on booking
+1. A reachable channel: customer **phone** or valid normalized **email** on booking
 2. `customer_id` on booking
 3. No existing `reviews` row for `(business_id, customer_id)`
 4. No existing `pending` invite for `(business_id, customer_id)`
 5. No existing invite row for this `booking_id`
 
-Invite creation is **best-effort** on complete — failure does not roll back booking completion.
+Invite creation is **best-effort** on complete — failure does not roll back booking completion. Delivery is **SMS-first** (review link texted) with an **email fallback** when there's no phone or the SMS fails — never both.
 
 ---
 
@@ -82,12 +82,12 @@ That ID is stored on `bookings.customer_id`. Review invites and reviews referenc
 
 **Dashboard complete modal** uses two flags from `GET /api/availability/bookings`:
 
-| Field                            | Meaning                                                      |
-| -------------------------------- | ------------------------------------------------------------ |
-| `customerAlreadyReviewed`        | `reviews` exists for this booking’s `customer_id`            |
-| `willSendReviewInviteOnComplete` | Full server eligibility (email, id, no pending invite, etc.) |
+| Field                            | Meaning                                                               |
+| -------------------------------- | --------------------------------------------------------------------- |
+| `customerAlreadyReviewed`        | `reviews` exists for this booking’s `customer_id`                     |
+| `willSendReviewInviteOnComplete` | Full server eligibility (phone or email, id, no pending invite, etc.) |
 
-Modal copy: show review-email message when `!customerAlreadyReviewed && hasEmail`; simple confirm when customer already reviewed.
+Modal copy: show review-request message when `!customerAlreadyReviewed && (hasPhone || hasEmail)`; simple confirm when customer already reviewed.
 
 ---
 
@@ -265,9 +265,11 @@ Batch for all bookings on load:
 
 ---
 
-## Mobile — review invite email
+## Mobile — review invite (SMS-first, email fallback)
 
-Mobile updates bookings directly in Supabase. After marking a booking **completed**, call this API when your local eligibility checks pass (same rules as web: customer email, `customer_id`, no existing review).
+> Prefer the **`job_completed` booking action** ([`mobile-booking-actions.md`](../../../../docs/contracts/mobile-booking-actions.md)) — it marks the booking complete **and** sends the one completion notification. This `/review-invite` endpoint is the legacy path where mobile marks the booking complete in Supabase itself.
+
+Mobile updates bookings directly in Supabase. After marking a booking **completed**, call this API when your local eligibility checks pass (same rules as web: a reachable channel — phone **or** email, `customer_id`, no existing review). The server delivers **SMS-first** with an email fallback.
 
 **`POST /api/availability/bookings/{bookingId}/review-invite`**
 
@@ -275,10 +277,16 @@ Mobile updates bookings directly in Supabase. After marking a booking **complete
 - **Precondition:** Booking `status = completed` (returns 400 otherwise)
 - **Idempotent:** Safe to call if web already sent on PATCH complete — skips with `reason`
 
-**Success — email sent**
+**Success — invite delivered**
 
 ```json
-{ "success": true, "sent": true, "skipped": false, "inviteId": "uuid" }
+{
+  "success": true,
+  "sent": true,
+  "skipped": false,
+  "channel": "sms",
+  "inviteId": "uuid"
+}
 ```
 
 **Success — skipped (not eligible or already invited)**
@@ -292,12 +300,18 @@ Mobile updates bookings directly in Supabase. After marking a booking **complete
 }
 ```
 
-`reason` values: `no_customer_email` | `no_customer_id` | `invite_already_exists` | `customer_already_reviewed` | `pending_invite_exists`
+`reason` values: `no_contact_method` | `no_customer_id` | `invite_already_exists` | `customer_already_reviewed` | `pending_invite_exists`
 
-**Success — invite created, email failed (best-effort)**
+**Success — invite created, delivery failed (best-effort)**
 
 ```json
-{ "success": true, "sent": false, "skipped": false, "inviteId": "uuid" }
+{
+  "success": true,
+  "sent": false,
+  "skipped": false,
+  "channel": "none",
+  "inviteId": "uuid"
+}
 ```
 
 **Errors:** `401` / `404` / `500` → `{ "success": false, "error": "..." }`
@@ -312,10 +326,11 @@ Server helper: `requestReviewInviteForBooking` in `src/features/reviews/server/`
 
 ## Environment
 
-| Variable                            | Used for                            |
-| ----------------------------------- | ----------------------------------- |
-| `RESEND_API_KEY`                    | Review invite email                 |
-| `SITE_URL` / `NEXT_PUBLIC_SITE_URL` | Absolute `/review/{token}` in email |
+| Variable                                  | Used for                        |
+| ----------------------------------------- | ------------------------------- |
+| `RESEND_API_KEY`                          | Review invite email (fallback)  |
+| `PINGRAM_API_KEY` / `PINGRAM_FROM_NUMBER` | Review invite SMS (priority)    |
+| `SITE_URL` / `NEXT_PUBLIC_SITE_URL`       | Absolute `/review/{token}` link |
 
 ---
 
@@ -347,8 +362,7 @@ src/app/api/availability/bookings/[id]/  complete → invite hook
 | Item                                                    | Notes                                            |
 | ------------------------------------------------------- | ------------------------------------------------ |
 | Owner resend invite                                     | Manual workaround: contact customer with support |
-| SMS invite                                              | Email only v1                                    |
-| Receipt + review combined email                         | Complete sends review invite only                |
+| Receipt + review combined message                       | Complete sends the review request only           |
 | `is_hidden` toggle in dashboard UI                      | API may support; UI TBD                          |
 | Background job to set `review_invites.status = expired` | Expiry enforced at read time via `expires_at`    |
 | OTP / code before review                                | Magic link only; likely unnecessary friction     |

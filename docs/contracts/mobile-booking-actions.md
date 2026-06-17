@@ -112,13 +112,22 @@ One generic endpoint runs all owner-triggered booking actions. Each action moves
 
 ### Available actions (the registry)
 
-| `action`        | Moves `job_status` to | Allowed from                               | Customer SMS                                            |
-| --------------- | --------------------- | ------------------------------------------ | ------------------------------------------------------- |
-| `on_the_way`    | `on_the_way`          | `not_started`                              | "{Business} is on the way for your appointment."        |
-| `job_started`   | `in_progress`         | `not_started`, `on_the_way`                | "{Business} has started your appointment."              |
-| `job_completed` | `completed`           | `not_started`, `on_the_way`, `in_progress` | "{Business} has completed your appointment. Thank you!" |
+| `action`        | Moves `job_status` to | Allowed from                               | Customer SMS                                                                   |
+| --------------- | --------------------- | ------------------------------------------ | ------------------------------------------------------------------------------ |
+| `on_the_way`    | `on_the_way`          | `not_started`                              | "{Business} is on the way for your appointment."                               |
+| `job_started`   | `in_progress`         | `not_started`, `on_the_way`                | "{Business} has started your service."                                         |
+| `job_completed` | `completed`           | `not_started`, `on_the_way`, `in_progress` | review request (see below) — **one** message, not the generic "completed" text |
 
 All messages append `Reply STOP to opt out.` New actions (e.g. reminders, invoices) are added server-side to the registry; the endpoint shape stays identical.
+
+> **`job_completed` does more than move `job_status`.** It also completes the **booking lifecycle** — sets `bookings.status = 'completed'` and runs the same post-completion side effects as the web "Complete" button (maintenance enrollment advance + the customer completion notification). The response includes `bookingStatus: "completed"` for this action.
+>
+> **One completion notification — no double-texting.** On `job_completed` the server sends exactly **one** customer message:
+>
+> - **Customer hasn't reviewed yet** → a **review request** delivered **SMS-first** (a "thank you + please leave us a review" text containing the review link). If there's **no phone or the SMS fails**, it falls back to the **review-invite email**. SMS and email are never both sent.
+> - **Customer already reviewed** (or isn't review-eligible) → a plain "{Business} has completed your appointment. Thank you!" SMS courtesy (if they have a phone).
+>
+> The `job_completed` response carries a `review` object describing this outcome (see below).
 
 ### Authentication (required)
 
@@ -141,6 +150,7 @@ Same JWT the app already uses. The server resolves the user (`getAuthenticatedUs
 
 1. The `job_status` **transition is the authoritative outcome** and is applied race-safely. A repeated/concurrent call that finds the booking already in the target (or an otherwise invalid) state returns `409` and sends **no** SMS — this is the idempotency guarantee.
 2. The customer SMS is a **best-effort notification sent after** the transition and logged to `sms_messages`. A failed or skipped send (e.g. no phone, provider error) does **not** roll back the state — the job genuinely started/completed. The outcome is reported under `sms`.
+3. For `job_completed` only: after the `job_status` move, the server also completes the booking lifecycle (`bookings.status = 'completed'`), fires the maintenance side effect, and sends the **single** completion notification (review-link SMS first → email fallback, or a plain thank-you SMS when already reviewed). All best-effort — they never fail the action. The response adds `bookingStatus: "completed"` and a `review` object. Mobile must **not** separately call the `/review-invite` endpoint or send its own completion text for this booking.
 
 ### Success response
 
@@ -168,7 +178,36 @@ If the text couldn't be sent (state still changed):
 
 `sms.reason` ∈ `no_phone | invalid_number | duplicate | not_configured | error`.
 
-**App handling:** treat `200` as "the action succeeded — update the chip to `jobStatus`." If `sms.sent === false`, show a **non-blocking** note ("Marked on the way — couldn't text the customer"), not an error. Durable history is always in `sms_messages` (§2).
+For `job_completed`, the response additionally carries `bookingStatus` (the booking is now finalized) and a `review` object describing the single completion notification:
+
+```json
+{
+  "success": true,
+  "action": "job_completed",
+  "jobStatus": "completed",
+  "bookingStatus": "completed",
+  "sms": { "sent": true, "messageId": "<sms_messages.id>" },
+  "review": {
+    "requested": true,
+    "sent": true,
+    "channel": "sms",
+    "inviteId": "<review_invites.id>"
+  }
+}
+```
+
+`review` shapes:
+
+| `review`                                                      | Meaning                                                                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `{ requested: true, sent: true, channel: "sms", inviteId }`   | Review link **texted** to the customer (the `sms` field is that send).                                                     |
+| `{ requested: true, sent: true, channel: "email", inviteId }` | No phone → review invite **emailed**. `sms.sent` is `false` (`no_phone`) because no text was attempted — **not an error**. |
+| `{ requested: true, sent: false, channel: "none", inviteId }` | Invite created but delivery failed (best-effort).                                                                          |
+| `{ requested: false, reason: "customer_already_reviewed" }`   | No review asked; `sms` is the plain "completed, thank you" courtesy text.                                                  |
+
+`review.reason` ∈ `customer_already_reviewed | pending_invite_exists | invite_already_exists | no_contact_method | no_customer_id | error`.
+
+**App handling:** treat `200` as "the action succeeded — update the chip to `jobStatus`." For `job_completed`, the customer was notified when **either** `sms.sent === true` **or** `review.sent === true` (email fallback). Only show a non-blocking "couldn't reach the customer" note when both are false. For non-completing actions, show that note when `sms.sent === false`. Durable history is always in `sms_messages` (§2). When `bookingStatus` is present, move the booking into your completed/past bucket.
 
 ### Error responses
 
@@ -268,15 +307,16 @@ async function runBookingAction(opts: {
 
 ## Related code
 
-| Piece                   | Location                                                                      |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| Booking actions route   | `src/app/api/availability/bookings/[id]/actions/route.ts`                     |
-| Action registry         | `src/features/availability/booking/server/bookingActionCatalog.ts`            |
-| Job status type         | `src/features/availability/booking/jobStatus.ts`                              |
-| Confirmation SMS (auto) | `src/app/api/public/bookings/route.ts`, `src/app/api/stripe/webhook/route.ts` |
-| Send + log              | `src/features/sms/services/sendAndRecordSms.ts`                               |
-| Low-level send          | `src/features/sms/services/sendSms.ts`                                        |
-| Message templates       | `src/features/sms/messages/bookingSms.ts`                                     |
-| Phone normalization     | `src/features/sms/utils/toE164.ts`                                            |
-| Rate limiter            | `src/server/rateLimit/ownerSmsSendRateLimit.ts`                               |
-| Auth helper             | `src/libs/api/getAuthenticatedUser.ts`                                        |
+| Piece                       | Location                                                                      |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| Booking actions route       | `src/app/api/availability/bookings/[id]/actions/route.ts`                     |
+| Action registry             | `src/features/availability/booking/server/bookingActionCatalog.ts`            |
+| Booking completion (shared) | `src/features/availability/services/completeBookingWithSideEffects.ts`        |
+| Job status type             | `src/features/availability/booking/jobStatus.ts`                              |
+| Confirmation SMS (auto)     | `src/app/api/public/bookings/route.ts`, `src/app/api/stripe/webhook/route.ts` |
+| Send + log                  | `src/features/sms/services/sendAndRecordSms.ts`                               |
+| Low-level send              | `src/features/sms/services/sendSms.ts`                                        |
+| Message templates           | `src/features/sms/messages/bookingSms.ts`                                     |
+| Phone normalization         | `src/features/sms/utils/toE164.ts`                                            |
+| Rate limiter                | `src/server/rateLimit/ownerSmsSendRateLimit.ts`                               |
+| Auth helper                 | `src/libs/api/getAuthenticatedUser.ts`                                        |

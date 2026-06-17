@@ -41,7 +41,7 @@ export const ReviewsCollectCard: React.FC = () => {
           className="border-t border-white/[0.06] px-3 pb-2.5 pt-1.5"
         >
           <p className="text-xs leading-snug text-zinc-500 sm:text-sm">
-            Mark a visit complete and we&apos;ll email your customer a link to
+            Mark a visit complete and we&apos;ll text your customer a link to
             leave a review.
           </p>
           <ul className="mt-1.5 space-y-0.5 text-xs leading-snug text-zinc-500 sm:text-sm">
@@ -49,7 +49,16 @@ export const ReviewsCollectCard: React.FC = () => {
               <span className="text-zinc-600" aria-hidden>
                 ·
               </span>
-              <span>Customer email required — text message coming soon</span>
+              <span>
+                Sent by text first; we email it instead when there&apos;s no
+                phone — never both
+              </span>
+            </li>
+            <li className="flex gap-1.5">
+              <span className="text-zinc-600" aria-hidden>
+                ·
+              </span>
+              <span>Only sent if the customer hasn&apos;t reviewed yet</span>
             </li>
             <li className="flex gap-1.5">
               <span className="text-zinc-600" aria-hidden>

@@ -4,6 +4,7 @@ import {
   buildJobCompletedSms,
   buildJobStartedSms,
   buildOnMyWaySms,
+  buildReviewRequestSms,
 } from '../messages/bookingSms';
 
 const OPT_OUT = 'Reply STOP to opt out.';
@@ -41,11 +42,25 @@ describe('booking SMS templates', () => {
 
   it('job_started and job_completed include business name + opt-out', () => {
     expect(buildJobStartedSms({ businessName: 'Acme' })).toBe(
-      `Acme has started your appointment. ${OPT_OUT}`
+      `Acme has started your service. ${OPT_OUT}`
     );
     expect(buildJobCompletedSms({ businessName: 'Acme' })).toBe(
       `Acme has completed your appointment. Thank you! ${OPT_OUT}`
     );
+  });
+
+  describe('buildReviewRequestSms', () => {
+    const msg = buildReviewRequestSms({
+      businessName: 'Black Label Detail',
+      reviewUrl: 'https://servicelink.app/review/abc123',
+    });
+
+    it('thanks the customer, asks for a review, and includes the link + opt-out', () => {
+      expect(msg).toContain('Black Label Detail');
+      expect(msg).toContain('review');
+      expect(msg).toContain('https://servicelink.app/review/abc123');
+      expect(msg.endsWith(OPT_OUT)).toBe(true);
+    });
   });
 
   it('all transactional templates fit in a single SMS segment (<=160 chars)', () => {

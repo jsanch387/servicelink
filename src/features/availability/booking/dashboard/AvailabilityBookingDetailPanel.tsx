@@ -128,7 +128,10 @@ export function AvailabilityBookingDetailPanel({
   const customerEmailTrimmed = (booking.customerEmail ?? '').trim();
   const hasEmail = customerEmailTrimmed.length > 0;
   const customerAlreadyReviewed = booking.customerAlreadyReviewed === true;
-  const showReviewInviteMessage = hasEmail && !customerAlreadyReviewed;
+  // The review invite goes out SMS-first (phone) with an email fallback, so a
+  // reachable customer (phone or email) who hasn't reviewed gets the message.
+  const showReviewInviteMessage =
+    (hasPhone || hasEmail) && !customerAlreadyReviewed;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
@@ -742,11 +745,9 @@ export function AvailabilityBookingDetailPanel({
           <p className="text-left text-sm leading-relaxed text-gray-300">
             {showReviewInviteMessage ? (
               <>
-                This wraps up the appointment. We&apos;ll email{' '}
-                <span className="font-medium text-gray-200">
-                  {customerEmailTrimmed}
-                </span>{' '}
-                a link to leave a review.
+                This wraps up the appointment. We&apos;ll{' '}
+                {hasPhone ? 'text' : 'email'} the customer a link to leave a
+                review.
               </>
             ) : (
               <>Are you sure you want to mark this appointment complete?</>

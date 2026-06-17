@@ -31,9 +31,11 @@ import {
   jobStatusLabel,
   type JobStatus,
 } from '@/features/availability/booking/jobStatus';
+import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
 import { sendAndRecordSms } from '@/features/sms';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -211,11 +213,44 @@ export async function POST(
     }
 
     const newJobStatus = (updated as { job_status: string }).job_status;
+    const admin = createSupabaseAdminClient();
 
-    // 9. Best-effort customer notification (state already changed above).
+    // 9. Completing actions (`job_completed`) take the shared completion path:
+    // it sets `status = 'completed'`, runs maintenance, and sends the SINGLE
+    // customer completion notification (review-link SMS first, email fallback,
+    // or a plain thank-you SMS when the customer already reviewed). For these we
+    // must NOT also send the generic action SMS below — that would double-text.
+    if (config.completesBooking) {
+      const completed = await completeBookingWithSideEffects(
+        auth.supabase,
+        admin,
+        booking.id,
+        { requestId: getReviewInviteRequestId(request), source: 'mobile_api' }
+      );
+
+      const notification = completed?.notification;
+      const smsResult = notification?.sms;
+      const sms = smsResult?.sent
+        ? { sent: true as const, messageId: smsResult.messageId }
+        : { sent: false as const, reason: smsResult?.reason ?? 'no_phone' };
+
+      return NextResponse.json({
+        success: true,
+        action: config.type,
+        jobStatus: newJobStatus,
+        ...(completed?.booking.status
+          ? { bookingStatus: completed.booking.status }
+          : {}),
+        sms,
+        ...(notification ? { review: notification.review } : {}),
+      });
+    }
+
+    // 10. Non-completing actions: best-effort customer notification (state
+    // already changed above).
     const businessName = business.business_name?.trim() || 'Your appointment';
     const sendResult = await sendAndRecordSms({
-      admin: createSupabaseAdminClient(),
+      admin,
       businessId: business.id,
       bookingId: booking.id,
       customerId: null,

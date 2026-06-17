@@ -10,8 +10,9 @@ Published feedback lives in [`REVIEWS_TABLE.md](./REVIEWS_TABLE.md).
 
 - One **invite row per booking** (`booking_id` unique) when the visit is eligible.
 - **Do not create** a new invite if the customer already has a review or a pending invite for this business (see [DATABASE.md](./DATABASE.md)).
-- Stores **hashed** link token only; raw token exists only in the email URL.
-- Tracks lifecycle (`pending` → `submitted` / `expired` / `cancelled`) and email delivery.
+- Stores **hashed** link token only; raw token exists only in the delivered link (SMS or email).
+- Tracks lifecycle (`pending` → `submitted` / `expired` / `cancelled`) and delivery (SMS and/or email).
+- Delivery is **SMS-first** (review link texted) with an **email fallback** — never both.
 
 ---
 
@@ -31,20 +32,21 @@ business_profiles
 
 Table: `public.review_invites`
 
-| Column                    | Type        | Nullable | Default             | Notes                                             |
-| ------------------------- | ----------- | -------- | ------------------- | ------------------------------------------------- |
-| `id`                      | uuid        | no       | `gen_random_uuid()` | PK                                                |
-| `business_id`             | uuid        | no       | —                   | FK → `business_profiles(id)` ON DELETE CASCADE    |
-| `booking_id`              | uuid        | no       | —                   | FK → `bookings(id)` ON DELETE CASCADE, **unique** |
-| `customer_id`             | uuid        | yes      | —                   | FK → `customers(id)` ON DELETE SET NULL           |
-| `link_token_hash`         | text        | no       | —                   | 64-char SHA-256 hex, **unique**                   |
-| `status`                  | text        | no       | `'pending'`         | See status enum below                             |
-| `expires_at`              | timestamptz | no       | —                   | App sets e.g. `now() + 90 days`                   |
-| `submitted_at`            | timestamptz | yes      | —                   | Required when `status = submitted`                |
-| `email_sent_at`           | timestamptz | yes      | —                   | Successful invite email                           |
-| `last_notification_error` | text        | yes      | —                   | Last email failure message                        |
-| `created_at`              | timestamptz | no       | `now()`             |                                                   |
-| `updated_at`              | timestamptz | no       | `now()`             | Trigger-maintained                                |
+| Column                    | Type        | Nullable | Default             | Notes                                               |
+| ------------------------- | ----------- | -------- | ------------------- | --------------------------------------------------- |
+| `id`                      | uuid        | no       | `gen_random_uuid()` | PK                                                  |
+| `business_id`             | uuid        | no       | —                   | FK → `business_profiles(id)` ON DELETE CASCADE      |
+| `booking_id`              | uuid        | no       | —                   | FK → `bookings(id)` ON DELETE CASCADE, **unique**   |
+| `customer_id`             | uuid        | yes      | —                   | FK → `customers(id)` ON DELETE SET NULL             |
+| `link_token_hash`         | text        | no       | —                   | 64-char SHA-256 hex, **unique**                     |
+| `status`                  | text        | no       | `'pending'`         | See status enum below                               |
+| `expires_at`              | timestamptz | no       | —                   | App sets e.g. `now() + 90 days`                     |
+| `submitted_at`            | timestamptz | yes      | —                   | Required when `status = submitted`                  |
+| `sms_sent_at`             | timestamptz | yes      | —                   | Successful invite SMS (review link) — migration 004 |
+| `email_sent_at`           | timestamptz | yes      | —                   | Successful invite email (fallback)                  |
+| `last_notification_error` | text        | yes      | —                   | Last delivery failure message                       |
+| `created_at`              | timestamptz | no       | `now()`             |                                                     |
+| `updated_at`              | timestamptz | no       | `now()`             | Trigger-maintained                                  |
 
 ### Status values
 
@@ -99,11 +101,13 @@ Public token routes must use **service role** server-side (no anon policies).
 
 Run **before** `002_reviews.sql`.
 
+Later: [`migrations/004_review_invites_sms_sent_at.sql`](./migrations/004_review_invites_sms_sent_at.sql) adds `sms_sent_at` for SMS-first delivery.
+
 ---
 
 ## App wiring (planned)
 
-1. Booking **completed** → if eligible, insert row and send email with `/review/{rawToken}`.
+1. Booking **completed** → if eligible, insert row and deliver `/review/{rawToken}` **SMS-first** (text), falling back to email when there's no phone or the SMS fails.
 2. `GET /review/[token]` → hash token, load pending non-expired invite.
 3. Submit → insert `reviews`, update invite to `submitted`.
 4. Later completed visits for same `customer_id` → no new invite (customer already reviewed).

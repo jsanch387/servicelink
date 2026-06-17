@@ -1,7 +1,10 @@
 import { randomUUID } from 'crypto';
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createReviewInviteIfEligible } from './createReviewInviteIfEligible';
+import {
+  createReviewInviteIfEligible,
+  type CreateReviewInviteResult,
+} from './createReviewInviteIfEligible';
 import {
   buildReviewInviteTrace,
   logReviewInviteFinished,
@@ -38,13 +41,15 @@ function logResult(
 }
 
 /**
- * Post-completion hook: review invite email (best-effort).
+ * Post-completion hook: create + deliver the review invite (SMS-first, email
+ * fallback). Best-effort. Returns the underlying result so the completion flow
+ * can decide whether a separate completion notification is still needed.
  */
 export async function applyReviewInviteOnBookingCompleted(
   supabase: SupabaseClient,
   booking: BookingRow,
   trace?: ReviewInviteLogTrace
-): Promise<void> {
+): Promise<CreateReviewInviteResult> {
   const activeTrace =
     trace ??
     buildReviewInviteTrace(randomUUID(), 'web_patch', {
@@ -55,10 +60,10 @@ export async function applyReviewInviteOnBookingCompleted(
   try {
     const result = await createReviewInviteIfEligible(supabase, booking);
     logResult(activeTrace, result);
+    return result;
   } catch (err) {
-    logReviewInviteFinished(activeTrace, {
-      kind: 'failed',
-      error: err instanceof Error ? err.message : 'unknown',
-    });
+    const error = err instanceof Error ? err.message : 'unknown';
+    logReviewInviteFinished(activeTrace, { kind: 'failed', error });
+    return { ok: false, error };
   }
 }

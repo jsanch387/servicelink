@@ -11,6 +11,7 @@ export type BookingForReviewInviteEligibility = {
   id: string;
   customer_id: string | null;
   customer_email: string | null;
+  customer_phone?: string | null;
 };
 
 export function willSendReviewInviteOnBookingComplete(
@@ -20,9 +21,13 @@ export function willSendReviewInviteOnBookingComplete(
   const bookingId = booking.id?.trim();
   if (!bookingId) return false;
 
-  if (!normalizedCustomerRecipientEmail(booking.customer_email ?? '')) {
-    return false;
-  }
+  // The invite is delivered SMS-first with an email fallback, so any reachable
+  // channel (phone or email) makes the customer eligible.
+  const hasEmail = Boolean(
+    normalizedCustomerRecipientEmail(booking.customer_email ?? '')
+  );
+  const hasPhone = Boolean(booking.customer_phone?.trim());
+  if (!hasEmail && !hasPhone) return false;
 
   const customerId = booking.customer_id?.trim() ?? '';
   if (!customerId) return false;
