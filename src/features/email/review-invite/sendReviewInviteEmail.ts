@@ -42,5 +42,5 @@ export async function sendReviewInviteEmail(
   if (!data?.id) {
     return { sent: false, error: 'Resend did not return an id' };
   }
-  return { sent: true };
+  return { sent: true, messageId: data.id };
 }

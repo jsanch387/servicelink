@@ -136,6 +136,24 @@ export async function POST(
       );
     }
 
+    // 4b. Idempotency for completing actions: if the booking is already
+    // completed, return 200 with the current state instead of erroring — a
+    // retry/double-tap should be a no-op, never a 409. No SMS/email is sent.
+    if (
+      config.completesBooking &&
+      ((booking.job_status ?? '').trim() === 'completed' ||
+        (booking.status ?? '').trim() === 'completed')
+    ) {
+      return NextResponse.json({
+        success: true,
+        action: config.type,
+        jobStatus: 'completed',
+        bookingStatus: 'completed',
+        sms: { sent: false, messageId: null, reason: 'duplicate' },
+        email: { sent: false, messageId: null, reason: null },
+      });
+    }
+
     // 5. Booking must be active (confirmed) to run job actions.
     if ((booking.status ?? '').trim() !== 'confirmed') {
       return NextResponse.json(
@@ -228,11 +246,19 @@ export async function POST(
         { requestId: getReviewInviteRequestId(request), source: 'mobile_api' }
       );
 
+      // Always return both `sms` and `email` blocks so the app can pick the
+      // right toast. SMS-first, email fallback — only one is ever `sent: true`.
       const notification = completed?.notification;
-      const smsResult = notification?.sms;
-      const sms = smsResult?.sent
-        ? { sent: true as const, messageId: smsResult.messageId }
-        : { sent: false as const, reason: smsResult?.reason ?? 'no_phone' };
+      const sms = notification?.sms ?? {
+        sent: false,
+        messageId: null,
+        reason: 'error',
+      };
+      const email = notification?.email ?? {
+        sent: false,
+        messageId: null,
+        reason: null,
+      };
 
       return NextResponse.json({
         success: true,
@@ -242,7 +268,7 @@ export async function POST(
           ? { bookingStatus: completed.booking.status }
           : {}),
         sms,
-        ...(notification ? { review: notification.review } : {}),
+        email,
       });
     }
 

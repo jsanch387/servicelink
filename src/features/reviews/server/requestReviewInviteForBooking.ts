@@ -47,13 +47,17 @@ function mapCreateResult(
       reason: result.reason as ReviewInviteSkipReason,
     };
   }
+  const emailErrorHint =
+    !result.email?.sent && result.email?.reason
+      ? result.email.reason
+      : undefined;
   return {
     ok: true,
     sent: result.sent,
     skipped: false,
     channel: result.channel,
     inviteId: result.inviteId,
-    ...(result.emailErrorHint ? { emailErrorHint: result.emailErrorHint } : {}),
+    ...(emailErrorHint ? { emailErrorHint } : {}),
   };
 }
 

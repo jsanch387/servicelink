@@ -27,10 +27,14 @@ function logResult(
     return;
   }
   if (!result.sent) {
+    const hint =
+      (!result.sms.sent ? result.sms.reason : null) ??
+      (!result.email.sent ? result.email.reason : null) ??
+      undefined;
     logReviewInviteFinished(trace, {
       kind: 'invite_no_email',
       inviteId: result.inviteId,
-      emailErrorHint: result.emailErrorHint,
+      emailErrorHint: hint,
     });
     return;
   }

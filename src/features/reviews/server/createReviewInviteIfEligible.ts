@@ -3,11 +3,7 @@ import { getPublicReviewPath } from '@/constants/routes';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import { sendReviewInviteEmail } from '@/features/email/review-invite/sendReviewInviteEmail';
 import { normalizedCustomerRecipientEmail } from '@/features/email/utils/normalizedCustomerRecipientEmail';
-import {
-  buildReviewRequestSms,
-  sendAndRecordSms,
-  type SendAndRecordSmsResult,
-} from '@/features/sms';
+import { buildReviewRequestSms, sendAndRecordSms } from '@/features/sms';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
@@ -17,20 +13,43 @@ const INVITE_EXPIRY_DAYS = 90;
 /** Which channel delivered (or attempted) the review invite. */
 export type ReviewInviteChannel = 'sms' | 'email' | 'none';
 
+/** Per-channel delivery outcome, mirrored 1:1 in the mobile API response. */
+export interface NotifyChannelOutcome {
+  sent: boolean;
+  messageId: string | null;
+  /** Null when sent, or when the channel wasn't attempted. */
+  reason: string | null;
+}
+
 export type CreateReviewInviteResult =
   | {
       ok: true;
       skipped: false;
+      /** Overall: a review link was delivered on at least one channel. */
       sent: boolean;
       /** `sms` (link texted), `email` (fallback), or `none` (both failed). */
       channel: ReviewInviteChannel;
       inviteId: string;
-      /** Present only when an SMS was attempted, for surfacing to the caller. */
-      smsResult?: SendAndRecordSmsResult;
-      emailErrorHint?: string;
+      sms: NotifyChannelOutcome;
+      email: NotifyChannelOutcome;
     }
   | { ok: true; skipped: true; reason: string }
   | { ok: false; error: string };
+
+const NOT_ATTEMPTED: NotifyChannelOutcome = {
+  sent: false,
+  messageId: null,
+  reason: null,
+};
+
+/** Map a `sendReviewInviteEmail` error string to a stable mobile reason code. */
+function emailFailureReason(
+  error: string
+): 'no_email' | 'not_configured' | 'error' {
+  if (/RESEND_API_KEY/i.test(error)) return 'not_configured';
+  if (/recipient email/i.test(error)) return 'no_email';
+  return 'error';
+}
 
 type ReviewInviteRow = {
   id: string;
@@ -218,6 +237,9 @@ export async function createReviewInviteIfEligible(
   const inviteId = inserted.id as string;
   const now = new Date().toISOString();
 
+  let sms: NotifyChannelOutcome = { ...NOT_ATTEMPTED };
+  let email: NotifyChannelOutcome = { ...NOT_ATTEMPTED };
+
   // 1. SMS first — text the review link (priority channel).
   if (phone) {
     const smsResult = await sendAndRecordSms({
@@ -247,10 +269,14 @@ export async function createReviewInviteIfEligible(
         sent: true,
         channel: 'sms',
         inviteId,
-        smsResult,
+        sms: { sent: true, messageId: smsResult.messageId, reason: null },
+        email,
       };
     }
-    // SMS failed (no/invalid number, provider error) → try email below.
+    // SMS failed (invalid number, provider error) → record + try email below.
+    sms = { sent: false, messageId: null, reason: smsResult.reason };
+  } else {
+    sms = { sent: false, messageId: null, reason: 'no_phone' };
   }
 
   // 2. Email fallback — only when SMS wasn't possible or failed.
@@ -278,28 +304,31 @@ export async function createReviewInviteIfEligible(
         sent: true,
         channel: 'email',
         inviteId,
+        sms,
+        email: { sent: true, messageId: emailResult.messageId, reason: null },
       };
     }
 
     await markInvite(supabase, inviteId, {
       last_notification_error: emailResult.error,
     });
-    return {
-      ok: true,
-      skipped: false,
+    email = {
       sent: false,
-      channel: 'none',
-      inviteId,
-      emailErrorHint: emailResult.error,
+      messageId: null,
+      reason: emailFailureReason(emailResult.error),
     };
+  } else {
+    email = { sent: false, messageId: null, reason: 'no_email' };
   }
 
-  // Phone was present but the SMS failed, and there's no email to fall back to.
+  // Neither channel delivered.
   return {
     ok: true,
     skipped: false,
     sent: false,
     channel: 'none',
     inviteId,
+    sms,
+    email,
   };
 }

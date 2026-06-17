@@ -127,7 +127,7 @@ All messages append `Reply STOP to opt out.` New actions (e.g. reminders, invoic
 > - **Customer hasn't reviewed yet** → a **review request** delivered **SMS-first** (a "thank you + please leave us a review" text containing the review link). If there's **no phone or the SMS fails**, it falls back to the **review-invite email**. SMS and email are never both sent.
 > - **Customer already reviewed** (or isn't review-eligible) → a plain "{Business} has completed your appointment. Thank you!" SMS courtesy (if they have a phone).
 >
-> The `job_completed` response carries a `review` object describing this outcome (see below).
+> The `job_completed` response always carries **both** an `sms` and an `email` outcome block describing this single notification (see below). It is also **idempotent**: a repeat `job_completed` on an already-completed booking returns `200` with the current state (never `409`).
 
 ### Authentication (required)
 
@@ -148,9 +148,9 @@ Same JWT the app already uses. The server resolves the user (`getAuthenticatedUs
 
 ### Semantics — state first, SMS second
 
-1. The `job_status` **transition is the authoritative outcome** and is applied race-safely. A repeated/concurrent call that finds the booking already in the target (or an otherwise invalid) state returns `409` and sends **no** SMS — this is the idempotency guarantee.
+1. The `job_status` **transition is the authoritative outcome** and is applied race-safely. For non-completing actions, a repeated/concurrent call that finds the booking already in the target (or an otherwise invalid) state returns `409` and sends **no** SMS — this is the idempotency guarantee. For `job_completed`, an already-completed booking is **idempotent**: it returns `200` with the current state and `sms.reason = "duplicate"` (no new notification).
 2. The customer SMS is a **best-effort notification sent after** the transition and logged to `sms_messages`. A failed or skipped send (e.g. no phone, provider error) does **not** roll back the state — the job genuinely started/completed. The outcome is reported under `sms`.
-3. For `job_completed` only: after the `job_status` move, the server also completes the booking lifecycle (`bookings.status = 'completed'`), fires the maintenance side effect, and sends the **single** completion notification (review-link SMS first → email fallback, or a plain thank-you SMS when already reviewed). All best-effort — they never fail the action. The response adds `bookingStatus: "completed"` and a `review` object. Mobile must **not** separately call the `/review-invite` endpoint or send its own completion text for this booking.
+3. For `job_completed` only: after the `job_status` move, the server also sets `bookings.status = 'completed'` (**required** — the mobile home query only loads `status = confirmed`, so without this the job sticks on "Next Up"), fires the maintenance side effect, and sends the **single** completion notification (review-link SMS first → email fallback, or a plain thank-you SMS when already reviewed). All best-effort — a notification failure never rolls back the completion. The response adds `bookingStatus: "completed"` and always includes both `sms` and `email` blocks. Mobile must **not** separately call the `/review-invite` endpoint or send its own completion text for this booking.
 
 ### Success response
 
@@ -178,7 +178,7 @@ If the text couldn't be sent (state still changed):
 
 `sms.reason` ∈ `no_phone | invalid_number | duplicate | not_configured | error`.
 
-For `job_completed`, the response additionally carries `bookingStatus` (the booking is now finalized) and a `review` object describing the single completion notification:
+For `job_completed`, the response additionally carries `bookingStatus` (the booking is now finalized) and **always** includes both an `sms` and an `email` block. Each block is `{ sent, messageId, reason }` — when `sent: true`, `reason` is `null`; when `sent: false`, `messageId` is `null` and `reason` explains why. **Only one channel is ever `sent: true`** (SMS-first, email fallback — never both).
 
 ```json
 {
@@ -186,28 +186,27 @@ For `job_completed`, the response additionally carries `bookingStatus` (the book
   "action": "job_completed",
   "jobStatus": "completed",
   "bookingStatus": "completed",
-  "sms": { "sent": true, "messageId": "<sms_messages.id>" },
-  "review": {
-    "requested": true,
-    "sent": true,
-    "channel": "sms",
-    "inviteId": "<review_invites.id>"
-  }
+  "sms": { "sent": true, "messageId": "SMxxxx", "reason": null },
+  "email": { "sent": false, "messageId": null, "reason": null }
 }
 ```
 
-`review` shapes:
+All `job_completed` outcomes the app must handle:
 
-| `review`                                                      | Meaning                                                                                                                    |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `{ requested: true, sent: true, channel: "sms", inviteId }`   | Review link **texted** to the customer (the `sms` field is that send).                                                     |
-| `{ requested: true, sent: true, channel: "email", inviteId }` | No phone → review invite **emailed**. `sms.sent` is `false` (`no_phone`) because no text was attempted — **not an error**. |
-| `{ requested: true, sent: false, channel: "none", inviteId }` | Invite created but delivery failed (best-effort).                                                                          |
-| `{ requested: false, reason: "customer_already_reviewed" }`   | No review asked; `sms` is the plain "completed, thank you" courtesy text.                                                  |
+| Scenario                            | `sms`                                                        | `email`                                                |
+| ----------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| SMS sent (happy path — no email)    | `{ sent: true, messageId, reason: null }`                    | `{ sent: false, messageId: null, reason: null }`       |
+| No phone → email fallback sent      | `{ sent: false, messageId: null, reason: "no_phone" }`       | `{ sent: true, messageId, reason: null }`              |
+| Phone invalid → email fallback sent | `{ sent: false, messageId: null, reason: "invalid_number" }` | `{ sent: true, messageId, reason: null }`              |
+| SMS provider error → email fallback | `{ sent: false, messageId: null, reason: "error" }`          | `{ sent: true, messageId, reason: null }`              |
+| No contact at all                   | `{ sent: false, messageId: null, reason: "no_phone" }`       | `{ sent: false, messageId: null, reason: "no_email" }` |
+| SMS skipped, email failed           | `{ sent: false, messageId: null, reason: "no_phone" }`       | `{ sent: false, messageId: null, reason: "error" }`    |
+| Already completed (idempotent)      | `{ sent: false, messageId: null, reason: "duplicate" }`      | `{ sent: false, messageId: null, reason: null }`       |
 
-`review.reason` ∈ `customer_already_reviewed | pending_invite_exists | invite_already_exists | no_contact_method | no_customer_id | error`.
+`sms.reason` ∈ `no_phone | invalid_number | duplicate | not_configured | error`.
+`email.reason` ∈ `no_email | duplicate | not_configured | error` (or `null` when not attempted, e.g. SMS already succeeded).
 
-**App handling:** treat `200` as "the action succeeded — update the chip to `jobStatus`." For `job_completed`, the customer was notified when **either** `sms.sent === true` **or** `review.sent === true` (email fallback). Only show a non-blocking "couldn't reach the customer" note when both are false. For non-completing actions, show that note when `sms.sent === false`. Durable history is always in `sms_messages` (§2). When `bookingStatus` is present, move the booking into your completed/past bucket.
+**App handling:** treat `200` as "the action succeeded — update the chip to `jobStatus`." For `job_completed`, the customer was notified when **either** `sms.sent === true` **or** `email.sent === true`. Show the SMS success toast when `sms.sent`, the email toast when `email.sent`, and a non-blocking "couldn't reach the customer" note only when **both** are false. For non-completing actions, show that note when `sms.sent === false`. Durable history is always in `sms_messages` (§2). When `bookingStatus` is present, move the booking into your completed/past bucket.
 
 ### Error responses
 
@@ -246,7 +245,14 @@ async function runBookingAction(opts: {
   bookingId: string;
   action: BookingAction;
 }): Promise<
-  | { ok: true; jobStatus: string; smsSent: boolean; smsReason?: string }
+  | {
+      ok: true;
+      jobStatus: string;
+      smsSent: boolean;
+      smsReason?: string | null;
+      emailSent: boolean;
+      emailReason?: string | null;
+    }
   | { ok: false; status: number; error: string; retryAfterSec?: number }
 > {
   const res = await fetch(
@@ -263,7 +269,12 @@ async function runBookingAction(opts: {
 
   const body = (await res.json().catch(() => ({}))) as {
     jobStatus?: string;
-    sms?: { sent: boolean; reason?: string };
+    sms?: { sent: boolean; messageId?: string | null; reason?: string | null };
+    email?: {
+      sent: boolean;
+      messageId?: string | null;
+      reason?: string | null;
+    };
     error?: string;
   };
 
@@ -273,6 +284,9 @@ async function runBookingAction(opts: {
       jobStatus: body.jobStatus ?? '',
       smsSent: body.sms?.sent ?? false,
       smsReason: body.sms?.reason,
+      // `email` is only present on `job_completed`; defaults are harmless elsewhere.
+      emailSent: body.email?.sent ?? false,
+      emailReason: body.email?.reason,
     };
   }
   const retryAfter = res.headers.get('Retry-After');
@@ -288,8 +302,8 @@ async function runBookingAction(opts: {
 ### Notes for the app
 
 - Drive button visibility from `job_status` (§3 table). Only show actions for `confirmed` bookings.
-- On `200`: update the chip to the returned `jobStatus`; success toast/haptic. If `sms.sent === false`, add a soft "couldn't text customer" note.
-- On `409`: the state moved on without you (already done / concurrent). Refetch the booking and re-render — no error toast.
+- On `200`: update the chip to the returned `jobStatus`; success toast/haptic. For `job_completed`, the customer was reached if `sms.sent` **or** `email.sent`; only add the soft "couldn't reach customer" note when both are false. For other actions, add the note when `sms.sent === false`.
+- On `409`: the state moved on without you (already done / concurrent). Refetch the booking and re-render — no error toast. (Note: `job_completed` on an already-completed booking is **not** a `409` — it returns `200` with `sms.reason = "duplicate"`.)
 - On `429`: honor `Retry-After`, disable temporarily.
 - The server must have `PINGRAM_API_KEY` + a Pingram sender for SMS; if not, actions still transition state and report `sms.reason = "not_configured"`.
 
@@ -309,6 +323,7 @@ async function runBookingAction(opts: {
 
 | Piece                       | Location                                                                      |
 | --------------------------- | ----------------------------------------------------------------------------- |
+| `job_completed` server spec | `src/features/availability/docs/BOOKING_JOB_COMPLETED_SERVER.md`              |
 | Booking actions route       | `src/app/api/availability/bookings/[id]/actions/route.ts`                     |
 | Action registry             | `src/features/availability/booking/server/bookingActionCatalog.ts`            |
 | Booking completion (shared) | `src/features/availability/services/completeBookingWithSideEffects.ts`        |

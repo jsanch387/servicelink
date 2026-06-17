@@ -99,6 +99,8 @@ describe('requestReviewInviteForBooking', () => {
       skipped: false,
       channel: 'sms',
       inviteId: 'inv-1',
+      sms: { sent: true, messageId: 'sms-1', reason: null },
+      email: { sent: false, messageId: null, reason: null },
     });
 
     const result = await requestReviewInviteForBooking(

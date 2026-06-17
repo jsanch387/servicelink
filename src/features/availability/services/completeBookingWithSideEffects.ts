@@ -22,16 +22,12 @@
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 import { applyMaintenanceVisitCompletedFromBooking } from '@/features/maintenance/server/applyMaintenanceVisitCompletedFromBooking';
 import { applyReviewInviteOnBookingCompleted } from '@/features/reviews/server/applyReviewInviteOnBookingCompleted';
-import type { ReviewInviteChannel } from '@/features/reviews/server/createReviewInviteIfEligible';
+import type { NotifyChannelOutcome } from '@/features/reviews/server/createReviewInviteIfEligible';
 import {
   buildReviewInviteTrace,
   type ReviewInviteLogSource,
 } from '@/features/reviews/server/reviewInviteRouteLog';
-import {
-  buildJobCompletedSms,
-  sendAndRecordSms,
-  type SendAndRecordSmsResult,
-} from '@/features/sms';
+import { buildJobCompletedSms, sendAndRecordSms } from '@/features/sms';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { updateBookingStatus } from './bookingService';
@@ -42,18 +38,13 @@ export interface CompleteBookingLog {
   source: ReviewInviteLogSource;
 }
 
-/** How the single completion notification was handled. */
+/**
+ * The single completion notification, split per channel (SMS-first, email
+ * fallback — never both). Mirrors the mobile API response 1:1.
+ */
 export interface CompletionNotification {
-  review:
-    | {
-        requested: true;
-        sent: boolean;
-        channel: ReviewInviteChannel;
-        inviteId: string;
-      }
-    | { requested: false; reason: string };
-  /** SMS attempt (review link or plain thank-you), when one was made. */
-  sms?: SendAndRecordSmsResult;
+  sms: NotifyChannelOutcome;
+  email: NotifyChannelOutcome;
 }
 
 export interface CompleteBookingResult {
@@ -113,27 +104,20 @@ export async function completeBookingWithSideEffects(
   );
 
   // The review invite (when created) IS the completion notification — SMS-first
-  // with email fallback, never both. We only send a plain thank-you SMS when no
-  // review was requested (e.g. the customer already reviewed).
+  // with email fallback, never both. Surface both channel outcomes as-is.
   if (reviewResult.ok && !reviewResult.skipped) {
     return {
       booking: updated,
-      notification: {
-        review: {
-          requested: true,
-          sent: reviewResult.sent,
-          channel: reviewResult.channel,
-          inviteId: reviewResult.inviteId,
-        },
-        ...(reviewResult.smsResult ? { sms: reviewResult.smsResult } : {}),
-      },
+      notification: { sms: reviewResult.sms, email: reviewResult.email },
     };
   }
 
+  // Not review-eligible (already reviewed / no contact method / create failed):
+  // send a plain "thank you, job complete" SMS courtesy, no email.
   const reason = reviewResult.ok ? reviewResult.reason : 'error';
   const businessName =
     (await loadBusinessName(admin, updated.business_id)) || 'Your appointment';
-  const sms = await sendAndRecordSms({
+  const smsResult = await sendAndRecordSms({
     admin,
     businessId: updated.business_id,
     bookingId: updated.id,
@@ -146,11 +130,16 @@ export async function completeBookingWithSideEffects(
     correlationId: updated.id,
   });
 
-  return {
-    booking: updated,
-    notification: {
-      review: { requested: false, reason },
-      sms,
-    },
+  const sms: NotifyChannelOutcome = smsResult.sent
+    ? { sent: true, messageId: smsResult.messageId, reason: null }
+    : { sent: false, messageId: null, reason: smsResult.reason };
+  // Email is only "no_email" when there was genuinely no way to reach them;
+  // otherwise it was intentionally not attempted (e.g. already reviewed).
+  const email: NotifyChannelOutcome = {
+    sent: false,
+    messageId: null,
+    reason: reason === 'no_contact_method' ? 'no_email' : null,
   };
+
+  return { booking: updated, notification: { sms, email } };
 }

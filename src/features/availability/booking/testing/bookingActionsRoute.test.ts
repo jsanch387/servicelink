@@ -136,13 +136,8 @@ beforeEach(() => {
   completeBookingWithSideEffectsMock.mockResolvedValue({
     booking: { id: 'booking-1', status: 'completed' },
     notification: {
-      review: {
-        requested: true,
-        sent: true,
-        channel: 'sms',
-        inviteId: 'inv-1',
-      },
-      sms: { sent: true, messageId: 'msg-1' },
+      sms: { sent: true, messageId: 'msg-1', reason: null },
+      email: { sent: false, messageId: null, reason: null },
     },
   });
 });
@@ -321,26 +316,16 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     // The completion notification is owned by the shared helper — the route must
     // NOT also fire a generic action SMS (no double-text).
     expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
-    expect(json.sms).toEqual({ sent: true, messageId: 'msg-1' });
-    expect(json.review).toEqual({
-      requested: true,
-      sent: true,
-      channel: 'sms',
-      inviteId: 'inv-1',
-    });
+    expect(json.sms).toEqual({ sent: true, messageId: 'msg-1', reason: null });
+    expect(json.email).toEqual({ sent: false, messageId: null, reason: null });
   });
 
-  it('200 job_completed still succeeds (state changed) when the completion SMS fails', async () => {
+  it('200 job_completed still succeeds (state changed) when both channels fail', async () => {
     completeBookingWithSideEffectsMock.mockResolvedValue({
       booking: { id: 'booking-1', status: 'completed' },
       notification: {
-        review: {
-          requested: true,
-          sent: false,
-          channel: 'none',
-          inviteId: 'inv-1',
-        },
-        sms: { sent: false, reason: 'error' },
+        sms: { sent: false, messageId: null, reason: 'error' },
+        email: { sent: false, messageId: null, reason: 'error' },
       },
     });
     getAuthenticatedUserMock.mockResolvedValue(
@@ -359,20 +344,20 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(json.bookingStatus).toBe('completed');
     expect(completeBookingWithSideEffectsMock).toHaveBeenCalledTimes(1);
     expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
-    expect(json.sms).toEqual({ sent: false, reason: 'error' });
+    expect(json.sms).toEqual({ sent: false, messageId: null, reason: 'error' });
+    expect(json.email).toEqual({
+      sent: false,
+      messageId: null,
+      reason: 'error',
+    });
   });
 
-  it('200 job_completed reports email-channel review when the customer has no phone', async () => {
+  it('200 job_completed emails as fallback when the customer has no phone', async () => {
     completeBookingWithSideEffectsMock.mockResolvedValue({
       booking: { id: 'booking-1', status: 'completed' },
       notification: {
-        review: {
-          requested: true,
-          sent: true,
-          channel: 'email',
-          inviteId: 'inv-1',
-        },
-        // No SMS attempted (emailed instead).
+        sms: { sent: false, messageId: null, reason: 'no_phone' },
+        email: { sent: true, messageId: 're_xxx', reason: null },
       },
     });
     getAuthenticatedUserMock.mockResolvedValue(
@@ -391,14 +376,45 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     const res = await POST(postRequest('job_completed'), params());
     const json = await res.json();
     expect(res.status).toBe(200);
-    expect(json.review).toEqual({
-      requested: true,
-      sent: true,
-      channel: 'email',
-      inviteId: 'inv-1',
+    expect(json.sms).toEqual({
+      sent: false,
+      messageId: null,
+      reason: 'no_phone',
     });
-    // No SMS was attempted; the SMS field reflects that.
-    expect(json.sms).toEqual({ sent: false, reason: 'no_phone' });
+    expect(json.email).toEqual({
+      sent: true,
+      messageId: 're_xxx',
+      reason: null,
+    });
+  });
+
+  it('200 idempotent when the booking is already completed (no notification)', async () => {
+    getAuthenticatedUserMock.mockResolvedValue(
+      authOk(
+        makeSupabase({
+          business,
+          booking: {
+            ...baseBooking,
+            status: 'completed',
+            job_status: 'completed',
+          },
+        })
+      )
+    );
+    const res = await POST(postRequest('job_completed'), params());
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.jobStatus).toBe('completed');
+    expect(json.bookingStatus).toBe('completed');
+    expect(json.sms).toEqual({
+      sent: false,
+      messageId: null,
+      reason: 'duplicate',
+    });
+    expect(json.email).toEqual({ sent: false, messageId: null, reason: null });
+    // Idempotent no-op: no completion + no rate-limit charge.
+    expect(completeBookingWithSideEffectsMock).not.toHaveBeenCalled();
+    expect(assertOwnerSmsSendRateLimitsMock).not.toHaveBeenCalled();
   });
 
   it('409 when the race-safe transition affects no rows (concurrent update)', async () => {
