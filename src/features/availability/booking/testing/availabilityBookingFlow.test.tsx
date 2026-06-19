@@ -187,7 +187,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
 
     await user.click(
       screen.getByRole('checkbox', {
-        name: /by confirming this appointment/i,
+        name: /by providing your phone number/i,
       })
     );
     await user.click(screen.getByRole('button', { name: /confirm booking/i }));
