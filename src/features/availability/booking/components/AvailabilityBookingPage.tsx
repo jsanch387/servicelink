@@ -972,8 +972,8 @@ export function AvailabilityBookingPage({
                         .filter((id): id is string => Boolean(id))
                         .join(' ')}
                     />
-                    <span className="text-sm leading-snug text-gray-300">
-                      {ui.calendar.notificationsConsentLabel}
+                    <span className="text-xs leading-snug text-gray-300">
+                      {ui.calendar.notificationsConsentLabel(businessName)}
                     </span>
                   </label>
                   <p

@@ -68,11 +68,10 @@ export const publicBookingUiEn: PublicBookingUi = {
     noSlotsHint: 'No available times for this date.',
     reviewBooking: 'Review your booking',
     reviewBookingCta: 'Review Booking',
-    notificationsConsentLabel:
-      'By confirming this appointment, you agree to receive email and SMS notifications about your booking.',
-    notificationsSmsFinePrintBeforeLink:
-      'Message and data rates may apply. Reply STOP to opt out. See our ',
-    notificationsSmsFinePrintLinkLabel: 'SMS-compliant Privacy Policy',
+    notificationsConsentLabel: (businessName: string) =>
+      `By providing your phone number, you agree to receive SMS notifications from ${businessName}. Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help.`,
+    notificationsSmsFinePrintBeforeLink: 'See our ',
+    notificationsSmsFinePrintLinkLabel: 'Privacy Policy',
     notificationsSmsFinePrintAfterLink: '.',
     notificationsConsentRequired:
       'Please check the box to agree to email and SMS notifications before continuing.',

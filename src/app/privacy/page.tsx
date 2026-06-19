@@ -50,7 +50,7 @@ export default function PrivacyPage() {
                 Where you opt in on a booking flow, your mobile phone number for
                 transactional SMS about that appointment (for example,
                 confirmations or reminders), delivered through our messaging
-                vendor (currently Twilio Inc. or a successor we designate)
+                vendor
               </li>
               <li>
                 Content uploads (logos, images, service descriptions, and other
@@ -106,24 +106,15 @@ export default function PrivacyPage() {
               liable for delayed or undelivered messages.
             </p>
             <p className="text-base leading-relaxed mb-3">
-              You can typically opt out of further SMS from a message thread by
-              replying with standard keywords such as STOP, END, CANCEL,
-              UNSUBSCRIBE, or QUIT (exact keywords and behavior depend on the
-              sender configuration and carrier rules). You may receive a
-              one-time confirmation text. Reply HELP for help where supported.
+              You can opt out of further SMS from a message thread by replying
+              with standard keywords such as STOP, END, CANCEL, UNSUBSCRIBE, or
+              QUIT (exact keywords and behavior depend on the sender
+              configuration and carrier rules). You may receive a one-time
+              confirmation text. Reply HELP for help where supported.
             </p>
             <p className="text-base leading-relaxed">
-              Twilio processes phone numbers and message content as a service
-              provider to deliver these texts. See Twilio&apos;s privacy notice:{' '}
-              <a
-                href="https://www.twilio.com/legal/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-orange-400 hover:text-orange-300 underline"
-              >
-                twilio.com/legal/privacy
-              </a>
-              .
+              Our messaging provider processes phone numbers and message content
+              as a service provider to deliver these texts.
             </p>
             <p className="text-base leading-relaxed mt-4">
               ServiceLink does not use SMS for marketing or promotional
@@ -146,9 +137,9 @@ export default function PrivacyPage() {
             <p className="text-base leading-relaxed mt-4">
               If the customer opts in to SMS notifications at booking, phone
               numbers and related message metadata may be processed by
-              ServiceLink and our messaging vendors (such as Twilio) solely to
-              send transactional texts about that booking, unless otherwise
-              described in this policy or required by law.
+              ServiceLink and our messaging vendor solely to send transactional
+              texts about that booking, unless otherwise described in this
+              policy or required by law.
             </p>
           </section>
 
@@ -186,9 +177,8 @@ export default function PrivacyPage() {
                 Stripe
               </li>
               <li>
-                With Twilio Inc. (or a similar messaging provider) to send
-                transactional SMS you have opted into at booking, as described
-                in this policy
+                With our messaging provider to send transactional SMS you have
+                opted into at booking, as described in this policy
               </li>
               <li>
                 With business owners when customers submit booking requests to
