@@ -11,18 +11,25 @@ export const BOOKING_CUSTOMER_NOTES_MAX = CUSTOMER_NOTE_MAX_LENGTH;
 export const BOOKING_VEHICLE_MAKE_MAX = 80;
 export const BOOKING_VEHICLE_MODEL_MAX = 80;
 
-/** US ZIP: 5 digits, or ZIP+4 as 9 digits (no hyphen). */
+/** US ZIP: 5 digits only. */
 export function sanitizeUsZipInput(value: string): string {
-  return value.replace(/\D/g, '').slice(0, 9);
+  return value.replace(/\D/g, '').slice(0, 5);
 }
 
 export function isValidUsZipDigits(zip: string): boolean {
-  const z = zip.trim();
-  return /^\d{5}$/.test(z) || /^\d{9}$/.test(z);
+  return /^\d{5}$/.test(zip.trim());
 }
 
 export function sanitizeVehicleYearInput(value: string): string {
   return value.replace(/\D/g, '').slice(0, 4);
+}
+
+/** Vehicle make/model: letters and common punctuation only (no digits). */
+export function sanitizeVehicleTextInput(
+  value: string,
+  maxLen: number
+): string {
+  return value.replace(/[0-9]/g, '').slice(0, maxLen);
 }
 
 export function isValidVehicleYearFourDigit(year: string): boolean {
@@ -93,7 +100,7 @@ export function bookingCustomerPayloadErrorMessage(
 
   const zipDigits = sanitizeUsZipInput(c.zip ?? '');
   if (!isValidUsZipDigits(zipDigits)) {
-    return 'Please enter a valid US ZIP code (5 digits, or 9 digits for ZIP+4).';
+    return 'Please enter a valid US ZIP code (5 digits).';
   }
 
   const notes = c.notes ?? '';

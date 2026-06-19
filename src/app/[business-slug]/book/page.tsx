@@ -37,7 +37,11 @@ import {
 } from '@/libs/bookingFlowLocale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import {
+  PublicFlowBackNavLabel,
+  PublicFlowStickyBackHeader,
+  publicFlowBackNavClassName,
+} from '@/components/shared';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
@@ -471,17 +475,11 @@ export default async function BookingRequestPage({
   return (
     <>
       {!calendarFlowOwnsHeader && (
-        <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
-            <Link
-              href={bookPageBackHref}
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">{bookPageBackLabel}</span>
-            </Link>
-          </div>
-        </div>
+        <PublicFlowStickyBackHeader>
+          <Link href={bookPageBackHref} className={publicFlowBackNavClassName}>
+            <PublicFlowBackNavLabel label={bookPageBackLabel} />
+          </Link>
+        </PublicFlowStickyBackHeader>
       )}
 
       {calendarFlowOwnsHeader ? (

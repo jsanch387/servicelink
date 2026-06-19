@@ -1,6 +1,7 @@
 import { BookingSummary } from '@/features/availability/booking/components/BookingSummary';
 import {
   CustomerForm,
+  type CustomerFormStep,
   isCustomerFormValid,
 } from '@/features/availability/booking/components/CustomerForm';
 import type { CustomerFormData } from '@/features/availability/booking/types';
@@ -83,18 +84,13 @@ describe('isCustomerFormValid (optional email)', () => {
     expect(isCustomerFormValid({ ...base, zip: '1234' }, false, true)).toBe(
       false
     );
-    expect(isCustomerFormValid({ ...base, zip: '123456' }, false, true)).toBe(
-      false
-    );
+    expect(isCustomerFormValid({ ...base, zip: '' }, false, true)).toBe(false);
   });
 
-  it('returns true for 5- or 9-digit US ZIP', () => {
+  it('returns true for a 5-digit US ZIP', () => {
     expect(isCustomerFormValid({ ...base, zip: '78701' }, false, true)).toBe(
       true
     );
-    expect(
-      isCustomerFormValid({ ...base, zip: '787011234' }, false, true)
-    ).toBe(true);
   });
 
   it('validates vehicle year when vehicle fields are required', () => {
@@ -114,13 +110,15 @@ describe('isCustomerFormValid (optional email)', () => {
 function CustomerFormHarness(props: {
   initial: CustomerFormData;
   emailOptional?: boolean;
+  step?: CustomerFormStep;
   onSubmit: () => void;
 }) {
-  const { initial, emailOptional = true, onSubmit } = props;
+  const { initial, emailOptional = true, step = 'contact', onSubmit } = props;
   const [value, setValue] = React.useState<CustomerFormData>(initial);
   return (
     <CustomerForm
       id="customer-form-test"
+      step={step}
       value={value}
       onChange={setValue}
       onSubmit={onSubmit}
@@ -132,34 +130,13 @@ function CustomerFormHarness(props: {
 }
 
 describe('CustomerForm optional email UI', () => {
-  it('shows the no-confirmation hint when email is optional and email is empty', () => {
+  it('shows optional email label when email is optional', () => {
     const onSubmit = vi.fn();
     render(
       <CustomerFormHarness initial={filledCustomer()} onSubmit={onSubmit} />
     );
 
-    expect(
-      screen.getByText(
-        /Without an email address, no booking confirmation email will be sent\./i
-      )
-    ).toBeTruthy();
     expect(screen.getByText('Email (optional)')).toBeTruthy();
-  });
-
-  it('hides the hint after the user enters an email', async () => {
-    const user = userEvent.setup();
-    const onSubmit = vi.fn();
-    render(
-      <CustomerFormHarness initial={filledCustomer()} onSubmit={onSubmit} />
-    );
-
-    await user.type(screen.getByPlaceholderText('jane@example.com'), 'a@b.co');
-
-    expect(
-      screen.queryByText(
-        /Without an email address, no booking confirmation email will be sent\./i
-      )
-    ).toBeNull();
   });
 
   it('shows a small live hint while the email format is invalid, then clears when valid', async () => {
@@ -194,11 +171,6 @@ describe('CustomerForm optional email UI', () => {
       />
     );
 
-    expect(
-      screen.queryByText(
-        /Without an email address, no booking confirmation email will be sent\./i
-      )
-    ).toBeNull();
     expect(screen.queryByText('Email (optional)')).toBeNull();
     expect(screen.getByPlaceholderText('jane@example.com')).toBeTruthy();
   });
@@ -210,7 +182,7 @@ describe('CustomerForm optional email UI', () => {
       <CustomerFormHarness initial={filledCustomer()} onSubmit={onSubmit} />
     );
 
-    await user.click(screen.getByRole('button', { name: /review booking/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });

@@ -3,6 +3,14 @@ export { ImagePreview, ImageUpload } from './ImageUpload';
 export { Input } from './Input';
 export { MoneyInput } from './MoneyInput';
 export {
+  PublicFlowBackChevron,
+  PublicFlowBackNavLabel,
+  PublicFlowStickyBackHeader,
+  publicFlowBackNavClassName,
+  publicFlowStickyBackHeaderClassName,
+  publicFlowStickyBackHeaderInnerClassName,
+} from './publicFlowBackNav';
+export {
   PhoneInput,
   US_PHONE_DIGIT_COUNT,
   formatUsPhoneDigits,
@@ -19,8 +27,12 @@ export { Card } from './Card';
 export { CompletionCelebration, SuccessMessage } from './CompletionCelebration';
 export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';
 export { CrownIcon } from './CrownIcon';
+export { DropdownSelect } from './DropdownSelect';
+export type { DropdownSelectOption } from './DropdownSelect';
 export { FilterPills } from './FilterPills';
 export type { FilterPillOption } from './FilterPills';
+export { FormStepSection } from './FormStepSection';
+export { SmsNotificationsConsent } from './SmsNotificationsConsent';
 export { horizontalScrollStripClassName } from './horizontalScrollStrip';
 export { FramedCtaButton } from './FramedCtaButton';
 export { GlassCard } from './GlassCard';

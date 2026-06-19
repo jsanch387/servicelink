@@ -39,6 +39,13 @@ vi.mock('@/components/shared', () => ({
         {children}
       </button>
     ),
+  publicFlowBackNavClassName: 'mock-back-nav',
+  PublicFlowStickyBackHeader: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="public-flow-sticky-back-header">{children}</div>
+  ),
+  PublicFlowBackNavLabel: ({ label }: { label: string }) => (
+    <span>{label}</span>
+  ),
 }));
 
 vi.mock('@/features/services/booking-flow/PriceOptionSelector', () => ({

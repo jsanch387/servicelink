@@ -2,7 +2,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CustomerForm } from '@/features/availability/booking/components/CustomerForm';
+import {
+  CustomerForm,
+  type CustomerFormStep,
+} from '@/features/availability/booking/components/CustomerForm';
 import type { CustomerFormData } from '@/features/availability/booking/types';
 import { INITIAL_CUSTOMER_FORM_DATA } from '@/features/availability/booking/utils/initialFormData';
 import {
@@ -45,14 +48,21 @@ function baseCustomer(
 
 function CustomerFormHarness(props: {
   initial: CustomerFormData;
+  step?: CustomerFormStep;
   showVehicleFields?: boolean;
   onSubmit: () => void;
 }) {
-  const { initial, showVehicleFields = false, onSubmit } = props;
+  const {
+    initial,
+    step = 'contact',
+    showVehicleFields = false,
+    onSubmit,
+  } = props;
   const [value, setValue] = React.useState<CustomerFormData>(initial);
   return (
     <CustomerForm
       id="customer-form-input-test"
+      step={step}
       value={value}
       onChange={setValue}
       onSubmit={onSubmit}
@@ -70,6 +80,7 @@ describe('CustomerForm input constraints (public booking details)', () => {
     render(
       <CustomerFormHarness
         initial={baseCustomer({ zip: '' })}
+        step="address"
         onSubmit={vi.fn()}
       />
     );
@@ -78,18 +89,19 @@ describe('CustomerForm input constraints (public booking details)', () => {
     expect(zipInput.value).toBe('78701');
   });
 
-  it('ZIP field accepts at most 9 digits', async () => {
+  it('ZIP field accepts at most 5 digits', async () => {
     const user = userEvent.setup();
     render(
       <CustomerFormHarness
         initial={baseCustomer({ zip: '' })}
+        step="address"
         onSubmit={vi.fn()}
       />
     );
     const zipInput = screen.getByPlaceholderText('78701') as HTMLInputElement;
     await user.type(zipInput, '12345678901234');
-    expect(zipInput.value).toHaveLength(9);
-    expect(zipInput.value).toBe('123456789');
+    expect(zipInput.value).toHaveLength(5);
+    expect(zipInput.value).toBe('12345');
   });
 
   it('vehicle year keeps digits only and caps at 4 characters', async () => {
@@ -101,6 +113,7 @@ describe('CustomerForm input constraints (public booking details)', () => {
           vehicleMake: 'Toyota',
           vehicleModel: 'Camry',
         })}
+        step="vehicleNotes"
         showVehicleFields
         onSubmit={vi.fn()}
       />
@@ -111,8 +124,36 @@ describe('CustomerForm input constraints (public booking details)', () => {
     expect(yearInput.value).toHaveLength(4);
   });
 
+  it('vehicle make and model reject digits as the user types', async () => {
+    const user = userEvent.setup();
+    render(
+      <CustomerFormHarness
+        initial={baseCustomer({
+          vehicleYear: '2020',
+          vehicleMake: '',
+          vehicleModel: '',
+        })}
+        step="vehicleNotes"
+        showVehicleFields
+        onSubmit={vi.fn()}
+      />
+    );
+    const makeInput = screen.getByPlaceholderText('Toyota') as HTMLInputElement;
+    const modelInput = screen.getByPlaceholderText('Camry') as HTMLInputElement;
+    await user.type(makeInput, 'Toy0ta');
+    await user.type(modelInput, 'Camry123');
+    expect(makeInput.value).toBe('Toyta');
+    expect(modelInput.value).toBe('Camry');
+  });
+
   it('truncates street address to max length on input', () => {
-    render(<CustomerFormHarness initial={baseCustomer()} onSubmit={vi.fn()} />);
+    render(
+      <CustomerFormHarness
+        initial={baseCustomer()}
+        step="address"
+        onSubmit={vi.fn()}
+      />
+    );
     const street = screen.getByPlaceholderText(
       '123 Main St'
     ) as HTMLInputElement;
@@ -122,7 +163,13 @@ describe('CustomerForm input constraints (public booking details)', () => {
   });
 
   it('truncates city to max length on input', () => {
-    render(<CustomerFormHarness initial={baseCustomer()} onSubmit={vi.fn()} />);
+    render(
+      <CustomerFormHarness
+        initial={baseCustomer()}
+        step="address"
+        onSubmit={vi.fn()}
+      />
+    );
     const city = screen.getByPlaceholderText('City') as HTMLInputElement;
     const long = 'b'.repeat(BOOKING_CUSTOMER_CITY_MAX + 20);
     fireEvent.change(city, { target: { value: long } });
@@ -130,7 +177,13 @@ describe('CustomerForm input constraints (public booking details)', () => {
   });
 
   it('truncates full name to max length on input', () => {
-    render(<CustomerFormHarness initial={baseCustomer()} onSubmit={vi.fn()} />);
+    render(
+      <CustomerFormHarness
+        initial={baseCustomer()}
+        step="contact"
+        onSubmit={vi.fn()}
+      />
+    );
     const name = screen.getByPlaceholderText('Jane Doe') as HTMLInputElement;
     const long = 'c'.repeat(BOOKING_CUSTOMER_FULL_NAME_MAX + 15);
     fireEvent.change(name, { target: { value: long } });
@@ -138,7 +191,13 @@ describe('CustomerForm input constraints (public booking details)', () => {
   });
 
   it('truncates unit / apt to max length on input', () => {
-    render(<CustomerFormHarness initial={baseCustomer()} onSubmit={vi.fn()} />);
+    render(
+      <CustomerFormHarness
+        initial={baseCustomer()}
+        step="address"
+        onSubmit={vi.fn()}
+      />
+    );
     const unit = screen.getByPlaceholderText('Apt 4B') as HTMLInputElement;
     const long = 'd'.repeat(BOOKING_CUSTOMER_UNIT_MAX + 10);
     fireEvent.change(unit, { target: { value: long } });
@@ -146,7 +205,13 @@ describe('CustomerForm input constraints (public booking details)', () => {
   });
 
   it('truncates notes to max length on input', () => {
-    render(<CustomerFormHarness initial={baseCustomer()} onSubmit={vi.fn()} />);
+    render(
+      <CustomerFormHarness
+        initial={baseCustomer()}
+        step="vehicleNotes"
+        onSubmit={vi.fn()}
+      />
+    );
     const notes = screen.getByPlaceholderText(
       /Any special requests/i
     ) as HTMLTextAreaElement;
@@ -156,7 +221,13 @@ describe('CustomerForm input constraints (public booking details)', () => {
   });
 
   it('does not render a notes character counter (e.g. 0/280)', () => {
-    render(<CustomerFormHarness initial={baseCustomer()} onSubmit={vi.fn()} />);
+    render(
+      <CustomerFormHarness
+        initial={baseCustomer()}
+        step="vehicleNotes"
+        onSubmit={vi.fn()}
+      />
+    );
     const matches = screen.queryAllByText(notesCounterPattern);
     expect(matches).toHaveLength(0);
   });

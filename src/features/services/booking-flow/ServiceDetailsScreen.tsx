@@ -19,7 +19,12 @@ import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
-import { ArrowLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import {
+  PublicFlowBackNavLabel,
+  PublicFlowStickyBackHeader,
+  publicFlowBackNavClassName,
+} from '@/components/shared';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
 import { AddOnSelector } from './AddOnSelector';
@@ -192,32 +197,25 @@ export function ServiceDetailsScreen({
     ? ui.nav.backToServices
     : ui.serviceDetails.backToProfile;
 
+  const backNavClassName = publicFlowBackNavClassName;
+
   return (
     <>
-      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
-          {phase === 'addons' && needsPriceStep ? (
-            <button
-              type="button"
-              onClick={() => setPhase('price')}
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                {ui.serviceDetails.backToOptions}
-              </span>
-            </button>
-          ) : (
-            <Link
-              href={exitDetailsHref}
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">{exitDetailsLabel}</span>
-            </Link>
-          )}
-        </div>
-      </div>
+      <PublicFlowStickyBackHeader>
+        {phase === 'addons' && needsPriceStep ? (
+          <button
+            type="button"
+            onClick={() => setPhase('price')}
+            className={backNavClassName}
+          >
+            <PublicFlowBackNavLabel label={ui.serviceDetails.backToOptions} />
+          </button>
+        ) : (
+          <Link href={exitDetailsHref} className={backNavClassName}>
+            <PublicFlowBackNavLabel label={exitDetailsLabel} />
+          </Link>
+        )}
+      </PublicFlowStickyBackHeader>
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
         <div className="flex-1 pb-28">
