@@ -24,9 +24,13 @@
  */
 
 import {
-  BOOKING_ACTION_TYPES,
+  ALL_BOOKING_ACTION_TYPES,
   getBookingAction,
 } from '@/features/availability/booking/server/bookingActionCatalog';
+import {
+  handleWorkFinishedAction,
+  WORK_FINISHED_ACTION,
+} from '@/features/availability/booking/server/handleWorkFinishedAction';
 import {
   jobStatusLabel,
   type JobStatus,
@@ -61,22 +65,12 @@ export async function POST(
       );
     }
 
-    // 1. Parse + validate the requested action against the registry.
+    // 1. Parse the request body.
     const body = (await request.json().catch(() => ({}))) as {
       action?: unknown;
+      notify?: unknown;
     };
     const requested = typeof body.action === 'string' ? body.action.trim() : '';
-    const config = getBookingAction(requested);
-    if (!config) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unknown or missing action.',
-          validActions: BOOKING_ACTION_TYPES,
-        },
-        { status: 400 }
-      );
-    }
 
     // 2. Authenticate (Bearer for mobile, cookies for web).
     const auth = await getAuthenticatedUser(request);
@@ -106,6 +100,38 @@ export async function POST(
       return NextResponse.json(
         { success: false, error: 'Business profile not found' },
         { status: 404 }
+      );
+    }
+
+    // 3b. Handoff action (Done / Skip) — separate from job_status registry.
+    if (requested === WORK_FINISHED_ACTION) {
+      if (typeof body.notify !== 'boolean') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'notify (boolean) is required for work_finished.',
+          },
+          { status: 400 }
+        );
+      }
+      return handleWorkFinishedAction({
+        request,
+        bookingId,
+        notify: body.notify,
+        auth,
+        business,
+      });
+    }
+
+    const config = getBookingAction(requested);
+    if (!config) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unknown or missing action.',
+          validActions: ALL_BOOKING_ACTION_TYPES,
+        },
+        { status: 400 }
       );
     }
 

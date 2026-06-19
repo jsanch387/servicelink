@@ -51,6 +51,11 @@ export function buildJobStartedSms(ctx: { businessName: string }): string {
   return `${ctx.businessName} has started your service. ${OPT_OUT}`;
 }
 
+/** Sent when the owner taps Done — physical work finished, before close-out. */
+export function buildWorkFinishedSms(ctx: { businessName: string }): string {
+  return `${ctx.businessName} has finished your service. Come take a look when you're ready. ${OPT_OUT}`;
+}
+
 /** Sent when the business marks the job complete. */
 export function buildJobCompletedSms(ctx: { businessName: string }): string {
   return `${ctx.businessName} has completed your appointment. Thank you! ${OPT_OUT}`;

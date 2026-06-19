@@ -46,6 +46,7 @@ interface BookingRow {
   business_id: string;
   status: string | null;
   job_status: string | null;
+  work_handoff_status?: string | null;
   customer_phone: string | null;
 }
 
@@ -54,11 +55,20 @@ interface SupabaseConfig {
   booking?: BookingRow | null;
   /** Row returned by the race-safe job_status UPDATE (null = race lost). */
   transition?: { job_status: string } | null;
+  /** Row returned by the work_handoff_status UPDATE (null = race lost). */
+  handoffTransition?: { work_handoff_status: string } | null;
+  /** Refetch after lost handoff race (idempotent duplicate). */
+  handoffAfterRace?: { work_handoff_status: string | null } | null;
 }
 
 function makeSupabase(config: SupabaseConfig) {
   const transition =
     'transition' in config ? config.transition : { job_status: 'unset' };
+  const handoffTransition =
+    'handoffTransition' in config
+      ? config.handoffTransition
+      : { work_handoff_status: 'notified' };
+  let bookingsSelectCount = 0;
   return {
     from: vi.fn((table: string) => {
       if (table === 'business_profiles') {
@@ -74,27 +84,62 @@ function makeSupabase(config: SupabaseConfig) {
           }),
         };
       }
-      // bookings: supports both SELECT (...maybeSingle) and the UPDATE chain
-      // (.update().eq().eq().in().select().maybeSingle()).
+      // bookings: SELECT, job_status UPDATE, or work_handoff UPDATE
       return {
         select: () => ({
           eq: () => ({
-            maybeSingle: () =>
-              Promise.resolve({ data: config.booking ?? null, error: null }),
+            maybeSingle: () => {
+              bookingsSelectCount += 1;
+              if (
+                bookingsSelectCount > 1 &&
+                'handoffAfterRace' in config &&
+                config.handoffAfterRace
+              ) {
+                return Promise.resolve({
+                  data: config.handoffAfterRace,
+                  error: null,
+                });
+              }
+              return Promise.resolve({
+                data: config.booking ?? null,
+                error: null,
+              });
+            },
           }),
         }),
-        update: () => ({
-          eq: () => ({
+        update: (payload: Record<string, unknown>) => {
+          if ('work_handoff_status' in payload) {
+            return {
+              eq: () => ({
+                eq: () => ({
+                  eq: () => ({
+                    is: () => ({
+                      select: () => ({
+                        maybeSingle: () =>
+                          Promise.resolve({
+                            data: handoffTransition,
+                            error: null,
+                          }),
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {
             eq: () => ({
-              in: () => ({
-                select: () => ({
-                  maybeSingle: () =>
-                    Promise.resolve({ data: transition, error: null }),
+              eq: () => ({
+                in: () => ({
+                  select: () => ({
+                    maybeSingle: () =>
+                      Promise.resolve({ data: transition, error: null }),
+                  }),
                 }),
               }),
             }),
-          }),
-        }),
+          };
+        },
       };
     }),
   };
@@ -104,13 +149,18 @@ function authOk(supabase: unknown) {
   return { user: { id: 'owner-1' }, supabase, authMethod: 'bearer' as const };
 }
 
-function postRequest(action?: string): NextRequest {
+function postRequest(
+  action?: string,
+  extra?: Record<string, unknown>
+): NextRequest {
+  const body =
+    action === undefined ? undefined : JSON.stringify({ action, ...extra });
   return new NextRequest(
     'http://localhost/api/availability/bookings/booking-1/actions',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: action === undefined ? undefined : JSON.stringify({ action }),
+      body,
     }
   );
 }
@@ -151,14 +201,20 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
   });
 
   it('400 when the action is unknown/missing', async () => {
-    getAuthenticatedUserMock.mockResolvedValue(authOk(makeSupabase({})));
+    getAuthenticatedUserMock.mockResolvedValue(
+      authOk(makeSupabase({ business }))
+    );
     const res = await POST(postRequest('teleport'), params());
     const json = await res.json();
     expect(res.status).toBe(400);
     expect(json.validActions).toEqual(
-      expect.arrayContaining(['on_the_way', 'job_started', 'job_completed'])
+      expect.arrayContaining([
+        'on_the_way',
+        'job_started',
+        'job_completed',
+        'work_finished',
+      ])
     );
-    expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
   });
 
   it('401 when unauthenticated', async () => {
@@ -462,5 +518,140 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(res.status).toBe(200);
     expect(json.jobStatus).toBe('on_the_way');
     expect(json.sms).toEqual({ sent: false, reason: 'no_phone' });
+  });
+
+  describe('work_finished (Done / Skip)', () => {
+    const inProgressBooking: BookingRow = {
+      ...baseBooking,
+      job_status: 'in_progress',
+      work_handoff_status: null,
+    };
+
+    it('400 when notify is missing', async () => {
+      getAuthenticatedUserMock.mockResolvedValue(
+        authOk(makeSupabase({ business }))
+      );
+      const res = await POST(postRequest('work_finished'), params());
+      expect(res.status).toBe(400);
+    });
+
+    it('409 when notify true and no sendable phone', async () => {
+      getAuthenticatedUserMock.mockResolvedValue(
+        authOk(
+          makeSupabase({
+            business,
+            booking: { ...inProgressBooking, customer_phone: null },
+          })
+        )
+      );
+      const res = await POST(
+        postRequest('work_finished', { notify: true }),
+        params()
+      );
+      const json = await res.json();
+      expect(res.status).toBe(409);
+      expect(json.error).toMatch(/no phone on file/i);
+      expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    });
+
+    it('200 Skip: sets skipped without SMS or rate limit', async () => {
+      getAuthenticatedUserMock.mockResolvedValue(
+        authOk(
+          makeSupabase({
+            business,
+            booking: inProgressBooking,
+            handoffTransition: { work_handoff_status: 'skipped' },
+          })
+        )
+      );
+      const res = await POST(
+        postRequest('work_finished', { notify: false }),
+        params()
+      );
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.workHandoffStatus).toBe('skipped');
+      expect(json.jobStatus).toBe('in_progress');
+      expect(json.sms).toEqual({
+        sent: false,
+        messageId: null,
+        reason: null,
+      });
+      expect(assertOwnerSmsSendRateLimitsMock).not.toHaveBeenCalled();
+      expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    });
+
+    it('200 Done: sets notified and sends work_finished SMS', async () => {
+      getAuthenticatedUserMock.mockResolvedValue(
+        authOk(
+          makeSupabase({
+            business,
+            booking: inProgressBooking,
+            handoffTransition: { work_handoff_status: 'notified' },
+          })
+        )
+      );
+      const res = await POST(
+        postRequest('work_finished', { notify: true }),
+        params()
+      );
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.action).toBe('work_finished');
+      expect(json.workHandoffStatus).toBe('notified');
+      expect(json.jobStatus).toBe('in_progress');
+      expect(json.sms).toEqual({
+        sent: true,
+        messageId: 'msg-1',
+        reason: null,
+      });
+      expect(sendAndRecordSmsMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'work_finished',
+          dedupeKey: 'booking-1:work_finished',
+          to: '5807545207',
+        })
+      );
+    });
+
+    it('200 idempotent when handoff already set', async () => {
+      getAuthenticatedUserMock.mockResolvedValue(
+        authOk(
+          makeSupabase({
+            business,
+            booking: {
+              ...inProgressBooking,
+              work_handoff_status: 'notified',
+            },
+          })
+        )
+      );
+      const res = await POST(
+        postRequest('work_finished', { notify: true }),
+        params()
+      );
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.workHandoffStatus).toBe('notified');
+      expect(json.sms.reason).toBe('duplicate');
+      expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    });
+
+    it('409 when job is not in progress', async () => {
+      getAuthenticatedUserMock.mockResolvedValue(
+        authOk(
+          makeSupabase({
+            business,
+            booking: { ...baseBooking, job_status: 'on_the_way' },
+          })
+        )
+      );
+      const res = await POST(
+        postRequest('work_finished', { notify: true }),
+        params()
+      );
+      expect(res.status).toBe(409);
+      expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    });
   });
 });

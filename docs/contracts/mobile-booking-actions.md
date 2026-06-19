@@ -5,7 +5,9 @@ This doc covers, for the native app:
 1. **How customer phone numbers are stored** and normalized.
 2. **The SMS data model** (`sms_messages`) — how every text is logged and how the app reads "messages sent" history.
 3. **Job tracking** (`bookings.job_status`) — the stateful fulfillment lifecycle of a booking.
-4. **The booking actions endpoint** — one generic, data-driven endpoint that drives a job-status transition **and** sends the matching customer SMS (`on_the_way`, `job_started`, `job_completed`, …).
+4. **The booking actions endpoint** — one generic, data-driven endpoint that drives a job-status transition **and** sends the matching customer SMS (`on_the_way`, `job_started`, `work_finished`, `job_completed`, …).
+
+> **Done / Skip (`work_finished`):** see [`mobile-booking-work-finished.md`](./mobile-booking-work-finished.md) — cycle 1 of the extended lifecycle (SMS when owner taps Done).
 
 > **Golden rule:** the app never calls Pingram or sends SMS directly. The server holds the API key, normalizes numbers, enforces ownership, rate-limits (SMS costs money), logs every send, owns the message templates, and owns the state machine. The app triggers **actions** and **reads state**.
 

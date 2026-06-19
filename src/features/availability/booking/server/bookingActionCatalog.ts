@@ -87,6 +87,14 @@ export const BOOKING_ACTION_TYPES = Object.keys(
   BOOKING_ACTIONS
 ) as BookingActionType[];
 
+/** Handoff action handled outside the job_status registry (see handleWorkFinishedAction). */
+export const BOOKING_HANDOFF_ACTION_TYPES = ['work_finished'] as const;
+
+export const ALL_BOOKING_ACTION_TYPES = [
+  ...BOOKING_ACTION_TYPES,
+  ...BOOKING_HANDOFF_ACTION_TYPES,
+] as const;
+
 export function getBookingAction(
   action: string | null | undefined
 ): BookingActionConfig | null {

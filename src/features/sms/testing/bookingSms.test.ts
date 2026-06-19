@@ -5,6 +5,7 @@ import {
   buildJobStartedSms,
   buildOnMyWaySms,
   buildReviewRequestSms,
+  buildWorkFinishedSms,
 } from '../messages/bookingSms';
 
 const OPT_OUT = 'Reply STOP to opt out.';
@@ -40,6 +41,15 @@ describe('booking SMS templates', () => {
     });
   });
 
+  describe('buildWorkFinishedSms', () => {
+    it('tells the customer work is finished and includes opt-out', () => {
+      const msg = buildWorkFinishedSms({ businessName: 'Black Label Detail' });
+      expect(msg).toBe(
+        `Black Label Detail has finished your service. Come take a look when you're ready. ${OPT_OUT}`
+      );
+    });
+  });
+
   it('job_started and job_completed include business name + opt-out', () => {
     expect(buildJobStartedSms({ businessName: 'Acme' })).toBe(
       `Acme has started your service. ${OPT_OUT}`
@@ -67,6 +77,7 @@ describe('booking SMS templates', () => {
     const ctx = { businessName: 'Black Label Detailing Co.' };
     expect(buildOnMyWaySms(ctx).length).toBeLessThanOrEqual(160);
     expect(buildJobStartedSms(ctx).length).toBeLessThanOrEqual(160);
+    expect(buildWorkFinishedSms(ctx).length).toBeLessThanOrEqual(160);
     expect(buildJobCompletedSms(ctx).length).toBeLessThanOrEqual(160);
   });
 });
