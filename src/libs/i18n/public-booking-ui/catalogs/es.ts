@@ -68,11 +68,10 @@ export const publicBookingUiEs: PublicBookingUi = {
     noSlotsHint: 'No hay horarios disponibles para esta fecha.',
     reviewBooking: 'Revisa tu reserva',
     reviewBookingCta: 'Revisar reserva',
-    notificationsConsentLabel:
-      'Al confirmar esta cita, aceptas recibir notificaciones por correo y SMS sobre tu reserva.',
-    notificationsSmsFinePrintBeforeLink:
-      'Pueden aplicarse cargos por mensajes y datos. Responde STOP para darte de baja. Consulta nuestra ',
-    notificationsSmsFinePrintLinkLabel: 'Política de privacidad conforme a SMS',
+    notificationsConsentLabel: (businessName: string) =>
+      `Al proporcionar tu número de teléfono, aceptas recibir notificaciones por SMS de ${businessName}. La frecuencia de mensajes puede variar. Pueden aplicarse tarifas estándar de mensajes y datos. Responde STOP para darte de baja. Responde HELP para obtener ayuda.`,
+    notificationsSmsFinePrintBeforeLink: 'Consulta nuestra ',
+    notificationsSmsFinePrintLinkLabel: 'Política de Privacidad',
     notificationsSmsFinePrintAfterLink: '.',
     notificationsConsentRequired:
       'Marca la casilla para aceptar las notificaciones por correo y SMS antes de continuar.',

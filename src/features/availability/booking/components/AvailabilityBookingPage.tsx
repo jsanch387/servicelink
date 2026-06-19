@@ -973,7 +973,7 @@ export function AvailabilityBookingPage({
                         .join(' ')}
                     />
                     <span className="text-sm leading-snug text-gray-300">
-                      {ui.calendar.notificationsConsentLabel}
+                      {ui.calendar.notificationsConsentLabel(businessName)}
                     </span>
                   </label>
                   <p

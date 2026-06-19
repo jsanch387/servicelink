@@ -106,7 +106,7 @@ export default function PrivacyPage() {
               liable for delayed or undelivered messages.
             </p>
             <p className="text-base leading-relaxed mb-3">
-              You can typically opt out of further SMS from a message thread by
+              You can opt out of further SMS from a message thread by
               replying with standard keywords such as STOP, END, CANCEL,
               UNSUBSCRIBE, or QUIT (exact keywords and behavior depend on the
               sender configuration and carrier rules). You may receive a

@@ -67,8 +67,8 @@ export type PublicBookingUi = {
     noSlotsHint: string;
     reviewBooking: string;
     reviewBookingCta: string;
-    /** Public booking: required consent for transactional email + SMS (e.g. Twilio). */
-    notificationsConsentLabel: string;
+    /** Public booking: required consent for transactional SMS. Takes businessName. */
+    notificationsConsentLabel: (businessName: string) => string;
     /** Fine print under consent; shown before the privacy policy link label. */
     notificationsSmsFinePrintBeforeLink: string;
     /** Linked text to `/privacy` (SMS-related section). */
