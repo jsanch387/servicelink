@@ -7,32 +7,16 @@ import {
   JOB_COMPLETED_ACTION,
   SESSION_PAYMENT_METHODS,
   type JobCompletedRequestBody,
-  type JobCompletedSessionFeeInput,
   type JobCompletedSessionPaymentInput,
 } from './jobCompletedTypes';
+import { parseSessionFeesInput } from './parseSessionFeesInput';
 
 export type ParseJobCompletedBodyResult =
   | { ok: true; body: JobCompletedRequestBody }
   | { ok: false; error: string };
 
-function parseSessionFees(raw: unknown): JobCompletedSessionFeeInput[] | null {
-  if (raw === undefined) return [];
-  if (!Array.isArray(raw)) return null;
-
-  const fees: JobCompletedSessionFeeInput[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== 'object') return null;
-    const label =
-      typeof (item as { label?: unknown }).label === 'string'
-        ? (item as { label: string }).label.trim()
-        : '';
-    const amountCents = (item as { amountCents?: unknown }).amountCents;
-    if (!label || !Number.isInteger(amountCents) || amountCents < 0) {
-      return null;
-    }
-    fees.push({ label, amountCents });
-  }
-  return fees;
+function parseSessionFees(raw: unknown) {
+  return parseSessionFeesInput(raw);
 }
 
 function parseSessionPayment(

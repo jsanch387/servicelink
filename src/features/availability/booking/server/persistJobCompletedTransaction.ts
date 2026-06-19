@@ -28,6 +28,7 @@ import {
 } from './jobCompletedRouteLog';
 import { sendJobCompletedCustomerNotification } from './sendJobCompletedCustomerNotification';
 import { loadBusinessProfileForInvoice } from './loadBusinessProfileForInvoice';
+import { markTapToPayIntentJobCompleted } from './verifyTapToPayPaymentIntent';
 import type { WorkHandoffStatus } from '../workHandoffStatus';
 
 const SESSION_FEE_SOURCE = 'owner_complete_screen';
@@ -176,6 +177,9 @@ async function upsertBookingPaymentsForCompletion(
       patch.session_payment_stripe_payment_intent_id =
         args.sessionPayment.stripePaymentIntentId;
     }
+    if (args.sessionPayment.method === 'tap_to_pay') {
+      patch.provider = 'stripe';
+    }
   }
 
   if (args.existing?.id) {
@@ -193,7 +197,8 @@ async function upsertBookingPaymentsForCompletion(
   const { error } = await (admin as any).from('booking_payments').insert({
     booking_id: args.bookingId,
     business_id: args.businessId,
-    provider: 'none',
+    provider:
+      args.sessionPayment?.method === 'tap_to_pay' ? 'stripe' : 'none',
     payment_method_selected: args.sessionPayment ? 'pay_in_person' : 'none',
     currency: args.existing?.currency?.trim()?.toLowerCase() || 'usd',
     required_online_amount_cents: 0,
@@ -363,6 +368,14 @@ export async function persistJobCompletedTransaction(
       sessionPayment: body.sessionPayment,
       existing: payments,
     });
+    if (
+      body.sessionPayment?.method === 'tap_to_pay' &&
+      body.sessionPayment.stripePaymentIntentId
+    ) {
+      await markTapToPayIntentJobCompleted({
+        paymentIntentId: body.sessionPayment.stripePaymentIntentId,
+      });
+    }
     logJobCompletedStage(trace, 'persist_payments', {
       totalAmountCents: amountDue.subtotalCents,
       sessionPaymentMethod: body.sessionPayment?.method ?? null,

@@ -61,7 +61,7 @@ After **Done/Skip**, mobile shows **Mark complete** → Complete sheet:
 | `sessionPayment` | No | Omit when customer already paid in full online |
 | `sessionPayment.method` | When payment present | `cash` \| `payment_app` \| `other` \| `tap_to_pay` |
 | `sessionPayment.amountCents` | When payment present | Integer ≥ 0 |
-| `sessionPayment.stripePaymentIntentId` | `tap_to_pay` only | **Phase 2** — server returns 400 without it today |
+| `sessionPayment.stripePaymentIntentId` | `tap_to_pay` only | Required — see [`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md) |
 
 ### Preconditions (server enforces)
 
@@ -193,15 +193,13 @@ Disable **Complete** until local `amountDueCents === 0`.
 
 ---
 
-## Phase 2 (not required for Phase 1 mobile)
+## Tap to Pay (Phase 2)
 
-| Item | Notes |
-| ---- | ----- |
-| `POST …/tap-to-pay/intent` | Stripe PaymentIntent before Tap to Pay UI |
-| `tap_to_pay` + `stripePaymentIntentId` | Server verifies with Stripe |
-| PDF invoices | Not on critical path |
+Stripe Tap to Pay on the Complete sheet is documented separately:
 
-Phase 1 ships with **Mark as paid** only; mock Tap to Pay stays blocked until Phase 2.
+**[`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md)** — connection token, PaymentIntent, SDK flow, PI verification on `job_completed`, and DB migration.
+
+Phase 1 **Mark as paid** (`cash` / `payment_app` / `other`) remains available without Tap to Pay.
 
 ---
 

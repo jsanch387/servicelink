@@ -54,10 +54,14 @@ Token is opaque (64-char hex). Page is `noindex`. Snapshot JSON is the display s
 
 Review invite row is created internally via `ensureReviewInviteRecordIfEligible.ts` during persist. Review URL is embedded in the invoice snapshot — mobile must **not** call a separate review-invite POST.
 
-## Phase 2 (deferred)
+## Tap to Pay (Phase 2)
 
-- Tap to Pay intent endpoint + Stripe PaymentIntent verification
-- PDF invoices
+**Contract:** [`docs/contracts/mobile-booking-tap-to-pay.md`](../../../../docs/contracts/mobile-booking-tap-to-pay.md)
+
+- `POST …/tap-to-pay/connection-token` — Terminal SDK
+- `POST …/tap-to-pay/intent` — PaymentIntent on Connect account
+- `job_completed` with `tap_to_pay` — verify PI then existing persist path
+- Migration: [`docs/sql/booking_tap_to_pay_phase2_migration.sql`](../../../../docs/sql/booking_tap_to_pay_phase2_migration.sql)
 
 ## Code map
 

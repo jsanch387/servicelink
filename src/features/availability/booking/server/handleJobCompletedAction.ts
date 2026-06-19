@@ -22,9 +22,13 @@ import {
 import { parseJobCompletedBody } from './parseJobCompletedBody';
 import { persistJobCompletedTransaction } from './persistJobCompletedTransaction';
 import {
+  resolveTapToPayBookingContext,
+} from './resolveTapToPayBookingContext';
+import {
   isWorkHandoffStatus,
   type WorkHandoffStatus,
 } from '../workHandoffStatus';
+import { verifyTapToPayPaymentIntent } from './verifyTapToPayPaymentIntent';
 
 interface BookingForJobCompleted {
   id: string;
@@ -277,15 +281,51 @@ export async function handleJobCompletedAction(opts: {
   ) {
     logJobCompletedStage(trace, 'rejected', {
       httpStatus: 400,
-      reason: 'Tap to Pay requires stripePaymentIntentId (Phase 2)',
+      reason: 'Tap to Pay requires stripePaymentIntentId',
     });
     return NextResponse.json(
       {
         success: false,
-        error: 'Tap to Pay requires stripePaymentIntentId (Phase 2).',
+        error: 'Tap to Pay requires stripePaymentIntentId.',
       },
       { status: 400 }
     );
+  }
+
+  if (parsed.body.sessionPayment?.method === 'tap_to_pay') {
+    const tapCtx = await resolveTapToPayBookingContext({
+      supabase: auth.supabase,
+      bookingId,
+      businessId: business.id,
+    });
+    if (!tapCtx.ok) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: tapCtx.reject.httpStatus,
+        reason: tapCtx.reject.error,
+      });
+      return NextResponse.json(
+        { success: false, error: tapCtx.reject.error },
+        { status: tapCtx.reject.httpStatus }
+      );
+    }
+
+    const verified = await verifyTapToPayPaymentIntent({
+      bookingId,
+      businessId: business.id,
+      stripeAccountId: tapCtx.ctx.stripeAccountId,
+      paymentIntentId: parsed.body.sessionPayment.stripePaymentIntentId!,
+      expectedAmountCents: parsed.body.sessionPayment.amountCents,
+    });
+    if (!verified.ok) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: verified.httpStatus,
+        reason: verified.error,
+      });
+      return NextResponse.json(
+        { success: false, error: verified.error },
+        { status: verified.httpStatus }
+      );
+    }
   }
 
   const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
