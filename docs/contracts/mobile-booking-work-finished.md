@@ -2,7 +2,7 @@
 
 Owner marks physical work complete **before** payment close-out and final booking completion. This is **cycle 1** of the extended booking lifecycle — only the **Done / Skip** handoff step and its customer SMS.
 
-**Not in this contract yet:** `job_completed` (Complete screen, fees, Tap to Pay, receipt + review). See [`mobile-booking-actions.md`](./mobile-booking-actions.md) for existing `on_the_way`, `job_started`, and `job_completed` behavior.
+**Next step (cycle 2):** [`mobile-booking-job-completed.md`](./mobile-booking-job-completed.md) — Complete sheet, fees, payment, invoice + review.
 
 **Server implementation:** `POST /api/availability/bookings/[id]/actions` with `{ "action": "work_finished", "notify": boolean }`  
 **Handler:** `src/features/availability/booking/server/handleWorkFinishedAction.ts`  

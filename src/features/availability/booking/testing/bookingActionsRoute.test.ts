@@ -8,12 +8,14 @@ const {
   sendAndRecordSmsMock,
   createSupabaseAdminClientMock,
   completeBookingWithSideEffectsMock,
+  persistJobCompletedTransactionMock,
 } = vi.hoisted(() => ({
   getAuthenticatedUserMock: vi.fn(),
   assertOwnerSmsSendRateLimitsMock: vi.fn(),
   sendAndRecordSmsMock: vi.fn(),
   createSupabaseAdminClientMock: vi.fn(),
   completeBookingWithSideEffectsMock: vi.fn(),
+  persistJobCompletedTransactionMock: vi.fn(),
 }));
 
 vi.mock('@/libs/api/getAuthenticatedUser', () => ({
@@ -35,6 +37,13 @@ vi.mock(
   })
 );
 
+vi.mock(
+  '@/features/availability/booking/server/persistJobCompletedTransaction',
+  () => ({
+    persistJobCompletedTransaction: persistJobCompletedTransactionMock,
+  })
+);
+
 // Keep the real registry + message builders; only the send orchestrator is mocked.
 vi.mock('@/features/sms', async importOriginal => {
   const actual = await importOriginal<typeof import('@/features/sms')>();
@@ -53,6 +62,7 @@ interface BookingRow {
 interface SupabaseConfig {
   business?: { id: string; business_name: string | null } | null;
   booking?: BookingRow | null;
+  bookingPayments?: { paid_online_amount_cents: number | null } | null;
   /** Row returned by the race-safe job_status UPDATE (null = race lost). */
   transition?: { job_status: string } | null;
   /** Row returned by the work_handoff_status UPDATE (null = race lost). */
@@ -79,6 +89,19 @@ function makeSupabase(config: SupabaseConfig) {
                 Promise.resolve({
                   data: config.business ?? null,
                   error: config.business ? null : { message: 'not found' },
+                }),
+            }),
+          }),
+        };
+      }
+      if (table === 'booking_payments') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: config.bookingPayments ?? null,
+                  error: null,
                 }),
             }),
           }),
@@ -121,6 +144,20 @@ function makeSupabase(config: SupabaseConfig) {
                             error: null,
                           }),
                       }),
+                    }),
+                  }),
+                }),
+              }),
+            };
+          }
+          if ('job_status' in payload && payload.job_status === 'completed') {
+            return {
+              eq: () => ({
+                eq: () => ({
+                  eq: () => ({
+                    select: () => ({
+                      maybeSingle: () =>
+                        Promise.resolve({ data: transition, error: null }),
                     }),
                   }),
                 }),
@@ -178,14 +215,39 @@ const baseBooking: BookingRow = {
   customer_phone: '5807545207',
 };
 
+const inProgressAfterHandoff: BookingRow = {
+  ...baseBooking,
+  job_status: 'in_progress',
+  work_handoff_status: 'notified',
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   assertOwnerSmsSendRateLimitsMock.mockResolvedValue({ ok: true });
   sendAndRecordSmsMock.mockResolvedValue({ sent: true, messageId: 'msg-1' });
-  createSupabaseAdminClientMock.mockReturnValue({});
+  createSupabaseAdminClientMock.mockReturnValue({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        }),
+      }),
+    }),
+  });
   completeBookingWithSideEffectsMock.mockResolvedValue({
     booking: { id: 'booking-1', status: 'completed' },
     notification: {
+      sms: { sent: true, messageId: 'msg-1', reason: null },
+      email: { sent: false, messageId: null, reason: null },
+    },
+  });
+  persistJobCompletedTransactionMock.mockResolvedValue({
+    ok: true,
+    response: {
+      jobStatus: 'completed',
+      bookingStatus: 'completed',
+      workHandoffStatus: 'notified',
+      invoicePublicToken: 'abc123invoice',
       sms: { sent: true, messageId: 'msg-1', reason: null },
       email: { sent: false, messageId: null, reason: null },
     },
@@ -349,7 +411,8 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
       authOk(
         makeSupabase({
           business,
-          booking: { ...baseBooking, job_status: 'in_progress' },
+          booking: inProgressAfterHandoff,
+          bookingPayments: { paid_online_amount_cents: 0 },
           transition: { job_status: 'completed' },
         })
       )
@@ -358,16 +421,10 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     const json = await res.json();
     expect(res.status).toBe(200);
     expect(json.jobStatus).toBe('completed');
-    // Marks the booking complete via the shared lifecycle helper (status +
-    // maintenance + the single SMS-first/email-fallback completion notice),
-    // surfacing bookingStatus + the review outcome to the app.
-    expect(completeBookingWithSideEffectsMock).toHaveBeenCalledTimes(1);
-    expect(completeBookingWithSideEffectsMock).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      'booking-1',
-      expect.objectContaining({ source: 'mobile_api' })
-    );
+    expect(json.workHandoffStatus).toBe('notified');
+    expect(json.invoicePublicToken).toBe('abc123invoice');
+    expect(persistJobCompletedTransactionMock).toHaveBeenCalledTimes(1);
+    expect(completeBookingWithSideEffectsMock).not.toHaveBeenCalled();
     expect(json.bookingStatus).toBe('completed');
     // The completion notification is owned by the shared helper — the route must
     // NOT also fire a generic action SMS (no double-text).
@@ -377,9 +434,13 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
   });
 
   it('200 job_completed still succeeds (state changed) when both channels fail', async () => {
-    completeBookingWithSideEffectsMock.mockResolvedValue({
-      booking: { id: 'booking-1', status: 'completed' },
-      notification: {
+    persistJobCompletedTransactionMock.mockResolvedValue({
+      ok: true,
+      response: {
+        jobStatus: 'completed',
+        bookingStatus: 'completed',
+        workHandoffStatus: 'notified',
+        invoicePublicToken: 'abc123invoice',
         sms: { sent: false, messageId: null, reason: 'error' },
         email: { sent: false, messageId: null, reason: 'error' },
       },
@@ -388,7 +449,8 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
       authOk(
         makeSupabase({
           business,
-          booking: { ...baseBooking, job_status: 'in_progress' },
+          booking: inProgressAfterHandoff,
+          bookingPayments: { paid_online_amount_cents: 0 },
           transition: { job_status: 'completed' },
         })
       )
@@ -398,7 +460,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(res.status).toBe(200);
     expect(json.jobStatus).toBe('completed');
     expect(json.bookingStatus).toBe('completed');
-    expect(completeBookingWithSideEffectsMock).toHaveBeenCalledTimes(1);
+    expect(persistJobCompletedTransactionMock).toHaveBeenCalledTimes(1);
     expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
     expect(json.sms).toEqual({ sent: false, messageId: null, reason: 'error' });
     expect(json.email).toEqual({
@@ -409,9 +471,13 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
   });
 
   it('200 job_completed emails as fallback when the customer has no phone', async () => {
-    completeBookingWithSideEffectsMock.mockResolvedValue({
-      booking: { id: 'booking-1', status: 'completed' },
-      notification: {
+    persistJobCompletedTransactionMock.mockResolvedValue({
+      ok: true,
+      response: {
+        jobStatus: 'completed',
+        bookingStatus: 'completed',
+        workHandoffStatus: 'notified',
+        invoicePublicToken: 'abc123invoice',
         sms: { sent: false, messageId: null, reason: 'no_phone' },
         email: { sent: true, messageId: 're_xxx', reason: null },
       },
@@ -421,10 +487,10 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
         makeSupabase({
           business,
           booking: {
-            ...baseBooking,
-            job_status: 'in_progress',
+            ...inProgressAfterHandoff,
             customer_phone: null,
           },
+          bookingPayments: { paid_online_amount_cents: 0 },
           transition: { job_status: 'completed' },
         })
       )
@@ -442,6 +508,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
       messageId: 're_xxx',
       reason: null,
     });
+    expect(persistJobCompletedTransactionMock).toHaveBeenCalledTimes(1);
   });
 
   it('200 idempotent when the booking is already completed (no notification)', async () => {
@@ -450,7 +517,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
         makeSupabase({
           business,
           booking: {
-            ...baseBooking,
+            ...inProgressAfterHandoff,
             status: 'completed',
             job_status: 'completed',
           },
@@ -462,14 +529,14 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(res.status).toBe(200);
     expect(json.jobStatus).toBe('completed');
     expect(json.bookingStatus).toBe('completed');
+    expect(json.workHandoffStatus).toBe('notified');
     expect(json.sms).toEqual({
       sent: false,
       messageId: null,
       reason: 'duplicate',
     });
     expect(json.email).toEqual({ sent: false, messageId: null, reason: null });
-    // Idempotent no-op: no completion + no rate-limit charge.
-    expect(completeBookingWithSideEffectsMock).not.toHaveBeenCalled();
+    expect(persistJobCompletedTransactionMock).not.toHaveBeenCalled();
     expect(assertOwnerSmsSendRateLimitsMock).not.toHaveBeenCalled();
   });
 

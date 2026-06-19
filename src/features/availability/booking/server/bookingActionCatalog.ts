@@ -14,7 +14,7 @@
 import { buildJobStartedSms, buildOnMyWaySms } from '@/features/sms';
 import type { JobStatus } from '../jobStatus';
 
-export type BookingActionType = 'on_the_way' | 'job_started' | 'job_completed';
+export type BookingActionType = 'on_the_way' | 'job_started';
 
 interface BaseBookingActionConfig {
   type: BookingActionType;
@@ -74,21 +74,21 @@ export const BOOKING_ACTIONS: Record<BookingActionType, BookingActionConfig> = {
     allowedFromJobStatus: ['not_started', 'on_the_way'],
     label: 'started',
   },
-  job_completed: {
-    type: 'job_completed',
-    jobStatus: 'completed',
-    allowedFromJobStatus: ['not_started', 'on_the_way', 'in_progress'],
-    label: 'completed',
-    completesBooking: true,
-  },
 };
 
 export const BOOKING_ACTION_TYPES = Object.keys(
   BOOKING_ACTIONS
 ) as BookingActionType[];
 
-/** Handoff action handled outside the job_status registry (see handleWorkFinishedAction). */
-export const BOOKING_HANDOFF_ACTION_TYPES = ['work_finished'] as const;
+/**
+ * Actions handled outside the job_status registry:
+ * - work_finished (Done / Skip)
+ * - job_completed (Complete sheet — fees, payment, invoice)
+ */
+export const BOOKING_HANDOFF_ACTION_TYPES = [
+  'work_finished',
+  'job_completed',
+] as const;
 
 export const ALL_BOOKING_ACTION_TYPES = [
   ...BOOKING_ACTION_TYPES,

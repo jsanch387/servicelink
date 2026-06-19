@@ -51,7 +51,7 @@ This document defines the `booking_payments` table for availability bookings wit
 - money fields `>= 0`.
 - `required_online_amount_cents <= total_amount_cents`.
 - `paid_online_amount_cents <= total_amount_cents`.
-- `remaining_amount_cents = GREATEST(total_amount_cents - paid_online_amount_cents, 0)`.
+- `remaining_amount_cents = GREATEST(total_amount_cents - paid_online_amount_cents - COALESCE(session_payment_amount_cents, 0), 0)`.
 - if `deposit_type` is null, `deposit_value` should be null; if not null, both present.
 - if `deposit_type = 'percent'`, `deposit_value` should be `0..100`.
 

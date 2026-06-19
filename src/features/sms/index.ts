@@ -17,6 +17,7 @@ export {
   buildBookingConfirmedSms,
   buildBookingReminderSms,
   buildJobCompletedSms,
+  buildJobCompletedInvoiceSms,
   buildJobStartedSms,
   buildOnMyWaySms,
   buildReviewRequestSms,

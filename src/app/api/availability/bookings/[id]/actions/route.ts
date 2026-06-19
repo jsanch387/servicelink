@@ -28,18 +28,20 @@ import {
   getBookingAction,
 } from '@/features/availability/booking/server/bookingActionCatalog';
 import {
+  handleJobCompletedAction,
+} from '@/features/availability/booking/server/handleJobCompletedAction';
+import {
   handleWorkFinishedAction,
   WORK_FINISHED_ACTION,
 } from '@/features/availability/booking/server/handleWorkFinishedAction';
+import { JOB_COMPLETED_ACTION } from '@/features/availability/booking/server/jobCompletedTypes';
 import {
   jobStatusLabel,
   type JobStatus,
 } from '@/features/availability/booking/jobStatus';
-import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
 import { sendAndRecordSms } from '@/features/sms';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -103,7 +105,18 @@ export async function POST(
       );
     }
 
-    // 3b. Handoff action (Done / Skip) — separate from job_status registry.
+    // 3b. Complete sheet — fees, payment, invoice (Phase 1).
+    if (requested === JOB_COMPLETED_ACTION) {
+      return handleJobCompletedAction({
+        request,
+        bookingId,
+        rawBody: body,
+        auth,
+        business,
+      });
+    }
+
+    // 3c. Handoff action (Done / Skip) — separate from job_status registry.
     if (requested === WORK_FINISHED_ACTION) {
       if (typeof body.notify !== 'boolean') {
         return NextResponse.json(
@@ -160,24 +173,6 @@ export async function POST(
         { success: false, error: 'Booking not found' },
         { status: 404 }
       );
-    }
-
-    // 4b. Idempotency for completing actions: if the booking is already
-    // completed, return 200 with the current state instead of erroring — a
-    // retry/double-tap should be a no-op, never a 409. No SMS/email is sent.
-    if (
-      config.completesBooking &&
-      ((booking.job_status ?? '').trim() === 'completed' ||
-        (booking.status ?? '').trim() === 'completed')
-    ) {
-      return NextResponse.json({
-        success: true,
-        action: config.type,
-        jobStatus: 'completed',
-        bookingStatus: 'completed',
-        sms: { sent: false, messageId: null, reason: 'duplicate' },
-        email: { sent: false, messageId: null, reason: null },
-      });
     }
 
     // 5. Booking must be active (confirmed) to run job actions.
@@ -259,46 +254,7 @@ export async function POST(
     const newJobStatus = (updated as { job_status: string }).job_status;
     const admin = createSupabaseAdminClient();
 
-    // 9. Completing actions (`job_completed`) take the shared completion path:
-    // it sets `status = 'completed'`, runs maintenance, and sends the SINGLE
-    // customer completion notification (review-link SMS first, email fallback,
-    // or a plain thank-you SMS when the customer already reviewed). For these we
-    // must NOT also send the generic action SMS below — that would double-text.
-    if (config.completesBooking) {
-      const completed = await completeBookingWithSideEffects(
-        auth.supabase,
-        admin,
-        booking.id,
-        { requestId: getReviewInviteRequestId(request), source: 'mobile_api' }
-      );
-
-      // Always return both `sms` and `email` blocks so the app can pick the
-      // right toast. SMS-first, email fallback — only one is ever `sent: true`.
-      const notification = completed?.notification;
-      const sms = notification?.sms ?? {
-        sent: false,
-        messageId: null,
-        reason: 'error',
-      };
-      const email = notification?.email ?? {
-        sent: false,
-        messageId: null,
-        reason: null,
-      };
-
-      return NextResponse.json({
-        success: true,
-        action: config.type,
-        jobStatus: newJobStatus,
-        ...(completed?.booking.status
-          ? { bookingStatus: completed.booking.status }
-          : {}),
-        sms,
-        email,
-      });
-    }
-
-    // 10. Non-completing actions: best-effort customer notification (state
+    // 9. Non-completing actions: best-effort customer notification (state
     // already changed above).
     const businessName = business.business_name?.trim() || 'Your appointment';
     const sendResult = await sendAndRecordSms({

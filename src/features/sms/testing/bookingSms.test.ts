@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildBookingConfirmedSms,
+  buildJobCompletedInvoiceSms,
   buildJobCompletedSms,
   buildJobStartedSms,
   buildOnMyWaySms,
@@ -57,6 +58,31 @@ describe('booking SMS templates', () => {
     expect(buildJobCompletedSms({ businessName: 'Acme' })).toBe(
       `Acme has completed your appointment. Thank you! ${OPT_OUT}`
     );
+  });
+
+  describe('buildJobCompletedInvoiceSms', () => {
+    it('includes review hint when eligible', () => {
+      const msg = buildJobCompletedInvoiceSms({
+        businessName: 'Acme',
+        invoiceUrl: 'https://app.test/i/abc',
+        includeReviewHint: true,
+      });
+      expect(msg).toContain('Thanks for choosing Acme');
+      expect(msg).toContain('leave us a review');
+      expect(msg).not.toContain('View your receipt');
+      expect(msg).toContain('https://app.test/i/abc');
+    });
+
+    it('omits review hint when already reviewed', () => {
+      const msg = buildJobCompletedInvoiceSms({
+        businessName: 'Acme',
+        invoiceUrl: 'https://app.test/i/abc',
+        includeReviewHint: false,
+      });
+      expect(msg).toContain('Thanks for choosing Acme');
+      expect(msg).toContain('View your receipt:');
+      expect(msg).not.toContain('leave us a review');
+    });
   });
 
   describe('buildReviewRequestSms', () => {

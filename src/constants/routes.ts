@@ -368,3 +368,10 @@ export function getPublicReviewPath(token: string): string {
   if (!t) return '/review';
   return `/review/${encodeURIComponent(t)}`;
 }
+
+/** Customer-facing booking invoice / receipt page (opaque public_token in path). */
+export function getPublicInvoicePath(publicToken: string): string {
+  const t = publicToken.trim();
+  if (!t) return '/i';
+  return `/i/${encodeURIComponent(t)}`;
+}

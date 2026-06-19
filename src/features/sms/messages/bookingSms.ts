@@ -62,6 +62,22 @@ export function buildJobCompletedSms(ctx: { businessName: string }): string {
 }
 
 /**
+ * Sent on job_completed when an invoice is issued. Review CTA lives on the
+ * receipt page; SMS links to the receipt only.
+ */
+export function buildJobCompletedInvoiceSms(ctx: {
+  businessName: string;
+  invoiceUrl: string;
+  includeReviewHint: boolean;
+}): string {
+  const name = ctx.businessName.trim() || 'Your provider';
+  if (ctx.includeReviewHint) {
+    return `Thanks for choosing ${name}. I would appreciate it if you could leave us a review. ${ctx.invoiceUrl} ${OPT_OUT}`;
+  }
+  return `Thanks for choosing ${name}. View your receipt: ${ctx.invoiceUrl} ${OPT_OUT}`;
+}
+
+/**
  * Sent on completion when the customer is eligible to leave a review. This is
  * the single, priority completion notification — it folds the thank-you into a
  * review ask with the one-time review link (no separate "completed" text).

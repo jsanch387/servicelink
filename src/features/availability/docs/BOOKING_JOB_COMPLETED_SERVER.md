@@ -1,129 +1,72 @@
-# `job_completed` — server behavior
+# `job_completed` — server behavior (Phase 1)
 
-Canonical server-side spec for the mobile `job_completed` action. The wire
-contract lives in [`docs/contracts/mobile-booking-actions.md`](../../../../docs/contracts/mobile-booking-actions.md);
-this file documents what the server actually does so the two never drift.
+**Canonical mobile contract:** [`docs/contracts/mobile-booking-job-completed.md`](../../../../docs/contracts/mobile-booking-job-completed.md)
 
-> Implemented by `POST /api/availability/bookings/{id}/actions` with
-> `{ "action": "job_completed" }`. The web "Complete" button
-> (`PATCH /api/availability/bookings/{id}` with `status: "completed"`) runs the
-> **same** completion via the shared helper, so both paths behave identically.
+**DB migration (required before prod):** [`docs/sql/booking_complete_phase1_migration.sql`](../../../../docs/sql/booking_complete_phase1_migration.sql)
 
-## Server must do (in order)
+## Scope
 
-1. **Auth** — verify the Supabase JWT; resolve the owner's business and confirm
-   the booking belongs to it (RLS + explicit `business_id` check). Mismatch → `404`.
-2. **Validate** — booking `status = confirmed` and `job_status = in_progress`
-   (the action also accepts `not_started`/`on_the_way` as a server-side superset
-   so the web button works; mobile only offers it from `in_progress`).
-   If the booking is **already completed**, short-circuit to an idempotent `200`
-   (see state machine).
-3. **Persist completion** — update the DB:
-   - `bookings.job_status = 'completed'`
-   - `bookings.status = 'completed'` ← **required.** The mobile home query only
-     loads `status = confirmed`; without this the job sticks on "Next Up".
-4. **Notify customer — one channel only:**
-   - Try **SMS first** if a valid phone exists: thank-you + review link only
-     (no receipt, no payment link).
-   - **Email fallback** only if SMS cannot send and a valid email exists:
-     same thank-you + review link.
-   - Never send both SMS and email on the same completion.
-5. **Return** JSON with `success: true`, updated `jobStatus`, and **both** `sms`
-   and `email` outcome blocks.
-6. **Always persist completion even if notifications fail.** A notification
-   failure must not roll back the booking (best-effort sends).
+Phase 1 covers the mobile **Complete** sheet flow:
 
-## State machine
+1. Owner adds session fees and collects balance (cash / payment app / other — not Tap to Pay yet).
+2. Mobile sends `POST /api/availability/bookings/{id}/actions` with `action: "job_completed"`.
+3. Server persists fees, payment summary, invoice snapshot, and marks booking completed.
+4. Customer receives **one** notification (SMS first, email fallback) with link to `/i/{invoicePublicToken}`.
 
-```
-in_progress  --(job_completed)-->  completed
-```
+## Entry points
 
-| Rule                  | Detail                                                                      |
-| --------------------- | --------------------------------------------------------------------------- |
-| Required `status`     | `confirmed`                                                                 |
-| Required `job_status` | `in_progress` (mobile); server also accepts `not_started`/`on_the_way`      |
-| On success            | `job_status = completed`, `status = completed`                              |
-| Idempotent            | Already `completed` → `200` with current state + `sms.reason = "duplicate"` |
-| `409`                 | Invalid transition for non-completing actions (e.g. wrong business)         |
+| Path | Handler | Invoice? |
+| ---- | ------- | -------- |
+| Mobile `POST …/actions` `job_completed` | `handleJobCompletedAction.ts` → `persistJobCompletedTransaction.ts` | **Yes** |
+| Web `PATCH …/bookings/{id}` `status: completed` | `completeBookingWithSideEffects.ts` | **No** (legacy thank-you / review SMS only) |
 
-## Notification content (this phase)
+Mobile and web completion are **not** identical today. Web dashboard Complete does not create `booking_invoices` rows or send invoice links. Mobile must use the actions endpoint per the contract.
 
-- **SMS (primary):** thank the customer + short review link. No receipt/invoice/payment link.
-- **Email (fallback only when SMS did not send):** same intent — thank-you + review link.
-- Suggested copy: `Thanks for choosing {businessName}! We hope you loved your service. Leave a review: {reviewUrl}` (we append `Reply STOP to opt out.`).
-- If the customer **already reviewed** (or isn't review-eligible), no review link
-  is generated — the server sends a plain "completed, thank you" SMS courtesy
-  instead (still one channel, still best-effort).
+## Preconditions (mobile)
 
-## Success response shape
+| Check | Value |
+| ----- | ----- |
+| `bookings.status` | `confirmed` |
+| `bookings.job_status` | `in_progress` |
+| `bookings.work_handoff_status` | `notified` or `skipped` |
+| Amount due | `0` (see `computeBookingAmountDue.ts`) |
 
-Always include both `sms` and `email` objects. When `sent: true`, `reason` is
-`null`; when `sent: false`, `messageId` is `null` and `reason` is set.
+## Persist order (`persistJobCompletedTransaction.ts`)
 
-```json
-{
-  "success": true,
-  "action": "job_completed",
-  "jobStatus": "completed",
-  "bookingStatus": "completed",
-  "sms": { "sent": true, "messageId": "SMxxxx", "reason": null },
-  "email": { "sent": false, "messageId": null, "reason": null }
-}
-```
+1. Replace `booking_session_fee_lines`
+2. Upsert `booking_payments` session columns + `paid_full`
+3. Insert `booking_invoices` (immutable snapshot + `public_token`)
+4. Mark booking `job_status` + `status` = `completed`
+5. Best-effort maintenance side effect
+6. SMS-first customer notification with invoice URL
 
-### Outcomes (all implemented)
+Invoice insert runs **before** booking completion so a failed invoice write does not leave a completed booking without a receipt.
 
-| Scenario                            | `sms`                               | `email`                       |
-| ----------------------------------- | ----------------------------------- | ----------------------------- |
-| SMS sent (happy path)               | `{ true, messageId, null }`         | `{ false, null, null }`       |
-| No phone → email fallback           | `{ false, null, "no_phone" }`       | `{ true, messageId, null }`   |
-| Phone invalid → email fallback      | `{ false, null, "invalid_number" }` | `{ true, messageId, null }`   |
-| SMS provider error → email fallback | `{ false, null, "error" }`          | `{ true, messageId, null }`   |
-| No contact at all                   | `{ false, null, "no_phone" }`       | `{ false, null, "no_email" }` |
-| SMS skipped, email failed           | `{ false, null, "no_phone" }`       | `{ false, null, "error" }`    |
-| Already completed (idempotent)      | `{ false, null, "duplicate" }`      | `{ false, null, null }`       |
+## Public invoice page
 
-`sms.reason` ∈ `no_phone | invalid_number | duplicate | not_configured | error`.
-`email.reason` ∈ `no_email | duplicate | not_configured | error` (or `null` when not attempted).
+| Route | Loader | UI |
+| ----- | ------ | -- |
+| `GET /i/{publicToken}` | `loadPublicBookingInvoiceByToken.ts` | `PublicInvoicePageShell.tsx` |
 
-## Error responses (same as other actions)
+Token is opaque (64-char hex). Page is `noindex`. Snapshot JSON is the display source of truth.
 
-```json
-{ "success": false, "error": "Human-readable message" }
-```
+## Review CTA
 
-| HTTP  | When                                        |
-| ----- | ------------------------------------------- |
-| `400` | Bad/missing `action`                        |
-| `401` | Invalid/missing JWT                         |
-| `404` | Booking not found / not owned               |
-| `409` | Invalid transition (non-completing actions) |
-| `429` | Rate limited — includes `Retry-After`       |
-| `500` | Unexpected error                            |
+Review invite row is created internally via `ensureReviewInviteRecordIfEligible.ts` during persist. Review URL is embedded in the invoice snapshot — mobile must **not** call a separate review-invite POST.
 
-## Out of scope (not implemented yet)
+## Phase 2 (deferred)
 
-Receipt SMS/email, payment links, invoice line items, tap to pay / mark as paid.
+- Tap to Pay intent endpoint + Stripe PaymentIntent verification
+- PDF invoices
 
 ## Code map
 
-| Concern                                  | File                                                                   |
-| ---------------------------------------- | ---------------------------------------------------------------------- |
-| Action endpoint + idempotency + response | `src/app/api/availability/bookings/[id]/actions/route.ts`              |
-| Web "Complete" button (same helper)      | `src/app/api/availability/bookings/[id]/route.ts`                      |
-| Completion + single notification         | `src/features/availability/services/completeBookingWithSideEffects.ts` |
-| Review link delivery (SMS-first/email)   | `src/features/reviews/server/createReviewInviteIfEligible.ts`          |
-| SMS send + log + dedupe                  | `src/features/sms/services/sendAndRecordSms.ts`                        |
-| Action registry / state machine          | `src/features/availability/booking/server/bookingActionCatalog.ts`     |
-
-## curl smoke test
-
-```bash
-curl -sS -X POST "$API_BASE/api/availability/bookings/$BOOKING_ID/actions" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"action":"job_completed"}'
-```
-
-Use a booking with `job_status: in_progress`, `status: confirmed`.
+| Concern | File |
+| ------- | ---- |
+| Action branch | `src/app/api/availability/bookings/[id]/actions/route.ts` |
+| Validation | `handleJobCompletedAction.ts`, `parseJobCompletedBody.ts` |
+| Amount due | `computeBookingAmountDue.ts` |
+| Snapshot | `buildInvoiceSnapshot.ts` |
+| Persist + notify | `persistJobCompletedTransaction.ts` |
+| Public page | `src/app/i/[publicToken]/page.tsx` |
+| Receipt UI | `public/components/PublicInvoicePageShell.tsx` |
