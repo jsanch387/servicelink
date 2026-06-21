@@ -30,6 +30,7 @@ function parseSessionPayment(
   if (
     typeof method !== 'string' ||
     !(SESSION_PAYMENT_METHODS as readonly string[]).includes(method) ||
+    typeof amountCents !== 'number' ||
     !Number.isInteger(amountCents) ||
     amountCents < 0
   ) {

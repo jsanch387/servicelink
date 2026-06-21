@@ -49,17 +49,18 @@ async function cancelOpenIntentsForBooking(opts: {
       const pi = await stripe.paymentIntents.retrieve(piId, {
         stripeAccount: opts.stripeAccountId,
       });
+      const piStatus = String(pi.status);
       if (pi.status === 'succeeded') {
         continue;
       }
 
       let markCanceled = false;
-      if (OPEN_TAP_TO_PAY_PI_STATUSES.has(pi.status)) {
+      if (OPEN_TAP_TO_PAY_PI_STATUSES.has(piStatus)) {
         await stripe.paymentIntents.cancel(piId, {
           stripeAccount: opts.stripeAccountId,
         });
         markCanceled = true;
-      } else if (pi.status === 'canceled' || pi.status === 'failed') {
+      } else if (piStatus === 'canceled' || piStatus === 'failed') {
         markCanceled = true;
       }
 

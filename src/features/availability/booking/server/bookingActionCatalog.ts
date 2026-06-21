@@ -97,10 +97,11 @@ export const ALL_BOOKING_ACTION_TYPES = [
 
 export function getBookingAction(
   action: string | null | undefined
-): BookingActionConfig | null {
+): NotifyBookingActionConfig | null {
   if (!action) return null;
   return (
-    (BOOKING_ACTIONS as Record<string, BookingActionConfig>)[action.trim()] ??
-    null
+    (BOOKING_ACTIONS as Record<string, NotifyBookingActionConfig>)[
+      action.trim()
+    ] ?? null
   );
 }

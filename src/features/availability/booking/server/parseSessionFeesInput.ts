@@ -18,7 +18,12 @@ export function parseSessionFeesInput(
         ? (item as { label: string }).label.trim()
         : '';
     const amountCents = (item as { amountCents?: unknown }).amountCents;
-    if (!label || !Number.isInteger(amountCents) || amountCents < 0) {
+    if (
+      !label ||
+      typeof amountCents !== 'number' ||
+      !Number.isInteger(amountCents) ||
+      amountCents < 0
+    ) {
       return null;
     }
     fees.push({ label, amountCents });
