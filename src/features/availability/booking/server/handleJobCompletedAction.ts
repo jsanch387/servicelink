@@ -21,9 +21,7 @@ import {
 } from './jobCompletedRouteLog';
 import { parseJobCompletedBody } from './parseJobCompletedBody';
 import { persistJobCompletedTransaction } from './persistJobCompletedTransaction';
-import {
-  resolveTapToPayBookingContext,
-} from './resolveTapToPayBookingContext';
+import { resolveTapToPayBookingContext } from './resolveTapToPayBookingContext';
 import {
   isWorkHandoffStatus,
   type WorkHandoffStatus,
@@ -42,6 +40,7 @@ interface BookingForJobCompleted {
 
 interface BookingPaymentsRow {
   paid_online_amount_cents: number | null;
+  session_payment_stripe_payment_intent_id?: string | null;
 }
 
 interface JobCompletedAuth {
@@ -164,10 +163,42 @@ export async function handleJobCompletedAction(opts: {
   const bookingStatus = (booking.status ?? '').trim();
   const handoff = booking.work_handoff_status;
 
-  if (
-    jobStatus === 'completed' ||
-    bookingStatus === 'completed'
-  ) {
+  if (jobStatus === 'completed' || bookingStatus === 'completed') {
+    const requestedTapPi =
+      parsed.body.sessionPayment?.method === 'tap_to_pay'
+        ? parsed.body.sessionPayment.stripePaymentIntentId?.trim()
+        : null;
+
+    if (requestedTapPi) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: completedPaymentsData } = await (auth.supabase as any)
+        .from('booking_payments')
+        .select('session_payment_stripe_payment_intent_id')
+        .eq('booking_id', bookingId)
+        .maybeSingle();
+
+      const storedTapPi = (
+        completedPaymentsData as BookingPaymentsRow | null
+      )?.session_payment_stripe_payment_intent_id?.trim();
+
+      if (storedTapPi && storedTapPi !== requestedTapPi) {
+        logJobCompletedStage(trace, 'rejected', {
+          httpStatus: 409,
+          reason: 'completed_booking_different_tap_pi',
+          storedTapPi,
+          requestedTapPi,
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'This booking was already completed with a different payment.',
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const admin = createSupabaseAdminClient();
     const invoicePublicToken = await loadInvoiceTokenForCompletedBooking(
       admin,

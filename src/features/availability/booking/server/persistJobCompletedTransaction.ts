@@ -197,8 +197,7 @@ async function upsertBookingPaymentsForCompletion(
   const { error } = await (admin as any).from('booking_payments').insert({
     booking_id: args.bookingId,
     business_id: args.businessId,
-    provider:
-      args.sessionPayment?.method === 'tap_to_pay' ? 'stripe' : 'none',
+    provider: args.sessionPayment?.method === 'tap_to_pay' ? 'stripe' : 'none',
     payment_method_selected: args.sessionPayment ? 'pay_in_person' : 'none',
     currency: args.existing?.currency?.trim()?.toLowerCase() || 'usd',
     required_online_amount_cents: 0,
@@ -241,7 +240,8 @@ async function insertBookingInvoice(
     amountDue: BookingAmountDueResult;
   }
 ): Promise<void> {
-  const paidCents = args.amountDue.paidOnlineCents + args.amountDue.sessionPayCents;
+  const paidCents =
+    args.amountDue.paidOnlineCents + args.amountDue.sessionPayCents;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any).from('booking_invoices').insert({
@@ -315,12 +315,15 @@ export async function persistJobCompletedTransaction(
 
   const reviewInvite = await ensureReviewInviteRecordIfEligible(admin, booking);
   const includeReviewHint =
-    reviewInvite.ok && !reviewInvite.skipped && 'rawReviewToken' in reviewInvite;
+    reviewInvite.ok &&
+    !reviewInvite.skipped &&
+    'rawReviewToken' in reviewInvite;
 
   logJobCompletedStage(trace, 'review_invite', {
     ok: reviewInvite.ok,
     skipped: reviewInvite.ok ? reviewInvite.skipped : undefined,
-    reason: reviewInvite.ok && reviewInvite.skipped ? reviewInvite.reason : undefined,
+    reason:
+      reviewInvite.ok && reviewInvite.skipped ? reviewInvite.reason : undefined,
     inviteCreated: includeReviewHint,
     inviteId:
       reviewInvite.ok && !reviewInvite.skipped && 'inviteId' in reviewInvite

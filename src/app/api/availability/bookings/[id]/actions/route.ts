@@ -27,9 +27,7 @@ import {
   ALL_BOOKING_ACTION_TYPES,
   getBookingAction,
 } from '@/features/availability/booking/server/bookingActionCatalog';
-import {
-  handleJobCompletedAction,
-} from '@/features/availability/booking/server/handleJobCompletedAction';
+import { handleJobCompletedAction } from '@/features/availability/booking/server/handleJobCompletedAction';
 import {
   handleWorkFinishedAction,
   WORK_FINISHED_ACTION,

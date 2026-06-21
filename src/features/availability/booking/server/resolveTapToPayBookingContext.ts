@@ -55,7 +55,9 @@ export async function resolveTapToPayBookingContext(opts: {
   businessId: string;
 }): Promise<ResolveTapToPayBookingContextResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: bookingData, error: bookingError } = await (opts.supabase as any)
+  const { data: bookingData, error: bookingError } = await (
+    opts.supabase as any
+  )
     .from('bookings')
     .select(
       'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details'
@@ -132,10 +134,7 @@ export async function resolveTapToPayBookingContext(opts: {
     true;
 
   if (!stripeAccountId || !chargesEnabled) {
-    return lifecycleReject(
-      422,
-      'Set up Stripe payments to use Tap to Pay.'
-    );
+    return lifecycleReject(422, 'Set up Stripe payments to use Tap to Pay.');
   }
 
   return {

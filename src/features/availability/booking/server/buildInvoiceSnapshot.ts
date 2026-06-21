@@ -1,4 +1,8 @@
-import { getPublicInvoicePath, getPublicReviewPath, getPublicBusinessProfilePath } from '@/constants/routes';
+import {
+  getPublicInvoicePath,
+  getPublicReviewPath,
+  getPublicBusinessProfilePath,
+} from '@/constants/routes';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import type { JobCompletedSessionFeeInput } from './jobCompletedTypes';
 import type { BookingAmountDueResult } from './computeBookingAmountDue';

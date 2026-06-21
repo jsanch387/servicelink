@@ -7,14 +7,7 @@ import { getStripePlatform } from '@/libs/stripe';
 import type { JobCompletedSessionFeeInput } from './jobCompletedTypes';
 import { mapStripePaymentIntentStatus } from './mapStripePaymentIntentStatus';
 import type { TapToPayBookingContext } from './resolveTapToPayBookingContext';
-
-const OPEN_PI_STATUSES = new Set([
-  'created',
-  'requires_payment_method',
-  'requires_confirmation',
-  'requires_action',
-  'processing',
-]);
+import { OPEN_TAP_TO_PAY_PI_STATUSES } from './tapToPayTypes';
 
 export type CreateBookingTapToPayIntentResult =
   | {
@@ -56,13 +49,26 @@ async function cancelOpenIntentsForBooking(opts: {
       const pi = await stripe.paymentIntents.retrieve(piId, {
         stripeAccount: opts.stripeAccountId,
       });
-      if (OPEN_PI_STATUSES.has(pi.status)) {
+      if (pi.status === 'succeeded') {
+        continue;
+      }
+
+      let markCanceled = false;
+      if (OPEN_TAP_TO_PAY_PI_STATUSES.has(pi.status)) {
         await stripe.paymentIntents.cancel(piId, {
           stripeAccount: opts.stripeAccountId,
         });
+        markCanceled = true;
+      } else if (pi.status === 'canceled' || pi.status === 'failed') {
+        markCanceled = true;
+      }
+
+      if (!markCanceled) {
+        continue;
       }
     } catch (e) {
       console.warn('[tap-to-pay] cancel stale intent failed', piId, e);
+      continue;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

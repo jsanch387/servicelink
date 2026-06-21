@@ -16,6 +16,10 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function PublicInvoiceLayout({ children }: { children: ReactNode }) {
+export default function PublicInvoiceLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return children;
 }

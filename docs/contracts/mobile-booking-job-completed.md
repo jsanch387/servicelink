@@ -15,13 +15,13 @@ Owner closes out a field job from the **Complete** full-screen sheet: add fees, 
 
 After **Done/Skip**, mobile shows **Mark complete** → Complete sheet:
 
-| Step | Mobile UI | Server |
-| ---- | --------- | ------ |
-| 1 | Line items (service + add-ons) | From booking row |
-| 2 | Add fee (label + dollars) | `sessionFees[]` in request |
-| 3 | Collect balance (Tap to Pay / Mark as paid) | `sessionPayment` in request |
-| 4 | Tap **Complete** | `POST …/actions` `job_completed` |
-| 5 | Success | Booking leaves Next Up; customer gets SMS/email with invoice link |
+| Step | Mobile UI                                   | Server                                                            |
+| ---- | ------------------------------------------- | ----------------------------------------------------------------- |
+| 1    | Line items (service + add-ons)              | From booking row                                                  |
+| 2    | Add fee (label + dollars)                   | `sessionFees[]` in request                                        |
+| 3    | Collect balance (Tap to Pay / Mark as paid) | `sessionPayment` in request                                       |
+| 4    | Tap **Complete**                            | `POST …/actions` `job_completed`                                  |
+| 5    | Success                                     | Booking leaves Next Up; customer gets SMS/email with invoice link |
 
 **Golden rule:** DB commit first; SMS/email best-effort second. Notification failure does **not** roll back completion.
 
@@ -31,22 +31,20 @@ After **Done/Skip**, mobile shows **Mark complete** → Complete sheet:
 
 ## Endpoint
 
-| | |
-| --- | --- |
-| **Method** | `POST` |
-| **Path** | `/api/availability/bookings/{bookingId}/actions` |
-| **Auth** | `Authorization: Bearer <Supabase access_token>` |
-| **Content-Type** | `application/json` |
-| **X-Request-ID** | Optional UUID (echoed in server logs) |
+|                  |                                                  |
+| ---------------- | ------------------------------------------------ |
+| **Method**       | `POST`                                           |
+| **Path**         | `/api/availability/bookings/{bookingId}/actions` |
+| **Auth**         | `Authorization: Bearer <Supabase access_token>`  |
+| **Content-Type** | `application/json`                               |
+| **X-Request-ID** | Optional UUID (echoed in server logs)            |
 
 ### Request body
 
 ```json
 {
   "action": "job_completed",
-  "sessionFees": [
-    { "label": "Pet hair removal", "amountCents": 2500 }
-  ],
+  "sessionFees": [{ "label": "Pet hair removal", "amountCents": 2500 }],
   "sessionPayment": {
     "method": "cash",
     "amountCents": 12000
@@ -54,23 +52,23 @@ After **Done/Skip**, mobile shows **Mark complete** → Complete sheet:
 }
 ```
 
-| Field | Required | Rules |
-| ----- | -------- | ----- |
-| `action` | Yes | `"job_completed"` |
-| `sessionFees` | No | Default `[]`. Each: non-empty `label`, integer `amountCents` ≥ 0 |
-| `sessionPayment` | No | Omit when customer already paid in full online |
-| `sessionPayment.method` | When payment present | `cash` \| `payment_app` \| `other` \| `tap_to_pay` |
-| `sessionPayment.amountCents` | When payment present | Integer ≥ 0 |
-| `sessionPayment.stripePaymentIntentId` | `tap_to_pay` only | Required — see [`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md) |
+| Field                                  | Required             | Rules                                                                           |
+| -------------------------------------- | -------------------- | ------------------------------------------------------------------------------- |
+| `action`                               | Yes                  | `"job_completed"`                                                               |
+| `sessionFees`                          | No                   | Default `[]`. Each: non-empty `label`, integer `amountCents` ≥ 0                |
+| `sessionPayment`                       | No                   | Omit when customer already paid in full online                                  |
+| `sessionPayment.method`                | When payment present | `cash` \| `payment_app` \| `other` \| `tap_to_pay`                              |
+| `sessionPayment.amountCents`           | When payment present | Integer ≥ 0                                                                     |
+| `sessionPayment.stripePaymentIntentId` | `tap_to_pay` only    | Required — see [`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md) |
 
 ### Preconditions (server enforces)
 
-| Check | Required |
-| ----- | -------- |
-| `bookings.status` | `confirmed` |
-| `bookings.job_status` | `in_progress` |
+| Check                          | Required                |
+| ------------------------------ | ----------------------- |
+| `bookings.status`              | `confirmed`             |
+| `bookings.job_status`          | `in_progress`           |
 | `bookings.work_handoff_status` | `notified` or `skipped` |
-| Amount due | `0` (see math below) |
+| Amount due                     | `0` (see math below)    |
 
 ### Amount-due math (must match Complete sheet)
 
@@ -107,12 +105,12 @@ Load `service_price_cents`, `addon_details`, and join/read `booking_payments` wh
 }
 ```
 
-| Field | Notes |
-| ----- | ----- |
-| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up |
-| `workHandoffStatus` | Echoes `notified` or `skipped` from Done/Skip step |
-| `invoicePublicToken` | Opaque token for customer invoice URL (optional for mobile UI today) |
-| `sms` / `email` | Always present. **One channel** may be `sent: true`; never both |
+| Field                         | Notes                                                                |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                       |
+| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                   |
+| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today) |
+| `sms` / `email`               | Always present. **One channel** may be `sent: true`; never both      |
 
 Customer invoice URL (for debugging): `{EXPO_PUBLIC_WEB_APP_URL}/i/{invoicePublicToken}`
 
@@ -128,14 +126,14 @@ Already completed → **200**, same statuses, `sms.reason: "duplicate"`, `invoic
 { "success": false, "error": "Human-readable message" }
 ```
 
-| HTTP | When |
-| ---- | ---- |
+| HTTP    | When                                                               |
+| ------- | ------------------------------------------------------------------ |
 | **400** | Bad payload; payment still due; `tap_to_pay` without Stripe intent |
-| **401** | Missing/invalid JWT |
-| **404** | Booking not found / not owned |
-| **409** | Not `in_progress`; handoff not done (`work_handoff_status` null) |
-| **429** | Rate limited — honor `Retry-After` |
-| **500** | Unexpected / persist failure |
+| **401** | Missing/invalid JWT                                                |
+| **404** | Booking not found / not owned                                      |
+| **409** | Not `in_progress`; handoff not done (`work_handoff_status` null)   |
+| **429** | Rate limited — honor `Retry-After`                                 |
+| **500** | Unexpected / persist failure                                       |
 
 ---
 
@@ -156,9 +154,10 @@ Build payload from sheet state:
 ```javascript
 await postBookingAction(bookingId, 'job_completed', {
   sessionFees: fees.map(f => ({ label: f.label, amountCents: f.amountCents })),
-  sessionPayment: amountDueCents > 0
-    ? { method: selectedMethod, amountCents: collectedCents }
-    : undefined,
+  sessionPayment:
+    amountDueCents > 0
+      ? { method: selectedMethod, amountCents: collectedCents }
+      : undefined,
 });
 ```
 
@@ -225,10 +224,10 @@ Verify: booking completed, fee lines + invoice row in DB, `invoicePublicToken` i
 
 ## Server code map
 
-| Concern | File |
-| ------- | ---- |
-| Action branch | `src/app/api/availability/bookings/[id]/actions/route.ts` |
-| Validation + orchestration | `handleJobCompletedAction.ts` |
-| Amount due | `computeBookingAmountDue.ts` |
-| Persist + notify | `persistJobCompletedTransaction.ts` |
-| Public invoice page | `src/app/i/[publicToken]/page.tsx` |
+| Concern                    | File                                                      |
+| -------------------------- | --------------------------------------------------------- |
+| Action branch              | `src/app/api/availability/bookings/[id]/actions/route.ts` |
+| Validation + orchestration | `handleJobCompletedAction.ts`                             |
+| Amount due                 | `computeBookingAmountDue.ts`                              |
+| Persist + notify           | `persistJobCompletedTransaction.ts`                       |
+| Public invoice page        | `src/app/i/[publicToken]/page.tsx`                        |

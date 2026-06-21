@@ -73,7 +73,10 @@ function formatLine(
   trace: JobCompletedLogTrace,
   detail?: string
 ): string {
-  const parts = [stage, ...Object.entries(baseContext(trace)).map(([k, v]) => `${k}=${v}`)];
+  const parts = [
+    stage,
+    ...Object.entries(baseContext(trace)).map(([k, v]) => `${k}=${v}`),
+  ];
   if (detail?.trim()) parts.push(detail.trim());
   return `${ROUTE_PREFIX} ${parts.join(' ')}`;
 }
@@ -99,7 +102,9 @@ export function logJobCompletedStage(
   };
 
   if (stage === 'rejected') {
-    console.warn(formatLine(stage, trace, String(extra?.reason ?? extra?.error ?? '')));
+    console.warn(
+      formatLine(stage, trace, String(extra?.reason ?? extra?.error ?? ''))
+    );
     console.warn(`${ROUTE_PREFIX}`, payload);
     return;
   }
@@ -128,7 +133,9 @@ export function logJobCompletedFinished(
     outcome.duplicate ? 'duplicate' : 'success',
     outcome.workHandoffStatus ? `handoff=${outcome.workHandoffStatus}` : null,
     outcome.smsSent ? 'sms=sent' : `sms=${outcome.smsReason ?? 'skipped'}`,
-    outcome.emailSent ? 'email=sent' : `email=${outcome.emailReason ?? 'skipped'}`,
+    outcome.emailSent
+      ? 'email=sent'
+      : `email=${outcome.emailReason ?? 'skipped'}`,
     invoiceUrl ? `invoice=${invoiceUrl}` : 'invoice=none',
   ]
     .filter(Boolean)

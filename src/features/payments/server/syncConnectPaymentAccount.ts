@@ -6,6 +6,7 @@ import { getStripePlatform } from '@/libs/stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import { logConnect } from './connectOnboardingLog';
+import { ensureTerminalLocation } from './ensureTerminalLocation';
 import { paymentAccountsOf } from './paymentAccountsQuery';
 
 /**
@@ -136,6 +137,28 @@ export async function syncConnectPaymentAccountForBusiness(
     last_synced_at: now,
     requirements_status: snapshotRequirementsStatus(account),
   });
+
+  if (onboardingStatus === 'complete' && (account.charges_enabled ?? false)) {
+    const terminalResult = await ensureTerminalLocation({
+      supabase,
+      businessId,
+    });
+    if (!terminalResult.ok) {
+      logConnect('sync.terminal_location_failed', {
+        businessId,
+        error: terminalResult.error,
+      });
+      console.warn(
+        '[terminal-location] Connect sync succeeded but Terminal Location provisioning failed',
+        { businessId, error: terminalResult.error }
+      );
+    } else {
+      logConnect('sync.terminal_location_ok', {
+        businessId,
+        terminalLocationId: terminalResult.terminalLocationId,
+      });
+    }
+  }
 
   return { ok: true, skipped: false };
 }

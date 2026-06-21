@@ -2,9 +2,13 @@
  * Map Stripe PaymentIntent status to booking_tap_to_pay_intents.status.
  */
 
-const ALLOWED_STATUSES = new Set([
+import type { BookingTapToPayIntentStatus } from './tapToPayTypes';
+
+const ALLOWED_STATUSES = new Set<BookingTapToPayIntentStatus>([
   'created',
   'requires_payment_method',
+  'requires_confirmation',
+  'requires_action',
   'processing',
   'succeeded',
   'canceled',
@@ -13,8 +17,10 @@ const ALLOWED_STATUSES = new Set([
 
 export function mapStripePaymentIntentStatus(
   status: string | null | undefined
-): string {
-  const normalized = (status ?? '').trim();
-  if (ALLOWED_STATUSES.has(normalized)) return normalized;
+): BookingTapToPayIntentStatus {
+  const normalized = (status ?? '').trim() as BookingTapToPayIntentStatus;
+  if (ALLOWED_STATUSES.has(normalized)) {
+    return normalized;
+  }
   return 'created';
 }

@@ -12,6 +12,7 @@ import {
   resolveTapToPayBookingContext,
 } from '@/features/availability/booking/server/resolveTapToPayBookingContext';
 import { resolveTapToPayRouteAuth } from '@/features/availability/booking/server/resolveTapToPayRouteAuth';
+import { ensureTerminalLocation } from '@/features/payments/server/ensureTerminalLocation';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -69,6 +70,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const terminalResult = await ensureTerminalLocation({
+      supabase: auth.supabase,
+      businessId: auth.business.id,
+    });
+    if (!terminalResult.ok) {
+      return NextResponse.json(
+        { success: false, error: terminalResult.error },
+        { status: terminalResult.httpStatus }
+      );
+    }
+
     const intentResult = await createBookingTapToPayIntent({
       ctx: ctxResult.ctx,
       sessionFees: parsed.body.sessionFees,
@@ -87,6 +99,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       clientSecret: intentResult.clientSecret,
       amountCents: intentResult.amountCents,
       currency: intentResult.currency,
+      terminalLocationId: terminalResult.terminalLocationId,
+      stripeAccountId: terminalResult.stripeAccountId,
+      merchantDisplayName: terminalResult.merchantDisplayName,
     });
   } catch (e) {
     console.error('[tap-to-pay:intent]', e);

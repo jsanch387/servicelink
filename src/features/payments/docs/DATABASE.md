@@ -28,21 +28,23 @@ Both tables reference **`business_profiles(id)`** (tenant root). The owner is `b
 
 ### Columns (Supabase order)
 
-| Column                | Type          | Nullable | Description                                                                                       |
-| --------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`        | no       | Primary key.                                                                                      |
-| `business_id`         | `uuid`        | no       | FK → `business_profiles(id)`. **Unique** per business.                                            |
-| `provider`            | `text`        | no       | e.g. `stripe`.                                                                                    |
-| `stripe_account_id`   | `text`        | no       | Stripe Connect account id (`acct_…`). **Unique** globally.                                        |
-| `onboarding_status`   | `text`        | no       | App enums include `not_started`, `in_progress`, `complete`, `restricted` (align with your CHECK). |
-| `charges_enabled`     | `bool`        | no       | From Stripe; card payments when true (subject to product rules).                                  |
-| `payouts_enabled`     | `bool`        | no       | From Stripe.                                                                                      |
-| `details_submitted`   | `bool`        | no       | From Stripe.                                                                                      |
-| `requirements_status` | `text`        | yes      | Optional snapshot (e.g. outstanding requirements).                                                |
-| `connected_at`        | `timestamptz` | yes      | When the account was first considered linked (product-defined).                                   |
-| `last_synced_at`      | `timestamptz` | yes      | Last successful sync from Stripe (return handler / webhook).                                      |
-| `created_at`          | `timestamptz` | no       | Created at.                                                                                       |
-| `updated_at`          | `timestamptz` | no       | Updated at (trigger-maintained if configured).                                                    |
+| Column                        | Type          | Nullable | Description                                                                                        |
+| ----------------------------- | ------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`        | no       | Primary key.                                                                                       |
+| `business_id`                 | `uuid`        | no       | FK → `business_profiles(id)`. **Unique** per business.                                             |
+| `provider`                    | `text`        | no       | e.g. `stripe`.                                                                                     |
+| `stripe_account_id`           | `text`        | no       | Stripe Connect account id (`acct_…`). **Unique** globally.                                         |
+| `onboarding_status`           | `text`        | no       | App enums include `not_started`, `in_progress`, `complete`, `restricted` (align with your CHECK).  |
+| `charges_enabled`             | `bool`        | no       | From Stripe; card payments when true (subject to product rules).                                   |
+| `payouts_enabled`             | `bool`        | no       | From Stripe.                                                                                       |
+| `details_submitted`           | `bool`        | no       | From Stripe.                                                                                       |
+| `requirements_status`         | `text`        | yes      | Optional snapshot (e.g. outstanding requirements).                                                 |
+| `connected_at`                | `timestamptz` | yes      | When the account was first considered linked (product-defined).                                    |
+| `last_synced_at`              | `timestamptz` | yes      | Last successful sync from Stripe (return handler / webhook).                                       |
+| `stripe_terminal_location_id` | `text`        | yes      | Stripe Terminal Location id (`tml_…`) on the connected account; server-provisioned for Tap to Pay. |
+| `tap_to_pay_ready`            | `bool`        | no       | `true` after Terminal Location is created successfully.                                            |
+| `created_at`                  | `timestamptz` | no       | Created at.                                                                                        |
+| `updated_at`                  | `timestamptz` | no       | Updated at (trigger-maintained if configured).                                                     |
 
 ### Constraints (intent)
 

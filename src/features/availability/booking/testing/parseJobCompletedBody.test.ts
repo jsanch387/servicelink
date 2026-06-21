@@ -36,13 +36,16 @@ describe('parseJobCompletedBody', () => {
     ).toBe(false);
   });
 
-  it('rejects tap_to_pay without valid method shape', () => {
-    expect(
-      parseJobCompletedBody({
-        action: 'job_completed',
-        sessionPayment: { method: 'tap_to_pay', amountCents: 1000 },
-      }).ok
-    ).toBe(true);
+  it('accepts tap_to_pay at parse time; stripePaymentIntentId is validated later', () => {
+    const result = parseJobCompletedBody({
+      action: 'job_completed',
+      sessionPayment: { method: 'tap_to_pay', amountCents: 1000 },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.body.sessionPayment?.method).toBe('tap_to_pay');
+      expect(result.body.sessionPayment?.stripePaymentIntentId).toBeUndefined();
+    }
   });
 
   it('rejects wrong action', () => {

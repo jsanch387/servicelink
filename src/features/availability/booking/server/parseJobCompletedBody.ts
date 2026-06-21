@@ -36,9 +36,8 @@ function parseSessionPayment(
     return null;
   }
 
-  const stripePaymentIntentId = (
-    raw as { stripePaymentIntentId?: unknown }
-  ).stripePaymentIntentId;
+  const stripePaymentIntentId = (raw as { stripePaymentIntentId?: unknown })
+    .stripePaymentIntentId;
   if (
     stripePaymentIntentId !== undefined &&
     typeof stripePaymentIntentId !== 'string'
@@ -49,7 +48,8 @@ function parseSessionPayment(
   return {
     method: method as JobCompletedSessionPaymentInput['method'],
     amountCents,
-    ...(typeof stripePaymentIntentId === 'string' && stripePaymentIntentId.trim()
+    ...(typeof stripePaymentIntentId === 'string' &&
+    stripePaymentIntentId.trim()
       ? { stripePaymentIntentId: stripePaymentIntentId.trim() }
       : {}),
   };

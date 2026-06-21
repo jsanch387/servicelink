@@ -32,10 +32,7 @@ function formatCents(cents: number): string {
   }).format(cents / 100);
 }
 
-function formatVisitShort(
-  scheduledDate: string,
-  startTime: string
-): string {
+function formatVisitShort(scheduledDate: string, startTime: string): string {
   const d = new Date(`${scheduledDate}T12:00:00`);
   const dateLabel = Number.isNaN(d.getTime())
     ? scheduledDate
@@ -159,7 +156,9 @@ function VisitSummary({
 
 function GroupedChargeRow({ line }: { line: InvoiceSnapshotLine }) {
   return (
-    <div className={`${PUBLIC_INVOICE_LINE_ROW_CLASS} py-2.5 first:pt-3 last:pb-3`}>
+    <div
+      className={`${PUBLIC_INVOICE_LINE_ROW_CLASS} py-2.5 first:pt-3 last:pb-3`}
+    >
       <p
         className={`flex-1 leading-snug text-[14px] text-[#555250] dark:text-[#bbb] ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
       >
@@ -305,7 +304,9 @@ export function PublicInvoicePageShell({
           <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-[#ebe8e1] px-5 py-5 sm:px-6 md:px-8 dark:border-[#2a2a2a]">
             <div className="flex min-w-0 flex-1 items-start gap-3">
               <BusinessInvoiceMark />
-              <div className={`min-w-0 flex-1 ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}>
+              <div
+                className={`min-w-0 flex-1 ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
+              >
                 <p className="text-[15px] font-semibold leading-snug text-[#0f0f0f] dark:text-white">
                   {snapshot.business.name}
                 </p>

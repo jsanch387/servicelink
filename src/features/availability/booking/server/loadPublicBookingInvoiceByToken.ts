@@ -3,10 +3,7 @@ import type { BookingInvoiceSnapshot } from './buildInvoiceSnapshot';
 import { invoiceSnapshotNeedsBusinessHydration } from '../utils/invoiceSnapshotBusiness';
 import { loadBusinessProfileForInvoice } from './loadBusinessProfileForInvoice';
 
-export type PublicInvoiceLoadReason =
-  | 'not_found'
-  | 'invalid_token'
-  | 'error';
+export type PublicInvoiceLoadReason = 'not_found' | 'invalid_token' | 'error';
 
 export interface PublicInvoiceContext {
   publicToken: string;
@@ -44,10 +41,7 @@ async function hydrateInvoiceSnapshotBusiness(
   }
 
   const business = await loadBusinessProfileForInvoice(admin, businessId);
-  if (
-    business.name === 'Your provider' &&
-    !business.profileUrl
-  ) {
+  if (business.name === 'Your provider' && !business.profileUrl) {
     return snapshot;
   }
 
@@ -73,7 +67,9 @@ export async function loadPublicBookingInvoiceByToken(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('booking_invoices')
-    .select('public_token, snapshot_json, subtotal_cents, total_cents, paid_cents, status, business_id')
+    .select(
+      'public_token, snapshot_json, subtotal_cents, total_cents, paid_cents, status, business_id'
+    )
     .eq('public_token', token)
     .maybeSingle();
 
@@ -108,7 +104,9 @@ export async function loadPublicBookingInvoiceByToken(
     invoice: {
       publicToken: token,
       snapshot,
-      subtotalCents: Number((data as { subtotal_cents?: number }).subtotal_cents ?? 0),
+      subtotalCents: Number(
+        (data as { subtotal_cents?: number }).subtotal_cents ?? 0
+      ),
       totalCents: Number((data as { total_cents?: number }).total_cents ?? 0),
       paidCents: Number((data as { paid_cents?: number }).paid_cents ?? 0),
       status: String((data as { status?: string }).status ?? 'paid'),
