@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ROUTES } from '@/constants/routes';
 
 const sectionClasses = 'mb-10';
 const h2Classes = 'text-xl sm:text-2xl font-bold text-white mt-10 mb-4';
@@ -203,6 +204,15 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           No long conversations in DMs. Just simple booking.{' '}
           <Link href="/" className={linkClasses}>
             Get your free booking page here
+          </Link>
+          . Not sure which tool to use? Read our guide on the{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'best-booking-app-for-mobile-detailers'
+            )}
+            className={linkClasses}
+          >
+            best booking app for mobile detailers
           </Link>
           .
         </p>

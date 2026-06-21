@@ -1,7 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { Navigation } from '@/features/landing-page/components/Navigation';
-import { getGuideBySlug } from '@/features/resources';
+import { GUIDES, getGuideBySlug } from '@/features/resources';
 import { getGuideContentComponent } from '@/features/resources/content';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -14,6 +14,10 @@ interface ResourceGuidePageProps {
   params: Promise<{ slug: string }>;
 }
 
+export function generateStaticParams() {
+  return GUIDES.map(guide => ({ slug: guide.slug }));
+}
+
 export async function generateMetadata({
   params,
 }: ResourceGuidePageProps): Promise<Metadata> {
@@ -24,26 +28,24 @@ export async function generateMetadata({
     return { title: 'Guide Not Found' };
   }
 
-  const title = `${guide.title} | ServiceLink`;
   const description = guide.metaDescription || guide.subheading;
   const canonicalUrl = `${SITE_URL}/resources/${slug}`;
-  const keywords = [
-    'mobile car detailing',
-    'get clients from Instagram',
-    'Instagram for detailers',
-    'TikTok for car detailing',
-    'detailing business marketing',
-    'booking link for detailers',
-    'ServiceLink',
-  ].join(', ');
+  const keywords = (
+    guide.keywords ?? [
+      'mobile car detailing',
+      'booking link for detailers',
+      'ServiceLink',
+    ]
+  ).join(', ');
+  const socialTitle = `${guide.title} | ServiceLink`;
 
   return {
-    title,
+    title: guide.title,
     description,
     keywords,
     alternates: { canonical: canonicalUrl },
     openGraph: {
-      title,
+      title: socialTitle,
       description,
       url: canonicalUrl,
       siteName: 'ServiceLink',
@@ -60,8 +62,9 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: socialTitle,
       description,
+      images: [MARKETING_IMAGES.brand.openGraph],
     },
     robots: {
       index: true,
@@ -136,20 +139,36 @@ export default async function ResourceGuidePage({
     ],
   };
 
+  const faqStructuredData = guide.faqs?.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: guide.faqs.map(faq => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer,
+          },
+        })),
+      }
+    : null;
+
+  const structuredDataScripts = [
+    articleStructuredData,
+    breadcrumbStructuredData,
+    ...(faqStructuredData ? [faqStructuredData] : []),
+  ];
+
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(articleStructuredData),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbStructuredData),
-        }}
-      />
+      {structuredDataScripts.map((schema, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
       <Navigation />
       <div className="h-16 sm:h-20 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />

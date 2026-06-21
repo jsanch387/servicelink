@@ -1,9 +1,12 @@
 import React from 'react';
+import { BestBookingAppForMobileDetailersContent } from './BestBookingAppForMobileDetailers';
 import { HowMobileDetailersGetClientsInstagramContent } from './HowMobileDetailersGetClientsInstagram';
 
 /** Map of guide slug to content component. Add new guides here. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export const GUIDE_CONTENT: Record<string, React.ComponentType<{}>> = {
+  'best-booking-app-for-mobile-detailers':
+    BestBookingAppForMobileDetailersContent,
   'how-mobile-detailers-get-clients-from-instagram-2026':
     HowMobileDetailersGetClientsInstagramContent,
 };

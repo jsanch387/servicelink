@@ -3,12 +3,30 @@ import {
   RESOURCES_CANONICAL_URL,
   RESOURCES_FAQS,
   RESOURCES_HERO,
+  RESOURCES_META_DESCRIPTION,
+  RESOURCES_PAGE_SEO_TITLE,
 } from '../data/resourcesSeoContent';
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 
+const ORGANIZATION_ID = `${SITE_URL}#organization`;
+
 export function ResourcesStructuredData() {
+  const sortedGuides = [...GUIDES].sort((a, b) => {
+    const aTime = a.datePublished ? Date.parse(a.datePublished) : 0;
+    const bTime = b.datePublished ? Date.parse(b.datePublished) : 0;
+    return bTime - aTime;
+  });
+
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': ORGANIZATION_ID,
+    name: 'ServiceLink',
+    url: SITE_URL,
+  };
+
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -23,45 +41,36 @@ export function ResourcesStructuredData() {
     ],
   };
 
-  const webPageSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    '@id': `${RESOURCES_CANONICAL_URL}#webpage`,
-    url: RESOURCES_CANONICAL_URL,
-    name: RESOURCES_HERO.title,
-    description: `${RESOURCES_HERO.subtitle} ${RESOURCES_HERO.description}`,
-    inLanguage: 'en-US',
-    isPartOf: { '@type': 'WebSite', name: 'ServiceLink', url: SITE_URL },
-    publisher: {
-      '@type': 'Organization',
-      name: 'ServiceLink',
-      url: SITE_URL,
-    },
-  };
-
   const collectionPageSchema = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: RESOURCES_HERO.title,
-    description: `${RESOURCES_HERO.subtitle} ${RESOURCES_HERO.description}`,
+    '@id': `${RESOURCES_CANONICAL_URL}#webpage`,
     url: RESOURCES_CANONICAL_URL,
+    name: RESOURCES_PAGE_SEO_TITLE,
+    headline: RESOURCES_HERO.title,
+    description: RESOURCES_META_DESCRIPTION,
     inLanguage: 'en-US',
-    publisher: {
-      '@type': 'Organization',
+    isPartOf: {
+      '@type': 'WebSite',
       name: 'ServiceLink',
       url: SITE_URL,
     },
+    publisher: { '@id': ORGANIZATION_ID },
     mainEntity: {
       '@type': 'ItemList',
-      itemListElement: GUIDES.map((guide, index) => ({
+      numberOfItems: sortedGuides.length,
+      itemListElement: sortedGuides.map((guide, index) => ({
         '@type': 'ListItem',
         position: index + 1,
+        name: guide.title,
+        url: `${SITE_URL}/resources/${guide.slug}`,
         item: {
           '@type': 'Article',
           headline: guide.title,
           description: guide.metaDescription || guide.subheading,
           url: `${SITE_URL}/resources/${guide.slug}`,
           ...(guide.datePublished && { datePublished: guide.datePublished }),
+          publisher: { '@id': ORGANIZATION_ID },
         },
       })),
     },
@@ -81,8 +90,8 @@ export function ResourcesStructuredData() {
   };
 
   const schemas = [
+    organizationSchema,
     breadcrumbSchema,
-    webPageSchema,
     collectionPageSchema,
     faqSchema,
   ];
