@@ -1,6 +1,10 @@
 'use client';
 
 import { Button, Input } from '@/components/shared';
+import {
+  markMetaLeadPending,
+  trackMetaLeadOnce,
+} from '@/features/analytics/utils/metaLeadTracking';
 import { completeWorkshopSignupTracking } from '@/features/ads-workshop/utils/completeWorkshopSignupTracking';
 import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
 import { ROUTES } from '@/constants/routes';
@@ -17,8 +21,6 @@ import {
   AuthScreenLayout,
 } from './AuthScreenLayout';
 import { AuthGoogleButton } from './AuthSocialButtons';
-
-const SIGNUP_PIXEL_FLAG_KEY = 'sl_meta_complete_registration_pending';
 
 const authFooterLinkClass =
   'font-semibold text-white hover:text-gray-200 transition-colors';
@@ -71,6 +73,7 @@ export const SignupForm: React.FC = () => {
       }
 
       if (result.needsEmailVerification) {
+        markMetaLeadPending();
         const q = result.email
           ? `?email=${encodeURIComponent(result.email)}`
           : '';
@@ -78,10 +81,10 @@ export const SignupForm: React.FC = () => {
         return;
       }
 
+      trackMetaLeadOnce();
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));
       completeWorkshopSignupTracking(formData.email);
-      window.sessionStorage.setItem(SIGNUP_PIXEL_FLAG_KEY, '1');
       router.push(ROUTES.DASHBOARD.MAIN);
     } catch {
       setAuthError('An unexpected error occurred. Please try again.');

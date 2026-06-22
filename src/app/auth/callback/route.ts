@@ -91,8 +91,6 @@ export async function GET(request: Request) {
     console.error('[auth/callback] profile lookup failed:', profileLookupError);
   }
 
-  let isNewOAuthSignup = false;
-
   if (!existingProfile) {
     const name =
       user.user_metadata?.full_name ??
@@ -109,15 +107,7 @@ export async function GET(request: Request) {
     if (insertError) {
       console.error('[auth/callback] profile insert failed:', insertError);
     }
-    isNewOAuthSignup = true;
   }
 
-  const redirectUrl = new URL(next, request.url);
-
-  // Mark new Google OAuth signups so dashboard can fire Meta CompleteRegistration once.
-  if (isNewOAuthSignup) {
-    redirectUrl.searchParams.set('sl_signup', '1');
-  }
-
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.redirect(new URL(next, request.url));
 }

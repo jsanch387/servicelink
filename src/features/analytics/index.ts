@@ -35,4 +35,3 @@ export { useAnalytics } from './hooks/useAnalytics';
 
 // Components
 export { ViewTracker } from './components/ViewTracker';
-export { MetaCompleteRegistrationTracker } from './components/MetaCompleteRegistrationTracker';

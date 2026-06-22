@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { flushMetaLeadIfPending } from '@/features/analytics/utils/metaLeadTracking';
 import { ROUTES } from '@/constants/routes';
 import { createClient } from '@/libs/supabase/client';
 import { EnvelopeIcon } from '@heroicons/react/24/outline';
@@ -35,6 +36,10 @@ export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendError, setResendError] = useState<string | null>(null);
   const [resendOk, setResendOk] = useState(false);
+
+  useEffect(() => {
+    flushMetaLeadIfPending();
+  }, []);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;

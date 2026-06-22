@@ -31,13 +31,6 @@ export const EmailConfirmedScreen: React.FC = () => {
     () => safeNextPath(searchParams.get('next')),
     [searchParams]
   );
-  const slSignup = searchParams.get('sl_signup');
-
-  const continueHref =
-    slSignup === '1'
-      ? `${nextPath}${nextPath.includes('?') ? '&' : '?'}sl_signup=1`
-      : nextPath;
-
   const sessionReady = isInitialized && !isLoading && !!user;
   const workshopSignupTracked = useRef(false);
 
@@ -78,7 +71,7 @@ export const EmailConfirmedScreen: React.FC = () => {
               variant="inverse"
               fullWidth
               className="font-semibold"
-              onClick={() => router.push(continueHref)}
+              onClick={() => router.push(nextPath)}
             >
               Continue to dashboard
             </Button>
