@@ -41,6 +41,18 @@ describe('computeBookingAmountDue', () => {
 
     expect(result.amountDueCents).toBe(0);
   });
+
+  it('yields negative amount due when session payment is over-reported', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 10000,
+      addonDetails: [],
+      sessionFees: [],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'tap_to_pay', amountCents: 12000 },
+    });
+
+    expect(result.amountDueCents).toBe(-2000);
+  });
 });
 
 describe('computeBookingRemainingAmountCents', () => {

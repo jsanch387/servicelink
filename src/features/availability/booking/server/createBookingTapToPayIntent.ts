@@ -3,11 +3,12 @@
  */
 
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { getStripePlatform } from '@/libs/stripe';
+import { getStripeConnectClient } from '@/libs/stripe';
 import type { JobCompletedSessionFeeInput } from './jobCompletedTypes';
 import { mapStripePaymentIntentStatus } from './mapStripePaymentIntentStatus';
 import type { TapToPayBookingContext } from './resolveTapToPayBookingContext';
 import { OPEN_TAP_TO_PAY_PI_STATUSES } from './tapToPayTypes';
+import { verifyTapToPayDirectChargeOnConnectedAccount } from './verifyTapToPayDirectChargeOnConnectedAccount';
 
 export type CreateBookingTapToPayIntentResult =
   | {
@@ -32,7 +33,7 @@ async function cancelOpenIntentsForBooking(opts: {
     .is('canceled_at', null)
     .is('job_completed_at', null);
 
-  const stripe = getStripePlatform();
+  const stripe = getStripeConnectClient(opts.stripeAccountId);
   const now = new Date().toISOString();
 
   for (const row of rows ?? []) {
@@ -46,9 +47,7 @@ async function cancelOpenIntentsForBooking(opts: {
     if (status === 'succeeded') continue;
 
     try {
-      const pi = await stripe.paymentIntents.retrieve(piId, {
-        stripeAccount: opts.stripeAccountId,
-      });
+      const pi = await stripe.paymentIntents.retrieve(piId);
       const piStatus = String(pi.status);
       if (pi.status === 'succeeded') {
         continue;
@@ -56,9 +55,7 @@ async function cancelOpenIntentsForBooking(opts: {
 
       let markCanceled = false;
       if (OPEN_TAP_TO_PAY_PI_STATUSES.has(piStatus)) {
-        await stripe.paymentIntents.cancel(piId, {
-          stripeAccount: opts.stripeAccountId,
-        });
+        await stripe.paymentIntents.cancel(piId);
         markCanceled = true;
       } else if (piStatus === 'canceled' || piStatus === 'failed') {
         markCanceled = true;
@@ -101,23 +98,20 @@ export async function createBookingTapToPayIntent(opts: {
     stripeAccountId: opts.ctx.stripeAccountId,
   });
 
-  const stripe = getStripePlatform();
+  const stripe = getStripeConnectClient(opts.ctx.stripeAccountId);
   let paymentIntent;
   try {
-    paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: amountCents,
-        currency: opts.ctx.currency,
-        payment_method_types: ['card_present'],
-        capture_method: 'automatic',
-        metadata: {
-          kind: 'booking_tap_to_pay',
-          bookingId: opts.ctx.bookingId,
-          businessId: opts.ctx.businessId,
-        },
+    paymentIntent = await stripe.paymentIntents.create({
+      amount: amountCents,
+      currency: opts.ctx.currency,
+      payment_method_types: ['card_present'],
+      capture_method: 'automatic',
+      metadata: {
+        kind: 'booking_tap_to_pay',
+        bookingId: opts.ctx.bookingId,
+        businessId: opts.ctx.businessId,
       },
-      { stripeAccount: opts.ctx.stripeAccountId }
-    );
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Stripe create failed';
     console.error('[tap-to-pay] paymentIntents.create failed', message);
@@ -131,6 +125,23 @@ export async function createBookingTapToPayIntent(opts: {
   const paymentIntentId = paymentIntent.id?.trim();
   const clientSecret = paymentIntent.client_secret?.trim();
   if (!paymentIntentId || !clientSecret) {
+    return {
+      ok: false,
+      httpStatus: 500,
+      error: "Couldn't start Tap to Pay. Try again or mark as paid.",
+    };
+  }
+
+  const scopeCheck = await verifyTapToPayDirectChargeOnConnectedAccount({
+    paymentIntentId,
+    stripeAccountId: opts.ctx.stripeAccountId,
+  });
+  if (!scopeCheck.ok) {
+    try {
+      await stripe.paymentIntents.cancel(paymentIntentId);
+    } catch {
+      // best effort
+    }
     return {
       ok: false,
       httpStatus: 500,
@@ -154,9 +165,7 @@ export async function createBookingTapToPayIntent(opts: {
   if (insertError) {
     console.error('[tap-to-pay] intent row insert failed', insertError);
     try {
-      await stripe.paymentIntents.cancel(paymentIntentId, {
-        stripeAccount: opts.ctx.stripeAccountId,
-      });
+      await stripe.paymentIntents.cancel(paymentIntentId);
     } catch {
       // best effort
     }

@@ -291,16 +291,21 @@ export async function handleJobCompletedAction(opts: {
     amountDueCents: amountDue.amountDueCents,
   });
 
-  if (amountDue.amountDueCents > 0) {
+  if (amountDue.amountDueCents !== 0) {
+    const stillDue = amountDue.amountDueCents > 0;
     logJobCompletedStage(trace, 'rejected', {
       httpStatus: 400,
-      reason: 'Payment is still due on this booking.',
+      reason: stillDue
+        ? 'Payment is still due on this booking.'
+        : 'payment_amount_mismatch',
       amountDueCents: amountDue.amountDueCents,
     });
     return NextResponse.json(
       {
         success: false,
-        error: 'Payment is still due on this booking.',
+        error: stillDue
+          ? 'Payment is still due on this booking.'
+          : 'Payment amount does not match the amount due.',
       },
       { status: 400 }
     );
@@ -345,7 +350,6 @@ export async function handleJobCompletedAction(opts: {
       businessId: business.id,
       stripeAccountId: tapCtx.ctx.stripeAccountId,
       paymentIntentId: parsed.body.sessionPayment.stripePaymentIntentId!,
-      expectedAmountCents: parsed.body.sessionPayment.amountCents,
     });
     if (!verified.ok) {
       logJobCompletedStage(trace, 'rejected', {

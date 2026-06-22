@@ -3,19 +3,24 @@
  */
 
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { getStripePlatform } from '@/libs/stripe';
+import { getStripeConnectClient } from '@/libs/stripe';
 import { mapStripePaymentIntentStatus } from './mapStripePaymentIntentStatus';
 
 export type VerifyTapToPayPaymentIntentResult =
   | { ok: true; paymentIntentId: string; amountCents: number }
   | { ok: false; error: string; httpStatus: number };
 
+interface TapToPayIntentRow {
+  booking_id?: string;
+  business_id?: string;
+  amount_cents?: number | null;
+}
+
 export async function verifyTapToPayPaymentIntent(opts: {
   bookingId: string;
   businessId: string;
   stripeAccountId: string;
   paymentIntentId: string;
-  expectedAmountCents: number;
 }): Promise<VerifyTapToPayPaymentIntentResult> {
   const paymentIntentId = opts.paymentIntentId.trim();
   if (!paymentIntentId) {
@@ -44,12 +49,64 @@ export async function verifyTapToPayPaymentIntent(opts: {
     };
   }
 
-  const stripe = getStripePlatform();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: intentRowData, error: intentRowError } = await (admin as any)
+    .from('booking_tap_to_pay_intents')
+    .select('booking_id, business_id, amount_cents')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+
+  if (intentRowError) {
+    console.error('[tap-to-pay] intent row load failed', intentRowError);
+    return {
+      ok: false,
+      httpStatus: 400,
+      error: 'Payment could not be verified.',
+    };
+  }
+
+  const intentRow = intentRowData as TapToPayIntentRow | null;
+  if (!intentRow) {
+    return {
+      ok: false,
+      httpStatus: 400,
+      error: 'Payment could not be verified.',
+    };
+  }
+
+  if (intentRow.booking_id !== opts.bookingId) {
+    return {
+      ok: false,
+      httpStatus: 400,
+      error: 'Payment is not for this booking.',
+    };
+  }
+
+  if (intentRow.business_id !== opts.businessId) {
+    return {
+      ok: false,
+      httpStatus: 400,
+      error: 'Payment is not for this business.',
+    };
+  }
+
+  const expectedAmountCents = intentRow.amount_cents;
+  if (
+    typeof expectedAmountCents !== 'number' ||
+    !Number.isInteger(expectedAmountCents) ||
+    expectedAmountCents <= 0
+  ) {
+    return {
+      ok: false,
+      httpStatus: 400,
+      error: 'Payment could not be verified.',
+    };
+  }
+
+  const stripe = getStripeConnectClient(opts.stripeAccountId);
   let paymentIntent;
   try {
-    paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-      stripeAccount: opts.stripeAccountId,
-    });
+    paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
   } catch (e) {
     console.error('[tap-to-pay] paymentIntents.retrieve failed', e);
     return {
@@ -67,7 +124,7 @@ export async function verifyTapToPayPaymentIntent(opts: {
     };
   }
 
-  if (paymentIntent.amount !== opts.expectedAmountCents) {
+  if (paymentIntent.amount !== expectedAmountCents) {
     return {
       ok: false,
       httpStatus: 400,

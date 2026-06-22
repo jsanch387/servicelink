@@ -1,7 +1,7 @@
 import { buildTerminalLocationAddress } from '@/features/payments/server/buildTerminalLocationAddress';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import type { Database } from '@/libs/supabase/client';
-import { getStripePlatform } from '@/libs/stripe';
+import { getStripeConnectClient, getStripePlatform } from '@/libs/stripe';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type EnsureTerminalLocationResult =
@@ -93,14 +93,13 @@ export async function ensureTerminalLocation(opts: {
   };
   const merchantDisplayName = profile.business_name?.trim() || 'Business';
 
-  const stripe = getStripePlatform();
+  const stripe = getStripeConnectClient(stripeAccountId);
+  const platformStripe = getStripePlatform();
   const existingLocationId = row?.stripe_terminal_location_id?.trim();
 
   if (existingLocationId) {
     try {
-      await stripe.terminal.locations.retrieve(existingLocationId, {
-        stripeAccount: stripeAccountId,
-      });
+      await stripe.terminal.locations.retrieve(existingLocationId);
       return {
         ok: true,
         terminalLocationId: existingLocationId,
@@ -118,7 +117,7 @@ export async function ensureTerminalLocation(opts: {
 
   let stripeAccount = null;
   try {
-    stripeAccount = await stripe.accounts.retrieve(stripeAccountId);
+    stripeAccount = await platformStripe.accounts.retrieve(stripeAccountId);
   } catch (e) {
     console.warn('[terminal-location] accounts.retrieve failed', e);
   }
@@ -127,13 +126,14 @@ export async function ensureTerminalLocation(opts: {
 
   let location;
   try {
-    location = await stripe.terminal.locations.create(
-      {
-        display_name: merchantDisplayName.slice(0, 100),
-        address,
-      },
-      { stripeAccount: stripeAccountId }
-    );
+    location = await stripe.terminal.locations.create({
+      display_name: merchantDisplayName.slice(0, 100),
+      address,
+    });
+    console.info('[terminal-location] locations.create', {
+      stripeAccount: stripeAccountId,
+      locationId: location.id,
+    });
   } catch (e) {
     const message =
       e instanceof Error ? e.message : 'Stripe Terminal location create failed';

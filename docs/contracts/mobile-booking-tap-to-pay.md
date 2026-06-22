@@ -107,27 +107,48 @@ If Connect is not ready, return **422** with a message the app can show inline (
 
 ### `POST /api/availability/bookings/{bookingId}/tap-to-pay/connection-token`
 
-**Request body:** `{}` or omit body.
+**Request body:**
+
+```json
+{
+  "stripeAccountId": "acct_…"
+}
+```
+
+| Field             | Required | Notes                                                                                                      |
+| ----------------- | -------- | ---------------------------------------------------------------------------------------------------------- |
+| `stripeAccountId` | No       | When sent (after intent loads), must match `payment_accounts.stripe_account_id` for the booking’s business |
 
 **Success (200):**
 
 ```json
 {
   "success": true,
-  "secret": "pst_…"
+  "secret": "pst_…",
+  "stripeAccountId": "acct_…",
+  "terminalLocationId": "tml_…"
 }
 ```
 
-| Field    | Notes                                                                           |
-| -------- | ------------------------------------------------------------------------------- |
-| `secret` | Stripe Terminal connection token; pass to SDK `setConnectionToken` / equivalent |
+| Field                | Notes                                                                           |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `secret`             | Stripe Terminal connection token; pass to SDK `setConnectionToken` / equivalent |
+| `stripeAccountId`    | Connected account the token was created on (for debugging / alignment)          |
+| `terminalLocationId` | Terminal location the token is scoped to (same as intent response)              |
+
+**Mobile SDK (direct charges):**
+
+- Connection token and PaymentIntent are both on the connected account (`acct_…`).
+- `easyConnect` must use `locationId` only — **do not** pass `onBehalfOf` (that is for destination charges with platform-scoped PIs).
+- `stripeAccountId` in API responses is for token-request alignment and logging, not for `SCPTapToPayConnectionConfiguration.onBehalfOf`.
 
 **Server implementation:**
 
 1. Load booking + business; verify ownership and preconditions above (except amount due may be 0 — still allow token if booking is completable; mobile typically calls when amount > 0).
 2. Load `payment_accounts.stripe_account_id`.
-3. Call Stripe `terminal.connectionTokens.create({}, { stripeAccount: acct_… })`.
-4. Return `secret`.
+3. If body includes `stripeAccountId`, reject **400** when it does not match the business Connect account.
+4. Call `issueTapToPayConnectionToken` (connection token on connected account, scoped to `tml_…`).
+5. Return `secret` + `stripeAccountId`.
 
 **Mobile usage:**
 
@@ -185,7 +206,7 @@ If Connect is not ready, return **422** with a message the app can show inline (
 | `amountCents`         | Server-computed amount due; display in UI before tap                                     |
 | `currency`            | Lowercase ISO-4217 from `booking_payments`                                               |
 | `terminalLocationId`  | Stripe Terminal Location on the connected account (`tml_…`); required for SDK collection |
-| `stripeAccountId`     | Connect account id (`acct_…`); optional `onBehalfOf` for Terminal SDK                    |
+| `stripeAccountId`     | Connect account id (`acct_…`); for connection-token alignment and logging only           |
 | `merchantDisplayName` | Business name for Terminal reader UI                                                     |
 
 **Server implementation:**
@@ -195,10 +216,10 @@ If Connect is not ready, return **422** with a message the app can show inline (
 3. Verify Connect account ready.
 4. **`ensureTerminalLocation(businessId)`** — create or reuse Stripe Terminal Location on the connected account; persist `payment_accounts.stripe_terminal_location_id`. Reject **500** if provisioning fails (do not return empty `terminalLocationId`).
 5. **Cancel or supersede** any open intent for this booking in `requires_payment_method` / `requires_confirmation` state (best-effort `paymentIntents.cancel` on Connect account) so stale amounts cannot be tapped.
-6. Create PaymentIntent on **connected account**:
+6. Create PaymentIntent on **connected account** via `getStripeConnectClient(acct_…)` (equivalent to `{ stripeAccount: acct_… }` on every request):
 
    ```text
-   stripe.paymentIntents.create({
+   connectClient.paymentIntents.create({
      amount: amountDueCents,
      currency,
      payment_method_types: ['card_present'],
@@ -208,8 +229,10 @@ If Connect is not ready, return **422** with a message the app can show inline (
        bookingId,
        businessId,
      },
-   }, { stripeAccount: acct_… })
+   })
    ```
+
+   Do **not** use `on_behalf_of` or `transfer_data`. After create, `verifyTapToPayDirectChargeOnConnectedAccount` rejects platform-scoped PIs before returning 200.
 
 7. Insert row in **`booking_tap_to_pay_intents`** (see Database).
 8. Return ids + secrets + Terminal connect fields to mobile.

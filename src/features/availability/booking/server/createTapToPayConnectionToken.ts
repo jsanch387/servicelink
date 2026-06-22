@@ -1,8 +1,10 @@
 /**
  * Stripe Terminal connection token for Tap to Pay SDK init.
+ * Token must be created on the connected account (direct charge), scoped to the
+ * Terminal location used at connect time.
  */
 
-import { getStripePlatform } from '@/libs/stripe';
+import { getStripeConnectClient } from '@/libs/stripe';
 
 export type CreateTapToPayConnectionTokenResult =
   | { ok: true; secret: string }
@@ -10,18 +12,21 @@ export type CreateTapToPayConnectionTokenResult =
 
 export async function createTapToPayConnectionToken(opts: {
   stripeAccountId: string;
+  terminalLocationId?: string | null;
 }): Promise<CreateTapToPayConnectionTokenResult> {
   const stripeAccountId = opts.stripeAccountId.trim();
   if (!stripeAccountId) {
     return { ok: false, error: 'Stripe account is not configured.' };
   }
 
+  const terminalLocationId = opts.terminalLocationId?.trim() ?? '';
+
   try {
-    const stripe = getStripePlatform();
+    const stripe = getStripeConnectClient(stripeAccountId);
     const token = await stripe.terminal.connectionTokens.create(
-      {},
-      { stripeAccount: stripeAccountId }
+      terminalLocationId ? { location: terminalLocationId } : {}
     );
+
     const secret = token.secret?.trim();
     if (!secret) {
       return { ok: false, error: 'Stripe did not return a connection token.' };

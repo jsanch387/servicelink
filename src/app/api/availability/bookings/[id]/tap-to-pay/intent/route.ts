@@ -13,6 +13,10 @@ import {
 } from '@/features/availability/booking/server/resolveTapToPayBookingContext';
 import { resolveTapToPayRouteAuth } from '@/features/availability/booking/server/resolveTapToPayRouteAuth';
 import { ensureTerminalLocation } from '@/features/payments/server/ensureTerminalLocation';
+import {
+  assertOwnerTapToPayIntentRateLimits,
+  TAP_TO_PAY_RATE_LIMIT_ERROR,
+} from '@/server/rateLimit/ownerTapToPayRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -35,6 +39,20 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json(
         { success: false, error: auth.error },
         { status: auth.httpStatus }
+      );
+    }
+
+    const rate = await assertOwnerTapToPayIntentRateLimits(
+      request,
+      auth.user.id
+    );
+    if (!rate.ok) {
+      return NextResponse.json(
+        { success: false, error: TAP_TO_PAY_RATE_LIMIT_ERROR },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rate.retryAfterSec) },
+        }
       );
     }
 
@@ -81,6 +99,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    if (terminalResult.stripeAccountId !== ctxResult.ctx.stripeAccountId) {
+      console.error('[tap-to-pay:intent] stripe account mismatch', {
+        bookingId,
+        ctxAccountId: ctxResult.ctx.stripeAccountId,
+        terminalAccountId: terminalResult.stripeAccountId,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Couldn't start Tap to Pay. Try again or mark as paid.",
+        },
+        { status: 500 }
+      );
+    }
+
     const intentResult = await createBookingTapToPayIntent({
       ctx: ctxResult.ctx,
       sessionFees: parsed.body.sessionFees,
@@ -100,7 +133,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       amountCents: intentResult.amountCents,
       currency: intentResult.currency,
       terminalLocationId: terminalResult.terminalLocationId,
-      stripeAccountId: terminalResult.stripeAccountId,
+      stripeAccountId: ctxResult.ctx.stripeAccountId,
       merchantDisplayName: terminalResult.merchantDisplayName,
     });
   } catch (e) {

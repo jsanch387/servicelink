@@ -5,9 +5,17 @@
  * Contract: docs/contracts/mobile-booking-tap-to-pay.md
  */
 
-import { createTapToPayConnectionToken } from '@/features/availability/booking/server/createTapToPayConnectionToken';
+import {
+  parseTapToPayConnectionTokenBody,
+  resolveTapToPayStripeAccountId,
+} from '@/features/availability/booking/server/parseTapToPayConnectionTokenBody';
 import { resolveTapToPayBookingContext } from '@/features/availability/booking/server/resolveTapToPayBookingContext';
 import { resolveTapToPayRouteAuth } from '@/features/availability/booking/server/resolveTapToPayRouteAuth';
+import { issueTapToPayConnectionToken } from '@/features/payments/server/issueTapToPayConnectionToken';
+import {
+  assertOwnerTapToPayConnectionTokenRateLimits,
+  TAP_TO_PAY_RATE_LIMIT_ERROR,
+} from '@/server/rateLimit/ownerTapToPayRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -33,6 +41,29 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const rate = await assertOwnerTapToPayConnectionTokenRateLimits(
+      request,
+      auth.user.id
+    );
+    if (!rate.ok) {
+      return NextResponse.json(
+        { success: false, error: TAP_TO_PAY_RATE_LIMIT_ERROR },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rate.retryAfterSec) },
+        }
+      );
+    }
+
+    const rawBody = await request.json().catch(() => ({}));
+    const parsedBody = parseTapToPayConnectionTokenBody(rawBody);
+    if (!parsedBody.ok) {
+      return NextResponse.json(
+        { success: false, error: parsedBody.error },
+        { status: 400 }
+      );
+    }
+
     const ctxResult = await resolveTapToPayBookingContext({
       supabase: auth.supabase,
       bookingId,
@@ -45,19 +76,35 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const tokenResult = await createTapToPayConnectionToken({
-      stripeAccountId: ctxResult.ctx.stripeAccountId,
+    const accountResult = resolveTapToPayStripeAccountId({
+      bookingStripeAccountId: ctxResult.ctx.stripeAccountId,
+      requestedStripeAccountId: parsedBody.body.stripeAccountId,
+    });
+    if (!accountResult.ok) {
+      return NextResponse.json(
+        { success: false, error: accountResult.error },
+        { status: 400 }
+      );
+    }
+
+    const tokenResult = await issueTapToPayConnectionToken({
+      supabase: auth.supabase,
+      businessId: auth.business.id,
+      stripeAccountId: accountResult.stripeAccountId,
+      logContext: 'tap-to-pay:connection-token',
     });
     if (!tokenResult.ok) {
       return NextResponse.json(
         { success: false, error: tokenResult.error },
-        { status: 500 }
+        { status: tokenResult.httpStatus }
       );
     }
 
     return NextResponse.json({
       success: true,
       secret: tokenResult.secret,
+      stripeAccountId: tokenResult.stripeAccountId,
+      terminalLocationId: tokenResult.terminalLocationId,
     });
   } catch (e) {
     console.error('[tap-to-pay:connection-token]', e);

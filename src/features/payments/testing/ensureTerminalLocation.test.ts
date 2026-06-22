@@ -6,13 +6,15 @@ const mockCreateLocation = vi.fn();
 const mockRetrieveAccount = vi.fn();
 
 vi.mock('@/libs/stripe', () => ({
-  getStripePlatform: () => ({
+  getStripeConnectClient: () => ({
     terminal: {
       locations: {
         retrieve: mockRetrieveLocation,
         create: mockCreateLocation,
       },
     },
+  }),
+  getStripePlatform: () => ({
     accounts: {
       retrieve: mockRetrieveAccount,
     },
@@ -131,8 +133,7 @@ describe('ensureTerminalLocation', () => {
       expect.objectContaining({
         display_name: 'Acme Detailing',
         address: expect.objectContaining({ line1: '123 Main St' }),
-      }),
-      { stripeAccount: 'acct_123' }
+      })
     );
     expect(update).toHaveBeenCalledWith({
       stripe_terminal_location_id: 'tml_new',
