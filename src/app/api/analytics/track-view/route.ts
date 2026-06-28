@@ -23,12 +23,20 @@ type PublicAnalyticsEventInsert = {
   event_type: 'page_view';
   visitor_key: string;
   path: string;
-  metadata: Record<string, never>;
+  metadata: Record<string, string>;
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const { businessSlug } = await request.json();
+    const {
+      businessSlug,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_term,
+      utm_content,
+      referrer,
+    } = await request.json();
 
     if (!businessSlug) {
       return NextResponse.json(
@@ -77,12 +85,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const metadata: Record<string, string> = {};
+    if (typeof utm_source === 'string' && utm_source)
+      metadata.utm_source = utm_source;
+    if (typeof utm_medium === 'string' && utm_medium)
+      metadata.utm_medium = utm_medium;
+    if (typeof utm_campaign === 'string' && utm_campaign)
+      metadata.utm_campaign = utm_campaign;
+    if (typeof utm_term === 'string' && utm_term) metadata.utm_term = utm_term;
+    if (typeof utm_content === 'string' && utm_content)
+      metadata.utm_content = utm_content;
+    if (typeof referrer === 'string' && referrer) metadata.referrer = referrer;
+
     const eventRow: PublicAnalyticsEventInsert = {
       business_profile_id: profile.id,
       event_type: 'page_view',
       visitor_key: visitorKey,
       path: `/${slug}`,
-      metadata: {},
+      metadata,
     };
 
     const { error: insertError } =
