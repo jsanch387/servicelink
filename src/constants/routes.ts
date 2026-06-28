@@ -146,6 +146,8 @@ export const API_ROUTES = {
   WORKSHOP_TRACK: '/api/workshop/track',
   /** Public: mark workshop lead as signed up (matched by email). */
   WORKSHOP_CONVERTED: '/api/workshop/converted',
+  /** Authenticated: write-once signup source attribution. */
+  MARKETING_ATTRIBUTION_SIGNUP: '/api/attribution/signup',
 } as const;
 
 export const PUBLIC_ROUTES = [

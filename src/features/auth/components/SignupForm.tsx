@@ -7,6 +7,7 @@ import {
 } from '@/features/analytics/utils/metaLeadTracking';
 import { completeWorkshopSignupTracking } from '@/features/ads-workshop/utils/completeWorkshopSignupTracking';
 import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
+import { markPendingSignupAttribution } from '@/features/marketing-attribution';
 import { ROUTES } from '@/constants/routes';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -45,6 +46,7 @@ export const SignupForm: React.FC = () => {
   const handleGoogleSignIn = async () => {
     setAuthError('');
     setGoogleLoading(true);
+    markPendingSignupAttribution();
     try {
       const result = await signInWithGoogle();
       if (result?.error) setAuthError(result.error);
@@ -73,6 +75,7 @@ export const SignupForm: React.FC = () => {
       }
 
       if (result.needsEmailVerification) {
+        markPendingSignupAttribution();
         markMetaLeadPending();
         const q = result.email
           ? `?email=${encodeURIComponent(result.email)}`
@@ -82,6 +85,7 @@ export const SignupForm: React.FC = () => {
       }
 
       trackMetaLeadOnce();
+      markPendingSignupAttribution();
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));
       completeWorkshopSignupTracking(formData.email);
