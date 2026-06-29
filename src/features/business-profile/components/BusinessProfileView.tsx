@@ -26,6 +26,7 @@ import React, { useEffect, useState } from 'react';
 import { LazyPublicReviewsSection } from '../reviews/components/LazyPublicReviewsSection';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { ProfileCompletionTracker } from './ProfileCompletionTracker';
+import { ProfileBioSection } from './ProfileBioSection';
 import { ProfileHeader } from './ProfileHeader';
 import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
