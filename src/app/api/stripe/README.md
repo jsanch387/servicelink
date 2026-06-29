@@ -19,17 +19,17 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 
 ## Environment variables
 
-| Variable                                       | Required                        | Description                                                                                                                                                                                                                                                     |
-| ---------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `STRIPE_SECRET_KEY`                            | Yes                             | Stripe secret key (starts with `sk_`). From [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys).                                                                                                                                   |
-| `STRIPE_PRO_PRICE_ID`                          | Yes                             | Stripe Price ID for the Pro monthly plan (e.g. `price_xxx`). Create a Product in [Stripe Dashboard → Products](https://dashboard.stripe.com/products), then add a recurring price.                                                                              |
-| `STRIPE_WEBHOOK_SECRET`                        | Yes (for webhook)               | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.                                                                                                                                          |
-| `STRIPE_CONNECT_WEBHOOK_SECRET`                | Yes (for Connect webhook)       | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments).                                                                                                                  |
-| `NEXT_PUBLIC_SITE_URL`                         | No                              | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`.                                                                                                                                     |
-| `STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL`  | Yes for Expo Connect onboarding | Stripe Connect **Account Link** `return_url` when `POST /api/stripe/connect/onboard` body includes `client: "mobile"`. Must be **`https://…`** or **`http://…`** (Stripe rejects custom schemes like `myapp://` — use an https bridge page that opens the app). |
-| `STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL` | Yes for Expo Connect onboarding | Account Link `refresh_url` (expired link / resume). Same **http(s)** rule as return URL.                                                                                                                                                                        |
-| `STRIPE_MOBILE_CONNECT_DEEP_LINK_RETURN_URL`   | Optional                        | Deep link that the bridge route opens for Connect return. Default: `servicelinkmobile://payments/connect?connect=return`.                                                                                                                                       |
-| `STRIPE_MOBILE_CONNECT_DEEP_LINK_REFRESH_URL`  | Optional                        | Deep link that the bridge route opens for Connect refresh. Default: `servicelinkmobile://payments/connect?connect=refresh`.                                                                                                                                     |
+| Variable                                       | Required                        | Description                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`                            | Yes                             | Stripe secret key (starts with `sk_`). From [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys).                                                                                                                                                                                                               |
+| `STRIPE_PRO_PRICE_ID`                          | Yes                             | Stripe Price ID for **new** Pro monthly signups (e.g. `$20/mo` `price_xxx`). Create a Product in [Stripe Dashboard → Products](https://dashboard.stripe.com/products), then add a recurring price. **Do not** migrate existing subscribers off a legacy price — Stripe keeps them on their current price until they cancel and resubscribe. |
+| `STRIPE_WEBHOOK_SECRET`                        | Yes (for webhook)               | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.                                                                                                                                                                                                                      |
+| `STRIPE_CONNECT_WEBHOOK_SECRET`                | Yes (for Connect webhook)       | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments).                                                                                                                                                                                              |
+| `NEXT_PUBLIC_SITE_URL`                         | No                              | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`.                                                                                                                                                                                                                 |
+| `STRIPE_MOBILE_CONNECT_ONBOARDING_RETURN_URL`  | Yes for Expo Connect onboarding | Stripe Connect **Account Link** `return_url` when `POST /api/stripe/connect/onboard` body includes `client: "mobile"`. Must be **`https://…`** or **`http://…`** (Stripe rejects custom schemes like `myapp://` — use an https bridge page that opens the app).                                                                             |
+| `STRIPE_MOBILE_CONNECT_ONBOARDING_REFRESH_URL` | Yes for Expo Connect onboarding | Account Link `refresh_url` (expired link / resume). Same **http(s)** rule as return URL.                                                                                                                                                                                                                                                    |
+| `STRIPE_MOBILE_CONNECT_DEEP_LINK_RETURN_URL`   | Optional                        | Deep link that the bridge route opens for Connect return. Default: `servicelinkmobile://payments/connect?connect=return`.                                                                                                                                                                                                                   |
+| `STRIPE_MOBILE_CONNECT_DEEP_LINK_REFRESH_URL`  | Optional                        | Deep link that the bridge route opens for Connect refresh. Default: `servicelinkmobile://payments/connect?connect=refresh`.                                                                                                                                                                                                                 |
 
 ## Flow (web)
 
@@ -59,6 +59,52 @@ Otherwise step 5 uses **`POST /api/onboarding-v2/complete`** (free tier, no Stri
 **Operational note:** Legacy accounts may already have duplicate Customers in Stripe from before this behavior. You can leave inactive orphans alone or use Stripe’s tools to merge/delete duplicates; going forward, new checkouts from the app should stay on a single Customer per profile as long as `stripe_customer_id` was saved at least once.
 
 **Out of scope:** Booking payments use Connect Checkout on **connected** accounts (`/api/public/booking-checkout`); that flow is unrelated to platform `profiles.stripe_customer_id` and is unchanged.
+
+## Stripe Tax (Pro subscription checkout)
+
+Dashboard **Tax** settings alone do **not** add tax — Checkout sessions must pass **`automatic_tax: { enabled: true }`** (see `src/libs/stripe/checkoutAutomaticTax.ts`, used by `create-checkout-session` and legacy `start-onboarding-trial`).
+
+### Stripe Dashboard setup
+
+1. **[Settings → Tax](https://dashboard.stripe.com/settings/tax)** — turn on **Stripe Tax**.
+2. **Head office address** — your business’s principal / origin address (for a solo founder operating from home, your residence is often correct; confirm with your accountant). Used to preview rates and as your tax origin.
+3. **Tax registrations** — add each US state (or country) where you’re **registered to collect** tax. Stripe only charges tax in jurisdictions you register; no registration → no tax line even with automatic tax enabled.
+4. **Product / Price** — Pro SaaS price should use an appropriate tax code (Stripe usually defaults digital services when Tax is on).
+
+### At checkout (after code + Dashboard)
+
+- Customer enters **billing address** (Checkout collects it for tax).
+- Stripe calculates tax from customer location + your registrations.
+- **Total due today** depends on **tax behavior** on the Price (see below).
+
+### Tax inclusive vs exclusive (why total can stay $20)
+
+Stripe Prices have a **tax behavior**:
+
+| Behavior      | What the customer pays        | Example ($20/mo, ~6.2% tax)                        |
+| ------------- | ----------------------------- | -------------------------------------------------- |
+| **Exclusive** | Subtotal **+ tax on top**     | $20.00 + $1.24 tax = **$21.24 due today**          |
+| **Inclusive** | Listed price **includes** tax | **$20.00 due today** ($1.24 is tax inside the $20) |
+
+If Checkout shows **Subtotal $20**, **Sales tax $1.24** in details, but **Total due today $20**, tax is **inclusive** — not broken.
+
+To charge **$20 + tax** (tax added on top), Checkout uses **`tax_behavior: exclusive`** via `buildProSubscriptionCheckoutLineItem` — amount still comes from **`STRIPE_PRO_PRICE_ID`**. You can also set the Price to Exclusive in Dashboard when creating it (optional; code enforces exclusive at checkout).
+
+Product → Price → edit or preview tax often shows “include tax in price” vs “exclude tax from price”.
+
+### Testing
+
+Use **test mode** Checkout with a billing address in a state where you added a registration — you should see a tax line on the Stripe Checkout page. Addresses in non-registered states may show $0 tax.
+
+**Booking Connect checkout** (`/api/public/booking-checkout`) is **not** covered here — that runs on each merchant’s connected account.
+
+## Grandfathering (legacy $10 vs new $20 list price)
+
+- **Marketing / upgrade cards** show **`PLANS.pro.price`** (current list price, e.g. `$20`) for new signups.
+- **Existing Stripe subscriptions** stay on whatever **Price** they were created with (e.g. `$10/mo`) until the customer cancels or changes plan in Stripe — no migration required.
+- Set **`STRIPE_PRO_PRICE_ID`** to the **new** `$20` price id. Leave the old `$10` price active in Stripe for existing rows; do not bulk-update subscriptions.
+- **Settings** and **Your plan** (when already Pro) read the live **`unit_amount`** from Stripe via `getSubscriptionMonthlyPriceDisplay` so grandfathered users see `$10/month`, not the new list price.
+- **Resubscribe after cancel** uses Checkout with **`STRIPE_PRO_PRICE_ID`** → new customers and returning churned users pay the current list price.
 
 ## Webhook idempotency table
 

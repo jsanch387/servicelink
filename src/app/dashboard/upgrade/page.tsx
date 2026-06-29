@@ -3,6 +3,7 @@ import {
   needsPaidProResubscribeForDashboard,
   UpgradeContent,
 } from '@/features/pricing';
+import { getSubscriptionMonthlyPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -56,6 +57,13 @@ export default async function DashboardUpgradePage() {
   const isBillingLocked =
     onboardingComplete && needsResubscribeGate && !isProSubscriber;
 
+  let subscriberPlanPrice: string | null = null;
+  const subscriptionId = row?.stripe_subscription_id?.trim();
+  if (isProSubscriber && subscriptionId) {
+    subscriberPlanPrice =
+      await getSubscriptionMonthlyPriceDisplay(subscriptionId);
+  }
+
   // Free users (no resubscribe gate) must be able to open this page to start checkout.
   // Middleware sends lapsed **pro** rows without Pro access here; downgraded **free** users are not billing-locked.
 
@@ -63,6 +71,7 @@ export default async function DashboardUpgradePage() {
     <UpgradeContent
       isProSubscriber={isProSubscriber}
       isBillingLocked={isBillingLocked}
+      subscriberPlanPrice={subscriberPlanPrice}
     />
   );
 }

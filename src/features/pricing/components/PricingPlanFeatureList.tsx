@@ -32,7 +32,7 @@ export interface PricingPlanFeatureListProps {
   items: readonly ProFeatureItem[];
   /** When false, highlight rows use the same body weight as other lines (e.g. Free tier). */
   emphasizeHighlights?: boolean;
-  /** neutral = white checkmarks (Pro card / modals); default = emerald (Free card). */
+  /** neutral = white checkmarks (Free card); default = emerald (Pro card). */
   bulletVariant?: 'default' | 'neutral';
 }
 
@@ -51,9 +51,9 @@ export const PricingPlanFeatureList: React.FC<PricingPlanFeatureListProps> = ({
         <span
           className={
             emphasizeHighlights && item.highlight
-              ? bulletVariant === 'neutral'
-                ? 'font-black text-white'
-                : 'font-medium text-zinc-100'
+              ? bulletVariant === 'default'
+                ? 'font-semibold text-white'
+                : 'font-medium text-zinc-200'
               : ''
           }
         >

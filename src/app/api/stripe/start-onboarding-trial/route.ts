@@ -18,6 +18,8 @@ import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfi
 import { STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO } from '@/features/pricing/utils/isProAccess';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getStripePlatform } from '@/libs/stripe';
+import { stripeSubscriptionAutomaticTaxParams } from '@/libs/stripe/checkoutAutomaticTax';
+import { buildProSubscriptionCreateItem } from '@/libs/stripe/proSubscriptionLineItem';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
@@ -211,9 +213,15 @@ export async function POST(request: NextRequest) {
       priceIdSuffix: priceId.slice(-12),
     });
 
+    const proSubscriptionItem = await buildProSubscriptionCreateItem(
+      stripe,
+      priceId
+    );
+
     const subscriptionParams: Stripe.SubscriptionCreateParams = {
       customer: stripeCustomerId,
-      items: [{ price: priceId, quantity: 1 }],
+      items: [proSubscriptionItem],
+      ...stripeSubscriptionAutomaticTaxParams,
       metadata: {
         userId: user.id,
         source: 'onboarding_trial_silent',

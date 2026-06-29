@@ -67,7 +67,7 @@ export const ProWelcomeModal: React.FC<ProWelcomeModalProps> = ({
         <PricingPlanFeatureList
           items={PRO_WELCOME_MODAL_FEATURES}
           emphasizeHighlights
-          bulletVariant="neutral"
+          bulletVariant="default"
         />
 
         <Button

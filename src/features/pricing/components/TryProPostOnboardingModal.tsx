@@ -6,7 +6,7 @@ import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { CrownIcon, CrownOutlineIcon } from '@/icons';
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import { PRO_WELCOME_MODAL_FEATURES } from '../marketingPlanFeatures';
+import { POST_ONBOARDING_PRO_NUDGE_FEATURES } from '../marketingPlanFeatures';
 import { PricingPlanFeatureList } from './PricingPlanFeatureList';
 import {
   PRICING_MODAL_CROWN_TILE_CLASS,
@@ -80,9 +80,9 @@ export const TryProPostOnboardingModal: React.FC<
         <div className="h-px w-full bg-white/10" aria-hidden />
 
         <PricingPlanFeatureList
-          items={PRO_WELCOME_MODAL_FEATURES}
+          items={POST_ONBOARDING_PRO_NUDGE_FEATURES}
           emphasizeHighlights
-          bulletVariant="neutral"
+          bulletVariant="default"
         />
 
         <div className="flex flex-col gap-3">

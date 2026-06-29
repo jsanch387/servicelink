@@ -16,13 +16,13 @@ Mobile clients should align with:
 
 ## Product and pricing strategy
 
-| Element               | Direction                                                                                                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Plans**             | **Free** and **Pro** only (`PlanId` in `src/features/pricing/types.ts`).                                                                                                                          |
-| **Pro price**         | Marketing copy uses **`PLANS.pro.price`** (currently `$10`); **live amount** comes from **Stripe** (`STRIPE_PRO_PRICE_ID`). Keep Dashboard / pricing page in sync when Stripe list price changes. |
-| **Monetization goal** | Free tier is **usable** so businesses can start (with caps). Pro unlocks **scale** (bookings, branding, payments-adjacent features, quotes).                                                      |
-| **Stripe**            | **One Customer per profile** when `stripe_customer_id` is known — reuse on Checkout to avoid duplicate `cus_…` rows (see Stripe README).                                                          |
-| **Trials**            | **7-day** subscription trial in Stripe (`trialing`). Same in-app **Pro entitlements** as a paying subscriber while the trial is valid.                                                            |
+| Element               | Direction                                                                                                                                                                                                                                                                                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Plans**             | **Free** and **Pro** only (`PlanId` in `src/features/pricing/types.ts`).                                                                                                                                                                                                                                                                 |
+| **Pro price**         | Marketing copy uses **`PLANS.pro.price`** (currently `$20` for new signups); **live charge** comes from **Stripe** (`STRIPE_PRO_PRICE_ID` for new Checkout). **Grandfathered** subscribers keep their existing Stripe Price (e.g. `$10/mo`) until they cancel/resubscribe; Settings shows the amount from Stripe, not `PLANS.pro.price`. |
+| **Monetization goal** | Free tier is **usable** so businesses can start (with caps). Pro unlocks **scale** (bookings, branding, payments-adjacent features, quotes).                                                                                                                                                                                             |
+| **Stripe**            | **One Customer per profile** when `stripe_customer_id` is known — reuse on Checkout to avoid duplicate `cus_…` rows (see Stripe README).                                                                                                                                                                                                 |
+| **Trials**            | **7-day** subscription trial in Stripe (`trialing`). Same in-app **Pro entitlements** as a paying subscriber while the trial is valid.                                                                                                                                                                                                   |
 
 ---
 
