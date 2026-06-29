@@ -8,11 +8,10 @@ import {
 /** Feature bullets for Free tier on marketing / upgrade plan cards. */
 export const MARKETING_FREE_PLAN_FEATURES: readonly ProFeatureItem[] = [
   { text: `${FREE_BOOKINGS_LIMIT} online bookings`, highlight: true },
-  { text: 'Professional booking page & online scheduling' },
+  { text: 'Shareable booking page & online scheduling' },
   { text: 'Services, availability calendar & dashboard' },
-  { text: 'Client CRM, notes, and visit history' },
-  { text: 'Email notifications for new bookings' },
-  { text: `Up to ${FREE_MAX_PORTFOLIO_IMAGES} portfolio gallery images` },
+  { text: 'Client CRM & visit history' },
+  { text: `Up to ${FREE_MAX_PORTFOLIO_IMAGES} gallery photos` },
 ];
 
 /** Same as marketing Free list — used on public `/pricing`. */
@@ -20,44 +19,40 @@ export const PUBLIC_PRICING_FREE_PLAN_FEATURES = MARKETING_FREE_PLAN_FEATURES;
 
 /** Feature bullets for Pro tier on marketing / upgrade plan cards. */
 export const MARKETING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
-  { text: 'Unlimited bookings', highlight: true },
-  { text: 'Verified profile badge' },
-  { text: `Up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery images` },
-  { text: 'Customer quote requests on your page' },
-  { text: 'Multiple price options per service' },
-  { text: 'Priority support' },
+  { text: 'Unlimited bookings on your public page', highlight: true },
+  { text: 'Accept card payments & collect deposits', highlight: true },
+  { text: 'Client CRM — notes, history, and check-ins' },
+  { text: 'Create and accept quote requests' },
+  { text: 'Email confirmations for you and clients' },
+  { text: 'Multiple prices per service (sedan, SUV, etc.)' },
+  {
+    text: `Verified badge & up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery photos`,
+  },
 ];
 
 /** Canonical Pro bullets shown on public `/pricing` and dashboard reactivation paywall. */
-export const PUBLIC_PRICING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
-  { text: 'Unlimited bookings', highlight: true },
-  { text: 'Take payments through the app' },
-  { text: 'Client CRM, notes, and visit history' },
-  { text: 'Quote requests on your public profile' },
-  { text: 'Multiple price options per service' },
-  { text: 'More gallery photos and verified badge' },
-];
+export const PUBLIC_PRICING_PRO_PLAN_FEATURES = MARKETING_PRO_PLAN_FEATURES;
 
 /**
- * Post-onboarding soft CTA: same practical benefits as marketing Pro, without
- * the support line (keeps the nudge about the product, not service tiers).
+ * Post-onboarding soft CTA: top Pro unlocks without the support line
+ * (keeps the nudge about the product, not service tiers).
  */
 export const POST_ONBOARDING_PRO_NUDGE_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings', highlight: true },
-  { text: 'Verified profile badge' },
-  { text: `Up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery images` },
-  { text: 'Customer quote requests on your page' },
+  { text: 'Accept payments & deposits in the app', highlight: true },
+  { text: 'Client CRM, quotes, and email confirmations' },
   { text: 'Multiple price options per service' },
+  { text: 'Verified badge & more gallery photos' },
 ];
 
 /** Post-upgrade welcome modal — core unlocks (no support line). */
 export const PRO_WELCOME_MODAL_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings on your public page', highlight: true },
-  { text: 'Take payments through the app', highlight: true },
-  { text: 'Verified badge on your booking link' },
-  {
-    text: `Up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery images on your booking page`,
-  },
+  { text: 'Accept card payments & collect deposits', highlight: true },
+  { text: 'Client CRM, quote requests, and check-ins' },
+  { text: 'Email confirmations for you and clients' },
   { text: 'Multiple price options per service' },
-  { text: 'Customer quote requests on your page' },
+  {
+    text: `Verified badge & up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery photos`,
+  },
 ];

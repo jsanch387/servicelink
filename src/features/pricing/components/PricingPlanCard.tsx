@@ -8,7 +8,7 @@ export interface PricingPlanCardProps {
   variant: PricingPlanCardVariant;
   title: string;
   description: string;
-  /** e.g. "$0", "$10" */
+  /** e.g. "$0", "$20" */
   price: string;
   priceSuffix?: string;
   features: readonly ProFeatureItem[];
@@ -40,7 +40,7 @@ const variantStyles: Record<
     pricePanel: 'border-white/[0.06] bg-white/[0.02]',
     priceText: 'text-white',
     badge: 'border border-white/15 bg-white/[0.06] text-zinc-300',
-    bulletVariant: 'default',
+    bulletVariant: 'neutral',
   },
   pro: {
     shell:
@@ -50,7 +50,7 @@ const variantStyles: Record<
     pricePanel: 'border-white/15 bg-white/[0.05]',
     priceText: 'text-white',
     badge: 'bg-white text-zinc-900 shadow-sm',
-    bulletVariant: 'neutral',
+    bulletVariant: 'default',
   },
 };
 

@@ -1,6 +1,7 @@
 import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
+import { getSubscriptionMonthlyPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -95,6 +96,13 @@ export default async function SettingsPage({
     );
     const planId = hasProAccess ? ('pro' as const) : ('free' as const);
 
+    let subscriptionMonthlyPrice: string | null = null;
+    const subscriptionId = profileRow?.stripe_subscription_id?.trim();
+    if (hasProAccess && subscriptionId) {
+      subscriptionMonthlyPrice =
+        await getSubscriptionMonthlyPriceDisplay(subscriptionId);
+    }
+
     const signedInWithGoogle = !(user.identities ?? []).some(
       identity => identity.provider === 'email'
     );
@@ -124,6 +132,7 @@ export default async function SettingsPage({
         profileRow?.subscription_current_period_end ?? null,
       subscriptionCancelAtPeriodEnd:
         profileRow?.subscription_cancel_at_period_end === true,
+      subscriptionMonthlyPrice,
       accountEmail: user.email ?? '',
       signedInWithGoogle,
     };

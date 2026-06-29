@@ -27,6 +27,8 @@ interface PlanSectionProps {
   subscriptionCancelAtPeriodEnd?: boolean;
   /** From `profiles.subscription_status` (e.g. trialing, active). */
   subscriptionStatus?: string | null;
+  /** When set, overrides `PLANS.pro.price` (e.g. grandfathered $10/mo from Stripe). */
+  monthlyPriceOverride?: string | null;
   /** Hide the section heading when a parent group label is shown (e.g. Settings billing). */
   hideHeading?: boolean;
 }
@@ -36,10 +38,15 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   subscriptionCurrentPeriodEnd = null,
   subscriptionCancelAtPeriodEnd = false,
   subscriptionStatus = null,
+  monthlyPriceOverride = null,
   hideHeading = false,
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
+  const displayPrice =
+    isPro && monthlyPriceOverride?.trim()
+      ? monthlyPriceOverride.trim()
+      : plan.price;
   const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
   const isTrialing = subscriptionStatus === 'trialing';
   const displayPlanName = isPro && isTrialing ? 'Pro trial' : plan.name;
@@ -110,7 +117,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
               </p>
             ) : (
               <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-white tabular-nums">
-                {plan.price}
+                {displayPrice}
                 <span className="text-sm font-normal leading-none text-gray-400">
                   /month
                 </span>
