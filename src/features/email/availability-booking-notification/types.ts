@@ -43,6 +43,13 @@ export interface AvailabilityBookingNotificationPayload {
   totalPriceCents?: number;
   /** Shown in both customer confirmation and owner notification when set. */
   paymentSummary?: AvailabilityBookingPaymentSummary;
+  /** Where service happens (mobile at customer vs shop visit). */
+  serviceLocation?: AvailabilityBookingServiceLocationEmail;
+}
+
+export interface AvailabilityBookingServiceLocationEmail {
+  type: 'mobile' | 'shop';
+  formattedAddress: string;
 }
 
 export interface SendAvailabilityBookingNotificationResult {

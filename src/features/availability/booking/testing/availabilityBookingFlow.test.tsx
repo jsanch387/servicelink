@@ -71,7 +71,6 @@ vi.mock('@/features/availability/booking/components/CustomerForm', () => ({
     showNotificationsConsent,
     agreedToNotifications,
     onAgreedToNotificationsChange,
-    notificationsConsentError,
   }: {
     id: string;
     step: 'contact' | 'address' | 'vehicleNotes';
@@ -79,7 +78,6 @@ vi.mock('@/features/availability/booking/components/CustomerForm', () => ({
     showNotificationsConsent?: boolean;
     agreedToNotifications?: boolean;
     onAgreedToNotificationsChange?: (agreed: boolean) => void;
-    notificationsConsentError?: string | null;
   }) => (
     <form
       id={id}
@@ -89,20 +87,14 @@ vi.mock('@/features/availability/booking/components/CustomerForm', () => ({
       }}
     >
       {step === 'contact' && showNotificationsConsent ? (
-        <>
-          <label>
-            <input
-              type="checkbox"
-              checked={agreedToNotifications}
-              onChange={e => onAgreedToNotificationsChange?.(e.target.checked)}
-            />
-            By providing your phone number, you agree to receive SMS
-            notifications from Acme Auto.
-          </label>
-          {notificationsConsentError ? (
-            <p role="alert">{notificationsConsentError}</p>
-          ) : null}
-        </>
+        <label>
+          <input
+            type="checkbox"
+            checked={agreedToNotifications}
+            onChange={e => onAgreedToNotificationsChange?.(e.target.checked)}
+          />
+          Text me appointment updates
+        </label>
       ) : null}
     </form>
   ),
@@ -132,11 +124,6 @@ function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
 async function advanceDetailsToReview(
   user: ReturnType<typeof userEvent.setup>
 ) {
-  await user.click(
-    screen.getByRole('checkbox', {
-      name: /by providing your phone number/i,
-    })
-  );
   await user.click(screen.getByRole('button', { name: /^continue$/i }));
   await user.click(screen.getByRole('button', { name: /^continue$/i }));
   await user.click(screen.getByRole('button', { name: /review booking/i }));
@@ -188,7 +175,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
     expect(screen.getAllByText('SUV')).toHaveLength(1);
   });
 
-  it('requires notification consent on details before continuing to review', async () => {
+  it('allows continuing from details when SMS consent is unchecked', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch');
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const u = typeof input === 'string' ? input : input.toString();
@@ -211,17 +198,18 @@ describe('AvailabilityBookingPage flow navigation', () => {
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
-    expect(
-      screen.getByText(
-        /please check the box to agree to email and sms notifications/i
-      )
-    ).toBeTruthy();
-    expect(
-      screen.queryByRole('button', { name: /confirm booking/i })
-    ).toBeNull();
+    const smsCheckbox = screen.getByRole('checkbox', {
+      name: /text me appointment updates/i,
+    }) as HTMLInputElement;
+    expect(smsCheckbox.checked).toBe(true);
+    await user.click(smsCheckbox);
+    expect(smsCheckbox.checked).toBe(false);
 
-    await advanceDetailsToReview(user);
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    expect(screen.queryByText(/please check the box/i)).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /review booking/i }));
     await user.click(screen.getByRole('button', { name: /confirm booking/i }));
 
     const postsToCreateBooking = () =>

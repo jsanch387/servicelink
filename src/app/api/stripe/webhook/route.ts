@@ -30,6 +30,12 @@ import {
   sendTrialEndingSoonEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
+import { buildStripeCheckoutPaymentSummary } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
+import {
+  buildPublicBookingServiceLocation,
+  resolveEffectiveCustomerServiceLocation,
+} from '@/features/business-profile/utils/publicServiceLocation';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
@@ -123,6 +129,7 @@ type StoredBookingCheckoutPayload = {
   paymentMethodSelected: 'pay_now' | 'pay_in_person' | 'none';
   depositType?: 'fixed' | 'percent' | null;
   depositValue?: number | null;
+  customerServiceLocation?: 'mobile' | 'shop';
 };
 
 function customerFormFromCheckoutStored(
@@ -186,6 +193,12 @@ function parseStoredBookingCheckoutPayload(
     paymentMethodSelected === 'none'
       ? paymentMethodSelected
       : null;
+  const customerServiceLocationRaw = p.customerServiceLocation;
+  const customerServiceLocation =
+    customerServiceLocationRaw === 'mobile' ||
+    customerServiceLocationRaw === 'shop'
+      ? customerServiceLocationRaw
+      : undefined;
   if (
     !businessId ||
     !businessSlug ||
@@ -252,6 +265,7 @@ function parseStoredBookingCheckoutPayload(
       typeof p.depositValue === 'number' && Number.isFinite(p.depositValue)
         ? Math.max(0, Math.round(p.depositValue))
         : null,
+    customerServiceLocation,
   };
 }
 
@@ -445,7 +459,9 @@ export async function POST(request: NextRequest) {
 
       const { data: capProfileRow, error: capProfileError } = await supabase
         .from('business_profiles')
-        .select('id, profile_id, free_bookings_month, free_bookings_count')
+        .select(
+          'id, profile_id, free_bookings_month, free_bookings_count, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+        )
         .eq('id', bookingPayload.businessId.trim())
         .maybeSingle();
 
@@ -473,6 +489,12 @@ export async function POST(request: NextRequest) {
         profile_id: string | null;
         free_bookings_month: string | null;
         free_bookings_count: number | null;
+        business_name: string | null;
+        service_location_mode: string | null;
+        service_area: string | null;
+        business_zip: string | null;
+        shop_street_address: string | null;
+        shop_unit: string | null;
       };
 
       const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
@@ -528,11 +550,6 @@ export async function POST(request: NextRequest) {
         typeof session.currency === 'string' && session.currency.trim()
           ? session.currency.trim().toLowerCase()
           : 'usd';
-      const formatMoney = (cents: number) =>
-        new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: currencyCode.toUpperCase(),
-        }).format(cents / 100);
       const selectedAddOnsForEmail = bookingPayload.selectedAddOns ?? [];
       const basePriceForEmail = bookingPayload.servicePriceCents ?? 0;
       const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
@@ -544,19 +561,28 @@ export async function POST(request: NextRequest) {
         (typeof bookingPayload.servicePriceCents === 'number' &&
           bookingPayload.servicePriceCents > 0) ||
         selectedAddOnsForEmail.length > 0;
-      const depositPaymentRows: Array<{ label: string; value: string }> = [
-        { label: 'Deposit paid', value: formatMoney(amountPaidCents) },
+      const serviceLocation = buildPublicBookingServiceLocation(capProfile);
+      const locationResolved = resolveEffectiveCustomerServiceLocation(
+        serviceLocation.mode,
+        bookingPayload.customerServiceLocation
+      );
+      const effectiveLocationType =
+        locationResolved.effective ??
+        (serviceLocation.mode === 'shop_only' ? 'shop' : 'mobile');
+      const emailServiceLocation = buildAvailabilityBookingEmailServiceLocation(
         {
-          label: 'Remaining balance',
-          value: formatMoney(remainingCents),
-        },
-      ];
-      if (!hasPriceLineItems) {
-        depositPaymentRows.push({
-          label: 'Appointment total',
-          value: formatMoney(bookingPayload.totalPriceCents),
-        });
-      }
+          effectiveType: effectiveLocationType,
+          shopAddressLabel: serviceLocation.shopAddressLabel,
+          customerStreet: bookingPayload.customer.streetAddress,
+          customerUnit: bookingPayload.customer.unitApt,
+          customerCity: bookingPayload.customer.city,
+          customerState: bookingPayload.customer.state,
+          customerZip: bookingPayload.customer.zip,
+        }
+      );
+      const profileId = capProfile.profile_id ?? null;
+      const businessDisplayName =
+        capProfile.business_name?.trim() || bookingPayload.businessSlug;
       const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
         customerName: bookingPayload.customer.fullName.trim(),
         customerEmail: resolvedCustomerEmail,
@@ -572,27 +598,16 @@ export async function POST(request: NextRequest) {
         servicePriceCents: bookingPayload.servicePriceCents,
         selectedAddOns: selectedAddOnsForEmail,
         totalPriceCents: totalPriceCentsForEmail,
-        paymentSummary: {
-          title: 'Payment',
-          rows:
-            paymentStatus === 'paid_full'
-              ? [{ label: 'Paid in full', value: formatMoney(amountPaidCents) }]
-              : depositPaymentRows,
-          stripeCardPayment: true,
-        },
+        paymentSummary: buildStripeCheckoutPaymentSummary({
+          paymentStatus,
+          amountPaidCents,
+          remainingCents,
+          totalPriceCents: bookingPayload.totalPriceCents,
+          currency: currencyCode,
+          hasPriceLineItems,
+        }),
+        serviceLocation: emailServiceLocation,
       };
-      const { data: businessRow } = await supabase
-        .from('business_profiles')
-        .select('profile_id, business_name')
-        .eq('id', bookingPayload.businessId)
-        .maybeSingle();
-      const profileId =
-        (businessRow as { profile_id?: string | null } | null)?.profile_id ??
-        null;
-      const businessDisplayName =
-        (
-          businessRow as { business_name?: string | null } | null
-        )?.business_name?.trim() || bookingPayload.businessSlug;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('booking_payments').insert({
         booking_id: createdBooking.id,

@@ -2,10 +2,10 @@
 
 Documentation for dashboard profile edit, public profile display, and booking-link settings owned by the `business-profile` feature.
 
-| Doc | Topic |
-| --- | --- |
-| [serviceLocation.md](./serviceLocation.md) | Mobile / shop / both, profile ZIP, shop street address, validation, DB columns |
-| [publicBookingLocales.md](./publicBookingLocales.md) | English / Spanish on the public booking link |
+| Doc                                                  | Topic                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [serviceLocation.md](./serviceLocation.md)           | Mobile / shop / both, profile ZIP, shop street address, validation, DB columns |
+| [publicBookingLocales.md](./publicBookingLocales.md) | English / Spanish on the public booking link                                   |
 
 **Related (other features)**
 

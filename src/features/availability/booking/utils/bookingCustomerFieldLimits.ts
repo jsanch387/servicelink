@@ -68,8 +68,10 @@ export function coerceCustomerFormData(raw: unknown): CustomerFormData {
  * Returns an English error message for the API, or null if valid.
  */
 export function bookingCustomerPayloadErrorMessage(
-  c: CustomerFormData
+  c: CustomerFormData,
+  options?: { requireCustomerAddress?: boolean }
 ): string | null {
+  const requireCustomerAddress = options?.requireCustomerAddress !== false;
   const name = c.fullName.trim();
   if (!name) return 'Customer name is required';
   if (name.length > BOOKING_CUSTOMER_FULL_NAME_MAX)
@@ -83,24 +85,27 @@ export function bookingCustomerPayloadErrorMessage(
   }
 
   if (!c.phone?.trim()) return 'Phone is required';
-  const street = c.streetAddress?.trim() ?? '';
-  if (!street) return 'Street address is required';
-  if (street.length > BOOKING_CUSTOMER_STREET_MAX)
-    return 'Street address is too long';
 
-  const unit = (c.unitApt ?? '').trim();
-  if (unit.length > BOOKING_CUSTOMER_UNIT_MAX)
-    return 'Unit / apartment line is too long';
+  if (requireCustomerAddress) {
+    const street = c.streetAddress?.trim() ?? '';
+    if (!street) return 'Street address is required';
+    if (street.length > BOOKING_CUSTOMER_STREET_MAX)
+      return 'Street address is too long';
 
-  const city = c.city?.trim() ?? '';
-  if (!city) return 'City is required';
-  if (city.length > BOOKING_CUSTOMER_CITY_MAX) return 'City is too long';
+    const unit = (c.unitApt ?? '').trim();
+    if (unit.length > BOOKING_CUSTOMER_UNIT_MAX)
+      return 'Unit / apartment line is too long';
 
-  if (!c.state?.trim()) return 'State is required';
+    const city = c.city?.trim() ?? '';
+    if (!city) return 'City is required';
+    if (city.length > BOOKING_CUSTOMER_CITY_MAX) return 'City is too long';
 
-  const zipDigits = sanitizeUsZipInput(c.zip ?? '');
-  if (!isValidUsZipDigits(zipDigits)) {
-    return 'Please enter a valid US ZIP code (5 digits).';
+    if (!c.state?.trim()) return 'State is required';
+
+    const zipDigits = sanitizeUsZipInput(c.zip ?? '');
+    if (!isValidUsZipDigits(zipDigits)) {
+      return 'Please enter a valid US ZIP code (5 digits).';
+    }
   }
 
   const notes = c.notes ?? '';

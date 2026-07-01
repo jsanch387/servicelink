@@ -117,11 +117,12 @@ export function isCustomerFormStepValid(
 export function isCustomerFormValid(
   data: CustomerFormData,
   requireVehicleFields = false,
-  emailOptional = false
+  emailOptional = false,
+  requireCustomerAddress = true
 ): boolean {
   return (
     isContactStepValid(data, emailOptional) &&
-    isAddressStepValid(data) &&
+    (requireCustomerAddress ? isAddressStepValid(data) : true) &&
     isVehicleNotesStepValid(data, requireVehicleFields)
   );
 }
@@ -249,20 +250,20 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           title={cf.yourDetails}
           footer={notificationsConsentFooter}
         >
+          <Input
+            label={cf.fullName}
+            value={value.fullName}
+            onChange={v =>
+              update({
+                fullName: v.slice(0, BOOKING_CUSTOMER_FULL_NAME_MAX),
+              })
+            }
+            placeholder="Jane Doe"
+            error={errors.fullName}
+            required
+            maxLength={BOOKING_CUSTOMER_FULL_NAME_MAX}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label={cf.fullName}
-              value={value.fullName}
-              onChange={v =>
-                update({
-                  fullName: v.slice(0, BOOKING_CUSTOMER_FULL_NAME_MAX),
-                })
-              }
-              placeholder="Jane Doe"
-              error={errors.fullName}
-              required
-              maxLength={BOOKING_CUSTOMER_FULL_NAME_MAX}
-            />
             <div className="space-y-1.5">
               <Input
                 label={emailOptional ? cf.emailOptional : cf.email}
@@ -289,8 +290,6 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 </p>
               ) : null}
             </div>
-          </div>
-          <div className="sm:max-w-xs">
             <PhoneInput
               label={cf.phone}
               value={value.phone}

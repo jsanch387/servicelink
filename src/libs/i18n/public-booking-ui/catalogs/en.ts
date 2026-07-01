@@ -71,11 +71,10 @@ export const publicBookingUiEn: PublicBookingUi = {
     noSlotsHint: 'No available times for this date.',
     reviewBooking: 'Review your booking',
     reviewBookingCta: 'Review Booking',
-    notificationsConsentLabel: (businessName: string) =>
-      `By providing your phone number, you agree to receive SMS notifications from ${businessName}. Message frequency may vary. Standard Message and Data Rates may apply. Reply STOP to opt out. Reply HELP for help.`,
+    notificationsConsentCheckboxLabel: 'Text me appointment updates',
+    notificationsConsentFinePrint: (businessName: string) =>
+      `From ${businessName}. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our`,
     notificationsSmsFinePrintLinkLabel: 'Privacy Policy',
-    notificationsConsentRequired:
-      'Please check the box to agree to email and SMS notifications before continuing.',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',
     chooseHowToPay: 'Choose how to pay',
@@ -121,6 +120,19 @@ export const publicBookingUiEn: PublicBookingUi = {
       `${businessName} collects payment when you meet—nothing is charged here today.`,
     paymentNotSetupLead: businessName =>
       `Payment options for ${businessName} are not fully set up yet. You will not be charged here today.`,
+  },
+  serviceLocation: {
+    chooseHeading: 'Where should service happen?',
+    chooseSubtitle: 'Choose whether they come to you or you visit them.',
+    mobileOption: 'At my address',
+    mobileOptionDesc: 'They travel to you. You will enter your address.',
+    shopOption: 'At their shop',
+    shopOptionDesc: 'You visit their location at your booked time.',
+    shopVisitAddressLabel: 'Shop address',
+    shopAddressIncomplete:
+      'This business has not finished setting up their shop address yet.',
+    backToServiceChoice: 'Back to location choice',
+    backToShopLocation: 'Back to shop location',
   },
   customerForm: {
     yourDetails: 'Your information',

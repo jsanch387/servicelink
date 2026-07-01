@@ -71,11 +71,11 @@ export const publicBookingUiEs: PublicBookingUi = {
     noSlotsHint: 'No hay horarios disponibles para esta fecha.',
     reviewBooking: 'Revisa tu reserva',
     reviewBookingCta: 'Revisar reserva',
-    notificationsConsentLabel: (businessName: string) =>
-      `Al proporcionar tu número de teléfono, aceptas recibir notificaciones por SMS de ${businessName}. La frecuencia de mensajes puede variar. Pueden aplicarse tarifas estándar de mensajes y datos. Responde STOP para darte de baja. Responde HELP para obtener ayuda.`,
+    notificationsConsentCheckboxLabel:
+      'Enviarme actualizaciones de la cita por mensaje',
+    notificationsConsentFinePrint: (businessName: string) =>
+      `De ${businessName}. La frecuencia de mensajes puede variar. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestra`,
     notificationsSmsFinePrintLinkLabel: 'Política de Privacidad',
-    notificationsConsentRequired:
-      'Marca la casilla para aceptar las notificaciones por correo y SMS antes de continuar.',
     continueToPayment: 'Continuar al pago',
     confirmBooking: 'Confirmar reserva',
     chooseHowToPay: 'Elige cómo pagar',
@@ -122,6 +122,19 @@ export const publicBookingUiEs: PublicBookingUi = {
       `${businessName} cobra en persona cuando se encuentren; aquí no se carga nada hoy.`,
     paymentNotSetupLead: businessName =>
       `Las opciones de pago de ${businessName} aún no están listas. Hoy no se te cobrará aquí.`,
+  },
+  serviceLocation: {
+    chooseHeading: '¿Dónde será el servicio?',
+    chooseSubtitle: 'Elige si van a tu ubicación o tú visitas su local.',
+    mobileOption: 'En mi dirección',
+    mobileOptionDesc: 'Ellos van a ti. Ingresarás tu dirección.',
+    shopOption: 'En su local',
+    shopOptionDesc: 'Tú visitas su ubicación a la hora reservada.',
+    shopVisitAddressLabel: 'Dirección del local',
+    shopAddressIncomplete:
+      'Este negocio aún no ha configurado la dirección de su local.',
+    backToServiceChoice: 'Volver a tipo de ubicación',
+    backToShopLocation: 'Volver al local',
   },
   customerForm: {
     yourDetails: 'Tu información',

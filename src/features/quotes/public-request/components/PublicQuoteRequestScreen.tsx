@@ -81,10 +81,7 @@ export const PublicQuoteRequestScreen: React.FC<
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [step, setStep] = useState<QuoteRequestStep>('contact');
   const [agreedToSmsNotifications, setAgreedToSmsNotifications] =
-    useState(false);
-  const [notificationsConsentError, setNotificationsConsentError] = useState<
-    string | null
-  >(null);
+    useState(true);
 
   const showVehicleFields = useMemo(() => {
     const t = (businessType ?? '').trim().toLowerCase();
@@ -119,8 +116,6 @@ export const PublicQuoteRequestScreen: React.FC<
     [form.customerEmail, form.customerName, form.customerPhone]
   );
 
-  const isContactValid = isContactFieldsValid && agreedToSmsNotifications;
-
   const isVehicleValid = useMemo(
     () =>
       !showVehicleFields ||
@@ -142,7 +137,7 @@ export const PublicQuoteRequestScreen: React.FC<
     return isRequestValid;
   }, [isContactFieldsValid, isRequestValid, isVehicleValid, step]);
 
-  const canSubmit = isContactValid && isVehicleValid && isRequestValid;
+  const canSubmit = isContactFieldsValid && isVehicleValid && isRequestValid;
 
   const stepIndex = steps.indexOf(step);
   const isLastStep = stepIndex === steps.length - 1;
@@ -226,12 +221,6 @@ export const PublicQuoteRequestScreen: React.FC<
 
   const handlePrimaryAction = async () => {
     setSubmitError(null);
-
-    if (step === 'contact' && !agreedToSmsNotifications) {
-      setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
-      return;
-    }
-    setNotificationsConsentError(null);
 
     if (isLastStep) {
       if (!validate()) return;
@@ -338,11 +327,7 @@ export const PublicQuoteRequestScreen: React.FC<
                 <SmsNotificationsConsent
                   businessName={businessName}
                   agreed={agreedToSmsNotifications}
-                  onAgreedChange={agreed => {
-                    setAgreedToSmsNotifications(agreed);
-                    if (agreed) setNotificationsConsentError(null);
-                  }}
-                  error={notificationsConsentError}
+                  onAgreedChange={setAgreedToSmsNotifications}
                   bookingFlowLocale={bookingFlowLocale}
                 />
               }

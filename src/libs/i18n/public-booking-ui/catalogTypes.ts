@@ -70,11 +70,12 @@ export type PublicBookingUi = {
     noSlotsHint: string;
     reviewBooking: string;
     reviewBookingCta: string;
-    /** Public booking: required consent for transactional SMS. Takes businessName. */
-    notificationsConsentLabel: (businessName: string) => string;
+    /** Short opt-in label beside the checkbox (transactional SMS). */
+    notificationsConsentCheckboxLabel: string;
+    /** TCPA / carrier fine print under the checkbox. Takes businessName. */
+    notificationsConsentFinePrint: (businessName: string) => string;
     /** Inline linked text to `/privacy` after consent copy. */
     notificationsSmsFinePrintLinkLabel: string;
-    notificationsConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;
     chooseHowToPay: string;
@@ -106,6 +107,18 @@ export type PublicBookingUi = {
     payInFullLead: (businessName: string) => string;
     payInPersonLead: (businessName: string) => string;
     paymentNotSetupLead: (businessName: string) => string;
+  };
+  serviceLocation: {
+    chooseHeading: string;
+    chooseSubtitle: string;
+    mobileOption: string;
+    mobileOptionDesc: string;
+    shopOption: string;
+    shopOptionDesc: string;
+    shopVisitAddressLabel: string;
+    shopAddressIncomplete: string;
+    backToServiceChoice: string;
+    backToShopLocation: string;
   };
   customerForm: {
     yourDetails: string;

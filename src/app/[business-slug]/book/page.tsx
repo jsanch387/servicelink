@@ -24,6 +24,7 @@ import { getAvailabilityForBusiness } from '@/features/availability/services/ava
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
@@ -81,7 +82,11 @@ type PublicBusinessProfileForBooking = {
   free_bookings_count: number | null;
   public_booking_locales: string[];
   public_booking_default_locale: string;
-  [key: string]: unknown;
+  service_location_mode: string | null;
+  service_area: string | null;
+  business_zip: string | null;
+  shop_street_address: string | null;
+  shop_unit: string | null;
 };
 
 type ServiceRowForPicker = {
@@ -146,7 +151,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
       )
       .eq('business_slug', slug)
       .single();
@@ -414,6 +419,8 @@ export default async function BookingRequestPage({
       )
     : null;
 
+  const serviceLocation = buildPublicBookingServiceLocation(businessProfile);
+
   let bookPageBackHref: string;
   let bookPageBackLabel: string;
   const profilePath = getPublicBusinessProfilePath(slugForRoutes, {
@@ -506,6 +513,7 @@ export default async function BookingRequestPage({
             exitCalendarFlowLabel={bookPageBackLabel}
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             bookingFlowLocale={bookingFlowLocale}
+            serviceLocation={serviceLocation}
           />
         </div>
       ) : (
@@ -541,6 +549,7 @@ export default async function BookingRequestPage({
               exitCalendarFlowLabel={bookPageBackLabel}
               stripeCheckoutSessionId={stripeCheckoutSessionId}
               bookingFlowLocale={bookingFlowLocale}
+              serviceLocation={serviceLocation}
             />
           )}
         </div>

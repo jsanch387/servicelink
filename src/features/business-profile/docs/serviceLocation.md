@@ -1,6 +1,6 @@
 # Service location (mobile / shop / both)
 
-How a business defines **where** service happens: mobile (you go to the customer), shop (they come to you), or both. Used in dashboard profile **edit → Booking** tab and stored on `business_profiles` for the public booking link (customer address branching is documented below as **planned**).
+How a business defines **where** service happens: mobile (you go to the customer), shop (they come to you), or both. Used in dashboard profile **edit → Booking** tab, stored on `business_profiles`, and drives the public booking link customer flow.
 
 ---
 
@@ -11,13 +11,13 @@ Migrations:
 - `supabase/migrations/20250630120000_add_business_zip.sql`
 - `supabase/migrations/20250630130000_add_service_location_and_shop_address.sql`
 
-| Column | Type | Purpose |
-| --- | --- | --- |
-| `service_area` | `text` | **City + state** as `"City, ST"` (existing column) |
-| `business_zip` | `text` | **US ZIP** (5 digits). **Required** on profile save |
+| Column                  | Type   | Purpose                                                       |
+| ----------------------- | ------ | ------------------------------------------------------------- |
+| `service_area`          | `text` | **City + state** as `"City, ST"` (existing column)            |
+| `business_zip`          | `text` | **US ZIP** (5 digits). **Required** on profile save           |
 | `service_location_mode` | `text` | `mobile_only` \| `shop_only` \| `both`. Default `mobile_only` |
-| `shop_street_address` | `text` | Street where customers visit (shop / both) |
-| `shop_unit` | `text` | Optional suite or unit |
+| `shop_street_address`   | `text` | Street where customers visit (shop / both)                    |
+| `shop_unit`             | `text` | Optional suite or unit                                        |
 
 **Not duplicated:** city, state, and ZIP are **not** stored again on shop fields. Shop address = `shop_street_address` + optional `shop_unit` + profile `service_area` + `business_zip`.
 
@@ -46,21 +46,21 @@ One base location per business. Mobile jobs and shop visits share city/state/ZIP
 
 **Route:** `/dashboard/business-profile?mode=edit` → **Booking** tab.
 
-| Control | Maps to |
-| --- | --- |
-| Service type: Mobile / Shop / Both | `service_location_mode` |
-| Shop → Street, Unit | `shop_street_address`, `shop_unit` |
-| Shop → City, State, ZIP | `service_area`, `business_zip` (same as **Details** tab) |
+| Control                            | Maps to                                                  |
+| ---------------------------------- | -------------------------------------------------------- |
+| Service type: Mobile / Shop / Both | `service_location_mode`                                  |
+| Shop → Street, Unit                | `shop_street_address`, `shop_unit`                       |
+| Shop → City, State, ZIP            | `service_area`, `business_zip` (same as **Details** tab) |
 
 City/state/ZIP also appear under **Details → Location**. Both tabs edit the same fields.
 
 ### Validation on save
 
-| Rule | Error (examples) |
-| --- | --- |
-| City, state, ZIP required for every profile | `City and state are required`, `ZIP is required` |
-| Shop or Both → street required | `Shop street address is required` |
-| Shop or Both → full profile location required | `Shop address requires city, state, and ZIP` |
+| Rule                                          | Error (examples)                                 |
+| --------------------------------------------- | ------------------------------------------------ |
+| City, state, ZIP required for every profile   | `City and state are required`, `ZIP is required` |
+| Shop or Both → street required                | `Shop street address is required`                |
+| Shop or Both → full profile location required | `Shop address requires city, state, and ZIP`     |
 
 Save errors route to tabs via `tabForSaveErrors()` in `EditProfileTabNav.tsx` (shop/location → **Booking**, generic location → **Details**).
 
@@ -77,18 +77,18 @@ When mode is `mobile_only`, shop street/unit are saved as `null`.
 
 ## Code map
 
-| Area | Path |
-| --- | --- |
-| Location + mode helpers (import barrel) | `utils/location/index.ts` |
-| City/state/ZIP parse, format, validate | `utils/businessLocation.ts` |
-| Mode UI state, hydrate, persist, validate | `utils/serviceLocationMode.ts` |
-| Shared city/state/ZIP inputs | `components/ProfileLocationFields.tsx` |
-| Booking tab card | `components/DashboardProfileServiceLocationCard.tsx` |
-| Details tab location | `components/edit/sections/BusinessInfoSection.tsx` |
-| Form types | `utils/editing/editingTypes.ts` |
-| Form validation (no API deps) | `utils/editing/editingValidation.ts` |
-| Save + transform | `utils/editing/editingHelpers.ts` |
-| Supabase types | `src/libs/supabase/client.ts` → `business_profiles` |
+| Area                                      | Path                                                 |
+| ----------------------------------------- | ---------------------------------------------------- |
+| Location + mode helpers (import barrel)   | `utils/location/index.ts`                            |
+| City/state/ZIP parse, format, validate    | `utils/businessLocation.ts`                          |
+| Mode UI state, hydrate, persist, validate | `utils/serviceLocationMode.ts`                       |
+| Shared city/state/ZIP inputs              | `components/ProfileLocationFields.tsx`               |
+| Booking tab card                          | `components/DashboardProfileServiceLocationCard.tsx` |
+| Details tab location                      | `components/edit/sections/BusinessInfoSection.tsx`   |
+| Form types                                | `utils/editing/editingTypes.ts`                      |
+| Form validation (no API deps)             | `utils/editing/editingValidation.ts`                 |
+| Save + transform                          | `utils/editing/editingHelpers.ts`                    |
+| Supabase types                            | `src/libs/supabase/client.ts` → `business_profiles`  |
 
 ### Key helpers (for public booking)
 
@@ -111,24 +111,24 @@ Parse city/state from DB: `parseServiceAreaCityState(profile.service_area)`.
 
 ---
 
-## Public booking link (planned behavior)
+## Public booking link
 
-**Status:** Profile data is stored and editable; the **public** `/:slug/book` flow does **not** yet branch on `service_location_mode`. Today every booking still collects the customer address on the address step.
+**Status:** Implemented on `/:slug/book`. The flow reads `service_location_mode` and shop fields from `business_profiles` and branches the details step accordingly.
 
-Intended behavior when implemented:
+| `service_location_mode` | Customer experience                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `mobile_only`           | Customer enters service address (contact → address → vehicle/notes → review)                                     |
+| `shop_only`             | Shop visit card shows `shopAddressLabel`; customer address is prefilled from the business shop address on submit |
+| `both`                  | Customer chooses mobile vs shop, then follows the branch above                                                   |
 
-| `service_location_mode` | Customer address step |
-| --- | --- |
-| `mobile_only` | Required — customer enters where service happens |
-| `shop_only` | Skip or read-only — show `formatFullShopAddress(...)` from business profile |
-| `both` | Customer chooses mobile vs shop; address required only for mobile |
+**Touch points:**
 
-**Touch points for implementation:**
-
-- `src/features/availability/booking/components/AvailabilityBookingPage.tsx`
-- `src/features/availability/booking/components/CustomerForm.tsx` (`address` step)
-- `POST /api/public/bookings` — validate address rules server-side to match mode
-- Public book page SSR — load `service_location_mode`, `shop_street_address`, `shop_unit`, `service_area`, `business_zip`
+- `src/app/[business-slug]/book/page.tsx` — SSR loads location columns
+- `src/features/business-profile/utils/publicServiceLocation.ts` — `buildPublicBookingServiceLocation`
+- `src/features/availability/booking/utils/bookingServiceLocationFlow.ts` — sub-step navigation
+- `src/features/availability/booking/components/BookingServiceLocationSteps.tsx` — choice + shop card UI
+- `src/features/availability/booking/components/AvailabilityBookingPage.tsx` — details sub-steps
+- `POST /api/public/bookings` and `POST /api/public/booking-checkout` — server-side address rules + shop prefill
 
 See also: `src/features/availability/docs/FLOWS.md` §2 (public V2 booking).
 
@@ -136,12 +136,12 @@ See also: `src/features/availability/docs/FLOWS.md` §2 (public V2 booking).
 
 ## Tests
 
-| File | Covers |
-| --- | --- |
-| `testing/businessLocation.test.ts` | ZIP/city validation, `formatFullShopAddress` |
-| `testing/serviceLocationMode.test.ts` | Hydrate, persist, shop validation |
-| `testing/validateEditingForm.test.ts` | Full form + shop rules |
-| `testing/editProfileTabNav.test.ts` | Error → tab routing |
+| File                                    | Covers                                            |
+| --------------------------------------- | ------------------------------------------------- |
+| `testing/businessLocation.test.ts`      | ZIP/city validation, `formatFullShopAddress`      |
+| `testing/serviceLocationMode.test.ts`   | Hydrate, persist, shop validation                 |
+| `testing/validateEditingForm.test.ts`   | Full form + shop rules                            |
+| `testing/publicServiceLocation.test.ts` | Public booking location builder + mode resolution |
 
 Run: `npm test -- src/features/business-profile/testing/`
 

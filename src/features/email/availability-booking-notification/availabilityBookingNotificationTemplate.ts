@@ -4,7 +4,14 @@
 
 import { formatPhoneUsDisplay } from '@/lib/formatPhoneUs';
 import { formatDurationForEmail } from '../utils/formatDurationForEmail';
-import { escapeHtml } from '../utils/escapeHtml';
+import {
+  serviceLinkEmailCta,
+  serviceLinkEmailDetailRow,
+  serviceLinkEmailFootnote,
+  serviceLinkEmailSection,
+  serviceLinkEmailServiceAndPricingContent,
+  wrapServiceLinkEmail,
+} from '../utils/serviceLinkEmailLayout';
 import type { AvailabilityBookingNotificationPayload } from './types';
 
 export type AvailabilityBookingEmailOptions =
@@ -44,53 +51,33 @@ function paymentSummaryFootnoteHtml(
     if (options.audience === 'owner') {
       const text =
         'The customer paid by card through ServiceLink. They may receive a receipt from Stripe—that email is for this payment only, not a duplicate charge. Collect any remaining balance according to your agreement with the customer.';
-      return `<p style="font-size:13px;color:#64748b;margin-top:14px;line-height:1.55;">${escapeHtml(text)}</p>`;
+      return serviceLinkEmailFootnote(text);
     }
-    const provider =
-      options.audience === 'customer'
-        ? options.businessName.trim()
-        : 'your provider';
-    const text = `You may receive a receipt from Stripe for the card payment above. That email is for this charge only—you were not charged twice. Any remaining balance is paid to ${provider} as you agreed.`;
-    return `<p style="font-size:13px;color:#64748b;margin-top:14px;line-height:1.55;">${escapeHtml(text)}</p>`;
+    return '';
   }
   if (block.note?.trim()) {
-    return `<p style="font-size:13px;color:#64748b;margin-top:14px;line-height:1.55;">${escapeHtml(block.note.trim())}</p>`;
+    return serviceLinkEmailFootnote(block.note.trim());
   }
   return '';
 }
 
-function buildPaymentSummaryCard(
+function buildPaymentSummarySection(
   payload: AvailabilityBookingNotificationPayload,
-  options: AvailabilityBookingEmailOptions
+  options: AvailabilityBookingEmailOptions,
+  addSection: (title: string, rowsHtml: string) => void
 ): string {
   const block = payload.paymentSummary;
   if (!block?.rows?.length) return '';
   const title = (block.title ?? 'Payment').trim();
-  const rowsHtml = block.rows
-    .map(
-      r => `
-              <tr>
-                <td class="detail-label" style="padding: 6px 0; color: #64748b;">
-                  ${escapeHtml(r.label)}
-                </td>
-                <td class="detail-value" style="padding: 6px 0; color: #0f172a; text-align: right;">
-                  ${escapeHtml(r.value)}
-                </td>
-              </tr>
-            `
-    )
-    .join('');
-  const noteHtml = paymentSummaryFootnoteHtml(block, options);
-
-  return `
-          <div class="card">
-            <div class="section-title">${escapeHtml(title)}</div>
-            <table width="100%" cellspacing="0" cellpadding="0">
-              ${rowsHtml}
-            </table>
-            ${noteHtml}
-          </div>
-        `;
+  const rows = block.rows.map((r, i) =>
+    serviceLinkEmailDetailRow(r.label, r.value, {
+      isLast:
+        i === block.rows.length - 1 &&
+        !paymentSummaryFootnoteHtml(block, options),
+    })
+  );
+  addSection(title, rows.join(''));
+  return paymentSummaryFootnoteHtml(block, options);
 }
 
 function formatVehicleLine(
@@ -106,6 +93,64 @@ function formatVehicleLine(
   return parts.join(' ');
 }
 
+function buildLocationSection(
+  payload: AvailabilityBookingNotificationPayload,
+  options: AvailabilityBookingEmailOptions,
+  addSection: (title: string, rowsHtml: string) => void
+): void {
+  const loc = payload.serviceLocation;
+  if (!loc?.formattedAddress) return;
+
+  if (options.audience === 'owner') {
+    if (loc.type === 'mobile') {
+      addSection(
+        'Service address',
+        serviceLinkEmailDetailRow('Address', loc.formattedAddress, {
+          isLast: true,
+        })
+      );
+      return;
+    }
+    addSection(
+      'Service location',
+      [
+        serviceLinkEmailDetailRow('Type', 'Shop visit'),
+        serviceLinkEmailDetailRow('Your shop', loc.formattedAddress, {
+          isLast: true,
+        }),
+      ].join('')
+    );
+    return;
+  }
+
+  if (loc.type === 'shop') {
+    addSection(
+      'Visit us at',
+      serviceLinkEmailDetailRow('Shop address', loc.formattedAddress, {
+        isLast: true,
+      })
+    );
+    return;
+  }
+
+  addSection(
+    'Service address',
+    serviceLinkEmailDetailRow('Address', loc.formattedAddress, { isLast: true })
+  );
+}
+
+function buildDetailRows(
+  rows: Array<{ label: string; value: string }>
+): string {
+  return rows
+    .map((row, i) =>
+      serviceLinkEmailDetailRow(row.label, row.value, {
+        isLast: i === rows.length - 1,
+      })
+    )
+    .join('');
+}
+
 export function buildAvailabilityBookingEmailHtml(
   payload: AvailabilityBookingNotificationPayload,
   options: AvailabilityBookingEmailOptions
@@ -116,11 +161,7 @@ export function buildAvailabilityBookingEmailHtml(
 
   const vehicleLine = formatVehicleLine(payload);
   const addOns = payload.selectedAddOns ?? [];
-  const addOnsNames = addOns.map(a => a.name).join(', ');
   const optionLabel = payload.servicePriceOptionLabel?.trim();
-  const serviceDisplayName = optionLabel
-    ? `${payload.serviceName} — ${optionLabel}`
-    : payload.serviceName;
 
   const hasBasePrice =
     payload.servicePriceCents != null && payload.servicePriceCents > 0;
@@ -133,325 +174,141 @@ export function buildAvailabilityBookingEmailHtml(
       ? formatPriceCents(payload.totalPriceCents)
       : null;
 
-  const addOnsListRows =
-    addOns.length > 0
-      ? addOns
-          .map(
-            a => `
-                <tr>
-                  <td class="detail-label" style="padding: 6px 0; color: #475569;">
-                    ${escapeHtml(a.name)}
-                  </td>
-                  <td class="detail-value" style="padding: 6px 0; color: #0f172a; text-align: right;">
-                    ${escapeHtml(formatPriceCents(a.priceCents))}
-                  </td>
-                </tr>
-              `
-          )
-          .join('')
-      : '';
+  const serviceLineItems: Array<{
+    label: string;
+    price: string;
+    isAddOn?: boolean;
+  }> = [];
+  if (hasBasePrice && basePriceLabel) {
+    serviceLineItems.push({
+      label: payload.serviceName,
+      price: basePriceLabel,
+    });
+  }
+  for (const addOn of addOns) {
+    serviceLineItems.push({
+      label: addOn.name,
+      price: formatPriceCents(addOn.priceCents),
+      isAddOn: true,
+    });
+  }
 
-  const pricingRows = `
-    ${
-      hasBasePrice
-        ? `
-      <tr>
-        <td class="detail-label" style="padding: 6px 0; color: #64748b;">
-          ${escapeHtml(serviceDisplayName)}
-        </td>
-        <td class="detail-value" style="padding: 6px 0; color: #0f172a; text-align: right;">
-          ${escapeHtml(basePriceLabel!)}
-        </td>
-      </tr>
-    `
-        : ''
-    }
-    ${addOnsListRows}
-  `.trim();
-
-  const vehicleRowHtml = vehicleLine
-    ? `
-      <tr>
-        <td class="detail-label" style="padding-bottom: 12px;">Vehicle</td>
-        <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(vehicleLine)}</td>
-      </tr>
-    `
-    : '';
-
-  const showPriceDetailsCard =
-    Boolean(hasBasePrice) || (addOns?.length ?? 0) > 0;
-
-  const priceDetailsCardHtml = showPriceDetailsCard
-    ? `
-          <div class="card" style="background-color:#ffffff;">
-            <div class="section-title">Price details</div>
-            <table width="100%" cellspacing="0" cellpadding="0">
-              ${pricingRows}
-            </table>
-            ${
-              totalLabel
-                ? `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 12px; border-top: 1px solid #e2e8f0;">
-              <tr>
-                <td style="font-size: 15px; font-weight: 700; padding-top: 12px; color: #1e293b;">Appointment total</td>
-                <td style="font-size: 15px; font-weight: 700; padding-top: 12px; text-align: right; color: #1e293b;">
-                  ${escapeHtml(totalLabel)}
-                </td>
-              </tr>
-            </table>`
-                : ''
-            }
-          </div>
-        `
-    : '';
-
-  const paymentSummaryCardHtml = buildPaymentSummaryCard(payload, options);
+  const showServiceSection =
+    Boolean(payload.serviceName?.trim()) ||
+    serviceLineItems.length > 0 ||
+    addOns.length > 0;
 
   const phoneRow = payload.customerPhone?.trim()
-    ? `
-      <tr>
-        <td class="detail-label" style="padding-bottom: 12px;">Phone</td>
-        <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(formatPhoneUsDisplay(payload.customerPhone.trim()))}</td>
-      </tr>
-    `
-    : '';
+    ? {
+        label: 'Phone',
+        value: formatPhoneUsDisplay(payload.customerPhone.trim()),
+      }
+    : null;
 
-  const heroHtml =
-    options.audience === 'owner'
-      ? `
-          <h1 style="font-size:26px;margin:0;color:#1e293b;letter-spacing:-0.02em;">New appointment</h1>
-          <p style="font-size:16px;color:#64748b;margin-top:8px;">You have a new appointment, here are the details:</p>
-        `
-      : `
-          <h1 style="font-size:26px;margin:0;color:#1e293b;letter-spacing:-0.02em;">Your appointment is confirmed</h1>
-          <p style="font-size:16px;color:#64748b;margin-top:8px;">Here are the details for your visit with ${escapeHtml(options.businessName)}:</p>
-        `;
+  const appointmentRows: Array<{ label: string; value: string }> = [];
+  if (options.audience === 'customer') {
+    appointmentRows.push({
+      label: 'Business',
+      value: options.businessName,
+    });
+  }
+  appointmentRows.push(
+    { label: 'Date', value: dateLabel },
+    {
+      label: 'Time',
+      value: `${timeLabel} (${durationLabel})`,
+    }
+  );
 
-  const firstCardHtml =
-    options.audience === 'owner'
-      ? `
-          <div class="card">
-            <div class="section-title">Customer Info</div>
-            <table width="100%" cellspacing="0" cellpadding="0">
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Name</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerName)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Email</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerEmail)}</td>
-              </tr>
-              ${phoneRow}
-              ${vehicleRowHtml}
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Date</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(dateLabel)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Time</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(
-                  timeLabel
-                )} (${escapeHtml(durationLabel)})</td>
-              </tr>
-            </table>
-          </div>
-        `
-      : `
-          <div class="card">
-            <div class="section-title">Your appointment</div>
-            <table width="100%" cellspacing="0" cellpadding="0">
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Business</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(options.businessName)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Date</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(dateLabel)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Time</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(
-                  timeLabel
-                )} (${escapeHtml(durationLabel)})</td>
-              </tr>
-            </table>
-          </div>
-          <div class="card">
-            <div class="section-title">Your information</div>
-            <table width="100%" cellspacing="0" cellpadding="0">
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Name</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerName)}</td>
-              </tr>
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Email</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.customerEmail)}</td>
-              </tr>
-              ${phoneRow}
-              ${vehicleRowHtml}
-            </table>
-          </div>
-        `;
+  const customerInfoRows: Array<{ label: string; value: string }> = [
+    { label: 'Name', value: payload.customerName },
+    { label: 'Email', value: payload.customerEmail },
+  ];
+  if (phoneRow) customerInfoRows.push(phoneRow);
+  if (vehicleLine)
+    customerInfoRows.push({ label: 'Vehicle', value: vehicleLine });
+
+  const ownerCustomerRows: Array<{ label: string; value: string }> = [
+    { label: 'Name', value: payload.customerName },
+    { label: 'Email', value: payload.customerEmail },
+  ];
+  if (phoneRow) ownerCustomerRows.push(phoneRow);
+  if (vehicleLine)
+    ownerCustomerRows.push({ label: 'Vehicle', value: vehicleLine });
+  ownerCustomerRows.push(
+    { label: 'Date', value: dateLabel },
+    { label: 'Time', value: `${timeLabel} (${durationLabel})` }
+  );
+
+  const sectionHtmlParts: string[] = [];
+  let sectionCount = 0;
+  const addSection = (title: string, rowsHtml: string) => {
+    sectionHtmlParts.push(
+      serviceLinkEmailSection(title, rowsHtml, {
+        isFirst: sectionCount === 0,
+      })
+    );
+    sectionCount += 1;
+  };
+
+  if (options.audience === 'owner') {
+    addSection('Customer info', buildDetailRows(ownerCustomerRows));
+  } else {
+    addSection('Your appointment', buildDetailRows(appointmentRows));
+    addSection('Your information', buildDetailRows(customerInfoRows));
+  }
+
+  buildLocationSection(payload, options, addSection);
+
+  if (showServiceSection) {
+    addSection(
+      'Service details',
+      serviceLinkEmailServiceAndPricingContent({
+        serviceName: payload.serviceName,
+        optionLabel: optionLabel || undefined,
+        lineItems: serviceLineItems,
+        totalLabel: serviceLineItems.length > 0 ? totalLabel : null,
+      })
+    );
+  }
+
+  const paymentFootnote = buildPaymentSummarySection(
+    payload,
+    options,
+    addSection
+  );
 
   const ctaHtml =
     options.audience === 'owner'
-      ? `<a href="${escapeHtml(options.dashboardBookingsUrl)}" class="button">View in dashboard</a>`
+      ? serviceLinkEmailCta(options.dashboardBookingsUrl, 'View in dashboard')
       : '';
+
+  const sectionsHtml = [...sectionHtmlParts, paymentFootnote, ctaHtml]
+    .filter(Boolean)
+    .join('');
+
+  const heading =
+    options.audience === 'owner'
+      ? 'New appointment'
+      : 'Your appointment is confirmed';
+
+  const subtitle =
+    options.audience === 'owner'
+      ? 'You have a new appointment. Here are the details:'
+      : `Here are the details for your visit with ${options.businessName}:`;
 
   const footerHtml =
     options.audience === 'owner'
-      ? `This email was sent because someone booked an appointment with your business.<br>
-          &copy; ${new Date().getFullYear()} ServiceLink.`
-      : `You received this email because an appointment was scheduled using this address.<br>
-          &copy; ${new Date().getFullYear()} ServiceLink.`;
+      ? `This email was sent because someone booked an appointment with your business.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
+      : `You received this email because an appointment was scheduled using this address.<br>&copy; ${new Date().getFullYear()} ServiceLink.`;
 
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Appointment</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f4f7f9;
-      color: #1a1a1a;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .wrapper {
-      width: 100%;
-      table-layout: fixed;
-      background-color: #f4f7f9;
-      padding-bottom: 40px;
-    }
-
-    .main {
-      background-color: #ffffff;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 600px;
-      border-spacing: 0;
-      color: #4a4a4a;
-    }
-
-    .header { padding: 30px; text-align: center; background-color: #ffffff; }
-    .hero { padding: 10px 30px 30px 30px; text-align: center; }
-    .content { padding: 0 30px 40px 30px; }
-
-    .card {
-      background-color: #f8fafc;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .section-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #64748b;
-      margin-bottom: 16px;
-    }
-
-    .detail-label { font-size: 14px; color: #64748b; }
-    .detail-value { font-size: 14px; font-weight: 500; color: #1e293b; text-align: right; }
-
-    .button {
-      background-color: #2563eb;
-      border-radius: 8px;
-      color: #ffffff !important;
-      display: inline-block;
-      font-size: 16px;
-      font-weight: 600;
-      line-height: 50px;
-      text-align: center;
-      text-decoration: none;
-      width: 100%;
-    }
-
-    .footer {
-      padding: 30px;
-      text-align: center;
-      font-size: 12px;
-      color: #94a3b8;
-      line-height: 1.6;
-    }
-
-    @media screen and (max-width: 600px) {
-      .content { padding: 0 20px 30px 20px; }
-      .card { padding: 16px; }
-    }
-  </style>
-</head>
-<body>
-  <center class="wrapper">
-    <table class="main">
-      <tr>
-        <td class="header">
-          <div style="height: 20px;"></div>
-        </td>
-      </tr>
-
-      <tr>
-        <td class="hero">
-          ${heroHtml}
-        </td>
-      </tr>
-
-      <tr>
-        <td class="content">
-          ${firstCardHtml}
-
-          <div class="card" style="background-color:#ffffff;">
-            <div class="section-title">Service details</div>
-            <table width="100%" cellspacing="0" cellpadding="0">
-              <tr>
-                <td class="detail-label" style="padding-bottom: 12px;">Service</td>
-                <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(payload.serviceName)}</td>
-              </tr>
-              ${
-                optionLabel
-                  ? `<tr>
-                      <td class="detail-label" style="padding-bottom: 12px;">Option</td>
-                      <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(optionLabel)}</td>
-                    </tr>`
-                  : ''
-              }
-              ${
-                addOns.length > 0
-                  ? `<tr>
-                      <td class="detail-label" style="padding-bottom: 12px;">Add-ons</td>
-                      <td class="detail-value" style="padding-bottom: 12px;">${escapeHtml(addOnsNames)}</td>
-                    </tr>`
-                  : ''
-              }
-            </table>
-          </div>
-
-          ${priceDetailsCardHtml}
-
-          ${paymentSummaryCardHtml}
-
-          ${ctaHtml}
-        </td>
-      </tr>
-
-      <tr>
-        <td class="footer">
-          ${footerHtml}
-        </td>
-      </tr>
-    </table>
-  </center>
-</body>
-</html>
-`.trim();
+  return wrapServiceLinkEmail({
+    title: 'Appointment',
+    heading,
+    subtitle,
+    bodyHtml: sectionsHtml,
+    footerHtml,
+  });
 }
 
 export function getAvailabilityBookingNotificationSubject(

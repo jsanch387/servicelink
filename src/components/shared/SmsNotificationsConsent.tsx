@@ -37,16 +37,21 @@ export function SmsNotificationsConsent({
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
         />
-        <span className="text-xs leading-snug text-gray-300">
-          {ui.calendar.notificationsConsentLabel(businessName)}{' '}
-          <Link
-            href={ROUTES.PRIVACY}
-            className="text-gray-400 underline underline-offset-2 hover:text-gray-300"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {ui.calendar.notificationsSmsFinePrintLinkLabel}
-          </Link>
+        <span className="min-w-0">
+          <span className="block text-sm font-medium text-gray-200">
+            {ui.calendar.notificationsConsentCheckboxLabel}
+          </span>
+          <span className="mt-1 block text-xs leading-snug text-gray-400">
+            {ui.calendar.notificationsConsentFinePrint(businessName)}{' '}
+            <Link
+              href={ROUTES.PRIVACY}
+              className="text-gray-400 underline underline-offset-2 hover:text-gray-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ui.calendar.notificationsSmsFinePrintLinkLabel}
+            </Link>
+          </span>
         </span>
       </label>
       {error ? (

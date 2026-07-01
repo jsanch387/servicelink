@@ -34,11 +34,21 @@ import { BookingPaymentSuccess } from './BookingPaymentSuccess';
 import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
+import { CustomerForm } from './CustomerForm';
+import { BookingServiceLocationChoice } from './BookingServiceLocationSteps';
 import {
-  CustomerForm,
-  type CustomerFormStep,
-  isCustomerFormStepValid,
-} from './CustomerForm';
+  type BookingDetailsSubStep,
+  type CustomerServiceChoice,
+  clearCustomerServiceAddress,
+  customerAddressEntryRequired,
+  customerBookingUsesShop,
+  getNextDetailsSubStep,
+  getPrevDetailsSubStep,
+  isBookingDetailsSubStepValid,
+  prefillCustomerWithShopAddress,
+  resolveCustomerServiceLocationPayload,
+} from '../utils/bookingServiceLocationFlow';
+import { DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION } from '@/features/business-profile/utils/publicServiceLocation';
 import { DateSelector } from './DateSelector';
 import { TimeSlotGrid } from './TimeSlotGrid';
 
@@ -183,6 +193,7 @@ export function AvailabilityBookingPage({
   exitCalendarFlowLabel,
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
+  serviceLocation = DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION,
 }: AvailabilityBookingPageProps) {
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
@@ -216,12 +227,31 @@ export function AvailabilityBookingPage({
 
   const [step, setStep] = useState<CalendarBookingStep>('schedule');
   const [detailsSubStep, setDetailsSubStep] =
-    useState<CustomerFormStep>('contact');
+    useState<BookingDetailsSubStep>('contact');
+  const [customerServiceChoice, setCustomerServiceChoice] =
+    useState<CustomerServiceChoice>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [customerData, setCustomerData] = useState<CustomerFormData>(
     INITIAL_CUSTOMER_FORM_DATA
   );
+
+  const customerForSubmit = useMemo(() => {
+    if (!customerAddressEntryRequired(serviceLocation, customerServiceChoice)) {
+      return prefillCustomerWithShopAddress(customerData, serviceLocation);
+    }
+    return customerData;
+  }, [customerData, serviceLocation, customerServiceChoice]);
+
+  const customerServiceLocationPayload = useMemo(
+    () =>
+      resolveCustomerServiceLocationPayload(
+        serviceLocation,
+        customerServiceChoice
+      ),
+    [serviceLocation, customerServiceChoice]
+  );
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedData, setSubmittedData] = useState<{
     date: string;
@@ -249,12 +279,9 @@ export function AvailabilityBookingPage({
   } | null>(null);
   const [customerPaymentChoice, setCustomerPaymentChoice] =
     useState<PaymentChoice | null>(null);
-  /** Public customers only: required before confirm / continue to payment (SMS compliance). */
+  /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
   const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
-    useState(false);
-  const [notificationsConsentError, setNotificationsConsentError] = useState<
-    string | null
-  >(null);
+    useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -357,11 +384,15 @@ export function AvailabilityBookingPage({
   }, [amountDueNowCents, ui]);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
-  const canContinueFromDetails = isCustomerFormStepValid(
-    customerData,
+  const canContinueFromDetails = isBookingDetailsSubStepValid(
     detailsSubStep,
-    showVehicleFields,
-    true
+    customerData,
+    serviceLocation,
+    customerServiceChoice,
+    {
+      showVehicleFields,
+      emailOptional: true,
+    }
   );
   const detailsPrimaryCtaLabel =
     detailsSubStep === 'vehicleNotes'
@@ -517,9 +548,8 @@ export function AvailabilityBookingPage({
     setCustomerData({ ...INITIAL_CUSTOMER_FORM_DATA, ...draft.customerData });
     setCustomerPaymentChoice(draft.customerPaymentChoice);
     skipNextStepScrollRef.current = true;
-    // Return to review summary; SMS consent must be re-confirmed on the details step.
-    setAgreedToPublicNotifications(false);
-    setNotificationsConsentError(null);
+    // Return to review summary after Stripe return.
+    setAgreedToPublicNotifications(true);
     setStep('review');
     setSubmitError(null);
     setIsSubmitting(false);
@@ -548,8 +578,8 @@ export function AvailabilityBookingPage({
 
   const openDetailsFromSchedule = () => {
     setDetailsSubStep('contact');
-    setAgreedToPublicNotifications(false);
-    setNotificationsConsentError(null);
+    setCustomerServiceChoice(null);
+    setAgreedToPublicNotifications(true);
     setStep('details');
   };
 
@@ -559,32 +589,35 @@ export function AvailabilityBookingPage({
   };
 
   const handleDetailsSubStepSubmit = () => {
-    if (detailsSubStep === 'contact') {
-      if (!isOwnerManualBooking && !agreedToPublicNotifications) {
-        setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
-        return;
-      }
-      setNotificationsConsentError(null);
-      setDetailsSubStep('address');
+    const next = getNextDetailsSubStep(
+      detailsSubStep,
+      serviceLocation,
+      customerServiceChoice
+    );
+
+    if (next === 'review') {
+      setStep('review');
       return;
     }
-    if (detailsSubStep === 'address') {
-      setDetailsSubStep('vehicleNotes');
-      return;
+
+    if (detailsSubStep === 'serviceChoice' && next === 'address') {
+      setCustomerData(prev => clearCustomerServiceAddress(prev));
     }
-    setStep('review');
+
+    setDetailsSubStep(next);
   };
 
   const handleDetailsBack = () => {
-    if (detailsSubStep === 'contact') {
+    const prev = getPrevDetailsSubStep(
+      detailsSubStep,
+      serviceLocation,
+      customerServiceChoice
+    );
+    if (prev === 'schedule') {
       setStep('schedule');
       return;
     }
-    if (detailsSubStep === 'address') {
-      setDetailsSubStep('contact');
-      return;
-    }
-    setDetailsSubStep('address');
+    setDetailsSubStep(prev);
   };
 
   const handleStartCheckout = async (amountToChargeCents: number) => {
@@ -608,12 +641,6 @@ export function AvailabilityBookingPage({
         amountToChargeCents,
       });
       setSubmitError(ui.calendar.invalidPaymentAmount);
-      return;
-    }
-    if (!isOwnerManualBooking && !agreedToPublicNotifications) {
-      setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
-      setDetailsSubStep('contact');
-      setStep('details');
       return;
     }
     setSubmitError(null);
@@ -651,8 +678,11 @@ export function AvailabilityBookingPage({
             scheduledDate: selectedDate.toISOString().slice(0, 10),
             startTime: selectedTime ?? '',
             customer: {
-              ...customerData,
+              ...customerForSubmit,
             },
+            ...(customerServiceLocationPayload
+              ? { customerServiceLocation: customerServiceLocationPayload }
+              : {}),
             totalPriceCents,
             requiredOnlineAmountCents: Math.round(amountToChargeCents),
             paymentMethodSelected: customerPaymentChoice ?? 'none',
@@ -733,14 +763,7 @@ export function AvailabilityBookingPage({
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
-    if (!isOwnerManualBooking && !agreedToPublicNotifications) {
-      setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
-      setDetailsSubStep('contact');
-      setStep('details');
-      return;
-    }
     setSubmitError(null);
-    setNotificationsConsentError(null);
     setIsSubmitting(true);
     const scheduledDate = selectedDate.toISOString().slice(0, 10);
     try {
@@ -772,7 +795,10 @@ export function AvailabilityBookingPage({
           durationMinutes: totalBookingDurationMinutes,
           scheduledDate,
           startTime: selectedTime,
-          customer: customerData,
+          customer: customerForSubmit,
+          ...(customerServiceLocationPayload
+            ? { customerServiceLocation: customerServiceLocationPayload }
+            : {}),
           paymentMethodSelected: paymentMethodForPublicCreate,
           ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
         }),
@@ -791,7 +817,7 @@ export function AvailabilityBookingPage({
       setSubmittedData({
         date: scheduledDate,
         time: formatBookingWallTime(selectedTime, bookingFlowLocale),
-        customer: customerData,
+        customer: customerForSubmit,
         selectedAddOns,
       });
       setShowSuccess(true);
@@ -887,9 +913,22 @@ export function AvailabilityBookingPage({
               label={
                 detailsSubStep === 'contact'
                   ? ui.nav.backToDateTime
-                  : detailsSubStep === 'address'
+                  : detailsSubStep === 'serviceChoice'
                     ? ui.nav.backToYourDetails
-                    : ui.nav.backToAddress
+                    : detailsSubStep === 'address'
+                      ? serviceLocation.mode === 'both'
+                        ? ui.serviceLocation.backToServiceChoice
+                        : ui.nav.backToYourDetails
+                      : detailsSubStep === 'vehicleNotes'
+                        ? customerAddressEntryRequired(
+                            serviceLocation,
+                            customerServiceChoice
+                          )
+                          ? ui.nav.backToAddress
+                          : serviceLocation.mode === 'both'
+                            ? ui.serviceLocation.backToServiceChoice
+                            : ui.nav.backToYourDetails
+                        : ui.nav.backToAddress
               }
             />
           </button>
@@ -958,26 +997,41 @@ export function AvailabilityBookingPage({
           {/* Step 2 – Details */}
           {step === 'details' && (
             <div>
-              <CustomerForm
-                id={CUSTOMER_FORM_ID}
-                step={detailsSubStep}
-                value={customerData}
-                onChange={setCustomerData}
-                onSubmit={handleDetailsSubStepSubmit}
-                showVehicleFields={showVehicleFields}
-                hideSubmitButton
-                submitLabel={detailsPrimaryCtaLabel}
-                bookingFlowLocale={bookingFlowLocale}
-                emailOptional
-                showNotificationsConsent={!isOwnerManualBooking}
-                businessName={businessName}
-                agreedToNotifications={agreedToPublicNotifications}
-                onAgreedToNotificationsChange={agreed => {
-                  setAgreedToPublicNotifications(agreed);
-                  if (agreed) setNotificationsConsentError(null);
-                }}
-                notificationsConsentError={notificationsConsentError}
-              />
+              {detailsSubStep === 'serviceChoice' ? (
+                <BookingServiceLocationChoice
+                  value={customerServiceChoice}
+                  onChange={choice => {
+                    setCustomerServiceChoice(choice);
+                    if (choice === 'mobile') {
+                      setCustomerData(prev =>
+                        clearCustomerServiceAddress(prev)
+                      );
+                    }
+                  }}
+                  bookingFlowLocale={bookingFlowLocale}
+                />
+              ) : null}
+
+              {detailsSubStep === 'contact' ||
+              detailsSubStep === 'address' ||
+              detailsSubStep === 'vehicleNotes' ? (
+                <CustomerForm
+                  id={CUSTOMER_FORM_ID}
+                  step={detailsSubStep}
+                  value={customerData}
+                  onChange={setCustomerData}
+                  onSubmit={handleDetailsSubStepSubmit}
+                  showVehicleFields={showVehicleFields}
+                  hideSubmitButton
+                  submitLabel={detailsPrimaryCtaLabel}
+                  bookingFlowLocale={bookingFlowLocale}
+                  emailOptional
+                  showNotificationsConsent={!isOwnerManualBooking}
+                  businessName={businessName}
+                  agreedToNotifications={agreedToPublicNotifications}
+                  onAgreedToNotificationsChange={setAgreedToPublicNotifications}
+                />
+              ) : null}
             </div>
           )}
 
@@ -999,8 +1053,13 @@ export function AvailabilityBookingPage({
                 totalPriceCents={totalPriceCents}
                 date={selectedDate.toISOString().slice(0, 10)}
                 startTimeHhmm={selectedTime}
-                customer={customerData}
+                customer={customerForSubmit}
                 bookingFlowLocale={bookingFlowLocale}
+                isShopBooking={customerBookingUsesShop(
+                  serviceLocation,
+                  customerServiceChoice
+                )}
+                shopAddressLabel={serviceLocation.shopAddressLabel}
               />
             </div>
           )}
@@ -1222,18 +1281,32 @@ export function AvailabilityBookingPage({
                 {ui.common.continue}
               </Button>
             )}
-            {step === 'details' && (
-              <Button
-                type="submit"
-                form={CUSTOMER_FORM_ID}
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!canContinueFromDetails}
-              >
-                {detailsPrimaryCtaLabel}
-              </Button>
-            )}
+            {step === 'details' &&
+              (detailsSubStep === 'contact' ||
+              detailsSubStep === 'address' ||
+              detailsSubStep === 'vehicleNotes' ? (
+                <Button
+                  type="submit"
+                  form={CUSTOMER_FORM_ID}
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold"
+                  disabled={!canContinueFromDetails}
+                >
+                  {detailsPrimaryCtaLabel}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold"
+                  disabled={!canContinueFromDetails}
+                  onClick={handleDetailsSubStepSubmit}
+                >
+                  {detailsPrimaryCtaLabel}
+                </Button>
+              ))}
             {step === 'review' && (
               <Button
                 type="button"
