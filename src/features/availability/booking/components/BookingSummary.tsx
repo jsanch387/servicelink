@@ -49,6 +49,8 @@ interface BookingSummaryProps {
   /** Shop visit — show business address instead of customer-entered address. */
   isShopBooking?: boolean;
   shopAddressLabel?: string | null;
+  /** Owner manual shop booking — omit address on review (owner already knows shop). */
+  hideServiceAddress?: boolean;
 }
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -65,13 +67,17 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   bookingFlowLocale = 'en',
   isShopBooking = false,
   shopAddressLabel = null,
+  hideServiceAddress = false,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const sl = ui.serviceLocation;
   const totalMinutes = totalAppointmentMinutes ?? serviceDurationMinutes;
   const customerAddress = formatAddress(customer);
   const showAddress =
-    isShopBooking && shopAddressLabel ? true : Boolean(customerAddress.trim());
+    !hideServiceAddress &&
+    (isShopBooking && shopAddressLabel
+      ? true
+      : Boolean(customerAddress.trim()));
   const addressLabel = isShopBooking
     ? sl.shopVisitAddressLabel
     : ui.common.address;

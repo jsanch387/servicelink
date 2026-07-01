@@ -262,10 +262,12 @@ export function ServiceDetailsScreen({
                 )}
               </div>
             </div>
-            <ServiceDescriptionFormatted
-              description={service.description}
-              className="text-sm text-zinc-500"
-            />
+            {!isOwnerManualBooking && service.description?.trim() ? (
+              <ServiceDescriptionFormatted
+                description={service.description}
+                className="text-sm text-zinc-500"
+              />
+            ) : null}
           </section>
 
           {phase === 'price' && needsPriceStep && (

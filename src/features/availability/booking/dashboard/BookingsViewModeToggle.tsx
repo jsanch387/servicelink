@@ -24,7 +24,7 @@ export function BookingsViewModeToggle({
       <div
         role="tablist"
         aria-label="Booking view"
-        className="inline-flex items-center rounded-xl border border-white/[0.09] bg-white/[0.04] p-0.5 sm:p-1 gap-px sm:gap-0.5"
+        className="inline-flex items-center gap-0.5 rounded-lg border border-white/[0.09] bg-white/[0.04] p-0.5"
       >
         {OPTIONS.map(opt => (
           <button
@@ -34,7 +34,7 @@ export function BookingsViewModeToggle({
             title={opt.title}
             aria-selected={value === opt.id}
             onClick={() => onChange(opt.id)}
-            className={`inline-flex min-h-10 min-w-[4.25rem] sm:min-w-[4.75rem] items-center justify-center rounded-[10px] px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold tracking-tight transition-colors cursor-pointer whitespace-nowrap ${
+            className={`inline-flex h-8 min-w-[3.25rem] items-center justify-center rounded-md px-2.5 text-[11px] font-semibold tracking-tight transition-colors cursor-pointer whitespace-nowrap sm:min-w-[3.75rem] sm:text-xs ${
               value === opt.id
                 ? 'bg-white text-black'
                 : 'text-gray-500 hover:text-gray-300'

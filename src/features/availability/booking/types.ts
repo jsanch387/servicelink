@@ -146,4 +146,9 @@ export interface CreateBookingRequest {
   ownerManualBooking?: boolean;
   /** Required when business offers both mobile and shop (`service_location_mode = both`). */
   customerServiceLocation?: 'mobile' | 'shop';
+  /**
+   * Mobile owner manual booking: where service happens (`mobile` | `shop`).
+   * Web may omit; use `customerServiceLocation` instead. Persisted as `bookings.service_location_type`.
+   */
+  serviceLocationType?: 'mobile' | 'shop';
 }

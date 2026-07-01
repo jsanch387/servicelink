@@ -6,6 +6,7 @@ export type PublicBookingUi = {
   nav: {
     backToDateTime: string;
     backToYourDetails: string;
+    backToCustomerDetails: string;
     backToAddress: string;
     backToVehicle: string;
     backToDetails: string;
@@ -119,9 +120,16 @@ export type PublicBookingUi = {
     shopAddressIncomplete: string;
     backToServiceChoice: string;
     backToShopLocation: string;
+    ownerChooseHeading: string;
+    ownerChooseSubtitle: string;
+    ownerMobileOption: string;
+    ownerMobileOptionDesc: string;
+    ownerShopOption: string;
+    ownerShopOptionDesc: string;
   };
   customerForm: {
     yourDetails: string;
+    customerDetails: string;
     serviceAddress: string;
     vehicle: string;
     fullName: string;

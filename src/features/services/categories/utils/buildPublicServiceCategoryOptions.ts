@@ -24,7 +24,7 @@ function compareCategories(
  */
 export function buildPublicServiceCategoryOptions(
   categories: ServiceCategoryRow[],
-  services: ServiceRow[],
+  services: Pick<ServiceRow, 'category_id'>[],
   uncategorizedLabel: string
 ): PublicServiceCategoryOption[] {
   if (categories.length === 0) return [];

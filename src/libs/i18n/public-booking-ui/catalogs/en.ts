@@ -4,6 +4,7 @@ export const publicBookingUiEn: PublicBookingUi = {
   nav: {
     backToDateTime: 'Back to date & time',
     backToYourDetails: 'Back to your information',
+    backToCustomerDetails: 'Back to customer information',
     backToAddress: 'Back to address',
     backToVehicle: 'Back to vehicle',
     backToDetails: 'Back to details',
@@ -133,9 +134,17 @@ export const publicBookingUiEn: PublicBookingUi = {
       'This business has not finished setting up their shop address yet.',
     backToServiceChoice: 'Back to location choice',
     backToShopLocation: 'Back to shop location',
+    ownerChooseHeading: 'Where will service happen?',
+    ownerChooseSubtitle: 'Choose mobile or shop for this appointment.',
+    ownerMobileOption: 'Mobile',
+    ownerMobileOptionDesc:
+      'You go to the customer. You will enter their address.',
+    ownerShopOption: 'Shop',
+    ownerShopOptionDesc: 'They come to your shop. No address entry needed.',
   },
   customerForm: {
     yourDetails: 'Your information',
+    customerDetails: 'Customer information',
     serviceAddress: 'Service address',
     vehicle: 'Vehicle',
     fullName: 'Full Name',

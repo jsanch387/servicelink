@@ -199,6 +199,9 @@ export function AvailabilityBookingPage({
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const backToContactLabel = isOwnerManualBooking
+    ? ui.nav.backToCustomerDetails
+    : ui.nav.backToYourDetails;
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
 
@@ -681,7 +684,10 @@ export function AvailabilityBookingPage({
               ...customerForSubmit,
             },
             ...(customerServiceLocationPayload
-              ? { customerServiceLocation: customerServiceLocationPayload }
+              ? {
+                  customerServiceLocation: customerServiceLocationPayload,
+                  serviceLocationType: customerServiceLocationPayload,
+                }
               : {}),
             totalPriceCents,
             requiredOnlineAmountCents: Math.round(amountToChargeCents),
@@ -797,7 +803,10 @@ export function AvailabilityBookingPage({
           startTime: selectedTime,
           customer: customerForSubmit,
           ...(customerServiceLocationPayload
-            ? { customerServiceLocation: customerServiceLocationPayload }
+            ? {
+                customerServiceLocation: customerServiceLocationPayload,
+                serviceLocationType: customerServiceLocationPayload,
+              }
             : {}),
           paymentMethodSelected: paymentMethodForPublicCreate,
           ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
@@ -914,11 +923,11 @@ export function AvailabilityBookingPage({
                 detailsSubStep === 'contact'
                   ? ui.nav.backToDateTime
                   : detailsSubStep === 'serviceChoice'
-                    ? ui.nav.backToYourDetails
+                    ? backToContactLabel
                     : detailsSubStep === 'address'
                       ? serviceLocation.mode === 'both'
                         ? ui.serviceLocation.backToServiceChoice
-                        : ui.nav.backToYourDetails
+                        : backToContactLabel
                       : detailsSubStep === 'vehicleNotes'
                         ? customerAddressEntryRequired(
                             serviceLocation,
@@ -927,7 +936,7 @@ export function AvailabilityBookingPage({
                           ? ui.nav.backToAddress
                           : serviceLocation.mode === 'both'
                             ? ui.serviceLocation.backToServiceChoice
-                            : ui.nav.backToYourDetails
+                            : backToContactLabel
                         : ui.nav.backToAddress
               }
             />
@@ -1009,6 +1018,7 @@ export function AvailabilityBookingPage({
                     }
                   }}
                   bookingFlowLocale={bookingFlowLocale}
+                  isOwnerManualBooking={isOwnerManualBooking}
                 />
               ) : null}
 
@@ -1026,6 +1036,7 @@ export function AvailabilityBookingPage({
                   submitLabel={detailsPrimaryCtaLabel}
                   bookingFlowLocale={bookingFlowLocale}
                   emailOptional
+                  isOwnerManualBooking={isOwnerManualBooking}
                   showNotificationsConsent={!isOwnerManualBooking}
                   businessName={businessName}
                   agreedToNotifications={agreedToPublicNotifications}
@@ -1060,6 +1071,13 @@ export function AvailabilityBookingPage({
                   customerServiceChoice
                 )}
                 shopAddressLabel={serviceLocation.shopAddressLabel}
+                hideServiceAddress={
+                  isOwnerManualBooking &&
+                  customerBookingUsesShop(
+                    serviceLocation,
+                    customerServiceChoice
+                  )
+                }
               />
             </div>
           )}

@@ -47,6 +47,8 @@ interface ServiceCardProps {
    * knows the business owner is booking on a customer's behalf.
    */
   manualBookingForCustomer?: boolean;
+  /** Hide long description (owner manual booking — they already know their services). */
+  hideDescription?: boolean;
   /**
    * When set, forwarded to `/book/details` as `?lang=` (booking funnel only).
    * When true on a public card, do not show the booking “Select” link.
@@ -63,6 +65,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   isPublic = false,
   businessSlug = '',
   manualBookingForCustomer = false,
+  hideDescription = false,
   hideBookLink = false,
   bookingFlowLocale = 'en',
 }) => {
@@ -142,40 +145,43 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
       <div className="border-t border-white/[0.04] mb-3 sm:mb-4" />
 
-      {/* Description — fixed min-height so all cards align; long text is collapsible */}
-      <div className="mb-0 min-h-[4rem] sm:min-h-[4.5rem]">
-        <div
-          ref={descriptionRef}
-          className={`text-zinc-400 text-[15px] sm:text-sm ${
-            shouldClampDescription ? SERVICE_CARD_DESCRIPTION_CLAMP_CLASS : ''
-          }`}
-        >
-          <ServiceDescriptionFormatted description={description} />
-        </div>
-        {isTruncatable && (
-          <button
-            type="button"
-            onClick={() => setIsDescriptionExpanded(prev => !prev)}
-            className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 active:text-zinc-300 transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
-            aria-expanded={isDescriptionExpanded}
+      {!hideDescription ? (
+        <div className="mb-0 min-h-[4rem] sm:min-h-[4.5rem]">
+          <div
+            ref={descriptionRef}
+            className={`text-zinc-400 text-[15px] sm:text-sm ${
+              shouldClampDescription ? SERVICE_CARD_DESCRIPTION_CLAMP_CLASS : ''
+            }`}
           >
-            {isDescriptionExpanded ? (
-              <>
-                <ChevronUpIcon className="h-3.5 w-3.5" />
-                {ui.serviceCard.seeLess}
-              </>
-            ) : (
-              <>
-                <ChevronDownIcon className="h-3.5 w-3.5" />
-                {ui.serviceCard.seeMore}
-              </>
-            )}
-          </button>
-        )}
-      </div>
+            <ServiceDescriptionFormatted description={description} />
+          </div>
+          {isTruncatable && (
+            <button
+              type="button"
+              onClick={() => setIsDescriptionExpanded(prev => !prev)}
+              className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 active:text-zinc-300 transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
+              aria-expanded={isDescriptionExpanded}
+            >
+              {isDescriptionExpanded ? (
+                <>
+                  <ChevronUpIcon className="h-3.5 w-3.5" />
+                  {ui.serviceCard.seeLess}
+                </>
+              ) : (
+                <>
+                  <ChevronDownIcon className="h-3.5 w-3.5" />
+                  {ui.serviceCard.seeMore}
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      ) : null}
 
       {/* Faint divider + footer: duration left, Book Now right */}
-      <div className="flex items-center justify-between pt-2.5 sm:pt-3">
+      <div
+        className={`flex items-center justify-between ${hideDescription ? '' : 'pt-2.5 sm:pt-3'}`}
+      >
         {effectiveDurationMinutes ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3.5 w-3.5 flex-shrink-0 sm:h-3 sm:w-3" />

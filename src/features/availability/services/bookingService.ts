@@ -46,6 +46,7 @@ export interface CreateBookingPayload {
   customer_vehicle_model: string | null;
   customer_notes: string | null;
   customer_id: string;
+  service_location_type: 'mobile' | 'shop' | null;
 }
 
 function mapCustomerToRow(
@@ -62,6 +63,7 @@ function mapCustomerToRow(
   | 'scheduled_date'
   | 'start_time'
   | 'customer_id'
+  | 'service_location_type'
 > {
   return {
     customer_name: c.fullName.trim(),
@@ -96,6 +98,7 @@ export async function createBooking(
     scheduledDate: string;
     startTime: string;
     customer: CustomerFormData;
+    serviceLocationType?: 'mobile' | 'shop' | null;
   }
 ): Promise<{ id: string }> {
   const addonDetails =
@@ -125,6 +128,7 @@ export async function createBooking(
     start_time: payload.startTime,
     ...mapCustomerToRow(payload.customer),
     customer_id: customerId,
+    service_location_type: payload.serviceLocationType ?? null,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -295,6 +299,7 @@ export async function createBookingForExistingCustomer(
     start_time: payload.startTime.trim(),
     ...mapCustomerToRow(customer),
     customer_id: payload.customerId,
+    service_location_type: null,
   };
 
   const { data, error } = await db

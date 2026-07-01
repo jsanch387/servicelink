@@ -17,6 +17,7 @@ import {
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
 import { prefillCustomerWithShopAddress } from '@/features/availability/booking/utils/bookingServiceLocationFlow';
+import { clientServiceLocationChoice } from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
   buildPublicBookingServiceLocation,
@@ -127,6 +128,11 @@ function parseBookingCheckoutDraftPayload(
     customerServiceLocationRaw === 'shop'
       ? customerServiceLocationRaw
       : undefined;
+  const serviceLocationTypeRaw = payload.serviceLocationType;
+  const serviceLocationType =
+    serviceLocationTypeRaw === 'mobile' || serviceLocationTypeRaw === 'shop'
+      ? serviceLocationTypeRaw
+      : undefined;
 
   if (
     !businessSlug ||
@@ -192,6 +198,7 @@ function parseBookingCheckoutDraftPayload(
     depositType,
     depositValue,
     customerServiceLocation,
+    serviceLocationType,
   };
 }
 
@@ -281,7 +288,7 @@ export async function POST(request: NextRequest) {
     );
     const locationResolved = resolveEffectiveCustomerServiceLocation(
       serviceLocation.mode,
-      parsedBookingPayload.customerServiceLocation
+      clientServiceLocationChoice(parsedBookingPayload)
     );
     if (locationResolved.error || !locationResolved.effective) {
       return NextResponse.json(
@@ -341,6 +348,7 @@ export async function POST(request: NextRequest) {
       ...parsedBookingPayload,
       customer: normalizedCustomer,
       customerServiceLocation: locationResolved.effective,
+      serviceLocationType: locationResolved.effective,
     };
     if (
       !Number.isFinite(amountCents) ||

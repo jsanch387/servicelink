@@ -141,6 +141,7 @@ function mapRowToPickerItem(
     priceOptionsEnabled: row.price_options_enabled === true && ownerPro,
     hours_to_complete: row.hours_to_complete ?? null,
     duration_minutes: row.duration_minutes ?? null,
+    category_id: row.category_id ?? null,
   };
 }
 
@@ -299,6 +300,7 @@ export default async function BookingRequestPage({
     !(serviceId && serviceId.trim());
 
   let availabilityPickerServices: BookServicePickerItem[] = [];
+  let availabilityPickerCategories: ServiceCategoryRow[] = [];
   if (showAvailabilityServicePicker) {
     const [servicesQuery, categoriesQuery] = await Promise.all([
       adminClient
@@ -328,6 +330,9 @@ export default async function BookingRequestPage({
       (servicesQuery.data ?? []) as ServiceRow[],
       (categoriesQuery.data ?? []) as ServiceCategoryRow[]
     );
+
+    availabilityPickerCategories = (categoriesQuery.data ??
+      []) as ServiceCategoryRow[];
 
     availabilityPickerServices = sortedPickerRows
       .map(row => mapRowToPickerItem(row, ownerHasPro))
@@ -516,42 +521,41 @@ export default async function BookingRequestPage({
             serviceLocation={serviceLocation}
           />
         </div>
+      ) : showAvailabilityServicePicker ? (
+        <BookServicePicker
+          businessSlug={slugForRoutes}
+          businessName={businessProfile.business_name}
+          services={availabilityPickerServices}
+          serviceCategories={availabilityPickerCategories}
+          isOwnerManualBooking={isOwnerManualBooking}
+          bookingFlowLocale={bookingFlowLocale}
+        />
       ) : (
         <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 pt-6 sm:pt-8">
-          {showAvailabilityServicePicker ? (
-            <BookServicePicker
-              businessSlug={slugForRoutes}
-              businessName={businessProfile.business_name}
-              services={availabilityPickerServices}
-              isOwnerManualBooking={isOwnerManualBooking}
-              bookingFlowLocale={bookingFlowLocale}
-            />
-          ) : (
-            <BookFlowSwitch
-              useAvailabilityBooking={effectiveUseAvailabilityBooking}
-              showNotAcceptingBookings={showNotAcceptingBookings}
-              businessName={businessProfile.business_name}
-              businessId={businessProfile.id}
-              businessSlug={slugForRoutes}
-              showVehicleFields={showVehicleFields}
-              serviceId={serviceId?.trim() ?? undefined}
-              addOnIds={addOnIds?.trim() || undefined}
-              selectedAddOns={selectedAddOns}
-              serviceName={serviceName}
-              servicePrice={servicePriceForBooking}
-              serviceDurationMinutes={serviceDurationMinutes}
-              selectedPriceOptionLabel={selectedPriceOptionLabel}
-              weeklySchedule={weeklySchedule}
-              timeOffBlocks={timeOffBlocks}
-              paymentSettings={paymentSettings}
-              isOwnerManualBooking={isOwnerManualBooking}
-              exitCalendarFlowHref={bookPageBackHref}
-              exitCalendarFlowLabel={bookPageBackLabel}
-              stripeCheckoutSessionId={stripeCheckoutSessionId}
-              bookingFlowLocale={bookingFlowLocale}
-              serviceLocation={serviceLocation}
-            />
-          )}
+          <BookFlowSwitch
+            useAvailabilityBooking={effectiveUseAvailabilityBooking}
+            showNotAcceptingBookings={showNotAcceptingBookings}
+            businessName={businessProfile.business_name}
+            businessId={businessProfile.id}
+            businessSlug={slugForRoutes}
+            showVehicleFields={showVehicleFields}
+            serviceId={serviceId?.trim() ?? undefined}
+            addOnIds={addOnIds?.trim() || undefined}
+            selectedAddOns={selectedAddOns}
+            serviceName={serviceName}
+            servicePrice={servicePriceForBooking}
+            serviceDurationMinutes={serviceDurationMinutes}
+            selectedPriceOptionLabel={selectedPriceOptionLabel}
+            weeklySchedule={weeklySchedule}
+            timeOffBlocks={timeOffBlocks}
+            paymentSettings={paymentSettings}
+            isOwnerManualBooking={isOwnerManualBooking}
+            exitCalendarFlowHref={bookPageBackHref}
+            exitCalendarFlowLabel={bookPageBackLabel}
+            stripeCheckoutSessionId={stripeCheckoutSessionId}
+            bookingFlowLocale={bookingFlowLocale}
+            serviceLocation={serviceLocation}
+          />
         </div>
       )}
     </>

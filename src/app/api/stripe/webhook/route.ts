@@ -36,6 +36,10 @@ import {
   buildPublicBookingServiceLocation,
   resolveEffectiveCustomerServiceLocation,
 } from '@/features/business-profile/utils/publicServiceLocation';
+import {
+  clientServiceLocationChoice,
+  resolvePersistedBookingServiceLocationType,
+} from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
@@ -130,6 +134,7 @@ type StoredBookingCheckoutPayload = {
   depositType?: 'fixed' | 'percent' | null;
   depositValue?: number | null;
   customerServiceLocation?: 'mobile' | 'shop';
+  serviceLocationType?: 'mobile' | 'shop';
 };
 
 function customerFormFromCheckoutStored(
@@ -199,6 +204,11 @@ function parseStoredBookingCheckoutPayload(
     customerServiceLocationRaw === 'shop'
       ? customerServiceLocationRaw
       : undefined;
+  const serviceLocationTypeRaw = p.serviceLocationType;
+  const serviceLocationType =
+    serviceLocationTypeRaw === 'mobile' || serviceLocationTypeRaw === 'shop'
+      ? serviceLocationTypeRaw
+      : undefined;
   if (
     !businessId ||
     !businessSlug ||
@@ -266,6 +276,7 @@ function parseStoredBookingCheckoutPayload(
         ? Math.max(0, Math.round(p.depositValue))
         : null,
     customerServiceLocation,
+    serviceLocationType,
   };
 }
 
@@ -523,6 +534,14 @@ export async function POST(request: NextRequest) {
       const storedServiceName = optionLabel
         ? `${bookingPayload.serviceName.trim()} — ${optionLabel}`
         : bookingPayload.serviceName.trim();
+      const serviceLocation = buildPublicBookingServiceLocation(capProfile);
+      const locationResolved = resolveEffectiveCustomerServiceLocation(
+        serviceLocation.mode,
+        clientServiceLocationChoice(bookingPayload)
+      );
+      const effectiveLocationType =
+        locationResolved.effective ??
+        (serviceLocation.mode === 'shop_only' ? 'shop' : 'mobile');
       const createdBooking = await createBooking(supabase, {
         businessId: bookingPayload.businessId,
         businessSlug: bookingPayload.businessSlug,
@@ -534,6 +553,10 @@ export async function POST(request: NextRequest) {
         scheduledDate: bookingPayload.scheduledDate,
         startTime: bookingPayload.startTime,
         customer: customerFormFromCheckoutStored(bookingPayload.customer),
+        serviceLocationType: resolvePersistedBookingServiceLocationType({
+          clientChoice: effectiveLocationType,
+          businessMode: serviceLocation.mode,
+        }),
       });
       logBookingCheckoutStage('booking.created', {
         eventId: event.id,
@@ -561,14 +584,6 @@ export async function POST(request: NextRequest) {
         (typeof bookingPayload.servicePriceCents === 'number' &&
           bookingPayload.servicePriceCents > 0) ||
         selectedAddOnsForEmail.length > 0;
-      const serviceLocation = buildPublicBookingServiceLocation(capProfile);
-      const locationResolved = resolveEffectiveCustomerServiceLocation(
-        serviceLocation.mode,
-        bookingPayload.customerServiceLocation
-      );
-      const effectiveLocationType =
-        locationResolved.effective ??
-        (serviceLocation.mode === 'shop_only' ? 'shop' : 'mobile');
       const emailServiceLocation = buildAvailabilityBookingEmailServiceLocation(
         {
           effectiveType: effectiveLocationType,

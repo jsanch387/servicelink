@@ -35,6 +35,11 @@ import {
   resolveEffectiveCustomerServiceLocation,
 } from '@/features/business-profile/utils/publicServiceLocation';
 import { prefillCustomerWithShopAddress } from '@/features/availability/booking/utils/bookingServiceLocationFlow';
+import {
+  clientServiceLocationChoice,
+  resolvePersistedBookingServiceLocationType,
+  validateServiceLocationTypeInput,
+} from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
 import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
 import { buildPublicBookingNoCheckoutPaymentSummary } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
 import {
@@ -143,9 +148,44 @@ export async function POST(request: NextRequest) {
     const serviceLocation = buildPublicBookingServiceLocation(
       profile as Parameters<typeof buildPublicBookingServiceLocation>[0]
     );
+
+    if (
+      body.serviceLocationType !== undefined &&
+      body.serviceLocationType !== null &&
+      body.serviceLocationType !== 'mobile' &&
+      body.serviceLocationType !== 'shop'
+    ) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: 'serviceLocationType must be mobile or shop',
+        },
+        400
+      );
+    }
+
+    if (
+      body.serviceLocationType === 'mobile' ||
+      body.serviceLocationType === 'shop'
+    ) {
+      const typeValidation = validateServiceLocationTypeInput(
+        body.serviceLocationType,
+        serviceLocation.mode
+      );
+      if (!typeValidation.ok) {
+        return publicBookingJson(
+          requestId,
+          { success: false, error: typeValidation.error },
+          400
+        );
+      }
+    }
+
+    const clientLocationChoice = clientServiceLocationChoice(body);
     const locationResolved = resolveEffectiveCustomerServiceLocation(
       serviceLocation.mode,
-      body.customerServiceLocation
+      clientLocationChoice
     );
     if (locationResolved.error || !locationResolved.effective) {
       return publicBookingJson(
@@ -314,6 +354,10 @@ export async function POST(request: NextRequest) {
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
       customer: sanitizedCustomer,
+      serviceLocationType: resolvePersistedBookingServiceLocationType({
+        clientChoice: locationResolved.effective ?? clientLocationChoice,
+        businessMode: serviceLocation.mode,
+      }),
     });
 
     const selectedAddOnsForEmail = body.selectedAddOns ?? [];

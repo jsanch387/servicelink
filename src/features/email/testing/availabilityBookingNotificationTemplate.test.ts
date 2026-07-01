@@ -18,6 +18,20 @@ function basePayload(): AvailabilityBookingNotificationPayload {
 }
 
 describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
+  it('includes tightened mobile stacked detail-row spacing in layout CSS', () => {
+    const html = buildAvailabilityBookingEmailHtml(basePayload(), {
+      audience: 'customer',
+      businessName: 'Acme Detail',
+    });
+    expect(html).toContain('.email-detail-row .email-detail-label');
+    expect(html).toContain('padding-bottom: 0 !important');
+    expect(html).toContain('margin-top: 2px !important');
+    expect(html).toContain('padding-bottom: 10px !important');
+    expect(html).toContain(
+      '.email-section-card > .email-detail-row:last-child .email-detail-value'
+    );
+  });
+
   it('uses ServiceLink dark brand layout', () => {
     const html = buildAvailabilityBookingEmailHtml(basePayload(), {
       audience: 'customer',

@@ -243,10 +243,18 @@ const RESPONSIVE_STYLES = `
       width: 100% !important;
       padding-right: 0 !important;
     }
+    .email-detail-row .email-detail-label {
+      padding-bottom: 0 !important;
+      line-height: 18px !important;
+    }
     .email-detail-row .email-detail-value {
       text-align: left !important;
-      margin-top: 4px !important;
-      padding-bottom: 14px !important;
+      margin-top: 2px !important;
+      padding-bottom: 10px !important;
+      line-height: 20px !important;
+    }
+    .email-section-card > .email-detail-row:last-child .email-detail-value {
+      padding-bottom: 0 !important;
     }
     .email-price-label {
       padding-right: 8px !important;

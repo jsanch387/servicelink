@@ -48,6 +48,8 @@ interface CustomerFormProps {
   emailOptional?: boolean;
   /** Public booking: SMS consent shown next to phone input (Pinggram / TCPA). */
   showNotificationsConsent?: boolean;
+  /** Owner manual booking: contact section uses "Customer information" title. */
+  isOwnerManualBooking?: boolean;
   businessName?: string;
   agreedToNotifications?: boolean;
   onAgreedToNotificationsChange?: (agreed: boolean) => void;
@@ -139,6 +141,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   bookingFlowLocale = 'en',
   emailOptional = false,
   showNotificationsConsent = false,
+  isOwnerManualBooking = false,
   businessName = '',
   agreedToNotifications = false,
   onAgreedToNotificationsChange,
@@ -147,6 +150,9 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   const ui = publicBookingUi(bookingFlowLocale);
   const cf = ui.customerForm;
   const effectiveSubmitLabel = submitLabel ?? ui.common.continue;
+  const contactSectionTitle = isOwnerManualBooking
+    ? cf.customerDetails
+    : cf.yourDetails;
 
   const [errors, setErrors] = React.useState<
     Partial<Record<keyof CustomerFormData, string>>
@@ -247,7 +253,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     <form id={id} onSubmit={handleSubmit} className="space-y-6">
       {step === 'contact' && (
         <FormStepSection
-          title={cf.yourDetails}
+          title={contactSectionTitle}
           footer={notificationsConsentFooter}
         >
           <Input

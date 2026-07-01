@@ -4,6 +4,7 @@ export const publicBookingUiEs: PublicBookingUi = {
   nav: {
     backToDateTime: 'Volver a fecha y hora',
     backToYourDetails: 'Volver a tu información',
+    backToCustomerDetails: 'Volver a la información del cliente',
     backToAddress: 'Volver a la dirección',
     backToVehicle: 'Volver al vehículo',
     backToDetails: 'Volver a los datos',
@@ -135,9 +136,17 @@ export const publicBookingUiEs: PublicBookingUi = {
       'Este negocio aún no ha configurado la dirección de su local.',
     backToServiceChoice: 'Volver a tipo de ubicación',
     backToShopLocation: 'Volver al local',
+    ownerChooseHeading: '¿Dónde será el servicio?',
+    ownerChooseSubtitle: 'Elige móvil o local para esta cita.',
+    ownerMobileOption: 'Móvil',
+    ownerMobileOptionDesc: 'Tú vas al cliente. Ingresarás su dirección.',
+    ownerShopOption: 'Local',
+    ownerShopOptionDesc:
+      'El cliente visita tu local. No necesitas ingresar dirección.',
   },
   customerForm: {
     yourDetails: 'Tu información',
+    customerDetails: 'Información del cliente',
     serviceAddress: 'Dirección del servicio',
     vehicle: 'Vehículo',
     fullName: 'Nombre completo',
