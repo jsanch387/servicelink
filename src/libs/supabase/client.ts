@@ -86,6 +86,10 @@ export type Database = {
           business_name: string;
           business_type: string | null;
           service_area: string | null;
+          business_zip: string | null;
+          service_location_mode: string;
+          shop_street_address: string | null;
+          shop_unit: string | null;
           bio: string | null;
           phone_number_call: string | null;
           phone_number_text: string | null;
@@ -122,6 +126,10 @@ export type Database = {
           free_bookings_month?: string | null;
           free_bookings_count?: number;
           service_area?: string | null;
+          business_zip?: string | null;
+          service_location_mode?: string;
+          shop_street_address?: string | null;
+          shop_unit?: string | null;
           bio?: string | null;
           phone_number_call?: string | null;
           phone_number_text?: string | null;
@@ -151,6 +159,10 @@ export type Database = {
           business_name?: string;
           business_type?: string | null;
           service_area?: string | null;
+          business_zip?: string | null;
+          service_location_mode?: string;
+          shop_street_address?: string | null;
+          shop_unit?: string | null;
           bio?: string | null;
           phone_number_call?: string | null;
           phone_number_text?: string | null;

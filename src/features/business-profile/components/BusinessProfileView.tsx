@@ -137,7 +137,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       label: 'Business type',
       done: Boolean(businessProfile.business_type?.trim()),
     },
-    { label: 'City + state', done: Boolean(city && state) },
+    {
+      label: 'City, state + ZIP',
+      done: Boolean(city && state && businessProfile.business_zip?.trim()),
+    },
     { label: 'Bio', done: Boolean(businessProfile.bio?.trim()) },
     {
       label: 'Phone',
@@ -156,6 +159,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     <ProfileCompletionTracker
       checks={completionChecks}
       onViewChecklist={() => setShowProfileChecklistModal(true)}
+      fullWidthOnLarge={editMode === 'view'}
     />
   ) : null;
 

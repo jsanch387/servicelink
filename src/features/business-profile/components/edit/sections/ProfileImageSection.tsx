@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 'use client';
 
-import { Button, Modal } from '@/components/shared';
+import { Button, GlassCard, Modal } from '@/components/shared';
 import { useUploadLogo } from '@/features/media/hooks';
 import { CameraIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
@@ -144,73 +144,49 @@ export const ProfileImageSection: React.FC<ProfileImageSectionProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Section Header */}
-      <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
-          Business Logo
-        </h2>
-        <p className="text-sm sm:text-base text-gray-400">
-          Add a professional logo to represent your business
-        </p>
-      </div>
+    <div className="w-full max-w-full text-left">
+      <p className="text-sm font-medium text-gray-200">Logo</p>
 
-      {/* Logo Display - Using Full Space */}
-      <div onClick={openModal} className="relative group cursor-pointer">
-        <div className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/[0.04] hover:border-white/20 transition-all duration-300">
-          {/* Logo Circle */}
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex items-center justify-center border-2 border-white/10 bg-white/[0.04] flex-shrink-0">
-            {businessProfile.logo_url &&
-            (businessProfile.logo_url as string).trim() ? (
-              <Image
-                src={businessProfile.logo_url as string}
-                alt="Logo"
-                width={96}
-                height={96}
-                className="w-full h-full object-cover"
-                unoptimized={(businessProfile.logo_url as string).startsWith(
-                  'http'
-                )}
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <CameraIcon className="h-8 w-8 text-neutral-500" />
-            )}
-          </div>
+      <GlassCard padding="sm" rounded="rounded-xl" className="mt-2 w-full">
+        <div onClick={openModal} className="relative group cursor-pointer">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden flex items-center justify-center border border-white/10 bg-white/[0.04] flex-shrink-0">
+              {businessProfile.logo_url &&
+              (businessProfile.logo_url as string).trim() ? (
+                <Image
+                  src={businessProfile.logo_url as string}
+                  alt="Logo"
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-cover"
+                  unoptimized={(businessProfile.logo_url as string).startsWith(
+                    'http'
+                  )}
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <CameraIcon className="h-8 w-8 text-neutral-500" />
+              )}
+            </div>
 
-          {/* Content Area */}
-          <div className="flex-1 min-w-0">
-            {businessProfile.logo_url &&
-            (businessProfile.logo_url as string).trim() ? (
-              <div>
-                <h3 className="text-sm font-semibold text-white mb-1">
-                  Business Logo
-                </h3>
-                <p className="text-xs text-neutral-400">
-                  Click to change your logo
-                </p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-300">
+                {businessProfile.logo_url &&
+                (businessProfile.logo_url as string).trim()
+                  ? 'Tap to change'
+                  : 'Tap to add logo'}
+              </p>
+            </div>
+
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <CameraIcon className="h-4 w-4 text-gray-300" />
               </div>
-            ) : (
-              <div>
-                <h3 className="text-sm font-semibold text-white mb-1">
-                  Add Your Logo
-                </h3>
-                <p className="text-xs text-neutral-400">
-                  Upload a professional logo for your business
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Action Indicator */}
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-              <CameraIcon className="h-4 w-4 text-gray-300" />
             </div>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Modal for Business Logo */}
       <Modal

@@ -2,6 +2,8 @@
 
 This feature controls the language shown on public profile and booking pages.
 
+See also: [business-profile docs index](./README.md) · [Service location](./serviceLocation.md)
+
 ## Source of truth
 
 - DB columns on `business_profiles`:

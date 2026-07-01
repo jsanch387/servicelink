@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ImageFormData } from '@/features/business-profile/utils/editing/editingHelpers';
@@ -303,99 +303,78 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   const hasReachedLimit = images.length >= maxImages;
 
   return (
-    <div className="space-y-6">
-      {/* Section Header - More Prominent */}
-      <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
-          Portfolio Gallery
-        </h2>
-        <p className="text-sm sm:text-base text-gray-400">
-          Showcase your best work with high-quality photos
-          {hasReachedLimit && (
-            <span className="text-gray-300 font-medium ml-2">
-              (Maximum {maxImages} images reached)
-            </span>
-          )}
-        </p>
-      </div>
+    <div className="w-full max-w-full text-left">
+      <p className="text-sm font-medium text-gray-200">Gallery</p>
 
-      {/* Upload Section */}
-      {!hasReachedLimit && (
-        <div className="mb-6">
+      <GlassCard
+        padding="sm"
+        rounded="rounded-xl"
+        className="mt-2 w-full space-y-4"
+      >
+        {!hasReachedLimit && (
           <EnhancedImageUpload
             onImageSelect={handleImageSelect}
             disabled={isLoading}
             maxCount={maxImages}
           />
-        </div>
-      )}
+        )}
 
-      {/* Maximum Limit Reached Message */}
-      {hasReachedLimit && (
-        <div className="mb-6 space-y-3">
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-start gap-3">
-              <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
-              <p className="text-gray-400 text-sm">
-                {isFreeTier && images.length > FREE_MAX_PORTFOLIO_IMAGES
-                  ? `Customers see only your first ${FREE_MAX_PORTFOLIO_IMAGES} images on your public profile. Upgrade to show all ${images.length}.`
-                  : `You've reached the maximum of ${maxImages} images.${isFreeTier ? ' Upgrade to add more.' : ' Remove an image to add a new one.'}`}
-              </p>
+        {hasReachedLimit && (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex items-start gap-3">
+                <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                <p className="text-gray-400 text-sm">
+                  {isFreeTier && images.length > FREE_MAX_PORTFOLIO_IMAGES
+                    ? `Customers see only your first ${FREE_MAX_PORTFOLIO_IMAGES} images on your public profile. Upgrade to show all ${images.length}.`
+                    : `You've reached the maximum of ${maxImages} images.${isFreeTier ? ' Upgrade to add more.' : ' Remove an image to add a new one.'}`}
+                </p>
+              </div>
+            </div>
+            {isFreeTier && (
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="inverse"
+                className="w-full sm:w-auto"
+              >
+                {images.length > FREE_MAX_PORTFOLIO_IMAGES
+                  ? 'Upgrade to show all images'
+                  : 'Upgrade to add more images'}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {images.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-xs text-zinc-500">
+              {images.length}/{maxImages} images
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {images.map((image, index) => (
+                <SmartImagePreview
+                  key={image.id || index}
+                  src={
+                    image.preview_url ||
+                    (image.storage_path
+                      ? `https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/${image.storage_path}`
+                      : 'https://placehold.co/400x400/374151/E5E7EB?text=No+Preview')
+                  }
+                  alt={`Gallery image ${index + 1}`}
+                  onRemove={() => removeImage(index)}
+                />
+              ))}
             </div>
           </div>
-          {isFreeTier && (
-            <Button
-              href={ROUTES.DASHBOARD.UPGRADE}
-              variant="inverse"
-              className="w-full sm:w-auto"
-            >
-              {images.length > FREE_MAX_PORTFOLIO_IMAGES
-                ? 'Upgrade to show all images'
-                : 'Upgrade to add more images'}
-            </Button>
-          )}
-        </div>
-      )}
+        )}
 
-      {/* Portfolio Grid */}
-      {images.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
-            Your Portfolio ({images.length}/{maxImages})
-          </h3>
-
-          {/* Smart Grid Layout - Always square containers */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
-            {images.map((image, index) => (
-              <SmartImagePreview
-                key={image.id || index}
-                src={
-                  image.preview_url ||
-                  (image.storage_path
-                    ? `https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/${image.storage_path}`
-                    : 'https://placehold.co/400x400/374151/E5E7EB?text=No+Preview')
-                }
-                alt={`Portfolio image ${index + 1}`}
-                onRemove={() => removeImage(index)}
-              />
-            ))}
+        {images.length === 0 && (
+          <div className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] p-6 text-center">
+            <CameraIcon className="h-8 w-8 text-gray-500 mx-auto mb-2 opacity-60" />
+            <p className="text-sm text-gray-400">No photos yet</p>
           </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {images.length === 0 && (
-        <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.04] p-8 text-center">
-          <CameraIcon className="h-12 w-12 text-gray-400 mx-auto mb-4 opacity-60" />
-          <p className="text-gray-400 mb-2 font-semibold">
-            Your portfolio is currently empty
-          </p>
-          <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Upload at least one high-quality photo to showcase your work and
-            build trust with customers!
-          </p>
-        </div>
-      )}
+        )}
+      </GlassCard>
     </div>
   );
 };

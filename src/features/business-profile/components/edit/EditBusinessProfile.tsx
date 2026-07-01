@@ -1,8 +1,6 @@
 'use client';
 
-import { Button } from '@/components/shared';
 import { useUploadPortfolio } from '@/features/media/hooks';
-import { EyeIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
 import {
@@ -17,11 +15,28 @@ import {
   saveBusinessProfile,
 } from '../../utils/editing/editingHelpers';
 import { DashboardProfileBookingLanguageCard } from '../DashboardProfileBookingLanguageCard';
+import { DashboardProfileServiceLocationCard } from '../DashboardProfileServiceLocationCard';
+import {
+  serviceLocationPersistFromUi,
+  serviceLocationUiFromProfile,
+} from '../../utils/serviceLocationMode';
+import type { ServiceLocationUiState } from '../../utils/serviceLocationMode';
+import {
+  formatProfileLocationLabel,
+  formatServiceArea,
+  parseServiceAreaCityState,
+} from '../../utils/businessLocation';
 import { BannerSection } from './sections/BannerSection';
 import { BusinessInfoSection } from './sections/BusinessInfoSection';
 import { ContactSection } from './sections/ContactSection';
 import { PortfolioSection } from './sections/PortfolioSection';
 import { ProfileImageSection } from './sections/ProfileImageSection';
+import {
+  EditProfileTabNav,
+  tabForSaveErrors,
+  type EditProfileTabId,
+} from './EditProfileTabNav';
+import { EditProfileActionBar } from './EditProfileActionBar';
 
 /**
  * HEIC Conversion for MVP
@@ -107,6 +122,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     business_name: businessProfile.business_name || '',
     business_type: businessProfile.business_type || '',
     service_area: businessProfile.service_area || '',
+    business_zip: businessProfile.business_zip || '',
     bio: businessProfile.bio || '',
     phone_number_call: businessProfile.phone_number_call || '',
     phone_number_text: '', // Not used; we only store one number (call)
@@ -126,6 +142,13 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       bookingLinkLocalesUiFromProfile(businessProfile)
     );
 
+  const [serviceLocation, setServiceLocation] =
+    useState<ServiceLocationUiState>(() =>
+      serviceLocationUiFromProfile(businessProfile)
+    );
+
+  const [activeTab, setActiveTab] = useState<EditProfileTabId>('photos');
+
   const [errors, setErrors] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -142,38 +165,14 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     };
   }, [formData.images]);
 
-  // Debug form data changes
   useEffect(() => {
-    // Form data images changed
-  }, [formData.images]);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [activeTab]);
 
-  // Handle form input changes
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors.length > 0) setErrors([]);
   };
-
-  // const handlePhoneCallChange = (value: string) => {
-  //   setFormData(prev => {
-  //     const newData = { ...prev, phone_number_call: value };
-  //     if (prev.same_phone_for_both) {
-  //       newData.phone_number_text = value;
-  //     }
-  //     return newData;
-  //   });
-  //   if (errors.length > 0) setErrors([]);
-  // };
-
-  // const handlePhoneTextChange = (value: string) => {
-  //   setFormData(prev => {
-  //     const newData = { ...prev, phone_number_text: value };
-  //     if (prev.same_phone_for_both && value !== prev.phone_number_call) {
-  //       newData.same_phone_for_both = false;
-  //     }
-  //     return newData;
-  //   });
-  //   if (errors.length > 0) setErrors([]);
-  // };
 
   const handleImagesChange = (images: ImageFormData[]) => {
     setFormData(prev => ({ ...prev, images }));
@@ -289,7 +288,11 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           setFormData(finalFormData);
           setSelectedFiles([]);
         } else {
-          setErrors(['Failed to upload portfolio images. Please try again.']);
+          const uploadErrors = [
+            'Failed to upload gallery images. Please try again.',
+          ];
+          setErrors(uploadErrors);
+          setActiveTab(tabForSaveErrors(uploadErrors));
           return;
         }
       }
@@ -298,7 +301,8 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
       const result = await saveBusinessProfile(
         businessProfile.id,
         finalFormData,
-        bookingLinkLocales
+        bookingLinkLocales,
+        serviceLocation
       );
 
       if (result.success) {
@@ -308,61 +312,45 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
         // by calling onSave with the updated data
         const bookingPersist =
           bookingLinkLocalesPersistFromUi(bookingLinkLocales);
+        const serviceLocationPersist =
+          serviceLocationPersistFromUi(serviceLocation);
         await onSave({
           ...(finalFormData as unknown as Record<string, unknown>),
           public_booking_locales: bookingPersist.public_booking_locales,
           public_booking_default_locale:
             bookingPersist.public_booking_default_locale,
+          ...serviceLocationPersist,
         });
       } else {
-        setErrors([result.error || 'Failed to save business profile']);
+        const saveErrors = [result.error || 'Failed to save business profile'];
+        setErrors(saveErrors);
+        setActiveTab(tabForSaveErrors(saveErrors));
       }
     } catch {
-      setErrors(['An unexpected error occurred while saving']);
+      const saveErrors = ['An unexpected error occurred while saving'];
+      setErrors(saveErrors);
+      setActiveTab(tabForSaveErrors(saveErrors));
     } finally {
       setIsSaving(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#0f0f0f] pb-8">
-      {/* Action Bar - Above all content */}
-      <div className="sticky top-20 z-30 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm px-4 py-2.5">
-          <div className="flex gap-2">
-            {/* Preview Button */}
-            <Button
-              onClick={onCancel}
-              variant="secondary"
-              className="flex-1"
-              disabled={isAnyLoading}
-            >
-              <EyeIcon className="h-4 w-4" />
-              <span className="sm:hidden">Preview</span>
-              <span className="hidden sm:inline">Preview</span>
-            </Button>
+  const { city, state } = parseServiceAreaCityState(formData.service_area);
+  const profileLocationLabel = formatProfileLocationLabel(
+    city,
+    state,
+    formData.business_zip
+  );
 
-            {/* Save Button */}
-            <Button
-              onClick={handleSave}
-              variant="inverse"
-              className="flex-1"
-              disabled={isAnyLoading}
-              loading={isSaving}
-            >
-              {isSaving
-                ? 'Saving...'
-                : isUploadingPortfolio
-                  ? 'Uploading...'
-                  : 'Save Changes'}
-            </Button>
-          </div>
+  return (
+    <div className="min-h-screen bg-[#0f0f0f] pb-28">
+      <div className="sticky top-16 z-20 bg-[#0f0f0f]/90 backdrop-blur-md lg:top-0">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5">
+          <EditProfileTabNav activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
       </div>
 
-      {/* Content Sections */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-20">
-        {/* Error Messages - surfaced near top so they are visible after Save */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         {errors.length > 0 && (
           <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
             <h4 className="text-red-400 font-medium mb-2">
@@ -375,85 +363,142 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
             </ul>
           </div>
         )}
-        {/* Cover Banner */}
-        <BannerSection
-          businessProfile={{
-            ...businessProfile,
-            cover_image_url:
-              formData.cover_image_url || businessProfile.cover_image_url,
-            banner_path: formData.banner_path || businessProfile.banner_path,
-          }}
-          isLoading={isLoading}
-          onCoverImageChange={handleCoverImageChange}
-        />
 
-        {/* Divider */}
-        <div className="border-t border-white/10 my-8 sm:my-12" />
+        {activeTab === 'photos' ? (
+          <div
+            id="edit-profile-tabpanel-photos"
+            role="tabpanel"
+            aria-labelledby="edit-profile-tab-photos"
+            className="space-y-6"
+          >
+            <BannerSection
+              businessProfile={{
+                ...businessProfile,
+                cover_image_url:
+                  formData.cover_image_url || businessProfile.cover_image_url,
+                banner_path:
+                  formData.banner_path || businessProfile.banner_path,
+              }}
+              isLoading={isLoading}
+              onCoverImageChange={handleCoverImageChange}
+            />
 
-        {/* Profile Image */}
-        <ProfileImageSection
-          businessProfile={{
-            ...businessProfile,
-            logo_url: formData.logo_url || businessProfile.logo_url,
-            logo_path: formData.logo_path || businessProfile.logo_path,
-          }}
-          isLoading={isLoading}
-          onLogoImageChange={handleLogoImageChange}
-        />
+            <ProfileImageSection
+              businessProfile={{
+                ...businessProfile,
+                logo_url: formData.logo_url || businessProfile.logo_url,
+                logo_path: formData.logo_path || businessProfile.logo_path,
+              }}
+              isLoading={isLoading}
+              onLogoImageChange={handleLogoImageChange}
+            />
 
-        {/* Divider */}
-        <div className="border-t border-white/10 my-8 sm:my-12" />
+            <PortfolioSection
+              images={formData.images}
+              onImagesChange={handleImagesChange}
+              onFilesChange={handleFilesChange}
+              businessProfile={businessProfile}
+              isLoading={isLoading}
+              isFreeTier={isFreeTier}
+            />
+          </div>
+        ) : null}
 
-        {/* Business Information */}
-        <BusinessInfoSection
-          formData={formData}
-          onInputChange={handleInputChange}
-          errors={errors}
-        />
+        {activeTab === 'details' ? (
+          <div
+            id="edit-profile-tabpanel-details"
+            role="tabpanel"
+            aria-labelledby="edit-profile-tab-details"
+          >
+            <BusinessInfoSection
+              formData={formData}
+              onInputChange={handleInputChange}
+              errors={errors}
+            />
+          </div>
+        ) : null}
 
-        <div className="mt-5 sm:mt-6 w-full min-w-0">
-          <DashboardProfileBookingLanguageCard
-            offerSpanish={bookingLinkLocales.offerSpanish}
-            onOfferSpanishChange={offer => {
-              setBookingLinkLocales(prev => ({
-                ...prev,
-                offerSpanish: offer,
-                visitorDefaultLocale: offer ? prev.visitorDefaultLocale : 'en',
-              }));
-            }}
-            visitorDefaultLocale={bookingLinkLocales.visitorDefaultLocale}
-            onVisitorDefaultLocaleChange={visitorDefaultLocale =>
-              setBookingLinkLocales(prev => ({
-                ...prev,
-                visitorDefaultLocale,
-              }))
-            }
-          />
-        </div>
+        {activeTab === 'booking' ? (
+          <div
+            id="edit-profile-tabpanel-booking"
+            role="tabpanel"
+            aria-labelledby="edit-profile-tab-booking"
+            className="space-y-6"
+          >
+            <DashboardProfileServiceLocationCard
+              value={serviceLocation}
+              onChange={next => {
+                setServiceLocation(next);
+                if (errors.length > 0) setErrors([]);
+              }}
+              profileLocation={{
+                city,
+                state,
+                zip: formData.business_zip,
+              }}
+              onProfileLocationChange={({
+                city: nextCity,
+                state: nextState,
+                zip,
+              }) => {
+                if (nextCity !== undefined || nextState !== undefined) {
+                  handleInputChange(
+                    'service_area',
+                    formatServiceArea(nextCity ?? city, nextState ?? state)
+                  );
+                }
+                if (zip !== undefined) {
+                  handleInputChange('business_zip', zip);
+                }
+              }}
+              profileLocationLabel={profileLocationLabel}
+              errors={errors}
+            />
 
-        {/* Divider */}
-        <div className="border-t border-white/10 my-8 sm:my-12" />
+            <DashboardProfileBookingLanguageCard
+              offerSpanish={bookingLinkLocales.offerSpanish}
+              onOfferSpanishChange={offer => {
+                setBookingLinkLocales(prev => ({
+                  ...prev,
+                  offerSpanish: offer,
+                  visitorDefaultLocale: offer
+                    ? prev.visitorDefaultLocale
+                    : 'en',
+                }));
+              }}
+              visitorDefaultLocale={bookingLinkLocales.visitorDefaultLocale}
+              onVisitorDefaultLocaleChange={visitorDefaultLocale =>
+                setBookingLinkLocales(prev => ({
+                  ...prev,
+                  visitorDefaultLocale,
+                }))
+              }
+            />
+          </div>
+        ) : null}
 
-        {/* Contact Information */}
-        <ContactSection
-          formData={formData}
-          onInputChange={handleInputChange}
-          errors={errors}
-        />
-
-        {/* Divider */}
-        <div className="border-t border-white/10 my-8 sm:my-12" />
-
-        {/* Portfolio */}
-        <PortfolioSection
-          images={formData.images}
-          onImagesChange={handleImagesChange}
-          onFilesChange={handleFilesChange}
-          businessProfile={businessProfile}
-          isLoading={isLoading}
-          isFreeTier={isFreeTier}
-        />
+        {activeTab === 'contact' ? (
+          <div
+            id="edit-profile-tabpanel-contact"
+            role="tabpanel"
+            aria-labelledby="edit-profile-tab-contact"
+          >
+            <ContactSection
+              formData={formData}
+              onInputChange={handleInputChange}
+              errors={errors}
+            />
+          </div>
+        ) : null}
       </div>
+
+      <EditProfileActionBar
+        onPreview={onCancel}
+        onSave={handleSave}
+        disabled={isAnyLoading}
+        isSaving={isSaving}
+        isUploading={isUploadingPortfolio}
+      />
     </div>
   );
 };

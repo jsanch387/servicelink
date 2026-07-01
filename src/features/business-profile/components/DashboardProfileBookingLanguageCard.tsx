@@ -1,17 +1,15 @@
 'use client';
 
-import { GlassCard, nativeCheckboxSmClassName } from '@/components/shared';
+import { GlassCard, Switch } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 
 export interface DashboardProfileBookingLanguageCardProps {
   offerSpanish: boolean;
   onOfferSpanishChange: (offer: boolean) => void;
-  /** Shown only when Spanish is offered. Must be `en` when Spanish is off (parent resets). */
   visitorDefaultLocale: PublicBookingFlowLocale;
   onVisitorDefaultLocaleChange: (locale: PublicBookingFlowLocale) => void;
 }
 
-/** Offered locales + visitor default when both EN and ES are offered. */
 export function DashboardProfileBookingLanguageCard({
   offerSpanish,
   onOfferSpanishChange,
@@ -20,72 +18,40 @@ export function DashboardProfileBookingLanguageCard({
 }: DashboardProfileBookingLanguageCardProps) {
   return (
     <div className="w-full max-w-full text-left">
-      <p className="mb-1.5 block text-left text-sm font-medium text-gray-200">
-        Booking link languages
-      </p>
+      <p className="text-sm font-medium text-gray-200">Languages</p>
+      <p className="mt-1 text-xs text-zinc-500">English is always included.</p>
 
-      <GlassCard
-        padding="sm"
-        rounded="rounded-xl"
-        className="w-full max-w-full"
-      >
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <label className="inline-flex cursor-default items-center gap-2">
-            <input
-              type="checkbox"
-              checked
-              disabled
-              className={`${nativeCheckboxSmClassName} cursor-not-allowed opacity-60`}
-              aria-label="English always included"
-            />
-            <span className="text-xs text-gray-300">
-              English <span className="text-zinc-600">(always on)</span>
-            </span>
-          </label>
-
-          <label className="inline-flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={offerSpanish}
-              onChange={e => onOfferSpanishChange(e.target.checked)}
-              className={`${nativeCheckboxSmClassName} cursor-pointer`}
-              aria-label="Offer Spanish on booking link"
-            />
-            <span className="text-xs text-gray-300">
-              Spanish <span className="text-zinc-600">(optional)</span>
-            </span>
-          </label>
+      <GlassCard padding="sm" rounded="rounded-xl" className="mt-2 w-full">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-gray-200">Spanish</p>
+          <Switch
+            checked={offerSpanish}
+            onCheckedChange={onOfferSpanishChange}
+            size="md"
+            aria-label="Spanish on booking link"
+          />
         </div>
 
         {offerSpanish ? (
-          <div className="mt-3 space-y-2 border-t border-white/[0.06] pt-3">
-            <div>
-              <p className="text-xs font-medium text-gray-200 leading-snug">
-                Default language for your link?
-              </p>
-              <p className="mt-1 text-[11px] leading-snug text-zinc-500">
-                Choose what languages your customers see.
-              </p>
-            </div>
-            <div
-              className="inline-flex rounded-md border border-white/10 bg-black/25 p-0.5"
-              role="group"
-              aria-label="Default language for your booking link"
-            >
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
+            <p className="text-sm text-gray-200">Default language</p>
+            <div className="flex flex-wrap gap-2">
               {(['en', 'es'] as const).map(code => {
                 const selected = visitorDefaultLocale === code;
+                const label = code === 'en' ? 'English' : 'Spanish';
                 return (
                   <button
                     key={code}
                     type="button"
                     onClick={() => onVisitorDefaultLocaleChange(code)}
-                    className={`rounded px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-white/25 ${
+                    aria-pressed={selected}
+                    className={`cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25 ${
                       selected
-                        ? 'bg-white/[0.15] text-gray-100'
-                        : 'text-zinc-500 hover:text-zinc-400'
+                        ? 'bg-white text-black'
+                        : 'bg-white/[0.06] text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
-                    {code === 'en' ? 'English' : 'Spanish'}
+                    {label}
                   </button>
                 );
               })}
