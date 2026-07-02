@@ -5,4 +5,4 @@
  * Reuses the main webhook handler logic, but verifies signatures with
  * `STRIPE_CONNECT_WEBHOOK_SECRET` first.
  */
-export { POST } from '@/app/api/stripe/webhook/route';
+export { maxDuration, POST } from '@/app/api/stripe/webhook/route';

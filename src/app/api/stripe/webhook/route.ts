@@ -54,8 +54,11 @@ import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+
+/** Stripe expects a 2xx within ~10s; booking DB writes must finish first, emails run after. */
+export const maxDuration = 60;
 
 function logBookingWebhook(message: string, payload?: Record<string, unknown>) {
   if (
@@ -646,40 +649,6 @@ export async function POST(request: NextRequest) {
         bookingId: createdBooking.id,
         paymentStatus,
       });
-      await notifyOwnerForAvailabilityBookingCreated(supabase, {
-        profileId,
-        bookingId: createdBooking.id,
-        customerName: bookingPayload.customer.fullName.trim(),
-        serviceSummaryLine: storedServiceName,
-        scheduledDate: bookingPayload.scheduledDate,
-        emailPayload: availabilityEmailPayload,
-      });
-      logBookingCheckoutStage('owner_notified', {
-        eventId: event.id,
-        sessionId: session.id,
-        bookingId: createdBooking.id,
-      });
-      if (resolvedCustomerEmail) {
-        try {
-          await sendAvailabilityBookingCustomerConfirmationEmail(
-            resolvedCustomerEmail,
-            businessDisplayName,
-            availabilityEmailPayload
-          );
-          logBookingCheckoutStage('customer_email.sent', {
-            eventId: event.id,
-            sessionId: session.id,
-            bookingId: createdBooking.id,
-          });
-        } catch {
-          // best-effort customer confirmation email
-          logBookingCheckoutStage('customer_email.failed', {
-            eventId: event.id,
-            sessionId: session.id,
-            bookingId: createdBooking.id,
-          });
-        }
-      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('booking_checkout_sessions')
@@ -710,6 +679,62 @@ export async function POST(request: NextRequest) {
         amountPaidCents,
         remainingCents,
       });
+
+      const bookingCheckoutNotifyContext = {
+        eventId: event.id,
+        sessionId: session.id,
+        bookingId: createdBooking.id,
+        profileId,
+        customerName: bookingPayload.customer.fullName.trim(),
+        storedServiceName,
+        scheduledDate: bookingPayload.scheduledDate,
+        availabilityEmailPayload,
+        resolvedCustomerEmail,
+        businessDisplayName,
+      };
+      after(async () => {
+        try {
+          await notifyOwnerForAvailabilityBookingCreated(supabase, {
+            profileId: bookingCheckoutNotifyContext.profileId,
+            bookingId: bookingCheckoutNotifyContext.bookingId,
+            customerName: bookingCheckoutNotifyContext.customerName,
+            serviceSummaryLine: bookingCheckoutNotifyContext.storedServiceName,
+            scheduledDate: bookingCheckoutNotifyContext.scheduledDate,
+            emailPayload: bookingCheckoutNotifyContext.availabilityEmailPayload,
+          });
+          logBookingCheckoutStage('owner_notified', {
+            eventId: bookingCheckoutNotifyContext.eventId,
+            sessionId: bookingCheckoutNotifyContext.sessionId,
+            bookingId: bookingCheckoutNotifyContext.bookingId,
+          });
+          if (bookingCheckoutNotifyContext.resolvedCustomerEmail) {
+            try {
+              await sendAvailabilityBookingCustomerConfirmationEmail(
+                bookingCheckoutNotifyContext.resolvedCustomerEmail,
+                bookingCheckoutNotifyContext.businessDisplayName,
+                bookingCheckoutNotifyContext.availabilityEmailPayload
+              );
+              logBookingCheckoutStage('customer_email.sent', {
+                eventId: bookingCheckoutNotifyContext.eventId,
+                sessionId: bookingCheckoutNotifyContext.sessionId,
+                bookingId: bookingCheckoutNotifyContext.bookingId,
+              });
+            } catch {
+              logBookingCheckoutStage('customer_email.failed', {
+                eventId: bookingCheckoutNotifyContext.eventId,
+                sessionId: bookingCheckoutNotifyContext.sessionId,
+                bookingId: bookingCheckoutNotifyContext.bookingId,
+              });
+            }
+          }
+        } catch (err) {
+          console.error(
+            '[booking-checkout:webhook] deferred owner/customer notify failed',
+            err
+          );
+        }
+      });
+
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
