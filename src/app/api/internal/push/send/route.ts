@@ -7,29 +7,26 @@
 
 import { parseInternalPushSendBody } from '@/features/push/server/internalPushSendParse';
 import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
+import { verifyInternalPushSecret } from '@/features/push/server/internalPushSecret';
 import { logInternalPushSend } from '@/features/push/server/pushTransactionLog';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { timingSafeEqual } from 'crypto';
+import { assertReasonableJsonBodySize } from '@/server/rateLimit/publicApiRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
-function constantTimeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, 'utf8');
-  const bufB = Buffer.from(b, 'utf8');
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
-}
+const MAX_BODY_BYTES = 8 * 1024;
 
 export async function POST(request: NextRequest) {
-  const configuredSecret = process.env.INTERNAL_PUSH_API_SECRET?.trim();
-  if (!configuredSecret) {
+  const auth = verifyInternalPushSecret(request);
+  if (auth === 'not_configured') {
     logInternalPushSend('warn', 'not_configured', {});
     return NextResponse.json({ error: 'Not configured' }, { status: 503 });
   }
-
-  const provided = request.headers.get('x-internal-push-secret') ?? '';
-  if (!constantTimeEqual(provided, configuredSecret)) {
+  if (auth === 'unauthorized') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const tooLarge = assertReasonableJsonBodySize(request, MAX_BODY_BYTES);
+  if (tooLarge) return tooLarge;
 
   let json: unknown;
   try {

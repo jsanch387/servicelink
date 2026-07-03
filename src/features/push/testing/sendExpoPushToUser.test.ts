@@ -111,3 +111,55 @@ describe('sendExpoPushToUser', () => {
     expect(parsed[0].body).toBeUndefined();
   });
 });
+
+describe('sendExpoPushBroadcast', () => {
+  const originalToken = process.env.EXPO_ACCESS_TOKEN;
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+    process.env.EXPO_ACCESS_TOKEN = 'test-expo-token';
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    process.env.EXPO_ACCESS_TOKEN = originalToken;
+  });
+
+  it('sends to all tokens from user_push_tokens', async () => {
+    const { sendExpoPushBroadcast } = await import(
+      '@/features/push/server/sendExpoPushToUser'
+    );
+
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ status: 'ok' }] }),
+    } as Response);
+
+    const range = vi.fn().mockResolvedValue({
+      data: [
+        { expo_push_token: 'ExponentPushToken[one]' },
+        { expo_push_token: 'ExponentPushToken[two]' },
+      ],
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ range });
+    const from = vi.fn().mockReturnValue({ select });
+
+    const result = await sendExpoPushBroadcast({ from } as never, {
+      title: 'New feature',
+      body: 'Try it now',
+      data: { reference_type: 'announcement', reference_id: 'launch-1' },
+    });
+
+    expect(from).toHaveBeenCalledWith('user_push_tokens');
+    expect(range).toHaveBeenCalledWith(0, 999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ tokenCount: 2, messageCount: 2 });
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body).toHaveLength(2);
+    expect(body[0].to).toBe('ExponentPushToken[one]');
+    expect(body[1].to).toBe('ExponentPushToken[two]');
+  });
+});

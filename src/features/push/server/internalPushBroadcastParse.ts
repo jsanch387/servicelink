@@ -2,23 +2,35 @@ import {
   INTERNAL_PUSH_BODY_MAX,
   INTERNAL_PUSH_REFERENCE_ID_MAX,
   INTERNAL_PUSH_REFERENCE_TYPE_MAX,
+  INTERNAL_PUSH_TEST_EMAIL_MAX,
   INTERNAL_PUSH_TITLE_MAX,
   internalPushStringWithinMax,
 } from '@/features/push/server/internalPushLimits';
 
-export type InternalPushSendPayload = {
-  userId: string;
+export type InternalPushBroadcastPayload = {
   title: string;
   body: string | null;
   data: { reference_type: string; reference_id: string };
+  /** When set, push is sent only to this user's devices (for testing). */
+  testEmail: string | null;
 };
 
-export function parseInternalPushSendBody(
+function normalizeOptionalEmail(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return null;
+  if (!internalPushStringWithinMax(trimmed, INTERNAL_PUSH_TEST_EMAIL_MAX)) {
+    return null;
+  }
+  return trimmed;
+}
+
+export function parseInternalPushBroadcastBody(
   json: unknown
-): InternalPushSendPayload | null {
+): InternalPushBroadcastPayload | null {
   if (!json || typeof json !== 'object') return null;
   const o = json as Record<string, unknown>;
-  const userId = typeof o.userId === 'string' ? o.userId.trim() : '';
   const title = typeof o.title === 'string' ? o.title.trim() : '';
   const body =
     o.body === null || o.body === undefined
@@ -34,7 +46,6 @@ export function parseInternalPushSendBody(
   const reference_id =
     typeof d.reference_id === 'string' ? d.reference_id.trim() : '';
   if (
-    !userId ||
     !internalPushStringWithinMax(title, INTERNAL_PUSH_TITLE_MAX) ||
     !internalPushStringWithinMax(
       reference_type,
@@ -51,9 +62,9 @@ export function parseInternalPushSendBody(
     return null;
   }
   return {
-    userId,
     title,
     body,
     data: { reference_type, reference_id },
+    testEmail: normalizeOptionalEmail(o.testEmail),
   };
 }
