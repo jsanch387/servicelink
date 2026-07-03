@@ -65,10 +65,7 @@ async function consume(
     return { success: result.success, reset: result.reset };
   }
   const allowed = memory.allow(memoryKey, memoryLimit, memoryWindowMs);
-  return {
-    success: allowed,
-    reset: Date.now() + memoryWindowMs,
-  };
+  return allowed;
 }
 
 /** All broadcast attempts per IP (auth success or failure) — slows secret guessing. */
