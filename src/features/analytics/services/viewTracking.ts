@@ -37,7 +37,8 @@ class ViewTrackingService {
         return { success: true, newView: false };
       }
 
-      // Call API to track view
+      const utmParams = this.captureUtmParams();
+
       const response = await fetch('/api/analytics/track-view', {
         method: 'POST',
         headers: {
@@ -46,6 +47,7 @@ class ViewTrackingService {
         body: JSON.stringify({
           businessSlug,
           viewerIP,
+          ...utmParams,
         }),
       });
 
@@ -110,6 +112,31 @@ class ViewTrackingService {
 
     // Clean up old cache entries
     this.cleanupCache();
+  }
+
+  private captureUtmParams(): {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_term?: string;
+    utm_content?: string;
+    referrer?: string;
+  } {
+    if (typeof window === 'undefined') return {};
+    const params = new URLSearchParams(window.location.search);
+    const result: Record<string, string> = {};
+    for (const key of [
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_term',
+      'utm_content',
+    ] as const) {
+      const val = params.get(key);
+      if (val) result[key] = val;
+    }
+    if (document.referrer) result.referrer = document.referrer;
+    return result;
   }
 
   /**

@@ -28,6 +28,7 @@ env.local
 next-env.d.ts
 
 # IDE and Editor files
+.cursor/
 .vscode/
 .idea/
 *.swp

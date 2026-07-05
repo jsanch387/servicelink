@@ -22,6 +22,34 @@ type ExpoPushMessage = {
   data: Record<string, string>;
 };
 
+function buildExpoPushMessages(
+  tokens: string[],
+  title: string,
+  body: string | null,
+  data: ExpoPushDeepLinkData
+): ExpoPushMessage[] {
+  const dataStrings: Record<string, string> = {
+    reference_type: data.reference_type,
+    reference_id: data.reference_id,
+    referenceType: data.reference_type,
+    referenceId: data.reference_id,
+  };
+
+  const bodyTrimmed = body?.trim() ? body.trim() : null;
+
+  return tokens.map(to => {
+    const msg: ExpoPushMessage = {
+      to,
+      title,
+      data: dataStrings,
+    };
+    if (bodyTrimmed) {
+      msg.body = bodyTrimmed;
+    }
+    return msg;
+  });
+}
+
 async function postExpoBatch(
   accessToken: string,
   messages: ExpoPushMessage[]
@@ -57,6 +85,18 @@ async function postExpoBatch(
     });
   }
 }
+
+async function sendExpoPushMessages(
+  accessToken: string,
+  messages: ExpoPushMessage[]
+): Promise<void> {
+  for (let i = 0; i < messages.length; i += EXPO_BATCH_SIZE) {
+    const chunk = messages.slice(i, i + EXPO_BATCH_SIZE);
+    await postExpoBatch(accessToken, chunk);
+  }
+}
+
+const TOKEN_PAGE_SIZE = 1000;
 
 /**
  * Sends one Expo message per device token for `userId`.
@@ -106,36 +146,94 @@ export async function sendExpoPushToUser(
     return;
   }
 
-  const dataStrings: Record<string, string> = {
-    reference_type: data.reference_type,
-    reference_id: data.reference_id,
-    referenceType: data.reference_type,
-    referenceId: data.reference_id,
-  };
-
-  const bodyTrimmed = body?.trim() ? body.trim() : null;
-
-  const messages: ExpoPushMessage[] = tokens.map(to => {
-    const msg: ExpoPushMessage = {
-      to,
-      title,
-      data: dataStrings,
-    };
-    if (bodyTrimmed) {
-      msg.body = bodyTrimmed;
-    }
-    return msg;
-  });
+  const messages = buildExpoPushMessages(tokens, title, body, data);
 
   try {
-    for (let i = 0; i < messages.length; i += EXPO_BATCH_SIZE) {
-      const chunk = messages.slice(i, i + EXPO_BATCH_SIZE);
-      await postExpoBatch(accessToken, chunk);
-    }
+    await sendExpoPushMessages(accessToken, messages);
   } catch (e) {
     logExpoPush('warn', 'expo_send_exception', {
       userId,
       message: e instanceof Error ? e.message : String(e),
     });
   }
+}
+
+/**
+ * Broadcasts one Expo message per registered device token (all app users).
+ * Requires `EXPO_ACCESS_TOKEN`; no-ops when missing.
+ */
+export async function sendExpoPushBroadcast(
+  admin: SupabaseClient<Database>,
+  params: {
+    title: string;
+    body: string | null;
+    data: ExpoPushDeepLinkData;
+  }
+): Promise<{ tokenCount: number; messageCount: number }> {
+  const accessToken = process.env.EXPO_ACCESS_TOKEN?.trim();
+  if (!accessToken) {
+    return { tokenCount: 0, messageCount: 0 };
+  }
+
+  const { title, body, data } = params;
+  const tokenSet = new Set<string>();
+  let offset = 0;
+
+  type TokenPick = Pick<
+    Database['public']['Tables']['user_push_tokens']['Row'],
+    'expo_push_token'
+  >;
+
+  while (true) {
+    const { data: rows, error } = await admin
+      .from('user_push_tokens')
+      .select('expo_push_token')
+      .range(offset, offset + TOKEN_PAGE_SIZE - 1);
+
+    if (error) {
+      logExpoPush('warn', 'broadcast_token_query_failed', {
+        message: error.message,
+        code: error.code,
+        offset,
+      });
+      break;
+    }
+
+    const page = (rows ?? []) as TokenPick[];
+    for (const row of page) {
+      const token = row.expo_push_token?.trim();
+      if (token) {
+        tokenSet.add(token);
+      }
+    }
+
+    if (page.length < TOKEN_PAGE_SIZE) {
+      break;
+    }
+    offset += TOKEN_PAGE_SIZE;
+  }
+
+  const tokens = [...tokenSet];
+  if (tokens.length === 0) {
+    return { tokenCount: 0, messageCount: 0 };
+  }
+
+  const messages = buildExpoPushMessages(tokens, title, body, data);
+
+  try {
+    await sendExpoPushMessages(accessToken, messages);
+    logExpoPush('info', 'broadcast_dispatched', {
+      tokenCount: tokens.length,
+      messageCount: messages.length,
+      reference_type: data.reference_type,
+      reference_id: data.reference_id,
+    });
+  } catch (e) {
+    logExpoPush('warn', 'broadcast_send_exception', {
+      tokenCount: tokens.length,
+      message: e instanceof Error ? e.message : String(e),
+    });
+  }
+
+  return { tokenCount: tokens.length, messageCount: messages.length };
 }

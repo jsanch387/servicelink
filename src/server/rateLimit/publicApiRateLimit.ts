@@ -98,6 +98,9 @@ const contactFormIpRl: { current: Ratelimit | null | undefined } = {
 const contactFormEmailRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
+const signupAttributionUserRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
 
 async function flushPending(result: { pending?: Promise<unknown> }) {
   try {
@@ -338,6 +341,25 @@ export async function assertContactFormRateLimits(
   );
   const r2 = await consume(emailLimiter, `email:${emailKey}`, 5, MS_HOUR);
   if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+/** POST /api/attribution/signup — write-once; bounded retries per user. */
+export async function assertSignupAttributionRateLimits(
+  request: NextRequest,
+  userId: string
+): Promise<NextResponse | null> {
+  const uid = safeUserIdSegment(userId);
+
+  const userLimiter = createLimiter(
+    signupAttributionUserRl,
+    'public_api:signup_attr:user',
+    20,
+    '1 h'
+  );
+  const r1 = await consume(userLimiter, `user:${uid}`, 20, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
 
   return null;
 }

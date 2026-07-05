@@ -2,7 +2,8 @@
 
 import { Button, Input, Select } from '@/components/shared';
 import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
-import React, { useState } from 'react';
+import { trackMetaLeadOnce } from '@/features/analytics/utils/metaLeadTracking';
+import React, { useEffect, useState } from 'react';
 
 interface Step1BusinessNameAndTypeProps {
   profileId: string;
@@ -18,6 +19,10 @@ export const Step1BusinessNameAndType: React.FC<
 > = ({ businessProfileId, businessName, businessType, onUpdate, onNext }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    trackMetaLeadOnce();
+  }, []);
 
   const canContinue =
     businessName.trim().length > 0 && businessType.trim().length > 0;

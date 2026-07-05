@@ -2,12 +2,13 @@
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { AvailabilityBookingPage } from '@/features/availability/booking';
-import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import type {
   AddOnDisplay,
   PublicBookingPaymentSettings,
   TimeOffInterval,
 } from '@/features/availability/booking/types';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
 import { BookingRequestPageClient } from './BookingRequestPageClient';
@@ -41,6 +42,7 @@ interface BookFlowSwitchProps {
   /** From server when URL has `checkout=success&session_id=…` after Stripe. */
   stripeCheckoutSessionId?: string | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  serviceLocation: PublicBookingServiceLocation;
 }
 
 /**
@@ -70,6 +72,7 @@ export function BookFlowSwitch({
   exitCalendarFlowLabel,
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
+  serviceLocation,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
 
@@ -107,6 +110,7 @@ export function BookFlowSwitch({
         exitCalendarFlowLabel={exitCalendarFlowLabel}
         stripeCheckoutSessionId={stripeCheckoutSessionId}
         bookingFlowLocale={bookingFlowLocale}
+        serviceLocation={serviceLocation}
       />
     );
   }

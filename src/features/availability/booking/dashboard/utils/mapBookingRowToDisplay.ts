@@ -31,6 +31,7 @@ export interface BookingRow {
   customer_vehicle_model: string | null;
   customer_notes: string | null;
   customer_id: string | null;
+  service_location_type?: string | null;
   status: string;
   created_at: string;
   updated_at: string;

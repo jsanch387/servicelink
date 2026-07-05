@@ -5,96 +5,29 @@
  * Handles validation, data transformation, and API calls.
  */
 
-import { getBioLengthValidationError } from '../../constants/businessBio';
 import { BusinessProfileApi } from '../../services/businessProfileApi';
 import type { BookingLinkLocalesUiState } from '../bookingLinkLocales';
 import { bookingLinkLocalesPersistFromUi } from '../bookingLinkLocales';
+import type { ServiceLocationUiState } from '../serviceLocationMode';
+import { serviceLocationPersistFromUi } from '../serviceLocationMode';
+import type { EditingFormData, ImageFormData } from './editingTypes';
+import { validateEditingForm } from './editingValidation';
 
-export interface EditingFormData {
-  business_name: string;
-  business_type: string;
-  service_area: string;
-  bio: string;
-  phone_number_call: string;
-  phone_number_text: string;
-  same_phone_for_both: boolean;
-  cover_image_url?: string;
-  logo_url?: string;
-  logo_path?: string;
-  banner_path?: string;
-  images: ImageFormData[];
-}
-
-export interface ImageFormData {
-  id?: string;
-  storage_path: string;
-  position: number;
-  preview_url?: string;
-  file_type?: string;
-  original_type?: string;
-}
-
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-}
-
-const SERVICE_AREA_CITY_STATE_REGEX =
-  /^[A-Za-z]+(?:[ '.-][A-Za-z]+)*,\s?[A-Za-z]{2}$/;
-
-export function isValidCityStateServiceArea(serviceArea: string): boolean {
-  return SERVICE_AREA_CITY_STATE_REGEX.test(serviceArea.trim());
-}
-
-/**
- * Validates the complete editing form
- */
-export function validateEditingForm(
-  formData: EditingFormData
-): ValidationResult {
-  const errors: string[] = [];
-
-  // Business Information Validation
-  if (!formData.business_name.trim()) {
-    errors.push('Business name is required');
-  }
-  if (!formData.business_type.trim()) {
-    errors.push('Business type is required');
-  }
-  // Service area is optional, but must be City, ST when provided
-  if (
-    formData.service_area.trim() &&
-    !isValidCityStateServiceArea(formData.service_area)
-  ) {
-    errors.push('Service area must be in City, ST format');
-  }
-
-  // Phone Validation (single number for customers to call - optional, but must be valid if provided)
-  if (
-    formData.phone_number_call &&
-    formData.phone_number_call.trim() !== '' &&
-    formData.phone_number_call.length !== 10
-  ) {
-    errors.push('Phone number must be 10 digits');
-  }
-
-  const bioError = getBioLengthValidationError(formData.bio);
-  if (bioError) {
-    errors.push(bioError);
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
+export type {
+  EditingFormData,
+  ImageFormData,
+  ValidationResult,
+} from './editingTypes';
+export { validateEditingForm } from './editingValidation';
+export { isValidCityStateServiceArea } from '../businessLocation';
 
 /**
  * Transforms form data for API submission
  */
 export function transformFormDataForAPI(
   formData: EditingFormData,
-  _businessProfileId: string
+  _businessProfileId: string,
+  serviceLocation: ServiceLocationUiState
 ) {
   const imagesToSave = formData.images
     .filter(image => {
@@ -115,7 +48,9 @@ export function transformFormDataForAPI(
     businessProfile: {
       business_name: formData.business_name,
       business_type: formData.business_type,
-      service_area: formData.service_area,
+      service_area: formData.service_area.trim(),
+      business_zip: formData.business_zip.trim(),
+      ...serviceLocationPersistFromUi(serviceLocation),
       bio: formData.bio,
       phone_number_call: formData.phone_number_call,
       phone_number_text: null, // Single number only; customers call this number
@@ -132,11 +67,12 @@ export function transformFormDataForAPI(
 export async function saveBusinessProfile(
   businessProfileId: string,
   formData: EditingFormData,
-  bookingLinkLocales: BookingLinkLocalesUiState
+  bookingLinkLocales: BookingLinkLocalesUiState,
+  serviceLocation: ServiceLocationUiState
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Validate form data
-    const validation = validateEditingForm(formData);
+    const validation = validateEditingForm(formData, serviceLocation);
     if (!validation.isValid) {
       return {
         success: false,
@@ -145,7 +81,11 @@ export async function saveBusinessProfile(
     }
 
     // Transform data for API
-    const apiData = transformFormDataForAPI(formData, businessProfileId);
+    const apiData = transformFormDataForAPI(
+      formData,
+      businessProfileId,
+      serviceLocation
+    );
     const bookingPersist = bookingLinkLocalesPersistFromUi(bookingLinkLocales);
 
     // Save business profile (basic info + booking link locale settings)

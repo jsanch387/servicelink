@@ -2,18 +2,26 @@
 
 import {
   Button,
-  GlassCard,
+  DropdownSelect,
+  FormStepSection,
   Input,
   PhoneInput,
-  Select,
+  SmsNotificationsConsent,
   TextArea,
 } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { API_ROUTES, getPublicBusinessProfilePath } from '@/constants/routes';
-import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import { BookingVehicleFields } from '@/features/availability/booking/components/BookingVehicleFields';
+import { isValidVehicleYearFourDigit } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
-import React, { useMemo, useState } from 'react';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import {
+  PublicFlowBackNavLabel,
+  PublicFlowStickyBackHeader,
+  publicFlowBackNavClassName,
+} from '@/components/shared';
+import Link from 'next/link';
+import React, { useEffect, useMemo, useState } from 'react';
 import type {
   PublicQuoteRequestFormData,
   PublicQuoteRequestFormErrors,
@@ -51,10 +59,6 @@ function isValidPhoneDigits(value: string): boolean {
   return /^\d{10}$/.test(value.trim());
 }
 
-function isValidVehicleYear(value: string): boolean {
-  return /^(19|20)\d{2}$/.test(value.trim());
-}
-
 export const PublicQuoteRequestScreen: React.FC<
   PublicQuoteRequestScreenProps
 > = ({
@@ -67,12 +71,17 @@ export const PublicQuoteRequestScreen: React.FC<
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const qf = ui.quoteForm;
+  const cf = ui.customerForm;
+
   const [form, setForm] = useState<PublicQuoteRequestFormData>(INITIAL_FORM);
   const [errors, setErrors] = useState<PublicQuoteRequestFormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [step, setStep] = useState<QuoteRequestStep>('contact');
+  const [agreedToSmsNotifications, setAgreedToSmsNotifications] =
+    useState(true);
 
   const showVehicleFields = useMemo(() => {
     const t = (businessType ?? '').trim().toLowerCase();
@@ -88,21 +97,34 @@ export const PublicQuoteRequestScreen: React.FC<
     [showVehicleFields]
   );
 
-  const isContactValid = useMemo(
+  const timelineOptions = useMemo(
+    () => [
+      { value: 'ASAP', label: qf.timelineAsap },
+      { value: 'This week', label: qf.timelineThisWeek },
+      { value: 'Next 2 weeks', label: qf.timelineNextTwoWeeks },
+      { value: 'This month', label: qf.timelineThisMonth },
+      { value: 'Flexible', label: qf.timelineFlexible },
+    ],
+    [qf]
+  );
+
+  const isContactFieldsValid = useMemo(
     () =>
       form.customerName.trim().length > 0 &&
       isValidEmail(form.customerEmail) &&
       isValidPhoneDigits(form.customerPhone),
     [form.customerEmail, form.customerName, form.customerPhone]
   );
+
   const isVehicleValid = useMemo(
     () =>
       !showVehicleFields ||
-      (isValidVehicleYear(form.vehicleYear) &&
+      (isValidVehicleYearFourDigit(form.vehicleYear.trim()) &&
         form.vehicleMake.trim().length > 0 &&
         form.vehicleModel.trim().length > 0),
     [form.vehicleMake, form.vehicleModel, form.vehicleYear, showVehicleFields]
   );
+
   const isRequestValid = useMemo(
     () =>
       form.serviceRequested.trim().length > 0 && form.details.trim().length > 0,
@@ -110,12 +132,28 @@ export const PublicQuoteRequestScreen: React.FC<
   );
 
   const canProceedCurrentStep = useMemo(() => {
-    if (step === 'contact') return isContactValid;
+    if (step === 'contact') return isContactFieldsValid;
     if (step === 'vehicle') return isVehicleValid;
     return isRequestValid;
-  }, [isContactValid, isRequestValid, isVehicleValid, step]);
+  }, [isContactFieldsValid, isRequestValid, isVehicleValid, step]);
 
-  const canSubmit = isContactValid && isVehicleValid && isRequestValid;
+  const canSubmit = isContactFieldsValid && isVehicleValid && isRequestValid;
+
+  const stepIndex = steps.indexOf(step);
+  const isLastStep = stepIndex === steps.length - 1;
+  const profileBackHref = getPublicBusinessProfilePath(businessSlug, {
+    lang: bookingFlowLocale,
+  });
+
+  const headerBackLabel = useMemo(() => {
+    if (step === 'contact') return ui.nav.backToProfile;
+    if (step === 'vehicle') return ui.nav.backToYourDetails;
+    return showVehicleFields ? ui.nav.backToVehicle : ui.nav.backToYourDetails;
+  }, [showVehicleFields, step, ui.nav]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
 
   const setField = <K extends keyof PublicQuoteRequestFormData>(
     key: K,
@@ -128,22 +166,18 @@ export const PublicQuoteRequestScreen: React.FC<
   const validate = (): boolean => {
     const next: PublicQuoteRequestFormErrors = {};
 
-    if (!form.customerName.trim()) next.customerName = 'Name is required';
-    if (!isValidEmail(form.customerEmail))
-      next.customerEmail = 'Enter a valid email';
+    if (!form.customerName.trim()) next.customerName = qf.errName;
+    if (!isValidEmail(form.customerEmail)) next.customerEmail = qf.errEmail;
     if (!isValidPhoneDigits(form.customerPhone))
-      next.customerPhone = 'Phone must be 10 digits';
-    if (!form.serviceRequested.trim())
-      next.serviceRequested = 'Service is required';
+      next.customerPhone = qf.errPhone;
+    if (!form.serviceRequested.trim()) next.serviceRequested = qf.errService;
     if (showVehicleFields) {
-      if (!isValidVehicleYear(form.vehicleYear))
-        next.vehicleYear = 'Enter a valid 4-digit year';
-      if (!form.vehicleMake.trim())
-        next.vehicleMake = 'Vehicle make is required';
-      if (!form.vehicleModel.trim())
-        next.vehicleModel = 'Vehicle model is required';
+      if (!isValidVehicleYearFourDigit(form.vehicleYear.trim()))
+        next.vehicleYear = qf.errVehicleYear;
+      if (!form.vehicleMake.trim()) next.vehicleMake = qf.errVehicleMake;
+      if (!form.vehicleModel.trim()) next.vehicleModel = qf.errVehicleModel;
     }
-    if (!form.details.trim()) next.details = 'Please add project details';
+    if (!form.details.trim()) next.details = qf.errDetails;
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -151,22 +185,18 @@ export const PublicQuoteRequestScreen: React.FC<
 
   const validateCurrentStep = (): boolean => {
     const all: PublicQuoteRequestFormErrors = {};
-    if (!form.customerName.trim()) all.customerName = 'Name is required';
-    if (!isValidEmail(form.customerEmail))
-      all.customerEmail = 'Enter a valid email';
+    if (!form.customerName.trim()) all.customerName = qf.errName;
+    if (!isValidEmail(form.customerEmail)) all.customerEmail = qf.errEmail;
     if (!isValidPhoneDigits(form.customerPhone))
-      all.customerPhone = 'Phone must be 10 digits';
+      all.customerPhone = qf.errPhone;
     if (showVehicleFields) {
-      if (!isValidVehicleYear(form.vehicleYear))
-        all.vehicleYear = 'Enter a valid 4-digit year';
-      if (!form.vehicleMake.trim())
-        all.vehicleMake = 'Vehicle make is required';
-      if (!form.vehicleModel.trim())
-        all.vehicleModel = 'Vehicle model is required';
+      if (!isValidVehicleYearFourDigit(form.vehicleYear.trim()))
+        all.vehicleYear = qf.errVehicleYear;
+      if (!form.vehicleMake.trim()) all.vehicleMake = qf.errVehicleMake;
+      if (!form.vehicleModel.trim()) all.vehicleModel = qf.errVehicleModel;
     }
-    if (!form.serviceRequested.trim())
-      all.serviceRequested = 'Service is required';
-    if (!form.details.trim()) all.details = 'Please add project details';
+    if (!form.serviceRequested.trim()) all.serviceRequested = qf.errService;
+    if (!form.details.trim()) all.details = qf.errDetails;
 
     const filtered: PublicQuoteRequestFormErrors =
       step === 'contact'
@@ -191,9 +221,8 @@ export const PublicQuoteRequestScreen: React.FC<
 
   const handlePrimaryAction = async () => {
     setSubmitError(null);
-    const idx = steps.indexOf(step);
-    const isLast = idx === steps.length - 1;
-    if (isLast) {
+
+    if (isLastStep) {
       if (!validate()) return;
       setIsSubmitting(true);
       try {
@@ -221,27 +250,29 @@ export const PublicQuoteRequestScreen: React.FC<
           setSubmitError(
             typeof json?.error === 'string' && json.error.trim()
               ? json.error
-              : 'Something went wrong. Please try again.'
+              : qf.submitErrorGeneric
           );
           return;
         }
         setSubmitted(true);
       } catch {
-        setSubmitError('Something went wrong. Please try again.');
+        setSubmitError(qf.submitErrorGeneric);
       } finally {
         setIsSubmitting(false);
       }
       return;
     }
+
     if (!canProceedCurrentStep && !validateCurrentStep()) return;
-    setStep(steps[idx + 1]);
+    setStep(steps[stepIndex + 1]);
   };
 
   const handleBack = () => {
-    const idx = steps.indexOf(step);
-    if (idx <= 0) return;
-    setStep(steps[idx - 1]);
+    if (stepIndex <= 0) return;
+    setStep(steps[stepIndex - 1]);
   };
+
+  const headerClassName = publicFlowBackNavClassName;
 
   if (submitted) {
     return (
@@ -259,189 +290,156 @@ export const PublicQuoteRequestScreen: React.FC<
   }
 
   return (
-    <main className="min-h-screen bg-[var(--dashboard-bg)] px-4 pb-32 pt-6 sm:px-6 sm:pb-32 sm:pt-8">
-      <div className="mx-auto w-full max-w-3xl">
-        <QuoteFlowHeader
-          backHref={getPublicBusinessProfilePath(businessSlug, {
-            lang: bookingFlowLocale,
-          })}
-          backLabel={ui.nav.backToProfile}
-          title={ui.profile.requestQuote}
-          subtitle={ui.profile.quotePageSubtitle(businessName)}
-          fullWidthDividerAfterBack
-          hideDividerAfterTitle
-        />
+    <main className="min-h-screen bg-[var(--dashboard-bg)]">
+      <PublicFlowStickyBackHeader>
+        {step === 'contact' ? (
+          <Link href={profileBackHref} className={headerClassName}>
+            <PublicFlowBackNavLabel label={headerBackLabel} />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={handleBack}
+            className={headerClassName}
+          >
+            <PublicFlowBackNavLabel label={headerBackLabel} />
+          </button>
+        )}
+      </PublicFlowStickyBackHeader>
 
-        <GlassCard
-          padding="md"
-          rounded="rounded-2xl"
-          blurColor="bg-zinc-500"
-          showBlur={true}
-          className="mt-6 w-full max-w-xl"
-        >
-          <div className="space-y-4">
-            {step === 'contact' ? (
-              <>
-                <p className="text-sm font-semibold text-gray-300">
-                  Your information
-                </p>
-                <Input
-                  label="Name"
-                  value={form.customerName}
-                  onChange={v => setField('customerName', v)}
-                  placeholder="Your full name"
-                  required
-                  autoComplete="name"
-                  error={errors.customerName}
+      <div className="mx-auto flex min-h-[60vh] w-full max-w-2xl flex-col px-4 pb-28 pt-6 sm:px-6 sm:pb-32">
+        {step === 'contact' ? (
+          <div className="mb-6">
+            <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+              {ui.profile.requestQuote}
+            </h1>
+            <p className="mt-0.5 max-w-xl text-sm text-gray-500">
+              {ui.profile.quotePageSubtitle(businessName)}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="flex-1 space-y-6">
+          {step === 'contact' ? (
+            <FormStepSection
+              title={cf.yourDetails}
+              footer={
+                <SmsNotificationsConsent
+                  businessName={businessName}
+                  agreed={agreedToSmsNotifications}
+                  onAgreedChange={setAgreedToSmsNotifications}
+                  bookingFlowLocale={bookingFlowLocale}
                 />
-                <Input
-                  label="Email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  value={form.customerEmail}
-                  onChange={v => setField('customerEmail', v)}
-                  placeholder="you@email.com"
-                  required
-                  error={errors.customerEmail}
-                />
+              }
+            >
+              <Input
+                label={cf.fullName}
+                value={form.customerName}
+                onChange={v => setField('customerName', v)}
+                placeholder="Jane Doe"
+                required
+                autoComplete="name"
+                error={errors.customerName}
+              />
+              <Input
+                label={cf.email}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={form.customerEmail}
+                onChange={v => setField('customerEmail', v)}
+                placeholder="jane@example.com"
+                required
+                error={errors.customerEmail}
+              />
+              <div className="sm:max-w-xs">
                 <PhoneInput
-                  label="Phone"
+                  label={cf.phone}
                   value={form.customerPhone}
                   onChange={v => setField('customerPhone', v)}
                   placeholder="(555) 123-4567"
                   required
                   error={errors.customerPhone}
-                  showDigitHint={false}
+                  showDigitHint
                 />
-              </>
-            ) : null}
+              </div>
+            </FormStepSection>
+          ) : null}
 
-            {step === 'vehicle' && showVehicleFields ? (
-              <>
-                <p className="text-sm font-semibold text-gray-300">Vehicle</p>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <Input
-                    label="Vehicle year"
-                    value={form.vehicleYear}
-                    onChange={v => setField('vehicleYear', v)}
-                    placeholder="e.g. 2020"
-                    inputMode="numeric"
-                    maxLength={4}
-                    required
-                    error={errors.vehicleYear}
-                  />
-                  <Input
-                    label="Vehicle make"
-                    value={form.vehicleMake}
-                    onChange={v => setField('vehicleMake', v)}
-                    placeholder="e.g. Toyota"
-                    required
-                    error={errors.vehicleMake}
-                  />
-                  <Input
-                    label="Vehicle model"
-                    value={form.vehicleModel}
-                    onChange={v => setField('vehicleModel', v)}
-                    placeholder="e.g. Camry"
-                    required
-                    error={errors.vehicleModel}
-                  />
-                </div>
-              </>
-            ) : null}
+          {step === 'vehicle' && showVehicleFields ? (
+            <FormStepSection title={cf.vehicle}>
+              <BookingVehicleFields
+                value={{
+                  vehicleYear: form.vehicleYear,
+                  vehicleMake: form.vehicleMake,
+                  vehicleModel: form.vehicleModel,
+                }}
+                onChange={updates => setForm(prev => ({ ...prev, ...updates }))}
+                errors={{
+                  vehicleYear: errors.vehicleYear,
+                  vehicleMake: errors.vehicleMake,
+                  vehicleModel: errors.vehicleModel,
+                }}
+                bookingFlowLocale={bookingFlowLocale}
+              />
+            </FormStepSection>
+          ) : null}
 
-            {step === 'request' ? (
-              <>
-                {submitError ? (
-                  <p className="text-sm text-red-400" role="alert">
-                    {submitError}
-                  </p>
-                ) : null}
-                <p className="text-sm font-semibold text-gray-300">
-                  Quote details
+          {step === 'request' ? (
+            <div className="space-y-6">
+              {submitError ? (
+                <p className="text-sm text-red-400" role="alert">
+                  {submitError}
                 </p>
+              ) : null}
+              <FormStepSection title={qf.quoteDetails}>
                 <Input
-                  label="Service requested"
+                  label={qf.serviceRequested}
                   value={form.serviceRequested}
                   onChange={v => setField('serviceRequested', v)}
-                  placeholder='e.g. "Interior + exterior detail"'
+                  placeholder={qf.serviceRequestedPlaceholder}
                   required
                   error={errors.serviceRequested}
                 />
-                <Select
-                  label="When? (optional)"
+                <DropdownSelect
+                  label={qf.whenOptional}
                   value={form.timeline}
                   onChange={v => setField('timeline', v)}
-                  options={[
-                    { value: 'ASAP', label: 'ASAP' },
-                    { value: 'This week', label: 'This week' },
-                    { value: 'Next 2 weeks', label: 'Next 2 weeks' },
-                    { value: 'This month', label: 'This month' },
-                    { value: 'Flexible', label: 'Flexible' },
-                  ]}
-                  placeholder="Select timeline"
+                  options={timelineOptions}
+                  placeholder={qf.whenPlaceholder}
                 />
-                <TextArea
-                  label="What do you need done?"
-                  value={form.details}
-                  onChange={v => setField('details', v)}
-                  placeholder="Share a few details so we can quote accurately."
-                  rows={4}
-                  required
-                  maxLength={700}
-                />
-                {errors.details ? (
-                  <p className="-mt-2 text-sm text-red-400">{errors.details}</p>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        </GlassCard>
+              </FormStepSection>
+              <TextArea
+                label={qf.detailsLabel}
+                value={form.details}
+                onChange={v => setField('details', v)}
+                placeholder={qf.detailsPlaceholder}
+                rows={4}
+                required
+                maxLength={700}
+                hideCharCount
+                inputClassName="!rounded-[10px]"
+                error={errors.details}
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <QuoteStickyBar>
-        {steps.indexOf(step) > 0 ? (
-          <div className="flex items-stretch gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="shrink-0 px-5"
-              onClick={handleBack}
-            >
-              Back
-            </Button>
-            <Button
-              type="button"
-              variant="inverse"
-              size="sm"
-              className="min-w-0 flex-1 font-semibold"
-              disabled={
-                steps.indexOf(step) === steps.length - 1
-                  ? !canSubmit || isSubmitting
-                  : !canProceedCurrentStep
-              }
-              loading={steps.indexOf(step) === steps.length - 1 && isSubmitting}
-              onClick={() => void handlePrimaryAction()}
-            >
-              {steps.indexOf(step) === steps.length - 1
-                ? 'Submit request'
-                : 'Continue'}
-            </Button>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="inverse"
-            fullWidth
-            className="font-semibold"
-            disabled={!canProceedCurrentStep}
-            onClick={handlePrimaryAction}
-          >
-            Continue
-          </Button>
-        )}
+      <QuoteStickyBar containerClassName="max-w-2xl">
+        <Button
+          type="button"
+          variant="inverse"
+          fullWidth
+          className="font-semibold"
+          disabled={
+            isLastStep ? !canSubmit || isSubmitting : !canProceedCurrentStep
+          }
+          loading={isLastStep && isSubmitting}
+          onClick={() => void handlePrimaryAction()}
+        >
+          {isLastStep ? qf.submitRequest : ui.common.continue}
+        </Button>
       </QuoteStickyBar>
     </main>
   );

@@ -61,9 +61,9 @@ export default function TermsPage() {
               <li>
                 Where a customer clearly consents in the booking flow, we may
                 also send a limited number of transactional SMS messages about
-                their appointment (for example via Twilio). Standard carrier
-                charges may apply; reply-based opt-out (such as STOP) may be
-                available depending on the program.
+                their appointment. Standard carrier charges may apply;
+                reply-based opt-out (such as STOP) may be available depending on
+                the program.
               </li>
             </ul>
           </section>
@@ -128,10 +128,10 @@ export default function TermsPage() {
                 applicable telecommunications and consumer-protection laws.
               </li>
               <li>
-                ServiceLink may use third-party providers (such as Twilio) to
-                deliver transactional messages on your behalf where the product
-                supports it; your use of those features constitutes direction to
-                send messages consistent with customer consent captured in the
+                ServiceLink may use third-party providers to deliver
+                transactional messages on your behalf where the product supports
+                it; your use of those features constitutes direction to send
+                messages consistent with customer consent captured in the
                 product.
               </li>
             </ul>

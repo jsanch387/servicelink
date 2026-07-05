@@ -4,6 +4,7 @@
  */
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
 import type { WeeklySchedule } from '../types/availability';
 
@@ -98,6 +99,8 @@ export interface AvailabilityBookingPageProps {
    * instead of flashing the calendar before `useSearchParams` + fetch settle.
    */
   stripeCheckoutSessionId?: string | null;
+  /** Business mobile / shop / both + resolved shop address for public booking. */
+  serviceLocation: PublicBookingServiceLocation;
 }
 
 export interface BookingSubmission {
@@ -141,4 +144,11 @@ export interface CreateBookingRequest {
    * authenticated session for this business; customer email may be omitted.
    */
   ownerManualBooking?: boolean;
+  /** Required when business offers both mobile and shop (`service_location_mode = both`). */
+  customerServiceLocation?: 'mobile' | 'shop';
+  /**
+   * Mobile owner manual booking: where service happens (`mobile` | `shop`).
+   * Web may omit; use `customerServiceLocation` instead. Persisted as `bookings.service_location_type`.
+   */
+  serviceLocationType?: 'mobile' | 'shop';
 }

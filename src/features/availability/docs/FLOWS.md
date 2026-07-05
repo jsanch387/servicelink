@@ -100,6 +100,12 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 - API resolves business by **slug**, loads **`time_off_blocks`** from `business_availability`, and **rejects** the request with **409** if the requested window overlaps any time-off block for that date.
   - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
 
+#### Service location on the business profile
+
+Businesses store **`service_location_mode`** (`mobile_only` | `shop_only` | `both`), **`shop_street_address`**, **`shop_unit`**, plus profile **`service_area`** (city/state) and **`business_zip`** on `business_profiles`. Dashboard edit saves these from the **Booking** tab.
+
+The public book flow branches on mode: **mobile** collects customer address; **shop** shows the business shop address and prefills it on submit; **both** lets the customer choose. APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
+
 ---
 
 ## 3. Dashboard: V2 bookings list and status updates
@@ -136,5 +142,6 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 | Blocked slots hook                                | `features/availability/booking/hooks/usePublicBlockedSlots.ts`                                                         |
 | Planner time-off overlay                          | `features/availability/booking/dashboard/DayPlannerView.tsx`                                                           |
 | Create booking (server)                           | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`) |
+| Business service location (mobile/shop/both)      | `business_profiles` columns + [serviceLocation.md](../../business-profile/docs/serviceLocation.md)                     |
 
 Keeping **time in minutes** everywhere (DB, APIs, slot logic) and converting to human-readable duration only in the UI (`formatDurationMinutes`, etc.) keeps the data model simple and avoids timezone/format issues. **Booked slot length** is always the **total** minutes (service + selected add-on time).

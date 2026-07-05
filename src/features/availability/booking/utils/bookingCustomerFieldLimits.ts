@@ -11,18 +11,25 @@ export const BOOKING_CUSTOMER_NOTES_MAX = CUSTOMER_NOTE_MAX_LENGTH;
 export const BOOKING_VEHICLE_MAKE_MAX = 80;
 export const BOOKING_VEHICLE_MODEL_MAX = 80;
 
-/** US ZIP: 5 digits, or ZIP+4 as 9 digits (no hyphen). */
+/** US ZIP: 5 digits only. */
 export function sanitizeUsZipInput(value: string): string {
-  return value.replace(/\D/g, '').slice(0, 9);
+  return value.replace(/\D/g, '').slice(0, 5);
 }
 
 export function isValidUsZipDigits(zip: string): boolean {
-  const z = zip.trim();
-  return /^\d{5}$/.test(z) || /^\d{9}$/.test(z);
+  return /^\d{5}$/.test(zip.trim());
 }
 
 export function sanitizeVehicleYearInput(value: string): string {
   return value.replace(/\D/g, '').slice(0, 4);
+}
+
+/** Vehicle make/model: letters and common punctuation only (no digits). */
+export function sanitizeVehicleTextInput(
+  value: string,
+  maxLen: number
+): string {
+  return value.replace(/[0-9]/g, '').slice(0, maxLen);
 }
 
 export function isValidVehicleYearFourDigit(year: string): boolean {
@@ -61,8 +68,10 @@ export function coerceCustomerFormData(raw: unknown): CustomerFormData {
  * Returns an English error message for the API, or null if valid.
  */
 export function bookingCustomerPayloadErrorMessage(
-  c: CustomerFormData
+  c: CustomerFormData,
+  options?: { requireCustomerAddress?: boolean }
 ): string | null {
+  const requireCustomerAddress = options?.requireCustomerAddress !== false;
   const name = c.fullName.trim();
   if (!name) return 'Customer name is required';
   if (name.length > BOOKING_CUSTOMER_FULL_NAME_MAX)
@@ -76,24 +85,27 @@ export function bookingCustomerPayloadErrorMessage(
   }
 
   if (!c.phone?.trim()) return 'Phone is required';
-  const street = c.streetAddress?.trim() ?? '';
-  if (!street) return 'Street address is required';
-  if (street.length > BOOKING_CUSTOMER_STREET_MAX)
-    return 'Street address is too long';
 
-  const unit = (c.unitApt ?? '').trim();
-  if (unit.length > BOOKING_CUSTOMER_UNIT_MAX)
-    return 'Unit / apartment line is too long';
+  if (requireCustomerAddress) {
+    const street = c.streetAddress?.trim() ?? '';
+    if (!street) return 'Street address is required';
+    if (street.length > BOOKING_CUSTOMER_STREET_MAX)
+      return 'Street address is too long';
 
-  const city = c.city?.trim() ?? '';
-  if (!city) return 'City is required';
-  if (city.length > BOOKING_CUSTOMER_CITY_MAX) return 'City is too long';
+    const unit = (c.unitApt ?? '').trim();
+    if (unit.length > BOOKING_CUSTOMER_UNIT_MAX)
+      return 'Unit / apartment line is too long';
 
-  if (!c.state?.trim()) return 'State is required';
+    const city = c.city?.trim() ?? '';
+    if (!city) return 'City is required';
+    if (city.length > BOOKING_CUSTOMER_CITY_MAX) return 'City is too long';
 
-  const zipDigits = sanitizeUsZipInput(c.zip ?? '');
-  if (!isValidUsZipDigits(zipDigits)) {
-    return 'Please enter a valid US ZIP code (5 digits, or 9 digits for ZIP+4).';
+    if (!c.state?.trim()) return 'State is required';
+
+    const zipDigits = sanitizeUsZipInput(c.zip ?? '');
+    if (!isValidUsZipDigits(zipDigits)) {
+      return 'Please enter a valid US ZIP code (5 digits).';
+    }
   }
 
   const notes = c.notes ?? '';

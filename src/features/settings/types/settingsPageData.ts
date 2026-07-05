@@ -19,6 +19,8 @@ export interface SettingsPageData {
   subscriptionStatus?: string | null;
   subscriptionCurrentPeriodEnd?: string | null;
   subscriptionCancelAtPeriodEnd?: boolean;
+  /** Stripe subscription unit amount when on Pro (e.g. grandfathered $10). */
+  subscriptionMonthlyPrice?: string | null;
   accountEmail?: string;
   signedInWithGoogle?: boolean;
 }

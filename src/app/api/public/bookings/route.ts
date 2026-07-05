@@ -30,9 +30,21 @@ import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availabilit
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
+  buildPublicBookingServiceLocation,
+  customerUsesShopAddress,
+  resolveEffectiveCustomerServiceLocation,
+} from '@/features/business-profile/utils/publicServiceLocation';
+import { prefillCustomerWithShopAddress } from '@/features/availability/booking/utils/bookingServiceLocationFlow';
+import {
+  clientServiceLocationChoice,
+  resolvePersistedBookingServiceLocationType,
+  validateServiceLocationTypeInput,
+} from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
+import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
+import { buildPublicBookingNoCheckoutPaymentSummary } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
+import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
-  type AvailabilityBookingPaymentSummary,
 } from '@/features/email';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
@@ -53,59 +65,6 @@ function publicBookingJson(
       'Cache-Control': 'no-store',
     },
   });
-}
-
-function buildPaymentSummaryForPublicBooking(params: {
-  paymentsEnabled: boolean;
-  checkoutMode: string | null | undefined;
-  currency: string;
-  totalPriceCents: number;
-  /** Email shows a Price details card with this total when true — avoid duplicating the row here. */
-  hasPriceLineItems: boolean;
-}): AvailabilityBookingPaymentSummary {
-  const code = /^[a-z]{3}$/.test(params.currency.trim().toLowerCase())
-    ? params.currency.trim().toLowerCase()
-    : 'usd';
-  const fmt = (cents: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: code.toUpperCase(),
-    }).format(cents / 100);
-
-  const rows: Array<{ label: string; value: string }> = [];
-
-  if (!params.paymentsEnabled) {
-    rows.push({
-      label: 'Online payment',
-      value: 'Not required for this booking',
-    });
-  } else if (params.checkoutMode === 'in_person') {
-    rows.push({
-      label: 'How you pay',
-      value: 'Pay your provider when you meet',
-    });
-    rows.push({
-      label: 'ServiceLink card charge',
-      value: 'None',
-    });
-  } else {
-    rows.push({
-      label: 'ServiceLink card charge',
-      value: 'None for this booking',
-    });
-  }
-
-  if (params.totalPriceCents > 0 && !params.hasPriceLineItems) {
-    rows.push({
-      label: 'Appointment total',
-      value: fmt(params.totalPriceCents),
-    });
-  }
-
-  return {
-    title: 'Payment',
-    rows,
-  };
 }
 
 export async function POST(request: NextRequest) {
@@ -156,8 +115,116 @@ export async function POST(request: NextRequest) {
     }
     const ownerManualBooking = body.ownerManualBooking === true;
     const coercedCustomer = coerceCustomerFormData(body.customer);
-    const customerPayloadErr =
-      bookingCustomerPayloadErrorMessage(coercedCustomer);
+
+    let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
+
+    const supabase = createSupabaseAdminClient();
+
+    const { data: profile, error: profileError } = await supabase
+      .from('business_profiles')
+      .select(
+        'id, business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+      )
+      .eq('business_slug', body.businessSlug.trim())
+      .single();
+
+    if (profileError || !profile) {
+      return publicBookingJson(
+        requestId,
+        { success: false, error: 'Business not found' },
+        404
+      );
+    }
+
+    if (
+      !(await isPublicBusinessSlugVisible(supabase, body.businessSlug.trim()))
+    ) {
+      return publicBookingJson(
+        requestId,
+        { success: false, error: 'Business not found' },
+        404
+      );
+    }
+
+    const serviceLocation = buildPublicBookingServiceLocation(
+      profile as Parameters<typeof buildPublicBookingServiceLocation>[0]
+    );
+
+    if (
+      body.serviceLocationType !== undefined &&
+      body.serviceLocationType !== null &&
+      body.serviceLocationType !== 'mobile' &&
+      body.serviceLocationType !== 'shop'
+    ) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: 'serviceLocationType must be mobile or shop',
+        },
+        400
+      );
+    }
+
+    if (
+      body.serviceLocationType === 'mobile' ||
+      body.serviceLocationType === 'shop'
+    ) {
+      const typeValidation = validateServiceLocationTypeInput(
+        body.serviceLocationType,
+        serviceLocation.mode
+      );
+      if (!typeValidation.ok) {
+        return publicBookingJson(
+          requestId,
+          { success: false, error: typeValidation.error },
+          400
+        );
+      }
+    }
+
+    const clientLocationChoice = clientServiceLocationChoice(body);
+    const locationResolved = resolveEffectiveCustomerServiceLocation(
+      serviceLocation.mode,
+      clientLocationChoice
+    );
+    if (locationResolved.error || !locationResolved.effective) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: locationResolved.error ?? 'Invalid service location',
+        },
+        400
+      );
+    }
+
+    if (
+      customerUsesShopAddress(
+        serviceLocation.mode,
+        locationResolved.effective
+      ) &&
+      !serviceLocation.hasCompleteShopAddress
+    ) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: 'This business has not finished setting up their shop address',
+        },
+        400
+      );
+    }
+
+    const requireCustomerAddress = !customerUsesShopAddress(
+      serviceLocation.mode,
+      locationResolved.effective
+    );
+
+    const customerPayloadErr = bookingCustomerPayloadErrorMessage(
+      coercedCustomer,
+      { requireCustomerAddress }
+    );
     if (customerPayloadErr) {
       return publicBookingJson(
         requestId,
@@ -165,9 +232,13 @@ export async function POST(request: NextRequest) {
         400
       );
     }
-    const sanitizedCustomer = normalizeBookingCustomerInput(coercedCustomer);
 
-    let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
+    let sanitizedCustomer = normalizeBookingCustomerInput(coercedCustomer);
+    if (!requireCustomerAddress) {
+      sanitizedCustomer = normalizeBookingCustomerInput(
+        prefillCustomerWithShopAddress(sanitizedCustomer, serviceLocation)
+      );
+    }
 
     if (ownerManualBooking) {
       if (!body.businessId?.trim()) {
@@ -208,34 +279,6 @@ export async function POST(request: NextRequest) {
         );
       }
       ownerAuthMethod = auth.authMethod;
-    }
-
-    const supabase = createSupabaseAdminClient();
-
-    const { data: profile, error: profileError } = await supabase
-      .from('business_profiles')
-      .select(
-        'id, business_slug, business_name, profile_id, free_bookings_count'
-      )
-      .eq('business_slug', body.businessSlug.trim())
-      .single();
-
-    if (profileError || !profile) {
-      return publicBookingJson(
-        requestId,
-        { success: false, error: 'Business not found' },
-        404
-      );
-    }
-
-    if (
-      !(await isPublicBusinessSlugVisible(supabase, body.businessSlug.trim()))
-    ) {
-      return publicBookingJson(
-        requestId,
-        { success: false, error: 'Business not found' },
-        404
-      );
     }
 
     const p = profile as {
@@ -312,6 +355,10 @@ export async function POST(request: NextRequest) {
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
       customer: sanitizedCustomer,
+      serviceLocationType: resolvePersistedBookingServiceLocationType({
+        clientChoice: locationResolved.effective ?? clientLocationChoice,
+        businessMode: serviceLocation.mode,
+      }),
     });
 
     const selectedAddOnsForEmail = body.selectedAddOns ?? [];
@@ -383,12 +430,23 @@ export async function POST(request: NextRequest) {
         body.servicePriceCents > 0) ||
       selectedAddOnsForEmail.length > 0;
 
-    const paymentSummary = buildPaymentSummaryForPublicBooking({
+    const paymentSummary = buildPublicBookingNoCheckoutPaymentSummary({
       paymentsEnabled: paySettings?.payments_enabled === true,
       checkoutMode: paySettings?.checkout_mode,
+      clientPaymentMethod,
       currency: paySettings?.currency?.trim() || 'usd',
       totalPriceCents: totalPriceCentsForEmail,
       hasPriceLineItems,
+    });
+
+    const emailServiceLocation = buildAvailabilityBookingEmailServiceLocation({
+      effectiveType: locationResolved.effective,
+      shopAddressLabel: serviceLocation.shopAddressLabel,
+      customerStreet: sanitizedCustomer.streetAddress,
+      customerUnit: sanitizedCustomer.unitApt,
+      customerCity: sanitizedCustomer.city,
+      customerState: sanitizedCustomer.state,
+      customerZip: sanitizedCustomer.zip,
     });
 
     const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
@@ -407,6 +465,7 @@ export async function POST(request: NextRequest) {
       selectedAddOns: selectedAddOnsForEmail,
       totalPriceCents: totalPriceCentsForEmail,
       paymentSummary,
+      serviceLocation: emailServiceLocation,
     };
 
     await notifyOwnerForAvailabilityBookingCreated(supabase, {

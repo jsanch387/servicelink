@@ -1,3 +1,11 @@
+import {
+  INTERNAL_PUSH_BODY_MAX,
+  INTERNAL_PUSH_REFERENCE_ID_MAX,
+  INTERNAL_PUSH_REFERENCE_TYPE_MAX,
+  INTERNAL_PUSH_TITLE_MAX,
+  internalPushStringWithinMax,
+} from '@/features/push/server/internalPushLimits';
+
 export type InternalPushSendPayload = {
   userId: string;
   title: string;
@@ -25,7 +33,23 @@ export function parseInternalPushSendBody(
     typeof d.reference_type === 'string' ? d.reference_type.trim() : '';
   const reference_id =
     typeof d.reference_id === 'string' ? d.reference_id.trim() : '';
-  if (!userId || !title || !reference_type || !reference_id) return null;
+  if (
+    !userId ||
+    !internalPushStringWithinMax(title, INTERNAL_PUSH_TITLE_MAX) ||
+    !internalPushStringWithinMax(
+      reference_type,
+      INTERNAL_PUSH_REFERENCE_TYPE_MAX
+    ) ||
+    !internalPushStringWithinMax(reference_id, INTERNAL_PUSH_REFERENCE_ID_MAX)
+  ) {
+    return null;
+  }
+  if (
+    body !== null &&
+    !internalPushStringWithinMax(body.trim(), INTERNAL_PUSH_BODY_MAX)
+  ) {
+    return null;
+  }
   return {
     userId,
     title,

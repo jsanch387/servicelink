@@ -30,6 +30,16 @@ import {
   sendTrialEndingSoonEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
+import { buildStripeCheckoutPaymentSummary } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
+import {
+  buildPublicBookingServiceLocation,
+  resolveEffectiveCustomerServiceLocation,
+} from '@/features/business-profile/utils/publicServiceLocation';
+import {
+  clientServiceLocationChoice,
+  resolvePersistedBookingServiceLocationType,
+} from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
@@ -45,8 +55,11 @@ import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+
+/** Stripe expects a 2xx within ~10s; booking DB writes must finish first, emails run after. */
+export const maxDuration = 60;
 
 function logBookingWebhook(message: string, payload?: Record<string, unknown>) {
   if (
@@ -124,6 +137,8 @@ type StoredBookingCheckoutPayload = {
   paymentMethodSelected: 'pay_now' | 'pay_in_person' | 'none';
   depositType?: 'fixed' | 'percent' | null;
   depositValue?: number | null;
+  customerServiceLocation?: 'mobile' | 'shop';
+  serviceLocationType?: 'mobile' | 'shop';
 };
 
 function customerFormFromCheckoutStored(
@@ -187,6 +202,17 @@ function parseStoredBookingCheckoutPayload(
     paymentMethodSelected === 'none'
       ? paymentMethodSelected
       : null;
+  const customerServiceLocationRaw = p.customerServiceLocation;
+  const customerServiceLocation =
+    customerServiceLocationRaw === 'mobile' ||
+    customerServiceLocationRaw === 'shop'
+      ? customerServiceLocationRaw
+      : undefined;
+  const serviceLocationTypeRaw = p.serviceLocationType;
+  const serviceLocationType =
+    serviceLocationTypeRaw === 'mobile' || serviceLocationTypeRaw === 'shop'
+      ? serviceLocationTypeRaw
+      : undefined;
   if (
     !businessId ||
     !businessSlug ||
@@ -253,6 +279,8 @@ function parseStoredBookingCheckoutPayload(
       typeof p.depositValue === 'number' && Number.isFinite(p.depositValue)
         ? Math.max(0, Math.round(p.depositValue))
         : null,
+    customerServiceLocation,
+    serviceLocationType,
   };
 }
 
@@ -446,7 +474,9 @@ export async function POST(request: NextRequest) {
 
       const { data: capProfileRow, error: capProfileError } = await supabase
         .from('business_profiles')
-        .select('id, profile_id, free_bookings_month, free_bookings_count')
+        .select(
+          'id, profile_id, free_bookings_month, free_bookings_count, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+        )
         .eq('id', bookingPayload.businessId.trim())
         .maybeSingle();
 
@@ -474,6 +504,12 @@ export async function POST(request: NextRequest) {
         profile_id: string | null;
         free_bookings_month: string | null;
         free_bookings_count: number | null;
+        business_name: string | null;
+        service_location_mode: string | null;
+        service_area: string | null;
+        business_zip: string | null;
+        shop_street_address: string | null;
+        shop_unit: string | null;
       };
 
       const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(
@@ -502,6 +538,14 @@ export async function POST(request: NextRequest) {
       const storedServiceName = optionLabel
         ? `${bookingPayload.serviceName.trim()} — ${optionLabel}`
         : bookingPayload.serviceName.trim();
+      const serviceLocation = buildPublicBookingServiceLocation(capProfile);
+      const locationResolved = resolveEffectiveCustomerServiceLocation(
+        serviceLocation.mode,
+        clientServiceLocationChoice(bookingPayload)
+      );
+      const effectiveLocationType =
+        locationResolved.effective ??
+        (serviceLocation.mode === 'shop_only' ? 'shop' : 'mobile');
       const createdBooking = await createBooking(supabase, {
         businessId: bookingPayload.businessId,
         businessSlug: bookingPayload.businessSlug,
@@ -513,6 +557,10 @@ export async function POST(request: NextRequest) {
         scheduledDate: bookingPayload.scheduledDate,
         startTime: bookingPayload.startTime,
         customer: customerFormFromCheckoutStored(bookingPayload.customer),
+        serviceLocationType: resolvePersistedBookingServiceLocationType({
+          clientChoice: effectiveLocationType,
+          businessMode: serviceLocation.mode,
+        }),
       });
       logBookingCheckoutStage('booking.created', {
         eventId: event.id,
@@ -529,11 +577,6 @@ export async function POST(request: NextRequest) {
         typeof session.currency === 'string' && session.currency.trim()
           ? session.currency.trim().toLowerCase()
           : 'usd';
-      const formatMoney = (cents: number) =>
-        new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: currencyCode.toUpperCase(),
-        }).format(cents / 100);
       const selectedAddOnsForEmail = bookingPayload.selectedAddOns ?? [];
       const basePriceForEmail = bookingPayload.servicePriceCents ?? 0;
       const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
@@ -545,19 +588,20 @@ export async function POST(request: NextRequest) {
         (typeof bookingPayload.servicePriceCents === 'number' &&
           bookingPayload.servicePriceCents > 0) ||
         selectedAddOnsForEmail.length > 0;
-      const depositPaymentRows: Array<{ label: string; value: string }> = [
-        { label: 'Deposit paid', value: formatMoney(amountPaidCents) },
+      const emailServiceLocation = buildAvailabilityBookingEmailServiceLocation(
         {
-          label: 'Remaining balance',
-          value: formatMoney(remainingCents),
-        },
-      ];
-      if (!hasPriceLineItems) {
-        depositPaymentRows.push({
-          label: 'Appointment total',
-          value: formatMoney(bookingPayload.totalPriceCents),
-        });
-      }
+          effectiveType: effectiveLocationType,
+          shopAddressLabel: serviceLocation.shopAddressLabel,
+          customerStreet: bookingPayload.customer.streetAddress,
+          customerUnit: bookingPayload.customer.unitApt,
+          customerCity: bookingPayload.customer.city,
+          customerState: bookingPayload.customer.state,
+          customerZip: bookingPayload.customer.zip,
+        }
+      );
+      const profileId = capProfile.profile_id ?? null;
+      const businessDisplayName =
+        capProfile.business_name?.trim() || bookingPayload.businessSlug;
       const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
         customerName: bookingPayload.customer.fullName.trim(),
         customerEmail: resolvedCustomerEmail,
@@ -573,27 +617,16 @@ export async function POST(request: NextRequest) {
         servicePriceCents: bookingPayload.servicePriceCents,
         selectedAddOns: selectedAddOnsForEmail,
         totalPriceCents: totalPriceCentsForEmail,
-        paymentSummary: {
-          title: 'Payment',
-          rows:
-            paymentStatus === 'paid_full'
-              ? [{ label: 'Paid in full', value: formatMoney(amountPaidCents) }]
-              : depositPaymentRows,
-          stripeCardPayment: true,
-        },
+        paymentSummary: buildStripeCheckoutPaymentSummary({
+          paymentStatus,
+          amountPaidCents,
+          remainingCents,
+          totalPriceCents: bookingPayload.totalPriceCents,
+          currency: currencyCode,
+          hasPriceLineItems,
+        }),
+        serviceLocation: emailServiceLocation,
       };
-      const { data: businessRow } = await supabase
-        .from('business_profiles')
-        .select('profile_id, business_name')
-        .eq('id', bookingPayload.businessId)
-        .maybeSingle();
-      const profileId =
-        (businessRow as { profile_id?: string | null } | null)?.profile_id ??
-        null;
-      const businessDisplayName =
-        (
-          businessRow as { business_name?: string | null } | null
-        )?.business_name?.trim() || bookingPayload.businessSlug;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('booking_payments').insert({
         booking_id: createdBooking.id,
@@ -617,57 +650,6 @@ export async function POST(request: NextRequest) {
         bookingId: createdBooking.id,
         paymentStatus,
       });
-      await notifyOwnerForAvailabilityBookingCreated(supabase, {
-        profileId,
-        bookingId: createdBooking.id,
-        customerName: bookingPayload.customer.fullName.trim(),
-        serviceSummaryLine: storedServiceName,
-        scheduledDate: bookingPayload.scheduledDate,
-        emailPayload: availabilityEmailPayload,
-      });
-      logBookingCheckoutStage('owner_notified', {
-        eventId: event.id,
-        sessionId: session.id,
-        bookingId: createdBooking.id,
-      });
-      if (resolvedCustomerEmail) {
-        try {
-          await sendAvailabilityBookingCustomerConfirmationEmail(
-            resolvedCustomerEmail,
-            businessDisplayName,
-            availabilityEmailPayload
-          );
-          logBookingCheckoutStage('customer_email.sent', {
-            eventId: event.id,
-            sessionId: session.id,
-            bookingId: createdBooking.id,
-          });
-        } catch {
-          // best-effort customer confirmation email
-          logBookingCheckoutStage('customer_email.failed', {
-            eventId: event.id,
-            sessionId: session.id,
-            bookingId: createdBooking.id,
-          });
-        }
-      }
-      if (bookingPayload.customer.phone) {
-        await sendAndRecordSms({
-          admin: supabase,
-          businessId: bookingPayload.businessId,
-          bookingId: createdBooking.id,
-          customerId: createdBooking.customerId,
-          type: 'booking_confirmation',
-          to: bookingPayload.customer.phone,
-          message: buildBookingConfirmedSms({
-            businessName: businessDisplayName,
-            scheduledDate: bookingPayload.scheduledDate,
-            startTime: bookingPayload.startTime,
-          }),
-          dedupeKey: `${createdBooking.id}:booking_confirmation`,
-          correlationId: event.id,
-        });
-      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('booking_checkout_sessions')
@@ -698,6 +680,83 @@ export async function POST(request: NextRequest) {
         amountPaidCents,
         remainingCents,
       });
+
+      const bookingCheckoutNotifyContext = {
+        eventId: event.id,
+        sessionId: session.id,
+        bookingId: createdBooking.id,
+        businessId: bookingPayload.businessId,
+        customerId: createdBooking.customerId,
+        profileId,
+        customerName: bookingPayload.customer.fullName.trim(),
+        customerPhone: bookingPayload.customer.phone?.trim(),
+        storedServiceName,
+        scheduledDate: bookingPayload.scheduledDate,
+        startTime: bookingPayload.startTime,
+        availabilityEmailPayload,
+        resolvedCustomerEmail,
+        businessDisplayName,
+      };
+      after(async () => {
+        try {
+          await notifyOwnerForAvailabilityBookingCreated(supabase, {
+            profileId: bookingCheckoutNotifyContext.profileId,
+            bookingId: bookingCheckoutNotifyContext.bookingId,
+            customerName: bookingCheckoutNotifyContext.customerName,
+            serviceSummaryLine: bookingCheckoutNotifyContext.storedServiceName,
+            scheduledDate: bookingCheckoutNotifyContext.scheduledDate,
+            emailPayload: bookingCheckoutNotifyContext.availabilityEmailPayload,
+          });
+          logBookingCheckoutStage('owner_notified', {
+            eventId: bookingCheckoutNotifyContext.eventId,
+            sessionId: bookingCheckoutNotifyContext.sessionId,
+            bookingId: bookingCheckoutNotifyContext.bookingId,
+          });
+          if (bookingCheckoutNotifyContext.resolvedCustomerEmail) {
+            try {
+              await sendAvailabilityBookingCustomerConfirmationEmail(
+                bookingCheckoutNotifyContext.resolvedCustomerEmail,
+                bookingCheckoutNotifyContext.businessDisplayName,
+                bookingCheckoutNotifyContext.availabilityEmailPayload
+              );
+              logBookingCheckoutStage('customer_email.sent', {
+                eventId: bookingCheckoutNotifyContext.eventId,
+                sessionId: bookingCheckoutNotifyContext.sessionId,
+                bookingId: bookingCheckoutNotifyContext.bookingId,
+              });
+            } catch {
+              logBookingCheckoutStage('customer_email.failed', {
+                eventId: bookingCheckoutNotifyContext.eventId,
+                sessionId: bookingCheckoutNotifyContext.sessionId,
+                bookingId: bookingCheckoutNotifyContext.bookingId,
+              });
+            }
+          }
+          if (bookingCheckoutNotifyContext.customerPhone) {
+            await sendAndRecordSms({
+              admin: supabase,
+              businessId: bookingCheckoutNotifyContext.businessId,
+              bookingId: bookingCheckoutNotifyContext.bookingId,
+              customerId: bookingCheckoutNotifyContext.customerId,
+              type: 'booking_confirmation',
+              to: bookingCheckoutNotifyContext.customerPhone,
+              message: buildBookingConfirmedSms({
+                businessName: bookingCheckoutNotifyContext.businessDisplayName,
+                scheduledDate: bookingCheckoutNotifyContext.scheduledDate,
+                startTime: bookingCheckoutNotifyContext.startTime,
+              }),
+              dedupeKey: `${bookingCheckoutNotifyContext.bookingId}:booking_confirmation`,
+              correlationId: bookingCheckoutNotifyContext.eventId,
+            });
+          }
+        } catch (err) {
+          console.error(
+            '[booking-checkout:webhook] deferred owner/customer notify failed',
+            err
+          );
+        }
+      });
+
       return NextResponse.json({ received: true }, { status: 200 });
     }
 

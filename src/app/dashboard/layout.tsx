@@ -1,4 +1,3 @@
-import { MetaCompleteRegistrationTracker } from '@/features/analytics';
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { Metadata } from 'next';
@@ -44,7 +43,6 @@ export default async function DashboardLayout({
 
   return (
     <DashboardWrapper isOnboardingCompleted={isOnboardingCompleted}>
-      <MetaCompleteRegistrationTracker />
       {children}
     </DashboardWrapper>
   );

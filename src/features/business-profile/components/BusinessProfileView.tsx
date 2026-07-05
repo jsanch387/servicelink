@@ -25,11 +25,13 @@ import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { LazyPublicReviewsSection } from '../reviews/components/LazyPublicReviewsSection';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import { ProfileCompletionTracker } from './ProfileCompletionTracker';
 import { ProfileBioSection } from './ProfileBioSection';
 import { ProfileHeader } from './ProfileHeader';
 import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
+import { ProfileWelcomeModal } from './ProfileWelcomeModal';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
 type TabType = 'services' | 'gallery' | 'bio' | 'reviews';
@@ -135,7 +137,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       label: 'Business type',
       done: Boolean(businessProfile.business_type?.trim()),
     },
-    { label: 'City + state', done: Boolean(city && state) },
+    {
+      label: 'City, state + ZIP',
+      done: Boolean(city && state && businessProfile.business_zip?.trim()),
+    },
     { label: 'Bio', done: Boolean(businessProfile.bio?.trim()) },
     {
       label: 'Phone',
@@ -150,68 +155,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       done: (businessProfile.services?.length ?? 0) > 0,
     },
   ] as const;
-  const completedChecks = completionChecks.filter(item => item.done).length;
-  const profileCompletionPercent = Math.round(
-    (completedChecks / completionChecks.length) * 100
-  );
-  const completionTone =
-    profileCompletionPercent >= 100
-      ? {
-          barClass: 'from-emerald-400 to-green-500',
-          textClass: 'text-emerald-300',
-        }
-      : profileCompletionPercent >= 75
-        ? {
-            barClass: 'from-cyan-300 to-sky-400',
-            textClass: 'text-cyan-200',
-          }
-        : profileCompletionPercent >= 40
-          ? {
-              barClass: 'from-amber-300 to-yellow-400',
-              textClass: 'text-amber-200',
-            }
-          : {
-              barClass: 'from-red-500 to-red-600',
-              textClass: 'text-red-300',
-            };
   const profileCompletionTracker = !isPublic ? (
-    <div className="px-4 pt-4 pb-2 sm:px-8 sm:pt-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm sm:text-base font-medium text-gray-200">
-          Profile completion
-        </h2>
-        <span
-          className={`shrink-0 text-xs sm:text-sm font-medium tabular-nums ${completionTone.textClass}`}
-        >
-          {profileCompletionPercent}%
-        </span>
-      </div>
-
-      <div className="mt-2 h-2 rounded-full bg-white/10 ring-1 ring-white/10 overflow-hidden">
-        <div
-          className={`relative h-full rounded-full bg-gradient-to-r transition-all duration-500 ${completionTone.barClass}`}
-          style={{
-            width: `${profileCompletionPercent}%`,
-          }}
-        >
-          <span
-            className="pointer-events-none absolute inset-0 opacity-40"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0))',
-            }}
-          />
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setShowProfileChecklistModal(true)}
-        className="mt-2 text-xs sm:text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
-      >
-        View checklist
-      </button>
-    </div>
+    <ProfileCompletionTracker
+      checks={completionChecks}
+      onViewChecklist={() => setShowProfileChecklistModal(true)}
+      fullWidthOnLarge={editMode === 'view'}
+    />
   ) : null;
 
   // Debug logging for public profiles
@@ -268,14 +217,23 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     window.history.pushState({}, '', url.toString());
   };
 
-  const handleEditFromWelcomeModal = async () => {
+  const markProfileWelcomeSeen = async () => {
     try {
       await fetch('/api/profile/mark-profile-welcome-seen', {
         method: 'POST',
       });
     } catch {
-      // ignore: editing should still proceed even if mark-as-seen fails.
+      // ignore: modal should still dismiss even if mark-as-seen fails.
     }
+  };
+
+  const handleDismissWelcomeModal = async () => {
+    await markProfileWelcomeSeen();
+    setShowProfileWelcomeModal(false);
+  };
+
+  const handleEditFromWelcomeModal = async () => {
+    await markProfileWelcomeSeen();
     setShowProfileWelcomeModal(false);
     handleEdit();
   };
@@ -338,50 +296,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
-      <Modal
+      <ProfileWelcomeModal
         isOpen={!isPublic && editMode === 'view' && showProfileWelcomeModal}
-        onClose={() => {
-          // Intentionally no-op: this modal closes after "Edit profile".
-        }}
-        title=""
-        maxWidth="sm"
-      >
-        <div className="flex flex-col gap-5">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-            <h2 className="flex items-center gap-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              <span className="relative flex h-3.5 w-3.5 shrink-0" aria-hidden>
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
-                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/30" />
-              </span>
-              Your booking link is live
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-300">
-              This is the page customers see when they visit your link. Add your
-              logo and cover photo, then update your info to look more
-              professional and book with confidence.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-gray-300">
-            Pro tip: a complete profile helps you convert more visitors into
-            bookings.
-          </div>
-
-          <div className="w-full">
-            <Button
-              type="button"
-              onClick={handleEditFromWelcomeModal}
-              variant="inverse"
-              fullWidth
-              className="font-semibold"
-              icon={<PencilIcon className="h-4 w-4" />}
-              iconPosition="left"
-            >
-              Edit profile
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        bookingLink={slugData?.fullLink}
+        onEditProfile={handleEditFromWelcomeModal}
+        onDismiss={handleDismissWelcomeModal}
+      />
       <TryProPostOnboardingModal
         isOpen={showOnboardingProModal}
         onClose={opts => {

@@ -31,8 +31,8 @@ interface GlassCardProps {
    */
   onClick?: () => void;
   /**
-   * Border radius - accepts Tailwind rounded classes (e.g., 'rounded-xl', 'rounded-2xl', 'rounded-[2rem]')
-   * Defaults to 'rounded-[2rem]'
+   * Border radius - accepts Tailwind rounded classes (e.g., 'rounded-xl', 'rounded-[10px]')
+   * Defaults to 'rounded-[10px]'
    */
   rounded?: string;
 }
@@ -42,7 +42,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   className = '',
   padding = 'md',
   onClick,
-  rounded = 'rounded-[2rem]',
+  rounded = 'rounded-[10px]',
 }) => {
   const paddingClasses = {
     sm: 'p-3 sm:p-4',

@@ -46,6 +46,11 @@ interface BookingSummaryProps {
   startTimeHhmm: string;
   customer: CustomerFormData;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** Shop visit — show business address instead of customer-entered address. */
+  isShopBooking?: boolean;
+  shopAddressLabel?: string | null;
+  /** Owner manual shop booking — omit address on review (owner already knows shop). */
+  hideServiceAddress?: boolean;
 }
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -60,9 +65,25 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   startTimeHhmm,
   customer,
   bookingFlowLocale = 'en',
+  isShopBooking = false,
+  shopAddressLabel = null,
+  hideServiceAddress = false,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
+  const sl = ui.serviceLocation;
   const totalMinutes = totalAppointmentMinutes ?? serviceDurationMinutes;
+  const customerAddress = formatAddress(customer);
+  const showAddress =
+    !hideServiceAddress &&
+    (isShopBooking && shopAddressLabel
+      ? true
+      : Boolean(customerAddress.trim()));
+  const addressLabel = isShopBooking
+    ? sl.shopVisitAddressLabel
+    : ui.common.address;
+  const addressDisplay = isShopBooking
+    ? (shopAddressLabel ?? '')
+    : customerAddress;
   const dateFormatted = new Date(date + 'T12:00:00').toLocaleDateString(
     bcp47ForBookingLocale(bookingFlowLocale),
     {
@@ -116,12 +137,14 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           </p>
         </div>
 
-        <div>
-          <p className="text-xs text-gray-500 tracking-wider mb-1">
-            {ui.common.address}
-          </p>
-          <p className="text-white font-medium">{formatAddress(customer)}</p>
-        </div>
+        {showAddress ? (
+          <div>
+            <p className="text-xs text-gray-500 tracking-wider mb-1">
+              {addressLabel}
+            </p>
+            <p className="text-white font-medium">{addressDisplay}</p>
+          </div>
+        ) : null}
 
         {formatVehicle(customer) && (
           <div>

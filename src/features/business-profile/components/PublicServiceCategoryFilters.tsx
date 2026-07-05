@@ -9,6 +9,8 @@ export interface PublicServiceCategoryFiltersProps {
   value: string;
   onChange: (id: string) => void;
   ariaLabel: string;
+  /** Profile uses wider gutters (px-8); book flow matches max-w-2xl px-6. */
+  edgeGutter?: 'profile' | 'bookFlow';
 }
 
 /**
@@ -19,12 +21,18 @@ export function PublicServiceCategoryFilters({
   value,
   onChange,
   ariaLabel,
+  edgeGutter = 'profile',
 }: PublicServiceCategoryFiltersProps) {
   if (options.length === 0) return null;
 
+  const edgeBleedClassName =
+    edgeGutter === 'bookFlow'
+      ? '-mx-4 flex gap-2 px-4 pb-1 sm:-mx-6 sm:px-6'
+      : '-mx-4 flex gap-2 px-4 pb-1 sm:-mx-8 sm:px-8';
+
   return (
     <div
-      className={`-mx-4 flex gap-2 px-4 pb-1 sm:-mx-8 sm:px-8 ${horizontalScrollStripClassName}`}
+      className={`${edgeBleedClassName} ${horizontalScrollStripClassName}`}
       role="tablist"
       aria-label={ariaLabel}
     >

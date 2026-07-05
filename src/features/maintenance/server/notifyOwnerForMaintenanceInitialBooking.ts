@@ -5,6 +5,7 @@
 
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import type { AvailabilityBookingNotificationPayload } from '@/features/email/availability-booking-notification/types';
+import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -45,7 +46,7 @@ export async function notifyOwnerForMaintenanceInitialBooking(
   const { data: bookingRow, error: bookingErr } = await db
     .from('bookings')
     .select(
-      'customer_name, customer_email, customer_phone, customer_vehicle_year, customer_vehicle_make, customer_vehicle_model'
+      'customer_name, customer_email, customer_phone, customer_vehicle_year, customer_vehicle_make, customer_vehicle_model, customer_street_address, customer_unit_apt, customer_city, customer_state, customer_zip'
     )
     .eq('id', params.bookingId)
     .maybeSingle();
@@ -68,6 +69,11 @@ export async function notifyOwnerForMaintenanceInitialBooking(
     customer_vehicle_year?: string | null;
     customer_vehicle_make?: string | null;
     customer_vehicle_model?: string | null;
+    customer_street_address?: string | null;
+    customer_unit_apt?: string | null;
+    customer_city?: string | null;
+    customer_state?: string | null;
+    customer_zip?: string | null;
   };
 
   const formatMoney = (cents: number) =>
@@ -126,6 +132,16 @@ export async function notifyOwnerForMaintenanceInitialBooking(
     servicePriceCents: priceCents,
     totalPriceCents: priceCents,
     paymentSummary,
+    serviceLocation: buildAvailabilityBookingEmailServiceLocation({
+      effectiveType: 'mobile',
+      shopAddressLabel: null,
+      customerStreet:
+        String(br.customer_street_address ?? '').trim() || undefined,
+      customerUnit: String(br.customer_unit_apt ?? '').trim() || undefined,
+      customerCity: String(br.customer_city ?? '').trim() || undefined,
+      customerState: String(br.customer_state ?? '').trim() || undefined,
+      customerZip: String(br.customer_zip ?? '').trim() || undefined,
+    }),
   };
 
   await notifyOwnerForAvailabilityBookingCreated(supabase, {

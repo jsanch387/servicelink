@@ -2,6 +2,7 @@
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
+import { MarketingAttributionRoot } from '@/features/marketing-attribution';
 import type { Metadata } from 'next';
 import {
   Geist,
@@ -14,6 +15,7 @@ import {
   Space_Grotesk,
 } from 'next/font/google';
 import Script from 'next/script';
+import { Suspense } from 'react';
 import './globals.css';
 
 const geistSans = Geist({
@@ -194,6 +196,9 @@ export default function RootLayout({
             />
           </noscript>
         ) : null}
+        <Suspense fallback={null}>
+          <MarketingAttributionRoot />
+        </Suspense>
         {children}
         <Analytics />
         <SpeedInsights />

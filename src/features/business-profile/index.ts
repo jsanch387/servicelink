@@ -30,6 +30,18 @@ export { WorkShowcase } from './components/WorkShowcase';
 
 // Edit Components
 export { EditBusinessProfile } from './components/edit/EditBusinessProfile';
+export { EditProfileActionBar } from './components/edit/EditProfileActionBar';
+export {
+  EditProfileTabNav,
+  tabForSaveErrors,
+} from './components/edit/EditProfileTabNav';
+export type { EditProfileTabId } from './components/edit/EditProfileTabNav';
+
+// Dashboard profile edit cards
+export { DashboardProfileBookingLanguageCard } from './components/DashboardProfileBookingLanguageCard';
+export { DashboardProfileServiceLocationCard } from './components/DashboardProfileServiceLocationCard';
+export { ProfileCompletionTracker } from './components/ProfileCompletionTracker';
+export { ProfileLocationFields } from './components/ProfileLocationFields';
 
 // Edit Section Components
 export { BusinessInfoSection } from './components/edit/sections/BusinessInfoSection';
@@ -49,6 +61,7 @@ export * from './types/businessProfile';
 
 // Utils
 export * from './utils/businessProfileHelpers';
+export * from './utils/location';
 
 // Editing Utils
 export {

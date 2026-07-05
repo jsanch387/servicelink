@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 'use client';
 
-import { Button, Modal } from '@/components/shared';
+import { Button, GlassCard, Modal } from '@/components/shared';
 import { useUploadBanner } from '@/features/media/hooks';
 import { CameraIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
@@ -144,75 +144,72 @@ export const BannerSection: React.FC<BannerSectionProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Section Header - More Prominent */}
-      <div className="mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-2">
-          Cover Photo
-        </h2>
-        <p className="text-sm sm:text-base text-gray-400">
-          Click to add or change your cover photo
-        </p>
-      </div>
+    <div className="w-full max-w-full text-left">
+      <p className="text-sm font-medium text-gray-200">Cover</p>
 
-      {/* Cover Photo Display with Clear Edit Indicator */}
-      <div
-        onClick={openModal}
-        className="relative group w-full h-48 sm:h-56 md:h-64 rounded-xl overflow-hidden cursor-pointer border-2 border-white/10 bg-white/[0.02] hover:border-white/20 transition-all duration-300"
+      <GlassCard
+        padding="none"
+        rounded="rounded-xl"
+        className="mt-2 w-full overflow-hidden"
       >
-        {businessProfile.cover_image_url &&
-        (businessProfile.cover_image_url as string).trim() ? (
-          <>
-            <Image
-              src={businessProfile.cover_image_url as string}
-              alt="Cover"
-              width={800}
-              height={320}
-              className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-              unoptimized={(
-                businessProfile.cover_image_url as string
-              ).startsWith('http')}
-              loading="lazy"
-              decoding="async"
-            />
-            {/* Always visible edit indicator */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-              <span className="text-white text-sm font-medium bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                Click to change
+        <div
+          onClick={openModal}
+          className="relative group w-full h-44 sm:h-52 cursor-pointer bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-300"
+        >
+          {businessProfile.cover_image_url &&
+          (businessProfile.cover_image_url as string).trim() ? (
+            <>
+              <Image
+                src={businessProfile.cover_image_url as string}
+                alt="Cover"
+                width={800}
+                height={320}
+                className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                unoptimized={(
+                  businessProfile.cover_image_url as string
+                ).startsWith('http')}
+                loading="lazy"
+                decoding="async"
+              />
+              {/* Always visible edit indicator */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                <span className="text-white text-sm font-medium bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  Click to change
+                </span>
+                <div className="bg-white/20 text-white p-2 rounded-full">
+                  <CameraIcon className="h-5 w-5" />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/10 rounded-xl hover:border-white/20 transition-colors">
+              <div className="text-center text-gray-400">
+                <div className="rounded-full bg-white/10 p-4 mx-auto mb-3 w-fit">
+                  <CameraIcon className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-base font-semibold mb-1 text-white">
+                  Click to add cover photo
+                </p>
+                <p className="text-xs text-gray-500">1200x400px recommended</p>
+              </div>
+            </div>
+          )}
+          {/* Hover overlay - only shows on hover */}
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="rounded-full bg-white/20 p-3 mx-auto mb-2 w-fit">
+                <PencilIcon className="h-6 w-6" />
+              </div>
+              <span className="font-semibold text-base">
+                {businessProfile.cover_image_url
+                  ? 'Change Cover Photo'
+                  : 'Upload Cover Photo'}
               </span>
-              <div className="bg-white/20 text-white p-2 rounded-full">
-                <CameraIcon className="h-5 w-5" />
-              </div>
             </div>
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/10 rounded-xl hover:border-white/20 transition-colors">
-            <div className="text-center text-gray-400">
-              <div className="rounded-full bg-white/10 p-4 mx-auto mb-3 w-fit">
-                <CameraIcon className="h-8 w-8 text-gray-400" />
-              </div>
-              <p className="text-base font-semibold mb-1 text-white">
-                Click to add cover photo
-              </p>
-              <p className="text-xs text-gray-500">1200x400px recommended</p>
-            </div>
-          </div>
-        )}
-        {/* Hover overlay - only shows on hover */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <div className="text-white text-center">
-            <div className="rounded-full bg-white/20 p-3 mx-auto mb-2 w-fit">
-              <PencilIcon className="h-6 w-6" />
-            </div>
-            <span className="font-semibold text-base">
-              {businessProfile.cover_image_url
-                ? 'Change Cover Photo'
-                : 'Upload Cover Photo'}
-            </span>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Modal for Cover Photo */}
       <Modal

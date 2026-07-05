@@ -13,6 +13,7 @@ import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availabilit
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { normalizePhoneForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
 import type { AvailabilityBookingNotificationPayload } from '@/features/email';
+import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
 import {
   mergeQuoteRowWithRespondFallback,
   type QuoteRespondStructuredAddress,
@@ -74,6 +75,10 @@ function buildEmailPayload(
 ): AvailabilityBookingNotificationPayload {
   const base = quote.price_cents ?? 0;
   const phoneDigits = normalizePhoneForLookup(quote.customer_phone);
+  const street =
+    quote.customer_street_address?.trim() ||
+    quote.service_address?.trim() ||
+    undefined;
   return {
     customerName: quote.customer_name.trim(),
     customerEmail: quote.customer_email.trim(),
@@ -88,6 +93,15 @@ function buildEmailPayload(
     servicePriceCents: quote.price_cents ?? undefined,
     selectedAddOns: [],
     totalPriceCents: base,
+    serviceLocation: buildAvailabilityBookingEmailServiceLocation({
+      effectiveType: 'mobile',
+      shopAddressLabel: null,
+      customerStreet: street,
+      customerUnit: quote.customer_unit_apt ?? undefined,
+      customerCity: quote.customer_city ?? undefined,
+      customerState: quote.customer_state ?? undefined,
+      customerZip: quote.customer_zip ?? undefined,
+    }),
   };
 }
 

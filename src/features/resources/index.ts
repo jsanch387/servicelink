@@ -1,4 +1,3 @@
-export { GuideCard } from './components/GuideCard';
 export { ResourcesIndexScreen } from './components/ResourcesIndexScreen';
 export { ResourcesPageShell } from './components/ResourcesPageShell';
 export { ResourcesStructuredData } from './components/ResourcesStructuredData';

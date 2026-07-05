@@ -10,6 +10,7 @@ export interface SettingsBillingSectionProps {
   subscriptionStatus?: string | null;
   subscriptionCurrentPeriodEnd?: string | null;
   subscriptionCancelAtPeriodEnd?: boolean;
+  subscriptionMonthlyPrice?: string | null;
 }
 
 export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
@@ -17,6 +18,7 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
   subscriptionStatus = null,
   subscriptionCurrentPeriodEnd = null,
   subscriptionCancelAtPeriodEnd = false,
+  subscriptionMonthlyPrice = null,
 }) => {
   const [portalLoading, setPortalLoading] = useState(false);
   const showPaymentFailedBanner =
@@ -69,6 +71,7 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
         subscriptionCurrentPeriodEnd={subscriptionCurrentPeriodEnd}
         subscriptionCancelAtPeriodEnd={subscriptionCancelAtPeriodEnd}
         subscriptionStatus={subscriptionStatus}
+        monthlyPriceOverride={subscriptionMonthlyPrice}
         hideHeading
       />
     </section>

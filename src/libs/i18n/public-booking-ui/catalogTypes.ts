@@ -5,6 +5,10 @@
 export type PublicBookingUi = {
   nav: {
     backToDateTime: string;
+    backToYourDetails: string;
+    backToCustomerDetails: string;
+    backToAddress: string;
+    backToVehicle: string;
     backToDetails: string;
     backToReview: string;
     backToProfile: string;
@@ -67,15 +71,12 @@ export type PublicBookingUi = {
     noSlotsHint: string;
     reviewBooking: string;
     reviewBookingCta: string;
-    /** Public booking: required consent for transactional email + SMS (e.g. Twilio). */
-    notificationsConsentLabel: string;
-    /** Fine print under consent; shown before the privacy policy link label. */
-    notificationsSmsFinePrintBeforeLink: string;
-    /** Linked text to `/privacy` (SMS-related section). */
+    /** Short opt-in label beside the checkbox (transactional SMS). */
+    notificationsConsentCheckboxLabel: string;
+    /** TCPA / carrier fine print under the checkbox. Takes businessName. */
+    notificationsConsentFinePrint: (businessName: string) => string;
+    /** Inline linked text to `/privacy` after consent copy. */
     notificationsSmsFinePrintLinkLabel: string;
-    /** Text after the privacy policy link (often a period). */
-    notificationsSmsFinePrintAfterLink: string;
-    notificationsConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;
     chooseHowToPay: string;
@@ -108,8 +109,27 @@ export type PublicBookingUi = {
     payInPersonLead: (businessName: string) => string;
     paymentNotSetupLead: (businessName: string) => string;
   };
+  serviceLocation: {
+    chooseHeading: string;
+    chooseSubtitle: string;
+    mobileOption: string;
+    mobileOptionDesc: string;
+    shopOption: string;
+    shopOptionDesc: string;
+    shopVisitAddressLabel: string;
+    shopAddressIncomplete: string;
+    backToServiceChoice: string;
+    backToShopLocation: string;
+    ownerChooseHeading: string;
+    ownerChooseSubtitle: string;
+    ownerMobileOption: string;
+    ownerMobileOptionDesc: string;
+    ownerShopOption: string;
+    ownerShopOptionDesc: string;
+  };
   customerForm: {
     yourDetails: string;
+    customerDetails: string;
     serviceAddress: string;
     vehicle: string;
     fullName: string;
@@ -139,8 +159,6 @@ export type PublicBookingUi = {
     errVehicleModel: string;
     /** Label when owner books without requiring customer email */
     emailOptional: string;
-    /** Hint under email when optional and field empty */
-    emailOptionalNoConfirmation: string;
     errEmailInvalid: string;
     errValueTooLong: string;
   };
@@ -202,5 +220,29 @@ export type PublicBookingUi = {
     serviceCategoriesAriaLabel: string;
     /** Public profile: empty state when a category has no services. */
     noServicesInCategory: string;
+  };
+  quoteForm: {
+    quoteDetails: string;
+    serviceRequested: string;
+    serviceRequestedPlaceholder: string;
+    whenOptional: string;
+    whenPlaceholder: string;
+    detailsLabel: string;
+    detailsPlaceholder: string;
+    submitRequest: string;
+    timelineAsap: string;
+    timelineThisWeek: string;
+    timelineNextTwoWeeks: string;
+    timelineThisMonth: string;
+    timelineFlexible: string;
+    errName: string;
+    errEmail: string;
+    errPhone: string;
+    errService: string;
+    errDetails: string;
+    errVehicleYear: string;
+    errVehicleMake: string;
+    errVehicleModel: string;
+    submitErrorGeneric: string;
   };
 };

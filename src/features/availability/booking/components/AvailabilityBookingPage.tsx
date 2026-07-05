@@ -1,16 +1,16 @@
 'use client';
 
-import { Button, nativeCheckboxSmClassName } from '@/components/shared';
-import {
-  API_ROUTES,
-  ROUTES,
-  type PublicBookingFlowLocale,
-} from '@/constants/routes';
+import { Button } from '@/components/shared';
+import { API_ROUTES, type PublicBookingFlowLocale } from '@/constants/routes';
 import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import {
+  PublicFlowBackNavLabel,
+  PublicFlowStickyBackHeader,
+  publicFlowBackNavClassName,
+} from '@/components/shared';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -34,7 +34,21 @@ import { BookingPaymentSuccess } from './BookingPaymentSuccess';
 import { BookingPriceBreakdown } from './BookingPriceBreakdown';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
-import { CustomerForm, isCustomerFormValid } from './CustomerForm';
+import { CustomerForm } from './CustomerForm';
+import { BookingServiceLocationChoice } from './BookingServiceLocationSteps';
+import {
+  type BookingDetailsSubStep,
+  type CustomerServiceChoice,
+  clearCustomerServiceAddress,
+  customerAddressEntryRequired,
+  customerBookingUsesShop,
+  getNextDetailsSubStep,
+  getPrevDetailsSubStep,
+  isBookingDetailsSubStepValid,
+  prefillCustomerWithShopAddress,
+  resolveCustomerServiceLocationPayload,
+} from '../utils/bookingServiceLocationFlow';
+import { DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION } from '@/features/business-profile/utils/publicServiceLocation';
 import { DateSelector } from './DateSelector';
 import { TimeSlotGrid } from './TimeSlotGrid';
 
@@ -179,11 +193,15 @@ export function AvailabilityBookingPage({
   exitCalendarFlowLabel,
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
+  serviceLocation = DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION,
 }: AvailabilityBookingPageProps) {
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const backToContactLabel = isOwnerManualBooking
+    ? ui.nav.backToCustomerDetails
+    : ui.nav.backToYourDetails;
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
 
@@ -211,11 +229,32 @@ export function AvailabilityBookingPage({
   }, [serviceDurationMinutes, selectedAddOns]);
 
   const [step, setStep] = useState<CalendarBookingStep>('schedule');
+  const [detailsSubStep, setDetailsSubStep] =
+    useState<BookingDetailsSubStep>('contact');
+  const [customerServiceChoice, setCustomerServiceChoice] =
+    useState<CustomerServiceChoice>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [customerData, setCustomerData] = useState<CustomerFormData>(
     INITIAL_CUSTOMER_FORM_DATA
   );
+
+  const customerForSubmit = useMemo(() => {
+    if (!customerAddressEntryRequired(serviceLocation, customerServiceChoice)) {
+      return prefillCustomerWithShopAddress(customerData, serviceLocation);
+    }
+    return customerData;
+  }, [customerData, serviceLocation, customerServiceChoice]);
+
+  const customerServiceLocationPayload = useMemo(
+    () =>
+      resolveCustomerServiceLocationPayload(
+        serviceLocation,
+        customerServiceChoice
+      ),
+    [serviceLocation, customerServiceChoice]
+  );
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedData, setSubmittedData] = useState<{
     date: string;
@@ -243,14 +282,9 @@ export function AvailabilityBookingPage({
   } | null>(null);
   const [customerPaymentChoice, setCustomerPaymentChoice] =
     useState<PaymentChoice | null>(null);
-  /** Public customers only: required before confirm / continue to payment (SMS compliance). */
+  /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
   const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
-    useState(false);
-  const [notificationsConsentError, setNotificationsConsentError] = useState<
-    string | null
-  >(null);
-  const notificationsConsentErrorId = useId();
-  const notificationsSmsFinePrintId = useId();
+    useState(true);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -353,11 +387,20 @@ export function AvailabilityBookingPage({
   }, [amountDueNowCents, ui]);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
-  const canContinueFromDetails = isCustomerFormValid(
+  const canContinueFromDetails = isBookingDetailsSubStepValid(
+    detailsSubStep,
     customerData,
-    showVehicleFields,
-    true
+    serviceLocation,
+    customerServiceChoice,
+    {
+      showVehicleFields,
+      emailOptional: true,
+    }
   );
+  const detailsPrimaryCtaLabel =
+    detailsSubStep === 'vehicleNotes'
+      ? ui.calendar.reviewBookingCta
+      : ui.common.continue;
   const canContinueFromPayment =
     !isSubmitting &&
     (paymentSettings?.checkoutMode !== 'customer_choice' ||
@@ -508,9 +551,8 @@ export function AvailabilityBookingPage({
     setCustomerData({ ...INITIAL_CUSTOMER_FORM_DATA, ...draft.customerData });
     setCustomerPaymentChoice(draft.customerPaymentChoice);
     skipNextStepScrollRef.current = true;
-    // Always return to review so the customer sees booking summary and notification consent.
-    setAgreedToPublicNotifications(false);
-    setNotificationsConsentError(null);
+    // Return to review summary after Stripe return.
+    setAgreedToPublicNotifications(true);
     setStep('review');
     setSubmitError(null);
     setIsSubmitting(false);
@@ -535,13 +577,51 @@ export function AvailabilityBookingPage({
       return;
     }
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [step]);
+  }, [step, detailsSubStep]);
 
-  useEffect(() => {
-    if (step !== 'details') return;
-    setAgreedToPublicNotifications(false);
-    setNotificationsConsentError(null);
-  }, [step]);
+  const openDetailsFromSchedule = () => {
+    setDetailsSubStep('contact');
+    setCustomerServiceChoice(null);
+    setAgreedToPublicNotifications(true);
+    setStep('details');
+  };
+
+  const openDetailsFromReview = () => {
+    setDetailsSubStep('vehicleNotes');
+    setStep('details');
+  };
+
+  const handleDetailsSubStepSubmit = () => {
+    const next = getNextDetailsSubStep(
+      detailsSubStep,
+      serviceLocation,
+      customerServiceChoice
+    );
+
+    if (next === 'review') {
+      setStep('review');
+      return;
+    }
+
+    if (detailsSubStep === 'serviceChoice' && next === 'address') {
+      setCustomerData(prev => clearCustomerServiceAddress(prev));
+    }
+
+    setDetailsSubStep(next);
+  };
+
+  const handleDetailsBack = () => {
+    const prev = getPrevDetailsSubStep(
+      detailsSubStep,
+      serviceLocation,
+      customerServiceChoice
+    );
+    if (prev === 'schedule') {
+      setStep('schedule');
+      return;
+    }
+    setDetailsSubStep(prev);
+  };
 
   const handleStartCheckout = async (amountToChargeCents: number) => {
     logBookingCheckoutDev('handleStartCheckout called', {
@@ -564,10 +644,6 @@ export function AvailabilityBookingPage({
         amountToChargeCents,
       });
       setSubmitError(ui.calendar.invalidPaymentAmount);
-      return;
-    }
-    if (!isOwnerManualBooking && !agreedToPublicNotifications) {
-      setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
       return;
     }
     setSubmitError(null);
@@ -605,8 +681,14 @@ export function AvailabilityBookingPage({
             scheduledDate: selectedDate.toISOString().slice(0, 10),
             startTime: selectedTime ?? '',
             customer: {
-              ...customerData,
+              ...customerForSubmit,
             },
+            ...(customerServiceLocationPayload
+              ? {
+                  customerServiceLocation: customerServiceLocationPayload,
+                  serviceLocationType: customerServiceLocationPayload,
+                }
+              : {}),
             totalPriceCents,
             requiredOnlineAmountCents: Math.round(amountToChargeCents),
             paymentMethodSelected: customerPaymentChoice ?? 'none',
@@ -687,12 +769,7 @@ export function AvailabilityBookingPage({
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
-    if (!isOwnerManualBooking && !agreedToPublicNotifications) {
-      setNotificationsConsentError(ui.calendar.notificationsConsentRequired);
-      return;
-    }
     setSubmitError(null);
-    setNotificationsConsentError(null);
     setIsSubmitting(true);
     const scheduledDate = selectedDate.toISOString().slice(0, 10);
     try {
@@ -724,7 +801,13 @@ export function AvailabilityBookingPage({
           durationMinutes: totalBookingDurationMinutes,
           scheduledDate,
           startTime: selectedTime,
-          customer: customerData,
+          customer: customerForSubmit,
+          ...(customerServiceLocationPayload
+            ? {
+                customerServiceLocation: customerServiceLocationPayload,
+                serviceLocationType: customerServiceLocationPayload,
+              }
+            : {}),
           paymentMethodSelected: paymentMethodForPublicCreate,
           ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
         }),
@@ -743,7 +826,7 @@ export function AvailabilityBookingPage({
       setSubmittedData({
         date: scheduledDate,
         time: formatBookingWallTime(selectedTime, bookingFlowLocale),
-        customer: customerData,
+        customer: customerForSubmit,
         selectedAddOns,
       });
       setShowSuccess(true);
@@ -818,58 +901,66 @@ export function AvailabilityBookingPage({
     );
   }
 
-  const headerClassName =
-    'inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors';
+  const headerClassName = publicFlowBackNavClassName;
 
   return (
     <>
       {/* Match ServiceDetailsScreen: full-width sticky bar; back row uses max-w-2xl + page gutters. */}
-      <div className="sticky top-0 z-10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
-          {step === 'schedule' && (
-            <Link href={exitCalendarFlowHref} className={headerClassName}>
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                {exitCalendarFlowLabel}
-              </span>
-            </Link>
-          )}
-          {step === 'details' && (
-            <button
-              type="button"
-              onClick={() => setStep('schedule')}
-              className={headerClassName}
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                {ui.nav.backToDateTime}
-              </span>
-            </button>
-          )}
-          {step === 'review' && (
-            <button
-              type="button"
-              onClick={() => setStep('details')}
-              className={headerClassName}
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                {ui.nav.backToDetails}
-              </span>
-            </button>
-          )}
-          {step === 'payment' && (
-            <button
-              type="button"
-              onClick={() => setStep('review')}
-              className={headerClassName}
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-              <span className="text-sm font-medium">{ui.nav.backToReview}</span>
-            </button>
-          )}
-        </div>
-      </div>
+      <PublicFlowStickyBackHeader>
+        {step === 'schedule' && (
+          <Link href={exitCalendarFlowHref} className={headerClassName}>
+            <PublicFlowBackNavLabel label={exitCalendarFlowLabel} />
+          </Link>
+        )}
+        {step === 'details' && (
+          <button
+            type="button"
+            onClick={handleDetailsBack}
+            className={headerClassName}
+          >
+            <PublicFlowBackNavLabel
+              label={
+                detailsSubStep === 'contact'
+                  ? ui.nav.backToDateTime
+                  : detailsSubStep === 'serviceChoice'
+                    ? backToContactLabel
+                    : detailsSubStep === 'address'
+                      ? serviceLocation.mode === 'both'
+                        ? ui.serviceLocation.backToServiceChoice
+                        : backToContactLabel
+                      : detailsSubStep === 'vehicleNotes'
+                        ? customerAddressEntryRequired(
+                            serviceLocation,
+                            customerServiceChoice
+                          )
+                          ? ui.nav.backToAddress
+                          : serviceLocation.mode === 'both'
+                            ? ui.serviceLocation.backToServiceChoice
+                            : backToContactLabel
+                        : ui.nav.backToAddress
+              }
+            />
+          </button>
+        )}
+        {step === 'review' && (
+          <button
+            type="button"
+            onClick={openDetailsFromReview}
+            className={headerClassName}
+          >
+            <PublicFlowBackNavLabel label={ui.nav.backToDetails} />
+          </button>
+        )}
+        {step === 'payment' && (
+          <button
+            type="button"
+            onClick={() => setStep('review')}
+            className={headerClassName}
+          >
+            <PublicFlowBackNavLabel label={ui.nav.backToReview} />
+          </button>
+        )}
+      </PublicFlowStickyBackHeader>
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
         <div className="flex-1 pb-28">
@@ -915,17 +1006,43 @@ export function AvailabilityBookingPage({
           {/* Step 2 – Details */}
           {step === 'details' && (
             <div>
-              <CustomerForm
-                id={CUSTOMER_FORM_ID}
-                value={customerData}
-                onChange={setCustomerData}
-                onSubmit={() => setStep('review')}
-                showVehicleFields={showVehicleFields}
-                hideSubmitButton
-                submitLabel={ui.calendar.reviewBookingCta}
-                bookingFlowLocale={bookingFlowLocale}
-                emailOptional
-              />
+              {detailsSubStep === 'serviceChoice' ? (
+                <BookingServiceLocationChoice
+                  value={customerServiceChoice}
+                  onChange={choice => {
+                    setCustomerServiceChoice(choice);
+                    if (choice === 'mobile') {
+                      setCustomerData(prev =>
+                        clearCustomerServiceAddress(prev)
+                      );
+                    }
+                  }}
+                  bookingFlowLocale={bookingFlowLocale}
+                  isOwnerManualBooking={isOwnerManualBooking}
+                />
+              ) : null}
+
+              {detailsSubStep === 'contact' ||
+              detailsSubStep === 'address' ||
+              detailsSubStep === 'vehicleNotes' ? (
+                <CustomerForm
+                  id={CUSTOMER_FORM_ID}
+                  step={detailsSubStep}
+                  value={customerData}
+                  onChange={setCustomerData}
+                  onSubmit={handleDetailsSubStepSubmit}
+                  showVehicleFields={showVehicleFields}
+                  hideSubmitButton
+                  submitLabel={detailsPrimaryCtaLabel}
+                  bookingFlowLocale={bookingFlowLocale}
+                  emailOptional
+                  isOwnerManualBooking={isOwnerManualBooking}
+                  showNotificationsConsent={!isOwnerManualBooking}
+                  businessName={businessName}
+                  agreedToNotifications={agreedToPublicNotifications}
+                  onAgreedToNotificationsChange={setAgreedToPublicNotifications}
+                />
+              ) : null}
             </div>
           )}
 
@@ -947,61 +1064,21 @@ export function AvailabilityBookingPage({
                 totalPriceCents={totalPriceCents}
                 date={selectedDate.toISOString().slice(0, 10)}
                 startTimeHhmm={selectedTime}
-                customer={customerData}
+                customer={customerForSubmit}
                 bookingFlowLocale={bookingFlowLocale}
+                isShopBooking={customerBookingUsesShop(
+                  serviceLocation,
+                  customerServiceChoice
+                )}
+                shopAddressLabel={serviceLocation.shopAddressLabel}
+                hideServiceAddress={
+                  isOwnerManualBooking &&
+                  customerBookingUsesShop(
+                    serviceLocation,
+                    customerServiceChoice
+                  )
+                }
               />
-              {!isOwnerManualBooking && (
-                <div className="space-y-1.5 pt-1">
-                  <label className="flex cursor-pointer items-start gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={agreedToPublicNotifications}
-                      onChange={e => {
-                        const on = e.target.checked;
-                        setAgreedToPublicNotifications(on);
-                        if (on) setNotificationsConsentError(null);
-                      }}
-                      className={`mt-0.5 cursor-pointer ${nativeCheckboxSmClassName}`}
-                      aria-invalid={Boolean(notificationsConsentError)}
-                      aria-describedby={[
-                        notificationsSmsFinePrintId,
-                        notificationsConsentError
-                          ? notificationsConsentErrorId
-                          : null,
-                      ]
-                        .filter((id): id is string => Boolean(id))
-                        .join(' ')}
-                    />
-                    <span className="text-sm leading-snug text-gray-300">
-                      {ui.calendar.notificationsConsentLabel}
-                    </span>
-                  </label>
-                  <p
-                    id={notificationsSmsFinePrintId}
-                    className="pl-6 text-[11px] leading-snug text-gray-500"
-                  >
-                    {ui.calendar.notificationsSmsFinePrintBeforeLink}
-                    <Link
-                      href={ROUTES.PRIVACY}
-                      className="text-gray-400 underline underline-offset-2 hover:text-gray-300"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {ui.calendar.notificationsSmsFinePrintLinkLabel}
-                    </Link>
-                    {ui.calendar.notificationsSmsFinePrintAfterLink}
-                  </p>
-                  {notificationsConsentError && (
-                    <p
-                      id={notificationsConsentErrorId}
-                      className="text-xs text-red-400/95 pl-6"
-                      role="alert"
-                    >
-                      {notificationsConsentError}
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
@@ -1217,23 +1294,37 @@ export function AvailabilityBookingPage({
                 fullWidth
                 className="font-semibold"
                 disabled={!canContinueFromSchedule}
-                onClick={() => setStep('details')}
+                onClick={openDetailsFromSchedule}
               >
                 {ui.common.continue}
               </Button>
             )}
-            {step === 'details' && (
-              <Button
-                type="submit"
-                form={CUSTOMER_FORM_ID}
-                variant="inverse"
-                fullWidth
-                className="font-semibold"
-                disabled={!canContinueFromDetails}
-              >
-                {ui.calendar.reviewBookingCta}
-              </Button>
-            )}
+            {step === 'details' &&
+              (detailsSubStep === 'contact' ||
+              detailsSubStep === 'address' ||
+              detailsSubStep === 'vehicleNotes' ? (
+                <Button
+                  type="submit"
+                  form={CUSTOMER_FORM_ID}
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold"
+                  disabled={!canContinueFromDetails}
+                >
+                  {detailsPrimaryCtaLabel}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  fullWidth
+                  className="font-semibold"
+                  disabled={!canContinueFromDetails}
+                  onClick={handleDetailsSubStepSubmit}
+                >
+                  {detailsPrimaryCtaLabel}
+                </Button>
+              ))}
             {step === 'review' && (
               <Button
                 type="button"
@@ -1242,13 +1333,6 @@ export function AvailabilityBookingPage({
                 className="font-semibold"
                 disabled={isSubmitting}
                 onClick={() => {
-                  if (!isOwnerManualBooking && !agreedToPublicNotifications) {
-                    setNotificationsConsentError(
-                      ui.calendar.notificationsConsentRequired
-                    );
-                    return;
-                  }
-                  setNotificationsConsentError(null);
                   if (shouldShowPaymentStep) setStep('payment');
                   else void handleConfirmBooking();
                 }}

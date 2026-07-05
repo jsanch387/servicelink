@@ -16,7 +16,14 @@ import {
   normalizeBookingCustomerInput,
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
+import { prefillCustomerWithShopAddress } from '@/features/availability/booking/utils/bookingServiceLocationFlow';
+import { clientServiceLocationChoice } from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import {
+  buildPublicBookingServiceLocation,
+  customerUsesShopAddress,
+  resolveEffectiveCustomerServiceLocation,
+} from '@/features/business-profile/utils/publicServiceLocation';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
@@ -115,6 +122,17 @@ function parseBookingCheckoutDraftPayload(
     typeof depositValueRaw === 'number' && Number.isFinite(depositValueRaw)
       ? Math.max(0, Math.round(depositValueRaw))
       : null;
+  const customerServiceLocationRaw = payload.customerServiceLocation;
+  const customerServiceLocation =
+    customerServiceLocationRaw === 'mobile' ||
+    customerServiceLocationRaw === 'shop'
+      ? customerServiceLocationRaw
+      : undefined;
+  const serviceLocationTypeRaw = payload.serviceLocationType;
+  const serviceLocationType =
+    serviceLocationTypeRaw === 'mobile' || serviceLocationTypeRaw === 'shop'
+      ? serviceLocationTypeRaw
+      : undefined;
 
   if (
     !businessSlug ||
@@ -179,6 +197,8 @@ function parseBookingCheckoutDraftPayload(
     paymentMethodSelected: paymentMethod,
     depositType,
     depositValue,
+    customerServiceLocation,
+    serviceLocationType,
   };
 }
 
@@ -223,8 +243,87 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (parsedBookingPayload.businessSlug !== businessSlug) {
+      logCheckoutDev('reject: bookingPayload slug mismatch', {
+        bodySlug: businessSlug,
+        payloadSlug: parsedBookingPayload.businessSlug,
+      });
+      return NextResponse.json(
+        { success: false, error: 'Invalid booking context.' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createSupabaseAdminClient();
+
+    const { data: profile, error: profileError } = await supabase
+      .from('business_profiles')
+      .select(
+        'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+      )
+      .eq('business_slug', businessSlug)
+      .single();
+
+    if (profileError || !profile) {
+      logCheckoutDev('reject: business not found', {
+        businessSlug,
+        profileError: profileError?.message,
+      });
+      return NextResponse.json(
+        { success: false, error: 'Business not found.' },
+        { status: 404 }
+      );
+    }
+
+    if (!(await isPublicBusinessSlugVisible(supabase, businessSlug))) {
+      logCheckoutDev('reject: business not publicly visible', { businessSlug });
+      return NextResponse.json(
+        { success: false, error: 'Business not found.' },
+        { status: 404 }
+      );
+    }
+
+    const serviceLocation = buildPublicBookingServiceLocation(
+      profile as Parameters<typeof buildPublicBookingServiceLocation>[0]
+    );
+    const locationResolved = resolveEffectiveCustomerServiceLocation(
+      serviceLocation.mode,
+      clientServiceLocationChoice(parsedBookingPayload)
+    );
+    if (locationResolved.error || !locationResolved.effective) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: locationResolved.error ?? 'Invalid service location',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      customerUsesShopAddress(
+        serviceLocation.mode,
+        locationResolved.effective
+      ) &&
+      !serviceLocation.hasCompleteShopAddress
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'This business has not finished setting up their shop address',
+        },
+        { status: 400 }
+      );
+    }
+
+    const requireCustomerAddress = !customerUsesShopAddress(
+      serviceLocation.mode,
+      locationResolved.effective
+    );
+
     const customerPayloadErr = bookingCustomerPayloadErrorMessage(
-      parsedBookingPayload.customer
+      parsedBookingPayload.customer,
+      { requireCustomerAddress }
     );
     if (customerPayloadErr) {
       logCheckoutDev('reject: invalid customer payload', {
@@ -235,20 +334,22 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const bookingPayload = {
-      ...parsedBookingPayload,
-      customer: normalizeBookingCustomerInput(parsedBookingPayload.customer),
-    };
-    if (bookingPayload.businessSlug !== businessSlug) {
-      logCheckoutDev('reject: bookingPayload slug mismatch', {
-        bodySlug: businessSlug,
-        payloadSlug: bookingPayload.businessSlug,
-      });
-      return NextResponse.json(
-        { success: false, error: 'Invalid booking context.' },
-        { status: 400 }
+
+    let normalizedCustomer = normalizeBookingCustomerInput(
+      parsedBookingPayload.customer
+    );
+    if (!requireCustomerAddress) {
+      normalizedCustomer = normalizeBookingCustomerInput(
+        prefillCustomerWithShopAddress(normalizedCustomer, serviceLocation)
       );
     }
+
+    const bookingPayload = {
+      ...parsedBookingPayload,
+      customer: normalizedCustomer,
+      customerServiceLocation: locationResolved.effective,
+      serviceLocationType: locationResolved.effective,
+    };
     if (
       !Number.isFinite(amountCents) ||
       amountCents < MIN_AMOUNT_CENTS ||
@@ -276,33 +377,6 @@ export async function POST(request: NextRequest) {
       );
     }
     logCheckoutDev('request ok', { businessSlug, amountCents });
-
-    const supabase = createSupabaseAdminClient();
-
-    const { data: profile, error: profileError } = await supabase
-      .from('business_profiles')
-      .select('id, business_slug, business_name')
-      .eq('business_slug', businessSlug)
-      .single();
-
-    if (profileError || !profile) {
-      logCheckoutDev('reject: business not found', {
-        businessSlug,
-        profileError: profileError?.message,
-      });
-      return NextResponse.json(
-        { success: false, error: 'Business not found.' },
-        { status: 404 }
-      );
-    }
-
-    if (!(await isPublicBusinessSlugVisible(supabase, businessSlug))) {
-      logCheckoutDev('reject: business not publicly visible', { businessSlug });
-      return NextResponse.json(
-        { success: false, error: 'Business not found.' },
-        { status: 404 }
-      );
-    }
 
     const businessId = (profile as { id: string }).id;
     const slugForUrl =

@@ -64,16 +64,41 @@ vi.mock('@/features/availability/booking/components/TimeSlotGrid', () => ({
 }));
 
 vi.mock('@/features/availability/booking/components/CustomerForm', () => ({
-  CustomerForm: ({ id, onSubmit }: { id: string; onSubmit: () => void }) => (
+  CustomerForm: ({
+    id,
+    step,
+    onSubmit,
+    showNotificationsConsent,
+    agreedToNotifications,
+    onAgreedToNotificationsChange,
+  }: {
+    id: string;
+    step: 'contact' | 'address' | 'vehicleNotes';
+    onSubmit: () => void;
+    showNotificationsConsent?: boolean;
+    agreedToNotifications?: boolean;
+    onAgreedToNotificationsChange?: (agreed: boolean) => void;
+  }) => (
     <form
       id={id}
       onSubmit={e => {
         e.preventDefault();
         onSubmit();
       }}
-    />
+    >
+      {step === 'contact' && showNotificationsConsent ? (
+        <label>
+          <input
+            type="checkbox"
+            checked={agreedToNotifications}
+            onChange={e => onAgreedToNotificationsChange?.(e.target.checked)}
+          />
+          Text me appointment updates
+        </label>
+      ) : null}
+    </form>
   ),
-  isCustomerFormValid: () => true,
+  isCustomerFormStepValid: () => true,
 }));
 
 function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
@@ -96,6 +121,14 @@ function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
   );
 }
 
+async function advanceDetailsToReview(
+  user: ReturnType<typeof userEvent.setup>
+) {
+  await user.click(screen.getByRole('button', { name: /^continue$/i }));
+  await user.click(screen.getByRole('button', { name: /^continue$/i }));
+  await user.click(screen.getByRole('button', { name: /review booking/i }));
+}
+
 describe('AvailabilityBookingPage flow navigation', () => {
   it('uses top back for step navigation and removes duplicate bottom Back button', async () => {
     const user = userEvent.setup();
@@ -115,9 +148,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
     expect(
       screen.getByRole('button', { name: /back to date & time/i })
     ).toBeTruthy();
-    expect(
-      screen.getByRole('button', { name: /review booking/i })
-    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^continue$/i })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^back$/i })).toBeNull();
 
     await user.click(
@@ -133,7 +164,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
     await user.click(screen.getByRole('button', { name: /pick date/i }));
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
-    await user.click(screen.getByRole('button', { name: /review booking/i }));
+    await advanceDetailsToReview(user);
 
     // Step 3 back behavior
     expect(
@@ -144,7 +175,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
     expect(screen.getAllByText('SUV')).toHaveLength(1);
   });
 
-  it('requires notification consent on review before confirming', async () => {
+  it('allows continuing from details when SMS consent is unchecked', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch');
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const u = typeof input === 'string' ? input : input.toString();
@@ -166,7 +197,20 @@ describe('AvailabilityBookingPage flow navigation', () => {
     await user.click(screen.getByRole('button', { name: /pick date/i }));
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
+
+    const smsCheckbox = screen.getByRole('checkbox', {
+      name: /text me appointment updates/i,
+    }) as HTMLInputElement;
+    expect(smsCheckbox.checked).toBe(true);
+    await user.click(smsCheckbox);
+    expect(smsCheckbox.checked).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    expect(screen.queryByText(/please check the box/i)).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
     await user.click(screen.getByRole('button', { name: /review booking/i }));
+    await user.click(screen.getByRole('button', { name: /confirm booking/i }));
 
     const postsToCreateBooking = () =>
       fetchMock.mock.calls.filter(
@@ -176,21 +220,6 @@ describe('AvailabilityBookingPage flow navigation', () => {
           args[0].includes('/api/public/bookings') &&
           !args[0].includes('/blocked/')
       );
-
-    await user.click(screen.getByRole('button', { name: /confirm booking/i }));
-    expect(
-      screen.getByText(
-        /please check the box to agree to email and sms notifications/i
-      )
-    ).toBeTruthy();
-    expect(postsToCreateBooking()).toHaveLength(0);
-
-    await user.click(
-      screen.getByRole('checkbox', {
-        name: /by confirming this appointment/i,
-      })
-    );
-    await user.click(screen.getByRole('button', { name: /confirm booking/i }));
 
     expect(postsToCreateBooking().length).toBeGreaterThan(0);
   });

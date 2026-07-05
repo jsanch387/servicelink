@@ -21,8 +21,9 @@ export const PLANS: Record<PlanId, PlanInfo> = {
   pro: {
     id: 'pro',
     name: 'Pro',
-    price: '$10',
-    description: 'For busy pros who need unlimited bookings and full control.',
+    price: '$20',
+    description:
+      'For pros who want unlimited bookings, get paid in-app, and close more jobs.',
   },
 } as const;
 
@@ -50,10 +51,10 @@ export interface ProFeatureItem {
 /** Pro plan feature list for upgrade and pricing UIs (first = main reason, highlight = star + bold). */
 export const PRO_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings', highlight: true },
-  { text: 'Verified profile badge' },
-  { text: 'More images' },
+  { text: 'Accept card payments & collect deposits', highlight: true },
+  { text: 'Client CRM, quotes, and email confirmations' },
   { text: 'Multiple price options per service' },
-  { text: 'Priority support' },
+  { text: 'Verified badge & more gallery photos' },
 ];
 
 /** localStorage key: set after user dismisses the post-upgrade welcome modal (show once). */

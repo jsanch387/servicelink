@@ -23,6 +23,8 @@ import {
 } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
+import { buildStripeCheckoutAutomaticTaxParams } from '@/libs/stripe/checkoutAutomaticTax';
+import { buildProSubscriptionCheckoutLineItem } from '@/libs/stripe/proSubscriptionLineItem';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
@@ -153,6 +155,9 @@ export async function POST(request: NextRequest) {
             invoice: openInv,
             success_url: successUrl,
             cancel_url: cancelUrl,
+            ...buildStripeCheckoutAutomaticTaxParams({
+              hasExistingCustomer: Boolean(existingStripeCustomerId),
+            }),
             ...(existingStripeCustomerId
               ? { customer: existingStripeCustomerId }
               : { customer_email: user.email ?? undefined }),
@@ -198,17 +203,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const proLineItem = await buildProSubscriptionCheckoutLineItem(
+      stripe,
+      priceId
+    );
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [proLineItem],
+      ...buildStripeCheckoutAutomaticTaxParams({
+        hasExistingCustomer: Boolean(existingStripeCustomerId),
+      }),
       ...(applyOnboardingTrial
         ? {
-            payment_method_collection: 'if_required',
+            payment_method_collection: 'if_required' as const,
             subscription_data: {
               trial_period_days: 7,
               trial_settings: {

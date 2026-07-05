@@ -3,6 +3,10 @@ import type { PublicBookingUi } from '../catalogTypes';
 export const publicBookingUiEs: PublicBookingUi = {
   nav: {
     backToDateTime: 'Volver a fecha y hora',
+    backToYourDetails: 'Volver a tu información',
+    backToCustomerDetails: 'Volver a la información del cliente',
+    backToAddress: 'Volver a la dirección',
+    backToVehicle: 'Volver al vehículo',
     backToDetails: 'Volver a los datos',
     backToReview: 'Volver a la revisión',
     backToProfile: 'Volver al perfil',
@@ -68,14 +72,11 @@ export const publicBookingUiEs: PublicBookingUi = {
     noSlotsHint: 'No hay horarios disponibles para esta fecha.',
     reviewBooking: 'Revisa tu reserva',
     reviewBookingCta: 'Revisar reserva',
-    notificationsConsentLabel:
-      'Al confirmar esta cita, aceptas recibir notificaciones por correo y SMS sobre tu reserva.',
-    notificationsSmsFinePrintBeforeLink:
-      'Pueden aplicarse cargos por mensajes y datos. Responde STOP para darte de baja. Consulta nuestra ',
-    notificationsSmsFinePrintLinkLabel: 'Política de privacidad conforme a SMS',
-    notificationsSmsFinePrintAfterLink: '.',
-    notificationsConsentRequired:
-      'Marca la casilla para aceptar las notificaciones por correo y SMS antes de continuar.',
+    notificationsConsentCheckboxLabel:
+      'Enviarme actualizaciones de la cita por mensaje',
+    notificationsConsentFinePrint: (businessName: string) =>
+      `De ${businessName}. La frecuencia de mensajes puede variar. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestra`,
+    notificationsSmsFinePrintLinkLabel: 'Política de Privacidad',
     continueToPayment: 'Continuar al pago',
     confirmBooking: 'Confirmar reserva',
     chooseHowToPay: 'Elige cómo pagar',
@@ -123,8 +124,29 @@ export const publicBookingUiEs: PublicBookingUi = {
     paymentNotSetupLead: businessName =>
       `Las opciones de pago de ${businessName} aún no están listas. Hoy no se te cobrará aquí.`,
   },
+  serviceLocation: {
+    chooseHeading: '¿Dónde será el servicio?',
+    chooseSubtitle: 'Elige si van a tu ubicación o tú visitas su local.',
+    mobileOption: 'En mi dirección',
+    mobileOptionDesc: 'Ellos van a ti. Ingresarás tu dirección.',
+    shopOption: 'En su local',
+    shopOptionDesc: 'Tú visitas su ubicación a la hora reservada.',
+    shopVisitAddressLabel: 'Dirección del local',
+    shopAddressIncomplete:
+      'Este negocio aún no ha configurado la dirección de su local.',
+    backToServiceChoice: 'Volver a tipo de ubicación',
+    backToShopLocation: 'Volver al local',
+    ownerChooseHeading: '¿Dónde será el servicio?',
+    ownerChooseSubtitle: 'Elige móvil o local para esta cita.',
+    ownerMobileOption: 'Móvil',
+    ownerMobileOptionDesc: 'Tú vas al cliente. Ingresarás su dirección.',
+    ownerShopOption: 'Local',
+    ownerShopOptionDesc:
+      'El cliente visita tu local. No necesitas ingresar dirección.',
+  },
   customerForm: {
-    yourDetails: 'Tus datos',
+    yourDetails: 'Tu información',
+    customerDetails: 'Información del cliente',
     serviceAddress: 'Dirección del servicio',
     vehicle: 'Vehículo',
     fullName: 'Nombre completo',
@@ -147,15 +169,12 @@ export const publicBookingUiEs: PublicBookingUi = {
     errCity: 'La ciudad es obligatoria',
     errState: 'El estado es obligatorio',
     errZip: 'El código postal es obligatorio',
-    errZipInvalid:
-      'Introduce un código postal válido de EE. UU. (5 dígitos o 9 con ZIP+4)',
+    errZipInvalid: 'Introduce un código postal válido de 5 dígitos (EE. UU.)',
     errVehicleYear: 'El año del vehículo es obligatorio',
     errVehicleYearInvalid: 'Introduce un año válido de 4 dígitos',
     errVehicleMake: 'La marca del vehículo es obligatoria',
     errVehicleModel: 'El modelo del vehículo es obligatorio',
     emailOptional: 'Correo electrónico (opcional)',
-    emailOptionalNoConfirmation:
-      'Sin dirección de correo, no se enviará un correo de confirmación de la reserva.',
     errEmailInvalid: 'Introduce una dirección de correo válida',
     errValueTooLong: 'Este valor es demasiado largo',
   },
@@ -220,5 +239,29 @@ export const publicBookingUiEs: PublicBookingUi = {
     serviceCategoryOther: 'Otros servicios',
     serviceCategoriesAriaLabel: 'Ver servicios por categoría',
     noServicesInCategory: 'No hay servicios en esta categoría.',
+  },
+  quoteForm: {
+    quoteDetails: 'Detalles de la cotización',
+    serviceRequested: 'Servicio solicitado',
+    serviceRequestedPlaceholder: 'p. ej. Detalle interior + exterior',
+    whenOptional: '¿Cuándo? (opcional)',
+    whenPlaceholder: 'Selecciona plazo',
+    detailsLabel: '¿Qué necesitas?',
+    detailsPlaceholder: 'Comparte algunos detalles para cotizar con precisión.',
+    submitRequest: 'Enviar solicitud',
+    timelineAsap: 'Lo antes posible',
+    timelineThisWeek: 'Esta semana',
+    timelineNextTwoWeeks: 'Próximas 2 semanas',
+    timelineThisMonth: 'Este mes',
+    timelineFlexible: 'Flexible',
+    errName: 'El nombre es obligatorio',
+    errEmail: 'Introduce un correo válido',
+    errPhone: 'El teléfono debe tener 10 dígitos',
+    errService: 'El servicio es obligatorio',
+    errDetails: 'Añade detalles del proyecto',
+    errVehicleYear: 'Introduce un año válido de 4 dígitos',
+    errVehicleMake: 'La marca del vehículo es obligatoria',
+    errVehicleModel: 'El modelo del vehículo es obligatorio',
+    submitErrorGeneric: 'Algo salió mal. Vuelve a intentarlo.',
   },
 };

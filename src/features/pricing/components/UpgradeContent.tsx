@@ -15,11 +15,14 @@ export interface UpgradeContentProps {
   isProSubscriber?: boolean;
   /** When true, user is locked out after subscription lapsed and must reactivate. */
   isBillingLocked?: boolean;
+  /** Grandfathered or Stripe-reported monthly rate for current Pro subscribers. */
+  subscriberPlanPrice?: string | null;
 }
 
 export const UpgradeContent: React.FC<UpgradeContentProps> = ({
   isProSubscriber = false,
   isBillingLocked = false,
+  subscriberPlanPrice = null,
 }) => {
   const free = PLANS.free;
   const pro = PLANS.pro;
@@ -138,7 +141,11 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
             variant="pro"
             title={pro.name}
             description={pro.description}
-            price={pro.price}
+            price={
+              isProSubscriber && subscriberPlanPrice
+                ? subscriberPlanPrice
+                : pro.price
+            }
             features={PUBLIC_PRICING_PRO_PLAN_FEATURES}
             badgeLabel={isProSubscriber ? 'Current plan' : 'Most popular'}
             footer={

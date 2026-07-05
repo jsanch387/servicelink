@@ -56,8 +56,28 @@ Set **`ownerManualBooking`** to **`true`** so the route treats this as an owner 
 | `customer`                | object  | Yes      | See **Customer object** below.                                                                                                                        |
 | `paymentMethodSelected`   | string  | No       | Owner web flow does **not** collect card on this POST; send **`"none"`** (same as dashboard owner confirm). Omit is also treated as unset downstream. |
 | `ownerManualBooking`      | boolean | Yes      | Must be **`true`** for this contract.                                                                                                                 |
+| `serviceLocationType`     | string  | Yes\*    | **`"mobile"`** or **`"shop"`** — where service happens. Required on new mobile builds. Omit on older clients → stored as `NULL` on the booking row.   |
+| `customerServiceLocation` | string  | No       | Web alias for the same choice. Mobile should send **`serviceLocationType`** instead. If both are sent, **`serviceLocationType` wins**.                |
 
-### Customer object (`customer`)
+\*New mobile builds always send `serviceLocationType`. Older builds may omit it (booking row stores `NULL`).
+
+### `serviceLocationType` rules
+
+| Value      | Meaning                                                                 |
+| ---------- | ----------------------------------------------------------------------- |
+| `"mobile"` | Owner travels to the customer. `customer.*` address = service address.  |
+| `"shop"`   | Customer visits the shop. `customer.*` address = business shop address. |
+
+**Validation (server):**
+
+- Must be `"mobile"` or `"shop"` when sent.
+- `"shop"` rejected if `business_profiles.service_location_mode` is `mobile_only`.
+- `"mobile"` rejected if `business_profiles.service_location_mode` is `shop_only`.
+- For `both`, either value is allowed.
+
+**Persistence:** stored on **`bookings.service_location_type`** (`text`, nullable). Legacy rows and omitted field → `NULL`.
+
+**Shop address:** when `"shop"`, the mobile app should still send `customer.streetAddress`, `city`, `state`, `zip` populated with the business shop address (loaded from `business_profiles`). Server also prefills from profile when shop is selected and customer address is not required.
 
 All keys are **strings** in JSON (server coerces missing keys to empty string, then validates).
 
@@ -87,6 +107,7 @@ All keys are **strings** in JSON (server coerces missing keys to empty string, t
   "startTime": "10:00",
   "paymentMethodSelected": "none",
   "ownerManualBooking": true,
+  "serviceLocationType": "mobile",
   "customer": {
     "fullName": "Jordan Lee",
     "email": "jordan@example.com",
@@ -123,7 +144,7 @@ Response headers include **`X-Request-ID`** (echo / trace id for support).
 
 **Server side effects (best-effort where noted):**
 
-1. **`bookings`** row created (status per `createBooking` in `bookingService`).
+1. **`bookings`** row created (status per `createBooking` in `bookingService`), including **`service_location_type`** when provided.
 2. **`booking_payments`** row for no-checkout path (`insertBookingPaymentsRowForNoCheckoutPublicBooking`) using business `payment_settings`.
 3. **Owner:** in-app `notifications` + Expo push (`notifyOwnerForAvailabilityBookingCreated`) when `profile_id` exists.
 4. **Customer:** `sendAvailabilityBookingCustomerConfirmationEmail` **only if** `customer.email` is non-empty after normalization.
@@ -143,7 +164,7 @@ Body shape is generally:
 
 | HTTP  | Typical `error` / cause                                                                                                          |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch).                                |
+| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch, invalid `serviceLocationType`). |
 | `401` | Missing/invalid Bearer token or no session (owner mode).                                                                         |
 | `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`). |
 | `404` | Unknown slug or business not publicly visible.                                                                                   |
@@ -169,6 +190,8 @@ Owner manual booking in the **web** app does not open Stripe Checkout on confirm
 | Piece                     | Location                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------- |
 | Route handler             | `src/app/api/public/bookings/route.ts`                                             |
+| Service location persist  | `src/features/availability/booking/utils/resolveBookingServiceLocationType.ts`     |
+| Booking insert            | `src/features/availability/services/bookingService.ts` → `createBooking`           |
 | Auth helper               | `src/libs/api/getAuthenticatedUser.ts`                                             |
 | Owner business resolution | `src/server/resolveCurrentBusinessId.ts`                                           |
 | Customer email            | `sendAvailabilityBookingCustomerConfirmationEmail` (availability booking template) |

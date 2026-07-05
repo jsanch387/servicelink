@@ -1,6 +1,6 @@
 'use client';
 
-import { PhoneInput } from '@/components/shared';
+import { GlassCard, PhoneInput } from '@/components/shared';
 import React from 'react';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
 
@@ -20,25 +20,23 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     : undefined;
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-        Contact
-      </h2>
+    <div className="w-full max-w-full text-left">
+      <p className="text-sm font-medium text-gray-200">Phone</p>
+      <p className="mt-1 text-xs text-zinc-500">
+        Optional. Shown on your profile so customers can call you.
+      </p>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-5 focus-within:border-white/20 focus-within:ring-1 focus-within:ring-white/10 transition-colors">
+      <GlassCard padding="sm" rounded="rounded-xl" className="mt-2 w-full">
         <PhoneInput
-          label="Phone number"
+          label="Number"
           value={formData.phone_number_call}
           onChange={value => onInputChange('phone_number_call', value)}
           placeholder="(555) 123-4567"
-          showIcon={true}
-          showDigitHint={true}
+          showIcon
+          showDigitHint
           error={phoneError}
         />
-        <p className="text-xs text-gray-500 mt-2">
-          Optional. Shown on your profile so customers can call you.
-        </p>
-      </div>
+      </GlassCard>
     </div>
   );
 };
