@@ -17,6 +17,7 @@
 import type { Database } from '@/libs/supabase/client';
 import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isSmsOutboundEnabled } from '../config/isSmsOutboundEnabled';
 import { logSms } from '../server/smsLog';
 import { sendSms } from './sendSms';
 import { toE164 } from '../utils/toE164';
@@ -65,6 +66,11 @@ export async function sendAndRecordSms(
     // Nothing to send (e.g. booking with no phone); nothing to log.
     logSms(correlationId, 'info', 'skip_no_phone', { type });
     return { sent: false, reason: 'no_phone' };
+  }
+
+  if (!isSmsOutboundEnabled()) {
+    logSms(correlationId, 'info', 'skip_outbound_disabled', { type });
+    return { sent: false, reason: 'not_configured' };
   }
 
   const phone = toE164(rawPhone);

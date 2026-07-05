@@ -1,5 +1,7 @@
 # Contract: Mobile — `job_completed` (Complete sheet / Phase 1)
 
+> **SMS outbound paused (2026-07):** Completion still persists fees, payment, invoice, and marks the booking complete. Customer receipt is sent via **email** when `customer.email` is present (`email.sent: true`). `sms.reason` is `"not_configured"` while paused. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+
 Owner closes out a field job from the **Complete** full-screen sheet: add fees, collect balance, tap **Complete**. This is **cycle 2** of the extended booking lifecycle — payment close-out, invoice, and customer notification.
 
 **Prior step (required):** [`mobile-booking-work-finished.md`](./mobile-booking-work-finished.md) — owner must tap **Done** or **Skip** first (`work_handoff_status` = `notified` | `skipped`).
@@ -15,13 +17,13 @@ Owner closes out a field job from the **Complete** full-screen sheet: add fees, 
 
 After **Done/Skip**, mobile shows **Mark complete** → Complete sheet:
 
-| Step | Mobile UI                                   | Server                                                            |
-| ---- | ------------------------------------------- | ----------------------------------------------------------------- |
-| 1    | Line items (service + add-ons)              | From booking row                                                  |
-| 2    | Add fee (label + dollars)                   | `sessionFees[]` in request                                        |
-| 3    | Collect balance (Tap to Pay / Mark as paid) | `sessionPayment` in request                                       |
-| 4    | Tap **Complete**                            | `POST …/actions` `job_completed`                                  |
-| 5    | Success                                     | Booking leaves Next Up; customer gets SMS/email with invoice link |
+| Step | Mobile UI                                   | Server                                                                               |
+| ---- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1    | Line items (service + add-ons)              | From booking row                                                                     |
+| 2    | Add fee (label + dollars)                   | `sessionFees[]` in request                                                           |
+| 3    | Collect balance (Tap to Pay / Mark as paid) | `sessionPayment` in request                                                          |
+| 4    | Tap **Complete**                            | `POST …/actions` `job_completed`                                                     |
+| 5    | Success                                     | Booking leaves Next Up; customer gets **email** with invoice link when email on file |
 
 **Golden rule:** DB commit first; SMS/email best-effort second. Notification failure does **not** roll back completion.
 
@@ -100,17 +102,17 @@ Load `service_price_cents`, `addon_details`, and join/read `booking_payments` wh
   "bookingStatus": "completed",
   "workHandoffStatus": "notified",
   "invoicePublicToken": "a1b2c3…",
-  "sms": { "sent": true, "messageId": "<uuid>", "reason": null },
-  "email": { "sent": false, "messageId": null, "reason": null }
+  "sms": { "sent": false, "messageId": null, "reason": "not_configured" },
+  "email": { "sent": true, "messageId": "<resend-id>", "reason": null }
 }
 ```
 
-| Field                         | Notes                                                                |
-| ----------------------------- | -------------------------------------------------------------------- |
-| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                       |
-| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                   |
-| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today) |
-| `sms` / `email`               | Always present. **One channel** may be `sent: true`; never both      |
+| Field                         | Notes                                                                                     |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                                            |
+| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                                        |
+| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today)                      |
+| `sms` / `email`               | Always present. While SMS is paused: `sms.not_configured`; check `email.sent` for receipt |
 
 Customer invoice URL (for debugging): `{EXPO_PUBLIC_WEB_APP_URL}/i/{invoicePublicToken}`
 
@@ -126,14 +128,14 @@ Already completed → **200**, same statuses, `sms.reason: "duplicate"`, `invoic
 { "success": false, "error": "Human-readable message" }
 ```
 
-| HTTP    | When                                                               |
-| ------- | ------------------------------------------------------------------ |
-| **400** | Bad payload; payment still due; `tap_to_pay` without Stripe intent |
-| **401** | Missing/invalid JWT                                                |
-| **404** | Booking not found / not owned                                      |
-| **409** | Not `in_progress`; handoff not done (`work_handoff_status` null)   |
-| **429** | Rate limited — honor `Retry-After`                                 |
-| **500** | Unexpected / persist failure                                       |
+| HTTP    | When                                                                                   |
+| ------- | -------------------------------------------------------------------------------------- |
+| **400** | Bad payload; payment still due; `tap_to_pay` without Stripe intent                     |
+| **401** | Missing/invalid JWT                                                                    |
+| **404** | Booking not found / not owned                                                          |
+| **409** | Not `in_progress` or handoff not done → `"Mark work done before completing this job."` |
+| **429** | Rate limited — honor `Retry-After`                                                     |
+| **500** | Unexpected / persist failure                                                           |
 
 ---
 

@@ -1,5 +1,7 @@
 # Contract: Mobile — SMS notifications, message history & booking actions
 
+> **SMS outbound paused (2026-07):** Customer SMS is intentionally disabled until Pingram/carrier setup is complete. Lifecycle actions still transition `job_status` / `work_handoff_status`; responses include `sms: { sent: false, reason: "not_configured" }`. Email notifications remain active where documented. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+
 This doc covers, for the native app:
 
 1. **How customer phone numbers are stored** and normalized.
@@ -20,7 +22,7 @@ This doc covers, for the native app:
 - The **number actually used** for a send is snapshotted on the SMS log row (`sms_messages.to_phone`), so history is accurate even if the customer's number is later edited.
 - If a booking has no usable phone, the action still runs (the **state still changes**) but no SMS is sent — the response reports `sms.sent = false` (see §4).
 
-Owner-created bookings and customer self-serve bookings both flow through `POST /api/public/bookings`; if a phone is present, the **booking confirmation SMS** is sent + logged automatically there (and in the Stripe webhook for card-paid bookings). The app does not trigger confirmations.
+Owner-created bookings and customer self-serve bookings both flow through `POST /api/public/bookings`. **While SMS is paused**, no booking confirmation text is sent; the server still sends the **customer confirmation email** when `customer.email` is present (and owner notification email). The app does not trigger confirmations.
 
 ---
 

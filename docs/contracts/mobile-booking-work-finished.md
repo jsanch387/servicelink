@@ -1,6 +1,8 @@
 # Contract: Mobile — `work_finished` (Done / Skip)
 
-Owner marks physical work complete **before** payment close-out and final booking completion. This is **cycle 1** of the extended booking lifecycle — only the **Done / Skip** handoff step and its customer SMS.
+> **SMS outbound paused (2026-07):** **Done** and **Skip** still set `work_handoff_status` (`notified` / `skipped`). No customer SMS is sent; `sms.reason` is `"not_configured"` on Done. **Done succeeds without a phone** while SMS is paused. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+
+Owner marks physical work complete **before** payment close-out and final booking completion. This is **cycle 1** of the extended booking lifecycle — the **Done / Skip** handoff step.
 
 **Next step (cycle 2):** [`mobile-booking-job-completed.md`](./mobile-booking-job-completed.md) — Complete sheet, fees, payment, invoice + review.
 
@@ -14,10 +16,10 @@ Owner marks physical work complete **before** payment close-out and final bookin
 
 While a job is **`in_progress`**, mobile shows **Done** and **Skip**:
 
-| Mobile button | Request         | Customer SMS   | `work_handoff_status` after |
-| ------------- | --------------- | -------------- | --------------------------- |
-| **Done**      | `notify: true`  | Yes (SMS only) | `notified`                  |
-| **Skip**      | `notify: false` | No             | `skipped`                   |
+| Mobile button | Request         | Customer notify (paused)    | `work_handoff_status` after |
+| ------------- | --------------- | --------------------------- | --------------------------- |
+| **Done**      | `notify: true`  | None (`sms.not_configured`) | `notified`                  |
+| **Skip**      | `notify: false` | None                        | `skipped`                   |
 
 After either action, mobile shows **Mark complete** (wired in a later cycle).
 

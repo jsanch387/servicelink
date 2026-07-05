@@ -13,3 +13,10 @@ export function isWorkHandoffStatus(
 ): value is WorkHandoffStatus {
   return value === 'notified' || value === 'skipped';
 }
+
+/** When Done/Skip was not used, treat completion as skipped for response fields. */
+export function resolveWorkHandoffStatusForCompletion(
+  value: string | null | undefined
+): WorkHandoffStatus {
+  return isWorkHandoffStatus(value) ? value : 'skipped';
+}

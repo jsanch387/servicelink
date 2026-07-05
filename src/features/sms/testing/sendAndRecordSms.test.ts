@@ -67,6 +67,7 @@ function baseParams(admin: unknown, overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.SMS_OUTBOUND_ENABLED = 'true';
   sendSmsMock.mockResolvedValue({ sent: true });
 });
 
@@ -121,6 +122,17 @@ describe('sendAndRecordSms', () => {
     const res = await sendAndRecordSms(baseParams(admin, { to: '   ' }));
 
     expect(res).toEqual({ sent: false, reason: 'no_phone' });
+    expect(inserts).toHaveLength(0);
+    expect(sendSmsMock).not.toHaveBeenCalled();
+  });
+
+  it('outbound disabled: skips send and log with not_configured', async () => {
+    process.env.SMS_OUTBOUND_ENABLED = 'false';
+    const { admin, inserts } = makeAdmin();
+
+    const res = await sendAndRecordSms(baseParams(admin));
+
+    expect(res).toEqual({ sent: false, reason: 'not_configured' });
     expect(inserts).toHaveLength(0);
     expect(sendSmsMock).not.toHaveBeenCalled();
   });

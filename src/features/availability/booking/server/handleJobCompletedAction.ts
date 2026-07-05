@@ -6,9 +6,14 @@
 
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
+import { isSmsOutboundEnabled } from '@/features/sms/config/isSmsOutboundEnabled';
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  rejectJobCompletionLifecycle,
+  requiredWorkHandoffStatus,
+} from './assertJobCompletionLifecycle';
 import { computeBookingAmountDue } from './computeBookingAmountDue';
 import {
   JOB_COMPLETED_ACTION,
@@ -96,17 +101,6 @@ export async function handleJobCompletedAction(opts: {
     businessId: business.id,
   });
 
-  logJobCompletedStage(trace, 'received', {
-    businessName: business.business_name,
-    sessionFeeCount: parsed.ok ? (parsed.body.sessionFees?.length ?? 0) : 0,
-    sessionPaymentMethod: parsed.ok
-      ? (parsed.body.sessionPayment?.method ?? null)
-      : null,
-    sessionPaymentCents: parsed.ok
-      ? (parsed.body.sessionPayment?.amountCents ?? null)
-      : null,
-  });
-
   if (!parsed.ok) {
     logJobCompletedStage(trace, 'rejected', {
       httpStatus: 400,
@@ -118,16 +112,15 @@ export async function handleJobCompletedAction(opts: {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: bookingData, error: bookingError } = await (
-    auth.supabase as any
-  )
-    .from('bookings')
-    .select(
-      'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details'
-    )
-    .eq('id', bookingId)
-    .maybeSingle();
+  const { data: bookingData, error: bookingError } =
+    await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (auth.supabase as any)
+      .from('bookings')
+      .select(
+        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details'
+      )
+      .eq('id', bookingId)
+      .maybeSingle();
 
   if (bookingError) {
     logJobCompletedStage(trace, 'rejected', {
@@ -152,12 +145,6 @@ export async function handleJobCompletedAction(opts: {
       { status: 404 }
     );
   }
-
-  logJobCompletedStage(trace, 'validated', {
-    bookingStatus: booking.status,
-    jobStatus: booking.job_status,
-    workHandoffStatus: booking.work_handoff_status,
-  });
 
   const jobStatus = (booking.job_status ?? '').trim();
   const bookingStatus = (booking.status ?? '').trim();
@@ -234,36 +221,19 @@ export async function handleJobCompletedAction(opts: {
     );
   }
 
-  if (jobStatus !== 'in_progress') {
+  const lifecycleRejectReason = rejectJobCompletionLifecycle(booking);
+  if (lifecycleRejectReason) {
     logJobCompletedStage(trace, 'rejected', {
-      httpStatus: 409,
-      reason: 'Job is not in progress',
-      jobStatus: jobStatus || 'not_started',
+      httpStatus: lifecycleRejectReason.httpStatus,
+      reason: lifecycleRejectReason.error,
     });
     return NextResponse.json(
-      {
-        success: false,
-        error: "Can't mark completed — the job is not in progress.",
-        jobStatus: jobStatus || 'not_started',
-      },
-      { status: 409 }
+      { success: false, error: lifecycleRejectReason.error },
+      { status: lifecycleRejectReason.httpStatus }
     );
   }
 
-  if (!isWorkHandoffStatus(handoff)) {
-    logJobCompletedStage(trace, 'rejected', {
-      httpStatus: 409,
-      reason: 'work_handoff_status required (Done/Skip first)',
-      workHandoffStatus: handoff,
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Mark work done or skip before completing this booking.',
-      },
-      { status: 409 }
-    );
-  }
+  const workHandoffStatus = requiredWorkHandoffStatus(handoff);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: paymentsData } = await (auth.supabase as any)
@@ -279,16 +249,6 @@ export async function handleJobCompletedAction(opts: {
     sessionFees: parsed.body.sessionFees ?? [],
     paidOnlineAmountCents: payments?.paid_online_amount_cents,
     sessionPayment: parsed.body.sessionPayment,
-  });
-
-  logJobCompletedStage(trace, 'amount_due', {
-    serviceCents: amountDue.serviceCents,
-    addonCents: amountDue.addonCents,
-    sessionFeeCents: amountDue.sessionFeeCents,
-    subtotalCents: amountDue.subtotalCents,
-    paidOnlineCents: amountDue.paidOnlineCents,
-    sessionPayCents: amountDue.sessionPayCents,
-    amountDueCents: amountDue.amountDueCents,
   });
 
   if (amountDue.amountDueCents !== 0) {
@@ -361,19 +321,36 @@ export async function handleJobCompletedAction(opts: {
         { status: verified.httpStatus }
       );
     }
+
+    const sessionPayCents = parsed.body.sessionPayment.amountCents;
+    if (sessionPayCents !== verified.amountCents) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: 400,
+        reason: 'tap_to_pay_session_amount_mismatch',
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Payment amount does not match the amount due.',
+        },
+        { status: 400 }
+      );
+    }
   }
 
-  const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
-  if (!rate.ok) {
-    logJobCompletedStage(trace, 'rejected', {
-      httpStatus: 429,
-      reason: 'rate_limited',
-      retryAfterSec: rate.retryAfterSec,
-    });
-    return NextResponse.json(
-      { success: false, error: 'Too many requests. Please slow down.' },
-      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } }
-    );
+  if (isSmsOutboundEnabled()) {
+    const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
+    if (!rate.ok) {
+      logJobCompletedStage(trace, 'rejected', {
+        httpStatus: 429,
+        reason: 'rate_limited',
+        retryAfterSec: rate.retryAfterSec,
+      });
+      return NextResponse.json(
+        { success: false, error: 'Too many requests. Please slow down.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } }
+      );
+    }
   }
 
   const admin = createSupabaseAdminClient();
@@ -382,7 +359,7 @@ export async function handleJobCompletedAction(opts: {
     admin,
     bookingId: booking.id,
     businessId: business.id,
-    workHandoffStatus: handoff,
+    workHandoffStatus,
     body: parsed.body,
     amountDue,
     requestId,

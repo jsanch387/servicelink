@@ -22,11 +22,11 @@ export function useServiceDescriptionClamp(
     const el = ref.current;
     if (!el || isExpanded) return;
     setIsTruncatable(isParagraphContentClamped(el));
-  }, [description, isExpanded]);
+  }, [isExpanded]);
 
   useLayoutEffect(() => {
     measure();
-  }, [measure]);
+  }, [measure, description]);
 
   useLayoutEffect(() => {
     const el = ref.current;

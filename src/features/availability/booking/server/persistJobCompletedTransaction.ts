@@ -22,7 +22,6 @@ import type {
   JobCompletedSuccessResponse,
 } from './jobCompletedTypes';
 import {
-  buildInvoiceUrlForLog,
   buildJobCompletedTrace,
   logJobCompletedStage,
 } from './jobCompletedRouteLog';
@@ -222,7 +221,7 @@ async function markBookingCompleted(
     .update({ job_status: 'completed', status: 'completed' })
     .eq('id', bookingId)
     .eq('status', 'confirmed')
-    .eq('job_status', 'in_progress')
+    .neq('job_status', 'completed')
     .select('id')
     .maybeSingle();
 
@@ -277,19 +276,8 @@ export async function persistJobCompletedTransaction(
     businessId,
   });
 
-  logJobCompletedStage(trace, 'persist_start', {
-    workHandoffStatus,
-    sessionFeeCount: body.sessionFees?.length ?? 0,
-    subtotalCents: amountDue.subtotalCents,
-  });
-
   const existingToken = await loadExistingInvoiceToken(admin, bookingId);
   if (existingToken) {
-    logJobCompletedStage(trace, 'persist_duplicate', {
-      invoicePublicToken: existingToken,
-      invoiceUrl: buildInvoiceUrlForLog(existingToken),
-      reason: 'invoice_already_exists',
-    });
     return {
       ok: true,
       response: {
@@ -319,18 +307,6 @@ export async function persistJobCompletedTransaction(
     !reviewInvite.skipped &&
     'rawReviewToken' in reviewInvite;
 
-  logJobCompletedStage(trace, 'review_invite', {
-    ok: reviewInvite.ok,
-    skipped: reviewInvite.ok ? reviewInvite.skipped : undefined,
-    reason:
-      reviewInvite.ok && reviewInvite.skipped ? reviewInvite.reason : undefined,
-    inviteCreated: includeReviewHint,
-    inviteId:
-      reviewInvite.ok && !reviewInvite.skipped && 'inviteId' in reviewInvite
-        ? reviewInvite.inviteId
-        : null,
-  });
-
   const reviewRawToken =
     reviewInvite.ok && !reviewInvite.skipped && 'rawReviewToken' in reviewInvite
       ? reviewInvite.rawReviewToken
@@ -351,7 +327,6 @@ export async function persistJobCompletedTransaction(
   });
 
   const publicToken = generateInvoicePublicToken();
-  const invoiceUrl = buildInvoiceUrlForLog(publicToken);
 
   try {
     await replaceSessionFeeLines(
@@ -360,9 +335,6 @@ export async function persistJobCompletedTransaction(
       businessId,
       body.sessionFees ?? []
     );
-    logJobCompletedStage(trace, 'persist_fees', {
-      count: body.sessionFees?.length ?? 0,
-    });
 
     await upsertBookingPaymentsForCompletion(admin, {
       bookingId,
@@ -379,11 +351,6 @@ export async function persistJobCompletedTransaction(
         paymentIntentId: body.sessionPayment.stripePaymentIntentId,
       });
     }
-    logJobCompletedStage(trace, 'persist_payments', {
-      totalAmountCents: amountDue.subtotalCents,
-      sessionPaymentMethod: body.sessionPayment?.method ?? null,
-      paymentStatus: 'paid_full',
-    });
 
     await insertBookingInvoice(admin, {
       bookingId,
@@ -392,23 +359,11 @@ export async function persistJobCompletedTransaction(
       snapshot,
       amountDue,
     });
-    logJobCompletedStage(trace, 'persist_invoice', {
-      invoicePublicToken: publicToken,
-      invoiceUrl,
-      subtotalCents: amountDue.subtotalCents,
-      paidCents: amountDue.paidOnlineCents + amountDue.sessionPayCents,
-      lineCount: snapshot.lines.length,
-    });
 
     const transitioned = await markBookingCompleted(sessionClient, bookingId);
     if (!transitioned) {
       const tokenAfterRace = await loadExistingInvoiceToken(admin, bookingId);
       if (tokenAfterRace) {
-        logJobCompletedStage(trace, 'persist_duplicate', {
-          invoicePublicToken: tokenAfterRace,
-          invoiceUrl: buildInvoiceUrlForLog(tokenAfterRace),
-          reason: 'race_lost_invoice_exists',
-        });
         return {
           ok: true,
           response: {
@@ -427,11 +382,6 @@ export async function persistJobCompletedTransaction(
         httpStatus: 409,
       };
     }
-
-    logJobCompletedStage(trace, 'persist_booking', {
-      jobStatus: 'completed',
-      bookingStatus: 'completed',
-    });
   } catch (err) {
     logJobCompletedStage(trace, 'rejected', {
       httpStatus: 500,
@@ -465,12 +415,7 @@ export async function persistJobCompletedTransaction(
       business_id: booking.business_id,
       customer_id: booking.customer_id,
     });
-    logJobCompletedStage(trace, 'maintenance', { applied: true });
   } catch (sideErr) {
-    logJobCompletedStage(trace, 'maintenance', {
-      applied: false,
-      error: sideErr instanceof Error ? sideErr.message : String(sideErr),
-    });
     console.error('[job_completed] maintenance side effect', sideErr);
   }
 

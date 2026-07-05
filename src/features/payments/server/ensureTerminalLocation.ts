@@ -66,14 +66,13 @@ export async function ensureTerminalLocation(opts: {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profileData, error: profileError } = await (
-    opts.supabase as any
-  )
-    .from('business_profiles')
-    .select('business_name, service_area')
-    .eq('id', opts.businessId)
-    .maybeSingle();
+  const { data: profileData, error: profileError } =
+    await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (opts.supabase as any)
+      .from('business_profiles')
+      .select('business_name, service_area')
+      .eq('id', opts.businessId)
+      .maybeSingle();
 
   if (profileError) {
     console.error(

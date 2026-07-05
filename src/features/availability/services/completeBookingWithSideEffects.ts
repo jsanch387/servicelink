@@ -27,7 +27,7 @@ import {
   buildReviewInviteTrace,
   type ReviewInviteLogSource,
 } from '@/features/reviews/server/reviewInviteRouteLog';
-import { buildJobCompletedSms, sendAndRecordSms } from '@/features/sms';
+import { pausedSmsChannelOutcome } from '@/features/sms/config/smsOutboundPaused';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { updateBookingStatus } from './bookingService';
@@ -50,21 +50,6 @@ export interface CompletionNotification {
 export interface CompleteBookingResult {
   booking: BookingRow;
   notification: CompletionNotification;
-}
-
-async function loadBusinessName(
-  admin: SupabaseClient<Database>,
-  businessId: string
-): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
-    .from('business_profiles')
-    .select('business_name')
-    .eq('id', businessId)
-    .maybeSingle();
-  const name = (data as { business_name?: string | null } | null)
-    ?.business_name;
-  return typeof name === 'string' ? name.trim() : '';
 }
 
 export async function completeBookingWithSideEffects(
@@ -114,6 +99,8 @@ export async function completeBookingWithSideEffects(
 
   // Not review-eligible (already reviewed / no contact method / create failed):
   // send a plain "thank you, job complete" SMS courtesy, no email.
+  // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (web PATCH complete courtesy)
+  /*
   const reason = reviewResult.ok ? reviewResult.reason : 'error';
   const businessName =
     (await loadBusinessName(admin, updated.business_id)) || 'Your appointment';
@@ -133,6 +120,9 @@ export async function completeBookingWithSideEffects(
   const sms: NotifyChannelOutcome = smsResult.sent
     ? { sent: true, messageId: smsResult.messageId, reason: null }
     : { sent: false, messageId: null, reason: smsResult.reason };
+  */
+  const reason = reviewResult.ok ? reviewResult.reason : 'error';
+  const sms: NotifyChannelOutcome = pausedSmsChannelOutcome();
   // Email is only "no_email" when there was genuinely no way to reach them;
   // otherwise it was intentionally not attempted (e.g. already reviewed).
   const email: NotifyChannelOutcome = {

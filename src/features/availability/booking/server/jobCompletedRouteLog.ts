@@ -1,14 +1,9 @@
 /**
  * Structured logs for the mobile `job_completed` action.
- * Grep server output for `[job_completed]` to trace a completion end-to-end.
+ * Grep server output for `[job_completed]` — rejections and finished outcomes only.
  */
 
-import { getPublicInvoicePath } from '@/constants/routes';
-import { getAppBaseUrl } from '@/features/email/services/resendClient';
-import {
-  maskEmailForLog,
-  shortEntityIdForLog,
-} from '@/features/reviews/server/reviewInviteRouteLog';
+import { shortEntityIdForLog } from '@/features/reviews/server/reviewInviteRouteLog';
 
 const ROUTE_PREFIX = '[job_completed]';
 
@@ -47,12 +42,6 @@ export function buildJobCompletedTrace(args: {
   };
 }
 
-export function buildInvoiceUrlForLog(publicToken: string): string {
-  const token = publicToken.trim();
-  if (!token) return '';
-  return `${getAppBaseUrl()}${getPublicInvoicePath(token)}`;
-}
-
 function requestIdForLogLine(requestId: string): string {
   return requestId.length > 72 ? `${requestId.slice(0, 72)}…` : requestId;
 }
@@ -68,49 +57,26 @@ function baseContext(trace: JobCompletedLogTrace): Record<string, string> {
   return ctx;
 }
 
-function formatLine(
-  stage: JobCompletedLogStage,
-  trace: JobCompletedLogTrace,
-  detail?: string
-): string {
-  const parts = [
-    stage,
-    ...Object.entries(baseContext(trace)).map(([k, v]) => `${k}=${v}`),
-  ];
-  if (detail?.trim()) parts.push(detail.trim());
-  return `${ROUTE_PREFIX} ${parts.join(' ')}`;
-}
-
-/** Stage log — always includes copy-pasteable JSON when `extra` has an invoice URL. */
+/** Log rejections and persist failures only — skip happy-path noise. */
 export function logJobCompletedStage(
   trace: JobCompletedLogTrace,
   stage: JobCompletedLogStage,
   extra?: Record<string, unknown>
 ): void {
-  const invoiceUrl =
-    typeof extra?.invoiceUrl === 'string'
-      ? extra.invoiceUrl
-      : typeof extra?.invoicePublicToken === 'string'
-        ? buildInvoiceUrlForLog(extra.invoicePublicToken)
-        : undefined;
-
-  const payload = {
-    ...baseContext(trace),
-    stage,
-    ...(invoiceUrl ? { invoiceUrl } : {}),
-    ...extra,
-  };
-
-  if (stage === 'rejected') {
-    console.warn(
-      formatLine(stage, trace, String(extra?.reason ?? extra?.error ?? ''))
-    );
-    console.warn(`${ROUTE_PREFIX}`, payload);
+  if (stage !== 'rejected') {
     return;
   }
 
-  console.info(formatLine(stage, trace));
-  console.info(`${ROUTE_PREFIX}`, payload);
+  const reason = String(extra?.reason ?? extra?.error ?? 'unknown');
+  const ctx = baseContext(trace);
+  const httpStatus =
+    typeof extra?.httpStatus === 'number' ? extra.httpStatus : undefined;
+
+  console.warn(
+    `${ROUTE_PREFIX} rejected req=${ctx.req} booking=${ctx.booking}${
+      ctx.biz ? ` biz=${ctx.biz}` : ''
+    } status=${httpStatus ?? '?'} reason=${reason}`
+  );
 }
 
 export function logJobCompletedFinished(
@@ -125,10 +91,7 @@ export function logJobCompletedFinished(
     workHandoffStatus?: string;
   }
 ): void {
-  const invoiceUrl = outcome.invoicePublicToken
-    ? buildInvoiceUrlForLog(outcome.invoicePublicToken)
-    : null;
-
+  const ctx = baseContext(trace);
   const detail = [
     outcome.duplicate ? 'duplicate' : 'success',
     outcome.workHandoffStatus ? `handoff=${outcome.workHandoffStatus}` : null,
@@ -136,26 +99,14 @@ export function logJobCompletedFinished(
     outcome.emailSent
       ? 'email=sent'
       : `email=${outcome.emailReason ?? 'skipped'}`,
-    invoiceUrl ? `invoice=${invoiceUrl}` : 'invoice=none',
+    outcome.invoicePublicToken ? 'invoice=yes' : 'invoice=no',
   ]
     .filter(Boolean)
     .join(' ');
 
-  console.info(formatLine('finished', trace, detail));
-  console.info(`${ROUTE_PREFIX}`, {
-    ...baseContext(trace),
-    stage: 'finished',
-    duplicate: Boolean(outcome.duplicate),
-    invoicePublicToken: outcome.invoicePublicToken,
-    invoiceUrl,
-    sms: { sent: outcome.smsSent, reason: outcome.smsReason ?? null },
-    email: { sent: outcome.emailSent, reason: outcome.emailReason ?? null },
-    workHandoffStatus: outcome.workHandoffStatus ?? null,
-  });
-
-  if (invoiceUrl) {
-    console.info(`${ROUTE_PREFIX} OPEN INVOICE → ${invoiceUrl}`);
-  }
+  console.info(
+    `${ROUTE_PREFIX} finished req=${ctx.req} booking=${ctx.booking} ${detail}`
+  );
 }
 
 export function maskPhoneForLog(phone: string | null | undefined): string {
@@ -165,4 +116,10 @@ export function maskPhoneForLog(phone: string | null | undefined): string {
   return `***${t.slice(-4)}`;
 }
 
-export { maskEmailForLog };
+export function maskEmailForLog(email: string | null | undefined): string {
+  const t = email?.trim() || '';
+  if (!t) return '[none]';
+  const at = t.indexOf('@');
+  if (at <= 1) return '***';
+  return `${t.slice(0, 1)}***${t.slice(at)}`;
+}

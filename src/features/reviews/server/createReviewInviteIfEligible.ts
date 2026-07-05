@@ -3,8 +3,7 @@ import { getPublicReviewPath } from '@/constants/routes';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import { sendReviewInviteEmail } from '@/features/email/review-invite/sendReviewInviteEmail';
 import { normalizedCustomerRecipientEmail } from '@/features/email/utils/normalizedCustomerRecipientEmail';
-import { buildReviewRequestSms, sendAndRecordSms } from '@/features/sms';
-import type { Database } from '@/libs/supabase/client';
+import { pausedSmsChannelOutcome } from '@/features/sms/config/smsOutboundPaused';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 
@@ -241,6 +240,13 @@ export async function createReviewInviteIfEligible(
   let email: NotifyChannelOutcome = { ...NOT_ATTEMPTED };
 
   // 1. SMS first — text the review link (priority channel).
+  // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (review_invite)
+  if (phone) {
+    sms = pausedSmsChannelOutcome();
+  } else {
+    sms = { sent: false, messageId: null, reason: 'no_phone' };
+  }
+  /*
   if (phone) {
     const smsResult = await sendAndRecordSms({
       admin: supabase as unknown as SupabaseClient<Database>,
@@ -278,6 +284,7 @@ export async function createReviewInviteIfEligible(
   } else {
     sms = { sent: false, messageId: null, reason: 'no_phone' };
   }
+  */
 
   // 2. Email fallback — only when SMS wasn't possible or failed.
   if (recipient) {

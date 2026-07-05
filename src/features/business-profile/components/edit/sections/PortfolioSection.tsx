@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 'use client';
 
 import { Button, GlassCard } from '@/components/shared';
@@ -183,7 +182,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   images,
   onImagesChange,
   onFilesChange,
-  businessProfile,
+  businessProfile: _businessProfile,
   isLoading,
   isFreeTier = false,
 }) => {

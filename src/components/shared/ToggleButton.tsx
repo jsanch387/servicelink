@@ -9,7 +9,7 @@ interface ToggleOption {
 interface ToggleButtonProps {
   options: ToggleOption[];
   value: string;
-  // eslint-disable-next-line no-unused-vars
+
   onChange: (value: string) => void;
   size?: 'sm' | 'md';
   className?: string;

@@ -1,6 +1,8 @@
 # Contract: Mobile — Tap to Pay (Complete sheet / Phase 2)
 
-Owner collects the **remaining balance** on-site using **Stripe Tap to Pay on iPhone** from the **Complete** full-screen sheet, then closes the job with the existing `job_completed` action.
+> **SMS outbound paused (2026-07):** After a successful tap, `job_completed` sends the invoice link via **email** when the customer has an email address. Do not expect receipt SMS. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+
+Owner collects the **remaining balance** on-site using **Stripe Tap to Pay on iPhone**:
 
 **Prerequisite lifecycle:** [`mobile-booking-work-finished.md`](./mobile-booking-work-finished.md) (Done/Skip) → Complete sheet per [`mobile-booking-job-completed.md`](./mobile-booking-job-completed.md).
 
@@ -21,7 +23,7 @@ Tap to Pay does **not** use Stripe Checkout and does **not** open a browser. The
 | 3    | SDK ready; owner confirms amount              | `POST …/tap-to-pay/intent` with current `sessionFees`                        |
 | 4    | Native Tap to Pay UI; customer taps card      | Stripe confirms PaymentIntent on Connect account                             |
 | 5    | SDK reports success                           | `POST …/actions` `job_completed` with `tap_to_pay` + `stripePaymentIntentId` |
-| 6    | Success toast; sheet closes                   | Persist fees, payment, invoice, notify customer (Phase 1 pipeline)           |
+| 6    | Success toast; sheet closes                   | Persist fees, payment, invoice, **email** receipt when address on file       |
 
 **Do not** call Supabase to update payment state directly. **Do not** skip `job_completed` after a successful tap — that action is what writes the invoice, marks the booking complete, and sends the receipt SMS.
 

@@ -45,8 +45,14 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   bookingFlowLocale = 'en',
 }) => {
   const bookingUi = publicBookingUi(bookingFlowLocale);
-  const services = businessProfile.services || [];
-  const categories = businessProfile.serviceCategories ?? [];
+  const services = useMemo(
+    () => businessProfile.services || [],
+    [businessProfile.services]
+  );
+  const categories = useMemo(
+    () => businessProfile.serviceCategories ?? [],
+    [businessProfile.serviceCategories]
+  );
   const hasServices = services.length > 0;
   const showCategoryFilters = shouldShowPublicServiceCategoryFilters(
     categories,

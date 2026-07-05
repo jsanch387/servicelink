@@ -191,7 +191,7 @@ export function serviceLinkEmailParagraph(text: string): string {
 }
 
 export function serviceLinkEmailFootnote(text: string): string {
-  return `<p style="margin:14px 0 0 0;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:13px;line-height:20px;color:${TEXT_MUTED};">${escapeHtml(text)}</p>`;
+  return `<p style="margin:14px 0 0 0;${FONT_BODY_MUTED}">${escapeHtml(text)}</p>`;
 }
 
 export function serviceLinkEmailCta(href: string, label: string): string {

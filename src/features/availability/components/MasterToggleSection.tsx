@@ -5,7 +5,7 @@ import React from 'react';
 
 interface MasterToggleSectionProps {
   acceptBookings: boolean;
-  // eslint-disable-next-line no-unused-vars
+
   onToggle: (value: boolean) => void;
 }
 

@@ -2,15 +2,16 @@
  * Shared booking + Connect preconditions for Tap to Pay endpoints.
  */
 
+import {
+  rejectJobCompletionLifecycle,
+  requiredWorkHandoffStatus,
+} from './assertJobCompletionLifecycle';
 import { computeBookingAmountDue } from './computeBookingAmountDue';
 import type { JobCompletedSessionFeeInput } from './jobCompletedTypes';
-import {
-  isWorkHandoffStatus,
-  type WorkHandoffStatus,
-} from '../workHandoffStatus';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { WorkHandoffStatus } from '../workHandoffStatus';
 
 export interface TapToPayReject {
   httpStatus: number;
@@ -54,16 +55,15 @@ export async function resolveTapToPayBookingContext(opts: {
   bookingId: string;
   businessId: string;
 }): Promise<ResolveTapToPayBookingContextResult> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: bookingData, error: bookingError } = await (
-    opts.supabase as any
-  )
-    .from('bookings')
-    .select(
-      'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details'
-    )
-    .eq('id', opts.bookingId)
-    .maybeSingle();
+  const { data: bookingData, error: bookingError } =
+    await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (opts.supabase as any)
+      .from('bookings')
+      .select(
+        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details'
+      )
+      .eq('id', opts.bookingId)
+      .maybeSingle();
 
   if (bookingError) {
     return lifecycleReject(500, 'Could not load booking');
@@ -74,34 +74,17 @@ export async function resolveTapToPayBookingContext(opts: {
     return lifecycleReject(404, 'Booking not found');
   }
 
-  const bookingStatus = (booking.status ?? '').trim();
-  const jobStatus = (booking.job_status ?? '').trim();
-  const handoff = booking.work_handoff_status;
-
-  if (bookingStatus === 'completed' || jobStatus === 'completed') {
-    return lifecycleReject(409, 'This booking is already completed.');
-  }
-
-  if (bookingStatus !== 'confirmed') {
+  const lifecycleRejectReason = rejectJobCompletionLifecycle(booking, {
+    forPaymentCollection: true,
+  });
+  if (lifecycleRejectReason) {
     return lifecycleReject(
-      409,
-      'Only confirmed appointments can collect payment.'
+      lifecycleRejectReason.httpStatus,
+      lifecycleRejectReason.error
     );
   }
 
-  if (jobStatus !== 'in_progress') {
-    return lifecycleReject(
-      409,
-      "Can't collect payment — the job is not in progress."
-    );
-  }
-
-  if (!isWorkHandoffStatus(handoff)) {
-    return lifecycleReject(
-      409,
-      'Mark work done or skip before collecting payment.'
-    );
-  }
+  const handoff = requiredWorkHandoffStatus(booking.work_handoff_status);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: paymentsData } = await (opts.supabase as any)

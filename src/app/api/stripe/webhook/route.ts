@@ -44,7 +44,6 @@ import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenanc
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
-import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
@@ -732,6 +731,8 @@ export async function POST(request: NextRequest) {
               });
             }
           }
+          // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (booking_confirmation)
+          /*
           if (bookingCheckoutNotifyContext.customerPhone) {
             await sendAndRecordSms({
               admin: supabase,
@@ -749,6 +750,7 @@ export async function POST(request: NextRequest) {
               correlationId: bookingCheckoutNotifyContext.eventId,
             });
           }
+          */
         } catch (err) {
           console.error(
             '[booking-checkout:webhook] deferred owner/customer notify failed',

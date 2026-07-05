@@ -12,7 +12,7 @@ import { persist } from 'zustand/middleware';
 interface AvailabilityBookingState {
   /** Same as "Accept Bookings" on dashboard/availability. */
   acceptBookings: boolean;
-  // eslint-disable-next-line no-unused-vars
+
   setAcceptBookings: (value: boolean) => void;
 }
 

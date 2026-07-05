@@ -153,7 +153,7 @@ describe('createReviewInviteIfEligible', () => {
     });
   });
 
-  it('texts the review link first when the customer has a phone', async () => {
+  it('emails the review link when SMS outbound is paused but email exists', async () => {
     const result = await createReviewInviteIfEligible(
       mockSupabase({ insertId: 'inv-99' }),
       { ...baseBooking(), customer_phone: '5807545207' }
@@ -162,24 +162,22 @@ describe('createReviewInviteIfEligible', () => {
       ok: true,
       skipped: false,
       sent: true,
-      channel: 'sms',
+      channel: 'email',
       inviteId: 'inv-99',
-      sms: { sent: true, messageId: 'sms-1', reason: null },
-      email: { sent: false, messageId: null, reason: null },
+      sms: { sent: false, messageId: null, reason: 'not_configured' },
+      email: { sent: true, messageId: 'email-1', reason: null },
     });
-    expect(sendAndRecordSmsMock).toHaveBeenCalledWith(
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    expect(sendReviewInviteEmail).toHaveBeenCalledWith(
+      'jane@example.com',
       expect.objectContaining({
-        type: 'review_invite',
-        to: '5807545207',
-        dedupeKey: 'booking-1:review_invite',
-        message: expect.stringContaining('/review/'),
+        customerName: 'Jane Doe',
+        publicReviewUrl: expect.stringContaining('/review/'),
       })
     );
-    // SMS succeeded → no email (no double notification).
-    expect(sendReviewInviteEmail).not.toHaveBeenCalled();
   });
 
-  it('falls back to email when the SMS fails (records both outcomes)', async () => {
+  it('falls back to email when SMS is paused (records not_configured on sms)', async () => {
     sendAndRecordSmsMock.mockResolvedValue({
       sent: false,
       reason: 'invalid_number',
@@ -194,10 +192,10 @@ describe('createReviewInviteIfEligible', () => {
       sent: true,
       channel: 'email',
       inviteId: 'inv-99',
-      sms: { sent: false, messageId: null, reason: 'invalid_number' },
+      sms: { sent: false, messageId: null, reason: 'not_configured' },
       email: { sent: true, messageId: 'email-1', reason: null },
     });
-    expect(sendAndRecordSmsMock).toHaveBeenCalledTimes(1);
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
     expect(sendReviewInviteEmail).toHaveBeenCalledWith(
       'jane@example.com',
       expect.objectContaining({

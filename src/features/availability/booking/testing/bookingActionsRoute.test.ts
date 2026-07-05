@@ -223,6 +223,7 @@ const inProgressAfterHandoff: BookingRow = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  delete process.env.SMS_OUTBOUND_ENABLED;
   assertOwnerSmsSendRateLimitsMock.mockResolvedValue({ ok: true });
   sendAndRecordSmsMock.mockResolvedValue({ sent: true, messageId: 'msg-1' });
   createSupabaseAdminClientMock.mockReturnValue({
@@ -360,6 +361,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
   });
 
   it('429 when rate limited, with Retry-After header', async () => {
+    process.env.SMS_OUTBOUND_ENABLED = 'true';
     assertOwnerSmsSendRateLimitsMock.mockResolvedValue({
       ok: false,
       retryAfterSec: 42,
@@ -374,7 +376,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
   });
 
-  it('200 success: transitions job_status and sends the SMS with a dedupe key', async () => {
+  it('200 success: transitions job_status without SMS while outbound is paused', async () => {
     getAuthenticatedUserMock.mockResolvedValue(
       authOk(
         makeSupabase({
@@ -391,19 +393,14 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(json.success).toBe(true);
     expect(json.action).toBe('on_the_way');
     expect(json.jobStatus).toBe('on_the_way');
-    expect(json.sms).toEqual({ sent: true, messageId: 'msg-1' });
-    // on_the_way does NOT complete the booking lifecycle.
+    expect(json.sms).toEqual({
+      sent: false,
+      messageId: null,
+      reason: 'not_configured',
+    });
     expect(completeBookingWithSideEffectsMock).not.toHaveBeenCalled();
     expect(json.bookingStatus).toBeUndefined();
-    expect(sendAndRecordSmsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        businessId: 'biz-1',
-        bookingId: 'booking-1',
-        type: 'on_the_way',
-        to: '5807545207',
-        dedupeKey: 'booking-1:on_the_way',
-      })
-    );
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
   });
 
   it('200 job_completed transitions job_status AND completes the booking lifecycle + side effects', async () => {
@@ -550,7 +547,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(json.error).toMatch(/already updated/i);
   });
 
-  it('200 with sms.sent=false when the customer SMS fails (state still changes)', async () => {
+  it('200 with sms paused while outbound is disabled (state still changes)', async () => {
     sendAndRecordSmsMock.mockResolvedValue({ sent: false, reason: 'error' });
     getAuthenticatedUserMock.mockResolvedValue(
       authOk(
@@ -566,10 +563,15 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(res.status).toBe(200);
     expect(json.success).toBe(true);
     expect(json.jobStatus).toBe('on_the_way');
-    expect(json.sms).toEqual({ sent: false, reason: 'error' });
+    expect(json.sms).toEqual({
+      sent: false,
+      messageId: null,
+      reason: 'not_configured',
+    });
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
   });
 
-  it('200 with sms.sent=false when there is no customer phone', async () => {
+  it('200 with sms paused even when there is no customer phone', async () => {
     sendAndRecordSmsMock.mockResolvedValue({ sent: false, reason: 'no_phone' });
     getAuthenticatedUserMock.mockResolvedValue(
       authOk(
@@ -584,7 +586,12 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     const json = await res.json();
     expect(res.status).toBe(200);
     expect(json.jobStatus).toBe('on_the_way');
-    expect(json.sms).toEqual({ sent: false, reason: 'no_phone' });
+    expect(json.sms).toEqual({
+      sent: false,
+      messageId: null,
+      reason: 'not_configured',
+    });
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
   });
 
   describe('work_finished (Done / Skip)', () => {
@@ -602,12 +609,13 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
       expect(res.status).toBe(400);
     });
 
-    it('409 when notify true and no sendable phone', async () => {
+    it('200 Done without phone while SMS outbound is paused', async () => {
       getAuthenticatedUserMock.mockResolvedValue(
         authOk(
           makeSupabase({
             business,
             booking: { ...inProgressBooking, customer_phone: null },
+            handoffTransition: { work_handoff_status: 'notified' },
           })
         )
       );
@@ -616,8 +624,9 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
         params()
       );
       const json = await res.json();
-      expect(res.status).toBe(409);
-      expect(json.error).toMatch(/no phone on file/i);
+      expect(res.status).toBe(200);
+      expect(json.workHandoffStatus).toBe('notified');
+      expect(json.sms.reason).toBe('not_configured');
       expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
     });
 
@@ -648,7 +657,7 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
       expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
     });
 
-    it('200 Done: sets notified and sends work_finished SMS', async () => {
+    it('200 Done: sets notified without SMS while outbound is paused', async () => {
       getAuthenticatedUserMock.mockResolvedValue(
         authOk(
           makeSupabase({
@@ -668,17 +677,11 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
       expect(json.workHandoffStatus).toBe('notified');
       expect(json.jobStatus).toBe('in_progress');
       expect(json.sms).toEqual({
-        sent: true,
-        messageId: 'msg-1',
-        reason: null,
+        sent: false,
+        messageId: null,
+        reason: 'not_configured',
       });
-      expect(sendAndRecordSmsMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'work_finished',
-          dedupeKey: 'booking-1:work_finished',
-          to: '5807545207',
-        })
-      );
+      expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
     });
 
     it('200 idempotent when handoff already set', async () => {

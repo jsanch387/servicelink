@@ -47,7 +47,6 @@ import {
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
-import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
@@ -498,6 +497,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (booking_confirmation)
+    /*
     if (sanitizedCustomer.phone) {
       await sendAndRecordSms({
         admin: supabase,
@@ -515,6 +516,7 @@ export async function POST(request: NextRequest) {
         correlationId: requestId,
       });
     }
+    */
 
     logBookingTransaction(requestId, 'info', 'created', {
       bookingId: result.id,

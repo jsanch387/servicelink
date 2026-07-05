@@ -24,14 +24,13 @@ export async function resolveTapToPayRouteAuth(
     return { ok: false, httpStatus: auth.status, error: auth.error };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: businessData, error: businessError } = await (
-    auth.supabase as any
-  )
-    .from('business_profiles')
-    .select('id, business_name')
-    .eq('profile_id', auth.user.id)
-    .single();
+  const { data: businessData, error: businessError } =
+    await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (auth.supabase as any)
+      .from('business_profiles')
+      .select('id, business_name')
+      .eq('profile_id', auth.user.id)
+      .single();
 
   const business = businessData as {
     id: string;

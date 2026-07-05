@@ -3,8 +3,11 @@
  * See docs/contracts/mobile-booking-work-finished.md.
  */
 
-import { buildWorkFinishedSms, sendAndRecordSms, toE164 } from '@/features/sms';
-import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import {
+  isSmsOutboundEnabled,
+  pausedSmsChannelOutcome,
+  toE164,
+} from '@/features/sms';
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
@@ -33,25 +36,6 @@ function hasSendablePhone(phone: string | null | undefined): boolean {
   return toE164(phone?.trim() || '') !== null;
 }
 
-function smsOutcome(
-  sendResult:
-    | { sent: true; messageId: string | null }
-    | { sent: false; reason: string }
-) {
-  if (sendResult.sent) {
-    return {
-      sent: true as const,
-      messageId: sendResult.messageId,
-      reason: null,
-    };
-  }
-  return {
-    sent: false as const,
-    messageId: null,
-    reason: sendResult.reason,
-  };
-}
-
 export async function handleWorkFinishedAction(opts: {
   request: NextRequest;
   bookingId: string;
@@ -61,16 +45,15 @@ export async function handleWorkFinishedAction(opts: {
 }): Promise<NextResponse> {
   const { request, bookingId, notify, auth, business } = opts;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: bookingData, error: bookingError } = await (
-    auth.supabase as any
-  )
-    .from('bookings')
-    .select(
-      'id, business_id, status, job_status, work_handoff_status, customer_phone'
-    )
-    .eq('id', bookingId)
-    .maybeSingle();
+  const { data: bookingData, error: bookingError } =
+    await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (auth.supabase as any)
+      .from('bookings')
+      .select(
+        'id, business_id, status, job_status, work_handoff_status, customer_phone'
+      )
+      .eq('id', bookingId)
+      .maybeSingle();
 
   if (bookingError) {
     return NextResponse.json(
@@ -122,7 +105,11 @@ export async function handleWorkFinishedAction(opts: {
     });
   }
 
-  if (notify && !hasSendablePhone(booking.customer_phone)) {
+  if (
+    notify &&
+    isSmsOutboundEnabled() &&
+    !hasSendablePhone(booking.customer_phone)
+  ) {
     return NextResponse.json(
       {
         success: false,
@@ -132,7 +119,7 @@ export async function handleWorkFinishedAction(opts: {
     );
   }
 
-  if (notify) {
+  if (notify && isSmsOutboundEnabled()) {
     const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
     if (!rate.ok) {
       return NextResponse.json(
@@ -202,6 +189,8 @@ export async function handleWorkFinishedAction(opts: {
     });
   }
 
+  // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (work_finished)
+  /*
   const admin = createSupabaseAdminClient();
   const businessName = business.business_name?.trim() || 'Your appointment';
   const sendResult = await sendAndRecordSms({
@@ -223,5 +212,14 @@ export async function handleWorkFinishedAction(opts: {
     jobStatus: 'in_progress',
     workHandoffStatus: 'notified',
     sms: smsOutcome(sendResult),
+  });
+  */
+
+  return NextResponse.json({
+    success: true,
+    action: WORK_FINISHED_ACTION,
+    jobStatus: 'in_progress',
+    workHandoffStatus: 'notified',
+    sms: pausedSmsChannelOutcome(),
   });
 }
