@@ -7,10 +7,10 @@ import {
 } from './createReviewInviteIfEligible';
 
 const BOOKING_SELECT =
-  'id, business_id, customer_id, customer_email, customer_name, service_name, scheduled_date, start_time, status';
+  'id, business_id, customer_id, customer_email, customer_phone, customer_name, service_name, scheduled_date, start_time, status';
 
 export type ReviewInviteSkipReason =
-  | 'no_customer_email'
+  | 'no_contact_method'
   | 'no_customer_id'
   | 'invite_already_exists'
   | 'customer_already_reviewed'
@@ -21,6 +21,7 @@ export type RequestReviewInviteForBookingResult =
       ok: true;
       sent: boolean;
       skipped: false;
+      channel: 'sms' | 'email' | 'none';
       inviteId: string;
       emailErrorHint?: string;
     }
@@ -46,12 +47,17 @@ function mapCreateResult(
       reason: result.reason as ReviewInviteSkipReason,
     };
   }
+  const emailErrorHint =
+    !result.email?.sent && result.email?.reason
+      ? result.email.reason
+      : undefined;
   return {
     ok: true,
     sent: result.sent,
     skipped: false,
+    channel: result.channel,
     inviteId: result.inviteId,
-    ...(result.emailErrorHint ? { emailErrorHint: result.emailErrorHint } : {}),
+    ...(emailErrorHint ? { emailErrorHint } : {}),
   };
 }
 
@@ -101,6 +107,7 @@ export async function requestReviewInviteForBooking(
     | 'business_id'
     | 'customer_id'
     | 'customer_email'
+    | 'customer_phone'
     | 'customer_name'
     | 'service_name'
     | 'scheduled_date'

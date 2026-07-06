@@ -684,10 +684,14 @@ export async function POST(request: NextRequest) {
         eventId: event.id,
         sessionId: session.id,
         bookingId: createdBooking.id,
+        businessId: bookingPayload.businessId,
+        customerId: createdBooking.customerId,
         profileId,
         customerName: bookingPayload.customer.fullName.trim(),
+        customerPhone: bookingPayload.customer.phone?.trim(),
         storedServiceName,
         scheduledDate: bookingPayload.scheduledDate,
+        startTime: bookingPayload.startTime,
         availabilityEmailPayload,
         resolvedCustomerEmail,
         businessDisplayName,
@@ -727,6 +731,26 @@ export async function POST(request: NextRequest) {
               });
             }
           }
+          // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (booking_confirmation)
+          /*
+          if (bookingCheckoutNotifyContext.customerPhone) {
+            await sendAndRecordSms({
+              admin: supabase,
+              businessId: bookingCheckoutNotifyContext.businessId,
+              bookingId: bookingCheckoutNotifyContext.bookingId,
+              customerId: bookingCheckoutNotifyContext.customerId,
+              type: 'booking_confirmation',
+              to: bookingCheckoutNotifyContext.customerPhone,
+              message: buildBookingConfirmedSms({
+                businessName: bookingCheckoutNotifyContext.businessDisplayName,
+                scheduledDate: bookingCheckoutNotifyContext.scheduledDate,
+                startTime: bookingCheckoutNotifyContext.startTime,
+              }),
+              dedupeKey: `${bookingCheckoutNotifyContext.bookingId}:booking_confirmation`,
+              correlationId: bookingCheckoutNotifyContext.eventId,
+            });
+          }
+          */
         } catch (err) {
           console.error(
             '[booking-checkout:webhook] deferred owner/customer notify failed',

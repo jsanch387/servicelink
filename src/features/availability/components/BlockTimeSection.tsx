@@ -31,7 +31,7 @@ function formatDateHeading(iso: string): string {
 
 interface BlockTimeSectionProps {
   entries: BlockTimeEntry[];
-  // eslint-disable-next-line no-unused-vars
+
   onEntriesChange: (entries: BlockTimeEntry[]) => void;
   disabled?: boolean;
 }

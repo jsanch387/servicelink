@@ -2,8 +2,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createReviewInviteIfEligible } from '../server/createReviewInviteIfEligible';
 
 vi.mock('@/features/email/review-invite/sendReviewInviteEmail', () => ({
-  sendReviewInviteEmail: vi.fn().mockResolvedValue({ sent: true }),
+  sendReviewInviteEmail: vi
+    .fn()
+    .mockResolvedValue({ sent: true, messageId: 'email-1' }),
 }));
+
+const { sendAndRecordSmsMock } = vi.hoisted(() => ({
+  sendAndRecordSmsMock: vi.fn(),
+}));
+
+// Mock the SMS transport but keep the real message builder + toE164.
+vi.mock('@/features/sms', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/features/sms')>();
+  return { ...actual, sendAndRecordSms: sendAndRecordSmsMock };
+});
 
 const { sendReviewInviteEmail } = await import(
   '@/features/email/review-invite/sendReviewInviteEmail'
@@ -15,6 +27,7 @@ function baseBooking() {
     business_id: 'biz-1',
     customer_id: 'cust-1',
     customer_email: 'jane@example.com',
+    customer_phone: null as string | null,
     customer_name: 'Jane Doe',
     service_name: 'Full detail',
     scheduled_date: '2026-06-01',
@@ -93,20 +106,27 @@ function mockSupabase(handlers: {
 describe('createReviewInviteIfEligible', () => {
   beforeEach(() => {
     vi.mocked(sendReviewInviteEmail).mockClear();
-    vi.mocked(sendReviewInviteEmail).mockResolvedValue({ sent: true });
+    vi.mocked(sendReviewInviteEmail).mockResolvedValue({
+      sent: true,
+      messageId: 'email-1',
+    });
+    sendAndRecordSmsMock.mockReset();
+    sendAndRecordSmsMock.mockResolvedValue({ sent: true, messageId: 'sms-1' });
   });
 
-  it('skips when no customer email', async () => {
+  it('skips when there is no phone and no email (no contact method)', async () => {
     const result = await createReviewInviteIfEligible(mockSupabase({}), {
       ...baseBooking(),
       customer_email: '',
+      customer_phone: null,
     });
     expect(result).toEqual({
       ok: true,
       skipped: true,
-      reason: 'no_customer_email',
+      reason: 'no_contact_method',
     });
     expect(sendReviewInviteEmail).not.toHaveBeenCalled();
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
   });
 
   it('skips when no customer_id', async () => {
@@ -133,7 +153,59 @@ describe('createReviewInviteIfEligible', () => {
     });
   });
 
-  it('creates invite and sends email when eligible', async () => {
+  it('emails the review link when SMS outbound is paused but email exists', async () => {
+    const result = await createReviewInviteIfEligible(
+      mockSupabase({ insertId: 'inv-99' }),
+      { ...baseBooking(), customer_phone: '5807545207' }
+    );
+    expect(result).toEqual({
+      ok: true,
+      skipped: false,
+      sent: true,
+      channel: 'email',
+      inviteId: 'inv-99',
+      sms: { sent: false, messageId: null, reason: 'not_configured' },
+      email: { sent: true, messageId: 'email-1', reason: null },
+    });
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    expect(sendReviewInviteEmail).toHaveBeenCalledWith(
+      'jane@example.com',
+      expect.objectContaining({
+        customerName: 'Jane Doe',
+        publicReviewUrl: expect.stringContaining('/review/'),
+      })
+    );
+  });
+
+  it('falls back to email when SMS is paused (records not_configured on sms)', async () => {
+    sendAndRecordSmsMock.mockResolvedValue({
+      sent: false,
+      reason: 'invalid_number',
+    });
+    const result = await createReviewInviteIfEligible(
+      mockSupabase({ insertId: 'inv-99' }),
+      { ...baseBooking(), customer_phone: '123' }
+    );
+    expect(result).toEqual({
+      ok: true,
+      skipped: false,
+      sent: true,
+      channel: 'email',
+      inviteId: 'inv-99',
+      sms: { sent: false, messageId: null, reason: 'not_configured' },
+      email: { sent: true, messageId: 'email-1', reason: null },
+    });
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
+    expect(sendReviewInviteEmail).toHaveBeenCalledWith(
+      'jane@example.com',
+      expect.objectContaining({
+        customerName: 'Jane Doe',
+        publicReviewUrl: expect.stringContaining('/review/'),
+      })
+    );
+  });
+
+  it('emails directly when there is no phone (sms.reason = no_phone)', async () => {
     const result = await createReviewInviteIfEligible(
       mockSupabase({ insertId: 'inv-99' }),
       baseBooking()
@@ -142,14 +214,15 @@ describe('createReviewInviteIfEligible', () => {
       ok: true,
       skipped: false,
       sent: true,
+      channel: 'email',
       inviteId: 'inv-99',
+      sms: { sent: false, messageId: null, reason: 'no_phone' },
+      email: { sent: true, messageId: 'email-1', reason: null },
     });
+    expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
     expect(sendReviewInviteEmail).toHaveBeenCalledWith(
       'jane@example.com',
-      expect.objectContaining({
-        customerName: 'Jane Doe',
-        publicReviewUrl: expect.stringContaining('/review/'),
-      })
+      expect.objectContaining({ customerName: 'Jane Doe' })
     );
   });
 });

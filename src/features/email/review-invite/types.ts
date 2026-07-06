@@ -10,5 +10,5 @@ export interface ReviewInviteEmailPayload {
 }
 
 export type SendReviewInviteEmailResult =
-  | { sent: true }
+  | { sent: true; messageId: string }
   | { sent: false; error: string };

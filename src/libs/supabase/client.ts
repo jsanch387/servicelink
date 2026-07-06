@@ -607,6 +607,8 @@ export type Database = {
           requirements_status: string | null;
           connected_at: string | null;
           last_synced_at: string | null;
+          stripe_terminal_location_id: string | null;
+          tap_to_pay_ready: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -622,6 +624,8 @@ export type Database = {
           requirements_status?: string | null;
           connected_at?: string | null;
           last_synced_at?: string | null;
+          stripe_terminal_location_id?: string | null;
+          tap_to_pay_ready?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -637,6 +641,8 @@ export type Database = {
           requirements_status?: string | null;
           connected_at?: string | null;
           last_synced_at?: string | null;
+          stripe_terminal_location_id?: string | null;
+          tap_to_pay_ready?: boolean;
           created_at?: string;
           updated_at?: string;
         };

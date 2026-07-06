@@ -131,6 +131,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         success: true,
         sent: result.sent,
         skipped: false,
+        channel: result.channel,
         inviteId: result.inviteId,
       },
       200

@@ -497,6 +497,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (booking_confirmation)
+    /*
+    if (sanitizedCustomer.phone) {
+      await sendAndRecordSms({
+        admin: supabase,
+        businessId,
+        bookingId: result.id,
+        customerId: result.customerId,
+        type: 'booking_confirmation',
+        to: sanitizedCustomer.phone,
+        message: buildBookingConfirmedSms({
+          businessName: businessDisplayName,
+          scheduledDate: body.scheduledDate,
+          startTime: body.startTime.trim(),
+        }),
+        dedupeKey: `${result.id}:booking_confirmation`,
+        correlationId: requestId,
+      });
+    }
+    */
+
     logBookingTransaction(requestId, 'info', 'created', {
       bookingId: result.id,
       owner: ownerManualBooking ? 1 : 0,
