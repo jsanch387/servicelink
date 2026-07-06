@@ -423,11 +423,39 @@ describe('POST /api/availability/bookings/[id]/actions', () => {
     expect(persistJobCompletedTransactionMock).toHaveBeenCalledTimes(1);
     expect(completeBookingWithSideEffectsMock).not.toHaveBeenCalled();
     expect(json.bookingStatus).toBe('completed');
-    // The completion notification is owned by the shared helper — the route must
-    // NOT also fire a generic action SMS (no double-text).
     expect(sendAndRecordSmsMock).not.toHaveBeenCalled();
     expect(json.sms).toEqual({ sent: true, messageId: 'msg-1', reason: null });
     expect(json.email).toEqual({ sent: false, messageId: null, reason: null });
+  });
+
+  it('200 job_completed from not_started without handoff (no progress steps required)', async () => {
+    persistJobCompletedTransactionMock.mockResolvedValue({
+      ok: true,
+      response: {
+        jobStatus: 'completed',
+        bookingStatus: 'completed',
+        workHandoffStatus: 'skipped',
+        invoicePublicToken: 'abc123invoice',
+        sms: { sent: true, messageId: 'msg-1', reason: null },
+        email: { sent: false, messageId: null, reason: null },
+      },
+    });
+    getAuthenticatedUserMock.mockResolvedValue(
+      authOk(
+        makeSupabase({
+          business,
+          booking: baseBooking,
+          bookingPayments: { paid_online_amount_cents: 0 },
+          transition: { job_status: 'completed' },
+        })
+      )
+    );
+    const res = await POST(postRequest('job_completed'), params());
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.jobStatus).toBe('completed');
+    expect(json.workHandoffStatus).toBe('skipped');
+    expect(persistJobCompletedTransactionMock).toHaveBeenCalledTimes(1);
   });
 
   it('200 job_completed still succeeds (state changed) when both channels fail', async () => {

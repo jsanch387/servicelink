@@ -2,16 +2,13 @@
  * Shared booking + Connect preconditions for Tap to Pay endpoints.
  */
 
-import {
-  rejectJobCompletionLifecycle,
-  requiredWorkHandoffStatus,
-} from './assertJobCompletionLifecycle';
+import { rejectJobCompletionLifecycle } from './assertJobCompletionLifecycle';
 import { computeBookingAmountDue } from './computeBookingAmountDue';
 import type { JobCompletedSessionFeeInput } from './jobCompletedTypes';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { WorkHandoffStatus } from '../workHandoffStatus';
+import { resolveWorkHandoffStatusForCompletion } from '../workHandoffStatus';
 
 export interface TapToPayReject {
   httpStatus: number;
@@ -21,7 +18,7 @@ export interface TapToPayReject {
 export interface TapToPayBookingContext {
   bookingId: string;
   businessId: string;
-  workHandoffStatus: WorkHandoffStatus;
+  workHandoffStatus: ReturnType<typeof resolveWorkHandoffStatusForCompletion>;
   servicePriceCents: number | null;
   addonDetails: unknown;
   paidOnlineAmountCents: number;
@@ -74,9 +71,7 @@ export async function resolveTapToPayBookingContext(opts: {
     return lifecycleReject(404, 'Booking not found');
   }
 
-  const lifecycleRejectReason = rejectJobCompletionLifecycle(booking, {
-    forPaymentCollection: true,
-  });
+  const lifecycleRejectReason = rejectJobCompletionLifecycle(booking);
   if (lifecycleRejectReason) {
     return lifecycleReject(
       lifecycleRejectReason.httpStatus,
@@ -84,7 +79,9 @@ export async function resolveTapToPayBookingContext(opts: {
     );
   }
 
-  const handoff = requiredWorkHandoffStatus(booking.work_handoff_status);
+  const handoff = resolveWorkHandoffStatusForCompletion(
+    booking.work_handoff_status
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: paymentsData } = await (opts.supabase as any)

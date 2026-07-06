@@ -10,10 +10,7 @@ import { isSmsOutboundEnabled } from '@/features/sms/config/isSmsOutboundEnabled
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  rejectJobCompletionLifecycle,
-  requiredWorkHandoffStatus,
-} from './assertJobCompletionLifecycle';
+import { rejectJobCompletionLifecycle } from './assertJobCompletionLifecycle';
 import { computeBookingAmountDue } from './computeBookingAmountDue';
 import {
   JOB_COMPLETED_ACTION,
@@ -29,6 +26,7 @@ import { persistJobCompletedTransaction } from './persistJobCompletedTransaction
 import { resolveTapToPayBookingContext } from './resolveTapToPayBookingContext';
 import {
   isWorkHandoffStatus,
+  resolveWorkHandoffStatusForCompletion,
   type WorkHandoffStatus,
 } from '../workHandoffStatus';
 import { verifyTapToPayPaymentIntent } from './verifyTapToPayPaymentIntent';
@@ -233,7 +231,7 @@ export async function handleJobCompletedAction(opts: {
     );
   }
 
-  const workHandoffStatus = requiredWorkHandoffStatus(handoff);
+  const workHandoffStatus = resolveWorkHandoffStatusForCompletion(handoff);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: paymentsData } = await (auth.supabase as any)

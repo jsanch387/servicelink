@@ -1,12 +1,14 @@
 import { getFromEmail, getResendClient } from '../services/resendClient';
 import { normalizedCustomerRecipientEmail } from '../utils/normalizedCustomerRecipientEmail';
+import {
+  buildJobCompletedInvoiceEmailHtml,
+  buildJobCompletedInvoiceEmailPlainText,
+  getJobCompletedInvoiceEmailSubject,
+  type JobCompletedInvoiceEmailPayload,
+} from './jobCompletedInvoiceTemplate';
 
-export interface SendJobCompletedInvoiceEmailPayload {
-  businessName: string;
-  customerName: string;
-  invoiceUrl: string;
-  includeReviewHint: boolean;
-}
+export type SendJobCompletedInvoiceEmailPayload =
+  JobCompletedInvoiceEmailPayload;
 
 export type SendJobCompletedInvoiceEmailResult =
   | { sent: true; messageId: string }
@@ -38,14 +40,9 @@ export async function sendJobCompletedInvoiceEmail(
     return { sent: false, error: 'RESEND_API_KEY is not set' };
   }
 
-  const businessName = payload.businessName.trim() || 'Your provider';
-  const greeting = payload.customerName.trim() || 'there';
-  const subject = `Your receipt from ${businessName}`;
-  const reviewLine = payload.includeReviewHint
-    ? ' I would appreciate it if you could leave us a review.'
-    : '';
-  const text = `Hi ${greeting},\n\nThanks for choosing ${businessName}.${reviewLine}\n\nView your receipt: ${payload.invoiceUrl}\n`;
-  const html = `<p>Hi ${greeting},</p><p>Thanks for choosing <strong>${businessName}</strong>.${reviewLine ? ` I would appreciate it if you could leave us a review.` : ''}</p><p><a href="${payload.invoiceUrl}">View your receipt</a></p>`;
+  const subject = getJobCompletedInvoiceEmailSubject(payload.businessName);
+  const html = buildJobCompletedInvoiceEmailHtml(payload);
+  const text = buildJobCompletedInvoiceEmailPlainText(payload);
 
   const { data, error } = await client.emails.send({
     from: getFromEmail(),

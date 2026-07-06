@@ -4,7 +4,7 @@
 
 Owner closes out a field job from the **Complete** full-screen sheet: add fees, collect balance, tap **Complete**. This is **cycle 2** of the extended booking lifecycle — payment close-out, invoice, and customer notification.
 
-**Prior step (required):** [`mobile-booking-work-finished.md`](./mobile-booking-work-finished.md) — owner must tap **Done** or **Skip** first (`work_handoff_status` = `notified` | `skipped`).
+**Optional prior step:** [`mobile-booking-work-finished.md`](./mobile-booking-work-finished.md) (Done/Skip) — **not required** for completion. Only `on_the_way` remains as an optional progress notification.
 
 **Related:** [`mobile-booking-actions.md`](./mobile-booking-actions.md) (shared actions endpoint), [`mobile-booking-work-finished.md`](./mobile-booking-work-finished.md) (Done/Skip).
 
@@ -15,7 +15,7 @@ Owner closes out a field job from the **Complete** full-screen sheet: add fees, 
 
 ## Product summary
 
-After **Done/Skip**, mobile shows **Mark complete** → Complete sheet:
+After opening **Complete** from a confirmed booking, mobile shows the Complete sheet:
 
 | Step | Mobile UI                                   | Server                                                                               |
 | ---- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -68,8 +68,7 @@ After **Done/Skip**, mobile shows **Mark complete** → Complete sheet:
 | Check                          | Required                |
 | ------------------------------ | ----------------------- |
 | `bookings.status`              | `confirmed`             |
-| `bookings.job_status`          | `in_progress`           |
-| `bookings.work_handoff_status` | `notified` or `skipped` |
+| `bookings.job_status`          | Not `completed`         |
 | Amount due                     | `0` (see math below)    |
 
 ### Amount-due math (must match Complete sheet)
@@ -133,7 +132,7 @@ Already completed → **200**, same statuses, `sms.reason: "duplicate"`, `invoic
 | **400** | Bad payload; payment still due; `tap_to_pay` without Stripe intent                     |
 | **401** | Missing/invalid JWT                                                                    |
 | **404** | Booking not found / not owned                                                          |
-| **409** | Not `in_progress` or handoff not done → `"Mark work done before completing this job."` |
+| **409** | Not confirmed or already completed |
 | **429** | Rate limited — honor `Retry-After`                                                     |
 | **500** | Unexpected / persist failure                                                           |
 
@@ -143,11 +142,7 @@ Already completed → **200**, same statuses, `sms.reason: "duplicate"`, `invoic
 
 ### 1. Lifecycle order
 
-```
-on_the_way → job_started → work_finished (Done/Skip) → job_completed (Complete)
-```
-
-Include `work_handoff_status` in booking SELECTs (Home Next Up, booking detail).
+Optional: `on_the_way` customer notification. **Complete** (`job_completed`) works from any confirmed booking — no `job_started`, `work_finished`, or handoff step required.
 
 ### 2. Complete sheet → HTTP
 
@@ -174,7 +169,7 @@ Disable **Complete** until local `amountDueCents === 0`.
 
 ### 4. On error
 
-- **409** handoff missing → surface “Mark work done first” (shouldn’t happen if UI gates correctly)
+- **409** not confirmed / already completed → refetch booking
 - **400** payment due → recheck math vs server
 - Network failure → safe to retry (idempotent when already completed)
 
@@ -206,7 +201,7 @@ Phase 1 **Mark as paid** (`cash` / `payment_app` / `other`) remains available wi
 
 ## curl smoke test
 
-Precondition: `job_status = in_progress`, `work_handoff_status IN ('notified','skipped')`, amount-due math matches body.
+Precondition: booking `status = confirmed`, amount-due math matches body.
 
 ```bash
 curl -sS -X POST "$ORIGIN/api/availability/bookings/$BOOKING_ID/actions" \

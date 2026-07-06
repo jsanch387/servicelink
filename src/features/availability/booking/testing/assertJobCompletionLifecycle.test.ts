@@ -4,47 +4,40 @@ import { rejectJobCompletionLifecycle } from '../server/assertJobCompletionLifec
 describe('rejectJobCompletionLifecycle', () => {
   const ready = {
     status: 'confirmed',
-    job_status: 'in_progress',
-    work_handoff_status: 'notified',
+    job_status: 'not_started',
   };
 
-  it('allows confirmed in_progress bookings with handoff set', () => {
+  it('allows any confirmed booking that is not yet completed', () => {
     expect(rejectJobCompletionLifecycle(ready)).toBeNull();
     expect(
-      rejectJobCompletionLifecycle(
-        { ...ready, work_handoff_status: 'skipped' },
-        { forPaymentCollection: true }
-      )
+      rejectJobCompletionLifecycle({ ...ready, job_status: 'on_the_way' })
+    ).toBeNull();
+    expect(
+      rejectJobCompletionLifecycle({ ...ready, job_status: 'in_progress' })
     ).toBeNull();
   });
 
-  it('rejects when job is not in progress', () => {
+  it('rejects when the booking is already completed', () => {
     expect(
-      rejectJobCompletionLifecycle({ ...ready, job_status: 'on_the_way' })
+      rejectJobCompletionLifecycle({
+        status: 'completed',
+        job_status: 'completed',
+      })
     ).toEqual({
       httpStatus: 409,
-      error: 'Mark work done before completing this job.',
+      error: 'This booking is already completed.',
     });
   });
 
-  it('rejects when handoff was never set', () => {
+  it('rejects when the booking is not confirmed', () => {
     expect(
-      rejectJobCompletionLifecycle({ ...ready, work_handoff_status: null })
+      rejectJobCompletionLifecycle({
+        status: 'cancelled',
+        job_status: 'not_started',
+      })
     ).toEqual({
       httpStatus: 409,
-      error: 'Mark work done before completing this job.',
-    });
-  });
-
-  it('uses payment-specific copy for tap to pay preconditions', () => {
-    expect(
-      rejectJobCompletionLifecycle(
-        { ...ready, work_handoff_status: null },
-        { forPaymentCollection: true }
-      )
-    ).toEqual({
-      httpStatus: 409,
-      error: 'Mark work done before collecting payment.',
+      error: 'Only confirmed appointments can be updated.',
     });
   });
 });

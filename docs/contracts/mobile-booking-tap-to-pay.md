@@ -89,8 +89,7 @@ For **`job_completed`**, mobile sends `sessionPayment.amountCents` equal to the 
 | Check                          | Required                                                |
 | ------------------------------ | ------------------------------------------------------- |
 | `bookings.status`              | `confirmed`                                             |
-| `bookings.job_status`          | `in_progress`                                           |
-| `bookings.work_handoff_status` | `notified` or `skipped`                                 |
+| `bookings.job_status`          | Not `completed`                                         |
 | `amountDueCents`               | **> 0** for intent; **0** after tap for `job_completed` |
 
 ### Stripe / Connect preconditions
@@ -164,7 +163,7 @@ If Connect is not ready, return **422** with a message the app can show inline (
 | ------- | ------------------------------------- | ---------------------------------------------------------- |
 | **401** | Invalid JWT                           | (standard)                                                 |
 | **404** | Booking not found / not owned         | (standard)                                                 |
-| **409** | Wrong lifecycle state                 | “Mark work done before collecting payment.”                |
+| **409** | Not confirmed or already completed      | (standard)                                                 |
 | **422** | No Connect account / charges disabled | “Set up Stripe payments to use Tap to Pay.”                |
 | **500** | Stripe failure                        | “Couldn’t connect to payments. Try again or mark as paid.” |
 
@@ -252,7 +251,7 @@ If Connect is not ready, return **422** with a message the app can show inline (
 | **400** | Invalid `sessionFees`; amount due is 0 | “Nothing to collect.” / validation message              |
 | **401** | Invalid JWT                            | (standard)                                              |
 | **404** | Booking not found                      | (standard)                                              |
-| **409** | Wrong lifecycle                        | “Mark work done first.”                                 |
+| **409** | Not confirmed or already completed     | (standard)                                              |
 | **422** | Connect not ready                      | “Set up Stripe payments to use Tap to Pay.”             |
 | **500** | Stripe / DB failure                    | “Couldn’t start Tap to Pay. Try again or mark as paid.” |
 
@@ -476,7 +475,7 @@ Mobile should map HTTP status + `error` string to toasts / inline alerts. Prefer
 
 ## curl smoke tests
 
-Set `ORIGIN`, `TOKEN`, `BOOKING_ID`. Booking must be `in_progress` with handoff done and amount due > 0.
+Set `ORIGIN`, `TOKEN`, `BOOKING_ID`. Booking must be confirmed (not completed) with amount due > 0.
 
 **Connection token:**
 

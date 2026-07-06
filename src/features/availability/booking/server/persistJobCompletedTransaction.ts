@@ -430,6 +430,11 @@ export async function persistJobCompletedTransaction(
     businessName: business.name,
     invoicePublicToken: publicToken,
     includeReviewHint,
+    serviceName: snapshot.booking.serviceName,
+    scheduledDate: snapshot.booking.scheduledDate,
+    startTime: snapshot.booking.startTime,
+    totalCents: snapshot.totals.totalCents,
+    reviewUrl: snapshot.reviewUrl,
     requestId: input.requestId,
   });
 

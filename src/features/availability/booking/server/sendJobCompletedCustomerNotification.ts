@@ -24,6 +24,11 @@ export interface JobCompletedNotificationInput {
   businessName: string;
   invoicePublicToken: string;
   includeReviewHint: boolean;
+  serviceName?: string;
+  scheduledDate?: string;
+  startTime?: string;
+  totalCents?: number;
+  reviewUrl?: string | null;
   requestId?: string;
 }
 
@@ -80,6 +85,11 @@ export async function sendJobCompletedCustomerNotification(
       customerName: input.customerName,
       invoiceUrl,
       includeReviewHint: input.includeReviewHint,
+      serviceName: input.serviceName,
+      scheduledDate: input.scheduledDate,
+      startTime: input.startTime,
+      totalCents: input.totalCents,
+      reviewUrl: input.reviewUrl,
     });
 
     if (emailResult.sent) {

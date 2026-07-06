@@ -27,8 +27,7 @@ Mobile and web completion are **not** identical today. Web dashboard Complete do
 | Check                          | Value                                  |
 | ------------------------------ | -------------------------------------- |
 | `bookings.status`              | `confirmed`                            |
-| `bookings.job_status`          | `in_progress`                          |
-| `bookings.work_handoff_status` | `notified` or `skipped`                |
+| `bookings.job_status`          | Not `completed`                        |
 | Amount due                     | `0` (see `computeBookingAmountDue.ts`) |
 
 ## Persist order (`persistJobCompletedTransaction.ts`)
