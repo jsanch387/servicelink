@@ -10,6 +10,7 @@ import {
 } from '@/components/shared';
 import {
   isValidServiceDurationHHmm,
+  minutesToServiceDurationHHmm,
   serviceDurationHHmmToMinutes,
 } from '@/features/availability/utils/timeOptions';
 import {
@@ -21,12 +22,14 @@ import {
   PlusIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { OnboardingV2Service } from '../types/flowState';
+import { getDefaultPlaceholderService } from '../utils/defaultPlaceholderService';
 import { formatDurationMinutes } from '../utils/formatDuration';
 
 interface Step2AddServiceProps {
   businessProfileId?: string;
+  businessType?: string;
   services: OnboardingV2Service[];
 
   onUpdate: (services: OnboardingV2Service[]) => void;
@@ -36,6 +39,7 @@ interface Step2AddServiceProps {
 
 export const Step2AddService: React.FC<Step2AddServiceProps> = ({
   businessProfileId,
+  businessType,
   services,
   onUpdate,
   onNext,
@@ -48,6 +52,17 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasPrefilledPlaceholder = useRef(false);
+
+  useEffect(() => {
+    if (hasPrefilledPlaceholder.current || services.length > 0) return;
+    hasPrefilledPlaceholder.current = true;
+    const placeholder = getDefaultPlaceholderService(businessType);
+    setName(placeholder.name);
+    setPrice(placeholder.price);
+    setDurationHHmm(minutesToServiceDurationHHmm(placeholder.durationMinutes));
+    setDescription(placeholder.description);
+  }, [businessType, services.length]);
 
   const handleInsertDescriptionBullet = useCallback(() => {
     const el = descriptionTextareaRef.current;

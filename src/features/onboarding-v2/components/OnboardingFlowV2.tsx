@@ -113,6 +113,7 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
         return (
           <Step2AddService
             businessProfileId={businessProfileId}
+            businessType={state.businessType}
             services={state.services}
             onUpdate={(services: OnboardingV2Service[]) =>
               updateState({ services })
