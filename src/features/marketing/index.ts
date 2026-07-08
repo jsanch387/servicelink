@@ -1,4 +1,5 @@
 export { MarketingPage } from './components/MarketingPage';
+export { MarketingPageSkeleton } from './components/MarketingPageSkeleton';
 export type {
   PromoCode,
   Sale,
