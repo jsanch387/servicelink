@@ -80,6 +80,7 @@ export const ROUTES = {
     CUSTOMERS: '/dashboard/customers',
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
+    MARKETING: '/dashboard/marketing',
     SETTINGS: '/dashboard/settings',
     CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',

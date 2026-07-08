@@ -10,6 +10,7 @@ import {
   ClockIcon,
   AdjustmentsHorizontalIcon,
   LinkIcon,
+  MegaphoneIcon,
   RectangleStackIcon,
   Squares2X2Icon,
   StarIcon,
@@ -73,6 +74,13 @@ const allNavigationItems = [
     icon: BanknotesIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/payments',
+  },
+  {
+    name: 'Marketing',
+    href: ROUTES.DASHBOARD.MARKETING,
+    icon: MegaphoneIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/marketing',
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [
