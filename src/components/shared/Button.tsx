@@ -51,15 +51,15 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      'bg-orange-500 hover:bg-orange-600 text-white shadow-sm focus-visible:ring-orange-500',
+      'bg-white text-black hover:bg-gray-100 shadow-sm focus-visible:ring-white/40',
     secondary:
       'border border-white/20 text-white bg-white/5 hover:bg-white/10 hover:border-white/30 focus-visible:ring-white/40 backdrop-blur-sm',
     outline:
-      'border border-orange-500/50 text-orange-400 bg-transparent hover:bg-orange-500/10 hover:border-orange-400 focus-visible:ring-orange-500',
+      'border border-white/20 text-white bg-transparent hover:bg-white/10 hover:border-white/30 focus-visible:ring-white/40',
     ghost:
       'text-gray-300 hover:text-white hover:bg-white/5 focus-visible:ring-neutral-500',
     inverse:
-      'bg-white text-neutral-900 hover:bg-gray-100 shadow-sm focus-visible:ring-neutral-400',
+      'bg-neutral-900 text-white hover:bg-neutral-800 shadow-sm focus-visible:ring-neutral-400',
     danger:
       'border border-red-400/30 bg-red-500/12 text-red-200 hover:bg-red-500/18 hover:border-red-400/45 focus-visible:ring-red-400/40 backdrop-blur-sm',
     success:

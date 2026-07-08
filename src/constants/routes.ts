@@ -81,6 +81,8 @@ export const ROUTES = {
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
     MARKETING: '/dashboard/marketing',
+    MARKETING_PROMO_CODES_NEW: '/dashboard/marketing/promo-codes/new',
+    MARKETING_SALES_NEW: '/dashboard/marketing/sales/new',
     SETTINGS: '/dashboard/settings',
     CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',

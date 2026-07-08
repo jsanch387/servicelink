@@ -1,42 +1,22 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { MegaphoneIcon, TicketIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
-import { CreatePromoCodeModal } from './CreatePromoCodeModal';
-import { CreateSaleModal } from './CreateSaleModal';
 import { MarketingEmptyState } from './MarketingEmptyState';
 import { PromoCodesTab } from './PromoCodesTab';
 import { SalesTab } from './SalesTab';
-import type {
-  PromoCode,
-  PromoCodeFormData,
-  Sale,
-  SaleFormData,
-} from '../types';
+import type { PromoCode, Sale } from '../types';
 
 type TabType = 'promo-codes' | 'sales';
 
 export const MarketingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('promo-codes');
-  const [isPromoCodeModalOpen, setIsPromoCodeModalOpen] = useState(false);
-  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
 
   // Mock data - replace with real data later
   const [promoCodes] = useState<PromoCode[]>([]);
   const [sales] = useState<Sale[]>([]);
-
-  const handleCreatePromoCode = (data: PromoCodeFormData) => {
-    console.log('Create promo code:', data);
-    // TODO: API call to create promo code
-    setIsPromoCodeModalOpen(false);
-  };
-
-  const handleCreateSale = (data: SaleFormData) => {
-    console.log('Create sale:', data);
-    // TODO: API call to create sale
-    setIsSaleModalOpen(false);
-  };
 
   const handleTogglePromoCodeActive = (id: string, isActive: boolean) => {
     console.log('Toggle promo code active:', id, isActive);
@@ -50,12 +30,12 @@ export const MarketingPage: React.FC = () => {
 
   const handleEditPromoCode = (promoCode: PromoCode) => {
     console.log('Edit promo code:', promoCode);
-    // TODO: Open edit modal with promo code data
+    // TODO: Navigate to edit page
   };
 
   const handleEditSale = (sale: Sale) => {
     console.log('Edit sale:', sale);
-    // TODO: Open edit modal with sale data
+    // TODO: Navigate to edit page
   };
 
   const handleDeletePromoCode = (id: string) => {
@@ -92,7 +72,7 @@ export const MarketingPage: React.FC = () => {
           {/* Action Buttons */}
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
             <Button
-              onClick={() => setIsPromoCodeModalOpen(true)}
+              href={ROUTES.DASHBOARD.MARKETING_PROMO_CODES_NEW}
               variant="primary"
               size="md"
               icon={<TicketIcon className="h-5 w-5" />}
@@ -102,7 +82,7 @@ export const MarketingPage: React.FC = () => {
               New Promo Code
             </Button>
             <Button
-              onClick={() => setIsSaleModalOpen(true)}
+              href={ROUTES.DASHBOARD.MARKETING_SALES_NEW}
               variant="secondary"
               size="md"
               icon={<MegaphoneIcon className="h-5 w-5" />}
@@ -120,7 +100,7 @@ export const MarketingPage: React.FC = () => {
                 onClick={() => setActiveTab('promo-codes')}
                 className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
                   activeTab === 'promo-codes'
-                    ? 'border-orange-500 text-orange-500'
+                    ? 'border-white text-white'
                     : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
                 }`}
               >
@@ -135,7 +115,7 @@ export const MarketingPage: React.FC = () => {
                 onClick={() => setActiveTab('sales')}
                 className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
                   activeTab === 'sales'
-                    ? 'border-orange-500 text-orange-500'
+                    ? 'border-white text-white'
                     : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
                 }`}
               >
@@ -161,10 +141,7 @@ export const MarketingPage: React.FC = () => {
                   onCopyCode={handleCopyPromoCode}
                 />
               ) : (
-                <MarketingEmptyState
-                  type="promo-codes"
-                  onCreateClick={() => setIsPromoCodeModalOpen(true)}
-                />
+                <MarketingEmptyState type="promo-codes" />
               )}
             </>
           )}
@@ -179,27 +156,12 @@ export const MarketingPage: React.FC = () => {
                   onDelete={handleDeleteSale}
                 />
               ) : (
-                <MarketingEmptyState
-                  type="sales"
-                  onCreateClick={() => setIsSaleModalOpen(true)}
-                />
+                <MarketingEmptyState type="sales" />
               )}
             </>
           )}
         </div>
       </div>
-
-      {/* Modals */}
-      <CreatePromoCodeModal
-        isOpen={isPromoCodeModalOpen}
-        onClose={() => setIsPromoCodeModalOpen(false)}
-        onSave={handleCreatePromoCode}
-      />
-      <CreateSaleModal
-        isOpen={isSaleModalOpen}
-        onClose={() => setIsSaleModalOpen(false)}
-        onSave={handleCreateSale}
-      />
     </div>
   );
 };
