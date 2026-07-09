@@ -12,6 +12,7 @@
  * so the same subscription is paid (e.g. new card or Link) instead of starting a second subscription.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
+ *      STRIPE_PRO_YEARLY_PRICE_ID (optional yearly $200/yr price),
  *      optional NEXT_PUBLIC_SITE_URL for success/cancel URLs (web).
  *
  * Mobile (iOS) no longer uses this route for subscription checkout — see Stripe README.
@@ -21,18 +22,25 @@ import {
   findOpenInvoiceIdForSubscriptionResume,
   isSubscriptionResumableViaInvoice,
 } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
+import type { BillingInterval } from '@/features/pricing/types';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
 import { buildStripeCheckoutAutomaticTaxParams } from '@/libs/stripe/checkoutAutomaticTax';
 import { buildProSubscriptionCheckoutLineItem } from '@/libs/stripe/proSubscriptionLineItem';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
+import { resolveStripeProPriceId } from '@/libs/stripe/resolveStripeProPriceId';
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
 type CheckoutRequestBody = {
   source?: unknown;
   client?: unknown;
+  billingInterval?: unknown;
 };
+
+function parseBillingInterval(value: unknown): BillingInterval {
+  return value === 'year' ? 'year' : 'month';
+}
 
 const LOG = '[stripe:create-checkout-session]';
 
@@ -66,11 +74,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const priceId = process.env.STRIPE_PRO_PRICE_ID;
+    const billingInterval = parseBillingInterval(body.billingInterval);
+    const priceId = resolveStripeProPriceId(billingInterval);
     if (!priceId) {
-      console.error(`${LOG} STRIPE_PRO_PRICE_ID is not set`);
+      const envKey =
+        billingInterval === 'year'
+          ? 'STRIPE_PRO_YEARLY_PRICE_ID'
+          : 'STRIPE_PRO_PRICE_ID';
+      console.error(`${LOG} ${envKey} is not set`);
       return NextResponse.json(
-        { success: false, error: 'Checkout is not configured' },
+        {
+          success: false,
+          error:
+            billingInterval === 'year'
+              ? 'Yearly checkout is not configured yet'
+              : 'Checkout is not configured',
+        },
         { status: 500 }
       );
     }
@@ -107,6 +126,7 @@ export async function POST(request: NextRequest) {
       authMethod,
       fromOnboarding,
       applyOnboardingTrial,
+      billingInterval,
       existingStripeCustomerIdSuffix: existingStripeCustomerId
         ? existingStripeCustomerId.slice(-8)
         : null,
@@ -235,6 +255,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         userId: user.id,
         source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
+        billingInterval,
       },
     });
 
@@ -253,6 +274,7 @@ export async function POST(request: NextRequest) {
       sessionIdSuffix: session.id.slice(-8),
       fromOnboarding,
       applyOnboardingTrial,
+      billingInterval,
     });
 
     return NextResponse.json({ success: true, url: session.url });

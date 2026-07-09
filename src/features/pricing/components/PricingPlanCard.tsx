@@ -11,6 +11,8 @@ export interface PricingPlanCardProps {
   /** e.g. "$0", "$20" */
   price: string;
   priceSuffix?: string;
+  /** Optional line under price (e.g. effective monthly on yearly). */
+  priceSubline?: string | null;
   features: readonly ProFeatureItem[];
   emphasizeFeatureHighlights?: boolean;
   /** e.g. "Most popular" or "Current plan" */
@@ -64,6 +66,7 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
   description,
   price,
   priceSuffix = '/ month',
+  priceSubline = null,
   features,
   emphasizeFeatureHighlights = true,
   badgeLabel,
@@ -126,6 +129,11 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
               {priceSuffix}
             </span>
           </div>
+          {priceSubline ? (
+            <p className="mt-2 text-xs font-medium text-emerald-300/90 sm:text-sm">
+              {priceSubline}
+            </p>
+          ) : null}
         </div>
 
         <PricingPlanFeatureList

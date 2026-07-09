@@ -3,7 +3,7 @@ import {
   needsPaidProResubscribeForDashboard,
   UpgradeContent,
 } from '@/features/pricing';
-import { getSubscriptionMonthlyPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -26,7 +26,7 @@ export default async function DashboardUpgradePage() {
   const { data: profileRow } = await supabase
     .from('profiles')
     .select(
-      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_billing_interval'
     )
     .eq('user_id', user.id)
     .maybeSingle();
@@ -38,6 +38,7 @@ export default async function DashboardUpgradePage() {
     subscription_status?: string | null;
     stripe_subscription_id?: string | null;
     stripe_customer_id?: string | null;
+    subscription_billing_interval?: string | null;
   } | null;
 
   const isProSubscriber = isProAccess(
@@ -57,11 +58,21 @@ export default async function DashboardUpgradePage() {
   const isBillingLocked =
     onboardingComplete && needsResubscribeGate && !isProSubscriber;
 
+  const storedBillingInterval =
+    row?.subscription_billing_interval === 'year'
+      ? 'year'
+      : row?.subscription_billing_interval === 'month'
+        ? 'month'
+        : null;
   let subscriberPlanPrice: string | null = null;
+  let subscriberBillingInterval: 'month' | 'year' | null =
+    storedBillingInterval;
   const subscriptionId = row?.stripe_subscription_id?.trim();
   if (isProSubscriber && subscriptionId) {
-    subscriberPlanPrice =
-      await getSubscriptionMonthlyPriceDisplay(subscriptionId);
+    const priceDisplay = await getSubscriptionPriceDisplay(subscriptionId);
+    subscriberPlanPrice = priceDisplay?.amount ?? null;
+    subscriberBillingInterval =
+      storedBillingInterval ?? priceDisplay?.interval ?? null;
   }
 
   // Free users (no resubscribe gate) must be able to open this page to start checkout.
@@ -72,6 +83,7 @@ export default async function DashboardUpgradePage() {
       isProSubscriber={isProSubscriber}
       isBillingLocked={isBillingLocked}
       subscriberPlanPrice={subscriberPlanPrice}
+      subscriberBillingInterval={subscriberBillingInterval}
     />
   );
 }

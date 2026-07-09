@@ -65,11 +65,11 @@ After opening **Complete** from a confirmed booking, mobile shows the Complete s
 
 ### Preconditions (server enforces)
 
-| Check                          | Required                |
-| ------------------------------ | ----------------------- |
-| `bookings.status`              | `confirmed`             |
-| `bookings.job_status`          | Not `completed`         |
-| Amount due                     | `0` (see math below)    |
+| Check                 | Required             |
+| --------------------- | -------------------- |
+| `bookings.status`     | `confirmed`          |
+| `bookings.job_status` | Not `completed`      |
+| Amount due            | `0` (see math below) |
 
 ### Amount-due math (must match Complete sheet)
 
@@ -127,14 +127,14 @@ Already completed → **200**, same statuses, `sms.reason: "duplicate"`, `invoic
 { "success": false, "error": "Human-readable message" }
 ```
 
-| HTTP    | When                                                                                   |
-| ------- | -------------------------------------------------------------------------------------- |
-| **400** | Bad payload; payment still due; `tap_to_pay` without Stripe intent                     |
-| **401** | Missing/invalid JWT                                                                    |
-| **404** | Booking not found / not owned                                                          |
-| **409** | Not confirmed or already completed |
-| **429** | Rate limited — honor `Retry-After`                                                     |
-| **500** | Unexpected / persist failure                                                           |
+| HTTP    | When                                                               |
+| ------- | ------------------------------------------------------------------ |
+| **400** | Bad payload; payment still due; `tap_to_pay` without Stripe intent |
+| **401** | Missing/invalid JWT                                                |
+| **404** | Booking not found / not owned                                      |
+| **409** | Not confirmed or already completed                                 |
+| **429** | Rate limited — honor `Retry-After`                                 |
+| **500** | Unexpected / persist failure                                       |
 
 ---
 

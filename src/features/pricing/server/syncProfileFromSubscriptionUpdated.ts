@@ -7,6 +7,7 @@
  */
 
 import { STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO } from '@/features/pricing/utils/isProAccess';
+import type { BillingInterval } from '@/features/pricing/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface SyncProfileFromSubscriptionUpdatedParams {
@@ -22,6 +23,8 @@ export interface SyncProfileFromSubscriptionUpdatedParams {
    * charge can't wipe the once-per-episode guard and allow a duplicate email.
    */
   resetPaymentFailedFlagOnGrant?: boolean;
+  /** Stripe price recurring interval (`month` or `year`). */
+  subscriptionBillingInterval?: BillingInterval | null;
 }
 
 /**
@@ -43,6 +46,7 @@ export async function syncProfileFromSubscriptionUpdated(
     currentPeriodEndUnix,
     cancelAtPeriodEnd,
     resetPaymentFailedFlagOnGrant = true,
+    subscriptionBillingInterval = null,
   } = params;
 
   if (!stripeSubscriptionId?.trim()) {
@@ -71,6 +75,9 @@ export async function syncProfileFromSubscriptionUpdated(
     updates.subscription_current_period_end = new Date(
       currentPeriodEndUnix * 1000
     ).toISOString();
+  }
+  if (subscriptionBillingInterval) {
+    updates.subscription_billing_interval = subscriptionBillingInterval;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

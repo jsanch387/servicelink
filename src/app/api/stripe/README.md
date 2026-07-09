@@ -23,6 +23,7 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 | ---------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `STRIPE_SECRET_KEY`                            | Yes                             | Stripe secret key (starts with `sk_`). From [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys).                                                                                                                                                                                                               |
 | `STRIPE_PRO_PRICE_ID`                          | Yes                             | Stripe Price ID for **new** Pro monthly signups (e.g. `$20/mo` `price_xxx`). Create a Product in [Stripe Dashboard → Products](https://dashboard.stripe.com/products), then add a recurring price. **Do not** migrate existing subscribers off a legacy price — Stripe keeps them on their current price until they cancel and resubscribe. |
+| `STRIPE_PRO_YEARLY_PRICE_ID`                   | Yes for yearly checkout         | Stripe Price ID for **new** Pro yearly signups (e.g. `$200/yr` `price_xxx`) on the same Pro product. Checkout passes `billingInterval: "year"` from `/dashboard/upgrade`.                                                                                                                                                                   |
 | `STRIPE_WEBHOOK_SECRET`                        | Yes (for webhook)               | Signing secret (starts with `whsec_`). From Stripe Dashboard → Developers → Webhooks → your endpoint → Signing secret.                                                                                                                                                                                                                      |
 | `STRIPE_CONNECT_WEBHOOK_SECRET`                | Yes (for Connect webhook)       | Signing secret for `/api/stripe/webhook-connect` destination that listens to **Connected and v2 accounts** events (booking checkout payments).                                                                                                                                                                                              |
 | `NEXT_PUBLIC_SITE_URL`                         | No                              | Base URL for success/cancel redirects (e.g. `https://yoursite.com`). Falls back to `VERCEL_URL` or `http://localhost:3000`.                                                                                                                                                                                                                 |
@@ -105,6 +106,44 @@ Use **test mode** Checkout with a billing address in a state where you added a r
 - Set **`STRIPE_PRO_PRICE_ID`** to the **new** `$20` price id. Leave the old `$10` price active in Stripe for existing rows; do not bulk-update subscriptions.
 - **Settings** and **Your plan** (when already Pro) read the live **`unit_amount`** from Stripe via `getSubscriptionMonthlyPriceDisplay` so grandfathered users see `$10/month`, not the new list price.
 - **Resubscribe after cancel** uses Checkout with **`STRIPE_PRO_PRICE_ID`** → new customers and returning churned users pay the current list price.
+
+## Yearly Pro ($200/yr)
+
+Use **one Stripe Product** (your existing Pro product) with **two recurring prices**:
+
+| Price       | Amount  | Interval | Env var                      |
+| ----------- | ------- | -------- | ---------------------------- |
+| Pro monthly | $20/mo  | Monthly  | `STRIPE_PRO_PRICE_ID`        |
+| Pro yearly  | $200/yr | Yearly   | `STRIPE_PRO_YEARLY_PRICE_ID` |
+
+### Stripe Dashboard
+
+1. [Products](https://dashboard.stripe.com/products) → open your **Pro** product (same product as `$20/mo`).
+2. **Add another price** → **Recurring** → **Yearly** → **$200.00 USD**.
+3. Copy the new `price_…` id into **`STRIPE_PRO_YEARLY_PRICE_ID`** (local `.env.local` and production env).
+4. Leave the monthly price active. Do **not** create a separate Product for yearly.
+
+Tax: set the yearly price to **tax exclusive** (same as monthly) if you use Stripe Tax.
+
+### App behavior (already wired)
+
+- `/pricing`, landing, and `/dashboard/upgrade` show a **Monthly / Yearly** toggle.
+- Checkout sends `billingInterval: "year"` and uses **`STRIPE_PRO_YEARLY_PRICE_ID`**.
+- Webhooks sync **`profiles.subscription_billing_interval`** (`month` or `year`) from the Stripe subscription price.
+
+### Database column
+
+Run once in Supabase SQL editor **before** deploying code that writes this field:
+
+```sql
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS subscription_billing_interval text;
+
+COMMENT ON COLUMN profiles.subscription_billing_interval IS
+  'Stripe subscription cadence: month or year. Null when free or no subscription.';
+```
+
+Existing Pro subscribers: interval is filled on the next `customer.subscription.updated` webhook, or when they open Settings (we still fall back to live Stripe price data until the column is set).
 
 ## Webhook idempotency table
 

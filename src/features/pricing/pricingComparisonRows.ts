@@ -64,6 +64,11 @@ export const PRICING_COMPARISON_ROWS: readonly PricingComparisonRow[] = [
     pro: { kind: 'included' },
   },
   {
+    feature: 'Tap to Pay on iPhone',
+    free: { kind: 'excluded' },
+    pro: { kind: 'text', value: 'On your iPhone' },
+  },
+  {
     feature: 'Quote requests on your booking link',
     free: { kind: 'excluded' },
     pro: { kind: 'included' },

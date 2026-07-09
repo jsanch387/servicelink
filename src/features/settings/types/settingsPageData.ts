@@ -1,4 +1,5 @@
 import type { PlanId } from '@/features/pricing';
+import type { BillingInterval } from '@/features/pricing/types';
 
 export interface SettingsPageData {
   businessProfile: {
@@ -21,6 +22,8 @@ export interface SettingsPageData {
   subscriptionCancelAtPeriodEnd?: boolean;
   /** Stripe subscription unit amount when on Pro (e.g. grandfathered $10). */
   subscriptionMonthlyPrice?: string | null;
+  /** Stripe recurring interval when on Pro. */
+  subscriptionBillingInterval?: BillingInterval | null;
   accountEmail?: string;
   signedInWithGoogle?: boolean;
 }

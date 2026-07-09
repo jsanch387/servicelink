@@ -4,7 +4,7 @@ import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { CrownIcon } from '@/icons';
 import React, { useState } from 'react';
-import type { PlanId } from '../types';
+import type { BillingInterval, PlanId } from '../types';
 import { PLANS } from '../types';
 
 function formatRenewalDate(iso: string | null | undefined): string | null {
@@ -29,6 +29,8 @@ interface PlanSectionProps {
   subscriptionStatus?: string | null;
   /** When set, overrides `PLANS.pro.price` (e.g. grandfathered $10/mo from Stripe). */
   monthlyPriceOverride?: string | null;
+  /** Stripe recurring interval for Pro subscribers. */
+  billingInterval?: BillingInterval;
   /** Hide the section heading when a parent group label is shown (e.g. Settings billing). */
   hideHeading?: boolean;
 }
@@ -39,6 +41,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   subscriptionCancelAtPeriodEnd = false,
   subscriptionStatus = null,
   monthlyPriceOverride = null,
+  billingInterval = 'month',
   hideHeading = false,
 }) => {
   const plan = PLANS[planId];
@@ -50,6 +53,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
   const isTrialing = subscriptionStatus === 'trialing';
   const displayPlanName = isPro && isTrialing ? 'Pro trial' : plan.name;
+  const pricePeriodSuffix = billingInterval === 'year' ? '/year' : '/month';
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageSubscription = async () => {
@@ -71,15 +75,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
 
   return (
     <section className="w-full min-w-0">
-      {hideHeading ? (
-        isPro && subscriptionCancelAtPeriodEnd ? (
-          <div className="mb-3 flex justify-end">
-            <span className="inline-flex shrink-0 items-center rounded-md border border-zinc-600/40 bg-zinc-800/40 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-              Canceled
-            </span>
-          </div>
-        ) : null
-      ) : (
+      {hideHeading ? null : (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
           <h2 className="text-lg sm:text-xl font-semibold text-white">
             Subscription plan
@@ -119,7 +115,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
               <p className="inline-flex items-center gap-1 text-lg font-bold leading-none text-white tabular-nums">
                 {displayPrice}
                 <span className="text-sm font-normal leading-none text-gray-400">
-                  /month
+                  {pricePeriodSuffix}
                 </span>
               </p>
             )}

@@ -5,6 +5,10 @@
 
 import { runOnboardingTrialBridgeAfterSubscribe } from '@/features/onboarding-v2/server/onboardingTrialBridgeAfterSubscribe';
 import { retrieveSubscriptionCurrentPeriodEndIso } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
+import {
+  parseBillingIntervalFromCheckoutMetadata,
+  resolveBillingIntervalFromStripeSubscription,
+} from '@/features/pricing/server/resolveSubscriptionBillingInterval';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -222,11 +226,15 @@ export async function applyPlatformProCheckoutSessionCompleted(
 
   let currentPeriodEnd: string | null = null;
   let subscriptionStatus: string | null = null;
+  let subscriptionBillingInterval =
+    parseBillingIntervalFromCheckoutMetadata(session.metadata) ?? null;
   if (stripeSubscriptionId) {
     try {
       const subscription =
         await stripe.subscriptions.retrieve(stripeSubscriptionId);
       subscriptionStatus = subscription.status ?? null;
+      subscriptionBillingInterval =
+        resolveBillingIntervalFromStripeSubscription(subscription);
     } catch (retrieveErr) {
       console.warn(
         '[applyPlatformProCheckoutSessionCompleted] subscriptions.retrieve status failed',
@@ -248,6 +256,7 @@ export async function applyPlatformProCheckoutSessionCompleted(
     stripeSubscriptionId,
     currentPeriodEnd,
     subscriptionStatus,
+    subscriptionBillingInterval,
   });
 
   if (!result.success) {

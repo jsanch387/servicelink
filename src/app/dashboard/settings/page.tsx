@@ -1,7 +1,7 @@
 import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
-import { getSubscriptionMonthlyPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -62,7 +62,7 @@ export default async function SettingsPage({
       supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end'
+          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end, subscription_billing_interval'
         )
         .eq('user_id', user.id)
         .maybeSingle(),
@@ -86,6 +86,7 @@ export default async function SettingsPage({
       stripe_subscription_id?: string | null;
       stripe_customer_id?: string | null;
       subscription_cancel_at_period_end?: boolean | null;
+      subscription_billing_interval?: string | null;
     } | null;
     const hasProAccess = isProAccess(
       profileRow?.subscription_tier,
@@ -96,11 +97,21 @@ export default async function SettingsPage({
     );
     const planId = hasProAccess ? ('pro' as const) : ('free' as const);
 
+    const storedBillingInterval =
+      profileRow?.subscription_billing_interval === 'year'
+        ? 'year'
+        : profileRow?.subscription_billing_interval === 'month'
+          ? 'month'
+          : null;
     let subscriptionMonthlyPrice: string | null = null;
+    let subscriptionBillingInterval: 'month' | 'year' | null =
+      storedBillingInterval;
     const subscriptionId = profileRow?.stripe_subscription_id?.trim();
     if (hasProAccess && subscriptionId) {
-      subscriptionMonthlyPrice =
-        await getSubscriptionMonthlyPriceDisplay(subscriptionId);
+      const priceDisplay = await getSubscriptionPriceDisplay(subscriptionId);
+      subscriptionMonthlyPrice = priceDisplay?.amount ?? null;
+      subscriptionBillingInterval =
+        storedBillingInterval ?? priceDisplay?.interval ?? null;
     }
 
     const signedInWithGoogle = !(user.identities ?? []).some(
@@ -133,6 +144,7 @@ export default async function SettingsPage({
       subscriptionCancelAtPeriodEnd:
         profileRow?.subscription_cancel_at_period_end === true,
       subscriptionMonthlyPrice,
+      subscriptionBillingInterval,
       accountEmail: user.email ?? '',
       signedInWithGoogle,
     };

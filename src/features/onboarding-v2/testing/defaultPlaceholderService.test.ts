@@ -11,6 +11,8 @@ describe('getDefaultPlaceholderService', () => {
   it('returns generic defaults for unknown or empty business type', () => {
     expect(getDefaultPlaceholderService('Other').name).toBe('Standard Service');
     expect(getDefaultPlaceholderService('').name).toBe('Standard Service');
-    expect(getDefaultPlaceholderService(undefined).name).toBe('Standard Service');
+    expect(getDefaultPlaceholderService(undefined).name).toBe(
+      'Standard Service'
+    );
   });
 });

@@ -6,6 +6,7 @@ import { Footer } from './Footer';
 import { HeroSection } from './HeroSection';
 import { HowItWorksSection } from './HowItWorksSection';
 import { LandingPageStructuredData } from './LandingPageStructuredData';
+import { LandingPricingSection } from './LandingPricingSection';
 import { Navigation } from './Navigation';
 import { ProblemSolutionSection } from './ProblemSolutionSection';
 import { TestimonialsSection } from './TestimonialsSection';
@@ -25,6 +26,7 @@ export const LandingPage: React.FC = () => {
           <DetailerFeaturesSection />
           <HowItWorksSection />
           <ProblemSolutionSection />
+          <LandingPricingSection />
           <FAQSection />
         </main>
         <Footer />

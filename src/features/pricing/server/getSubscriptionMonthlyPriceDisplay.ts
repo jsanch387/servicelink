@@ -8,6 +8,38 @@ export function formatSubscriptionUnitAmountCents(cents: number): string {
     : `$${dollars.toFixed(2)}`;
 }
 
+export type SubscriptionBillingInterval = 'month' | 'year';
+
+export interface SubscriptionPriceDisplay {
+  amount: string;
+  interval: SubscriptionBillingInterval;
+}
+
+/**
+ * Reads the recurring unit amount and interval from an active Stripe subscription.
+ */
+export async function getSubscriptionPriceDisplay(
+  subscriptionId: string
+): Promise<SubscriptionPriceDisplay | null> {
+  const id = subscriptionId.trim();
+  if (!id) return null;
+
+  try {
+    const stripe = getStripePlatform();
+    const sub = await stripe.subscriptions.retrieve(id);
+    const price = sub.items.data[0]?.price;
+    const unitAmount = price?.unit_amount;
+    if (unitAmount == null || unitAmount < 0) return null;
+    const interval = price?.recurring?.interval === 'year' ? 'year' : 'month';
+    return {
+      amount: formatSubscriptionUnitAmountCents(unitAmount),
+      interval,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Reads the recurring unit amount from an active Stripe subscription.
  * Used so grandfathered subscribers (e.g. legacy $10/mo) see their real rate
@@ -16,16 +48,6 @@ export function formatSubscriptionUnitAmountCents(cents: number): string {
 export async function getSubscriptionMonthlyPriceDisplay(
   subscriptionId: string
 ): Promise<string | null> {
-  const id = subscriptionId.trim();
-  if (!id) return null;
-
-  try {
-    const stripe = getStripePlatform();
-    const sub = await stripe.subscriptions.retrieve(id);
-    const unitAmount = sub.items.data[0]?.price?.unit_amount;
-    if (unitAmount == null || unitAmount < 0) return null;
-    return formatSubscriptionUnitAmountCents(unitAmount);
-  } catch {
-    return null;
-  }
+  const display = await getSubscriptionPriceDisplay(subscriptionId);
+  return display?.amount ?? null;
 }
