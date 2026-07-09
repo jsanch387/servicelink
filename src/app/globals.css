@@ -25,6 +25,27 @@ body {
   scroll-behavior: smooth;
 }
 
+/* Pointer cursor on desktop/trackpad for interactive elements */
+@media (hover: hover) and (pointer: fine) {
+  a[href]:not([aria-disabled='true']),
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='switch']:not([aria-disabled='true']),
+  [role='checkbox']:not([aria-disabled='true']),
+  [role='tab']:not([aria-disabled='true']),
+  label[for],
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
 /* Dashboard layout fixes */
 .dashboard-container {
   min-height: 100vh;

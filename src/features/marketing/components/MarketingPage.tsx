@@ -4,6 +4,7 @@ import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { MegaphoneIcon, TicketIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
+import { useMarketingStore } from '../stores/marketingStore';
 import { MarketingEmptyState } from './MarketingEmptyState';
 import { PromoCodesTab } from './PromoCodesTab';
 import { SalesTab } from './SalesTab';
@@ -13,19 +14,21 @@ type TabType = 'promo-codes' | 'sales';
 
 export const MarketingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('promo-codes');
-
-  // Mock data - replace with real data later
-  const [promoCodes] = useState<PromoCode[]>([]);
-  const [sales] = useState<Sale[]>([]);
+  const promoCodes = useMarketingStore(state => state.promoCodes);
+  const togglePromoCodeActive = useMarketingStore(
+    state => state.togglePromoCodeActive
+  );
+  const deletePromoCode = useMarketingStore(state => state.deletePromoCode);
+  const sales = useMarketingStore(state => state.sales);
+  const toggleSaleActive = useMarketingStore(state => state.toggleSaleActive);
+  const deleteSale = useMarketingStore(state => state.deleteSale);
 
   const handleTogglePromoCodeActive = (id: string, isActive: boolean) => {
-    console.log('Toggle promo code active:', id, isActive);
-    // TODO: API call to toggle promo code
+    togglePromoCodeActive(id, isActive);
   };
 
   const handleToggleSaleActive = (id: string, isActive: boolean) => {
-    console.log('Toggle sale active:', id, isActive);
-    // TODO: API call to toggle sale
+    toggleSaleActive(id, isActive);
   };
 
   const handleEditPromoCode = (promoCode: PromoCode) => {
@@ -39,13 +42,11 @@ export const MarketingPage: React.FC = () => {
   };
 
   const handleDeletePromoCode = (id: string) => {
-    console.log('Delete promo code:', id);
-    // TODO: Confirm and delete promo code
+    deletePromoCode(id);
   };
 
   const handleDeleteSale = (id: string) => {
-    console.log('Delete sale:', id);
-    // TODO: Confirm and delete sale
+    deleteSale(id);
   };
 
   const handleCopyPromoCode = (code: string) => {
@@ -98,7 +99,7 @@ export const MarketingPage: React.FC = () => {
             <nav className="-mb-px flex space-x-8" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('promo-codes')}
-                className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
+                className={`cursor-pointer whitespace-nowrap border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
                   activeTab === 'promo-codes'
                     ? 'border-white text-white'
                     : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'
@@ -113,7 +114,7 @@ export const MarketingPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('sales')}
-                className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
+                className={`cursor-pointer whitespace-nowrap border-b-2 px-1 py-4 text-sm font-semibold transition-colors ${
                   activeTab === 'sales'
                     ? 'border-white text-white'
                     : 'border-transparent text-gray-400 hover:border-gray-300 hover:text-gray-300'

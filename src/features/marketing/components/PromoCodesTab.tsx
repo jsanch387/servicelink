@@ -115,7 +115,7 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                       </span>
                       <button
                         onClick={() => onCopyCode(promoCode.code)}
-                        className="text-gray-400 transition-colors hover:text-white"
+                        className="cursor-pointer text-gray-400 transition-colors hover:text-white"
                         title="Copy code"
                       >
                         <ClipboardIcon className="h-4 w-4" />
@@ -162,14 +162,14 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => onEdit(promoCode)}
-                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+                        className="cursor-pointer rounded p-1.5 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
                         title="Edit"
                       >
                         <PencilSquareIcon className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => onDelete(promoCode.id)}
-                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                        className="cursor-pointer rounded p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
                         title="Delete"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -241,14 +241,6 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
               </div>
 
               <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                <Switch
-                  checked={promoCode.isActive}
-                  onCheckedChange={checked =>
-                    onToggleActive(promoCode.id, checked)
-                  }
-                  label="Active"
-                  size="sm"
-                />
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={() => onEdit(promoCode)}
@@ -267,6 +259,14 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                     Delete
                   </Button>
                 </div>
+                <Switch
+                  checked={promoCode.isActive}
+                  onCheckedChange={checked =>
+                    onToggleActive(promoCode.id, checked)
+                  }
+                  size="sm"
+                  aria-label="Toggle active"
+                />
               </div>
             </div>
           );
