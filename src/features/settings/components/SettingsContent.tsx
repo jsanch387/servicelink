@@ -53,6 +53,9 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
           settingsData.subscriptionCancelAtPeriodEnd === true
         }
         subscriptionMonthlyPrice={settingsData.subscriptionMonthlyPrice ?? null}
+        subscriptionBillingInterval={
+          settingsData.subscriptionBillingInterval ?? null
+        }
       />
 
       <SettingsAccountSection

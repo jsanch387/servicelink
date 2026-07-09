@@ -7,7 +7,10 @@ import {
   PUBLIC_PRICING_FREE_PLAN_FEATURES,
   PUBLIC_PRICING_PRO_PLAN_FEATURES,
 } from '../marketingPlanFeatures';
+import type { BillingInterval } from '../types';
 import { PLANS } from '../types';
+import { getProBillingDisplay } from '../utils/proBillingDisplay';
+import { BillingIntervalToggle } from './BillingIntervalToggle';
 import { PricingPlanCard } from './PricingPlanCard';
 
 export interface UpgradeContentProps {
@@ -15,20 +18,40 @@ export interface UpgradeContentProps {
   isProSubscriber?: boolean;
   /** When true, user is locked out after subscription lapsed and must reactivate. */
   isBillingLocked?: boolean;
-  /** Grandfathered or Stripe-reported monthly rate for current Pro subscribers. */
+  /** Grandfathered or Stripe-reported rate for current Pro subscribers. */
   subscriberPlanPrice?: string | null;
+  /** Billing cadence for current Pro subscribers (from Stripe). */
+  subscriberBillingInterval?: BillingInterval | null;
 }
 
 export const UpgradeContent: React.FC<UpgradeContentProps> = ({
   isProSubscriber = false,
   isBillingLocked = false,
   subscriberPlanPrice = null,
+  subscriberBillingInterval = null,
 }) => {
   const free = PLANS.free;
   const pro = PLANS.pro;
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>('month');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const checkoutBilling = getProBillingDisplay(billingInterval);
+  const subscriberInterval = subscriberBillingInterval ?? 'month';
+  const proDisplay = isProSubscriber
+    ? {
+        price:
+          subscriberPlanPrice?.trim() || getProBillingDisplay('month').price,
+        priceSuffix: subscriberInterval === 'year' ? '/ year' : '/ month',
+        subline: null,
+      }
+    : {
+        price: checkoutBilling.price,
+        priceSuffix: checkoutBilling.priceSuffix,
+        subline: checkoutBilling.subline,
+      };
 
   const handleUpgradeToPro = async () => {
     setError(null);
@@ -37,7 +60,7 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
       const res = await fetch(API_ROUTES.STRIPE_CREATE_CHECKOUT_SESSION, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ billingInterval }),
       });
       const data = (await res.json()) as {
         success?: boolean;
@@ -109,6 +132,15 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
           </p>
         ) : null}
 
+        {!isProSubscriber ? (
+          <div className="mb-8 flex justify-center sm:mb-10">
+            <BillingIntervalToggle
+              value={billingInterval}
+              onChange={setBillingInterval}
+            />
+          </div>
+        ) : null}
+
         <div className="grid gap-6 md:grid-cols-2 items-stretch">
           <PricingPlanCard
             variant="free"
@@ -141,11 +173,9 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
             variant="pro"
             title={pro.name}
             description={pro.description}
-            price={
-              isProSubscriber && subscriberPlanPrice
-                ? subscriberPlanPrice
-                : pro.price
-            }
+            price={proDisplay.price}
+            priceSuffix={proDisplay.priceSuffix}
+            priceSubline={proDisplay.subline}
             features={PUBLIC_PRICING_PRO_PLAN_FEATURES}
             badgeLabel={isProSubscriber ? 'Current plan' : 'Most popular'}
             footer={

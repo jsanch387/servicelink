@@ -86,11 +86,11 @@ For **`job_completed`**, mobile sends `sessionPayment.amountCents` equal to the 
 
 ## Booking preconditions (all Tap to Pay endpoints)
 
-| Check                          | Required                                                |
-| ------------------------------ | ------------------------------------------------------- |
-| `bookings.status`              | `confirmed`                                             |
-| `bookings.job_status`          | Not `completed`                                         |
-| `amountDueCents`               | **> 0** for intent; **0** after tap for `job_completed` |
+| Check                 | Required                                                |
+| --------------------- | ------------------------------------------------------- |
+| `bookings.status`     | `confirmed`                                             |
+| `bookings.job_status` | Not `completed`                                         |
+| `amountDueCents`      | **> 0** for intent; **0** after tap for `job_completed` |
 
 ### Stripe / Connect preconditions
 
@@ -163,7 +163,7 @@ If Connect is not ready, return **422** with a message the app can show inline (
 | ------- | ------------------------------------- | ---------------------------------------------------------- |
 | **401** | Invalid JWT                           | (standard)                                                 |
 | **404** | Booking not found / not owned         | (standard)                                                 |
-| **409** | Not confirmed or already completed      | (standard)                                                 |
+| **409** | Not confirmed or already completed    | (standard)                                                 |
 | **422** | No Connect account / charges disabled | “Set up Stripe payments to use Tap to Pay.”                |
 | **500** | Stripe failure                        | “Couldn’t connect to payments. Try again or mark as paid.” |
 

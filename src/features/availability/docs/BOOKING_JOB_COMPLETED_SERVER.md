@@ -24,11 +24,11 @@ Mobile and web completion are **not** identical today. Web dashboard Complete do
 
 ## Preconditions (mobile)
 
-| Check                          | Value                                  |
-| ------------------------------ | -------------------------------------- |
-| `bookings.status`              | `confirmed`                            |
-| `bookings.job_status`          | Not `completed`                        |
-| Amount due                     | `0` (see `computeBookingAmountDue.ts`) |
+| Check                 | Value                                  |
+| --------------------- | -------------------------------------- |
+| `bookings.status`     | `confirmed`                            |
+| `bookings.job_status` | Not `completed`                        |
+| Amount due            | `0` (see `computeBookingAmountDue.ts`) |
 
 ## Persist order (`persistJobCompletedTransaction.ts`)
 

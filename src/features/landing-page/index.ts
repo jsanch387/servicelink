@@ -5,6 +5,7 @@ export { FeaturesPage } from './components/FeaturesPage';
 export { FeaturesSection } from './components/FeaturesSection';
 export { Footer } from './components/Footer';
 export { HeroSection } from './components/HeroSection';
+export { LandingPricingSection } from './components/LandingPricingSection';
 export { LandingPage } from './components/LandingPage';
 export { Navigation } from './components/Navigation';
 export { PricingCTASection } from './components/PricingCTASection';

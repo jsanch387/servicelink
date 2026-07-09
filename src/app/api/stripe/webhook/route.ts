@@ -49,6 +49,7 @@ import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stri
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
+import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/trialConfirmationPayload';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
 import { getStripePlatform } from '@/libs/stripe';
@@ -968,12 +969,15 @@ export async function POST(request: NextRequest) {
     let status = subscription.status ?? 'active';
     let cancelAtPeriodEnd =
       subscriptionIsScheduledCancelWithoutRenewal(subscription);
+    let billingInterval =
+      resolveBillingIntervalFromStripeSubscription(subscription);
     try {
       const stripe = getStripePlatform();
       const fresh = await stripe.subscriptions.retrieve(subId);
       periodEnd = subscriptionCurrentPeriodEndUnix(fresh);
       status = fresh.status;
       cancelAtPeriodEnd = subscriptionIsScheduledCancelWithoutRenewal(fresh);
+      billingInterval = resolveBillingIntervalFromStripeSubscription(fresh);
     } catch (retrieveErr) {
       console.warn(
         '[Stripe webhook] subscriptions.retrieve failed; using event payload',
@@ -990,6 +994,7 @@ export async function POST(request: NextRequest) {
       subscriptionStatus: status,
       currentPeriodEndUnix: periodEnd ?? null,
       cancelAtPeriodEnd,
+      subscriptionBillingInterval: billingInterval,
     });
     if (!result.success) {
       if (result.noMatchingProfile) {
@@ -1112,6 +1117,8 @@ export async function POST(request: NextRequest) {
           currentPeriodEndUnix: periodEnd ?? null,
           cancelAtPeriodEnd:
             subscriptionIsScheduledCancelWithoutRenewal(subscription),
+          subscriptionBillingInterval:
+            resolveBillingIntervalFromStripeSubscription(subscription),
           // Don't let a transient `active` status here clear the failure guard —
           // recovery is handled by the `customer.subscription.updated` path.
           resetPaymentFailedFlagOnGrant: false,

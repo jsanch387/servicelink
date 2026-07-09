@@ -4,6 +4,15 @@
  */
 export type PlanId = 'free' | 'pro';
 
+/** Pro subscription billing cadence shown on pricing and at checkout. */
+export type BillingInterval = 'month' | 'year';
+
+/** List price for new Pro yearly signups ($20/mo × 12 − 2 months). */
+export const PRO_YEARLY_LIST_PRICE = '$200';
+
+/** Shown on yearly toggle / plan card (vs $240/yr at monthly list price). */
+export const PRO_YEARLY_SAVINGS_LABEL = '2 months free';
+
 export interface PlanInfo {
   id: PlanId;
   name: string;
@@ -23,7 +32,7 @@ export const PLANS: Record<PlanId, PlanInfo> = {
     name: 'Pro',
     price: '$20',
     description:
-      'For pros who want unlimited bookings, get paid in-app, and close more jobs.',
+      'For pros who want unlimited bookings, iPhone payments at the job, and more.',
   },
 } as const;
 
@@ -51,6 +60,10 @@ export interface ProFeatureItem {
 /** Pro plan feature list for upgrade and pricing UIs (first = main reason, highlight = star + bold). */
 export const PRO_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings', highlight: true },
+  {
+    text: 'Tap to Pay on iPhone — customers tap their card or phone to pay you',
+    highlight: true,
+  },
   { text: 'Accept card payments & collect deposits', highlight: true },
   { text: 'Client CRM, quotes, and email confirmations' },
   { text: 'Multiple price options per service' },

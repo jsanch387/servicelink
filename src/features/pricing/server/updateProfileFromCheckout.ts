@@ -4,6 +4,7 @@
  * Do not import from client code.
  */
 
+import type { BillingInterval } from '@/features/pricing/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface UpdateProfileFromCheckoutParams {
@@ -17,6 +18,8 @@ export interface UpdateProfileFromCheckoutParams {
   currentPeriodEnd: string | null;
   /** Stripe subscription status from retrieved subscription (e.g. active, trialing). */
   subscriptionStatus?: string | null;
+  /** Recurring cadence from Stripe price (`month` or `year`). */
+  subscriptionBillingInterval?: BillingInterval | null;
 }
 
 /**
@@ -33,6 +36,7 @@ export async function updateProfileFromCheckout(
     stripeSubscriptionId,
     currentPeriodEnd,
     subscriptionStatus,
+    subscriptionBillingInterval,
   } = params;
 
   if (!userId?.trim()) {
@@ -56,6 +60,9 @@ export async function updateProfileFromCheckout(
   }
   if (currentPeriodEnd) {
     updates.subscription_current_period_end = currentPeriodEnd;
+  }
+  if (subscriptionBillingInterval) {
+    updates.subscription_billing_interval = subscriptionBillingInterval;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
