@@ -16,10 +16,9 @@ interface PromoCodeCreatedSuccessProps {
   onCreateAnother: () => void;
 }
 
-export const PromoCodeCreatedSuccess: React.FC<PromoCodeCreatedSuccessProps> = ({
-  promoCode,
-  onCreateAnother,
-}) => {
+export const PromoCodeCreatedSuccess: React.FC<
+  PromoCodeCreatedSuccessProps
+> = ({ promoCode, onCreateAnother }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -57,10 +56,7 @@ export const PromoCodeCreatedSuccess: React.FC<PromoCodeCreatedSuccessProps> = (
           {promoCode.code}
         </p>
         <p className="mt-1 text-sm font-medium text-emerald-400">
-          {formatPromoDiscount(
-            promoCode.discountType,
-            promoCode.discountValue
-          )}
+          {formatPromoDiscount(promoCode.discountType, promoCode.discountValue)}
         </p>
         <Button
           onClick={() => void handleCopy()}

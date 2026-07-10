@@ -25,8 +25,8 @@ export interface Sale {
   discountType: DiscountType;
   discountValue: number;
   isActive: boolean;
-  startsAt: Date;
-  endsAt: Date;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
   appliesToAllServices: boolean;
   serviceIds?: string[];
   createdAt: Date;
@@ -52,6 +52,7 @@ export interface SaleFormData {
   discountType: DiscountType;
   discountValue: string;
   isActive: boolean;
+  hasDateRange: boolean;
   startsAt: string;
   endsAt: string;
   appliesToAllServices: boolean;

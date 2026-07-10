@@ -1,5 +1,5 @@
 import { MarketingPageSkeleton } from '@/features/marketing';
 
-export default function MarketingLoading() {
+export default function MarketingListLoading() {
   return <MarketingPageSkeleton />;
 }

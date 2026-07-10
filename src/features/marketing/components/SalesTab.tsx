@@ -4,17 +4,23 @@ import { Button, Switch } from '@/components/shared';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import type { Sale, SaleStatus } from '../types';
+import { formatSaleDateRange } from '../utils/formatSaleDateRange';
 import { StatusBadge } from './StatusBadge';
 
 interface SalesTabProps {
   sales: Sale[];
   onToggleActive: (id: string, isActive: boolean) => void;
   onEdit: (sale: Sale) => void;
-  onDelete: (id: string) => void;
+  onDelete: (sale: Sale) => void;
+  togglingId?: string | null;
 }
 
 function getSaleStatus(sale: Sale): SaleStatus {
   if (!sale.isActive) return 'inactive';
+
+  if (!sale.startsAt || !sale.endsAt) {
+    return 'active';
+  }
 
   const now = new Date();
 
@@ -33,27 +39,15 @@ function formatDiscount(type: string, value: number): string {
   return type === 'percentage' ? `${value}% off` : `$${value} off`;
 }
 
-function formatDateRange(startsAt: Date, endsAt: Date): string {
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  };
-
-  return `${formatDate(startsAt)} - ${formatDate(endsAt)}`;
-}
-
 export const SalesTab: React.FC<SalesTabProps> = ({
   sales,
   onToggleActive,
   onEdit,
   onDelete,
+  togglingId = null,
 }) => {
   return (
     <div className="space-y-4">
-      {/* Desktop Table View */}
       <div className="hidden overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02] md:block">
         <table className="min-w-full">
           <thead>
@@ -82,6 +76,8 @@ export const SalesTab: React.FC<SalesTabProps> = ({
           <tbody>
             {sales.map(sale => {
               const status = getSaleStatus(sale);
+              const isToggling = togglingId === sale.id;
+
               return (
                 <tr
                   key={sale.id}
@@ -109,7 +105,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                   </td>
                   <td className="px-4 py-3 align-middle">
                     <span className="text-sm text-gray-200">
-                      {formatDateRange(sale.startsAt, sale.endsAt)}
+                      {formatSaleDateRange(sale.startsAt, sale.endsAt)}
                     </span>
                   </td>
                   <td className="px-4 py-3 align-middle">
@@ -126,20 +122,23 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                         onToggleActive(sale.id, checked)
                       }
                       size="sm"
+                      disabled={isToggling}
                     />
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <div className="flex items-center gap-1">
                       <button
+                        type="button"
                         onClick={() => onEdit(sale)}
-                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+                        className="cursor-pointer rounded p-1.5 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
                         title="Edit"
                       >
                         <PencilSquareIcon className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => onDelete(sale.id)}
-                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                        type="button"
+                        onClick={() => onDelete(sale)}
+                        className="cursor-pointer rounded p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
                         title="Delete"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -153,10 +152,11 @@ export const SalesTab: React.FC<SalesTabProps> = ({
         </table>
       </div>
 
-      {/* Mobile Card View */}
       <div className="space-y-3 md:hidden">
         {sales.map(sale => {
           const status = getSaleStatus(sale);
+          const isToggling = togglingId === sale.id;
+
           return (
             <div
               key={sale.id}
@@ -184,7 +184,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                 <div className="flex justify-between">
                   <span className="text-gray-400">Valid:</span>
                   <span className="text-gray-200">
-                    {formatDateRange(sale.startsAt, sale.endsAt)}
+                    {formatSaleDateRange(sale.startsAt, sale.endsAt)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -198,12 +198,6 @@ export const SalesTab: React.FC<SalesTabProps> = ({
               </div>
 
               <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                <Switch
-                  checked={sale.isActive}
-                  onCheckedChange={checked => onToggleActive(sale.id, checked)}
-                  label="Active"
-                  size="sm"
-                />
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={() => onEdit(sale)}
@@ -214,7 +208,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                     Edit
                   </Button>
                   <Button
-                    onClick={() => onDelete(sale.id)}
+                    onClick={() => onDelete(sale)}
                     variant="ghost"
                     size="xs"
                     icon={<TrashIcon className="h-4 w-4" />}
@@ -222,6 +216,13 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                     Delete
                   </Button>
                 </div>
+                <Switch
+                  checked={sale.isActive}
+                  onCheckedChange={checked => onToggleActive(sale.id, checked)}
+                  size="sm"
+                  disabled={isToggling}
+                  aria-label="Toggle active"
+                />
               </div>
             </div>
           );

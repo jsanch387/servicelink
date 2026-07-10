@@ -1,21 +1,18 @@
 'use client';
 
 import { Button, Switch } from '@/components/shared';
-import {
-  ClipboardIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import type { PromoCode, PromoCodeStatus } from '../types';
+import { PromoCodeCopyButton } from './PromoCodeCopyButton';
 import { StatusBadge } from './StatusBadge';
 
 interface PromoCodesTabProps {
   promoCodes: PromoCode[];
   onToggleActive: (id: string, isActive: boolean) => void;
   onEdit: (promoCode: PromoCode) => void;
-  onDelete: (id: string) => void;
-  onCopyCode: (code: string) => void;
+  onDelete: (promoCode: PromoCode) => void;
+  togglingId?: string | null;
 }
 
 function getPromoCodeStatus(promoCode: PromoCode): PromoCodeStatus {
@@ -70,11 +67,10 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
   onToggleActive,
   onEdit,
   onDelete,
-  onCopyCode,
+  togglingId = null,
 }) => {
   return (
     <div className="space-y-4">
-      {/* Desktop Table View */}
       <div className="hidden overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02] md:block">
         <table className="min-w-full">
           <thead>
@@ -103,6 +99,8 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
           <tbody>
             {promoCodes.map(promoCode => {
               const status = getPromoCodeStatus(promoCode);
+              const isToggling = togglingId === promoCode.id;
+
               return (
                 <tr
                   key={promoCode.id}
@@ -113,13 +111,7 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                       <span className="font-mono text-sm font-semibold text-white">
                         {promoCode.code}
                       </span>
-                      <button
-                        onClick={() => onCopyCode(promoCode.code)}
-                        className="cursor-pointer text-gray-400 transition-colors hover:text-white"
-                        title="Copy code"
-                      >
-                        <ClipboardIcon className="h-4 w-4" />
-                      </button>
+                      <PromoCodeCopyButton code={promoCode.code} />
                     </div>
                     {promoCode.description && (
                       <p className="mt-0.5 text-xs text-gray-400">
@@ -156,11 +148,13 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                         onToggleActive(promoCode.id, checked)
                       }
                       size="sm"
+                      disabled={isToggling}
                     />
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <div className="flex items-center gap-1">
                       <button
+                        type="button"
                         onClick={() => onEdit(promoCode)}
                         className="cursor-pointer rounded p-1.5 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
                         title="Edit"
@@ -168,7 +162,8 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                         <PencilSquareIcon className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => onDelete(promoCode.id)}
+                        type="button"
+                        onClick={() => onDelete(promoCode)}
                         className="cursor-pointer rounded p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
                         title="Delete"
                       >
@@ -183,10 +178,11 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
         </table>
       </div>
 
-      {/* Mobile Card View */}
       <div className="space-y-3 md:hidden">
         {promoCodes.map(promoCode => {
           const status = getPromoCodeStatus(promoCode);
+          const isToggling = togglingId === promoCode.id;
+
           return (
             <div
               key={promoCode.id}
@@ -198,13 +194,7 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                     <span className="font-mono text-base font-semibold text-white">
                       {promoCode.code}
                     </span>
-                    <button
-                      onClick={() => onCopyCode(promoCode.code)}
-                      className="text-gray-400 transition-colors hover:text-white"
-                      title="Copy code"
-                    >
-                      <ClipboardIcon className="h-4 w-4" />
-                    </button>
+                    <PromoCodeCopyButton code={promoCode.code} />
                   </div>
                   {promoCode.description && (
                     <p className="text-sm text-gray-400">
@@ -251,7 +241,7 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                     Edit
                   </Button>
                   <Button
-                    onClick={() => onDelete(promoCode.id)}
+                    onClick={() => onDelete(promoCode)}
                     variant="ghost"
                     size="xs"
                     icon={<TrashIcon className="h-4 w-4" />}
@@ -265,6 +255,7 @@ export const PromoCodesTab: React.FC<PromoCodesTabProps> = ({
                     onToggleActive(promoCode.id, checked)
                   }
                   size="sm"
+                  disabled={isToggling}
                   aria-label="Toggle active"
                 />
               </div>

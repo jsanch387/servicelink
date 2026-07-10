@@ -8,8 +8,14 @@ export function saleFromFormData(formData: SaleFormData): Sale {
     discountType: formData.discountType,
     discountValue: parseFloat(formData.discountValue),
     isActive: formData.isActive,
-    startsAt: new Date(formData.startsAt),
-    endsAt: new Date(formData.endsAt),
+    startsAt:
+      formData.hasDateRange && formData.startsAt
+        ? new Date(formData.startsAt)
+        : null,
+    endsAt:
+      formData.hasDateRange && formData.endsAt
+        ? new Date(formData.endsAt)
+        : null,
     appliesToAllServices: true,
     serviceIds: undefined,
     createdAt: new Date(),

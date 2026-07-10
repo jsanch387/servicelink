@@ -161,7 +161,7 @@ export const SignupForm: React.FC = () => {
 
           <Button
             type="submit"
-            variant="inverse"
+            variant="primary"
             fullWidth
             size="lg"
             loading={isLoading}

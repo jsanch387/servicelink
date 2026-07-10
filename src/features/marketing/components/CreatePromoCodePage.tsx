@@ -2,17 +2,21 @@
 
 import { Button, GlassCard, Input, Select, Switch } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import {
-  ChevronDownIcon,
-  ChevronLeftIcon,
-} from '@heroicons/react/24/outline';
+import { ChevronDownIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { CreatePromoCodePageSkeleton } from './CreateMarketingFormPageSkeleton';
 import { PromoCodeCreatedSuccess } from './PromoCodeCreatedSuccess';
-import { useMarketingStore } from '../stores/marketingStore';
+import {
+  createPromoCodeRequest,
+  fetchPromoCodeById,
+  updatePromoCodeRequest,
+} from '../hooks/useDashboardPromoCodes';
 import type { PromoCode, PromoCodeFormData } from '../types';
 import { formatPromoDiscount } from '../utils/formatPromoDiscount';
-import { promoCodeFromFormData } from '../utils/promoCodeFromFormData';
+import { promoCodeFormDataToCreatePayload } from '../utils/promoCodeFormDataToCreatePayload';
+import { promoCodeToFormData } from '../utils/promoCodeToFormData';
 
 const INITIAL_FORM_DATA: PromoCodeFormData = {
   code: '',
@@ -28,18 +32,63 @@ const INITIAL_FORM_DATA: PromoCodeFormData = {
   oneUsePerCustomer: true,
 };
 
-export const CreatePromoCodePage: React.FC = () => {
-  const addPromoCode = useMarketingStore(state => state.addPromoCode);
+interface CreatePromoCodePageProps {
+  promoCodeId?: string;
+}
+
+export const CreatePromoCodePage: React.FC<CreatePromoCodePageProps> = ({
+  promoCodeId,
+}) => {
+  const router = useRouter();
+  const isEditMode = Boolean(promoCodeId);
   const [formData, setFormData] =
     useState<PromoCodeFormData>(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<
     Partial<Record<keyof PromoCodeFormData, string>>
   >({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(isEditMode);
   const [isSaving, setIsSaving] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [createdPromoCode, setCreatedPromoCode] = useState<PromoCode | null>(
     null
   );
+
+  useEffect(() => {
+    if (!promoCodeId) return;
+
+    let cancelled = false;
+    setIsLoadingEdit(true);
+    setLoadError(null);
+
+    void fetchPromoCodeById(promoCodeId)
+      .then(promoCode => {
+        if (cancelled) return;
+        setFormData(promoCodeToFormData(promoCode));
+        setShowMoreOptions(
+          Boolean(
+            promoCode.description ||
+              promoCode.startsAt ||
+              promoCode.endsAt ||
+              !promoCode.oneUsePerCustomer
+          )
+        );
+      })
+      .catch(error => {
+        if (cancelled) return;
+        const message =
+          error instanceof Error ? error.message : 'Failed to load promo code';
+        setLoadError(message);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingEdit(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [promoCodeId]);
 
   const showPreview =
     formData.code.trim().length > 0 &&
@@ -101,11 +150,20 @@ export const CreatePromoCodePage: React.FC = () => {
     if (!validate()) return;
 
     setIsSaving(true);
+    setSaveError(null);
     try {
-      const promoCode = promoCodeFromFormData(formData);
-      addPromoCode(promoCode);
+      const payload = promoCodeFormDataToCreatePayload(formData);
+      if (isEditMode && promoCodeId) {
+        await updatePromoCodeRequest(promoCodeId, payload);
+        router.push(ROUTES.DASHBOARD.MARKETING);
+        return;
+      }
+      const promoCode = await createPromoCodeRequest(payload);
       setCreatedPromoCode(promoCode);
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to create promo code';
+      setSaveError(message);
       console.error('Error creating promo code:', error);
     } finally {
       setIsSaving(false);
@@ -115,9 +173,14 @@ export const CreatePromoCodePage: React.FC = () => {
   const handleCreateAnother = () => {
     setFormData(INITIAL_FORM_DATA);
     setErrors({});
+    setSaveError(null);
     setShowMoreOptions(false);
     setCreatedPromoCode(null);
   };
+
+  if (isLoadingEdit) {
+    return <CreatePromoCodePageSkeleton />;
+  }
 
   if (createdPromoCode) {
     return (
@@ -170,7 +233,7 @@ export const CreatePromoCodePage: React.FC = () => {
             disabled={isSaving}
             loading={isSaving}
           >
-            Create code
+            {isEditMode ? 'Save changes' : 'Create code'}
           </Button>
         </div>
       </div>
@@ -179,13 +242,26 @@ export const CreatePromoCodePage: React.FC = () => {
         <div className="mx-auto w-full max-w-lg px-4 pb-24 pt-2 sm:max-w-2xl sm:px-6 sm:pb-12 sm:pt-4 lg:max-w-3xl">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-white">
-              New promo code
+              {isEditMode ? 'Edit promo code' : 'New promo code'}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-gray-400">
-              Name your code, set the discount, and share it with customers.
-              They enter it at checkout — that&apos;s it.
+              {isEditMode
+                ? 'Update your code, discount, or active status.'
+                : 'Name your code, set the discount, and share it with customers. They enter it at checkout — that\u2019s it.'}
             </p>
           </div>
+
+          {loadError ? (
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {loadError}
+            </div>
+          ) : null}
+
+          {saveError ? (
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {saveError}
+            </div>
+          ) : null}
 
           {showPreview ? (
             <div className="mb-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] px-5 py-5 text-center">
@@ -402,7 +478,7 @@ export const CreatePromoCodePage: React.FC = () => {
               disabled={isSaving}
               loading={isSaving}
             >
-              Create code
+              {isEditMode ? 'Save changes' : 'Create code'}
             </Button>
           </div>
         </div>
@@ -417,7 +493,7 @@ export const CreatePromoCodePage: React.FC = () => {
           disabled={isSaving}
           loading={isSaving}
         >
-          Create code
+          {isEditMode ? 'Save changes' : 'Create code'}
         </Button>
       </div>
     </div>

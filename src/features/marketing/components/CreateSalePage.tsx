@@ -2,18 +2,22 @@
 
 import { Button, GlassCard, Input, Select, Switch } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import {
-  ChevronDownIcon,
-  ChevronLeftIcon,
-} from '@heroicons/react/24/outline';
+import { ChevronDownIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { CreateSalePageSkeleton } from './CreateMarketingFormPageSkeleton';
 import { SaleCreatedSuccess } from './SaleCreatedSuccess';
-import { useMarketingStore } from '../stores/marketingStore';
+import {
+  createSaleRequest,
+  fetchSaleById,
+  updateSaleRequest,
+} from '../hooks/useDashboardSales';
 import type { Sale, SaleFormData } from '../types';
 import { formatPromoDiscount } from '../utils/formatPromoDiscount';
 import { formatSaleDateRange } from '../utils/formatSaleDateRange';
-import { saleFromFormData } from '../utils/saleFromFormData';
+import { saleFormDataToCreatePayload } from '../utils/saleFormDataToCreatePayload';
+import { saleToFormData } from '../utils/saleToFormData';
 
 const INITIAL_FORM_DATA: SaleFormData = {
   name: '',
@@ -21,6 +25,7 @@ const INITIAL_FORM_DATA: SaleFormData = {
   discountType: 'percentage',
   discountValue: '',
   isActive: true,
+  hasDateRange: false,
   startsAt: '',
   endsAt: '',
   appliesToAllServices: true,
@@ -30,15 +35,53 @@ const INITIAL_FORM_DATA: SaleFormData = {
 const dateInputClassName =
   'w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white transition-all duration-200 focus:border-white/30 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-white/20';
 
-export const CreateSalePage: React.FC = () => {
-  const addSale = useMarketingStore(state => state.addSale);
+interface CreateSalePageProps {
+  saleId?: string;
+}
+
+export const CreateSalePage: React.FC<CreateSalePageProps> = ({ saleId }) => {
+  const router = useRouter();
+  const isEditMode = Boolean(saleId);
   const [formData, setFormData] = useState<SaleFormData>(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<
     Partial<Record<keyof SaleFormData, string>>
   >({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(isEditMode);
   const [isSaving, setIsSaving] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [createdSale, setCreatedSale] = useState<Sale | null>(null);
+
+  useEffect(() => {
+    if (!saleId) return;
+
+    let cancelled = false;
+    setIsLoadingEdit(true);
+    setLoadError(null);
+
+    void fetchSaleById(saleId)
+      .then(sale => {
+        if (cancelled) return;
+        setFormData(saleToFormData(sale));
+        setShowMoreOptions(
+          Boolean(sale.description || sale.startsAt || sale.endsAt)
+        );
+      })
+      .catch(error => {
+        if (cancelled) return;
+        const message =
+          error instanceof Error ? error.message : 'Failed to load sale';
+        setLoadError(message);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingEdit(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [saleId]);
 
   const showPreview =
     formData.name.trim().length > 0 &&
@@ -63,20 +106,20 @@ export const CreateSalePage: React.FC = () => {
       }
     }
 
-    if (!formData.startsAt) {
-      newErrors.startsAt = 'Start date is required';
-    }
-
-    if (!formData.endsAt) {
-      newErrors.endsAt = 'End date is required';
-    }
-
-    if (
-      formData.startsAt &&
-      formData.endsAt &&
-      new Date(formData.startsAt) >= new Date(formData.endsAt)
-    ) {
-      newErrors.endsAt = 'End date must be after start date';
+    if (formData.hasDateRange) {
+      if (!formData.startsAt) {
+        newErrors.startsAt = 'Start date is required';
+      }
+      if (!formData.endsAt) {
+        newErrors.endsAt = 'End date is required';
+      }
+      if (
+        formData.startsAt &&
+        formData.endsAt &&
+        new Date(formData.startsAt) >= new Date(formData.endsAt)
+      ) {
+        newErrors.endsAt = 'End date must be after start date';
+      }
     }
 
     setErrors(newErrors);
@@ -87,11 +130,20 @@ export const CreateSalePage: React.FC = () => {
     if (!validate()) return;
 
     setIsSaving(true);
+    setSaveError(null);
     try {
-      const sale = saleFromFormData(formData);
-      addSale(sale);
+      const payload = saleFormDataToCreatePayload(formData);
+      if (isEditMode && saleId) {
+        await updateSaleRequest(saleId, payload);
+        router.push(ROUTES.DASHBOARD.MARKETING);
+        return;
+      }
+      const sale = await createSaleRequest(payload);
       setCreatedSale(sale);
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to create sale';
+      setSaveError(message);
       console.error('Error creating sale:', error);
     } finally {
       setIsSaving(false);
@@ -101,9 +153,14 @@ export const CreateSalePage: React.FC = () => {
   const handleCreateAnother = () => {
     setFormData(INITIAL_FORM_DATA);
     setErrors({});
+    setSaveError(null);
     setShowMoreOptions(false);
     setCreatedSale(null);
   };
+
+  if (isLoadingEdit) {
+    return <CreateSalePageSkeleton />;
+  }
 
   if (createdSale) {
     return (
@@ -156,7 +213,7 @@ export const CreateSalePage: React.FC = () => {
             disabled={isSaving}
             loading={isSaving}
           >
-            Create sale
+            {isEditMode ? 'Save changes' : 'Create sale'}
           </Button>
         </div>
       </div>
@@ -165,13 +222,26 @@ export const CreateSalePage: React.FC = () => {
         <div className="mx-auto w-full max-w-lg px-4 pb-24 pt-2 sm:max-w-2xl sm:px-6 sm:pb-12 sm:pt-4 lg:max-w-3xl">
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-white">
-              New sale
+              {isEditMode ? 'Edit sale' : 'New sale'}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-gray-400">
-              Run a limited-time discount that applies automatically when
-              customers book. Set the dates, turn it on, and you&apos;re done.
+              {isEditMode
+                ? 'Update your sale name, discount, dates, or active status.'
+                : 'Run a discount that applies automatically when customers book. Turn it on when you want it live — add dates only if you need them.'}
             </p>
           </div>
+
+          {loadError ? (
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {loadError}
+            </div>
+          ) : null}
+
+          {saveError ? (
+            <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {saveError}
+            </div>
+          ) : null}
 
           {showPreview ? (
             <div className="mb-6 rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] px-5 py-5 text-center">
@@ -187,7 +257,7 @@ export const CreateSalePage: React.FC = () => {
                   formData.discountValue
                 )}
               </p>
-              {formData.startsAt && formData.endsAt ? (
+              {formData.hasDateRange && formData.startsAt && formData.endsAt ? (
                 <p className="mt-2 text-xs text-gray-400">
                   {formatSaleDateRange(formData.startsAt, formData.endsAt)}
                 </p>
@@ -241,45 +311,6 @@ export const CreateSalePage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-left text-sm font-medium text-gray-200">
-                    Start date <span className="ml-1 text-red-400">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.startsAt}
-                    onChange={e =>
-                      setFormData({ ...formData, startsAt: e.target.value })
-                    }
-                    disabled={isSaving}
-                    className={dateInputClassName}
-                  />
-                  {errors.startsAt ? (
-                    <p className="mt-1 text-sm text-red-400">
-                      {errors.startsAt}
-                    </p>
-                  ) : null}
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-left text-sm font-medium text-gray-200">
-                    End date <span className="ml-1 text-red-400">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.endsAt}
-                    onChange={e =>
-                      setFormData({ ...formData, endsAt: e.target.value })
-                    }
-                    disabled={isSaving}
-                    className={dateInputClassName}
-                  />
-                  {errors.endsAt ? (
-                    <p className="mt-1 text-sm text-red-400">{errors.endsAt}</p>
-                  ) : null}
-                </div>
-              </div>
-
               <div className="border-t border-white/[0.06] pt-1">
                 <Switch
                   checked={formData.isActive}
@@ -289,7 +320,7 @@ export const CreateSalePage: React.FC = () => {
                   label="Active"
                   description={
                     formData.isActive
-                      ? 'Ready to go — discounts apply automatically during these dates'
+                      ? 'Ready to go — discounts apply automatically while this sale is on'
                       : 'Off for now — turn on when you want it live'
                   }
                   disabled={isSaving}
@@ -324,6 +355,59 @@ export const CreateSalePage: React.FC = () => {
                   }
                   disabled={isSaving}
                 />
+
+                <Switch
+                  checked={formData.hasDateRange}
+                  onCheckedChange={checked =>
+                    setFormData({ ...formData, hasDateRange: checked })
+                  }
+                  label="Set date range"
+                  description="Limit when this sale can apply automatically"
+                  disabled={isSaving}
+                />
+
+                {formData.hasDateRange ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-left text-sm font-medium text-gray-200">
+                        Start date <span className="ml-1 text-red-400">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.startsAt}
+                        onChange={e =>
+                          setFormData({ ...formData, startsAt: e.target.value })
+                        }
+                        disabled={isSaving}
+                        className={dateInputClassName}
+                      />
+                      {errors.startsAt ? (
+                        <p className="mt-1 text-sm text-red-400">
+                          {errors.startsAt}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-left text-sm font-medium text-gray-200">
+                        End date <span className="ml-1 text-red-400">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.endsAt}
+                        onChange={e =>
+                          setFormData({ ...formData, endsAt: e.target.value })
+                        }
+                        disabled={isSaving}
+                        className={dateInputClassName}
+                      />
+                      {errors.endsAt ? (
+                        <p className="mt-1 text-sm text-red-400">
+                          {errors.endsAt}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </GlassCard>
           ) : null}
@@ -337,7 +421,7 @@ export const CreateSalePage: React.FC = () => {
               disabled={isSaving}
               loading={isSaving}
             >
-              Create sale
+              {isEditMode ? 'Save changes' : 'Create sale'}
             </Button>
           </div>
         </div>
@@ -352,7 +436,7 @@ export const CreateSalePage: React.FC = () => {
           disabled={isSaving}
           loading={isSaving}
         >
-          Create sale
+          {isEditMode ? 'Save changes' : 'Create sale'}
         </Button>
       </div>
     </div>

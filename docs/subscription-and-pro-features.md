@@ -118,6 +118,7 @@ Authoritative **current codebase** differences (update this table when you chang
 | **Public “Request quote”**            | Cannot enable **`accept_quote_req`** without Pro; API 403 if forced.                                                                                                                                                                                                                                     | Opt-in + public intake when allowed.               |
 | **Customer check-in (SMS)**           | Free → upgrade teaser instead of Pro SMS flow.                                                                                                                                                                                                                                                           | Full check-in.                                     |
 | **Quotes dashboard**                  | Upgrade prompts where `isFreeTier` is used.                                                                                                                                                                                                                                                              | Full access to Pro-gated quote surfaces.           |
+| **Marketing (promo codes & sales)**   | Not available — read-only or upgrade CTA when UI ships. No new redemptions. See [marketing docs](../src/features/marketing/docs/README.md).                                                                                                                                                              | Full CRUD + customer redemptions.                  |
 | **Connect / owner payouts**           | Gated similarly (use same profile helpers as payments features).                                                                                                                                                                                                                                         | Requires Pro for payment surfaces that enforce it. |
 
 ### Marketing copy reference
@@ -143,6 +144,7 @@ Authoritative **current codebase** differences (update this table when you chang
 | Free booking lifetime cap  | `enforceFreeTierBookingCapBeforeCreate.ts`, `public/bookings` route                                         |
 | Free service count cap     | `features/services/server/freeTierServiceLimit.ts`, `createService.ts`, `onboarding-v2/server/saveStep2.ts` |
 | Check-in Pro gate          | `CustomerDetailPanel`, `customers/page.tsx`                                                                 |
+| Marketing Pro gate         | `src/features/marketing/docs/FLOWS.md` (planned: dashboard routes + server actions + public apply)          |
 | Public booking “at cap” UX | `resolvePublicBookingFreeTierGate`, `book/page.tsx`                                                         |
 
 ---

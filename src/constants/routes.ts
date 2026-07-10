@@ -82,7 +82,11 @@ export const ROUTES = {
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
     MARKETING: '/dashboard/marketing',
     MARKETING_PROMO_CODES_NEW: '/dashboard/marketing/promo-codes/new',
+    MARKETING_PROMO_CODE_EDIT: (promoCodeId: string) =>
+      `/dashboard/marketing/promo-codes/${encodeURIComponent(promoCodeId.trim())}/edit`,
     MARKETING_SALES_NEW: '/dashboard/marketing/sales/new',
+    MARKETING_SALE_EDIT: (saleId: string) =>
+      `/dashboard/marketing/sales/${encodeURIComponent(saleId.trim())}/edit`,
     SETTINGS: '/dashboard/settings',
     CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',

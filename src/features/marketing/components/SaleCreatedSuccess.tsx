@@ -32,8 +32,9 @@ export const SaleCreatedSuccess: React.FC<SaleCreatedSuccessProps> = ({
         Sale created
       </h1>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-400">
-        Customers who book during this period will automatically get the
-        discount. No code needed.
+        {sale.startsAt && sale.endsAt
+          ? 'Customers who book during this period will automatically get the discount. No code needed.'
+          : 'Turn this sale on whenever you want the discount to apply. No code needed.'}
       </p>
 
       <div className="mt-8 w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:max-w-lg lg:max-w-xl">

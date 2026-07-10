@@ -59,7 +59,7 @@ export const Button: React.FC<ButtonProps> = ({
     ghost:
       'text-gray-300 hover:text-white hover:bg-white/5 focus-visible:ring-neutral-500',
     inverse:
-      'bg-neutral-900 text-white hover:bg-neutral-800 shadow-sm focus-visible:ring-neutral-400',
+      'bg-white text-black hover:bg-gray-100 shadow-sm focus-visible:ring-white/40',
     danger:
       'border border-red-400/30 bg-red-500/12 text-red-200 hover:bg-red-500/18 hover:border-red-400/45 focus-visible:ring-red-400/40 backdrop-blur-sm',
     success:
