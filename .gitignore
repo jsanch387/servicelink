@@ -18,6 +18,7 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.e2e.local
 env.local
 
 # Vercel
@@ -125,6 +126,12 @@ temp/
 # Testing
 coverage/
 .nyc_output/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright-browsers/
+/e2e/.auth/
 
 # Misc
 *.tgz

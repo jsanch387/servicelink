@@ -8,6 +8,7 @@ import React from 'react';
 import type { Sale } from '../types';
 import { formatPromoDiscount } from '../utils/formatPromoDiscount';
 import { formatSaleDateRange } from '../utils/formatSaleDateRange';
+import { TruncatedSaleName } from './TruncatedSaleName';
 
 interface SaleCreatedSuccessProps {
   sale: Sale;
@@ -41,9 +42,12 @@ export const SaleCreatedSuccess: React.FC<SaleCreatedSuccessProps> = ({
         <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
           Your sale
         </p>
-        <p className="mt-2 text-2xl font-semibold tracking-tight text-white">
-          {sale.name}
-        </p>
+        <div className="mx-auto mt-2 w-full max-w-md min-w-0">
+          <TruncatedSaleName
+            name={sale.name}
+            className="text-center text-2xl font-semibold tracking-tight text-white"
+          />
+        </div>
         <p className="mt-1 text-sm font-medium text-emerald-400">
           {formatPromoDiscount(sale.discountType, sale.discountValue)}
         </p>

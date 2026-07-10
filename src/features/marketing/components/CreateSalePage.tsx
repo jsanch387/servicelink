@@ -18,6 +18,8 @@ import { formatPromoDiscount } from '../utils/formatPromoDiscount';
 import { formatSaleDateRange } from '../utils/formatSaleDateRange';
 import { saleFormDataToCreatePayload } from '../utils/saleFormDataToCreatePayload';
 import { saleToFormData } from '../utils/saleToFormData';
+import { SALE_NAME_MAX_LENGTH } from '../constants/limits';
+import { TruncatedSaleName } from './TruncatedSaleName';
 
 const INITIAL_FORM_DATA: SaleFormData = {
   name: '',
@@ -93,6 +95,8 @@ export const CreateSalePage: React.FC<CreateSalePageProps> = ({ saleId }) => {
 
     if (!formData.name.trim()) {
       newErrors.name = 'Sale name is required';
+    } else if (formData.name.trim().length > SALE_NAME_MAX_LENGTH) {
+      newErrors.name = `Sale name cannot exceed ${SALE_NAME_MAX_LENGTH} characters`;
     }
 
     if (!formData.discountValue.trim()) {
@@ -248,9 +252,12 @@ export const CreateSalePage: React.FC<CreateSalePageProps> = ({ saleId }) => {
               <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
                 Customers booking during your sale get
               </p>
-              <p className="mt-2 text-xl font-semibold tracking-tight text-white">
-                {formData.name}
-              </p>
+              <div className="mx-auto mt-2 w-full max-w-md min-w-0 px-1">
+                <TruncatedSaleName
+                  name={formData.name}
+                  className="text-center text-xl font-semibold tracking-tight text-white"
+                />
+              </div>
               <p className="mt-1 text-sm font-medium text-emerald-400">
                 {formatPromoDiscount(
                   formData.discountType,
@@ -275,6 +282,7 @@ export const CreateSalePage: React.FC<CreateSalePageProps> = ({ saleId }) => {
                 required
                 error={errors.name}
                 disabled={isSaving}
+                maxLength={SALE_NAME_MAX_LENGTH}
               />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

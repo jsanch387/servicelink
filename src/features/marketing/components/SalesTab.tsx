@@ -6,6 +6,7 @@ import React from 'react';
 import type { Sale, SaleStatus } from '../types';
 import { formatSaleDateRange } from '../utils/formatSaleDateRange';
 import { StatusBadge } from './StatusBadge';
+import { TruncatedSaleName } from './TruncatedSaleName';
 
 interface SalesTabProps {
   sales: Sale[];
@@ -83,13 +84,17 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                   key={sale.id}
                   className="border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.03]"
                 >
-                  <td className="px-4 py-3 align-middle">
-                    <div>
-                      <p className="text-sm font-semibold text-white">
-                        {sale.name}
-                      </p>
+                  <td className="max-w-[14rem] px-4 py-3 align-middle lg:max-w-xs">
+                    <div className="min-w-0">
+                      <TruncatedSaleName
+                        name={sale.name}
+                        className="text-sm font-semibold text-white"
+                      />
                       {sale.description && (
-                        <p className="mt-0.5 text-xs text-gray-400">
+                        <p
+                          className="mt-0.5 truncate text-xs text-gray-400"
+                          title={sale.description}
+                        >
                           {sale.description}
                         </p>
                       )}
@@ -164,9 +169,11 @@ export const SalesTab: React.FC<SalesTabProps> = ({
             >
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <h4 className="mb-1 text-base font-semibold text-white">
-                    {sale.name}
-                  </h4>
+                  <TruncatedSaleName
+                    name={sale.name}
+                    as="h4"
+                    className="mb-1 text-base font-semibold text-white"
+                  />
                   {sale.description && (
                     <p className="text-sm text-gray-400">{sale.description}</p>
                   )}

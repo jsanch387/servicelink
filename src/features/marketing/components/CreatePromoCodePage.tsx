@@ -17,6 +17,7 @@ import type { PromoCode, PromoCodeFormData } from '../types';
 import { formatPromoDiscount } from '../utils/formatPromoDiscount';
 import { promoCodeFormDataToCreatePayload } from '../utils/promoCodeFormDataToCreatePayload';
 import { promoCodeToFormData } from '../utils/promoCodeToFormData';
+import { PROMO_CODE_MAX_LENGTH } from '../constants/limits';
 
 const INITIAL_FORM_DATA: PromoCodeFormData = {
   code: '',
@@ -102,6 +103,8 @@ export const CreatePromoCodePage: React.FC<CreatePromoCodePageProps> = ({
       newErrors.code = 'Code is required';
     } else if (!/^[A-Z0-9]+$/.test(formData.code)) {
       newErrors.code = 'Use uppercase letters and numbers only';
+    } else if (formData.code.length > PROMO_CODE_MAX_LENGTH) {
+      newErrors.code = `Code cannot exceed ${PROMO_CODE_MAX_LENGTH} characters`;
     }
 
     if (!formData.discountValue.trim()) {
@@ -292,7 +295,7 @@ export const CreatePromoCodePage: React.FC<CreatePromoCodePageProps> = ({
                 required
                 error={errors.code}
                 disabled={isSaving}
-                maxLength={20}
+                maxLength={PROMO_CODE_MAX_LENGTH}
               />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

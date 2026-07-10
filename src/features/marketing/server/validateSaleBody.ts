@@ -1,4 +1,5 @@
 import type { CreateSalePayload } from '../api/types';
+import { SALE_NAME_MAX_LENGTH } from '../constants/limits';
 
 type ValidationResult =
   | { ok: true; value: CreateSalePayload }
@@ -20,6 +21,12 @@ export function validateCreateSaleBody(body: unknown): ValidationResult {
 
   if (!name) {
     return { ok: false, error: 'Sale name is required' };
+  }
+  if (name.length > SALE_NAME_MAX_LENGTH) {
+    return {
+      ok: false,
+      error: `Sale name cannot exceed ${SALE_NAME_MAX_LENGTH} characters`,
+    };
   }
 
   if (!isDiscountType(raw.discountType)) {

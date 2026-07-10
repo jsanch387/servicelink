@@ -1,4 +1,5 @@
 import type { CreatePromoCodePayload } from '../api/types';
+import { PROMO_CODE_MAX_LENGTH } from '../constants/limits';
 
 type ValidationResult =
   | { ok: true; value: CreatePromoCodePayload }
@@ -24,6 +25,12 @@ export function validateCreatePromoCodeBody(body: unknown): ValidationResult {
   }
   if (!/^[A-Z0-9]+$/.test(code)) {
     return { ok: false, error: 'Use uppercase letters and numbers only' };
+  }
+  if (code.length > PROMO_CODE_MAX_LENGTH) {
+    return {
+      ok: false,
+      error: `Code cannot exceed ${PROMO_CODE_MAX_LENGTH} characters`,
+    };
   }
 
   if (!isDiscountType(raw.discountType)) {

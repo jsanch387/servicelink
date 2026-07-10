@@ -38,6 +38,7 @@
 | `../stores/marketingStore.ts`           | UI-only mock state (replace with API) |
 | `../types/index.ts`                     | Form + domain types                   |
 | `src/app/dashboard/marketing/`          | Routes                                |
+| `../../../../e2e/marketing/`            | E2E regression checklist + specs      |
 
 ## Related docs
 
