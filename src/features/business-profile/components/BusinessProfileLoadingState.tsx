@@ -32,7 +32,7 @@ export const BusinessProfileLoadingState: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <div className="max-w-4xl mx-auto">
-        <div className={`relative h-44 sm:h-52 md:h-56 w-full ${bar}`} />
+        <div className={`relative h-44 sm:h-56 md:h-60 w-full ${bar}`} />
 
         <div className="relative z-10 -mt-14 flex flex-col items-center px-4 sm:px-8 text-center">
           <div

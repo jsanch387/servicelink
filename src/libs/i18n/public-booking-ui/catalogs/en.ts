@@ -237,6 +237,28 @@ export const publicBookingUiEn: PublicBookingUi = {
     serviceCategoryOther: 'Other services',
     serviceCategoriesAriaLabel: 'Browse services by category',
     noServicesInCategory: 'No services in this category.',
+    saleBannerBadge: 'Sale',
+    saleBannerOffLabel: 'off',
+    saleBannerWhenYouBook: discount => `Get ${discount} when you book`,
+    saleBannerLimitedTime: 'Limited time offer',
+    saleBannerDates: {
+      validPrefix: 'Offer valid',
+      throughPrefix: 'Offer through',
+      dateRange: (start, end) => `${start} – ${end}`,
+      through: date => `Offer through ${date}`,
+      fromThrough: (start, end) => `Offer valid ${start} – ${end}`,
+    },
+    saleBannerAriaLabel: (saleName, discount) =>
+      `Active sale: ${saleName}, ${discount}`,
+    saleMarqueeAnnouncement: (saleName, discountMain, offLabel) =>
+      `${saleName}, ${discountMain} ${offLabel}`,
+    promoBannerBadge: 'Promo code',
+    promoBannerWhenYouBook: (code, discount) =>
+      `Use code ${code} at checkout for ${discount}`,
+    promoBannerAriaLabel: (code, discount) =>
+      `Active promo code: ${code}, ${discount}`,
+    promoBannerCopyCode: 'Copy',
+    promoBannerCopied: 'Copied',
   },
   quoteForm: {
     quoteDetails: 'Quote details',

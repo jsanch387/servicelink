@@ -8,6 +8,9 @@ export const SERVICE_DESCRIPTION_MAX_LENGTH = 800;
 /** Max lines shown before "See more" on service cards. */
 export const SERVICE_CARD_DESCRIPTION_LINE_CLAMP = 5;
 
+export const SERVICE_CARD_DESCRIPTION_COLLAPSED_MAX_MOBILE = 140;
+export const SERVICE_CARD_DESCRIPTION_COLLAPSED_MAX_DESKTOP = 220;
+
 /**
  * Collapsed description cap for service cards (5 × leading-relaxed lines).
  * Uses max-height instead of line-clamp so bullet rows from
@@ -15,6 +18,52 @@ export const SERVICE_CARD_DESCRIPTION_LINE_CLAMP = 5;
  */
 export const SERVICE_CARD_DESCRIPTION_CLAMP_CLASS =
   'max-h-[7.625rem] overflow-hidden sm:max-h-[7.125rem]';
+
+/** Flatten multiline / bullet descriptions for inline card previews. */
+export function flattenServiceDescriptionForCardPreview(
+  description: string
+): string {
+  return description
+    .split(/\r?\n/)
+    .map(line => line.replace(/^•\s?/, '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function serviceCardDescriptionCollapsedMaxChars(
+  isDesktop: boolean
+): number {
+  return isDesktop
+    ? SERVICE_CARD_DESCRIPTION_COLLAPSED_MAX_DESKTOP
+    : SERVICE_CARD_DESCRIPTION_COLLAPSED_MAX_MOBILE;
+}
+
+export function serviceCardDescriptionNeedsExpand(
+  description: string,
+  maxChars: number
+): boolean {
+  return flattenServiceDescriptionForCardPreview(description).length > maxChars;
+}
+
+/** Truncate at a word boundary when possible (no trailing ellipsis). */
+export function truncateServiceDescriptionForCardPreview(
+  description: string,
+  maxChars: number
+): string {
+  const flattened = flattenServiceDescriptionForCardPreview(description);
+  if (flattened.length <= maxChars) return flattened;
+
+  const slice = flattened.slice(0, maxChars);
+  const lastSpace = slice.lastIndexOf(' ');
+  const cut =
+    lastSpace > Math.floor(maxChars * 0.55)
+      ? slice.slice(0, lastSpace)
+      : slice.trimEnd();
+
+  return cut.trimEnd();
+}
 
 const BULLET_PREFIX = '• ';
 

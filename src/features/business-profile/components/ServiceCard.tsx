@@ -9,18 +9,22 @@ import {
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { getBusinessBookDetailsPath } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
+import { getServiceSalePriceCents } from '@/features/marketing/utils/getServiceSalePriceCents';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
-  ChevronDownIcon,
   ChevronRightIcon,
-  ChevronUpIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ServiceDescriptionFormatted } from './ServiceDescriptionFormatted';
-import { useServiceDescriptionClamp } from '../hooks/useServiceDescriptionClamp';
-import { SERVICE_CARD_DESCRIPTION_CLAMP_CLASS } from '../utils/serviceDescriptionDisplay';
+import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport';
+import {
+  serviceCardDescriptionCollapsedMaxChars,
+  serviceCardDescriptionNeedsExpand,
+  truncateServiceDescriptionForCardPreview,
+} from '../utils/serviceDescriptionDisplay';
 
 interface Service {
   id?: string;
@@ -55,6 +59,8 @@ interface ServiceCardProps {
    */
   hideBookLink?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** When set on public cards, show struck-through base price + sale price. */
+  publicActiveSale?: PublicActiveSale | null;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -68,16 +74,22 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   hideDescription = false,
   hideBookLink = false,
   bookingFlowLocale = 'en',
+  publicActiveSale = null,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const description = service.description || '';
-  const { ref: descriptionRef, isTruncatable } = useServiceDescriptionClamp(
+  const isDesktop = useIsDesktopViewport();
+  const collapsedMaxChars = serviceCardDescriptionCollapsedMaxChars(isDesktop);
+  const descriptionNeedsExpand = serviceCardDescriptionNeedsExpand(
     description,
-    isDescriptionExpanded
+    collapsedMaxChars
   );
-  const shouldClampDescription =
-    !isDescriptionExpanded && description.length > 0;
+  const collapsedDescriptionPreview = useMemo(
+    () =>
+      truncateServiceDescriptionForCardPreview(description, collapsedMaxChars),
+    [description, collapsedMaxChars]
+  );
 
   const effectiveDurationMinutes =
     service.duration_minutes != null && service.duration_minutes > 0
@@ -114,74 +126,98 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     typeof service.price === 'number' &&
     service.price > 0;
 
+  const salePrice =
+    publicActiveSale && typeof service.price === 'number'
+      ? getServiceSalePriceCents(service.price, publicActiveSale)
+      : null;
+
+  const renderPrice = (price: string | number) => (
+    <span className={serviceListingPriceClassName}>{formatPrice(price)}</span>
+  );
+
   return (
     <GlassCard
       blurColor="bg-zinc-500"
       rounded="rounded-2xl"
-      className="group"
+      className={
+        salePrice
+          ? 'group border-white/14 ring-1 ring-inset ring-white/[0.07]'
+          : 'group'
+      }
       padding="md"
     >
       <div
-        className={`flex justify-between gap-2 mb-2.5 sm:gap-3 sm:mb-3 ${
+        className={`mb-2.5 flex justify-between gap-2 sm:mb-3 sm:gap-3 ${
           showStartingAt ? 'items-start' : 'items-baseline'
         }`}
       >
         <h3
-          className={`${serviceListingNameClassName} flex-1 min-w-0 pr-1 sm:pr-2`}
+          className={`${serviceListingNameClassName} min-w-0 flex-1 pr-1 sm:pr-2`}
         >
           {service.name}
         </h3>
-        <span className="text-right leading-none flex-shrink-0">
+        <div className="shrink-0 text-right leading-none">
           {showStartingAt ? (
             <span className={serviceListingStartingAtClassName}>
               {ui.serviceCard.startingAt}
             </span>
           ) : null}
-          <span className={serviceListingPriceClassName}>
-            {formatPrice(service.price)}
-          </span>
-        </span>
+          {salePrice ? (
+            <div className="flex items-baseline justify-end gap-2 whitespace-nowrap">
+              <span className="text-sm font-medium text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                {formatPrice(salePrice.originalCents)}
+              </span>
+              <span className={serviceListingPriceClassName}>
+                {formatPrice(salePrice.saleCents)}
+              </span>
+            </div>
+          ) : (
+            renderPrice(service.price)
+          )}
+        </div>
       </div>
 
-      <div className="border-t border-white/[0.04] mb-3 sm:mb-4" />
+      {!hideDescription ? (
+        <div className="border-t border-white/[0.04] mb-3 sm:mb-4" />
+      ) : null}
 
       {!hideDescription ? (
-        <div className="mb-0 min-h-[4rem] sm:min-h-[4.5rem]">
-          <div
-            ref={descriptionRef}
-            className={`text-zinc-400 text-[15px] sm:text-sm ${
-              shouldClampDescription ? SERVICE_CARD_DESCRIPTION_CLAMP_CLASS : ''
-            }`}
-          >
-            <ServiceDescriptionFormatted description={description} />
-          </div>
-          {isTruncatable && (
-            <button
-              type="button"
-              onClick={() => setIsDescriptionExpanded(prev => !prev)}
-              className="mt-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 active:text-zinc-300 transition-colors cursor-pointer touch-manipulation min-h-[44px] min-w-[44px] -ml-2 pl-2 flex items-center gap-1"
-              aria-expanded={isDescriptionExpanded}
-            >
-              {isDescriptionExpanded ? (
-                <>
-                  <ChevronUpIcon className="h-3.5 w-3.5" />
+        <div className="mb-0">
+          {descriptionNeedsExpand && !isDescriptionExpanded ? (
+            <p className="m-0 leading-relaxed break-words text-zinc-400 text-[15px] sm:text-sm">
+              {collapsedDescriptionPreview}
+              {'... '}
+              <button
+                type="button"
+                onClick={() => setIsDescriptionExpanded(true)}
+                className="inline font-medium text-white hover:text-zinc-200 active:text-zinc-200 transition-colors cursor-pointer touch-manipulation"
+                aria-expanded={false}
+              >
+                {ui.serviceCard.seeMore}
+              </button>
+            </p>
+          ) : (
+            <div>
+              <div className="text-zinc-400 text-[15px] sm:text-sm">
+                <ServiceDescriptionFormatted description={description} />
+              </div>
+              {descriptionNeedsExpand && isDescriptionExpanded ? (
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionExpanded(false)}
+                  className="mt-2 inline-flex text-sm font-medium text-white hover:text-zinc-200 active:text-zinc-200 transition-colors cursor-pointer touch-manipulation"
+                  aria-expanded
+                >
                   {ui.serviceCard.seeLess}
-                </>
-              ) : (
-                <>
-                  <ChevronDownIcon className="h-3.5 w-3.5" />
-                  {ui.serviceCard.seeMore}
-                </>
-              )}
-            </button>
+                </button>
+              ) : null}
+            </div>
           )}
         </div>
       ) : null}
 
-      {/* Faint divider + footer: duration left, Book Now right */}
-      <div
-        className={`flex items-center justify-between ${hideDescription ? '' : 'pt-2.5 sm:pt-3'}`}
-      >
+      {/* Footer: duration left, Select right */}
+      <div className="mt-4 flex items-center justify-between sm:mt-5">
         {effectiveDurationMinutes ? (
           <div className="flex items-center gap-1.5 text-zinc-500">
             <ClockIcon className="h-3.5 w-3.5 flex-shrink-0 sm:h-3 sm:w-3" />

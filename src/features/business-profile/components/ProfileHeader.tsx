@@ -51,7 +51,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   return (
     <>
-      <div className="relative h-44 sm:h-52 md:h-56 w-full overflow-hidden bg-[#0f0f0f]">
+      <div className="relative h-44 sm:h-56 md:h-60 w-full overflow-hidden bg-[#0f0f0f]">
         {businessProfile.cover_image_url ? (
           <ImageWithFallback
             src={businessProfile.cover_image_url}
@@ -62,7 +62,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             fallbackLabel="Cover photo"
             fallbackSize={{ w: 1200, h: 400 }}
             priority
-            sizes="100vw"
+            sizes="(max-width: 640px) 100vw, 896px"
           />
         ) : (
           <CoverPhotoPlaceholder
@@ -82,7 +82,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             />
           </div>
         ) : null}
-        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-b from-transparent to-[#0f0f0f] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-28 sm:h-32 bg-gradient-to-b from-transparent to-[#0f0f0f] pointer-events-none" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center px-4 sm:px-8 -mt-14 text-center">

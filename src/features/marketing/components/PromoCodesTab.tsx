@@ -3,7 +3,8 @@
 import { Button, Switch } from '@/components/shared';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
-import type { PromoCode, PromoCodeStatus } from '../types';
+import type { PromoCode } from '../types';
+import { getPromoCodeStatus } from '../utils/getPromoCodeStatus';
 import { PromoCodeCopyButton } from './PromoCodeCopyButton';
 import { StatusBadge } from './StatusBadge';
 
@@ -13,26 +14,6 @@ interface PromoCodesTabProps {
   onEdit: (promoCode: PromoCode) => void;
   onDelete: (promoCode: PromoCode) => void;
   togglingId?: string | null;
-}
-
-function getPromoCodeStatus(promoCode: PromoCode): PromoCodeStatus {
-  if (!promoCode.isActive) return 'inactive';
-
-  const now = new Date();
-
-  if (promoCode.startsAt && new Date(promoCode.startsAt) > now) {
-    return 'scheduled';
-  }
-
-  if (promoCode.endsAt && new Date(promoCode.endsAt) < now) {
-    return 'expired';
-  }
-
-  if (promoCode.maxUses && promoCode.currentUseCount >= promoCode.maxUses) {
-    return 'expired';
-  }
-
-  return 'active';
 }
 
 function formatDiscount(type: string, value: number): string {

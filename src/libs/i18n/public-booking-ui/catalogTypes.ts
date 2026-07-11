@@ -220,6 +220,33 @@ export type PublicBookingUi = {
     serviceCategoriesAriaLabel: string;
     /** Public profile: empty state when a category has no services. */
     noServicesInCategory: string;
+    /** Public profile: active sale announcement badge. */
+    saleBannerBadge: string;
+    /** Suffix under the large discount number on the ticket. */
+    saleBannerOffLabel: string;
+    /** Supporting line under dates, e.g. "Get 30% off when you book". */
+    saleBannerWhenYouBook: (discount: string) => string;
+    /** Public profile: when sale has no end date. */
+    saleBannerLimitedTime: string;
+    saleBannerDates: {
+      validPrefix: string;
+      throughPrefix: string;
+      dateRange: (start: string, end: string) => string;
+      through: (date: string) => string;
+      fromThrough: (start: string, end: string) => string;
+    };
+    saleBannerAriaLabel: (saleName: string, discount: string) => string;
+    /** Public profile: scrolling top banner (e.g. "Summer Sale, 35% off"). */
+    saleMarqueeAnnouncement: (
+      saleName: string,
+      discountMain: string,
+      offLabel: string
+    ) => string;
+    promoBannerBadge: string;
+    promoBannerWhenYouBook: (code: string, discount: string) => string;
+    promoBannerAriaLabel: (code: string, discount: string) => string;
+    promoBannerCopyCode: string;
+    promoBannerCopied: string;
   };
   quoteForm: {
     quoteDetails: string;

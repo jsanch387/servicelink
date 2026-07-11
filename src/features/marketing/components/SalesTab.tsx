@@ -3,8 +3,9 @@
 import { Button, Switch } from '@/components/shared';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
-import type { Sale, SaleStatus } from '../types';
+import type { Sale } from '../types';
 import { formatSaleDateRange } from '../utils/formatSaleDateRange';
+import { getSaleStatus } from '../utils/getSaleStatus';
 import { StatusBadge } from './StatusBadge';
 import { TruncatedSaleName } from './TruncatedSaleName';
 
@@ -14,26 +15,6 @@ interface SalesTabProps {
   onEdit: (sale: Sale) => void;
   onDelete: (sale: Sale) => void;
   togglingId?: string | null;
-}
-
-function getSaleStatus(sale: Sale): SaleStatus {
-  if (!sale.isActive) return 'inactive';
-
-  if (!sale.startsAt || !sale.endsAt) {
-    return 'active';
-  }
-
-  const now = new Date();
-
-  if (new Date(sale.startsAt) > now) {
-    return 'scheduled';
-  }
-
-  if (new Date(sale.endsAt) < now) {
-    return 'expired';
-  }
-
-  return 'active';
 }
 
 function formatDiscount(type: string, value: number): string {
