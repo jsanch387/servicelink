@@ -12,12 +12,10 @@ Automated browser tests that walk full user flows — login, dashboard, create/e
 ```
 e2e/
   README.md                 ← you are here
-  fixtures/                 ← shared helpers (auth, env)
-  marketing/                ← marketing feature
-    README.md               ← manual checklist + automated scope
-    marketing.spec.ts       ← Playwright specs (skipped until ready)
-  bookings/                 ← (future)
-  quotes/                   ← (future)
+  fixtures/                 ← shared helpers (auth, env, booking)
+  marketing/                ← marketing dashboard CRUD
+  bookings/                 ← public booking + discounts
+  smoke/                    ← auth smoke
 ```
 
 When adding a feature: create `e2e/<feature>/README.md` + `<feature>.spec.ts`.
@@ -60,21 +58,28 @@ When adding a feature: create `e2e/<feature>/README.md` + `<feature>.spec.ts`.
    npm run dev
    ```
 
-5. Run E2E (currently all marketing tests are **skipped**):
+5. Run E2E:
 
    ```bash
    npm run test:e2e
+   ```
+
+   Or a single suite:
+
+   ```bash
+   npm run test:e2e -- e2e/bookings/public-booking-discounts.spec.ts
    ```
 
 ---
 
 ## Environment variables
 
-| Variable              | Required                      | Description                            |
-| --------------------- | ----------------------------- | -------------------------------------- |
-| `E2E_OWNER_EMAIL`     | Yes (when running auth tests) | Login email for dedicated test account |
-| `E2E_OWNER_PASSWORD`  | Yes                           | Password for that account              |
-| `PLAYWRIGHT_BASE_URL` | No                            | Default `http://localhost:3000`        |
+| Variable                   | Required                      | Description                                        |
+| -------------------------- | ----------------------------- | -------------------------------------------------- |
+| `E2E_OWNER_EMAIL`          | Yes (when running auth tests) | Login email for dedicated test account             |
+| `E2E_OWNER_PASSWORD`       | Yes                           | Password for that account                          |
+| `E2E_PUBLIC_BUSINESS_SLUG` | No                            | Public `/{slug}/book` slug (else resolved via API) |
+| `PLAYWRIGHT_BASE_URL`      | No                            | Default `http://localhost:3000`                    |
 
 Credentials are loaded from `.env.e2e.local` (not committed).
 
@@ -91,9 +96,9 @@ Before the first real E2E run:
 
 2. **Which Supabase environment** — local dev hits your `.env.local` project (currently prod Service Link). Confirm you’re OK running create/delete tests against that DB, or tell us if you want a separate staging project later.
 
-3. **Public booking slug** (later, for booking + discount E2E) — your test business’s public link slug.
+3. **Public booking slug** — set `E2E_PUBLIC_BUSINESS_SLUG`, or leave unset to resolve from the owner dashboard API after login.
 
-We will **not** start running destructive tests until you confirm the test account and environment.
+Marketing + public booking discount specs create and delete `E2E…` promo/sale rows. Prefer a dedicated test account.
 
 ---
 

@@ -2,6 +2,8 @@ export interface E2ETestEnv {
   baseUrl: string;
   ownerEmail: string;
   ownerPassword: string;
+  /** Optional override; otherwise resolve from owner dashboard after login. */
+  publicBusinessSlug: string | null;
 }
 
 function requireEnv(name: string): string {
@@ -20,6 +22,7 @@ export function getE2ETestEnv(): E2ETestEnv {
     baseUrl: process.env.PLAYWRIGHT_BASE_URL?.trim() || 'http://localhost:3000',
     ownerEmail: requireEnv('E2E_OWNER_EMAIL'),
     ownerPassword: requireEnv('E2E_OWNER_PASSWORD'),
+    publicBusinessSlug: process.env.E2E_PUBLIC_BUSINESS_SLUG?.trim() || null,
   };
 }
 

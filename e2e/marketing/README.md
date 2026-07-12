@@ -1,9 +1,8 @@
 # Marketing — E2E testing
 
-**Status:** Foundation only — automated specs are **skipped** (`marketing.spec.ts`).  
-**In scope now:** Dashboard CRUD for promo codes and sales.  
-**Out of scope (next phase):** Public booking link, discount application, redemption at completion.
-
+**Status:** Automated dashboard CRUD is active (`marketing.spec.ts`).  
+**In scope:** Dashboard CRUD for promo codes and sales.  
+**Public booking discounts:** see `e2e/bookings/` (sale auto-apply + promo at checkout).
 Product rules: `src/features/marketing/docs/FLOWS.md`
 
 ---
