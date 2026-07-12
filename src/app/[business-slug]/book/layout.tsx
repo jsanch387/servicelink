@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
+import { Suspense } from 'react';
+import { BookFlowLoadingState } from '@/features/availability/booking/components/BookFlowLoadingState';
 
 /**
  * Shared shell for the public booking funnel (`/[slug]/book`, `/[slug]/book/details`, …).
- * Keeps background + min height in one place so nested pages stay layout-only.
+ * Single Suspense boundary + loader for all nested book routes (avoids loading.tsx swaps).
  */
 export default function BusinessBookRouteLayout({
   children,
@@ -11,7 +13,7 @@ export default function BusinessBookRouteLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-[var(--dashboard-bg)]">
-      {children}
+      <Suspense fallback={<BookFlowLoadingState />}>{children}</Suspense>
     </div>
   );
 }

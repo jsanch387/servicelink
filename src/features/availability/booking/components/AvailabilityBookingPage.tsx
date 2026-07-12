@@ -49,6 +49,10 @@ import {
   resolveCustomerServiceLocationPayload,
 } from '../utils/bookingServiceLocationFlow';
 import { DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION } from '@/features/business-profile/utils/publicServiceLocation';
+import { BookingSaleAppliesNotice } from '@/features/marketing/components/BookingSaleAppliesNotice';
+import { computeBookingSalePricing } from '@/features/marketing/utils/computeBookingSalePricing';
+import { formatPublicSaleDiscountLabel } from '@/features/marketing/utils/formatPublicSaleDiscountLabel';
+import { formatServiceDateYmd } from '@/features/marketing/utils/isServiceDateInSaleWindow';
 import { DateSelector } from './DateSelector';
 import { TimeSlotGrid } from './TimeSlotGrid';
 
@@ -194,6 +198,7 @@ export function AvailabilityBookingPage({
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
   serviceLocation = DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION,
+  activeSale = null,
 }: AvailabilityBookingPageProps) {
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
@@ -238,6 +243,27 @@ export function AvailabilityBookingPage({
   const [customerData, setCustomerData] = useState<CustomerFormData>(
     INITIAL_CUSTOMER_FORM_DATA
   );
+
+  const serviceDateYmd = useMemo(
+    () => (selectedDate ? formatServiceDateYmd(selectedDate) : null),
+    [selectedDate]
+  );
+
+  const bookingSalePricing = useMemo(
+    () => computeBookingSalePricing(totalPriceCents, activeSale, serviceDateYmd),
+    [totalPriceCents, activeSale, serviceDateYmd]
+  );
+
+  const saleAppliesLine = useMemo(() => {
+    if (!bookingSalePricing.saleApplies || !activeSale) return null;
+    const discountLabel = formatPublicSaleDiscountLabel(
+      activeSale.discountType,
+      activeSale.discountValue,
+      ui.profile.saleBannerOffLabel
+    );
+    if (!discountLabel) return null;
+    return ui.calendar.saleApplies(activeSale.name, discountLabel);
+  }, [bookingSalePricing.saleApplies, activeSale, ui]);
 
   const customerForSubmit = useMemo(() => {
     if (!customerAddressEntryRequired(serviceLocation, customerServiceChoice)) {
@@ -678,7 +704,7 @@ export function AvailabilityBookingPage({
                   }))
                 : [],
             durationMinutes: totalBookingDurationMinutes,
-            scheduledDate: selectedDate.toISOString().slice(0, 10),
+            scheduledDate: serviceDateYmd ?? selectedDate.toISOString().slice(0, 10),
             startTime: selectedTime ?? '',
             customer: {
               ...customerForSubmit,
@@ -771,7 +797,7 @@ export function AvailabilityBookingPage({
     if (!selectedDate || !selectedTime) return;
     setSubmitError(null);
     setIsSubmitting(true);
-    const scheduledDate = selectedDate.toISOString().slice(0, 10);
+    const scheduledDate = formatServiceDateYmd(selectedDate);
     try {
       const paymentMethodForPublicCreate =
         shouldShowPaymentStep && customerPaymentChoice === 'pay_in_person'
@@ -975,6 +1001,17 @@ export function AvailabilityBookingPage({
                 selectedAddOns={selectedAddOns}
                 totalBookingDurationMinutes={totalBookingDurationMinutes}
                 totalPriceCents={totalPriceCents}
+                saleSubtotalCents={
+                  bookingSalePricing.saleApplies
+                    ? bookingSalePricing.subtotalCents
+                    : undefined
+                }
+                saleEstimatedTotalCents={
+                  bookingSalePricing.saleApplies
+                    ? bookingSalePricing.estimatedTotalCents
+                    : undefined
+                }
+                saleAppliesLine={saleAppliesLine}
                 bookingFlowLocale={bookingFlowLocale}
               />
               <DateSelector
@@ -1062,7 +1099,18 @@ export function AvailabilityBookingPage({
                 serviceVariantLabel={selectedPriceOptionLabel}
                 selectedAddOns={selectedAddOns}
                 totalPriceCents={totalPriceCents}
-                date={selectedDate.toISOString().slice(0, 10)}
+                saleSubtotalCents={
+                  bookingSalePricing.saleApplies
+                    ? bookingSalePricing.subtotalCents
+                    : undefined
+                }
+                saleEstimatedTotalCents={
+                  bookingSalePricing.saleApplies
+                    ? bookingSalePricing.estimatedTotalCents
+                    : undefined
+                }
+                saleAppliesLine={saleAppliesLine}
+                date={serviceDateYmd ?? ''}
                 startTimeHhmm={selectedTime}
                 customer={customerForSubmit}
                 bookingFlowLocale={bookingFlowLocale}
@@ -1221,6 +1269,9 @@ export function AvailabilityBookingPage({
                           )}
                         </span>
                       </div>
+                      {saleAppliesLine ? (
+                        <BookingSaleAppliesNotice line={saleAppliesLine} />
+                      ) : null}
                       {requiresDepositNow && (
                         <div className="flex items-center justify-between gap-4 text-sm">
                           <span className="text-gray-300 shrink-0">

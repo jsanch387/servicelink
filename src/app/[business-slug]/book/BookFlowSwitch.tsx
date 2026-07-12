@@ -2,6 +2,7 @@
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { AvailabilityBookingPage } from '@/features/availability/booking';
+import { BookFlowLoadingState } from '@/features/availability/booking/components/BookFlowLoadingState';
 import type {
   AddOnDisplay,
   PublicBookingPaymentSettings,
@@ -9,8 +10,10 @@ import type {
 } from '@/features/availability/booking/types';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
+import { Suspense } from 'react';
 import { BookingRequestPageClient } from './BookingRequestPageClient';
 
 interface BookFlowSwitchProps {
@@ -43,6 +46,7 @@ interface BookFlowSwitchProps {
   stripeCheckoutSessionId?: string | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
   serviceLocation: PublicBookingServiceLocation;
+  activeSale?: PublicActiveSale | null;
 }
 
 /**
@@ -73,6 +77,7 @@ export function BookFlowSwitch({
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
   serviceLocation,
+  activeSale = null,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
 
@@ -90,28 +95,31 @@ export function BookFlowSwitch({
   if (useAvailabilityBooking) {
     const schedule = weeklySchedule ?? DEFAULT_SCHEDULE;
     return (
-      <AvailabilityBookingPage
-        businessName={businessName}
-        businessId={businessId}
-        businessSlug={businessSlug}
-        showVehicleFields={showVehicleFields}
-        serviceId={serviceId}
-        addOnIds={addOnIds}
-        selectedAddOns={selectedAddOns}
-        serviceName={serviceName || 'Booking'}
-        serviceDurationMinutes={serviceDurationMinutes}
-        servicePriceCents={servicePrice}
-        selectedPriceOptionLabel={selectedPriceOptionLabel}
-        weeklySchedule={schedule}
-        timeOffBlocks={timeOffBlocks}
-        isOwnerManualBooking={isOwnerManualBooking}
-        paymentSettings={paymentSettings}
-        exitCalendarFlowHref={exitCalendarFlowHref}
-        exitCalendarFlowLabel={exitCalendarFlowLabel}
-        stripeCheckoutSessionId={stripeCheckoutSessionId}
-        bookingFlowLocale={bookingFlowLocale}
-        serviceLocation={serviceLocation}
-      />
+      <Suspense fallback={<BookFlowLoadingState />}>
+        <AvailabilityBookingPage
+          businessName={businessName}
+          businessId={businessId}
+          businessSlug={businessSlug}
+          showVehicleFields={showVehicleFields}
+          serviceId={serviceId}
+          addOnIds={addOnIds}
+          selectedAddOns={selectedAddOns}
+          serviceName={serviceName || 'Booking'}
+          serviceDurationMinutes={serviceDurationMinutes}
+          servicePriceCents={servicePrice}
+          selectedPriceOptionLabel={selectedPriceOptionLabel}
+          weeklySchedule={schedule}
+          timeOffBlocks={timeOffBlocks}
+          isOwnerManualBooking={isOwnerManualBooking}
+          paymentSettings={paymentSettings}
+          exitCalendarFlowHref={exitCalendarFlowHref}
+          exitCalendarFlowLabel={exitCalendarFlowLabel}
+          stripeCheckoutSessionId={stripeCheckoutSessionId}
+          bookingFlowLocale={bookingFlowLocale}
+          serviceLocation={serviceLocation}
+          activeSale={activeSale}
+        />
+      </Suspense>
     );
   }
 

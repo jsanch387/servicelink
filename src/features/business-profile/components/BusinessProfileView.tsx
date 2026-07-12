@@ -526,6 +526,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   editMode={editMode}
                   onSave={handleSave}
                   onCancel={handleCancel}
+                  isPublic={isPublic}
+                  bookingFlowLocale={bookingFlowLocale}
                 />
               ) : activeTab === 'bio' ? (
                 <section className="px-4 py-6 sm:px-8 sm:py-8">

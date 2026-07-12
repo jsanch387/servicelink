@@ -5,6 +5,7 @@
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import type { CheckoutPaymentMode } from '@/features/payments/types/checkoutPaymentMode';
 import type { WeeklySchedule } from '../types/availability';
 
@@ -101,6 +102,8 @@ export interface AvailabilityBookingPageProps {
   stripeCheckoutSessionId?: string | null;
   /** Business mobile / shop / both + resolved shop address for public booking. */
   serviceLocation: PublicBookingServiceLocation;
+  /** Live sale for this business (Pro only); auto-applies when appointment date qualifies. */
+  activeSale?: PublicActiveSale | null;
 }
 
 export interface BookingSubmission {

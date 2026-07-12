@@ -66,7 +66,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           />
         ) : (
           <CoverPhotoPlaceholder
-            businessName={businessProfile.business_name}
             className="w-full h-full"
             isPublic={isPublic}
           />

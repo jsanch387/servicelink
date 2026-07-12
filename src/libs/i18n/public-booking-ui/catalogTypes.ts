@@ -103,6 +103,8 @@ export type PublicBookingUi = {
     confirmingBooking: string;
     payAmount: (amount: string) => string;
     payDepositAmount: (amount: string) => string;
+    /** When appointment date qualifies for the business's active sale. */
+    saleApplies: (saleName: string, discountLabel: string) => string;
     depositPercentLead: (businessName: string, pct: number) => string;
     depositFixedLead: (businessName: string, amount: string) => string;
     payInFullLead: (businessName: string) => string;
@@ -202,6 +204,8 @@ export type PublicBookingUi = {
     /** Public profile preview tabs (same view as embedded “back to profile” from booking). */
     servicesTab: string;
     galleryTab: string;
+    galleryEmptyTitle: string;
+    galleryEmptyDescription: string;
     bioTab: string;
     reviewsTab: string;
     noBioYet: string;

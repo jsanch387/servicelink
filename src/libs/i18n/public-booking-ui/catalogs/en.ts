@@ -111,6 +111,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     confirmingBooking: 'Confirming booking',
     payAmount: amount => `Pay ${amount}`,
     payDepositAmount: amount => `Pay ${amount} deposit`,
+    saleApplies: (saleName, discountLabel) =>
+      `${saleName} — ${discountLabel} applies`,
     depositPercentLead: (businessName, pct) =>
       `${businessName} requires ${pct}% of the total cost as a deposit to book this appointment. This deposit is non-refundable.`,
     depositFixedLead: (businessName, amount) =>
@@ -222,6 +224,9 @@ export const publicBookingUiEn: PublicBookingUi = {
       `Share a few details and ${businessName} will send back a quote.`,
     servicesTab: 'Services',
     galleryTab: 'Gallery',
+    galleryEmptyTitle: 'No photos yet',
+    galleryEmptyDescription:
+      "This business hasn't shared any gallery photos yet.",
     bioTab: 'Bio',
     reviewsTab: 'Reviews',
     noBioYet: 'No bio added yet.',

@@ -1,6 +1,7 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { BookingSaleAppliesNotice } from '@/features/marketing/components/BookingSaleAppliesNotice';
 import React from 'react';
 import type { AddOnDisplay } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
@@ -14,6 +15,12 @@ export interface BookingPriceBreakdownProps {
   selectedAddOns: AddOnDisplay[];
   totalBookingDurationMinutes: number;
   totalPriceCents?: number;
+  /** Pre-discount subtotal when a sale applies to the appointment date. */
+  saleSubtotalCents?: number;
+  /** Estimated total after sale discount (display only; charged at completion). */
+  saleEstimatedTotalCents?: number;
+  /** e.g. "Summer Sale — 35% off applies" */
+  saleAppliesLine?: string | null;
   /** Default `h2` (calendar step); use `h3` under a page-level heading on review. */
   serviceTitleTag?: 'h2' | 'h3';
   bookingFlowLocale?: PublicBookingFlowLocale;
@@ -27,10 +34,25 @@ export function BookingPriceBreakdown({
   selectedAddOns,
   totalBookingDurationMinutes,
   totalPriceCents,
+  saleSubtotalCents,
+  saleEstimatedTotalCents,
+  saleAppliesLine,
   serviceTitleTag = 'h2',
   bookingFlowLocale = 'en',
 }: BookingPriceBreakdownProps) {
   const TitleTag = serviceTitleTag;
+  const showSalePricing =
+    Boolean(saleAppliesLine) &&
+    saleSubtotalCents != null &&
+    saleSubtotalCents > 0 &&
+    saleEstimatedTotalCents != null &&
+    saleEstimatedTotalCents < saleSubtotalCents;
+
+  const renderTotalPrice = (cents: number, className: string) => (
+    <span className={`${className} tabular-nums shrink-0 text-right min-w-[4.5rem]`}>
+      ${(cents / 100).toFixed(2)}
+    </span>
+  );
 
   return (
     <section>
@@ -100,13 +122,36 @@ export function BookingPriceBreakdown({
               )}
             </p>
             {totalPriceCents != null && totalPriceCents > 0 ? (
-              <span className="text-base font-semibold text-white tabular-nums shrink-0 text-right min-w-[4.5rem]">
-                ${(totalPriceCents / 100).toFixed(2)}
-              </span>
+              showSalePricing ? (
+                <div className="flex items-baseline justify-end gap-2 whitespace-nowrap">
+                  {renderTotalPrice(
+                    saleSubtotalCents!,
+                    'text-sm font-medium text-zinc-500 line-through decoration-zinc-500/70'
+                  )}
+                  {renderTotalPrice(
+                    saleEstimatedTotalCents!,
+                    'text-base font-semibold text-white'
+                  )}
+                </div>
+              ) : (
+                renderTotalPrice(
+                  totalPriceCents,
+                  'text-base font-semibold text-white'
+                )
+              )
             ) : null}
           </div>
+          {saleAppliesLine ? (
+            <BookingSaleAppliesNotice line={saleAppliesLine} />
+          ) : null}
         </div>
       )}
+      {selectedAddOns.length === 0 &&
+      saleAppliesLine &&
+      totalPriceCents != null &&
+      totalPriceCents > 0 ? (
+        <BookingSaleAppliesNotice line={saleAppliesLine} />
+      ) : null}
     </section>
   );
 }

@@ -25,6 +25,7 @@ import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTim
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
 import { resolvePublicBookingService } from '@/features/services/api/resolvePublicBookingService';
@@ -426,6 +427,10 @@ export default async function BookingRequestPage({
 
   const serviceLocation = buildPublicBookingServiceLocation(businessProfile);
 
+  const activeSale = await loadPublicActiveSale(adminClient, businessProfile.id, {
+    ownerHasPro,
+  });
+
   let bookPageBackHref: string;
   let bookPageBackLabel: string;
   const profilePath = getPublicBusinessProfilePath(slugForRoutes, {
@@ -519,6 +524,7 @@ export default async function BookingRequestPage({
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             bookingFlowLocale={bookingFlowLocale}
             serviceLocation={serviceLocation}
+            activeSale={activeSale}
           />
         </div>
       ) : showAvailabilityServicePicker ? (
@@ -555,6 +561,7 @@ export default async function BookingRequestPage({
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             bookingFlowLocale={bookingFlowLocale}
             serviceLocation={serviceLocation}
+            activeSale={activeSale}
           />
         </div>
       )}
