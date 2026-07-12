@@ -43,6 +43,43 @@ describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
     expect(html).not.toContain('background-color:#f4f7f9');
   });
 
+  it('shows sale discount line and discounted appointment total', () => {
+    const html = buildAvailabilityBookingEmailHtml(
+      {
+        ...basePayload(),
+        discount: {
+          label: 'Summer Sale — 35% off',
+          discountCents: 52_50,
+          estimatedTotalCents: 97_50,
+        },
+      },
+      { audience: 'customer', businessName: 'Acme Detail' }
+    );
+    expect(html).toContain('Summer Sale — 35% off');
+    expect(html).toContain('−$52.50');
+    expect(html).toContain('$97.50');
+    expect(html).toContain('Appointment total');
+  });
+
+  it('owner email also includes sale discount in service details', () => {
+    const html = buildAvailabilityBookingEmailHtml(
+      {
+        ...basePayload(),
+        discount: {
+          label: 'Summer Sale — 35% off',
+          discountCents: 52_50,
+          estimatedTotalCents: 97_50,
+        },
+      },
+      {
+        audience: 'owner',
+        dashboardBookingsUrl: 'https://example.com/bookings',
+      }
+    );
+    expect(html).toContain('Summer Sale — 35% off');
+    expect(html).toContain('−$52.50');
+  });
+
   it('includes appointment total inside Service details (no separate Price details section)', () => {
     const html = buildAvailabilityBookingEmailHtml(basePayload(), {
       audience: 'customer',

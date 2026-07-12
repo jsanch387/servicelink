@@ -250,7 +250,8 @@ export function AvailabilityBookingPage({
   );
 
   const bookingSalePricing = useMemo(
-    () => computeBookingSalePricing(totalPriceCents, activeSale, serviceDateYmd),
+    () =>
+      computeBookingSalePricing(totalPriceCents, activeSale, serviceDateYmd),
     [totalPriceCents, activeSale, serviceDateYmd]
   );
 
@@ -359,13 +360,26 @@ export function AvailabilityBookingPage({
     paymentSettings?.checkoutMode === 'in_app' ||
     (paymentSettings?.checkoutMode === 'customer_choice' &&
       customerPaymentChoice === 'pay_now');
-  const amountDueNowCents = computeOnlineAmountDueNowCents(
-    paymentSettings,
-    paymentSettingsEnabled,
-    customerPaymentChoice,
-    totalPriceCents
+  /** Sale-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
+  const bookingDisplayTotalCents = bookingSalePricing.saleApplies
+    ? bookingSalePricing.estimatedTotalCents
+    : totalPriceCents;
+  const amountDueNowCents = (() => {
+    const base = computeOnlineAmountDueNowCents(
+      paymentSettings,
+      paymentSettingsEnabled,
+      customerPaymentChoice,
+      totalPriceCents
+    );
+    if (requiresPayNow && bookingSalePricing.saleApplies) {
+      return bookingDisplayTotalCents;
+    }
+    return base;
+  })();
+  const amountDueLaterCents = Math.max(
+    0,
+    bookingDisplayTotalCents - amountDueNowCents
   );
-  const amountDueLaterCents = Math.max(0, totalPriceCents - amountDueNowCents);
 
   const paymentCurrency = paymentSettings?.currency ?? 'usd';
   const paymentChoiceGroupLabelId = useId();
@@ -385,16 +399,16 @@ export function AvailabilityBookingPage({
       paymentCurrency,
       bookingFlowLocale
     );
-    if (requiresPayNow && amountDueNowCents >= totalPriceCents) {
+    if (requiresPayNow && amountDueNowCents >= bookingDisplayTotalCents) {
       return ui.calendar.payAmount(amt);
     }
-    if (requiresDepositNow && amountDueNowCents < totalPriceCents) {
+    if (requiresDepositNow && amountDueNowCents < bookingDisplayTotalCents) {
       return ui.calendar.payDepositAmount(amt);
     }
     return ui.calendar.payAmount(amt);
   }, [
     amountDueNowCents,
-    totalPriceCents,
+    bookingDisplayTotalCents,
     requiresPayNow,
     requiresDepositNow,
     paymentCurrency,
@@ -704,7 +718,8 @@ export function AvailabilityBookingPage({
                   }))
                 : [],
             durationMinutes: totalBookingDurationMinutes,
-            scheduledDate: serviceDateYmd ?? selectedDate.toISOString().slice(0, 10),
+            scheduledDate:
+              serviceDateYmd ?? selectedDate.toISOString().slice(0, 10),
             startTime: selectedTime ?? '',
             customer: {
               ...customerForSubmit,
@@ -715,7 +730,7 @@ export function AvailabilityBookingPage({
                   serviceLocationType: customerServiceLocationPayload,
                 }
               : {}),
-            totalPriceCents,
+            totalPriceCents: bookingDisplayTotalCents,
             requiredOnlineAmountCents: Math.round(amountToChargeCents),
             paymentMethodSelected: customerPaymentChoice ?? 'none',
             depositType: requiresDepositNow
@@ -873,6 +888,17 @@ export function AvailabilityBookingPage({
         servicePriceCents={servicePriceCents}
         selectedAddOns={submittedData.selectedAddOns}
         totalPriceCents={totalPriceCents}
+        saleSubtotalCents={
+          bookingSalePricing.saleApplies
+            ? bookingSalePricing.subtotalCents
+            : undefined
+        }
+        saleEstimatedTotalCents={
+          bookingSalePricing.saleApplies
+            ? bookingSalePricing.estimatedTotalCents
+            : undefined
+        }
+        saleAppliesLine={saleAppliesLine}
         customer={submittedData.customer}
         date={submittedData.date}
         time={submittedData.time}
@@ -1109,6 +1135,11 @@ export function AvailabilityBookingPage({
                     ? bookingSalePricing.estimatedTotalCents
                     : undefined
                 }
+                saleDiscountCents={
+                  bookingSalePricing.saleApplies
+                    ? bookingSalePricing.discountCents
+                    : undefined
+                }
                 saleAppliesLine={saleAppliesLine}
                 date={serviceDateYmd ?? ''}
                 startTimeHhmm={selectedTime}
@@ -1261,16 +1292,48 @@ export function AvailabilityBookingPage({
                         <span className="text-gray-300 shrink-0">
                           {ui.common.bookingTotal}
                         </span>
-                        <span className="text-white font-semibold text-right tabular-nums">
-                          {formatPrice(
-                            totalPriceCents,
-                            paymentCurrency,
-                            bookingFlowLocale
-                          )}
-                        </span>
+                        {bookingSalePricing.saleApplies ? (
+                          <div className="flex items-baseline justify-end gap-2">
+                            <span className="text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                              {formatPrice(
+                                bookingSalePricing.subtotalCents,
+                                paymentCurrency,
+                                bookingFlowLocale
+                              )}
+                            </span>
+                            <span className="text-white font-semibold text-right tabular-nums">
+                              {formatPrice(
+                                bookingDisplayTotalCents,
+                                paymentCurrency,
+                                bookingFlowLocale
+                              )}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-white font-semibold text-right tabular-nums">
+                            {formatPrice(
+                              totalPriceCents,
+                              paymentCurrency,
+                              bookingFlowLocale
+                            )}
+                          </span>
+                        )}
                       </div>
                       {saleAppliesLine ? (
-                        <BookingSaleAppliesNotice line={saleAppliesLine} />
+                        <div className="space-y-1.5">
+                          <BookingSaleAppliesNotice line={saleAppliesLine} />
+                          {bookingSalePricing.discountCents > 0 ? (
+                            <p className="text-sm font-medium text-emerald-300/90">
+                              {ui.common.youSave(
+                                formatPrice(
+                                  bookingSalePricing.discountCents,
+                                  paymentCurrency,
+                                  bookingFlowLocale
+                                )
+                              )}
+                            </p>
+                          ) : null}
+                        </div>
                       ) : null}
                       {requiresDepositNow && (
                         <div className="flex items-center justify-between gap-4 text-sm">
@@ -1402,12 +1465,7 @@ export function AvailabilityBookingPage({
                 disabled={!canContinueFromPayment}
                 loading={isSubmitting}
                 onClick={() => {
-                  const cents = computeOnlineAmountDueNowCents(
-                    paymentSettings,
-                    shouldShowPaymentStep,
-                    customerPaymentChoice,
-                    totalPriceCents
-                  );
+                  const cents = amountDueNowCents;
                   logBookingCheckoutDev('payment primary CTA clicked', {
                     cents,
                     action:

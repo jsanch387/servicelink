@@ -4,6 +4,7 @@ import { GlassCard } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ROUTES } from '@/constants/routes';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { BookingSaleAppliesNotice } from '@/features/marketing/components/BookingSaleAppliesNotice';
 import {
   bcp47ForBookingLocale,
   publicBookingUi,
@@ -22,8 +23,11 @@ interface BookingSuccessProps {
   servicePriceCents?: number;
   /** Add-ons selected on the service details page. */
   selectedAddOns?: AddOnDisplay[];
-  /** Total price including base service + add-ons. */
+  /** Total price including base service + add-ons (pre-discount). */
   totalPriceCents?: number;
+  saleSubtotalCents?: number;
+  saleEstimatedTotalCents?: number;
+  saleAppliesLine?: string | null;
   customer: CustomerFormData;
   date: string;
   time: string;
@@ -53,6 +57,9 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   servicePriceCents,
   selectedAddOns = [],
   totalPriceCents,
+  saleSubtotalCents,
+  saleEstimatedTotalCents,
+  saleAppliesLine,
   customer,
   date,
   time,
@@ -71,16 +78,23 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   );
 
   const vehicleLine = formatVehicle(customer);
+  const showSalePricing =
+    Boolean(saleAppliesLine) &&
+    saleSubtotalCents != null &&
+    saleSubtotalCents > 0 &&
+    saleEstimatedTotalCents != null &&
+    saleEstimatedTotalCents < saleSubtotalCents;
 
   return (
     <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16 sm:pb-24">
-      {/* Green check */}
       <div className="self-center w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-8 shadow-lg shadow-emerald-500/25">
         <CheckIcon className="w-10 h-10 text-white" />
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-2 text-center">
-        {ui.bookingSuccess.title}
+        {isOwnerManualBooking
+          ? ui.bookingSuccess.titleOwner
+          : ui.bookingSuccess.title}
       </h2>
       <p className="self-center text-gray-400 text-sm mb-8 max-w-sm text-center">
         {isOwnerManualBooking ? (
@@ -96,7 +110,6 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         )}
       </p>
 
-      {/* Details card */}
       <GlassCard
         padding="none"
         rounded="rounded-2xl"
@@ -166,14 +179,39 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
           {totalPriceCents != null && totalPriceCents > 0 && (
             <>
               <div className="h-px bg-white/10" />
-              <div className="flex justify-between items-center">
-                <p className="text-sm font-medium text-white">
-                  {ui.common.total}
-                </p>
-                <p className="text-lg font-semibold text-white">
-                  {formatPrice(totalPriceCents)}
-                </p>
-              </div>
+              {saleAppliesLine ? (
+                <div className="space-y-2">
+                  <BookingSaleAppliesNotice line={saleAppliesLine} />
+                  <div className="flex justify-between items-center gap-3">
+                    <p className="text-sm font-medium text-white">
+                      {ui.common.total}
+                    </p>
+                    {showSalePricing ? (
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-sm text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                          {formatPrice(saleSubtotalCents!)}
+                        </p>
+                        <p className="text-lg font-semibold text-white tabular-nums">
+                          {formatPrice(saleEstimatedTotalCents!)}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-lg font-semibold text-white">
+                        {formatPrice(totalPriceCents)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-medium text-white">
+                    {ui.common.total}
+                  </p>
+                  <p className="text-lg font-semibold text-white">
+                    {formatPrice(totalPriceCents)}
+                  </p>
+                </div>
+              )}
             </>
           )}
           <div className="h-px bg-white/10" />
@@ -212,7 +250,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         href={
           isOwnerManualBooking ? ROUTES.DASHBOARD.BOOKINGS : `/${businessSlug}`
         }
-        className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors"
+        className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors cursor-pointer"
       >
         {isOwnerManualBooking
           ? ui.bookingSuccess.goToBookings

@@ -4,21 +4,24 @@ import { getServiceSalePriceCents } from '../utils/getServiceSalePriceCents';
 
 describe('applyDiscountToSubtotalCents', () => {
   it('applies percentage discounts with cap at subtotal', () => {
-    expect(
-      applyDiscountToSubtotalCents(10000, 'percentage', 35)
-    ).toEqual({ discountCents: 3500, totalCents: 6500 });
+    expect(applyDiscountToSubtotalCents(10000, 'percentage', 35)).toEqual({
+      discountCents: 3500,
+      totalCents: 6500,
+    });
   });
 
   it('applies fixed discounts in dollars capped at subtotal', () => {
-    expect(
-      applyDiscountToSubtotalCents(5000, 'fixed_amount', 15)
-    ).toEqual({ discountCents: 1500, totalCents: 3500 });
+    expect(applyDiscountToSubtotalCents(5000, 'fixed_amount', 15)).toEqual({
+      discountCents: 1500,
+      totalCents: 3500,
+    });
   });
 
   it('returns no discount for invalid input', () => {
-    expect(
-      applyDiscountToSubtotalCents(0, 'percentage', 20)
-    ).toEqual({ discountCents: 0, totalCents: 0 });
+    expect(applyDiscountToSubtotalCents(0, 'percentage', 20)).toEqual({
+      discountCents: 0,
+      totalCents: 0,
+    });
   });
 });
 

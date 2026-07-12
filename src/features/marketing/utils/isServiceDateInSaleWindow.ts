@@ -1,5 +1,3 @@
-import type { PublicActiveSale } from '../types/publicActiveSale';
-
 /** `YYYY-MM-DD` in local calendar terms for booking `scheduledDate`. */
 export function formatServiceDateYmd(date: Date): string {
   const year = date.getFullYear();
@@ -14,7 +12,7 @@ function toDateYmd(value: Date): string {
 
 /** True when the appointment date falls within the sale window (inclusive). */
 export function isServiceDateInSaleWindow(
-  sale: Pick<PublicActiveSale, 'startsAt' | 'endsAt'>,
+  sale: { startsAt?: Date | null; endsAt?: Date | null },
   serviceDateYmd: string
 ): boolean {
   const trimmed = serviceDateYmd.trim();

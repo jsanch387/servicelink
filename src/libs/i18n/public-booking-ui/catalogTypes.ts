@@ -28,6 +28,8 @@ export type PublicBookingUi = {
     dueNow: string;
     remaining: string;
     bookingTotal: string;
+    /** Shown under booking total when a sale/promo discount applies. */
+    youSave: (amount: string) => string;
     service: string;
     addOns: string;
     date: string;
@@ -50,6 +52,9 @@ export type PublicBookingUi = {
     backToOptions: string;
     backToProfile: string;
     backToServices: string;
+    /** Expand collapsed service description on options / add-ons steps. */
+    seeDescription: string;
+    hideDescription: string;
   };
   bookPicker: {
     noServicesOwnerTitle: string;
@@ -165,7 +170,10 @@ export type PublicBookingUi = {
     errValueTooLong: string;
   };
   bookingSuccess: {
+    /** Public customer confirmation title. */
     title: string;
+    /** Owner manual booking confirmation title. */
+    titleOwner: string;
     subtitleOwner: string;
     /** Owner booked successfully but customer had no email (no confirmation sent) */
     subtitleOwnerNoCustomerEmail: string;

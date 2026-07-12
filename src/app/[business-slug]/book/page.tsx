@@ -427,9 +427,13 @@ export default async function BookingRequestPage({
 
   const serviceLocation = buildPublicBookingServiceLocation(businessProfile);
 
-  const activeSale = await loadPublicActiveSale(adminClient, businessProfile.id, {
-    ownerHasPro,
-  });
+  const activeSale = await loadPublicActiveSale(
+    adminClient,
+    businessProfile.id,
+    {
+      ownerHasPro,
+    }
+  );
 
   let bookPageBackHref: string;
   let bookPageBackLabel: string;

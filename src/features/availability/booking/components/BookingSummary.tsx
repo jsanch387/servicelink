@@ -75,6 +75,8 @@ interface BookingSummaryProps {
   totalPriceCents?: number;
   saleSubtotalCents?: number;
   saleEstimatedTotalCents?: number;
+  /** Savings amount in cents when a sale applies. */
+  saleDiscountCents?: number;
   saleAppliesLine?: string | null;
   date: string;
   /** Local wall time `HH:mm` (24h); formatted for display using `bookingFlowLocale`. */
@@ -98,6 +100,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   totalPriceCents,
   saleSubtotalCents,
   saleEstimatedTotalCents,
+  saleDiscountCents,
   saleAppliesLine,
   date,
   startTimeHhmm,
@@ -156,7 +159,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       icon: UserCircleIcon,
       content: (
         <>
-          <p className="font-medium text-white leading-snug">{customer.fullName}</p>
+          <p className="font-medium text-white leading-snug">
+            {customer.fullName}
+          </p>
           <div className="mt-1 space-y-0.5 text-sm text-gray-400">
             <p>{email || ui.common.emailNotProvided}</p>
             <p>{phone}</p>
@@ -241,9 +246,13 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
         <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-white leading-snug">{serviceName}</p>
+            <p className="font-semibold text-white leading-snug">
+              {serviceName}
+            </p>
             {serviceVariantLabel ? (
-              <p className="mt-0.5 text-sm text-gray-400">{serviceVariantLabel}</p>
+              <p className="mt-0.5 text-sm text-gray-400">
+                {serviceVariantLabel}
+              </p>
             ) : null}
           </div>
           {showServicePrice ? (
@@ -293,7 +302,14 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
               )}
             </div>
             {saleAppliesLine ? (
-              <BookingSaleAppliesNotice line={saleAppliesLine} />
+              <div className="space-y-1.5">
+                <BookingSaleAppliesNotice line={saleAppliesLine} />
+                {saleDiscountCents != null && saleDiscountCents > 0 ? (
+                  <p className="text-sm font-medium text-emerald-300/90">
+                    {ui.common.youSave(formatCents(saleDiscountCents))}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : null}

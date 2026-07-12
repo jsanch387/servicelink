@@ -26,13 +26,13 @@ When adding a feature: create `e2e/<feature>/README.md` + `<feature>.spec.ts`.
 
 ## Commands
 
-| Command | Purpose |
-| ------- | ------- |
-| `npm run test:e2e` | Run all E2E specs (headless — no visible browser) |
-| `npm run test:e2e:ui` | **Playwright UI** — best for watching step-by-step |
-| `npm run test:e2e:headed` | Run with a **visible browser** window |
-| `npm run test:e2e:report` | Open last HTML report |
-| `npm run test:e2e:install` | Install/update Chromium for Playwright |
+| Command                    | Purpose                                            |
+| -------------------------- | -------------------------------------------------- |
+| `npm run test:e2e`         | Run all E2E specs (headless — no visible browser)  |
+| `npm run test:e2e:ui`      | **Playwright UI** — best for watching step-by-step |
+| `npm run test:e2e:headed`  | Run with a **visible browser** window              |
+| `npm run test:e2e:report`  | Open last HTML report                              |
+| `npm run test:e2e:install` | Install/update Chromium for Playwright             |
 
 ---
 
@@ -70,11 +70,11 @@ When adding a feature: create `e2e/<feature>/README.md` + `<feature>.spec.ts`.
 
 ## Environment variables
 
-| Variable | Required | Description |
-| -------- | -------- | ----------- |
-| `E2E_OWNER_EMAIL` | Yes (when running auth tests) | Login email for dedicated test account |
-| `E2E_OWNER_PASSWORD` | Yes | Password for that account |
-| `PLAYWRIGHT_BASE_URL` | No | Default `http://localhost:3000` |
+| Variable              | Required                      | Description                            |
+| --------------------- | ----------------------------- | -------------------------------------- |
+| `E2E_OWNER_EMAIL`     | Yes (when running auth tests) | Login email for dedicated test account |
+| `E2E_OWNER_PASSWORD`  | Yes                           | Password for that account              |
+| `PLAYWRIGHT_BASE_URL` | No                            | Default `http://localhost:3000`        |
 
 Credentials are loaded from `.env.e2e.local` (not committed).
 
@@ -84,9 +84,9 @@ Credentials are loaded from `.env.e2e.local` (not committed).
 
 Before the first real E2E run:
 
-1. **Dedicated test business account** — not your personal prod account.  
-   - Email + password you’re OK putting in `.env.e2e.local`  
-   - Onboarding **completed** (can reach `/dashboard/marketing`)  
+1. **Dedicated test business account** — not your personal prod account.
+   - Email + password you’re OK putting in `.env.e2e.local`
+   - Onboarding **completed** (can reach `/dashboard/marketing`)
    - Ideally **Pro** if marketing is Pro-gated when we wire that
 
 2. **Which Supabase environment** — local dev hits your `.env.local` project (currently prod Service Link). Confirm you’re OK running create/delete tests against that DB, or tell us if you want a separate staging project later.

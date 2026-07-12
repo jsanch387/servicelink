@@ -22,6 +22,7 @@
  */
 
 import type { CustomerFormData } from '@/features/availability/booking/types';
+import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
@@ -40,6 +41,7 @@ import {
   clientServiceLocationChoice,
   resolvePersistedBookingServiceLocationType,
 } from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
+import { resolveBookingSaleDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
@@ -546,6 +548,29 @@ export async function POST(request: NextRequest) {
       const effectiveLocationType =
         locationResolved.effective ??
         (serviceLocation.mode === 'shop_only' ? 'shop' : 'mobile');
+
+      const selectedAddOnsForEmail = bookingPayload.selectedAddOns ?? [];
+      const basePriceForEmail = bookingPayload.servicePriceCents ?? 0;
+      const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
+        (sum, addOn) => sum + (addOn.priceCents ?? 0),
+        0
+      );
+      const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
+
+      const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {
+        profileId: capProfile.profile_id,
+        freeBookingsCount: capProfile.free_bookings_count,
+      });
+      const discountSnapshot = await resolveBookingSaleDiscountSnapshot(
+        supabase,
+        {
+          businessId: bookingPayload.businessId,
+          ownerHasPro,
+          serviceDateYmd: bookingPayload.scheduledDate,
+          subtotalCents: totalPriceCentsForEmail,
+        }
+      );
+
       const createdBooking = await createBooking(supabase, {
         businessId: bookingPayload.businessId,
         businessSlug: bookingPayload.businessSlug,
@@ -561,6 +586,7 @@ export async function POST(request: NextRequest) {
           clientChoice: effectiveLocationType,
           businessMode: serviceLocation.mode,
         }),
+        discountSnapshot,
       });
       logBookingCheckoutStage('booking.created', {
         eventId: event.id,
@@ -577,13 +603,6 @@ export async function POST(request: NextRequest) {
         typeof session.currency === 'string' && session.currency.trim()
           ? session.currency.trim().toLowerCase()
           : 'usd';
-      const selectedAddOnsForEmail = bookingPayload.selectedAddOns ?? [];
-      const basePriceForEmail = bookingPayload.servicePriceCents ?? 0;
-      const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
-        (sum, addOn) => sum + (addOn.priceCents ?? 0),
-        0
-      );
-      const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
       const hasPriceLineItems =
         (typeof bookingPayload.servicePriceCents === 'number' &&
           bookingPayload.servicePriceCents > 0) ||
@@ -617,6 +636,17 @@ export async function POST(request: NextRequest) {
         servicePriceCents: bookingPayload.servicePriceCents,
         selectedAddOns: selectedAddOnsForEmail,
         totalPriceCents: totalPriceCentsForEmail,
+        ...(discountSnapshot
+          ? {
+              discount: {
+                label: discountSnapshot.discountLabel,
+                discountCents: discountSnapshot.discountCents,
+                estimatedTotalCents:
+                  discountSnapshot.subtotalCents -
+                  discountSnapshot.discountCents,
+              },
+            }
+          : {}),
         paymentSummary: buildStripeCheckoutPaymentSummary({
           paymentStatus,
           amountPaidCents,

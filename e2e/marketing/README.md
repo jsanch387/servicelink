@@ -44,11 +44,11 @@ Run after marketing or shared dashboard/auth changes. Use your E2E test account.
 
 File: `marketing.spec.ts` — **active** (run with `npm run test:e2e -- e2e/marketing/marketing.spec.ts`)
 
-| Test | Covers |
-| ---- | ------ |
+| Test            | Covers                                                 |
+| --------------- | ------------------------------------------------------ |
 | Promo code CRUD | Create → list → toggle off/on → edit discount → delete |
-| Sale CRUD | Create → list → toggle → edit name/discount → delete |
-| One active sale | Create two active sales → first auto-deactivates |
+| Sale CRUD       | Create → list → toggle → edit name/discount → delete   |
+| One active sale | Create two active sales → first auto-deactivates       |
 
 Helpers: `e2e/fixtures/marketing-helpers.ts`  
 Test data uses `E2E…` prefix and is cleaned up after each test.

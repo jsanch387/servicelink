@@ -30,7 +30,10 @@ export async function loadPublicActivePromoCodes(
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[marketing] loadPublicActivePromoCodes query failed', error);
+      console.error(
+        '[marketing] loadPublicActivePromoCodes query failed',
+        error
+      );
       return [];
     }
 
@@ -74,7 +77,10 @@ async function loadRedemptionCounts(
     .eq('business_id', businessId);
 
   if (error) {
-    console.warn('[marketing] loadPublicActivePromoCodes redemption counts failed', error);
+    console.warn(
+      '[marketing] loadPublicActivePromoCodes redemption counts failed',
+      error
+    );
     return counts;
   }
 

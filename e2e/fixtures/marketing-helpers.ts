@@ -25,7 +25,9 @@ export async function openMarketing(page: Page): Promise<void> {
   await expect(
     page.getByRole('heading', { name: 'Marketing', level: 1 })
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'New Promo Code' })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'New Promo Code' })
+  ).toBeVisible();
 }
 
 export async function openPromoCodesTab(page: Page): Promise<void> {
@@ -61,9 +63,11 @@ export async function createPromoCode(
   }
 
   await primaryFormButton(page, 'Create code').click();
-  await expect(page.getByRole('heading', { name: 'Code created' })).toBeVisible({
-    timeout: 15_000,
-  });
+  await expect(page.getByRole('heading', { name: 'Code created' })).toBeVisible(
+    {
+      timeout: 15_000,
+    }
+  );
   await page.getByRole('link', { name: 'Back to Marketing' }).click();
   await openMarketing(page);
   await openPromoCodesTab(page);
@@ -88,9 +92,11 @@ export async function createSale(
   }
 
   await primaryFormButton(page, 'Create sale').click();
-  await expect(page.getByRole('heading', { name: 'Sale created' })).toBeVisible({
-    timeout: 15_000,
-  });
+  await expect(page.getByRole('heading', { name: 'Sale created' })).toBeVisible(
+    {
+      timeout: 15_000,
+    }
+  );
   await page.getByRole('link', { name: 'Back to Marketing' }).click();
   await openMarketing(page);
   await openSalesTab(page);
@@ -105,7 +111,10 @@ export function saleRow(page: Page, name: string) {
 }
 
 async function confirmDeleteModal(page: Page): Promise<void> {
-  await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Delete' })
+    .click();
 }
 
 export async function deletePromoCode(page: Page, code: string): Promise<void> {
@@ -129,7 +138,9 @@ export async function deleteSale(page: Page, name: string): Promise<void> {
   if ((await row.count()) === 0) return;
 
   await row.getByTitle('Delete').click();
-  await expect(page.getByRole('heading', { name: 'Delete sale?' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Delete sale?' })
+  ).toBeVisible();
   await confirmDeleteModal(page);
   await expect(row).toHaveCount(0, { timeout: 15_000 });
 }

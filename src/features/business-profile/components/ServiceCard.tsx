@@ -12,10 +12,7 @@ import { formatDurationMinutes } from '@/features/availability/booking/utils/for
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import { getServiceSalePriceCents } from '@/features/marketing/utils/getServiceSalePriceCents';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import {
-  ChevronRightIcon,
-  ClockIcon,
-} from '@heroicons/react/24/outline';
+import { ChevronRightIcon, ClockIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 import { ServiceDescriptionFormatted } from './ServiceDescriptionFormatted';

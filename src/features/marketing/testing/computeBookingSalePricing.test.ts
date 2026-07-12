@@ -48,9 +48,7 @@ describe('computeBookingSalePricing', () => {
   };
 
   it('returns no discount when appointment date is outside the sale window', () => {
-    expect(
-      computeBookingSalePricing(10000, sale, '2026-08-01')
-    ).toEqual({
+    expect(computeBookingSalePricing(10000, sale, '2026-08-01')).toEqual({
       subtotalCents: 10000,
       discountCents: 0,
       estimatedTotalCents: 10000,
@@ -59,9 +57,7 @@ describe('computeBookingSalePricing', () => {
   });
 
   it('applies sale discount when appointment date qualifies', () => {
-    expect(
-      computeBookingSalePricing(10000, sale, '2026-07-15')
-    ).toEqual({
+    expect(computeBookingSalePricing(10000, sale, '2026-07-15')).toEqual({
       subtotalCents: 10000,
       discountCents: 3500,
       estimatedTotalCents: 6500,

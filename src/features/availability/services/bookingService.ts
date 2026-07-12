@@ -19,6 +19,8 @@ import {
   mapBookingRowToDisplay,
   type BookingRow,
 } from '../booking/dashboard/utils/mapBookingRowToDisplay';
+import type { BookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
+import { bookingDiscountColumnsFromSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
 
 const TABLE = 'bookings';
@@ -47,6 +49,14 @@ export interface CreateBookingPayload {
   customer_notes: string | null;
   customer_id: string;
   service_location_type: 'mobile' | 'shop' | null;
+  discount_source: 'sale' | null;
+  discount_sale_id: string | null;
+  discount_promo_code_id: null;
+  discount_type: string | null;
+  discount_value: number | null;
+  subtotal_cents: number | null;
+  discount_cents: number | null;
+  discount_label: string | null;
 }
 
 function mapCustomerToRow(
@@ -64,6 +74,14 @@ function mapCustomerToRow(
   | 'start_time'
   | 'customer_id'
   | 'service_location_type'
+  | 'discount_source'
+  | 'discount_sale_id'
+  | 'discount_promo_code_id'
+  | 'discount_type'
+  | 'discount_value'
+  | 'subtotal_cents'
+  | 'discount_cents'
+  | 'discount_label'
 > {
   return {
     customer_name: c.fullName.trim(),
@@ -99,6 +117,8 @@ export async function createBooking(
     startTime: string;
     customer: CustomerFormData;
     serviceLocationType?: 'mobile' | 'shop' | null;
+    /** Server-resolved sale/promo snapshot; null clears discount columns. */
+    discountSnapshot?: BookingDiscountSnapshot | null;
   }
 ): Promise<{ id: string; customerId: string }> {
   const addonDetails =
@@ -116,6 +136,10 @@ export async function createBooking(
     }
   );
 
+  const discountColumns = bookingDiscountColumnsFromSnapshot(
+    payload.discountSnapshot
+  );
+
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
@@ -129,6 +153,7 @@ export async function createBooking(
     ...mapCustomerToRow(payload.customer),
     customer_id: customerId,
     service_location_type: payload.serviceLocationType ?? null,
+    ...discountColumns,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -300,6 +325,7 @@ export async function createBookingForExistingCustomer(
     ...mapCustomerToRow(customer),
     customer_id: payload.customerId,
     service_location_type: null,
+    ...bookingDiscountColumnsFromSnapshot(null),
   };
 
   const { data, error } = await db

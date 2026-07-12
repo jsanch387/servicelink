@@ -6,8 +6,7 @@ interface TruncatedSaleNameProps {
   as?: 'p' | 'h4';
 }
 
-const baseClassName =
-  'min-w-0 truncate text-left';
+const baseClassName = 'min-w-0 truncate text-left';
 
 export const TruncatedSaleName: React.FC<TruncatedSaleNameProps> = ({
   name,

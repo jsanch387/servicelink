@@ -8,7 +8,10 @@ export type ServiceSalePrice = {
 
 export function getServiceSalePriceCents(
   priceCents: number,
-  sale: Pick<PublicActiveSale, 'discountType' | 'discountValue'> | null | undefined
+  sale:
+    | Pick<PublicActiveSale, 'discountType' | 'discountValue'>
+    | null
+    | undefined
 ): ServiceSalePrice | null {
   if (!sale || priceCents <= 0) return null;
 

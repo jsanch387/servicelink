@@ -9,6 +9,7 @@
  * Otherwise resolves business by slug only (customer self-serve).
  */
 
+import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import {
   bookingCustomerPayloadErrorMessage,
@@ -46,6 +47,7 @@ import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { resolveBookingSaleDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -343,6 +345,28 @@ export async function POST(request: NextRequest) {
       ? `${body.serviceName.trim()} — ${optionLabel}`
       : body.serviceName.trim();
 
+    const selectedAddOnsForEmail = body.selectedAddOns ?? [];
+    const basePriceForEmail = body.servicePriceCents ?? 0;
+    const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
+      (s, a) => s + a.priceCents,
+      0
+    );
+    const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
+
+    const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {
+      profileId,
+      freeBookingsCount: p.free_bookings_count,
+    });
+    const discountSnapshot = await resolveBookingSaleDiscountSnapshot(
+      supabase,
+      {
+        businessId,
+        ownerHasPro,
+        serviceDateYmd: body.scheduledDate,
+        subtotalCents: totalPriceCentsForEmail,
+      }
+    );
+
     const result = await createBooking(supabase, {
       businessId,
       businessSlug,
@@ -358,15 +382,8 @@ export async function POST(request: NextRequest) {
         clientChoice: locationResolved.effective ?? clientLocationChoice,
         businessMode: serviceLocation.mode,
       }),
+      discountSnapshot,
     });
-
-    const selectedAddOnsForEmail = body.selectedAddOns ?? [];
-    const basePriceForEmail = body.servicePriceCents ?? 0;
-    const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
-      (s, a) => s + a.priceCents,
-      0
-    );
-    const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
 
     const { data: paymentSettingsRow, error: paymentSettingsError } =
       await paymentSettingsOf(supabase)
@@ -463,6 +480,16 @@ export async function POST(request: NextRequest) {
       servicePriceCents: body.servicePriceCents,
       selectedAddOns: selectedAddOnsForEmail,
       totalPriceCents: totalPriceCentsForEmail,
+      ...(discountSnapshot
+        ? {
+            discount: {
+              label: discountSnapshot.discountLabel,
+              discountCents: discountSnapshot.discountCents,
+              estimatedTotalCents:
+                discountSnapshot.subtotalCents - discountSnapshot.discountCents,
+            },
+          }
+        : {}),
       paymentSummary,
       serviceLocation: emailServiceLocation,
     };

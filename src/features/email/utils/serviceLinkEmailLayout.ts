@@ -99,9 +99,12 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
   optionLabel?: string;
   lineItems: Array<{ label: string; price: string; isAddOn?: boolean }>;
   totalLabel?: string | null;
+  /** Sale/promo line shown above the appointment total. */
+  discount?: { label: string; amountLabel: string } | null;
 }): string {
-  const { lineItems, totalLabel } = params;
+  const { lineItems, totalLabel, discount } = params;
   const hasServiceLine = lineItems.some(item => !item.isAddOn);
+  const hasDiscount = Boolean(discount?.label?.trim() && discount.amountLabel);
   const rows: string[] = [];
 
   if (!hasServiceLine && lineItems.length > 0) {
@@ -133,18 +136,29 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
         `<div style="margin-top:4px;${FONT_BODY_SECONDARY}${WORD_WRAP}">${escapeHtml(params.optionLabel.trim())}</div>`
       );
     }
-    return `
+    if (!hasDiscount && !totalLabel) {
+      return `
       <tr>
         <td colspan="2" style="padding:0;font-family:${SERVICE_LINK_EMAIL_FONT};">
           ${headerParts.join('')}
         </td>
       </tr>
     `.trim();
+    }
+    rows.push(
+      `
+      <tr>
+        <td colspan="2" style="padding:0 0 14px 0;font-family:${SERVICE_LINK_EMAIL_FONT};">
+          ${headerParts.join('')}
+        </td>
+      </tr>
+    `.trim()
+    );
   }
 
   lineItems.forEach((item, i) => {
     const isFirst = i === 0;
-    const isLast = i === lineItems.length - 1 && !totalLabel;
+    const isLast = i === lineItems.length - 1 && !hasDiscount && !totalLabel;
     rows.push(
       serviceLinkEmailPriceLineRow(item.label, item.price, {
         isLast,
@@ -153,6 +167,14 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
       })
     );
   });
+
+  if (hasDiscount && discount) {
+    rows.push(
+      serviceLinkEmailPriceLineRow(discount.label, discount.amountLabel, {
+        isLast: !totalLabel,
+      })
+    );
+  }
 
   if (totalLabel) {
     rows.push(serviceLinkEmailPriceTotalRow('Appointment total', totalLabel));

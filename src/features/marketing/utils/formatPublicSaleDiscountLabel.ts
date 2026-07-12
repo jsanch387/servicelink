@@ -7,7 +7,10 @@ export function formatPublicSaleDiscountLabel(
   discountValue: number,
   offLabel: string
 ): string | null {
-  const highlight = formatPublicSaleDiscountHighlight(discountType, discountValue);
+  const highlight = formatPublicSaleDiscountHighlight(
+    discountType,
+    discountValue
+  );
   if (!highlight) return null;
   return `${highlight.main} ${offLabel}`.trim();
 }

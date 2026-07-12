@@ -111,9 +111,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
     !isPublic || publicOwnerHasProForPriceOptions === true;
 
   const sectionY =
-    compactTopPadding === true
-      ? 'pt-2 pb-6 sm:pt-3 sm:pb-8'
-      : 'py-4 sm:py-5';
+    compactTopPadding === true ? 'pt-2 pb-6 sm:pt-3 sm:pb-8' : 'py-4 sm:py-5';
 
   return (
     <section className={`px-4 sm:px-8 ${sectionY}`}>

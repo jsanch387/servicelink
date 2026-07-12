@@ -44,8 +44,8 @@ export async function loadPublicActiveSale(
       description: sale.description,
       discountType: sale.discountType,
       discountValue: sale.discountValue,
-      startsAt: sale.startsAt,
-      endsAt: sale.endsAt,
+      startsAt: sale.startsAt ?? undefined,
+      endsAt: sale.endsAt ?? undefined,
     };
   } catch (err) {
     console.error('[marketing] loadPublicActiveSale failed', err);

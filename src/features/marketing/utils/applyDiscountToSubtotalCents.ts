@@ -6,13 +6,20 @@ export function applyDiscountToSubtotalCents(
   discountType: DiscountType,
   discountValue: number
 ): { discountCents: number; totalCents: number } {
-  if (subtotalCents <= 0 || !Number.isFinite(discountValue) || discountValue <= 0) {
+  if (
+    subtotalCents <= 0 ||
+    !Number.isFinite(discountValue) ||
+    discountValue <= 0
+  ) {
     return { discountCents: 0, totalCents: subtotalCents };
   }
 
   const discountCents =
     discountType === 'percentage'
-      ? Math.min(subtotalCents, Math.round((subtotalCents * discountValue) / 100))
+      ? Math.min(
+          subtotalCents,
+          Math.round((subtotalCents * discountValue) / 100)
+        )
       : Math.min(subtotalCents, Math.round(discountValue * 100));
 
   return {

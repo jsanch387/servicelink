@@ -103,6 +103,7 @@ export function ServiceDetailsScreen({
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<Set<string>>(
     () => new Set(initialAddOnIds ?? [])
   );
+  const [showDescription, setShowDescription] = useState(false);
 
   const selectedPriceOption = useMemo(
     () =>
@@ -263,10 +264,24 @@ export function ServiceDetailsScreen({
               </div>
             </div>
             {!isOwnerManualBooking && service.description?.trim() ? (
-              <ServiceDescriptionFormatted
-                description={service.description}
-                className="text-sm text-zinc-500"
-              />
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDescription(prev => !prev)}
+                  className="text-sm text-zinc-200 hover:text-white transition-colors cursor-pointer"
+                  aria-expanded={showDescription}
+                >
+                  {showDescription
+                    ? ui.serviceDetails.hideDescription
+                    : ui.serviceDetails.seeDescription}
+                </button>
+                {showDescription ? (
+                  <ServiceDescriptionFormatted
+                    description={service.description}
+                    className="mt-2 text-sm text-zinc-500"
+                  />
+                ) : null}
+              </div>
             ) : null}
           </section>
 

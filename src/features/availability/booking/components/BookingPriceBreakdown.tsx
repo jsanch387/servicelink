@@ -49,7 +49,9 @@ export function BookingPriceBreakdown({
     saleEstimatedTotalCents < saleSubtotalCents;
 
   const renderTotalPrice = (cents: number, className: string) => (
-    <span className={`${className} tabular-nums shrink-0 text-right min-w-[4.5rem]`}>
+    <span
+      className={`${className} tabular-nums shrink-0 text-right min-w-[4.5rem]`}
+    >
       ${(cents / 100).toFixed(2)}
     </span>
   );
@@ -81,9 +83,22 @@ export function BookingPriceBreakdown({
           </div>
         </div>
         {servicePriceCents != null && servicePriceCents > 0 ? (
-          <span className="text-sm text-gray-300 tabular-nums shrink-0 text-right min-w-[4.5rem] pt-0.5">
-            ${(servicePriceCents / 100).toFixed(2)}
-          </span>
+          selectedAddOns.length === 0 && showSalePricing ? (
+            <div className="flex items-baseline justify-end gap-2 whitespace-nowrap pt-0.5">
+              {renderTotalPrice(
+                saleSubtotalCents!,
+                'text-sm font-medium text-zinc-500 line-through decoration-zinc-500/70'
+              )}
+              {renderTotalPrice(
+                saleEstimatedTotalCents!,
+                'text-sm font-semibold text-white'
+              )}
+            </div>
+          ) : (
+            <span className="text-sm text-gray-300 tabular-nums shrink-0 text-right min-w-[4.5rem] pt-0.5">
+              ${(servicePriceCents / 100).toFixed(2)}
+            </span>
+          )
         ) : null}
       </div>
 
@@ -146,11 +161,10 @@ export function BookingPriceBreakdown({
           ) : null}
         </div>
       )}
-      {selectedAddOns.length === 0 &&
-      saleAppliesLine &&
-      totalPriceCents != null &&
-      totalPriceCents > 0 ? (
-        <BookingSaleAppliesNotice line={saleAppliesLine} />
+      {selectedAddOns.length === 0 && saleAppliesLine ? (
+        <div className="mt-2">
+          <BookingSaleAppliesNotice line={saleAppliesLine} />
+        </div>
       ) : null}
     </section>
   );

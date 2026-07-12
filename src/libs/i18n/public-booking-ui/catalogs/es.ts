@@ -26,6 +26,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     dueNow: 'A pagar ahora',
     remaining: 'Restante',
     bookingTotal: 'Total de la reserva',
+    youSave: amount => `Ahorras ${amount}`,
     service: 'Servicio',
     addOns: 'Complementos',
     date: 'Fecha',
@@ -47,6 +48,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     backToOptions: 'Volver a las opciones',
     backToProfile: 'Volver al perfil',
     backToServices: 'Volver a servicios',
+    seeDescription: 'Ver descripción',
+    hideDescription: 'Ocultar descripción',
   },
   bookPicker: {
     noServicesOwnerTitle: 'Aún no hay servicios para elegir.',
@@ -182,6 +185,7 @@ export const publicBookingUiEs: PublicBookingUi = {
   },
   bookingSuccess: {
     title: 'Reserva confirmada',
+    titleOwner: 'Cita creada',
     subtitleOwner:
       'Se creó la cita. Tu cliente recibirá un correo de notificación.',
     subtitleOwnerNoCustomerEmail:

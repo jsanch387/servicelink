@@ -75,7 +75,9 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
           type="images"
           showEditButton={false}
           title={isPublic ? ui.profile.galleryEmptyTitle : undefined}
-          description={isPublic ? ui.profile.galleryEmptyDescription : undefined}
+          description={
+            isPublic ? ui.profile.galleryEmptyDescription : undefined
+          }
         />
       )}
     </section>

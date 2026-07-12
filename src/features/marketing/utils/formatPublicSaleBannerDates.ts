@@ -67,5 +67,8 @@ export function formatPublicSaleBannerDates(
   locale: PublicBookingFlowLocale,
   labels: SaleBannerDateLabels
 ): string | null {
-  return getPublicSaleBannerTiming(startsAt, endsAt, locale, labels)?.fullLabel ?? null;
+  return (
+    getPublicSaleBannerTiming(startsAt, endsAt, locale, labels)?.fullLabel ??
+    null
+  );
 }

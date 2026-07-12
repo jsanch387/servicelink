@@ -71,14 +71,19 @@ test.describe('Marketing dashboard', () => {
       await expect(
         page.getByRole('heading', { name: 'Delete promo code?' })
       ).toBeVisible();
-      await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
+      await page
+        .getByRole('dialog')
+        .getByRole('button', { name: 'Delete' })
+        .click();
       await expect(promoRow(page, code)).toHaveCount(0, { timeout: 15_000 });
     } finally {
       await deletePromoCode(page, code);
     }
   });
 
-  test('owner can create, edit, toggle, and delete a sale', async ({ page }) => {
+  test('owner can create, edit, toggle, and delete a sale', async ({
+    page,
+  }) => {
     const name = uniqueSaleName('Primary');
 
     try {
@@ -98,7 +103,9 @@ test.describe('Marketing dashboard', () => {
       });
 
       await row.getByTitle('Edit').click();
-      await expect(page.getByRole('heading', { name: 'Edit sale' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Edit sale' })
+      ).toBeVisible();
       await page.getByPlaceholder('4th of July Sale').fill(`${name} Updated`);
       await fieldByLabel(page, 'Amount').fill('20');
       await primaryFormButton(page, 'Save changes').click();
@@ -115,7 +122,10 @@ test.describe('Marketing dashboard', () => {
       await expect(
         page.getByRole('heading', { name: 'Delete sale?' })
       ).toBeVisible();
-      await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
+      await page
+        .getByRole('dialog')
+        .getByRole('button', { name: 'Delete' })
+        .click();
       await expect(updatedRow).toHaveCount(0, { timeout: 15_000 });
     } finally {
       await deleteSale(page, name);
@@ -129,10 +139,18 @@ test.describe('Marketing dashboard', () => {
 
     try {
       await openSalesTab(page);
-      await createSale(page, { name: saleA, discountPercent: '10', active: true });
+      await createSale(page, {
+        name: saleA,
+        discountPercent: '10',
+        active: true,
+      });
 
       await openSalesTab(page);
-      await createSale(page, { name: saleB, discountPercent: '12', active: true });
+      await createSale(page, {
+        name: saleB,
+        discountPercent: '12',
+        active: true,
+      });
 
       const rowA = saleRow(page, saleA);
       const rowB = saleRow(page, saleB);
