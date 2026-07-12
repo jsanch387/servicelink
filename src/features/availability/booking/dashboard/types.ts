@@ -42,6 +42,13 @@ export interface AvailabilityBookingDisplay {
   servicePriceCents: number | null;
   /** Add-ons selected at booking time. */
   addonDetails: AddOnAtBookingDisplay[];
+  /** Discount snapshot from booking create (sale/promo), if any. */
+  discount?: {
+    source: 'sale' | 'promo';
+    label: string;
+    discountCents: number;
+    subtotalCents: number;
+  } | null;
   date: string;
   time: string;
   /** Local wall start `HH:mm` (00/30) for slot generation and reschedule APIs. */

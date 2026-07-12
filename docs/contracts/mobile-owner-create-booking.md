@@ -58,8 +58,12 @@ Set **`ownerManualBooking`** to **`true`** so the route treats this as an owner 
 | `ownerManualBooking`      | boolean | Yes      | Must be **`true`** for this contract.                                                                                                                 |
 | `serviceLocationType`     | string  | Yes\*    | **`"mobile"`** or **`"shop"`** — where service happens. Required on new mobile builds. Omit on older clients → stored as `NULL` on the booking row.   |
 | `customerServiceLocation` | string  | No       | Web alias for the same choice. Mobile should send **`serviceLocationType`** instead. If both are sent, **`serviceLocationType` wins**.                |
+| `promoCode`               | string  | No       | **Ignored** on owner manual booking. Promo codes are public-checkout only.                                                                            |
+| `discountSource` …        | mixed   | No       | Optional **Review preview** fields (`discountSaleId`, `discountCents`, etc.). **Ignored** — server recomputes the sale snapshot. See sale addendum.   |
 
 \*New mobile builds always send `serviceLocationType`. Older builds may omit it (booking row stores `NULL`).
+
+**Sale auto-apply:** see [`mobile-owner-create-booking-sale.md`](./mobile-owner-create-booking-sale.md).
 
 ### `serviceLocationType` rules
 
@@ -144,8 +148,8 @@ Response headers include **`X-Request-ID`** (echo / trace id for support).
 
 **Server side effects (best-effort where noted):**
 
-1. **`bookings`** row created (status per `createBooking` in `bookingService`), including **`service_location_type`** when provided.
-2. **`booking_payments`** row for no-checkout path (`insertBookingPaymentsRowForNoCheckoutPublicBooking`) using business `payment_settings`.
+1. **`bookings`** row created (status per `createBooking` in `bookingService`), including **`service_location_type`** when provided, and **sale discount snapshot columns** when an active sale qualifies for `scheduledDate`.
+2. **`booking_payments`** row for no-checkout path (`insertBookingPaymentsRowForNoCheckoutPublicBooking`) using business `payment_settings` (gross total).
 3. **Owner:** in-app `notifications` + Expo push (`notifyOwnerForAvailabilityBookingCreated`) when `profile_id` exists.
 4. **Customer:** `sendAvailabilityBookingCustomerConfirmationEmail` **only if** `customer.email` is non-empty after normalization.
 
@@ -190,6 +194,7 @@ Owner manual booking in the **web** app does not open Stripe Checkout on confirm
 | Piece                     | Location                                                                           |
 | ------------------------- | ---------------------------------------------------------------------------------- |
 | Route handler             | `src/app/api/public/bookings/route.ts`                                             |
+| Sale auto-apply (owner)   | [`mobile-owner-create-booking-sale.md`](./mobile-owner-create-booking-sale.md)     |
 | Service location persist  | `src/features/availability/booking/utils/resolveBookingServiceLocationType.ts`     |
 | Booking insert            | `src/features/availability/services/bookingService.ts` → `createBooking`           |
 | Auth helper               | `src/libs/api/getAuthenticatedUser.ts`                                             |

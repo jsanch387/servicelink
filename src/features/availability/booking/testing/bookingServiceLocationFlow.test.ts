@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import type { CustomerFormData } from '../types';
 import {
   clearCustomerServiceAddress,
   customerAddressEntryRequired,
@@ -9,6 +10,28 @@ import {
   isBookingDetailsSubStepValid,
   prefillCustomerWithShopAddress,
 } from '../utils/bookingServiceLocationFlow';
+
+const emptyCustomer: CustomerFormData = {
+  fullName: '',
+  email: '',
+  phone: '',
+  streetAddress: '',
+  unitApt: '',
+  city: '',
+  state: '',
+  zip: '',
+  vehicleYear: '',
+  vehicleMake: '',
+  vehicleModel: '',
+  notes: '',
+};
+
+const contactOnlyCustomer: CustomerFormData = {
+  ...emptyCustomer,
+  fullName: 'Jane',
+  phone: '5551234567',
+  email: '',
+};
 
 const mobileOnly: PublicBookingServiceLocation = {
   mode: 'mobile_only',
@@ -65,15 +88,21 @@ describe('bookingServiceLocationFlow', () => {
 
   it('blocks shop path when shop address is incomplete', () => {
     expect(
-      isBookingDetailsSubStepValid('serviceChoice', {}, both, 'shop', {
-        showVehicleFields: false,
-        emailOptional: false,
-      })
+      isBookingDetailsSubStepValid(
+        'serviceChoice',
+        emptyCustomer,
+        both,
+        'shop',
+        {
+          showVehicleFields: false,
+          emailOptional: false,
+        }
+      )
     ).toBe(true);
     expect(
       isBookingDetailsSubStepValid(
         'serviceChoice',
-        {},
+        emptyCustomer,
         { ...both, hasCompleteShopAddress: false },
         'shop',
         { showVehicleFields: false, emailOptional: false }
@@ -82,7 +111,7 @@ describe('bookingServiceLocationFlow', () => {
     expect(
       isBookingDetailsSubStepValid(
         'contact',
-        { fullName: 'Jane', phone: '5551234567', email: '' },
+        contactOnlyCustomer,
         { ...shopOnly, hasCompleteShopAddress: false },
         null,
         { showVehicleFields: false, emailOptional: false }
@@ -92,7 +121,7 @@ describe('bookingServiceLocationFlow', () => {
 
   it('prefills customer with shop address', () => {
     const filled = prefillCustomerWithShopAddress(
-      { fullName: 'Jane', phone: '5551234567', email: '' },
+      contactOnlyCustomer,
       shopOnly
     );
     expect(filled.streetAddress).toBe('100 Main St');
@@ -102,7 +131,7 @@ describe('bookingServiceLocationFlow', () => {
 
   it('clears customer address when switching to mobile', () => {
     const prefilled = prefillCustomerWithShopAddress(
-      { fullName: 'Jane', phone: '5551234567', email: '' },
+      contactOnlyCustomer,
       shopOnly
     );
     const cleared = clearCustomerServiceAddress(prefilled);
@@ -113,10 +142,7 @@ describe('bookingServiceLocationFlow', () => {
   });
 
   it('does not treat address as valid on mobile path when choice is shop', () => {
-    const prefilled = prefillCustomerWithShopAddress(
-      { fullName: 'Jane', phone: '5551234567', email: '' },
-      both
-    );
+    const prefilled = prefillCustomerWithShopAddress(contactOnlyCustomer, both);
     expect(
       isBookingDetailsSubStepValid('address', prefilled, both, 'shop', {
         showVehicleFields: false,

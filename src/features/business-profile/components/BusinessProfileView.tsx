@@ -13,6 +13,10 @@ import { ROUTES } from '@/constants/routes';
 import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
+import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
+import { PublicActivePromoCodeTicketBanner } from '@/features/marketing/components/PublicActivePromoCodeTicketBanner';
+import type { PublicActivePromoCode } from '@/features/marketing/types/publicActivePromoCode';
+import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   ArrowRightIcon,
@@ -82,6 +86,10 @@ interface BusinessProfileViewProps {
   publicReviewSummary?: PublicProfileReviewsSummary | null;
   /** Slug for lazy reviews API (public profile + booking-link preview). */
   publicProfileSlug?: string;
+  /** Live sale to announce on the public booking link (Pro owners only). */
+  publicActiveSale?: PublicActiveSale | null;
+  /** Live promo codes to show as tickets on the public booking link (Pro owners only). */
+  publicActivePromoCodes?: PublicActivePromoCode[];
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -99,6 +107,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   bookingFlowLocale = 'en',
   publicReviewSummary = null,
   publicProfileSlug,
+  publicActiveSale = null,
+  publicActivePromoCodes = [],
 }) => {
   const showReviewsTab = Boolean(
     publicReviewSummary &&
@@ -344,6 +354,13 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       <div
         className={`bg-[#0f0f0f] min-h-screen ${!isPublic && editMode === 'view' ? 'pb-24 sm:pb-24' : ''}`}
       >
+        {editMode === 'view' && publicActiveSale ? (
+          <PublicActiveSaleMarqueeBanner
+            sale={publicActiveSale}
+            bookingFlowLocale={bookingFlowLocale}
+          />
+        ) : null}
+
         <div className="max-w-4xl mx-auto">
           {/* Create Link CTA - Only show for authenticated users without a slug */}
           {!isPublic && slugData && !slugData.hasSlug && (
@@ -397,7 +414,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
               />
 
               {/* Tabs Navigation */}
-              <div className="px-4 sm:px-8 mt-8 border-b border-white/[0.06]">
+              <div className="mt-8 px-4 sm:px-8 border-b border-white/[0.06]">
                 <div className="flex gap-6 overflow-x-auto scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <button
                     onClick={() => setActiveTab('services')}
@@ -487,6 +504,20 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                     }
                     compactTopPadding={isPublic && publicFreeBookingsCapReached}
                     bookingFlowLocale={bookingFlowLocale}
+                    publicActiveSale={publicActiveSale}
+                    belowCategoryFilters={
+                      publicActivePromoCodes.length > 0 ? (
+                        <div className="space-y-3">
+                          {publicActivePromoCodes.map(promo => (
+                            <PublicActivePromoCodeTicketBanner
+                              key={promo.code}
+                              promo={promo}
+                              bookingFlowLocale={bookingFlowLocale}
+                            />
+                          ))}
+                        </div>
+                      ) : null
+                    }
                   />
                 </>
               ) : activeTab === 'gallery' ? (
@@ -495,6 +526,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                   editMode={editMode}
                   onSave={handleSave}
                   onCancel={handleCancel}
+                  isPublic={isPublic}
+                  bookingFlowLocale={bookingFlowLocale}
                 />
               ) : activeTab === 'bio' ? (
                 <section className="px-4 py-6 sm:px-8 sm:py-8">

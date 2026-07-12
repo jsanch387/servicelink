@@ -21,10 +21,19 @@
  * might record does not leak internal DB messages.
  */
 
+import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { CustomerFormData } from '@/features/availability/booking/types';
+import {
+  clientServiceLocationChoice,
+  resolvePersistedBookingServiceLocationType,
+} from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
+import {
+  buildPublicBookingServiceLocation,
+  resolveEffectiveCustomerServiceLocation,
+} from '@/features/business-profile/utils/publicServiceLocation';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   sendTrialEndingSoonEmail,
@@ -32,30 +41,24 @@ import {
 } from '@/features/email';
 import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
 import { buildStripeCheckoutPaymentSummary } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
-import {
-  buildPublicBookingServiceLocation,
-  resolveEffectiveCustomerServiceLocation,
-} from '@/features/business-profile/utils/publicServiceLocation';
-import {
-  clientServiceLocationChoice,
-  resolvePersistedBookingServiceLocationType,
-} from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
 import { hasMaintenanceAnchorScheduled } from '@/features/maintenance/server/hasMaintenanceAnchorScheduled';
 import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance/server/maintenanceEnrollmentPaymentStatus';
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
+import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
+import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
-import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
-import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
-import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
+import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
+import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
+import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/trialConfirmationPayload';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
-import { after, NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import Stripe from 'stripe';
 
 /** Stripe expects a 2xx within ~10s; booking DB writes must finish first, emails run after. */
@@ -139,6 +142,7 @@ type StoredBookingCheckoutPayload = {
   depositValue?: number | null;
   customerServiceLocation?: 'mobile' | 'shop';
   serviceLocationType?: 'mobile' | 'shop';
+  promoCode?: string;
 };
 
 function customerFormFromCheckoutStored(
@@ -281,6 +285,10 @@ function parseStoredBookingCheckoutPayload(
         : null,
     customerServiceLocation,
     serviceLocationType,
+    promoCode:
+      typeof p.promoCode === 'string'
+        ? normalizeEnteredPromoCode(p.promoCode) || undefined
+        : undefined,
   };
 }
 
@@ -546,6 +554,55 @@ export async function POST(request: NextRequest) {
       const effectiveLocationType =
         locationResolved.effective ??
         (serviceLocation.mode === 'shop_only' ? 'shop' : 'mobile');
+
+      const selectedAddOnsForEmail = bookingPayload.selectedAddOns ?? [];
+      const basePriceForEmail = bookingPayload.servicePriceCents ?? 0;
+      const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
+        (sum, addOn) => sum + (addOn.priceCents ?? 0),
+        0
+      );
+      const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
+
+      const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {
+        profileId: capProfile.profile_id,
+        freeBookingsCount: capProfile.free_bookings_count,
+      });
+      const enteredPromoCode = normalizeEnteredPromoCode(
+        bookingPayload.promoCode
+      );
+      const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
+        businessId: bookingPayload.businessId,
+        ownerHasPro,
+        serviceDateYmd: bookingPayload.scheduledDate,
+        subtotalCents: totalPriceCentsForEmail,
+        promoCode: enteredPromoCode || null,
+        customerPhone: bookingPayload.customer.phone,
+        customerEmail: bookingPayload.customer.email,
+      });
+
+      let discountSnapshot = discountResolved.ok
+        ? discountResolved.snapshot
+        : null;
+      if (!discountResolved.ok) {
+        if (enteredPromoCode) {
+          console.warn(
+            '[booking-checkout:webhook] promo invalid after pay; using sale/none',
+            {
+              error: discountResolved.error,
+              bookingBusinessId: bookingPayload.businessId,
+            }
+          );
+        }
+        const saleFallback = await resolveBookingDiscountSnapshot(supabase, {
+          businessId: bookingPayload.businessId,
+          ownerHasPro,
+          serviceDateYmd: bookingPayload.scheduledDate,
+          subtotalCents: totalPriceCentsForEmail,
+          promoCode: null,
+        });
+        discountSnapshot = saleFallback.ok ? saleFallback.snapshot : null;
+      }
+
       const createdBooking = await createBooking(supabase, {
         businessId: bookingPayload.businessId,
         businessSlug: bookingPayload.businessSlug,
@@ -561,6 +618,7 @@ export async function POST(request: NextRequest) {
           clientChoice: effectiveLocationType,
           businessMode: serviceLocation.mode,
         }),
+        discountSnapshot,
       });
       logBookingCheckoutStage('booking.created', {
         eventId: event.id,
@@ -577,13 +635,6 @@ export async function POST(request: NextRequest) {
         typeof session.currency === 'string' && session.currency.trim()
           ? session.currency.trim().toLowerCase()
           : 'usd';
-      const selectedAddOnsForEmail = bookingPayload.selectedAddOns ?? [];
-      const basePriceForEmail = bookingPayload.servicePriceCents ?? 0;
-      const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
-        (sum, addOn) => sum + (addOn.priceCents ?? 0),
-        0
-      );
-      const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
       const hasPriceLineItems =
         (typeof bookingPayload.servicePriceCents === 'number' &&
           bookingPayload.servicePriceCents > 0) ||
@@ -617,6 +668,17 @@ export async function POST(request: NextRequest) {
         servicePriceCents: bookingPayload.servicePriceCents,
         selectedAddOns: selectedAddOnsForEmail,
         totalPriceCents: totalPriceCentsForEmail,
+        ...(discountSnapshot
+          ? {
+              discount: {
+                label: discountSnapshot.discountLabel,
+                discountCents: discountSnapshot.discountCents,
+                estimatedTotalCents:
+                  discountSnapshot.subtotalCents -
+                  discountSnapshot.discountCents,
+              },
+            }
+          : {}),
         paymentSummary: buildStripeCheckoutPaymentSummary({
           paymentStatus,
           amountPaidCents,

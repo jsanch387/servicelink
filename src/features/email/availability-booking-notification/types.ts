@@ -39,8 +39,17 @@ export interface AvailabilityBookingNotificationPayload {
   servicePriceCents?: number;
   /** Add-ons selected at booking. */
   selectedAddOns?: AddOnForEmail[];
-  /** Total price (base + add-ons). */
+  /** Total price (base + add-ons), pre-discount. */
   totalPriceCents?: number;
+  /**
+   * When a sale (or later promo) applies at book time — shown in Service details.
+   * `totalPriceCents` stays pre-discount; email shows estimated total after discount.
+   */
+  discount?: {
+    label: string;
+    discountCents: number;
+    estimatedTotalCents: number;
+  };
   /** Shown in both customer confirmation and owner notification when set. */
   paymentSummary?: AvailabilityBookingPaymentSummary;
   /** Where service happens (mobile at customer vs shop visit). */

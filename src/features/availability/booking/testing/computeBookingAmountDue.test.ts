@@ -15,6 +15,29 @@ describe('computeBookingAmountDue', () => {
     });
 
     expect(result.subtotalCents).toBe(15000);
+    expect(result.discountCents).toBe(0);
+    expect(result.adjustedTotalCents).toBe(15000);
+    expect(result.amountDueCents).toBe(0);
+  });
+
+  it('applies promo/sale discount to service + add-ons only', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 10000,
+      addonDetails: [{ name: 'Odor', priceCents: 2500 }],
+      sessionFees: [{ label: 'Pet hair', amountCents: 2500 }],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 12500 },
+      discount: {
+        discountSource: 'promo',
+        discountType: 'percentage',
+        discountValue: 20,
+      },
+    });
+
+    // 20% of 12500 line = 2500; adjusted = 12500 - 2500 + 2500 fees = 12500
+    expect(result.discountCents).toBe(2500);
+    expect(result.subtotalCents).toBe(15000);
+    expect(result.adjustedTotalCents).toBe(12500);
     expect(result.amountDueCents).toBe(0);
   });
 

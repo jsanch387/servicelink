@@ -1,6 +1,8 @@
 'use client';
 
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ImageWithFallback } from '@/components/shared/ImageWithFallback';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { EmptyState } from './EmptyState';
@@ -10,6 +12,8 @@ interface WorkShowcaseProps {
   editMode: EditMode;
   onSave: (data: Record<string, unknown>) => Promise<void>;
   onCancel: () => void;
+  isPublic?: boolean;
+  bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
 export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
@@ -17,7 +21,10 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
   editMode: _editMode,
   onSave: _onSave,
   onCancel: _onCancel,
+  isPublic = false,
+  bookingFlowLocale = 'en',
 }) => {
+  const ui = publicBookingUi(bookingFlowLocale);
   const images = businessProfile.images || [];
   const hasImages = images && images.length > 0;
   const [loadedIds, setLoadedIds] = React.useState<Set<string>>(new Set());
@@ -64,7 +71,14 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
           })}
         </div>
       ) : (
-        <EmptyState type="images" showEditButton={false} />
+        <EmptyState
+          type="images"
+          showEditButton={false}
+          title={isPublic ? ui.profile.galleryEmptyTitle : undefined}
+          description={
+            isPublic ? ui.profile.galleryEmptyDescription : undefined
+          }
+        />
       )}
     </section>
   );

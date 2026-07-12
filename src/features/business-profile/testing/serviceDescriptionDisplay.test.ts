@@ -1,6 +1,9 @@
 import {
+  flattenServiceDescriptionForCardPreview,
   parseServiceDescriptionLine,
   parseServiceDescriptionLines,
+  serviceCardDescriptionNeedsExpand,
+  truncateServiceDescriptionForCardPreview,
 } from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import { describe, expect, it } from 'vitest';
 
@@ -33,5 +36,29 @@ describe('parseServiceDescriptionLines', () => {
       { kind: 'bullet', text: 'Item one' },
       { kind: 'bullet', text: 'Item two' },
     ]);
+  });
+});
+
+describe('service card description preview', () => {
+  it('flattens multiline descriptions into one preview string', () => {
+    expect(
+      flattenServiceDescriptionForCardPreview(
+        'Wheel and tire cleaner\n• Full interior vacuum'
+      )
+    ).toBe('Wheel and tire cleaner Full interior vacuum');
+  });
+
+  it('detects when preview needs expand', () => {
+    const description = 'Wheel and tire cleaner'.repeat(8);
+    expect(serviceCardDescriptionNeedsExpand(description, 140)).toBe(true);
+  });
+
+  it('truncates at a word boundary without adding ellipsis', () => {
+    expect(
+      truncateServiceDescriptionForCardPreview(
+        'Wheel and tire cleaner with premium gloss finish',
+        24
+      )
+    ).toBe('Wheel and tire cleaner');
   });
 });

@@ -10,6 +10,7 @@ import {
   ClockIcon,
   AdjustmentsHorizontalIcon,
   LinkIcon,
+  MegaphoneIcon,
   RectangleStackIcon,
   Squares2X2Icon,
   StarIcon,
@@ -52,7 +53,6 @@ const allNavigationItems = [
     icon: StarIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/reviews',
-    isNew: true,
   },
   {
     name: 'Quotes',
@@ -73,6 +73,13 @@ const allNavigationItems = [
     icon: BanknotesIcon,
     requiresOnboarding: true,
     activePathPrefix: '/dashboard/payments',
+  },
+  {
+    name: 'Marketing',
+    href: ROUTES.DASHBOARD.MARKETING,
+    icon: MegaphoneIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/marketing',
   },
   ...(AVAILABILITY_FEATURE_ENABLED
     ? [
@@ -159,11 +166,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     }`}
                   />
                   <span className="flex-1">{item.name}</span>
-                  {item.isNew ? (
-                    <span className="ml-2 rounded-full border border-emerald-400/35 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-                      New
-                    </span>
-                  ) : null}
                 </Link>
               );
             })}

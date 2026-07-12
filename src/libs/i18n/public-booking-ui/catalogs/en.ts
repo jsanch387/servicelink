@@ -26,6 +26,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     dueNow: 'Due now',
     remaining: 'Remaining',
     bookingTotal: 'Booking total',
+    youSave: amount => `You save ${amount}`,
     service: 'Service',
     addOns: 'Add-ons',
     date: 'Date',
@@ -47,6 +48,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     backToOptions: 'Back to options',
     backToProfile: 'Back to profile',
     backToServices: 'Back to services',
+    seeDescription: 'See description',
+    hideDescription: 'Hide description',
   },
   bookPicker: {
     noServicesOwnerTitle: 'No services to pick yet.',
@@ -111,6 +114,21 @@ export const publicBookingUiEn: PublicBookingUi = {
     confirmingBooking: 'Confirming booking',
     payAmount: amount => `Pay ${amount}`,
     payDepositAmount: amount => `Pay ${amount} deposit`,
+    saleApplies: (saleName, discountLabel) =>
+      `${saleName} — ${discountLabel} applies`,
+    promoCodeHeading: 'Promo code',
+    promoCodePlaceholder: 'Enter code',
+    promoCodeApply: 'Apply',
+    promoCodeApplying: 'Applying…',
+    promoCodeRemove: 'Remove',
+    promoCodeApplied: code => `Code ${code} applied`,
+    promoCodeInvalid: 'That promo code is not valid.',
+    promoCodeInactive: 'That promo code is no longer active.',
+    promoCodeScheduled: 'That promo code is not available yet.',
+    promoCodeExpired: 'That promo code has expired.',
+    promoCodeAlreadyUsed: 'You have already used this promo code.',
+    promoCodeIdentityRequired: 'Add a phone or email to use this promo code.',
+    promoCodeUnavailable: 'Promo codes are not available for this business.',
     depositPercentLead: (businessName, pct) =>
       `${businessName} requires ${pct}% of the total cost as a deposit to book this appointment. This deposit is non-refundable.`,
     depositFixedLead: (businessName, amount) =>
@@ -178,6 +196,7 @@ export const publicBookingUiEn: PublicBookingUi = {
   },
   bookingSuccess: {
     title: "You're booked",
+    titleOwner: 'Appointment created',
     subtitleOwner:
       'Your appointment has been created. Your customer will receive an email notification.',
     subtitleOwnerNoCustomerEmail:
@@ -222,6 +241,9 @@ export const publicBookingUiEn: PublicBookingUi = {
       `Share a few details and ${businessName} will send back a quote.`,
     servicesTab: 'Services',
     galleryTab: 'Gallery',
+    galleryEmptyTitle: 'No photos yet',
+    galleryEmptyDescription:
+      "This business hasn't shared any gallery photos yet.",
     bioTab: 'Bio',
     reviewsTab: 'Reviews',
     noBioYet: 'No bio added yet.',
@@ -237,6 +259,28 @@ export const publicBookingUiEn: PublicBookingUi = {
     serviceCategoryOther: 'Other services',
     serviceCategoriesAriaLabel: 'Browse services by category',
     noServicesInCategory: 'No services in this category.',
+    saleBannerBadge: 'Sale',
+    saleBannerOffLabel: 'off',
+    saleBannerWhenYouBook: discount => `Get ${discount} when you book`,
+    saleBannerLimitedTime: 'Limited time offer',
+    saleBannerDates: {
+      validPrefix: 'Offer valid',
+      throughPrefix: 'Offer through',
+      dateRange: (start, end) => `${start} – ${end}`,
+      through: date => `Offer through ${date}`,
+      fromThrough: (start, end) => `Offer valid ${start} – ${end}`,
+    },
+    saleBannerAriaLabel: (saleName, discount) =>
+      `Active sale: ${saleName}, ${discount}`,
+    saleMarqueeAnnouncement: (saleName, discountMain, offLabel) =>
+      `${saleName}, ${discountMain} ${offLabel}`,
+    promoBannerBadge: 'Promo code',
+    promoBannerWhenYouBook: (code, discount) =>
+      `Use code ${code} at checkout for ${discount}`,
+    promoBannerAriaLabel: (code, discount) =>
+      `Active promo code: ${code}, ${discount}`,
+    promoBannerCopyCode: 'Copy',
+    promoBannerCopied: 'Copied',
   },
   quoteForm: {
     quoteDetails: 'Quote details',

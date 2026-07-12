@@ -20,6 +20,7 @@ import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvai
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
+import { BookFlowClientRedirect } from '@/features/availability/booking/components/BookFlowClientRedirect';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -172,13 +173,15 @@ export default async function ServiceDetailsPage({
 
   // No add-ons and no price choice needed: skip details and go straight to date selection
   if (!needsPriceStep && addOns.length === 0) {
-    redirect(
-      getBusinessBookScheduleUrl(slug, {
-        serviceId: serviceId.trim(),
-        skipDetails: true,
-        forOwner: isOwnerManualBooking,
-        lang: bookingFlowLocale,
-      })
+    return (
+      <BookFlowClientRedirect
+        href={getBusinessBookScheduleUrl(slug, {
+          serviceId: serviceId.trim(),
+          skipDetails: true,
+          forOwner: isOwnerManualBooking,
+          lang: bookingFlowLocale,
+        })}
+      />
     );
   }
 

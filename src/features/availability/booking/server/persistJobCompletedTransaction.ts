@@ -6,6 +6,7 @@
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 import { ensureReviewInviteRecordIfEligible } from '@/features/reviews/server/ensureReviewInviteRecordIfEligible';
 import { applyMaintenanceVisitCompletedFromBooking } from '@/features/maintenance/server/applyMaintenanceVisitCompletedFromBooking';
+import { recordPromoCodeRedemptionForCompletedBooking } from '@/features/marketing/server/recordPromoCodeRedemptionForCompletedBooking';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -151,7 +152,7 @@ async function upsertBookingPaymentsForCompletion(
 ): Promise<void> {
   const now = new Date().toISOString();
   const sessionFeesTotal = args.amountDue.sessionFeeCents;
-  const totalAmountCents = args.amountDue.subtotalCents;
+  const totalAmountCents = args.amountDue.adjustedTotalCents;
   const paidOnline = args.amountDue.paidOnlineCents;
   const sessionPay = args.amountDue.sessionPayCents;
   const remainingAmountCents = computeBookingRemainingAmountCents({
@@ -249,7 +250,7 @@ async function insertBookingInvoice(
     public_token: args.publicToken,
     snapshot_json: args.snapshot,
     subtotal_cents: args.amountDue.subtotalCents,
-    total_cents: args.amountDue.subtotalCents,
+    total_cents: args.amountDue.adjustedTotalCents,
     paid_cents: paidCents,
     status: 'paid',
   });
@@ -407,6 +408,12 @@ export async function persistJobCompletedTransaction(
       error: 'Could not complete booking checkout.',
       httpStatus: 500,
     };
+  }
+
+  try {
+    await recordPromoCodeRedemptionForCompletedBooking(admin, booking);
+  } catch (sideErr) {
+    console.error('[job_completed] promo redemption side effect', sideErr);
   }
 
   try {

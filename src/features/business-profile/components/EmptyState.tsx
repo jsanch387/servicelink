@@ -10,6 +10,10 @@ interface EmptyStateProps {
   type: 'images' | 'services' | 'bio' | 'contact';
   onEdit?: () => void;
   showEditButton?: boolean;
+  /** Override default owner-facing title (e.g. public gallery empty state). */
+  title?: string;
+  /** Override default owner-facing description. */
+  description?: string;
 }
 
 const emptyStateConfig = {
@@ -45,9 +49,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   type,
   onEdit,
   showEditButton = true,
+  title,
+  description,
 }) => {
   const config = emptyStateConfig[type];
   const IconComponent = config.icon;
+  const displayTitle = title ?? config.title;
+  const displayDescription = description ?? config.description;
 
   return (
     <div className="text-center py-8 px-4">
@@ -55,10 +63,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <IconComponent className="h-8 w-8 text-gray-400" />
       </div>
 
-      <h3 className="text-lg font-medium text-white mb-2">{config.title}</h3>
+      <h3 className="text-lg font-medium text-white mb-2">{displayTitle}</h3>
 
       <p className="text-gray-400 mb-4 max-w-sm mx-auto">
-        {config.description}
+        {displayDescription}
       </p>
 
       {showEditButton && onEdit && (

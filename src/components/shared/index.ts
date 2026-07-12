@@ -28,6 +28,8 @@ export { CompletionCelebration, SuccessMessage } from './CompletionCelebration';
 export { CoverPhotoPlaceholder } from './CoverPhotoPlaceholder';
 export { CrownIcon } from './CrownIcon';
 export { DropdownSelect } from './DropdownSelect';
+export { EchoBarsLoader } from './EchoBarsLoader';
+export type { EchoBarsLoaderProps, EchoBarsLoaderSize } from './EchoBarsLoader';
 export type { DropdownSelectOption } from './DropdownSelect';
 export { FilterPills } from './FilterPills';
 export type { FilterPillOption } from './FilterPills';

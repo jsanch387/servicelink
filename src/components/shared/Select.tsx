@@ -34,9 +34,9 @@ export const Select: React.FC<SelectProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-left text-sm font-semibold text-gray-200 mb-2.5">
+        <label className="mb-1.5 block text-left text-sm font-medium text-gray-200">
           {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
+          {required && <span className="ml-1 text-red-400">*</span>}
         </label>
       )}
       <div className="relative">
@@ -47,8 +47,8 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
           name={name}
           className={`
-            w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-medium
-            focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
+            w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-base font-normal text-white sm:text-sm
+            focus:border-white/30 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-white/20
             transition-all duration-200 appearance-none touch-manipulation
             ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20 active:bg-white/8 cursor-pointer'}

@@ -9,8 +9,12 @@ import type { BookingAmountDueResult } from './computeBookingAmountDue';
 import { parseStoredBookingServiceName } from '../utils/parseStoredBookingServiceName';
 
 export interface InvoiceSnapshotLine {
-  kind: 'service' | 'addon' | 'session_fee';
+  kind: 'service' | 'addon' | 'session_fee' | 'discount';
   label: string;
+  /**
+   * For service/addon/session_fee: charge amount.
+   * For discount: reduction amount (positive); UI renders as −$X.XX.
+   */
   amountCents: number;
   /** Pricing option label when the customer picked a multi-price variant. */
   detailLabel?: string | null;
@@ -47,8 +51,14 @@ export interface BookingInvoiceSnapshot {
   lines: InvoiceSnapshotLine[];
   payments: InvoiceSnapshotPayment[];
   totals: {
+    /** Service + add-ons + session fees (pre-discount). */
     subtotalCents: number;
+    /**
+     * Sale/promo reduction (0 when none). Optional on older stored snapshots.
+     */
+    discountCents?: number;
     paidCents: number;
+    /** Amount charged after discount. */
     totalCents: number;
   };
   reviewUrl: string | null;
@@ -71,6 +81,8 @@ interface BuildInvoiceSnapshotInput {
     customer_phone: string | null;
     service_price_cents: number | null;
     addon_details: unknown;
+    /** Customer-facing sale/promo label from booking snapshot. */
+    discount_label?: string | null;
   };
   sessionFees: JobCompletedSessionFeeInput[];
   amountDue: BookingAmountDueResult;
@@ -139,6 +151,21 @@ export function buildInvoiceSnapshot(
     });
   }
 
+  const discountCents =
+    typeof input.amountDue.discountCents === 'number' &&
+    Number.isFinite(input.amountDue.discountCents) &&
+    input.amountDue.discountCents > 0
+      ? Math.round(input.amountDue.discountCents)
+      : 0;
+  if (discountCents > 0) {
+    const discountLabel = input.booking.discount_label?.trim() || 'Discount';
+    lines.push({
+      kind: 'discount',
+      label: discountLabel,
+      amountCents: discountCents,
+    });
+  }
+
   const payments: InvoiceSnapshotPayment[] = [];
   if (input.amountDue.paidOnlineCents > 0) {
     payments.push({
@@ -190,8 +217,9 @@ export function buildInvoiceSnapshot(
     payments,
     totals: {
       subtotalCents: input.amountDue.subtotalCents,
+      discountCents,
       paidCents,
-      totalCents: input.amountDue.subtotalCents,
+      totalCents: input.amountDue.adjustedTotalCents,
     },
     reviewUrl,
   };

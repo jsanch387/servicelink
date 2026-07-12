@@ -26,6 +26,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     dueNow: 'A pagar ahora',
     remaining: 'Restante',
     bookingTotal: 'Total de la reserva',
+    youSave: amount => `Ahorras ${amount}`,
     service: 'Servicio',
     addOns: 'Complementos',
     date: 'Fecha',
@@ -47,6 +48,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     backToOptions: 'Volver a las opciones',
     backToProfile: 'Volver al perfil',
     backToServices: 'Volver a servicios',
+    seeDescription: 'Ver descripción',
+    hideDescription: 'Ocultar descripción',
   },
   bookPicker: {
     noServicesOwnerTitle: 'Aún no hay servicios para elegir.',
@@ -113,6 +116,23 @@ export const publicBookingUiEs: PublicBookingUi = {
     confirmingBooking: 'Confirmando reserva',
     payAmount: amount => `Pagar ${amount}`,
     payDepositAmount: amount => `Pagar depósito de ${amount}`,
+    saleApplies: (saleName, discountLabel) =>
+      `${saleName} — ${discountLabel} aplica`,
+    promoCodeHeading: 'Código promocional',
+    promoCodePlaceholder: 'Ingresa el código',
+    promoCodeApply: 'Aplicar',
+    promoCodeApplying: 'Aplicando…',
+    promoCodeRemove: 'Quitar',
+    promoCodeApplied: code => `Código ${code} aplicado`,
+    promoCodeInvalid: 'Ese código promocional no es válido.',
+    promoCodeInactive: 'Ese código promocional ya no está activo.',
+    promoCodeScheduled: 'Ese código promocional aún no está disponible.',
+    promoCodeExpired: 'Ese código promocional ha vencido.',
+    promoCodeAlreadyUsed: 'Ya usaste este código promocional.',
+    promoCodeIdentityRequired:
+      'Agrega un teléfono o correo para usar este código.',
+    promoCodeUnavailable:
+      'Los códigos promocionales no están disponibles para este negocio.',
     depositPercentLead: (businessName, pct) =>
       `${businessName} exige un depósito del ${pct}% del costo total para reservar esta cita. Este depósito no es reembolsable.`,
     depositFixedLead: (businessName, amount) =>
@@ -180,6 +200,7 @@ export const publicBookingUiEs: PublicBookingUi = {
   },
   bookingSuccess: {
     title: 'Reserva confirmada',
+    titleOwner: 'Cita creada',
     subtitleOwner:
       'Se creó la cita. Tu cliente recibirá un correo de notificación.',
     subtitleOwnerNoCustomerEmail:
@@ -224,6 +245,9 @@ export const publicBookingUiEs: PublicBookingUi = {
       `Comparte algunos datos y ${businessName} te enviará una cotización.`,
     servicesTab: 'Servicios',
     galleryTab: 'Galería',
+    galleryEmptyTitle: 'Aún no hay fotos',
+    galleryEmptyDescription:
+      'Este negocio aún no ha compartido fotos en la galería.',
     bioTab: 'Biografía',
     reviewsTab: 'Reseñas',
     noBioYet: 'Aún no hay biografía.',
@@ -239,6 +263,28 @@ export const publicBookingUiEs: PublicBookingUi = {
     serviceCategoryOther: 'Otros servicios',
     serviceCategoriesAriaLabel: 'Ver servicios por categoría',
     noServicesInCategory: 'No hay servicios en esta categoría.',
+    saleBannerBadge: 'Oferta',
+    saleBannerOffLabel: 'dto',
+    saleBannerWhenYouBook: discount => `Obtén ${discount} al reservar`,
+    saleBannerLimitedTime: 'Por tiempo limitado',
+    saleBannerDates: {
+      validPrefix: 'Oferta válida',
+      throughPrefix: 'Oferta hasta',
+      dateRange: (start, end) => `${start} – ${end}`,
+      through: date => `Oferta hasta ${date}`,
+      fromThrough: (start, end) => `Oferta válida ${start} – ${end}`,
+    },
+    saleBannerAriaLabel: (saleName, discount) =>
+      `Oferta activa: ${saleName}, ${discount}`,
+    saleMarqueeAnnouncement: (saleName, discountMain, offLabel) =>
+      `${saleName}, ${discountMain} ${offLabel}`,
+    promoBannerBadge: 'Código promo',
+    promoBannerWhenYouBook: (code, discount) =>
+      `Usa el código ${code} al reservar para ${discount}`,
+    promoBannerAriaLabel: (code, discount) =>
+      `Código promo activo: ${code}, ${discount}`,
+    promoBannerCopyCode: 'Copiar',
+    promoBannerCopied: 'Copiado',
   },
   quoteForm: {
     quoteDetails: 'Detalles de la cotización',

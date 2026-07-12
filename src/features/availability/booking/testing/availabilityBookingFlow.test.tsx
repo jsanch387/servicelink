@@ -117,6 +117,17 @@ function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
       exitCalendarFlowHref="/acme-auto/book/details?serviceId=svc-1"
       exitCalendarFlowLabel="Back to add-ons"
       bookingFlowLocale={options?.bookingFlowLocale ?? 'en'}
+      serviceLocation={{
+        mode: 'mobile_only',
+        profileLocationLabel: 'Austin, TX',
+        shopAddressLabel: null,
+        shopStreet: '',
+        shopUnit: '',
+        city: '',
+        state: '',
+        zip: '',
+        hasCompleteShopAddress: false,
+      }}
     />
   );
 }

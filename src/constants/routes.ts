@@ -80,6 +80,13 @@ export const ROUTES = {
     CUSTOMERS: '/dashboard/customers',
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
+    MARKETING: '/dashboard/marketing',
+    MARKETING_PROMO_CODES_NEW: '/dashboard/marketing/promo-codes/new',
+    MARKETING_PROMO_CODE_EDIT: (promoCodeId: string) =>
+      `/dashboard/marketing/promo-codes/${encodeURIComponent(promoCodeId.trim())}/edit`,
+    MARKETING_SALES_NEW: '/dashboard/marketing/sales/new',
+    MARKETING_SALE_EDIT: (saleId: string) =>
+      `/dashboard/marketing/sales/${encodeURIComponent(saleId.trim())}/edit`,
     SETTINGS: '/dashboard/settings',
     CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',
@@ -125,6 +132,8 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Public: fetch booking payment summary after successful checkout return. */
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
+  /** Public: validate a promo code for booking checkout preview. */
+  PUBLIC_PROMO_CODE_VALIDATE: '/api/public/promo-codes/validate',
   /** Public: subscribed ICS feed for a business (path includes signed token). */
   CALENDAR_FEED: (token: string) => `/api/calendar/feed/${token}`,
   /** Owner session: JSON with `httpsUrl` + `webcalUrl` for the ICS feed. */

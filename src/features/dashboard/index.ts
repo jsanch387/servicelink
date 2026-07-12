@@ -1,4 +1,3 @@
-export { IosAppLiveBanner } from './components/IosAppLiveBanner';
 export { Dashboard } from './components/Dashboard';
 export { DashboardGlassCard } from './components/DashboardGlassCard';
 export { DashboardMetricCard } from './components/DashboardMetricCard';

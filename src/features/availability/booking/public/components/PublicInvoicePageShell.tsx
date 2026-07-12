@@ -72,17 +72,22 @@ function BusinessInvoiceMark() {
 function ChargeAmount({
   amountCents,
   size = 'md',
+  tone = 'default',
 }: {
   amountCents: number;
   size?: 'md' | 'sm';
+  tone?: 'default' | 'discount';
 }) {
+  const isDiscount = tone === 'discount';
   return (
     <p
-      className={`${PUBLIC_INVOICE_AMOUNT_COLUMN_CLASS} tabular-nums font-medium text-[#1a1a1a] dark:text-[#f0f0f0] ${
-        size === 'sm' ? 'text-[14px]' : 'text-[15px]'
-      }`}
+      className={`${PUBLIC_INVOICE_AMOUNT_COLUMN_CLASS} tabular-nums font-medium ${
+        isDiscount
+          ? 'text-[#15803d] dark:text-[#86efac]'
+          : 'text-[#1a1a1a] dark:text-[#f0f0f0]'
+      } ${size === 'sm' ? 'text-[14px]' : 'text-[15px]'}`}
     >
-      {formatCents(amountCents)}
+      {isDiscount ? `−${formatCents(amountCents)}` : formatCents(amountCents)}
     </p>
   );
 }
@@ -179,8 +184,22 @@ function ServiceChargeRow({ line }: { line: InvoiceSnapshotLine }) {
   );
 }
 
+function DiscountChargeRow({ line }: { line: InvoiceSnapshotLine }) {
+  return (
+    <div className={PUBLIC_INVOICE_LINE_ROW_CLASS}>
+      <div className={`flex-1 ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}>
+        <p className="leading-snug text-[15px] font-medium text-[#15803d] dark:text-[#86efac]">
+          {line.label}
+        </p>
+      </div>
+      <ChargeAmount amountCents={line.amountCents} tone="discount" />
+    </div>
+  );
+}
+
 function ChargeGroupSection({ group }: { group: InvoiceLineGroup }) {
   const isService = group.id === 'service';
+  const isDiscount = group.id === 'discount';
   const isMulti = group.lines.length > 1;
 
   if (isService) {
@@ -189,6 +208,19 @@ function ChargeGroupSection({ group }: { group: InvoiceLineGroup }) {
         {group.lines.map((line, index) => (
           <ServiceChargeRow
             key={`service-${line.label}-${line.detailLabel ?? ''}-${index}`}
+            line={line}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (isDiscount) {
+    return (
+      <div className="space-y-3">
+        {group.lines.map((line, index) => (
+          <DiscountChargeRow
+            key={`discount-${line.label}-${index}`}
             line={line}
           />
         ))}

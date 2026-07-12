@@ -27,8 +27,8 @@ export function PublicServiceCategoryFilters({
 
   const edgeBleedClassName =
     edgeGutter === 'bookFlow'
-      ? '-mx-4 flex gap-2 px-4 pb-1 sm:-mx-6 sm:px-6'
-      : '-mx-4 flex gap-2 px-4 pb-1 sm:-mx-8 sm:px-8';
+      ? '-mx-4 flex gap-2 px-4 sm:-mx-6 sm:px-6'
+      : '-mx-4 flex gap-2 px-4 sm:-mx-8 sm:px-8';
 
   return (
     <div

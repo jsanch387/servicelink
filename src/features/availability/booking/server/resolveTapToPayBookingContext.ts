@@ -24,6 +24,12 @@ export interface TapToPayBookingContext {
   paidOnlineAmountCents: number;
   currency: string;
   stripeAccountId: string;
+  discount: {
+    discountSource?: string | null;
+    discountType?: string | null;
+    discountValue?: number | null;
+    discountCents?: number | null;
+  };
 }
 
 export type ResolveTapToPayBookingContextResult =
@@ -38,6 +44,10 @@ interface BookingRow {
   work_handoff_status: string | null;
   service_price_cents: number | null;
   addon_details: unknown;
+  discount_source?: string | null;
+  discount_type?: string | null;
+  discount_value?: number | string | null;
+  discount_cents?: number | null;
 }
 
 function lifecycleReject(
@@ -45,6 +55,17 @@ function lifecycleReject(
   error: string
 ): ResolveTapToPayBookingContextResult {
   return { ok: false, reject: { httpStatus, error } };
+}
+
+function parseDiscountValue(
+  value: number | string | null | undefined
+): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 export async function resolveTapToPayBookingContext(opts: {
@@ -57,7 +78,7 @@ export async function resolveTapToPayBookingContext(opts: {
     (opts.supabase as any)
       .from('bookings')
       .select(
-        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details'
+        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details, discount_source, discount_type, discount_value, discount_cents'
       )
       .eq('id', opts.bookingId)
       .maybeSingle();
@@ -128,6 +149,12 @@ export async function resolveTapToPayBookingContext(opts: {
       paidOnlineAmountCents: payments?.paid_online_amount_cents ?? 0,
       currency: payments?.currency?.trim()?.toLowerCase() || 'usd',
       stripeAccountId,
+      discount: {
+        discountSource: booking.discount_source,
+        discountType: booking.discount_type,
+        discountValue: parseDiscountValue(booking.discount_value),
+        discountCents: booking.discount_cents,
+      },
     },
   };
 }
@@ -142,5 +169,6 @@ export function computeTapToPayAmountDue(
     sessionFees,
     paidOnlineAmountCents: ctx.paidOnlineAmountCents,
     sessionPayment: undefined,
+    discount: ctx.discount,
   });
 }

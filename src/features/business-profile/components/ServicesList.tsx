@@ -1,6 +1,7 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   buildPublicServiceCategoryOptions,
@@ -31,6 +32,10 @@ interface ServicesListProps {
   /** Tighter top padding when a one-line notice sits directly above this list. */
   compactTopPadding?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /** Live sale — shows struck-through prices on eligible service cards. */
+  publicActiveSale?: PublicActiveSale | null;
+  /** Rendered after category filters and before service cards (e.g. promo tickets). */
+  belowCategoryFilters?: React.ReactNode;
 }
 
 export const ServicesList: React.FC<ServicesListProps> = ({
@@ -43,6 +48,8 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   publicHideBookLinks = false,
   compactTopPadding = false,
   bookingFlowLocale = 'en',
+  publicActiveSale = null,
+  belowCategoryFilters = null,
 }) => {
   const bookingUi = publicBookingUi(bookingFlowLocale);
   const services = useMemo(
@@ -104,12 +111,12 @@ export const ServicesList: React.FC<ServicesListProps> = ({
     !isPublic || publicOwnerHasProForPriceOptions === true;
 
   const sectionY =
-    compactTopPadding === true ? 'pt-2 pb-6 sm:pt-3 sm:pb-8' : 'py-6 sm:py-8';
+    compactTopPadding === true ? 'pt-2 pb-6 sm:pt-3 sm:pb-8' : 'py-4 sm:py-5';
 
   return (
     <section className={`px-4 sm:px-8 ${sectionY}`}>
       {hasServices ? (
-        <div className="space-y-4">
+        <div>
           {showCategoryFilters ? (
             <PublicServiceCategoryFilters
               options={categoryOptions}
@@ -119,8 +126,22 @@ export const ServicesList: React.FC<ServicesListProps> = ({
             />
           ) : null}
 
+          {belowCategoryFilters ? (
+            <div className={showCategoryFilters ? 'mt-3' : undefined}>
+              {belowCategoryFilters}
+            </div>
+          ) : null}
+
           {displayServices.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div
+              className={`grid grid-cols-1 gap-4 ${
+                belowCategoryFilters
+                  ? 'mt-2'
+                  : showCategoryFilters
+                    ? 'mt-3'
+                    : ''
+              }`}
+            >
               {displayServices.map(service => (
                 <ServiceCard
                   key={service.id}
@@ -140,6 +161,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                   businessSlug={businessSlug}
                   hideBookLink={publicHideBookLinks}
                   bookingFlowLocale={bookingFlowLocale}
+                  publicActiveSale={publicActiveSale}
                 />
               ))}
             </div>

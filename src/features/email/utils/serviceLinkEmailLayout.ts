@@ -93,15 +93,45 @@ export function serviceLinkEmailPriceTotalRow(
   `.trim();
 }
 
+const DISCOUNT_AMOUNT_COLOR = '#86efac';
+
+/** Sale/promo discount line — distinct from regular price rows. */
+export function serviceLinkEmailDiscountLineRow(
+  label: string,
+  amountLabel: string,
+  options?: { isLast?: boolean }
+): string {
+  const paddingBottom = options?.isLast ? '0' : '14px';
+  return `
+    <tr class="email-price-line email-discount-line">
+      <td colspan="2" style="padding:0 0 ${paddingBottom} 0;font-family:${SERVICE_LINK_EMAIL_FONT};">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          <tr>
+            <td class="email-price-label" style="padding:0 12px 0 0;vertical-align:top;${WORD_WRAP}">
+              <div style="${FONT_BODY}${WORD_WRAP}color:${DISCOUNT_AMOUNT_COLOR};">${escapeHtml(label)}</div>
+            </td>
+            <td class="email-price-amount" style="width:76px;vertical-align:top;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:14px;line-height:22px;font-weight:600;color:${DISCOUNT_AMOUNT_COLOR};text-align:right;white-space:nowrap;">
+              ${escapeHtml(amountLabel)}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `.trim();
+}
+
 /** Service, option, add-ons, and line-item prices in one card (no duplicate sections). */
 export function serviceLinkEmailServiceAndPricingContent(params: {
   serviceName: string;
   optionLabel?: string;
   lineItems: Array<{ label: string; price: string; isAddOn?: boolean }>;
   totalLabel?: string | null;
+  /** Sale/promo line shown above the appointment total. */
+  discount?: { label: string; amountLabel: string } | null;
 }): string {
-  const { lineItems, totalLabel } = params;
+  const { lineItems, totalLabel, discount } = params;
   const hasServiceLine = lineItems.some(item => !item.isAddOn);
+  const hasDiscount = Boolean(discount?.label?.trim() && discount.amountLabel);
   const rows: string[] = [];
 
   if (!hasServiceLine && lineItems.length > 0) {
@@ -133,18 +163,29 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
         `<div style="margin-top:4px;${FONT_BODY_SECONDARY}${WORD_WRAP}">${escapeHtml(params.optionLabel.trim())}</div>`
       );
     }
-    return `
+    if (!hasDiscount && !totalLabel) {
+      return `
       <tr>
         <td colspan="2" style="padding:0;font-family:${SERVICE_LINK_EMAIL_FONT};">
           ${headerParts.join('')}
         </td>
       </tr>
     `.trim();
+    }
+    rows.push(
+      `
+      <tr>
+        <td colspan="2" style="padding:0 0 14px 0;font-family:${SERVICE_LINK_EMAIL_FONT};">
+          ${headerParts.join('')}
+        </td>
+      </tr>
+    `.trim()
+    );
   }
 
   lineItems.forEach((item, i) => {
     const isFirst = i === 0;
-    const isLast = i === lineItems.length - 1 && !totalLabel;
+    const isLast = i === lineItems.length - 1 && !hasDiscount && !totalLabel;
     rows.push(
       serviceLinkEmailPriceLineRow(item.label, item.price, {
         isLast,
@@ -153,6 +194,14 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
       })
     );
   });
+
+  if (hasDiscount && discount) {
+    rows.push(
+      serviceLinkEmailDiscountLineRow(discount.label, discount.amountLabel, {
+        isLast: !totalLabel,
+      })
+    );
+  }
 
   if (totalLabel) {
     rows.push(serviceLinkEmailPriceTotalRow('Appointment total', totalLabel));

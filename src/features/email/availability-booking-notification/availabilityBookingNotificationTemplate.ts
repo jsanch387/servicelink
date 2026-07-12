@@ -170,8 +170,19 @@ export function buildAvailabilityBookingEmailHtml(
     : null;
 
   const totalLabel =
-    payload.totalPriceCents != null && payload.totalPriceCents > 0
-      ? formatPriceCents(payload.totalPriceCents)
+    payload.discount != null && payload.discount.estimatedTotalCents >= 0
+      ? formatPriceCents(payload.discount.estimatedTotalCents)
+      : payload.totalPriceCents != null && payload.totalPriceCents > 0
+        ? formatPriceCents(payload.totalPriceCents)
+        : null;
+
+  const discountForEmail =
+    payload.discount != null && payload.discount.discountCents > 0
+      ? {
+          label: payload.discount.label,
+          // ASCII hyphen — unicode minus can render poorly in some clients.
+          amountLabel: `-${formatPriceCents(payload.discount.discountCents)}`,
+        }
       : null;
 
   const serviceLineItems: Array<{
@@ -196,7 +207,8 @@ export function buildAvailabilityBookingEmailHtml(
   const showServiceSection =
     Boolean(payload.serviceName?.trim()) ||
     serviceLineItems.length > 0 ||
-    addOns.length > 0;
+    addOns.length > 0 ||
+    discountForEmail != null;
 
   const phoneRow = payload.customerPhone?.trim()
     ? {
@@ -267,7 +279,9 @@ export function buildAvailabilityBookingEmailHtml(
         serviceName: payload.serviceName,
         optionLabel: optionLabel || undefined,
         lineItems: serviceLineItems,
-        totalLabel: serviceLineItems.length > 0 ? totalLabel : null,
+        totalLabel:
+          serviceLineItems.length > 0 || discountForEmail ? totalLabel : null,
+        discount: discountForEmail,
       })
     );
   }

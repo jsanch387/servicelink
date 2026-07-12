@@ -22,6 +22,7 @@ import type { ExistingBooking, TimeOffInterval } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
 import { localDateKey } from './dayPlannerUtils';
 import type { AvailabilityBookingDisplay } from './types';
+import { bookingServiceNameParts } from './utils/bookingCardServiceTitle';
 
 interface AvailabilityBookingDetailPanelProps {
   booking: AvailabilityBookingDisplay;
@@ -175,6 +176,23 @@ export function AvailabilityBookingDetailPanel({
       : `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
   })();
 
+  const { name: serviceBaseName, optionLabel: serviceOptionLabel } =
+    bookingServiceNameParts(booking.serviceName);
+  const priceLineTotal =
+    (booking.servicePriceCents ?? 0) +
+    (booking.addonDetails ?? []).reduce((s, a) => s + a.priceCents, 0);
+  const bookingDiscount = booking.discount;
+  const showBookingDiscount =
+    bookingDiscount != null &&
+    bookingDiscount.discountCents > 0 &&
+    bookingDiscount.discountCents < priceLineTotal;
+  const priceEstimatedTotal = showBookingDiscount
+    ? Math.max(0, priceLineTotal - bookingDiscount.discountCents)
+    : priceLineTotal;
+  const showPriceBreakdown =
+    (booking.servicePriceCents != null && booking.servicePriceCents > 0) ||
+    (booking.addonDetails?.length ?? 0) > 0;
+
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
   };
@@ -269,45 +287,56 @@ export function AvailabilityBookingDetailPanel({
             </div>
           )}
 
-          {/* Schedule & service */}
+          {/* Schedule — when only */}
           <section>
             <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3 flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
               Schedule
             </h3>
+            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
+              <p className="font-semibold text-white leading-snug">
+                {new Date(booking.date + 'T12:00:00').toLocaleDateString(
+                  'en-US',
+                  {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  }
+                )}
+              </p>
+              <p className="mt-1 text-sm text-gray-300">
+                {booking.time}
+                <span className="text-gray-600" aria-hidden>
+                  {' '}
+                  ·{' '}
+                </span>
+                <span className="text-gray-400 tabular-nums">
+                  {formatDurationMinutes(booking.serviceDurationMinutes)}
+                </span>
+              </p>
+            </div>
+          </section>
+
+          {/* Service — what + pricing */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
+              Service
+            </h3>
             <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
-              {/* When & what */}
-              <div className="p-4 space-y-3">
-                <p className="font-semibold text-white">
-                  {booking.serviceName}
+              <div className="p-4">
+                <p className="font-semibold text-white leading-snug">
+                  {serviceBaseName}
                 </p>
-                <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-gray-300">
-                  <span>
-                    {new Date(booking.date + 'T12:00:00').toLocaleDateString(
-                      'en-US',
-                      {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      }
-                    )}
-                  </span>
-                  <span>
-                    {booking.time} ·{' '}
-                    {formatDurationMinutes(booking.serviceDurationMinutes)}
-                  </span>
-                </div>
+                {serviceOptionLabel ? (
+                  <p className="mt-0.5 text-sm text-gray-400">
+                    {serviceOptionLabel}
+                  </p>
+                ) : null}
               </div>
 
-              {/* Price breakdown – only if there is any price to show */}
-              {((booking.servicePriceCents != null &&
-                booking.servicePriceCents > 0) ||
-                (booking.addonDetails?.length ?? 0) > 0) && (
+              {showPriceBreakdown ? (
                 <div className="border-t border-white/[0.06] px-4 py-3 bg-white/[0.02]">
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2.5">
-                    Price breakdown
-                  </p>
                   <div className="space-y-1.5 text-sm">
                     {booking.servicePriceCents != null &&
                       booking.servicePriceCents > 0 && (
@@ -329,23 +358,36 @@ export function AvailabilityBookingDetailPanel({
                         </span>
                       </div>
                     ))}
+                    {showBookingDiscount && bookingDiscount ? (
+                      <div className="flex justify-between items-baseline gap-3 pt-1">
+                        <span className="text-amber-200/90 min-w-0">
+                          {bookingDiscount.label}
+                        </span>
+                        <span className="text-amber-200/90 tabular-nums shrink-0">
+                          −${(bookingDiscount.discountCents / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="flex justify-between items-baseline gap-3 pt-2 mt-2 border-t border-white/[0.06]">
                       <span className="font-medium text-white">Total</span>
-                      <span className="font-semibold text-white tabular-nums">
-                        $
-                        {(
-                          ((booking.servicePriceCents ?? 0) +
-                            (booking.addonDetails ?? []).reduce(
-                              (s, a) => s + a.priceCents,
-                              0
-                            )) /
-                          100
-                        ).toFixed(2)}
-                      </span>
+                      {showBookingDiscount ? (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                            ${(priceLineTotal / 100).toFixed(2)}
+                          </span>
+                          <span className="font-semibold text-white tabular-nums">
+                            ${(priceEstimatedTotal / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-white tabular-nums">
+                          ${(priceLineTotal / 100).toFixed(2)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </section>
 

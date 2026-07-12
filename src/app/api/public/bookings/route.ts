@@ -9,12 +9,14 @@
  * Otherwise resolves business by slug only (customer self-serve).
  */
 
+import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { CreateBookingRequest } from '@/features/availability/booking/types';
 import {
   bookingCustomerPayloadErrorMessage,
   coerceCustomerFormData,
   normalizeBookingCustomerInput,
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
+import { coerceBookingCents } from '@/features/availability/booking/utils/coerceBookingCents';
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import {
   getPublicBookingRequestId,
@@ -46,6 +48,9 @@ import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
+import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
+import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -343,13 +348,58 @@ export async function POST(request: NextRequest) {
       ? `${body.serviceName.trim()} — ${optionLabel}`
       : body.serviceName.trim();
 
+    const selectedAddOnsForEmail = (body.selectedAddOns ?? []).map(addOn => ({
+      ...addOn,
+      priceCents: coerceBookingCents(addOn.priceCents),
+    }));
+    const basePriceForEmail = coerceBookingCents(body.servicePriceCents);
+    const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
+      (sum, addOn) => sum + addOn.priceCents,
+      0
+    );
+    const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
+
+    const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {
+      profileId,
+      freeBookingsCount: p.free_bookings_count,
+    });
+    // Owner manual booking: sale auto-apply only. Ignore client promo + discount
+    // preview fields — server recomputes snapshot from DB for scheduledDate.
+    const enteredPromoCode = ownerManualBooking
+      ? ''
+      : normalizeEnteredPromoCode(
+          typeof body.promoCode === 'string' ? body.promoCode : ''
+        );
+    const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
+      businessId,
+      ownerHasPro,
+      serviceDateYmd: body.scheduledDate,
+      subtotalCents: totalPriceCentsForEmail,
+      promoCode: enteredPromoCode || null,
+      customerPhone: sanitizedCustomer.phone,
+      customerEmail: sanitizedCustomer.email,
+      allowPromoCode: !ownerManualBooking,
+    });
+    if (!discountResolved.ok) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: promoDiscountResolveErrorMessage(discountResolved.error),
+          errorCode: discountResolved.error,
+        },
+        400
+      );
+    }
+    const discountSnapshot = discountResolved.snapshot;
+
     const result = await createBooking(supabase, {
       businessId,
       businessSlug,
       serviceId: body.serviceId,
       serviceName: storedServiceName,
-      servicePriceCents: body.servicePriceCents,
-      selectedAddOns: body.selectedAddOns,
+      servicePriceCents: basePriceForEmail,
+      selectedAddOns: selectedAddOnsForEmail,
       durationMinutes: body.durationMinutes,
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
@@ -358,15 +408,8 @@ export async function POST(request: NextRequest) {
         clientChoice: locationResolved.effective ?? clientLocationChoice,
         businessMode: serviceLocation.mode,
       }),
+      discountSnapshot,
     });
-
-    const selectedAddOnsForEmail = body.selectedAddOns ?? [];
-    const basePriceForEmail = body.servicePriceCents ?? 0;
-    const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
-      (s, a) => s + a.priceCents,
-      0
-    );
-    const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
 
     const { data: paymentSettingsRow, error: paymentSettingsError } =
       await paymentSettingsOf(supabase)
@@ -425,9 +468,7 @@ export async function POST(request: NextRequest) {
     }
 
     const hasPriceLineItems =
-      (typeof body.servicePriceCents === 'number' &&
-        body.servicePriceCents > 0) ||
-      selectedAddOnsForEmail.length > 0;
+      basePriceForEmail > 0 || selectedAddOnsForEmail.length > 0;
 
     const paymentSummary = buildPublicBookingNoCheckoutPaymentSummary({
       paymentsEnabled: paySettings?.payments_enabled === true,
@@ -460,9 +501,19 @@ export async function POST(request: NextRequest) {
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
       durationMinutes: body.durationMinutes,
-      servicePriceCents: body.servicePriceCents,
+      servicePriceCents: basePriceForEmail || undefined,
       selectedAddOns: selectedAddOnsForEmail,
       totalPriceCents: totalPriceCentsForEmail,
+      ...(discountSnapshot
+        ? {
+            discount: {
+              label: discountSnapshot.discountLabel,
+              discountCents: discountSnapshot.discountCents,
+              estimatedTotalCents:
+                discountSnapshot.subtotalCents - discountSnapshot.discountCents,
+            },
+          }
+        : {}),
       paymentSummary,
       serviceLocation: emailServiceLocation,
     };

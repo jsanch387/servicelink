@@ -61,7 +61,7 @@ export const Navigation: React.FC = () => {
               <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="sm">
                 Login
               </Button>
-              <Button href={ROUTES.AUTH.SIGNUP} variant="inverse" size="sm">
+              <Button href={ROUTES.AUTH.SIGNUP} variant="primary" size="sm">
                 Sign up
               </Button>
             </>
@@ -126,7 +126,7 @@ export const Navigation: React.FC = () => {
                     </Button>
                     <Button
                       href={ROUTES.AUTH.SIGNUP}
-                      variant="inverse"
+                      variant="primary"
                       size="sm"
                       fullWidth
                       onClick={closeMobileMenu}

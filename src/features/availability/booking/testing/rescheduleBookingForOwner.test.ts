@@ -17,6 +17,26 @@ vi.mock(
   }
 );
 
+vi.mock('@/features/pricing/server/ownerHasProAccessForBusiness', () => ({
+  ownerHasProAccessForBusiness: vi.fn(async () => false),
+}));
+
+vi.mock(
+  '@/features/marketing/server/resolveDiscountColumnsForReschedule',
+  () => ({
+    resolveDiscountColumnsForReschedule: vi.fn(async () => ({
+      discount_source: null,
+      discount_sale_id: null,
+      discount_promo_code_id: null,
+      discount_type: null,
+      discount_value: null,
+      subtotal_cents: null,
+      discount_cents: null,
+      discount_label: null,
+    })),
+  })
+);
+
 function minimalConfirmedRow(overrides: Partial<BookingRow> = {}): BookingRow {
   return {
     id: 'booking-1',

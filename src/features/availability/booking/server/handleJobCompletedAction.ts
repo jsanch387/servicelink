@@ -39,6 +39,10 @@ interface BookingForJobCompleted {
   work_handoff_status: string | null;
   service_price_cents: number | null;
   addon_details: unknown;
+  discount_source?: string | null;
+  discount_type?: string | null;
+  discount_value?: number | null;
+  discount_cents?: number | null;
 }
 
 interface BookingPaymentsRow {
@@ -115,7 +119,7 @@ export async function handleJobCompletedAction(opts: {
     (auth.supabase as any)
       .from('bookings')
       .select(
-        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details'
+        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details, discount_source, discount_type, discount_value, discount_cents'
       )
       .eq('id', bookingId)
       .maybeSingle();
@@ -247,6 +251,17 @@ export async function handleJobCompletedAction(opts: {
     sessionFees: parsed.body.sessionFees ?? [],
     paidOnlineAmountCents: payments?.paid_online_amount_cents,
     sessionPayment: parsed.body.sessionPayment,
+    discount: {
+      discountSource: booking.discount_source,
+      discountType: booking.discount_type,
+      discountValue:
+        typeof booking.discount_value === 'number'
+          ? booking.discount_value
+          : booking.discount_value != null
+            ? Number(booking.discount_value)
+            : null,
+      discountCents: booking.discount_cents,
+    },
   });
 
   if (amountDue.amountDueCents !== 0) {

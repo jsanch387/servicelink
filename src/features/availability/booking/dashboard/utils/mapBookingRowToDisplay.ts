@@ -35,6 +35,14 @@ export interface BookingRow {
   status: string;
   created_at: string;
   updated_at: string;
+  discount_source?: string | null;
+  discount_promo_code_id?: string | null;
+  discount_sale_id?: string | null;
+  discount_type?: string | null;
+  discount_value?: number | null;
+  discount_label?: string | null;
+  discount_cents?: number | null;
+  subtotal_cents?: number | null;
 }
 
 /** Postgres time "HH:mm:ss" or "HH:mm" → "2:30 PM" */
@@ -55,6 +63,37 @@ export function mapBookingRowToDisplay(
   const addonDetails = Array.isArray(row.addon_details)
     ? row.addon_details
     : [];
+
+  const discountCents =
+    typeof row.discount_cents === 'number' &&
+    Number.isFinite(row.discount_cents)
+      ? Math.max(0, Math.round(row.discount_cents))
+      : 0;
+  const rawDiscountSource = row.discount_source;
+  const discountSource: 'sale' | 'promo' | null =
+    rawDiscountSource === 'sale' || rawDiscountSource === 'promo'
+      ? rawDiscountSource
+      : null;
+  const discountLabel = row.discount_label?.trim() || '';
+  const lineSubtotal =
+    (row.service_price_cents ?? 0) +
+    addonDetails.reduce((sum, a) => sum + (a.priceCents ?? 0), 0);
+  const snapshotSubtotal =
+    typeof row.subtotal_cents === 'number' &&
+    Number.isFinite(row.subtotal_cents)
+      ? Math.max(0, Math.round(row.subtotal_cents))
+      : lineSubtotal;
+
+  const discount: AvailabilityBookingDisplay['discount'] =
+    discountSource && discountCents > 0 && discountLabel
+      ? {
+          source: discountSource,
+          label: discountLabel,
+          discountCents,
+          subtotalCents: snapshotSubtotal,
+        }
+      : null;
+
   return {
     id: row.id,
     customerName: row.customer_name,
@@ -67,6 +106,7 @@ export function mapBookingRowToDisplay(
     serviceDurationMinutes: row.duration_minutes,
     servicePriceCents: row.service_price_cents ?? 0,
     addonDetails,
+    discount,
     date: row.scheduled_date,
     time: formatTimeDisplay(row.start_time ?? ''),
     startTimeHHmm:

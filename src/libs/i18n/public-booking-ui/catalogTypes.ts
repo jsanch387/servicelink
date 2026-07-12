@@ -28,6 +28,8 @@ export type PublicBookingUi = {
     dueNow: string;
     remaining: string;
     bookingTotal: string;
+    /** Shown under booking total when a sale/promo discount applies. */
+    youSave: (amount: string) => string;
     service: string;
     addOns: string;
     date: string;
@@ -50,6 +52,9 @@ export type PublicBookingUi = {
     backToOptions: string;
     backToProfile: string;
     backToServices: string;
+    /** Expand collapsed service description on options / add-ons steps. */
+    seeDescription: string;
+    hideDescription: string;
   };
   bookPicker: {
     noServicesOwnerTitle: string;
@@ -103,6 +108,21 @@ export type PublicBookingUi = {
     confirmingBooking: string;
     payAmount: (amount: string) => string;
     payDepositAmount: (amount: string) => string;
+    /** When appointment date qualifies for the business's active sale. */
+    saleApplies: (saleName: string, discountLabel: string) => string;
+    promoCodeHeading: string;
+    promoCodePlaceholder: string;
+    promoCodeApply: string;
+    promoCodeApplying: string;
+    promoCodeRemove: string;
+    promoCodeApplied: (code: string) => string;
+    promoCodeInvalid: string;
+    promoCodeInactive: string;
+    promoCodeScheduled: string;
+    promoCodeExpired: string;
+    promoCodeAlreadyUsed: string;
+    promoCodeIdentityRequired: string;
+    promoCodeUnavailable: string;
     depositPercentLead: (businessName: string, pct: number) => string;
     depositFixedLead: (businessName: string, amount: string) => string;
     payInFullLead: (businessName: string) => string;
@@ -163,7 +183,10 @@ export type PublicBookingUi = {
     errValueTooLong: string;
   };
   bookingSuccess: {
+    /** Public customer confirmation title. */
     title: string;
+    /** Owner manual booking confirmation title. */
+    titleOwner: string;
     subtitleOwner: string;
     /** Owner booked successfully but customer had no email (no confirmation sent) */
     subtitleOwnerNoCustomerEmail: string;
@@ -202,6 +225,8 @@ export type PublicBookingUi = {
     /** Public profile preview tabs (same view as embedded “back to profile” from booking). */
     servicesTab: string;
     galleryTab: string;
+    galleryEmptyTitle: string;
+    galleryEmptyDescription: string;
     bioTab: string;
     reviewsTab: string;
     noBioYet: string;
@@ -220,6 +245,33 @@ export type PublicBookingUi = {
     serviceCategoriesAriaLabel: string;
     /** Public profile: empty state when a category has no services. */
     noServicesInCategory: string;
+    /** Public profile: active sale announcement badge. */
+    saleBannerBadge: string;
+    /** Suffix under the large discount number on the ticket. */
+    saleBannerOffLabel: string;
+    /** Supporting line under dates, e.g. "Get 30% off when you book". */
+    saleBannerWhenYouBook: (discount: string) => string;
+    /** Public profile: when sale has no end date. */
+    saleBannerLimitedTime: string;
+    saleBannerDates: {
+      validPrefix: string;
+      throughPrefix: string;
+      dateRange: (start: string, end: string) => string;
+      through: (date: string) => string;
+      fromThrough: (start: string, end: string) => string;
+    };
+    saleBannerAriaLabel: (saleName: string, discount: string) => string;
+    /** Public profile: scrolling top banner (e.g. "Summer Sale, 35% off"). */
+    saleMarqueeAnnouncement: (
+      saleName: string,
+      discountMain: string,
+      offLabel: string
+    ) => string;
+    promoBannerBadge: string;
+    promoBannerWhenYouBook: (code: string, discount: string) => string;
+    promoBannerAriaLabel: (code: string, discount: string) => string;
+    promoBannerCopyCode: string;
+    promoBannerCopied: string;
   };
   quoteForm: {
     quoteDetails: string;
