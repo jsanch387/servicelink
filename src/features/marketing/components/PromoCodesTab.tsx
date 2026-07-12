@@ -4,6 +4,7 @@ import { Button, Switch } from '@/components/shared';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import type { PromoCode } from '../types';
+import { formatMarketingCalendarDate } from '../utils/marketingCalendarDate';
 import { getPromoCodeStatus } from '../utils/getPromoCodeStatus';
 import { PromoCodeCopyButton } from './PromoCodeCopyButton';
 import { StatusBadge } from './StatusBadge';
@@ -23,22 +24,14 @@ function formatDiscount(type: string, value: number): string {
 function formatDateRange(startsAt?: Date | null, endsAt?: Date | null): string {
   if (!startsAt && !endsAt) return 'Always active';
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  };
-
   if (startsAt && endsAt) {
-    return `${formatDate(startsAt)} - ${formatDate(endsAt)}`;
+    return `${formatMarketingCalendarDate(startsAt)} - ${formatMarketingCalendarDate(endsAt)}`;
   }
   if (startsAt) {
-    return `From ${formatDate(startsAt)}`;
+    return `From ${formatMarketingCalendarDate(startsAt)}`;
   }
   if (endsAt) {
-    return `Until ${formatDate(endsAt)}`;
+    return `Until ${formatMarketingCalendarDate(endsAt)}`;
   }
   return 'Always active';
 }

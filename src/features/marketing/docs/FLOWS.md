@@ -31,7 +31,8 @@ Gate: dashboard routes, server actions, and public validate/apply APIs must chec
 ### Sale
 
 - Owner runs **one active sale at a time** per business (enforce in app + DB).
-- **Auto-applied at booking** when **appointment service date** ∈ `[starts_at, ends_at]` in **business timezone**.
+- **Auto-applied at booking** when `is_active` and **appointment service date** falls in the sale window (`starts_at`/`ends_at` null = open-ended; otherwise inclusive calendar days).
+- Dashboard badges (`scheduled` / `active` / `expired`) are **wall-clock** for Marketing UI only — booking apply uses the **service date**, so a sale that starts tomorrow still applies to appointments inside its window.
 - Applies to **all services**.
 - **No per-customer cap** on sales (time-boxed promotion).
 - **Editable while live**.
@@ -109,12 +110,13 @@ When **`scheduled_date`** changes:
 
 ---
 
-## Owner-created bookings (Phase 4)
+## Owner-created bookings
 
-- Same `POST /api/public/bookings` path as today (`?for=owner`).
-- **Optional promo code field** for owner when customer mentioned a deal.
-- Same priority and snapshot rules as public booking.
-- Not required for Phase 1–3.
+- Same `POST /api/public/bookings` path (`ownerManualBooking: true` / `?for=owner`).
+- **Promo codes are not accepted** on owner-created appointments (ignored if sent).
+- **Active sale** auto-applies when `scheduledDate` qualifies (same window rules as public).
+- Server recomputes the discount snapshot from DB — client preview fields are not trusted.
+- No `promo_code_redemptions` for sales.
 
 ---
 

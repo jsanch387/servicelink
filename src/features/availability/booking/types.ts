@@ -156,4 +156,16 @@ export interface CreateBookingRequest {
   serviceLocationType?: 'mobile' | 'shop';
   /** Optional promo code entered at checkout (uppercase letters/numbers). */
   promoCode?: string;
+  /**
+   * Owner/mobile Review preview only — **ignored by the server**.
+   * Server recomputes the sale snapshot from DB for `scheduledDate`.
+   * Promo is never applied when `ownerManualBooking` is true.
+   */
+  discountSource?: 'sale';
+  discountSaleId?: string;
+  discountType?: 'percentage' | 'fixed_amount';
+  discountValue?: number;
+  subtotalCents?: number;
+  discountCents?: number;
+  discountLabel?: string;
 }

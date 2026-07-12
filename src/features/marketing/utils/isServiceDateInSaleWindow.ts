@@ -10,7 +10,7 @@ function toDateYmd(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-/** True when the appointment date falls within the sale window (inclusive). */
+/** True when the appointment date falls within the sale window (inclusive UTC calendar days). */
 export function isServiceDateInSaleWindow(
   sale: { startsAt?: Date | null; endsAt?: Date | null },
   serviceDateYmd: string

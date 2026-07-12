@@ -13,6 +13,9 @@ export type ResolveBookingDiscountResult =
 
 /**
  * One discount per booking: valid entered promo wins; else qualifying sale.
+ *
+ * Owner manual booking (`allowPromoCode: false`) never applies promo — sale only.
+ * Client discount preview fields are never trusted; amounts always come from DB.
  */
 export async function resolveBookingDiscountSnapshot(
   db: SupabaseClient,
@@ -24,9 +27,14 @@ export async function resolveBookingDiscountSnapshot(
     promoCode?: string | null;
     customerPhone?: string | null;
     customerEmail?: string | null;
+    /** Default true. Set false for owner-created appointments. */
+    allowPromoCode?: boolean;
   }
 ): Promise<ResolveBookingDiscountResult> {
-  const entered = normalizeEnteredPromoCode(params.promoCode);
+  const allowPromoCode = params.allowPromoCode !== false;
+  const entered = allowPromoCode
+    ? normalizeEnteredPromoCode(params.promoCode)
+    : '';
   if (entered) {
     const promo = await resolveBookingPromoDiscountSnapshot(db, {
       businessId: params.businessId,

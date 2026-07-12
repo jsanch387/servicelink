@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { applyDiscountToSubtotalCents } from '../utils/applyDiscountToSubtotalCents';
 import { formatPublicSaleDiscountLabel } from '../utils/formatPublicSaleDiscountLabel';
 import { isServiceDateInSaleWindow } from '../utils/isServiceDateInSaleWindow';
-import { getSaleStatus } from '../utils/getSaleStatus';
 import type { BookingDiscountSnapshot } from './bookingDiscountSnapshot';
 import { tryMapSaleRowToSale } from './mapSaleRow';
 import type { SaleRow } from './rows';
@@ -16,6 +15,10 @@ const ACTIVE_SALE_SELECT =
 /**
  * Resolves an auto-applied sale for a booking create.
  * Server-side only — do not trust client discount amounts.
+ *
+ * Qualifies by `is_active` + appointment **service date** in the sale window.
+ * Do not use dashboard "live now" status (`scheduled`/`expired`) — a sale that
+ * starts tomorrow still applies when booking an appointment inside that window.
  */
 export async function resolveBookingSaleDiscountSnapshot(
   db: SupabaseClient,
@@ -53,7 +56,7 @@ export async function resolveBookingSaleDiscountSnapshot(
     }
 
     const sale = tryMapSaleRowToSale(data as SaleRow | null);
-    if (!sale || getSaleStatus(sale) !== 'active') return null;
+    if (!sale || !sale.isActive) return null;
     if (!isServiceDateInSaleWindow(sale, serviceDateYmd)) return null;
 
     const { discountCents } = applyDiscountToSubtotalCents(

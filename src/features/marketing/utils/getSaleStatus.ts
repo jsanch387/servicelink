@@ -1,21 +1,24 @@
 import type { Sale, SaleStatus } from '../types';
+import { compareMarketingCalendarDayToWindow } from './marketingCalendarDate';
 
-export function getSaleStatus(sale: Sale): SaleStatus {
+/**
+ * Dashboard badge status. Date windows use UTC calendar days (same as storage),
+ * not wall-clock instant compare — otherwise US timezones show "Scheduled" on
+ * the start calendar day the owner picked.
+ */
+export function getSaleStatus(sale: Sale, now: Date = new Date()): SaleStatus {
   if (!sale.isActive) return 'inactive';
 
   if (!sale.startsAt || !sale.endsAt) {
     return 'active';
   }
 
-  const now = new Date();
-
-  if (new Date(sale.startsAt) > now) {
-    return 'scheduled';
-  }
-
-  if (new Date(sale.endsAt) < now) {
-    return 'expired';
-  }
-
+  const position = compareMarketingCalendarDayToWindow(
+    now,
+    sale.startsAt,
+    sale.endsAt
+  );
+  if (position === 'before') return 'scheduled';
+  if (position === 'after') return 'expired';
   return 'active';
 }

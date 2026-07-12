@@ -93,6 +93,33 @@ export function serviceLinkEmailPriceTotalRow(
   `.trim();
 }
 
+const DISCOUNT_AMOUNT_COLOR = '#86efac';
+
+/** Sale/promo discount line — distinct from regular price rows. */
+export function serviceLinkEmailDiscountLineRow(
+  label: string,
+  amountLabel: string,
+  options?: { isLast?: boolean }
+): string {
+  const paddingBottom = options?.isLast ? '0' : '14px';
+  return `
+    <tr class="email-price-line email-discount-line">
+      <td colspan="2" style="padding:0 0 ${paddingBottom} 0;font-family:${SERVICE_LINK_EMAIL_FONT};">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          <tr>
+            <td class="email-price-label" style="padding:0 12px 0 0;vertical-align:top;${WORD_WRAP}">
+              <div style="${FONT_BODY}${WORD_WRAP}color:${DISCOUNT_AMOUNT_COLOR};">${escapeHtml(label)}</div>
+            </td>
+            <td class="email-price-amount" style="width:76px;vertical-align:top;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:14px;line-height:22px;font-weight:600;color:${DISCOUNT_AMOUNT_COLOR};text-align:right;white-space:nowrap;">
+              ${escapeHtml(amountLabel)}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `.trim();
+}
+
 /** Service, option, add-ons, and line-item prices in one card (no duplicate sections). */
 export function serviceLinkEmailServiceAndPricingContent(params: {
   serviceName: string;
@@ -170,7 +197,7 @@ export function serviceLinkEmailServiceAndPricingContent(params: {
 
   if (hasDiscount && discount) {
     rows.push(
-      serviceLinkEmailPriceLineRow(discount.label, discount.amountLabel, {
+      serviceLinkEmailDiscountLineRow(discount.label, discount.amountLabel, {
         isLast: !totalLabel,
       })
     );

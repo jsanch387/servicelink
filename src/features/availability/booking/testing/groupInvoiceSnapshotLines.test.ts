@@ -30,4 +30,23 @@ describe('groupInvoiceSnapshotLines', () => {
     expect(groups[1]?.title).toBe('Add-on');
     expect(groups[2]?.title).toBe('Extra charge');
   });
+
+  it('places discount after other charge groups', () => {
+    const groups = groupInvoiceSnapshotLines([
+      { kind: 'service', label: 'Wash', amountCents: 10000 },
+      { kind: 'discount', label: 'Summer Sale — $25 off', amountCents: 2500 },
+      { kind: 'addon', label: 'Wax', amountCents: 2000 },
+    ]);
+
+    expect(groups.map(group => group.id)).toEqual([
+      'service',
+      'addon',
+      'discount',
+    ]);
+    expect(groups[2]).toMatchObject({
+      id: 'discount',
+      title: 'Discount',
+      subtotalCents: 2500,
+    });
+  });
 });

@@ -1,3 +1,5 @@
+import { formatMarketingCalendarDate } from './marketingCalendarDate';
+
 export function formatSaleDateRange(
   startsAt?: Date | string | null,
   endsAt?: Date | string | null
@@ -6,12 +8,5 @@ export function formatSaleDateRange(
     return 'No set dates — turn on when ready';
   }
 
-  const formatDate = (date: Date) =>
-    new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-
-  return `${formatDate(new Date(startsAt))} – ${formatDate(new Date(endsAt))}`;
+  return `${formatMarketingCalendarDate(startsAt)} – ${formatMarketingCalendarDate(endsAt)}`;
 }

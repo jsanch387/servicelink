@@ -997,7 +997,9 @@ export function AvailabilityBookingPage({
             : {}),
           paymentMethodSelected: paymentMethodForPublicCreate,
           ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
-          ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
+          ...(!isOwnerManualBooking && appliedPromo?.code
+            ? { promoCode: appliedPromo.code }
+            : {}),
         }),
       });
       const json = await res.json();
@@ -1335,7 +1337,9 @@ export function AvailabilityBookingPage({
                   )
                 }
               />
-              {!shouldShowPaymentStep ? promoCodeField : null}
+              {!shouldShowPaymentStep && !isOwnerManualBooking
+                ? promoCodeField
+                : null}
             </div>
           )}
 

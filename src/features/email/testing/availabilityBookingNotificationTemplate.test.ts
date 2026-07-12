@@ -56,9 +56,10 @@ describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
       { audience: 'customer', businessName: 'Acme Detail' }
     );
     expect(html).toContain('Summer Sale — 35% off');
-    expect(html).toContain('−$52.50');
+    expect(html).toContain('-$52.50');
     expect(html).toContain('$97.50');
     expect(html).toContain('Appointment total');
+    expect(html).toContain('email-discount-line');
   });
 
   it('owner email also includes sale discount in service details', () => {
@@ -77,7 +78,8 @@ describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
       }
     );
     expect(html).toContain('Summer Sale — 35% off');
-    expect(html).toContain('−$52.50');
+    expect(html).toContain('-$52.50');
+    expect(html).toContain('email-discount-line');
   });
 
   it('includes appointment total inside Service details (no separate Price details section)', () => {

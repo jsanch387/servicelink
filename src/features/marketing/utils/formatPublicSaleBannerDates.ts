@@ -1,11 +1,8 @@
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { formatMarketingCalendarDate } from './marketingCalendarDate';
 
 function formatShortDate(date: Date, locale: PublicBookingFlowLocale): string {
-  return new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(date);
+  return formatMarketingCalendarDate(date, locale === 'es' ? 'es-US' : 'en-US');
 }
 
 type SaleBannerDateLabels = {

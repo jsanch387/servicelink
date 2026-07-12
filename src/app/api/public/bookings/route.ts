@@ -16,6 +16,7 @@ import {
   coerceCustomerFormData,
   normalizeBookingCustomerInput,
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
+import { coerceBookingCents } from '@/features/availability/booking/utils/coerceBookingCents';
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import {
   getPublicBookingRequestId,
@@ -347,10 +348,13 @@ export async function POST(request: NextRequest) {
       ? `${body.serviceName.trim()} — ${optionLabel}`
       : body.serviceName.trim();
 
-    const selectedAddOnsForEmail = body.selectedAddOns ?? [];
-    const basePriceForEmail = body.servicePriceCents ?? 0;
+    const selectedAddOnsForEmail = (body.selectedAddOns ?? []).map(addOn => ({
+      ...addOn,
+      priceCents: coerceBookingCents(addOn.priceCents),
+    }));
+    const basePriceForEmail = coerceBookingCents(body.servicePriceCents);
     const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
-      (s, a) => s + a.priceCents,
+      (sum, addOn) => sum + addOn.priceCents,
       0
     );
     const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
@@ -359,9 +363,13 @@ export async function POST(request: NextRequest) {
       profileId,
       freeBookingsCount: p.free_bookings_count,
     });
-    const enteredPromoCode = normalizeEnteredPromoCode(
-      typeof body.promoCode === 'string' ? body.promoCode : ''
-    );
+    // Owner manual booking: sale auto-apply only. Ignore client promo + discount
+    // preview fields — server recomputes snapshot from DB for scheduledDate.
+    const enteredPromoCode = ownerManualBooking
+      ? ''
+      : normalizeEnteredPromoCode(
+          typeof body.promoCode === 'string' ? body.promoCode : ''
+        );
     const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
       businessId,
       ownerHasPro,
@@ -370,6 +378,7 @@ export async function POST(request: NextRequest) {
       promoCode: enteredPromoCode || null,
       customerPhone: sanitizedCustomer.phone,
       customerEmail: sanitizedCustomer.email,
+      allowPromoCode: !ownerManualBooking,
     });
     if (!discountResolved.ok) {
       return publicBookingJson(
@@ -389,8 +398,8 @@ export async function POST(request: NextRequest) {
       businessSlug,
       serviceId: body.serviceId,
       serviceName: storedServiceName,
-      servicePriceCents: body.servicePriceCents,
-      selectedAddOns: body.selectedAddOns,
+      servicePriceCents: basePriceForEmail,
+      selectedAddOns: selectedAddOnsForEmail,
       durationMinutes: body.durationMinutes,
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
@@ -459,9 +468,7 @@ export async function POST(request: NextRequest) {
     }
 
     const hasPriceLineItems =
-      (typeof body.servicePriceCents === 'number' &&
-        body.servicePriceCents > 0) ||
-      selectedAddOnsForEmail.length > 0;
+      basePriceForEmail > 0 || selectedAddOnsForEmail.length > 0;
 
     const paymentSummary = buildPublicBookingNoCheckoutPaymentSummary({
       paymentsEnabled: paySettings?.payments_enabled === true,
@@ -494,7 +501,7 @@ export async function POST(request: NextRequest) {
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
       durationMinutes: body.durationMinutes,
-      servicePriceCents: body.servicePriceCents,
+      servicePriceCents: basePriceForEmail || undefined,
       selectedAddOns: selectedAddOnsForEmail,
       totalPriceCents: totalPriceCentsForEmail,
       ...(discountSnapshot

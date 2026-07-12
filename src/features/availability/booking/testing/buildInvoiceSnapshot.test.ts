@@ -90,6 +90,96 @@ describe('buildInvoiceSnapshot', () => {
     });
     expect(snapshot.payments).toHaveLength(2);
     expect(snapshot.totals.totalCents).toBe(17000);
+    expect(snapshot.totals.discountCents).toBe(0);
     expect(snapshot.reviewUrl).toContain('/review/review-token-abc');
+  });
+
+  it('includes a sale/promo discount line after charges', () => {
+    const snapshot = buildInvoiceSnapshot({
+      business: {
+        id: 'biz-1',
+        name: 'Black Label Detail',
+        businessSlug: 'black-label-detail',
+      },
+      booking: {
+        id: 'booking-2',
+        service_name: 'Mobile Detail',
+        scheduled_date: '2026-07-14',
+        start_time: '10:00:00',
+        customer_name: 'Alex Rivera',
+        customer_email: 'alex@example.com',
+        customer_phone: '+15551234567',
+        service_price_cents: 15000,
+        addon_details: [],
+        discount_label: 'Mobile Sale 2 — $25 off',
+      },
+      sessionFees: [],
+      amountDue: {
+        serviceCents: 15000,
+        addonCents: 0,
+        sessionFeeCents: 0,
+        subtotalCents: 15000,
+        discountCents: 2500,
+        adjustedTotalCents: 12500,
+        paidOnlineCents: 0,
+        sessionPayCents: 12500,
+        amountDueCents: 0,
+      },
+      sessionPaymentMethod: 'cash',
+    });
+
+    expect(snapshot.lines).toEqual([
+      {
+        kind: 'service',
+        label: 'Mobile Detail',
+        detailLabel: null,
+        amountCents: 15000,
+      },
+      {
+        kind: 'discount',
+        label: 'Mobile Sale 2 — $25 off',
+        amountCents: 2500,
+      },
+    ]);
+    expect(snapshot.totals).toMatchObject({
+      subtotalCents: 15000,
+      discountCents: 2500,
+      totalCents: 12500,
+    });
+  });
+
+  it('falls back to Discount label when booking label is missing', () => {
+    const snapshot = buildInvoiceSnapshot({
+      business: { id: 'biz-1', name: 'Detail Co', businessSlug: 'detail-co' },
+      booking: {
+        id: 'booking-3',
+        service_name: 'Wash',
+        scheduled_date: '2026-07-14',
+        start_time: '09:00:00',
+        customer_name: 'Pat',
+        customer_email: null,
+        customer_phone: null,
+        service_price_cents: 8000,
+        addon_details: null,
+      },
+      sessionFees: [],
+      amountDue: {
+        serviceCents: 8000,
+        addonCents: 0,
+        sessionFeeCents: 0,
+        subtotalCents: 8000,
+        discountCents: 1000,
+        adjustedTotalCents: 7000,
+        paidOnlineCents: 0,
+        sessionPayCents: 7000,
+        amountDueCents: 0,
+      },
+    });
+
+    expect(snapshot.lines.at(-1)).toMatchObject({
+      kind: 'discount',
+      label: 'Discount',
+      amountCents: 1000,
+    });
   });
 });

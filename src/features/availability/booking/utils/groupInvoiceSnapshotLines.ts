@@ -1,6 +1,10 @@
 import type { InvoiceSnapshotLine } from '@/features/availability/booking/server/buildInvoiceSnapshot';
 
-export type InvoiceLineGroupId = 'service' | 'addon' | 'session_fee';
+export type InvoiceLineGroupId =
+  | 'service'
+  | 'addon'
+  | 'session_fee'
+  | 'discount';
 
 export interface InvoiceLineGroup {
   id: InvoiceLineGroupId;
@@ -19,6 +23,7 @@ export function groupInvoiceSnapshotLines(
   const service = lines.filter(line => line.kind === 'service');
   const addons = lines.filter(line => line.kind === 'addon');
   const extras = lines.filter(line => line.kind === 'session_fee');
+  const discounts = lines.filter(line => line.kind === 'discount');
 
   const groups: InvoiceLineGroup[] = [];
 
@@ -46,6 +51,16 @@ export function groupInvoiceSnapshotLines(
       title: extras.length === 1 ? 'Extra charge' : 'Extra charges',
       lines: extras,
       subtotalCents: sumLines(extras),
+    });
+  }
+
+  if (discounts.length > 0) {
+    groups.push({
+      id: 'discount',
+      title: discounts.length === 1 ? 'Discount' : 'Discounts',
+      lines: discounts,
+      // Displayed as a reduction; keep positive magnitude for formatting.
+      subtotalCents: sumLines(discounts),
     });
   }
 
