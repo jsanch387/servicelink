@@ -191,7 +191,7 @@ export function buildInvoiceSnapshot(
     totals: {
       subtotalCents: input.amountDue.subtotalCents,
       paidCents,
-      totalCents: input.amountDue.subtotalCents,
+      totalCents: input.amountDue.adjustedTotalCents,
     },
     reviewUrl,
   };

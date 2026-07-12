@@ -132,6 +132,8 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Public: fetch booking payment summary after successful checkout return. */
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
+  /** Public: validate a promo code for booking checkout preview. */
+  PUBLIC_PROMO_CODE_VALIDATE: '/api/public/promo-codes/validate',
   /** Public: subscribed ICS feed for a business (path includes signed token). */
   CALENDAR_FEED: (token: string) => `/api/calendar/feed/${token}`,
   /** Owner session: JSON with `httpsUrl` + `webcalUrl` for the ICS feed. */

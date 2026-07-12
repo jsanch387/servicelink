@@ -13,14 +13,16 @@ import {
   loadReviewInviteEligibilityContext,
   willSendReviewInviteOnBookingComplete,
 } from '@/features/reviews/server/reviewInviteEligibility';
+import type { BookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
+import { bookingDiscountColumnsFromSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
+import { resolveDiscountColumnsForReschedule } from '@/features/marketing/server/resolveDiscountColumnsForReschedule';
+import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   mapBookingRowToDisplay,
   type BookingRow,
 } from '../booking/dashboard/utils/mapBookingRowToDisplay';
-import type { BookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
-import { bookingDiscountColumnsFromSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
 
 const TABLE = 'bookings';
@@ -49,9 +51,9 @@ export interface CreateBookingPayload {
   customer_notes: string | null;
   customer_id: string;
   service_location_type: 'mobile' | 'shop' | null;
-  discount_source: 'sale' | null;
+  discount_source: 'sale' | 'promo' | null;
   discount_sale_id: string | null;
-  discount_promo_code_id: null;
+  discount_promo_code_id: string | null;
   discount_type: string | null;
   discount_value: number | null;
   subtotal_cents: number | null;
@@ -614,11 +616,25 @@ export async function rescheduleBookingForOwner(
     };
   }
 
+  const scheduledDate = params.scheduledDate.trim();
+  const ownerHasPro = await ownerHasProAccessForBusiness(
+    supabase,
+    params.businessId
+  );
+  const discountColumns = await resolveDiscountColumnsForReschedule(supabase, {
+    businessId: params.businessId,
+    ownerHasPro,
+    bookingId: params.bookingId.trim(),
+    scheduledDateYmd: scheduledDate,
+    booking: row as BookingRow,
+  });
+
   const { data: updated, error: updateErr } = await db
     .from(TABLE)
     .update({
-      scheduled_date: params.scheduledDate.trim(),
+      scheduled_date: scheduledDate,
       start_time: params.startTimeHHmm.trim().slice(0, 5),
+      ...discountColumns,
     })
     .eq('id', params.bookingId.trim())
     .eq('business_id', params.businessId)

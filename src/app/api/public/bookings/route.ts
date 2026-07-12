@@ -47,7 +47,9 @@ import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
-import { resolveBookingSaleDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
+import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
+import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
+import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -357,15 +359,30 @@ export async function POST(request: NextRequest) {
       profileId,
       freeBookingsCount: p.free_bookings_count,
     });
-    const discountSnapshot = await resolveBookingSaleDiscountSnapshot(
-      supabase,
-      {
-        businessId,
-        ownerHasPro,
-        serviceDateYmd: body.scheduledDate,
-        subtotalCents: totalPriceCentsForEmail,
-      }
+    const enteredPromoCode = normalizeEnteredPromoCode(
+      typeof body.promoCode === 'string' ? body.promoCode : ''
     );
+    const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
+      businessId,
+      ownerHasPro,
+      serviceDateYmd: body.scheduledDate,
+      subtotalCents: totalPriceCentsForEmail,
+      promoCode: enteredPromoCode || null,
+      customerPhone: sanitizedCustomer.phone,
+      customerEmail: sanitizedCustomer.email,
+    });
+    if (!discountResolved.ok) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: promoDiscountResolveErrorMessage(discountResolved.error),
+          errorCode: discountResolved.error,
+        },
+        400
+      );
+    }
+    const discountSnapshot = discountResolved.snapshot;
 
     const result = await createBooking(supabase, {
       businessId,

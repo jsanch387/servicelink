@@ -36,6 +36,10 @@ export interface BookingRow {
   created_at: string;
   updated_at: string;
   discount_source?: string | null;
+  discount_promo_code_id?: string | null;
+  discount_sale_id?: string | null;
+  discount_type?: string | null;
+  discount_value?: number | null;
   discount_label?: string | null;
   discount_cents?: number | null;
   subtotal_cents?: number | null;

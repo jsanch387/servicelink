@@ -154,4 +154,6 @@ export interface CreateBookingRequest {
    * Web may omit; use `customerServiceLocation` instead. Persisted as `bookings.service_location_type`.
    */
   serviceLocationType?: 'mobile' | 'shop';
+  /** Optional promo code entered at checkout (uppercase letters/numbers). */
+  promoCode?: string;
 }

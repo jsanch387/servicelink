@@ -32,6 +32,10 @@ import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
 import { publicBookingFlowUserFacingError } from '../utils/publicBookingFlowUserFacingError';
 import { BookingPaymentSuccess } from './BookingPaymentSuccess';
 import { BookingPriceBreakdown } from './BookingPriceBreakdown';
+import {
+  BookingPromoCodeField,
+  type AppliedBookingPromo,
+} from './BookingPromoCodeField';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
 import { CustomerForm } from './CustomerForm';
@@ -255,16 +259,54 @@ export function AvailabilityBookingPage({
     [totalPriceCents, activeSale, serviceDateYmd]
   );
 
-  const saleAppliesLine = useMemo(() => {
-    if (!bookingSalePricing.saleApplies || !activeSale) return null;
-    const discountLabel = formatPublicSaleDiscountLabel(
-      activeSale.discountType,
-      activeSale.discountValue,
-      ui.profile.saleBannerOffLabel
-    );
-    if (!discountLabel) return null;
-    return ui.calendar.saleApplies(activeSale.name, discountLabel);
-  }, [bookingSalePricing.saleApplies, activeSale, ui]);
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<AppliedBookingPromo | null>(
+    null
+  );
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+
+  /** Promo wins over sale for display + pay-in-full (never stack). */
+  const bookingDiscountPricing = useMemo(() => {
+    if (appliedPromo && appliedPromo.discountCents > 0) {
+      return {
+        source: 'promo' as const,
+        subtotalCents: appliedPromo.subtotalCents,
+        discountCents: appliedPromo.discountCents,
+        estimatedTotalCents: appliedPromo.estimatedTotalCents,
+        applies: true,
+        appliesLine: appliedPromo.label,
+      };
+    }
+    if (bookingSalePricing.saleApplies && activeSale) {
+      const discountLabel = formatPublicSaleDiscountLabel(
+        activeSale.discountType,
+        activeSale.discountValue,
+        ui.profile.saleBannerOffLabel
+      );
+      return {
+        source: 'sale' as const,
+        subtotalCents: bookingSalePricing.subtotalCents,
+        discountCents: bookingSalePricing.discountCents,
+        estimatedTotalCents: bookingSalePricing.estimatedTotalCents,
+        applies: true,
+        appliesLine:
+          discountLabel != null
+            ? ui.calendar.saleApplies(activeSale.name, discountLabel)
+            : null,
+      };
+    }
+    return {
+      source: null,
+      subtotalCents: totalPriceCents,
+      discountCents: 0,
+      estimatedTotalCents: totalPriceCents,
+      applies: false,
+      appliesLine: null as string | null,
+    };
+  }, [appliedPromo, bookingSalePricing, activeSale, totalPriceCents, ui]);
+
+  const saleAppliesLine = bookingDiscountPricing.appliesLine;
 
   const customerForSubmit = useMemo(() => {
     if (!customerAddressEntryRequired(serviceLocation, customerServiceChoice)) {
@@ -272,6 +314,109 @@ export function AvailabilityBookingPage({
     }
     return customerData;
   }, [customerData, serviceLocation, customerServiceChoice]);
+
+  useEffect(() => {
+    if (appliedPromo && appliedPromo.subtotalCents !== totalPriceCents) {
+      setAppliedPromo(null);
+      setPromoError(null);
+    }
+  }, [totalPriceCents, appliedPromo]);
+
+  const promoCodeYmdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      appliedPromo &&
+      serviceDateYmd &&
+      promoCodeYmdRef.current != null &&
+      promoCodeYmdRef.current !== serviceDateYmd
+    ) {
+      setAppliedPromo(null);
+      setPromoError(null);
+    }
+    promoCodeYmdRef.current = serviceDateYmd;
+  }, [serviceDateYmd, appliedPromo]);
+
+  const mapPromoErrorCode = (errorCode: string | undefined): string => {
+    switch (errorCode) {
+      case 'inactive':
+        return ui.calendar.promoCodeInactive;
+      case 'scheduled':
+        return ui.calendar.promoCodeScheduled;
+      case 'expired':
+        return ui.calendar.promoCodeExpired;
+      case 'already_used':
+        return ui.calendar.promoCodeAlreadyUsed;
+      case 'identity_required':
+        return ui.calendar.promoCodeIdentityRequired;
+      case 'unavailable':
+        return ui.calendar.promoCodeUnavailable;
+      default:
+        return ui.calendar.promoCodeInvalid;
+    }
+  };
+
+  const handleApplyPromoCode = async () => {
+    if (!serviceDateYmd || totalPriceCents <= 0) {
+      setPromoError(ui.calendar.promoCodeInvalid);
+      return;
+    }
+    setPromoError(null);
+    setIsApplyingPromo(true);
+    try {
+      const res = await fetch(API_ROUTES.PUBLIC_PROMO_CODE_VALIDATE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessSlug,
+          promoCode: promoInput,
+          serviceDate: serviceDateYmd,
+          subtotalCents: totalPriceCents,
+          customerPhone: customerForSubmit.phone,
+          customerEmail: customerForSubmit.email,
+        }),
+      });
+      const json = (await res.json()) as {
+        success?: boolean;
+        promoCode?: string;
+        label?: string;
+        discountCents?: number;
+        subtotalCents?: number;
+        estimatedTotalCents?: number;
+        errorCode?: string;
+        error?: string;
+      };
+      if (!res.ok || json.success === false) {
+        setAppliedPromo(null);
+        setPromoError(mapPromoErrorCode(json.errorCode));
+        return;
+      }
+      if (
+        !json.promoCode ||
+        !json.label ||
+        typeof json.discountCents !== 'number' ||
+        typeof json.subtotalCents !== 'number' ||
+        typeof json.estimatedTotalCents !== 'number'
+      ) {
+        setAppliedPromo(null);
+        setPromoError(ui.calendar.promoCodeInvalid);
+        return;
+      }
+      setAppliedPromo({
+        code: json.promoCode,
+        label: json.label,
+        discountCents: json.discountCents,
+        subtotalCents: json.subtotalCents,
+        estimatedTotalCents: json.estimatedTotalCents,
+      });
+      setPromoInput(json.promoCode);
+      setPromoError(null);
+    } catch {
+      setAppliedPromo(null);
+      setPromoError(ui.calendar.promoCodeInvalid);
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
 
   const customerServiceLocationPayload = useMemo(
     () =>
@@ -360,9 +505,9 @@ export function AvailabilityBookingPage({
     paymentSettings?.checkoutMode === 'in_app' ||
     (paymentSettings?.checkoutMode === 'customer_choice' &&
       customerPaymentChoice === 'pay_now');
-  /** Sale-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
-  const bookingDisplayTotalCents = bookingSalePricing.saleApplies
-    ? bookingSalePricing.estimatedTotalCents
+  /** Discount-adjusted total for display + pay-in-full; deposits stay on pre-discount. */
+  const bookingDisplayTotalCents = bookingDiscountPricing.applies
+    ? bookingDiscountPricing.estimatedTotalCents
     : totalPriceCents;
   const amountDueNowCents = (() => {
     const base = computeOnlineAmountDueNowCents(
@@ -371,7 +516,7 @@ export function AvailabilityBookingPage({
       customerPaymentChoice,
       totalPriceCents
     );
-    if (requiresPayNow && bookingSalePricing.saleApplies) {
+    if (requiresPayNow && bookingDiscountPricing.applies) {
       return bookingDisplayTotalCents;
     }
     return base;
@@ -739,6 +884,7 @@ export function AvailabilityBookingPage({
             depositValue: requiresDepositNow
               ? (paymentSettings?.depositValue ?? null)
               : null,
+            ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
           }
         : null,
       ...(resumeQueryForCheckout
@@ -851,6 +997,7 @@ export function AvailabilityBookingPage({
             : {}),
           paymentMethodSelected: paymentMethodForPublicCreate,
           ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
+          ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
         }),
       });
       const json = await res.json();
@@ -889,13 +1036,13 @@ export function AvailabilityBookingPage({
         selectedAddOns={submittedData.selectedAddOns}
         totalPriceCents={totalPriceCents}
         saleSubtotalCents={
-          bookingSalePricing.saleApplies
-            ? bookingSalePricing.subtotalCents
+          bookingDiscountPricing.applies
+            ? bookingDiscountPricing.subtotalCents
             : undefined
         }
         saleEstimatedTotalCents={
-          bookingSalePricing.saleApplies
-            ? bookingSalePricing.estimatedTotalCents
+          bookingDiscountPricing.applies
+            ? bookingDiscountPricing.estimatedTotalCents
             : undefined
         }
         saleAppliesLine={saleAppliesLine}
@@ -954,6 +1101,30 @@ export function AvailabilityBookingPage({
   }
 
   const headerClassName = publicFlowBackNavClassName;
+
+  const promoCodeField = (
+    <BookingPromoCodeField
+      value={promoInput}
+      onChange={setPromoInput}
+      applied={appliedPromo}
+      onApply={handleApplyPromoCode}
+      onRemove={() => {
+        setAppliedPromo(null);
+        setPromoError(null);
+      }}
+      error={promoError}
+      isApplying={isApplyingPromo}
+      disabled={isSubmitting}
+      labels={{
+        heading: ui.calendar.promoCodeHeading,
+        placeholder: ui.calendar.promoCodePlaceholder,
+        apply: ui.calendar.promoCodeApply,
+        applying: ui.calendar.promoCodeApplying,
+        remove: ui.calendar.promoCodeRemove,
+        applied: ui.calendar.promoCodeApplied,
+      }}
+    />
+  );
 
   return (
     <>
@@ -1028,16 +1199,22 @@ export function AvailabilityBookingPage({
                 totalBookingDurationMinutes={totalBookingDurationMinutes}
                 totalPriceCents={totalPriceCents}
                 saleSubtotalCents={
-                  bookingSalePricing.saleApplies
+                  bookingSalePricing.saleApplies && !appliedPromo
                     ? bookingSalePricing.subtotalCents
                     : undefined
                 }
                 saleEstimatedTotalCents={
-                  bookingSalePricing.saleApplies
+                  bookingSalePricing.saleApplies && !appliedPromo
                     ? bookingSalePricing.estimatedTotalCents
                     : undefined
                 }
-                saleAppliesLine={saleAppliesLine}
+                saleAppliesLine={
+                  appliedPromo
+                    ? null
+                    : bookingSalePricing.saleApplies
+                      ? saleAppliesLine
+                      : null
+                }
                 bookingFlowLocale={bookingFlowLocale}
               />
               <DateSelector
@@ -1126,18 +1303,18 @@ export function AvailabilityBookingPage({
                 selectedAddOns={selectedAddOns}
                 totalPriceCents={totalPriceCents}
                 saleSubtotalCents={
-                  bookingSalePricing.saleApplies
-                    ? bookingSalePricing.subtotalCents
+                  bookingDiscountPricing.applies
+                    ? bookingDiscountPricing.subtotalCents
                     : undefined
                 }
                 saleEstimatedTotalCents={
-                  bookingSalePricing.saleApplies
-                    ? bookingSalePricing.estimatedTotalCents
+                  bookingDiscountPricing.applies
+                    ? bookingDiscountPricing.estimatedTotalCents
                     : undefined
                 }
                 saleDiscountCents={
-                  bookingSalePricing.saleApplies
-                    ? bookingSalePricing.discountCents
+                  bookingDiscountPricing.applies
+                    ? bookingDiscountPricing.discountCents
                     : undefined
                 }
                 saleAppliesLine={saleAppliesLine}
@@ -1158,6 +1335,7 @@ export function AvailabilityBookingPage({
                   )
                 }
               />
+              {!shouldShowPaymentStep ? promoCodeField : null}
             </div>
           )}
 
@@ -1171,6 +1349,8 @@ export function AvailabilityBookingPage({
                   {submitError}
                 </p>
               )}
+
+              {promoCodeField}
 
               {paymentSettingsEnabled && (
                 <>
@@ -1292,11 +1472,11 @@ export function AvailabilityBookingPage({
                         <span className="text-gray-300 shrink-0">
                           {ui.common.bookingTotal}
                         </span>
-                        {bookingSalePricing.saleApplies ? (
+                        {bookingDiscountPricing.applies ? (
                           <div className="flex items-baseline justify-end gap-2">
                             <span className="text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
                               {formatPrice(
-                                bookingSalePricing.subtotalCents,
+                                bookingDiscountPricing.subtotalCents,
                                 paymentCurrency,
                                 bookingFlowLocale
                               )}
@@ -1322,11 +1502,11 @@ export function AvailabilityBookingPage({
                       {saleAppliesLine ? (
                         <div className="space-y-1.5">
                           <BookingSaleAppliesNotice line={saleAppliesLine} />
-                          {bookingSalePricing.discountCents > 0 ? (
+                          {bookingDiscountPricing.discountCents > 0 ? (
                             <p className="text-sm font-medium text-emerald-300/90">
                               {ui.common.youSave(
                                 formatPrice(
-                                  bookingSalePricing.discountCents,
+                                  bookingDiscountPricing.discountCents,
                                   paymentCurrency,
                                   bookingFlowLocale
                                 )

@@ -70,7 +70,8 @@ async function loadRedemptionCounts(
 ): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('promo_code_redemptions')
     .select('promo_code_id')
     .eq('business_id', businessId);

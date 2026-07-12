@@ -66,6 +66,8 @@ describe('buildInvoiceSnapshot', () => {
         addonCents: 2500,
         sessionFeeCents: 2500,
         subtotalCents: 17000,
+        discountCents: 0,
+        adjustedTotalCents: 17000,
         paidOnlineCents: 5000,
         sessionPayCents: 12000,
         amountDueCents: 0,

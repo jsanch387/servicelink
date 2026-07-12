@@ -1,27 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { DiscountType } from '../types';
 import { applyDiscountToSubtotalCents } from '../utils/applyDiscountToSubtotalCents';
 import { formatPublicSaleDiscountLabel } from '../utils/formatPublicSaleDiscountLabel';
 import { isServiceDateInSaleWindow } from '../utils/isServiceDateInSaleWindow';
 import { getSaleStatus } from '../utils/getSaleStatus';
+import type { BookingDiscountSnapshot } from './bookingDiscountSnapshot';
 import { tryMapSaleRowToSale } from './mapSaleRow';
 import type { SaleRow } from './rows';
 
+export type { BookingDiscountSnapshot } from './bookingDiscountSnapshot';
+export { bookingDiscountColumnsFromSnapshot } from './bookingDiscountSnapshot';
+
 const ACTIVE_SALE_SELECT =
   'id, business_id, name, description, discount_type, discount_value, starts_at, ends_at, is_active, created_at, updated_at';
-
-/** Snapshot persisted on `bookings` at create time (sale auto-apply for v1). */
-export type BookingDiscountSnapshot = {
-  discountSource: 'sale';
-  discountSaleId: string;
-  discountPromoCodeId: null;
-  discountType: DiscountType;
-  discountValue: number;
-  subtotalCents: number;
-  discountCents: number;
-  /** Display label, e.g. "Summer Sale — 35% off". */
-  discountLabel: string;
-};
 
 /**
  * Resolves an auto-applied sale for a booking create.
@@ -94,41 +84,4 @@ export async function resolveBookingSaleDiscountSnapshot(
     console.error('[marketing] resolveBookingSaleDiscountSnapshot failed', err);
     return null;
   }
-}
-
-export function bookingDiscountColumnsFromSnapshot(
-  snapshot: BookingDiscountSnapshot | null | undefined
-): {
-  discount_source: 'sale' | null;
-  discount_sale_id: string | null;
-  discount_promo_code_id: null;
-  discount_type: DiscountType | null;
-  discount_value: number | null;
-  subtotal_cents: number | null;
-  discount_cents: number | null;
-  discount_label: string | null;
-} {
-  if (!snapshot) {
-    return {
-      discount_source: null,
-      discount_sale_id: null,
-      discount_promo_code_id: null,
-      discount_type: null,
-      discount_value: null,
-      subtotal_cents: null,
-      discount_cents: null,
-      discount_label: null,
-    };
-  }
-
-  return {
-    discount_source: snapshot.discountSource,
-    discount_sale_id: snapshot.discountSaleId,
-    discount_promo_code_id: null,
-    discount_type: snapshot.discountType,
-    discount_value: snapshot.discountValue,
-    subtotal_cents: snapshot.subtotalCents,
-    discount_cents: snapshot.discountCents,
-    discount_label: snapshot.discountLabel,
-  };
 }

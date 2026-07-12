@@ -21,6 +21,7 @@
 
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 import { applyMaintenanceVisitCompletedFromBooking } from '@/features/maintenance/server/applyMaintenanceVisitCompletedFromBooking';
+import { recordPromoCodeRedemptionForCompletedBooking } from '@/features/marketing/server/recordPromoCodeRedemptionForCompletedBooking';
 import { applyReviewInviteOnBookingCompleted } from '@/features/reviews/server/applyReviewInviteOnBookingCompleted';
 import type { NotifyChannelOutcome } from '@/features/reviews/server/createReviewInviteIfEligible';
 import {
@@ -64,6 +65,12 @@ export async function completeBookingWithSideEffects(
     'completed'
   );
   if (!updated) return null;
+
+  try {
+    await recordPromoCodeRedemptionForCompletedBooking(admin, updated);
+  } catch (sideErr) {
+    console.error('[completeBooking] promo redemption side effect', sideErr);
+  }
 
   try {
     await applyMaintenanceVisitCompletedFromBooking(admin, {

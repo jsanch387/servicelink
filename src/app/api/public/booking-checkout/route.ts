@@ -26,6 +26,9 @@ import {
 } from '@/features/business-profile/utils/publicServiceLocation';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
+import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
+import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
+import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import { getAppBaseUrl } from '@/libs/stripe/appBaseUrl';
 import { getStripePlatform } from '@/libs/stripe/platformClient';
@@ -133,6 +136,10 @@ function parseBookingCheckoutDraftPayload(
     serviceLocationTypeRaw === 'mobile' || serviceLocationTypeRaw === 'shop'
       ? serviceLocationTypeRaw
       : undefined;
+  const promoCodeRaw =
+    typeof payload.promoCode === 'string'
+      ? normalizeEnteredPromoCode(payload.promoCode)
+      : '';
 
   if (
     !businessSlug ||
@@ -199,6 +206,7 @@ function parseBookingCheckoutDraftPayload(
     depositValue,
     customerServiceLocation,
     serviceLocationType,
+    ...(promoCodeRaw ? { promoCode: promoCodeRaw } : {}),
   };
 }
 
@@ -403,6 +411,31 @@ export async function POST(request: NextRequest) {
         },
         { status: 403 }
       );
+    }
+
+    if (bookingPayload.promoCode) {
+      const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
+        businessId,
+        ownerHasPro,
+        serviceDateYmd: bookingPayload.scheduledDate,
+        subtotalCents: bookingPayload.totalPriceCents,
+        promoCode: bookingPayload.promoCode,
+        customerPhone: bookingPayload.customer.phone,
+        customerEmail: bookingPayload.customer.email,
+      });
+      if (!discountResolved.ok) {
+        logCheckoutDev('reject: invalid promo code', {
+          error: discountResolved.error,
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: promoDiscountResolveErrorMessage(discountResolved.error),
+            errorCode: discountResolved.error,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const { data: settingsRow, error: settingsError } = await paymentSettingsOf(

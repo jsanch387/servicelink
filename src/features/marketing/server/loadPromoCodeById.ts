@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PromoCode } from '../types';
+import { countPromoCodeRedemptions } from './countPromoCodeRedemptions';
 import { mapPromoCodeRowToPromoCode } from './mapPromoCodeRow';
 import type { PromoCodeRow } from './rows';
 
@@ -43,14 +44,14 @@ export async function loadPromoCodeById(
       return { ok: false, status: 404, error: 'Promo code not found' };
     }
 
-    const { data: redemptionRows } = await supabase
-      .from('promo_code_redemptions')
-      .select('promo_code_id')
-      .eq('promo_code_id', trimmedId);
+    const redemptionCount = await countPromoCodeRedemptions(
+      supabase,
+      trimmedId
+    );
 
     const promoCode = mapPromoCodeRowToPromoCode(
       data as PromoCodeRow,
-      redemptionRows?.length ?? 0
+      redemptionCount
     );
 
     return { ok: true, promoCode };

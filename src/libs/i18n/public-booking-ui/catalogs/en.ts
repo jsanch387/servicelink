@@ -116,6 +116,19 @@ export const publicBookingUiEn: PublicBookingUi = {
     payDepositAmount: amount => `Pay ${amount} deposit`,
     saleApplies: (saleName, discountLabel) =>
       `${saleName} — ${discountLabel} applies`,
+    promoCodeHeading: 'Promo code',
+    promoCodePlaceholder: 'Enter code',
+    promoCodeApply: 'Apply',
+    promoCodeApplying: 'Applying…',
+    promoCodeRemove: 'Remove',
+    promoCodeApplied: code => `Code ${code} applied`,
+    promoCodeInvalid: 'That promo code is not valid.',
+    promoCodeInactive: 'That promo code is no longer active.',
+    promoCodeScheduled: 'That promo code is not available yet.',
+    promoCodeExpired: 'That promo code has expired.',
+    promoCodeAlreadyUsed: 'You have already used this promo code.',
+    promoCodeIdentityRequired: 'Add a phone or email to use this promo code.',
+    promoCodeUnavailable: 'Promo codes are not available for this business.',
     depositPercentLead: (businessName, pct) =>
       `${businessName} requires ${pct}% of the total cost as a deposit to book this appointment. This deposit is non-refundable.`,
     depositFixedLead: (businessName, amount) =>

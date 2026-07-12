@@ -110,6 +110,19 @@ export type PublicBookingUi = {
     payDepositAmount: (amount: string) => string;
     /** When appointment date qualifies for the business's active sale. */
     saleApplies: (saleName: string, discountLabel: string) => string;
+    promoCodeHeading: string;
+    promoCodePlaceholder: string;
+    promoCodeApply: string;
+    promoCodeApplying: string;
+    promoCodeRemove: string;
+    promoCodeApplied: (code: string) => string;
+    promoCodeInvalid: string;
+    promoCodeInactive: string;
+    promoCodeScheduled: string;
+    promoCodeExpired: string;
+    promoCodeAlreadyUsed: string;
+    promoCodeIdentityRequired: string;
+    promoCodeUnavailable: string;
     depositPercentLead: (businessName: string, pct: number) => string;
     depositFixedLead: (businessName: string, amount: string) => string;
     payInFullLead: (businessName: string) => string;

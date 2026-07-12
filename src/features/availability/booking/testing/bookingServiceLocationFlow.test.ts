@@ -142,10 +142,7 @@ describe('bookingServiceLocationFlow', () => {
   });
 
   it('does not treat address as valid on mobile path when choice is shop', () => {
-    const prefilled = prefillCustomerWithShopAddress(
-      contactOnlyCustomer,
-      both
-    );
+    const prefilled = prefillCustomerWithShopAddress(contactOnlyCustomer, both);
     expect(
       isBookingDetailsSubStepValid('address', prefilled, both, 'shop', {
         showVehicleFields: false,
