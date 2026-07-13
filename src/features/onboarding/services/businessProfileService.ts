@@ -140,21 +140,22 @@ export class BusinessProfileService {
     try {
       const supabase = createClient();
 
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from('business_profiles')
         .select('*')
         .eq('profile_id', profileId)
-        .maybeSingle();
+        .order('created_at', { ascending: true })
+        .limit(1);
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      if (!data) {
+      if (!rows?.[0]) {
         return { success: true, data: null as any };
       }
 
-      return { success: true, data };
+      return { success: true, data: rows[0] };
     } catch (error) {
       return {
         success: false,

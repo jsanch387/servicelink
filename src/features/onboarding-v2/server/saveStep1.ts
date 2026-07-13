@@ -45,7 +45,27 @@ export async function saveStep1(
         error: 'Please choose a business type from the list',
       };
     }
-    let resolvedBusinessProfileId = businessProfileId ?? null;
+    let resolvedBusinessProfileId = businessProfileId?.trim() || null;
+
+    // Reuse an existing business when the client lost the id (refresh, back nav,
+    // double-submit). Creating a second row breaks resume via maybeSingle.
+    if (!resolvedBusinessProfileId) {
+      const { data: existingRows, error: existingError } = await supabase
+        .from('business_profiles')
+        .select('id')
+        .eq('profile_id', profileId)
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      if (existingError) {
+        return {
+          success: false,
+          error: existingError.message,
+        };
+      }
+
+      resolvedBusinessProfileId = existingRows?.[0]?.id ?? null;
+    }
 
     if (!resolvedBusinessProfileId) {
       // Create business profile (same as old onboarding startOnboarding)

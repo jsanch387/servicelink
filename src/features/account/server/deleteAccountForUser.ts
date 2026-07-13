@@ -72,6 +72,8 @@ export async function deleteAccountForUser({
       .from('business_profiles')
       .select('id')
       .eq('profile_id', userId)
+      .order('created_at', { ascending: true })
+      .limit(1)
       .maybeSingle();
 
     const [profileRes, businessRes] = await Promise.all([

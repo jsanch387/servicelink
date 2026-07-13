@@ -24,11 +24,14 @@ export default async function DashboardQuoteRequestsPage() {
     redirect(ROUTES.DASHBOARD.MAIN);
   }
 
-  const { data: businessRow, error: businessError } = await supabase
+  const { data: businessRows, error: businessError } = await supabase
     .from('business_profiles')
     .select('id, accept_quote_req')
     .eq('profile_id', user.id)
-    .maybeSingle();
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  const businessRow = businessRows?.[0] ?? null;
 
   if (businessError || !businessRow) {
     redirect(ROUTES.DASHBOARD.MAIN);

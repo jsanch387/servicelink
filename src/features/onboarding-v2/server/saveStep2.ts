@@ -102,6 +102,34 @@ export async function saveStep2(
       return { success: false, error: replaceGate.error };
     }
 
+    // Build insert rows before delete — price_cents is NOT NULL; validate first so a
+    // bad price cannot wipe existing services.
+    const rows: Array<{
+      business_id: string;
+      name: string;
+      description: string | null;
+      price_cents: number;
+      duration_minutes: number;
+      is_active: boolean;
+    }> = [];
+    for (const s of validServices) {
+      const cents = priceToCents(s.price ?? '');
+      if (cents === null || cents < 0) {
+        return {
+          success: false,
+          error: 'Each service needs a valid price',
+        };
+      }
+      rows.push({
+        business_id: businessProfileId,
+        name: s.name.trim(),
+        description: s.description?.trim() || null,
+        price_cents: cents,
+        duration_minutes: s.durationMinutes,
+        is_active: true,
+      });
+    }
+
     // Delete existing services for this business (replace-all)
     const { error: deleteError } = await supabase
       .from('business_services')
@@ -111,16 +139,6 @@ export async function saveStep2(
     if (deleteError) {
       return { success: false, error: deleteError.message };
     }
-
-    // Insert all services (duration in minutes only; hours_to_complete is deprecated)
-    const rows = validServices.map(s => ({
-      business_id: businessProfileId,
-      name: s.name.trim(),
-      description: s.description?.trim() || null,
-      price_cents: priceToCents(s.price ?? '') ?? null,
-      duration_minutes: s.durationMinutes,
-      is_active: true,
-    }));
 
     const { error: insertError } = await supabase
       .from('business_services')

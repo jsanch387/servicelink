@@ -95,18 +95,21 @@ export async function getOnboardingState(
       };
     }
 
-    const { data: businessRow, error: businessError } = await db
+    // Prefer oldest business. Avoid bare `.maybeSingle()` — 2+ rows (duplicate
+    // step-1 creates) yield PGRST116 and kick the user to /login mid-onboarding.
+    const { data: businessRows, error: businessError } = await db
       .from('business_profiles')
       .select('*')
       .eq('profile_id', userId)
-      .maybeSingle();
+      .order('created_at', { ascending: true })
+      .limit(1);
 
     if (businessError) {
       return { success: false, error: businessError.message };
     }
 
-    const businessProfile = businessRow
-      ? (businessRow as unknown as BusinessProfile)
+    const businessProfile = businessRows?.[0]
+      ? (businessRows[0] as unknown as BusinessProfile)
       : null;
 
     const status = (userProfile.onboarding_status as string) || 'not_started';

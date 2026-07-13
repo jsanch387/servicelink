@@ -98,11 +98,14 @@ export async function completeOnboardingV2WithWelcomeLiveEmail(
     };
   }
 
-  const { data: businessProfile, error: businessError } = await supabase
+  const { data: businessRows, error: businessError } = await supabase
     .from('business_profiles')
     .select('business_slug')
     .eq('profile_id', id)
-    .maybeSingle();
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  const businessProfile = businessRows?.[0] ?? null;
 
   if (businessError || !businessProfile) {
     return {

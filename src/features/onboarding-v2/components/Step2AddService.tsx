@@ -82,18 +82,30 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
     }, 0);
   }, [description]);
 
-  const addService = () => {
+  const canAdd =
+    name.trim().length > 0 &&
+    price.trim().length > 0 &&
+    durationHHmm.trim().length > 0 &&
+    isValidServiceDurationHHmm(durationHHmm) &&
+    description.trim().length > 0;
+  const canContinue = services.length > 0 || canAdd;
+
+  const buildServiceFromForm = (): OnboardingV2Service | null => {
     const descTrim = description.trim();
-    if (!name.trim() || !price.trim() || !durationHHmm || !descTrim) return;
-    if (!isValidServiceDurationHHmm(durationHHmm)) return;
-    const minutes = serviceDurationHHmmToMinutes(durationHHmm);
-    const next: OnboardingV2Service = {
+    if (!name.trim() || !price.trim() || !durationHHmm || !descTrim) return null;
+    if (!isValidServiceDurationHHmm(durationHHmm)) return null;
+    return {
       id: `temp-${Date.now()}`,
       name: name.trim(),
       price: price.trim(),
-      durationMinutes: minutes,
+      durationMinutes: serviceDurationHHmmToMinutes(durationHHmm),
       description: descTrim,
     };
+  };
+
+  const addService = () => {
+    const next = buildServiceFromForm();
+    if (!next) return;
     onUpdate([...services, next]);
     setName('');
     setPrice('');
@@ -105,25 +117,42 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
     onUpdate(services.filter((_, i) => i !== index));
   };
 
-  const canAdd =
-    name.trim().length > 0 &&
-    price.trim().length > 0 &&
-    durationHHmm.trim().length > 0 &&
-    isValidServiceDurationHHmm(durationHHmm) &&
-    description.trim().length > 0;
-  const canContinue = services.length > 0;
-
   const handleNext = async () => {
-    if (!canContinue || isLoading || !businessProfileId) return;
+    if (!canContinue || isLoading) return;
     setIsLoading(true);
     setError('');
+
+    let servicesToSave = services;
+    if (servicesToSave.length === 0) {
+      const fromForm = buildServiceFromForm();
+      if (!fromForm) {
+        setError('Add at least one service to continue.');
+        setIsLoading(false);
+        return;
+      }
+      servicesToSave = [fromForm];
+      onUpdate(servicesToSave);
+      setName('');
+      setPrice('');
+      setDurationHHmm('');
+      setDescription('');
+    }
+
+    if (!businessProfileId) {
+      setError(
+        'Something went wrong loading your business. Refresh and try again.'
+      );
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/onboarding-v2/step2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessProfileId,
-          services: services.map(s => ({
+          services: servicesToSave.map(s => ({
             name: s.name,
             price: s.price,
             durationMinutes: s.durationMinutes,
@@ -151,7 +180,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           Add at least one service
         </h1>
         <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-          Add one service to continue — you can add the rest after onboarding.
+          Fill in one service and tap Next — you can add more after onboarding.
         </p>
       </div>
 
@@ -287,7 +316,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           type="button"
           onClick={handleNext}
           variant="inverse"
-          disabled={!canContinue || isLoading || !businessProfileId}
+          disabled={!canContinue || isLoading}
           loading={isLoading}
           className="sm:ml-auto"
         >
