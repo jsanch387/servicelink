@@ -6,7 +6,8 @@ interface TruncatedSaleNameProps {
   as?: 'p' | 'h4';
 }
 
-const baseClassName = 'min-w-0 truncate text-left';
+/** Alignment comes from `className` (e.g. text-center in previews, text-left in lists). */
+const baseClassName = 'min-w-0 truncate';
 
 export const TruncatedSaleName: React.FC<TruncatedSaleNameProps> = ({
   name,
