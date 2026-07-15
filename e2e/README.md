@@ -15,6 +15,7 @@ e2e/
   fixtures/                 ← shared helpers (auth, env, booking)
   marketing/                ← marketing dashboard CRUD
   bookings/                 ← public booking + discounts
+  quotes/                   ← custom/catalog send + customer request lifecycle
   smoke/                    ← auth smoke
 ```
 
@@ -98,7 +99,10 @@ Before the first real E2E run:
 
 3. **Public booking slug** — set `E2E_PUBLIC_BUSINESS_SLUG`, or leave unset to resolve from the owner dashboard API after login.
 
-Marketing + public booking discount specs create and delete `E2E…` promo/sale rows. Prefer a dedicated test account.
+Marketing, booking, and quote specs create identifiable `E2E…` rows and delete
+them after each scenario. Prefer a dedicated test account. Quote tests require
+at least one active service plus Pro quote requests enabled; see
+[`quotes/README.md`](./quotes/README.md).
 
 ---
 
