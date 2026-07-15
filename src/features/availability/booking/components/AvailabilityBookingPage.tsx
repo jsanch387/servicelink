@@ -1667,6 +1667,7 @@ export function AvailabilityBookingPage({
               detailsSubStep === 'address' ||
               detailsSubStep === 'vehicleNotes' ? (
                 <Button
+                  key={`details-form-${detailsSubStep}`}
                   type="submit"
                   form={CUSTOMER_FORM_ID}
                   variant="inverse"
@@ -1678,6 +1679,7 @@ export function AvailabilityBookingPage({
                 </Button>
               ) : (
                 <Button
+                  key={`details-step-${detailsSubStep}`}
                   type="button"
                   variant="inverse"
                   fullWidth

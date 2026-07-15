@@ -229,6 +229,7 @@ export type PublicCustomerFixture = {
   vehicleYear?: string;
   vehicleMake?: string;
   vehicleModel?: string;
+  notes?: string;
 };
 
 export function defaultPublicCustomer(
@@ -246,6 +247,7 @@ export function defaultPublicCustomer(
     vehicleYear: '2020',
     vehicleMake: 'Toyota',
     vehicleModel: 'Camry',
+    notes: '',
     ...overrides,
   };
 }
@@ -255,8 +257,11 @@ export function defaultPublicCustomer(
  */
 export async function fillCustomerDetailsThroughReview(
   page: Page,
-  customer: PublicCustomerFixture = defaultPublicCustomer()
-): Promise<void> {
+  customer: PublicCustomerFixture = defaultPublicCustomer(),
+  options?: { location?: 'mobile' | 'shop' }
+): Promise<{ vehicleFieldsShown: boolean; notesFieldShown: boolean }> {
+  let vehicleFieldsShown = false;
+  let notesFieldShown = false;
   for (let guard = 0; guard < 8; guard++) {
     if (
       await page
@@ -266,26 +271,34 @@ export async function fillCustomerDetailsThroughReview(
         .isVisible()
         .catch(() => false)
     ) {
-      return;
+      return { vehicleFieldsShown, notesFieldShown };
     }
 
     // Location choice (mobile vs shop)
     if (
       await page
-        .getByRole('heading', { name: /Where should service happen/i })
+        .getByRole('heading', {
+          name: /Where (?:should|will) service happen/i,
+        })
         .isVisible()
         .catch(() => false)
     ) {
       const locationGroup = page.getByRole('radiogroup', {
-        name: /Where should service happen/i,
+        name: /Where (?:should|will) service happen/i,
       });
-      const shop = locationGroup.getByRole('radio', { name: /At their shop/i });
-      if (await shop.isVisible().catch(() => false)) {
-        await shop.click();
+      const requestedLocation = options?.location ?? 'shop';
+      const target =
+        requestedLocation === 'mobile'
+          ? locationGroup.getByRole('radio', {
+              name: /^(?:Mobile|At my address)/i,
+            })
+          : locationGroup.getByRole('radio', {
+              name: /^(?:Shop|At their shop)/i,
+            });
+      if (await target.isVisible().catch(() => false)) {
+        await target.click();
       } else {
-        await locationGroup
-          .getByRole('radio', { name: /At my address/i })
-          .click();
+        await locationGroup.getByRole('radio').first().click();
       }
       const cta = stickyPrimaryButton(page, 'Continue');
       await expect(cta).toBeEnabled({ timeout: 10_000 });
@@ -319,10 +332,12 @@ export async function fillCustomerDetailsThroughReview(
         .isVisible()
         .catch(() => false)
     ) {
-      await page.getByPlaceholder('123 Main St').fill(customer.streetAddress!);
-      await page.getByPlaceholder('City').fill(customer.city!);
-      await page.getByPlaceholder('ST').fill(customer.state!);
-      await page.getByPlaceholder('78701').fill(customer.zip!);
+      await page
+        .getByPlaceholder('123 Main St', { exact: true })
+        .fill(customer.streetAddress!);
+      await page.getByPlaceholder('City', { exact: true }).fill(customer.city!);
+      await page.getByPlaceholder('ST', { exact: true }).fill(customer.state!);
+      await page.getByPlaceholder('78701', { exact: true }).fill(customer.zip!);
       const cta = stickyPrimaryButton(page, /^(Continue|Review Booking)$/);
       await expect(cta).toBeEnabled({ timeout: 10_000 });
       await cta.click();
@@ -336,9 +351,15 @@ export async function fillCustomerDetailsThroughReview(
         .isVisible()
         .catch(() => false)
     ) {
+      vehicleFieldsShown = true;
       await page.getByPlaceholder('2018').fill(customer.vehicleYear!);
       await page.getByPlaceholder('Toyota').fill(customer.vehicleMake!);
       await page.getByPlaceholder('Camry').fill(customer.vehicleModel!);
+      const notes = page.getByPlaceholder(/special requests/i);
+      if (await notes.isVisible().catch(() => false)) {
+        notesFieldShown = true;
+        await notes.fill(customer.notes ?? '');
+      }
       const cta = stickyPrimaryButton(page, /^(Continue|Review Booking)$/);
       await expect(cta).toBeEnabled({ timeout: 10_000 });
       await cta.click();
@@ -352,6 +373,10 @@ export async function fillCustomerDetailsThroughReview(
         .isVisible()
         .catch(() => false)
     ) {
+      notesFieldShown = true;
+      await page
+        .getByPlaceholder(/special requests/i)
+        .fill(customer.notes ?? '');
       await stickyPrimaryButton(page, /^(Continue|Review Booking)$/).click();
       continue;
     }
