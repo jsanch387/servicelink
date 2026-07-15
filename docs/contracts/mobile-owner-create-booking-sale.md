@@ -108,7 +108,20 @@ Downstream amount-due math (complete visit, deposits, etc.) uses the snapshot (`
   "subtotalCents": 23500,
   "discountCents": 4700,
   "discountLabel": "20% OFF",
-  "customer": {}
+  "customer": {
+    "fullName": "Jordan Lee",
+    "email": "jordan@example.com",
+    "phone": "5551234567",
+    "streetAddress": "123 Main St",
+    "unitApt": "",
+    "city": "Austin",
+    "state": "TX",
+    "zip": "78701",
+    "vehicleYear": "",
+    "vehicleMake": "",
+    "vehicleModel": "",
+    "notes": ""
+  }
 }
 ```
 
