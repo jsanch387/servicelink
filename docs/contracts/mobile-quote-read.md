@@ -8,12 +8,12 @@ need to query the `quotes` table directly.
 
 **Implementation**
 
-| Purpose | Endpoint | Server file |
-| --- | --- | --- |
-| Quote inbox | `GET /api/quotes` | `src/app/api/quotes/route.ts` |
-| Quote detail | `GET /api/quotes/[id]` | `src/app/api/quotes/[id]/route.ts` |
-| Response mapping | — | `src/features/quotes/dashboard/server/mapQuoteRowToDashboardQuote.ts` |
-| Response type | — | `src/features/quotes/dashboard/types.ts` |
+| Purpose          | Endpoint               | Server file                                                           |
+| ---------------- | ---------------------- | --------------------------------------------------------------------- |
+| Quote inbox      | `GET /api/quotes`      | `src/app/api/quotes/route.ts`                                         |
+| Quote detail     | `GET /api/quotes/[id]` | `src/app/api/quotes/[id]/route.ts`                                    |
+| Response mapping | —                      | `src/features/quotes/dashboard/server/mapQuoteRowToDashboardQuote.ts` |
+| Response type    | —                      | `src/features/quotes/dashboard/types.ts`                              |
 
 ---
 
@@ -94,12 +94,12 @@ Success (`200`):
 
 Errors:
 
-| Status | Meaning |
-| --- | --- |
-| `400` | Missing quote id |
-| `401` | Missing, invalid, or expired session |
-| `404` | Business profile or business-owned quote not found |
-| `500` | Database or unexpected server failure |
+| Status | Meaning                                            |
+| ------ | -------------------------------------------------- |
+| `400`  | Missing quote id                                   |
+| `401`  | Missing, invalid, or expired session               |
+| `404`  | Business profile or business-owned quote not found |
+| `500`  | Database or unexpected server failure              |
 
 ---
 

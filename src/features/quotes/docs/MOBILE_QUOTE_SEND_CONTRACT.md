@@ -6,14 +6,14 @@ Defines how the **native app** calls this Next.js server to **create or first-se
 
 **Implementation files**
 
-| Piece                                   | Path                                              |
-| --------------------------------------- | ------------------------------------------------- |
-| New quote + link                        | `src/app/api/quotes/send/route.ts`                |
-| First send (`requested` / `draft`)      | `src/app/api/quotes/[id]/send/route.ts`           |
+| Piece                                   | Path                                                       |
+| --------------------------------------- | ---------------------------------------------------------- |
+| New quote + link                        | `src/app/api/quotes/send/route.ts`                         |
+| First send (`requested` / `draft`)      | `src/app/api/quotes/[id]/send/route.ts`                    |
 | Validation                              | `src/features/quotes/shared/validateQuotePayloadFields.ts` |
-| Structured logs (no tokens / URLs)      | `src/features/quotes/server/quoteSendRouteLog.ts` |
-| Rate limits (Upstash + memory fallback) | `src/server/rateLimit/ownerQuoteSendRateLimit.ts` |
-| Full quotes API index                   | [README.md](./README.md)                          |
+| Structured logs (no tokens / URLs)      | `src/features/quotes/server/quoteSendRouteLog.ts`          |
+| Rate limits (Upstash + memory fallback) | `src/server/rateLimit/ownerQuoteSendRateLimit.ts`          |
+| Full quotes API index                   | [README.md](./README.md)                                   |
 
 ---
 
@@ -69,44 +69,44 @@ Validated by `validateSendQuoteBody` → `validateQuotePayloadFields` (`src/feat
 
 ### Customer + vehicle
 
-| Field                | Type   | Required | Notes                                                                      |
-| -------------------- | ------ | -------- | -------------------------------------------------------------------------- |
-| `businessSlug`       | string | yes      | Must match a business owned by the caller.                                 |
-| `customerName`       | string | yes      | Trimmed.                                                                   |
-| `customerEmail`      | string | yes      | Valid email format.                                                        |
-| `customerPhone`      | string | no       | If present, **10 digits** after stripping non-digits, or validation fails. |
-| `vehicleYear`        | string | no       | Optional.                                                                  |
-| `vehicleMake`        | string | no       | Optional.                                                                  |
-| `vehicleModel`       | string | no       | Optional.                                                                  |
-| `note`               | string | no       | Owner note; omit or empty → stored as null.                                |
+| Field           | Type   | Required | Notes                                                                      |
+| --------------- | ------ | -------- | -------------------------------------------------------------------------- |
+| `businessSlug`  | string | yes      | Must match a business owned by the caller.                                 |
+| `customerName`  | string | yes      | Trimmed.                                                                   |
+| `customerEmail` | string | yes      | Valid email format.                                                        |
+| `customerPhone` | string | no       | If present, **10 digits** after stripping non-digits, or validation fails. |
+| `vehicleYear`   | string | no       | Optional.                                                                  |
+| `vehicleMake`   | string | no       | Optional.                                                                  |
+| `vehicleModel`  | string | no       | Optional.                                                                  |
+| `note`          | string | no       | Owner note; omit or empty → stored as null.                                |
 
 **Not** collected here: service street address (customer may supply when accepting the quote).
 
 ### Service (required)
 
-| Field             | Type   | Required | Notes                                              |
-| ----------------- | ------ | -------- | -------------------------------------------------- |
+| Field             | Type   | Required | Notes                                               |
+| ----------------- | ------ | -------- | --------------------------------------------------- |
 | `serviceName`     | string | yes      | Display label. Catalog with option: `Name — Label`. |
-| `priceCents`      | number | yes      | Integer ≥ 0. **Total** (base + add-ons).           |
-| `durationMinutes` | number | yes      | Integer > 0. **Total** duration.                   |
+| `priceCents`      | number | yes      | Integer ≥ 0. **Total** (base + add-ons).            |
+| `durationMinutes` | number | yes      | Integer > 0. **Total** duration.                    |
 
 ### Catalog snapshot (optional — omit for custom quotes)
 
-| Field                  | Type   | Required | Notes                                                        |
-| ---------------------- | ------ | -------- | ------------------------------------------------------------ |
-| `serviceId`            | string | no       | UUID — `business_services.id`.                               |
-| `servicePriceOptionId` | string | no       | UUID — `service_price_options.id` when option chosen.        |
-| `servicePriceCents`    | number | no       | Integer ≥ 0. Base catalog price **before** add-ons.          |
-| `addonDetails`         | array  | no       | `{ id, name, priceCents, durationMinutes? }[]` — see below.  |
+| Field                  | Type   | Required | Notes                                                       |
+| ---------------------- | ------ | -------- | ----------------------------------------------------------- |
+| `serviceId`            | string | no       | UUID — `business_services.id`.                              |
+| `servicePriceOptionId` | string | no       | UUID — `service_price_options.id` when option chosen.       |
+| `servicePriceCents`    | number | no       | Integer ≥ 0. Base catalog price **before** add-ons.         |
+| `addonDetails`         | array  | no       | `{ id, name, priceCents, durationMinutes? }[]` — see below. |
 
 **`addonDetails`:** Each item needs `id`, `name`, `priceCents` (≥ 0). `durationMinutes` optional. Server accepts `price_cents` / `duration_minutes` aliases.
 
 ### Schedule (optional on send)
 
-| Field                | Type   | Required | Notes                                                                      |
-| -------------------- | ------ | -------- | -------------------------------------------------------------------------- |
-| `scheduledDate`      | string | no\*     | **`YYYY-MM-DD`**.                                                          |
-| `scheduledStartTime` | string | no\*     | **`HH:mm`** (24h, zero-padded); stored as `HH:mm:ss` in DB.              |
+| Field                | Type   | Required | Notes                                                       |
+| -------------------- | ------ | -------- | ----------------------------------------------------------- |
+| `scheduledDate`      | string | no\*     | **`YYYY-MM-DD`**.                                           |
+| `scheduledStartTime` | string | no\*     | **`HH:mm`** (24h, zero-padded); stored as `HH:mm:ss` in DB. |
 
 \*Send **both** or **omit both**. If omitted, customer picks date/time when approving on `/q/[token]`.
 

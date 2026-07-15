@@ -606,6 +606,7 @@ export async function POST(request: NextRequest) {
       const createdBooking = await createBooking(supabase, {
         businessId: bookingPayload.businessId,
         businessSlug: bookingPayload.businessSlug,
+        bookingSource: 'public',
         serviceId: bookingPayload.serviceId,
         serviceName: storedServiceName,
         servicePriceCents: bookingPayload.servicePriceCents,
@@ -688,6 +689,7 @@ export async function POST(request: NextRequest) {
           hasPriceLineItems,
         }),
         serviceLocation: emailServiceLocation,
+        customerNotes: bookingPayload.customer.notes?.trim() || undefined,
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('booking_payments').insert({

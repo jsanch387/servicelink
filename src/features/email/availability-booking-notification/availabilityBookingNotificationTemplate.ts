@@ -3,6 +3,7 @@
  */
 
 import { formatPhoneUsDisplay } from '@/lib/formatPhoneUs';
+import { escapeHtml } from '../utils/escapeHtml';
 import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import {
   serviceLinkEmailCta,
@@ -10,6 +11,7 @@ import {
   serviceLinkEmailFootnote,
   serviceLinkEmailSection,
   serviceLinkEmailServiceAndPricingContent,
+  SERVICE_LINK_EMAIL_FONT,
   wrapServiceLinkEmail,
 } from '../utils/serviceLinkEmailLayout';
 import type { AvailabilityBookingNotificationPayload } from './types';
@@ -151,6 +153,28 @@ function buildDetailRows(
     .join('');
 }
 
+function formatMultilineForEmail(value: string): string {
+  return escapeHtml(value).replace(/\r?\n/g, '<br />');
+}
+
+function buildNotesSection(
+  notes: string,
+  addSection: (title: string, rowsHtml: string) => void
+): void {
+  const trimmed = notes.trim();
+  if (!trimmed) return;
+  addSection(
+    'Notes',
+    `
+      <tr>
+        <td colspan="2" style="padding:0;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:14px;line-height:22px;font-weight:500;color:#fafafa;word-break:break-word;overflow-wrap:break-word;">
+          ${formatMultilineForEmail(trimmed)}
+        </td>
+      </tr>
+    `.trim()
+  );
+}
+
 export function buildAvailabilityBookingEmailHtml(
   payload: AvailabilityBookingNotificationPayload,
   options: AvailabilityBookingEmailOptions
@@ -164,7 +188,8 @@ export function buildAvailabilityBookingEmailHtml(
   const optionLabel = payload.servicePriceOptionLabel?.trim();
 
   const hasBasePrice =
-    payload.servicePriceCents != null && payload.servicePriceCents > 0;
+    payload.servicePriceCents != null &&
+    Number.isFinite(payload.servicePriceCents);
   const basePriceLabel = hasBasePrice
     ? formatPriceCents(payload.servicePriceCents!)
     : null;
@@ -172,7 +197,8 @@ export function buildAvailabilityBookingEmailHtml(
   const totalLabel =
     payload.discount != null && payload.discount.estimatedTotalCents >= 0
       ? formatPriceCents(payload.discount.estimatedTotalCents)
-      : payload.totalPriceCents != null && payload.totalPriceCents > 0
+      : payload.totalPriceCents != null &&
+          Number.isFinite(payload.totalPriceCents)
         ? formatPriceCents(payload.totalPriceCents)
         : null;
 
@@ -232,19 +258,21 @@ export function buildAvailabilityBookingEmailHtml(
     }
   );
 
+  const customerEmail = payload.customerEmail?.trim();
   const customerInfoRows: Array<{ label: string; value: string }> = [
     { label: 'Name', value: payload.customerName },
-    { label: 'Email', value: payload.customerEmail },
   ];
+  if (customerEmail)
+    customerInfoRows.push({ label: 'Email', value: customerEmail });
   if (phoneRow) customerInfoRows.push(phoneRow);
   if (vehicleLine)
     customerInfoRows.push({ label: 'Vehicle', value: vehicleLine });
 
   const ownerCustomerRows: Array<{ label: string; value: string }> = [
     { label: 'Name', value: payload.customerName },
-    { label: 'Email', value: payload.customerEmail },
   ];
-  if (phoneRow) ownerCustomerRows.push(phoneRow);
+  if (customerEmail)
+    ownerCustomerRows.push({ label: 'Email', value: customerEmail });
   if (vehicleLine)
     ownerCustomerRows.push({ label: 'Vehicle', value: vehicleLine });
   ownerCustomerRows.push(
@@ -286,6 +314,8 @@ export function buildAvailabilityBookingEmailHtml(
     );
   }
 
+  buildNotesSection(payload.customerNotes ?? '', addSection);
+
   const paymentFootnote = buildPaymentSummarySection(
     payload,
     options,
@@ -301,19 +331,27 @@ export function buildAvailabilityBookingEmailHtml(
     .filter(Boolean)
     .join('');
 
+  const createdByOwner = payload.createdByOwner === true;
+
   const heading =
     options.audience === 'owner'
-      ? 'New appointment'
+      ? createdByOwner
+        ? 'Appointment created'
+        : 'New appointment'
       : 'Your appointment is confirmed';
 
   const subtitle =
     options.audience === 'owner'
-      ? 'You have a new appointment. Here are the details:'
+      ? createdByOwner
+        ? `You scheduled this appointment for ${payload.customerName}. Here are the details:`
+        : 'You have a new appointment. Here are the details:'
       : `Here are the details for your visit with ${options.businessName}:`;
 
   const footerHtml =
     options.audience === 'owner'
-      ? `This email was sent because someone booked an appointment with your business.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
+      ? createdByOwner
+        ? `You received this email because an appointment was created from your dashboard.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
+        : `This email was sent because someone booked an appointment with your business.<br>&copy; ${new Date().getFullYear()} ServiceLink.`
       : `You received this email because an appointment was scheduled using this address.<br>&copy; ${new Date().getFullYear()} ServiceLink.`;
 
   return wrapServiceLinkEmail({
@@ -326,8 +364,12 @@ export function buildAvailabilityBookingEmailHtml(
 }
 
 export function getAvailabilityBookingNotificationSubject(
-  customerName: string
+  customerName: string,
+  options?: { createdByOwner?: boolean }
 ): string {
+  if (options?.createdByOwner) {
+    return `Appointment created for ${customerName}`;
+  }
   return `New appointment from ${customerName}`;
 }
 

@@ -157,7 +157,12 @@ export default async function ServiceDetailsPage({
     reachedFreeCap;
 
   if (showNotAcceptingBookings) {
-    redirect(getBusinessBookPath(slug, { lang: bookingFlowLocale }));
+    redirect(
+      getBusinessBookPath(slug, {
+        forOwner: isOwnerManualBooking,
+        lang: bookingFlowLocale,
+      })
+    );
   }
 
   const result = await getServiceWithAddOnsForBooking(

@@ -115,4 +115,51 @@ describe('notifyOwnerForAvailabilityBookingCreated', () => {
       expect.objectContaining({ customerName: 'Jordan' })
     );
   });
+
+  it('uses owner-created notification copy when flagged on email payload', async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    const from = vi.fn().mockImplementation((table: string) => {
+      if (table === 'notifications') {
+        return { insert };
+      }
+      return { insert: vi.fn() };
+    });
+
+    const getUserById = vi.fn().mockResolvedValue({
+      data: { user: { email: 'owner@example.com' } },
+    });
+
+    const supabase = {
+      from,
+      auth: { admin: { getUserById } },
+    } as never;
+
+    await notifyOwnerForAvailabilityBookingCreated(supabase, {
+      profileId: 'profile-uuid',
+      bookingId: 'booking-uuid',
+      customerName: 'Sam',
+      serviceSummaryLine: 'Custom detail',
+      scheduledDate: '2026-05-10',
+      emailPayload: {
+        customerName: 'Sam',
+        customerEmail: '',
+        serviceName: 'Custom detail',
+        scheduledDate: '2026-05-10',
+        startTime: '14:00',
+        durationMinutes: 120,
+        servicePriceCents: 15000,
+        selectedAddOns: [],
+        totalPriceCents: 15000,
+        paymentSummary: { title: 'Payment', rows: [] },
+        createdByOwner: true,
+      },
+    });
+
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Appointment created',
+        body: 'For Sam',
+      })
+    );
+  });
 });

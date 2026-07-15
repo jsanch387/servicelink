@@ -46,12 +46,16 @@ export async function notifyOwnerForAvailabilityBookingCreated(
     return;
   }
 
+  const createdByOwner = params.emailPayload.createdByOwner === true;
   const title = notificationMinimalDisplayTitle(
     'availability_booking',
     'booking',
-    ''
+    '',
+    createdByOwner ? 'Appointment created' : null
   );
-  const bodyText = notificationInboxSubtitleFromCustomer(customerName);
+  const bodyText = createdByOwner
+    ? `For ${customerName}`
+    : notificationInboxSubtitleFromCustomer(customerName);
 
   const { error: notifError } = await supabase.from('notifications').insert({
     user_id: profileId,

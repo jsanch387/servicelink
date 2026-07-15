@@ -19,8 +19,12 @@ function truncateFallback(title: string): string {
 export function notificationMinimalDisplayTitle(
   type: string,
   referenceType: string,
-  fallbackTitle: string
+  fallbackTitle: string,
+  overrideTitle?: string | null
 ): string {
+  const override = overrideTitle?.trim();
+  if (override) return truncateFallback(override);
+
   const blob = `${type} ${referenceType}`.toLowerCase();
 
   if (blob.includes('payment') && blob.includes('fail')) {

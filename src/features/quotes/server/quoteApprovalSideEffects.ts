@@ -72,6 +72,15 @@ function rowToQuotePayload(
   };
 }
 
+function buildQuoteBookingNotes(quote: QuoteRowForApprovedBooking): string {
+  const bookingNoteParts: string[] = [];
+  const reqMsg = quote.request_message?.trim();
+  if (reqMsg) bookingNoteParts.push(`Customer note:\n${reqMsg}`);
+  const ownerMsg = quote.note?.trim();
+  if (ownerMsg) bookingNoteParts.push(`Your notes:\n${ownerMsg}`);
+  return bookingNoteParts.join('\n\n');
+}
+
 function buildEmailPayload(
   quote: QuoteRowForApprovedBooking,
   serviceNameForOwner: string,
@@ -90,6 +99,7 @@ function buildEmailPayload(
     quote.customer_street_address?.trim() ||
     quote.service_address?.trim() ||
     undefined;
+  const bookingNotes = buildQuoteBookingNotes(quote);
   return {
     customerName: quote.customer_name.trim(),
     customerEmail: quote.customer_email.trim(),
@@ -104,6 +114,7 @@ function buildEmailPayload(
     servicePriceCents: basePrice,
     selectedAddOns: addOns,
     totalPriceCents: total,
+    customerNotes: bookingNotes || undefined,
     serviceLocation: buildAvailabilityBookingEmailServiceLocation({
       effectiveType: 'mobile',
       shopAddressLabel: null,

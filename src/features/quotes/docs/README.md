@@ -6,14 +6,14 @@ Single place to see **where code lives**, **which HTTP APIs exist**, and **how c
 
 ## Schema (database)
 
-| Doc                                                                                    | Contents                                                                                        |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [MOBILE_QUOTE_SEND_CONTRACT.md](./MOBILE_QUOTE_SEND_CONTRACT.md)                       | **Mobile ↔ Next.js**: Bearer auth, JSON body, tracing headers, send / send-existing responses  |
+| Doc                                                                                      | Contents                                                                                        |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [MOBILE_QUOTE_SEND_CONTRACT.md](./MOBILE_QUOTE_SEND_CONTRACT.md)                         | **Mobile ↔ Next.js**: Bearer auth, JSON body, tracing headers, send / send-existing responses  |
 | [`docs/contracts/mobile-quote-read.md`](../../../../docs/contracts/mobile-quote-read.md) | **Mobile ↔ Next.js**: Bearer-auth quote inbox/detail fields and rendering rules                |
-| [QUOTES_TABLE.md](./QUOTES_TABLE.md)                                                   | `quotes` columns, statuses, owner vs customer request                                           |
-| [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md)                           | `quote_public_links`, token hash, expiry, RLS notes                                             |
-| [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md) | **Public quote request** intake vs **availability booking**, data flow, approve → V2 `bookings` |
-| [BOOKINGS_CUSTOMER_ID.md](./BOOKINGS_CUSTOMER_ID.md)                                   | Why `bookings.customer_id` must exist when creating bookings from quotes                        |
+| [QUOTES_TABLE.md](./QUOTES_TABLE.md)                                                     | `quotes` columns, statuses, owner vs customer request                                           |
+| [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md)                             | `quote_public_links`, token hash, expiry, RLS notes                                             |
+| [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md)   | **Public quote request** intake vs **availability booking**, data flow, approve → V2 `bookings` |
+| [BOOKINGS_CUSTOMER_ID.md](./BOOKINGS_CUSTOMER_ID.md)                                     | Why `bookings.customer_id` must exist when creating bookings from quotes                        |
 
 Business scope: quotes belong to `business_profiles` via `quotes.business_id`. Owner APIs resolve the current business with `src/server/resolveCurrentBusinessId.ts`.
 
@@ -40,8 +40,8 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | `send/validateSendQuoteBody.ts`                          | Validates `businessSlug` + shared payload (POST send).                                                                                               |
 | `edit/validateUpdateQuoteBody.ts`                        | Re-exports shared payload validation (PATCH).                                                                                                        |
 | `shared/validateQuotePayloadFields.ts`                   | **Shared** field rules for send + patch (customer, service, catalog snapshot, optional schedule, phone).                                             |
-| `shared/quoteServiceSnapshot.ts`                         | `addonDetails` shape + `splitQuoteServiceDisplayName` for catalog display.                                                                            |
-| `server/loadQuoteServiceCatalog.ts`                      | Server-only catalog loader for create/edit UI (mobile loads same tables via Supabase).                                                                |
+| `shared/quoteServiceSnapshot.ts`                         | `addonDetails` shape + `splitQuoteServiceDisplayName` for catalog display.                                                                           |
+| `server/loadQuoteServiceCatalog.ts`                      | Server-only catalog loader for create/edit UI (mobile loads same tables via Supabase).                                                               |
 | `shared/utils/resolveQuoteTokenHash.ts`                  | Raw URL token → SHA-256 hex; 64-char hex passthrough (dashboard uses stored hash).                                                                   |
 | `public-view/validateQuoteRespondRequest.ts`             | POST respond: `token`, `decision`, `serviceAddress` required when approving.                                                                         |
 | `server/createBookingFromApprovedQuote.ts`               | Map approved quote → `createBooking` (V2 bookings + customer upsert).                                                                                |
@@ -96,7 +96,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 | `scheduledStartTime`                         | optional | `HH:mm` (stored as `HH:mm:ss`). Customer picks on accept when omitted.                 |
 | `serviceId`                                  | optional | `business_services.id` (catalog snapshot).                                             |
 | `servicePriceOptionId`                       | optional | `service_price_options.id` when multi-price option chosen.                             |
-| `servicePriceCents`                          | optional | Base catalog price before add-ons.                                                       |
+| `servicePriceCents`                          | optional | Base catalog price before add-ons.                                                     |
 | `addonDetails`                               | optional | `[{ id, name, priceCents, durationMinutes? }]` — stored in `quotes.addon_details`.     |
 
 **Success:** `201` — `{ success: true, data: { quoteId, publicUrl, expiresAt } }`  

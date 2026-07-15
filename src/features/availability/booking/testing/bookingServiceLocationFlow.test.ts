@@ -33,6 +33,14 @@ const contactOnlyCustomer: CustomerFormData = {
   email: '',
 };
 
+const customerWithAddress: CustomerFormData = {
+  ...contactOnlyCustomer,
+  streetAddress: '123 Main St',
+  city: 'Austin',
+  state: 'TX',
+  zip: '78701',
+};
+
 const mobileOnly: PublicBookingServiceLocation = {
   mode: 'mobile_only',
   profileLocationLabel: 'Austin, TX 78701',
@@ -155,6 +163,59 @@ describe('bookingServiceLocationFlow', () => {
     expect(getNextDetailsSubStep('serviceChoice', both, 'mobile')).toBe(
       'address'
     );
+  });
+
+  it('allows visible vehicle fields to be optional for owner manual booking', () => {
+    expect(
+      isBookingDetailsSubStepValid(
+        'vehicleNotes',
+        customerWithAddress,
+        mobileOnly,
+        null,
+        {
+          showVehicleFields: true,
+          requireVehicleFields: false,
+          emailOptional: true,
+        }
+      )
+    ).toBe(true);
+  });
+
+  it('rejects partial optional vehicle fields', () => {
+    expect(
+      isBookingDetailsSubStepValid(
+        'vehicleNotes',
+        {
+          ...customerWithAddress,
+          vehicleYear: '2018',
+          vehicleMake: '',
+          vehicleModel: '',
+        },
+        mobileOnly,
+        null,
+        {
+          showVehicleFields: true,
+          requireVehicleFields: false,
+          emailOptional: true,
+        }
+      )
+    ).toBe(false);
+  });
+
+  it('still requires visible vehicle fields when configured as required', () => {
+    expect(
+      isBookingDetailsSubStepValid(
+        'vehicleNotes',
+        customerWithAddress,
+        mobileOnly,
+        null,
+        {
+          showVehicleFields: true,
+          requireVehicleFields: true,
+          emailOptional: true,
+        }
+      )
+    ).toBe(false);
   });
 
   it('navigates back from vehicle notes', () => {

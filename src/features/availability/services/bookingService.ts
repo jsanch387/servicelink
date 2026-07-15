@@ -27,9 +27,12 @@ import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
 
 const TABLE = 'bookings';
 
+export type BookingSource = 'public' | 'owner';
+
 export interface CreateBookingPayload {
   business_id: string;
   business_slug: string | null;
+  booking_source: BookingSource | null;
   service_id: string | null;
   service_name: string;
   service_price_cents: number | null;
@@ -67,6 +70,7 @@ function mapCustomerToRow(
   CreateBookingPayload,
   | 'business_id'
   | 'business_slug'
+  | 'booking_source'
   | 'service_id'
   | 'service_name'
   | 'service_price_cents'
@@ -110,6 +114,8 @@ export async function createBooking(
   payload: {
     businessId: string;
     businessSlug: string;
+    /** Server-derived origin. Omit for legacy/system flows with no direct source. */
+    bookingSource?: BookingSource | null;
     serviceId?: string;
     serviceName: string;
     servicePriceCents?: number;
@@ -145,6 +151,7 @@ export async function createBooking(
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
+    booking_source: payload.bookingSource ?? null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
     service_price_cents: payload.servicePriceCents ?? null,
@@ -317,6 +324,7 @@ export async function createBookingForExistingCustomer(
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
+    booking_source: null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
     service_price_cents: payload.servicePriceCents ?? null,

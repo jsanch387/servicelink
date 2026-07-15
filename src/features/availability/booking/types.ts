@@ -73,6 +73,8 @@ export interface AvailabilityBookingPageProps {
   selectedAddOns?: AddOnDisplay[];
   serviceName: string;
   serviceDurationMinutes?: number;
+  /** Owner custom job notes used to prefill the booking notes field. */
+  initialCustomerNotes?: string;
   servicePriceCents?: number;
   /** Shown under the service name when customer chose a multi-price option. */
   selectedPriceOptionLabel?: string;

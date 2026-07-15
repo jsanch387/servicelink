@@ -3,6 +3,7 @@
 import { Button } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import {
+  ROUTES,
   getBusinessBookPath,
   getBusinessBookScheduleUrl,
   getPublicBusinessProfilePath,
@@ -189,6 +190,7 @@ export function ServiceDetailsScreen({
   const exitDetailsHref = isOwnerManualBooking
     ? getBusinessBookPath(businessSlug, {
         forOwner: true,
+        entry: 'services',
         lang: bookingFlowLocale,
       })
     : getPublicBusinessProfilePath(businessSlug, {
@@ -203,92 +205,104 @@ export function ServiceDetailsScreen({
   return (
     <>
       <PublicFlowStickyBackHeader>
-        {phase === 'addons' && needsPriceStep ? (
-          <button
-            type="button"
-            onClick={() => setPhase('price')}
-            className={backNavClassName}
-          >
-            <PublicFlowBackNavLabel label={ui.serviceDetails.backToOptions} />
-          </button>
-        ) : (
-          <Link href={exitDetailsHref} className={backNavClassName}>
-            <PublicFlowBackNavLabel label={exitDetailsLabel} />
+        {isOwnerManualBooking ? (
+          <Link href={ROUTES.DASHBOARD.BOOKINGS} className={backNavClassName}>
+            <PublicFlowBackNavLabel label={ui.nav.backToBookings} />
           </Link>
+        ) : (
+          <>
+            {phase === 'addons' && needsPriceStep ? (
+              <button
+                type="button"
+                onClick={() => setPhase('price')}
+                className={backNavClassName}
+              >
+                <PublicFlowBackNavLabel
+                  label={ui.serviceDetails.backToOptions}
+                />
+              </button>
+            ) : (
+              <Link href={exitDetailsHref} className={backNavClassName}>
+                <PublicFlowBackNavLabel label={exitDetailsLabel} />
+              </Link>
+            )}
+          </>
         )}
       </PublicFlowStickyBackHeader>
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
         <div className="flex-1 pb-28">
-          <section className="mb-6">
-            {/* Match calendar step: title + duration (left), price (right, same row as title) */}
-            <div className="flex justify-between gap-4 items-start mb-2">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg font-semibold text-white leading-snug tracking-tight">
-                  {service.name}
-                </h1>
-                <div className="mt-0.5 flex items-center gap-1 text-sm tabular-nums italic">
-                  <p className="text-zinc-400">
-                    {formatDurationMinutes(
-                      durationForHeader,
-                      bookingFlowLocale
-                    )}
-                  </p>
-                  {selectedPriceOption &&
-                  (phase === 'price' || phase === 'addons') ? (
-                    <>
-                      <span
-                        aria-hidden="true"
-                        className="text-zinc-500 not-italic leading-none"
-                      >
-                        &bull;
-                      </span>
-                      <p className="text-zinc-500 not-italic">
-                        {selectedPriceOption.label}
-                      </p>
-                    </>
-                  ) : null}
+          {!isOwnerManualBooking ? (
+            <section className="mb-6">
+              {/* Match calendar step: title + duration (left), price (right, same row as title) */}
+              <div className="flex justify-between gap-4 items-start mb-2">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg font-semibold text-white leading-snug tracking-tight">
+                    {service.name}
+                  </h1>
+                  <div className="mt-0.5 flex items-center gap-1 text-sm tabular-nums italic">
+                    <p className="text-zinc-400">
+                      {formatDurationMinutes(
+                        durationForHeader,
+                        bookingFlowLocale
+                      )}
+                    </p>
+                    {selectedPriceOption &&
+                    (phase === 'price' || phase === 'addons') ? (
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className="text-zinc-500 not-italic leading-none"
+                        >
+                          &bull;
+                        </span>
+                        <p className="text-zinc-500 not-italic">
+                          {selectedPriceOption.label}
+                        </p>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right pt-0.5 min-w-[4.5rem]">
+                  {showStartingAtOnly ? (
+                    <span className="text-sm text-zinc-400 tabular-nums leading-snug">
+                      {ui.serviceDetails.startingAt}{' '}
+                      {formatPrice(service.priceCents, bookingFlowLocale)}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-zinc-300 tabular-nums">
+                      {formatPrice(basePriceCents, bookingFlowLocale)}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="shrink-0 text-right pt-0.5 min-w-[4.5rem]">
-                {showStartingAtOnly ? (
-                  <span className="text-sm text-zinc-400 tabular-nums leading-snug">
-                    {ui.serviceDetails.startingAt}{' '}
-                    {formatPrice(service.priceCents, bookingFlowLocale)}
-                  </span>
-                ) : (
-                  <span className="text-sm text-zinc-300 tabular-nums">
-                    {formatPrice(basePriceCents, bookingFlowLocale)}
-                  </span>
-                )}
-              </div>
-            </div>
-            {!isOwnerManualBooking && service.description?.trim() ? (
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowDescription(prev => !prev)}
-                  className="text-sm text-zinc-200 hover:text-white transition-colors cursor-pointer"
-                  aria-expanded={showDescription}
-                >
-                  {showDescription
-                    ? ui.serviceDetails.hideDescription
-                    : ui.serviceDetails.seeDescription}
-                </button>
-                {showDescription ? (
-                  <ServiceDescriptionFormatted
-                    description={service.description}
-                    className="mt-2 text-sm text-zinc-500"
-                  />
-                ) : null}
-              </div>
-            ) : null}
-          </section>
+              {!isOwnerManualBooking && service.description?.trim() ? (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDescription(prev => !prev)}
+                    className="text-sm text-zinc-200 hover:text-white transition-colors cursor-pointer"
+                    aria-expanded={showDescription}
+                  >
+                    {showDescription
+                      ? ui.serviceDetails.hideDescription
+                      : ui.serviceDetails.seeDescription}
+                  </button>
+                  {showDescription ? (
+                    <ServiceDescriptionFormatted
+                      description={service.description}
+                      className="mt-2 text-sm text-zinc-500"
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
           {phase === 'price' && needsPriceStep && (
             <section className="mb-6">
               <h2 className="text-base font-semibold text-white mb-3">
-                {ui.serviceDetails.chooseOption}
+                {ui.serviceDetails.choosePricingOption}
               </h2>
               <PriceOptionSelector
                 options={priceOptions}
@@ -312,13 +326,16 @@ export function ServiceDetailsScreen({
           )}
 
           <section className="mb-8">
+            <h2 className="mb-3 text-base font-semibold text-white">
+              {ui.common.summary}
+            </h2>
             <ServiceDetailsBookingSummary
               serviceName={service.name}
               servicePriceCents={basePriceCents}
+              serviceDurationMinutes={baseDurationMinutes}
               selectedVariantLabel={selectedPriceOption?.label}
               selectedAddOns={selectedAddOns}
               totalCents={totalCents}
-              serviceLabel={ui.common.service}
               addOnsLabel={ui.common.addOns}
               totalLabel={ui.common.total}
               bookingFlowLocale={bookingFlowLocale}
@@ -330,7 +347,33 @@ export function ServiceDetailsScreen({
           className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb"
           style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
         >
-          <div className="max-w-2xl mx-auto">
+          <div
+            className={`max-w-2xl mx-auto ${
+              isOwnerManualBooking ? 'grid grid-cols-2 gap-3' : ''
+            }`}
+          >
+            {isOwnerManualBooking ? (
+              phase === 'addons' && needsPriceStep ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={() => setPhase('price')}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : (
+                <Button
+                  href={exitDetailsHref}
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                >
+                  {ui.common.back}
+                </Button>
+              )
+            ) : null}
             {phase === 'price' && showAddOnSection && (
               <Button
                 type="button"

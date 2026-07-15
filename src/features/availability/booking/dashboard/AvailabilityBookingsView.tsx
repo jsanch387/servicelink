@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { getBusinessBookPath } from '@/constants/routes';
+import { ROUTES, getBusinessBookPath } from '@/constants/routes';
 import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import type {
@@ -14,7 +14,13 @@ import {
 } from '@/features/calendar-sync';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { AvailabilityBookingCard } from './AvailabilityBookingCard';
 import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
@@ -138,6 +144,9 @@ export function AvailabilityBookingsView({
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
+  const [newAppointmentNotice, setNewAppointmentNotice] = useState<
+    string | null
+  >(null);
 
   const trimmedSlug = businessSlug?.trim() ?? '';
   const newAppointmentHref = trimmedSlug
@@ -152,10 +161,14 @@ export function AvailabilityBookingsView({
   const newAppointmentEnabled =
     Boolean(newAppointmentHref) && !manualBookingBlockedByCap;
 
+  const freeCapNotice = `You've reached your free plan limit (${FREE_BOOKINGS_LIMIT} appointments). Upgrade to Pro for unlimited bookings.`;
+  const missingSlugNotice =
+    'Set your public page URL under Business profile to create bookings from here.';
+
   const newAppointmentTitle = manualBookingBlockedByCap
-    ? `You've reached your free plan limit (${FREE_BOOKINGS_LIMIT} appointments). Upgrade to Pro for unlimited bookings.`
+    ? freeCapNotice
     : !newAppointmentHref
-      ? 'Set your public page URL under Business profile to create bookings from here.'
+      ? missingSlugNotice
       : undefined;
 
   const newAppointmentAriaLabel = manualBookingBlockedByCap
@@ -163,6 +176,22 @@ export function AvailabilityBookingsView({
     : newAppointmentHref
       ? 'New appointment for a customer'
       : 'New appointment unavailable. Set your public page URL under Business profile first.';
+
+  useEffect(() => {
+    if (!newAppointmentNotice) return;
+    const timer = setTimeout(() => setNewAppointmentNotice(null), 4500);
+    return () => clearTimeout(timer);
+  }, [newAppointmentNotice]);
+
+  const handleNewAppointmentClick = () => {
+    if (manualBookingBlockedByCap) {
+      setNewAppointmentNotice(freeCapNotice);
+      return;
+    }
+    if (!newAppointmentHref) {
+      setNewAppointmentNotice(missingSlugNotice);
+    }
+  };
 
   const { upcoming, past, cancelled } = useMemo(() => {
     const now = new Date();
@@ -426,15 +455,34 @@ export function AvailabilityBookingsView({
       </div>
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-4 backdrop-blur-md sm:px-4 md:px-6 lg:left-64 lg:px-8 safe-area-pb"
+        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 lg:left-64 lg:px-8 safe-area-pb"
         style={{
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
         }}
       >
-        <div className="mx-auto w-full max-w-xl lg:max-w-3xl">
+        <div className="mx-auto w-full max-w-lg space-y-3 lg:max-w-2xl">
+          {newAppointmentNotice ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className="rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 text-sm leading-relaxed text-zinc-300"
+            >
+              <p>{newAppointmentNotice}</p>
+              {manualBookingBlockedByCap ? (
+                <a
+                  href={ROUTES.DASHBOARD.UPGRADE}
+                  className="mt-2 inline-flex cursor-pointer text-sm font-semibold text-white underline-offset-2 hover:underline"
+                >
+                  Upgrade to Pro
+                </a>
+              ) : null}
+            </div>
+          ) : null}
           <Button
-            href={newAppointmentHref}
-            disabled={!newAppointmentEnabled}
+            href={newAppointmentEnabled ? newAppointmentHref : undefined}
+            onClick={
+              newAppointmentEnabled ? undefined : handleNewAppointmentClick
+            }
             variant="inverse"
             fullWidth
             className="font-semibold"

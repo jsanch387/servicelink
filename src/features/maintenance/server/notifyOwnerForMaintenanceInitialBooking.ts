@@ -46,7 +46,7 @@ export async function notifyOwnerForMaintenanceInitialBooking(
   const { data: bookingRow, error: bookingErr } = await db
     .from('bookings')
     .select(
-      'customer_name, customer_email, customer_phone, customer_vehicle_year, customer_vehicle_make, customer_vehicle_model, customer_street_address, customer_unit_apt, customer_city, customer_state, customer_zip'
+      'customer_name, customer_email, customer_phone, customer_vehicle_year, customer_vehicle_make, customer_vehicle_model, customer_street_address, customer_unit_apt, customer_city, customer_state, customer_zip, customer_notes'
     )
     .eq('id', params.bookingId)
     .maybeSingle();
@@ -74,6 +74,7 @@ export async function notifyOwnerForMaintenanceInitialBooking(
     customer_city?: string | null;
     customer_state?: string | null;
     customer_zip?: string | null;
+    customer_notes?: string | null;
   };
 
   const formatMoney = (cents: number) =>
@@ -142,6 +143,7 @@ export async function notifyOwnerForMaintenanceInitialBooking(
       customerState: String(br.customer_state ?? '').trim() || undefined,
       customerZip: String(br.customer_zip ?? '').trim() || undefined,
     }),
+    customerNotes: String(br.customer_notes ?? '').trim() || undefined,
   };
 
   await notifyOwnerForAvailabilityBookingCreated(supabase, {

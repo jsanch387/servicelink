@@ -396,6 +396,7 @@ export async function POST(request: NextRequest) {
     const result = await createBooking(supabase, {
       businessId,
       businessSlug,
+      bookingSource: ownerManualBooking ? 'owner' : 'public',
       serviceId: body.serviceId,
       serviceName: storedServiceName,
       servicePriceCents: basePriceForEmail,
@@ -516,6 +517,8 @@ export async function POST(request: NextRequest) {
         : {}),
       paymentSummary,
       serviceLocation: emailServiceLocation,
+      customerNotes: sanitizedCustomer.notes?.trim() || undefined,
+      createdByOwner: ownerManualBooking || undefined,
     };
 
     await notifyOwnerForAvailabilityBookingCreated(supabase, {

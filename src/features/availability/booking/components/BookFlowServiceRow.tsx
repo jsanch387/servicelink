@@ -25,6 +25,8 @@ export interface BookFlowServiceRowProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   isSelected?: boolean;
   onSelect?: () => void;
+  /** When false, selection is controlled by the parent and does not navigate immediately. */
+  navigateOnSelect?: boolean;
 }
 
 function formatPrice(cents: number, contactLabel: string): string {
@@ -42,6 +44,7 @@ export function BookFlowServiceRow({
   bookingFlowLocale = 'en',
   isSelected = false,
   onSelect,
+  navigateOnSelect = true,
 }: BookFlowServiceRowProps) {
   const router = useRouter();
   const ui = publicBookingUi(bookingFlowLocale);
@@ -66,7 +69,7 @@ export function BookFlowServiceRow({
 
   const handleClick = () => {
     onSelect?.();
-    router.push(href);
+    if (navigateOnSelect) router.push(href);
   };
 
   return (

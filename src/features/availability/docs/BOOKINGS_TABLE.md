@@ -75,6 +75,7 @@ All customer fields except name/email can be nullable if we later make address o
 | Column                | Type                  | Why                                                                                     |
 | --------------------- | --------------------- | --------------------------------------------------------------------------------------- |
 | `business_slug`       | text, nullable        | Denormalized slug for display/emails (e.g. “Booked at johns-plumbing”) without joining. |
+| `booking_source`      | text, nullable        | Direct creation origin: `public` booking link or authenticated `owner` flow.            |
 | `cancelled_at`        | timestamptz, nullable | When it was cancelled, if we track that.                                                |
 | `cancellation_reason` | text, nullable        | Optional; for analytics or support.                                                     |
 
@@ -111,6 +112,7 @@ All customer fields except name/email can be nullable if we later make address o
 | id                      | uuid        | no       | gen_random_uuid()                                                                                                                                                    |
 | business_id             | uuid        | no       | –                                                                                                                                                                    |
 | business_slug           | text        | yes      | –                                                                                                                                                                    |
+| booking_source          | text        | yes      | `public` or `owner`; null for legacy and unrelated system-created bookings.                                                                                          |
 | service_id              | uuid        | yes      | –                                                                                                                                                                    |
 | service_name            | text        | no       | –                                                                                                                                                                    |
 | service_price_cents     | integer     | yes      | –                                                                                                                                                                    |
@@ -133,6 +135,7 @@ All customer fields except name/email can be nullable if we later make address o
 | updated_at              | timestamptz | no       | now()                                                                                                                                                                |
 
 - **`addon_details`:** JSON array of objects shaped like **`AddOnAtBooking`** (`features/availability/booking/types.ts`): `id`, `name`, `priceCents`, optional **`durationMinutes`** (extra minutes that were included in `duration_minutes` for that add-on, or omitted/null for price-only add-ons). Used for receipts, emails, and customer metrics (e.g. last add-on names). Persisted by **`createBooking`** from **`POST /api/public/bookings`** `selectedAddOns`.
+- **`booking_source`:** Set by the server, not trusted from arbitrary client input. `POST /api/public/bookings` stores `owner` only after owner authentication succeeds; otherwise it stores `public`. Stripe checkout completion also stores `public`.
 - **Status:** `confirmed` (default when submitted), `completed`, `cancelled`. Owner can change to completed or cancelled.
 - **Cascade:** `business_id` → business_profiles(id) ON DELETE CASCADE (when a business/user data is deleted, their bookings are removed). `service_id` → business_services(id) ON DELETE SET NULL (if service is deleted, booking remains with service_id null).
 - Trigger to keep `updated_at` in sync on update.
