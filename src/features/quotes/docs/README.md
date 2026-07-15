@@ -9,6 +9,7 @@ Single place to see **where code lives**, **which HTTP APIs exist**, and **how c
 | Doc                                                                                    | Contents                                                                                        |
 | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | [MOBILE_QUOTE_SEND_CONTRACT.md](./MOBILE_QUOTE_SEND_CONTRACT.md)                       | **Mobile ↔ Next.js**: Bearer auth, JSON body, tracing headers, send / send-existing responses  |
+| [`docs/contracts/mobile-quote-read.md`](../../../../docs/contracts/mobile-quote-read.md) | **Mobile ↔ Next.js**: Bearer-auth quote inbox/detail fields and rendering rules                |
 | [QUOTES_TABLE.md](./QUOTES_TABLE.md)                                                   | `quotes` columns, statuses, owner vs customer request                                           |
 | [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md)                           | `quote_public_links`, token hash, expiry, RLS notes                                             |
 | [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md) | **Public quote request** intake vs **availability booking**, data flow, approve → V2 `bookings` |
@@ -38,7 +39,9 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | `dashboard/utils/publicQuoteUrl.ts`                      | Build `/q/...` path or absolute URL from dashboard token field.                                                                                      |
 | `send/validateSendQuoteBody.ts`                          | Validates `businessSlug` + shared payload (POST send).                                                                                               |
 | `edit/validateUpdateQuoteBody.ts`                        | Re-exports shared payload validation (PATCH).                                                                                                        |
-| `shared/validateQuotePayloadFields.ts`                   | **Shared** field rules for send + patch (customer, service, price, duration, schedule, phone).                                                       |
+| `shared/validateQuotePayloadFields.ts`                   | **Shared** field rules for send + patch (customer, service, catalog snapshot, optional schedule, phone).                                             |
+| `shared/quoteServiceSnapshot.ts`                         | `addonDetails` shape + `splitQuoteServiceDisplayName` for catalog display.                                                                            |
+| `server/loadQuoteServiceCatalog.ts`                      | Server-only catalog loader for create/edit UI (mobile loads same tables via Supabase).                                                                |
 | `shared/utils/resolveQuoteTokenHash.ts`                  | Raw URL token → SHA-256 hex; 64-char hex passthrough (dashboard uses stored hash).                                                                   |
 | `public-view/validateQuoteRespondRequest.ts`             | POST respond: `token`, `decision`, `serviceAddress` required when approving.                                                                         |
 | `server/createBookingFromApprovedQuote.ts`               | Map approved quote → `createBooking` (V2 bookings + customer upsert).                                                                                |
@@ -85,12 +88,16 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 | `customerEmail`                              | yes      | Format validated.                                                                      |
 | `customerPhone`                              | optional | If present, must normalize to **10 digits** or validation fails.                       |
 | `vehicleYear`, `vehicleMake`, `vehicleModel` | optional |                                                                                        |
-| `serviceName`                                | yes      |                                                                                        |
-| `priceCents`                                 | yes      | Integer ≥ 0.                                                                           |
-| `durationMinutes`                            | yes      | Integer > 0.                                                                           |
+| `serviceName`                                | yes      | Catalog with option: `{name} — {optionLabel}`.                                         |
+| `priceCents`                                 | yes      | Integer ≥ 0. **Total** (base + add-ons).                                               |
+| `durationMinutes`                            | yes      | Integer > 0. **Total** duration.                                                       |
 | `note`                                       | optional |                                                                                        |
-| `scheduledDate`                              | yes      | `YYYY-MM-DD`.                                                                          |
-| `scheduledStartTime`                         | yes      | `HH:mm` (stored as `HH:mm:ss` in DB).                                                  |
+| `scheduledDate`                              | optional | `YYYY-MM-DD`. Send with `scheduledStartTime` or omit both.                             |
+| `scheduledStartTime`                         | optional | `HH:mm` (stored as `HH:mm:ss`). Customer picks on accept when omitted.                 |
+| `serviceId`                                  | optional | `business_services.id` (catalog snapshot).                                             |
+| `servicePriceOptionId`                       | optional | `service_price_options.id` when multi-price option chosen.                             |
+| `servicePriceCents`                          | optional | Base catalog price before add-ons.                                                       |
+| `addonDetails`                               | optional | `[{ id, name, priceCents, durationMinutes? }]` — stored in `quotes.addon_details`.     |
 
 **Success:** `201` — `{ success: true, data: { quoteId, publicUrl, expiresAt } }`  
 `publicUrl` is `${origin}/q/${rawToken}` (raw token is **not** stored; DB stores SHA-256 hex).
@@ -135,9 +142,10 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 ### `GET /api/quotes`
 
-**Auth:** Session + `resolveCurrentBusinessId`.
+**Auth:** Supabase cookies (web) or **`Authorization: Bearer <access_token>`**
+(mobile) via `getAuthenticatedUser`, then `resolveCurrentBusinessId`.
 
-**Success:** `{ success: true, quotes: DashboardQuote[] }` (newest `updated_at` first). Each quote includes the **newest active** public link’s `token_hash` as `publicToken` for dashboard URL helpers (see [Tokens](#public-link-tokens)).
+**Success:** `{ success: true, quotes: DashboardQuote[] }` (newest `updated_at` first). Each quote includes catalog snapshots (`serviceId`, `servicePriceOptionId`, `servicePriceCents`, `addonDetails`) and the **newest active** public link’s `token_hash` as `publicToken` for dashboard URL helpers (see [Tokens](#public-link-tokens)).
 
 **Code:** `src/app/api/quotes/route.ts`
 
@@ -145,7 +153,8 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 ### `GET /api/quotes/[id]`
 
-**Auth:** Session + business scope; quote must belong to current business.
+**Auth:** Supabase cookies (web) or **Bearer** (mobile) + business scope; quote
+must belong to current business.
 
 **Success:** `{ success: true, quote: DashboardQuote }`.
 
@@ -157,7 +166,8 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 ### `PATCH /api/quotes/[id]`
 
-**Auth:** Same as GET.
+**Auth:** Web cookie session. Mobile Bearer editing is not part of the current
+read/send contract.
 
 **Purpose:** Update quote fields **without** creating a new link. Customer keeps the same `/q/[token]` URL; next page load shows new data.
 
@@ -165,7 +175,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Body:** Same fields as send **except** `businessSlug` (validated by `validateUpdateQuoteBody` / `validateQuotePayloadFields`).
 
-**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `updated_at`. **`request_message` is not updated** by PATCH (customer intake text). (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
+**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `service_id`, `service_price_option_id`, `service_price_cents`, `addon_details`, `updated_at`. **`request_message` is not updated** by PATCH (customer intake text). (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
 
 **Success:** `{ success: true, quote: DashboardQuote }` (reloaded after update).
 

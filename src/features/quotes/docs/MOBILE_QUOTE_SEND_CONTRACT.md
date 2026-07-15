@@ -1,6 +1,8 @@
 # Mobile ↔ Next.js contract — send quote + public link
 
-Defines how the **native app** (or any non-browser client) calls this Next.js server to **create or first-send** a quote and receive a **shareable customer URL**.
+Defines how the **native app** calls this Next.js server to **create or first-send** a quote and receive a **shareable customer URL**.
+
+**Canonical copy (mobile contracts folder):** [`docs/contracts/mobile-quote-send.md`](../../../../docs/contracts/mobile-quote-send.md)
 
 **Implementation files**
 
@@ -8,6 +10,7 @@ Defines how the **native app** (or any non-browser client) calls this Next.js se
 | --------------------------------------- | ------------------------------------------------- |
 | New quote + link                        | `src/app/api/quotes/send/route.ts`                |
 | First send (`requested` / `draft`)      | `src/app/api/quotes/[id]/send/route.ts`           |
+| Validation                              | `src/features/quotes/shared/validateQuotePayloadFields.ts` |
 | Structured logs (no tokens / URLs)      | `src/features/quotes/server/quoteSendRouteLog.ts` |
 | Rate limits (Upstash + memory fallback) | `src/server/rateLimit/ownerQuoteSendRateLimit.ts` |
 | Full quotes API index                   | [README.md](./README.md)                          |
@@ -64,6 +67,8 @@ Server echoes tracing in structured logs (`requestId`) so Next.js logs and mobil
 
 Validated by `validateSendQuoteBody` → `validateQuotePayloadFields` (`src/features/quotes/shared/validateQuotePayloadFields.ts`).
 
+### Customer + vehicle
+
 | Field                | Type   | Required | Notes                                                                      |
 | -------------------- | ------ | -------- | -------------------------------------------------------------------------- |
 | `businessSlug`       | string | yes      | Must match a business owned by the caller.                                 |
@@ -73,14 +78,37 @@ Validated by `validateSendQuoteBody` → `validateQuotePayloadFields` (`src/feat
 | `vehicleYear`        | string | no       | Optional.                                                                  |
 | `vehicleMake`        | string | no       | Optional.                                                                  |
 | `vehicleModel`       | string | no       | Optional.                                                                  |
-| `serviceName`        | string | yes      | Free-text service label.                                                   |
-| `priceCents`         | number | yes      | Integer ≥ 0.                                                               |
-| `durationMinutes`    | number | yes      | Integer > 0.                                                               |
 | `note`               | string | no       | Owner note; omit or empty → stored as null.                                |
-| `scheduledDate`      | string | yes      | **`YYYY-MM-DD`**.                                                          |
-| `scheduledStartTime` | string | yes      | **`HH:mm`** (24h); stored as `HH:mm:ss` in DB.                             |
 
 **Not** collected here: service street address (customer may supply when accepting the quote).
+
+### Service (required)
+
+| Field             | Type   | Required | Notes                                              |
+| ----------------- | ------ | -------- | -------------------------------------------------- |
+| `serviceName`     | string | yes      | Display label. Catalog with option: `Name — Label`. |
+| `priceCents`      | number | yes      | Integer ≥ 0. **Total** (base + add-ons).           |
+| `durationMinutes` | number | yes      | Integer > 0. **Total** duration.                   |
+
+### Catalog snapshot (optional — omit for custom quotes)
+
+| Field                  | Type   | Required | Notes                                                        |
+| ---------------------- | ------ | -------- | ------------------------------------------------------------ |
+| `serviceId`            | string | no       | UUID — `business_services.id`.                               |
+| `servicePriceOptionId` | string | no       | UUID — `service_price_options.id` when option chosen.        |
+| `servicePriceCents`    | number | no       | Integer ≥ 0. Base catalog price **before** add-ons.          |
+| `addonDetails`         | array  | no       | `{ id, name, priceCents, durationMinutes? }[]` — see below.  |
+
+**`addonDetails`:** Each item needs `id`, `name`, `priceCents` (≥ 0). `durationMinutes` optional. Server accepts `price_cents` / `duration_minutes` aliases.
+
+### Schedule (optional on send)
+
+| Field                | Type   | Required | Notes                                                                      |
+| -------------------- | ------ | -------- | -------------------------------------------------------------------------- |
+| `scheduledDate`      | string | no\*     | **`YYYY-MM-DD`**.                                                          |
+| `scheduledStartTime` | string | no\*     | **`HH:mm`** (24h, zero-padded); stored as `HH:mm:ss` in DB.              |
+
+\*Send **both** or **omit both**. If omitted, customer picks date/time when approving on `/q/[token]`.
 
 ---
 
@@ -114,7 +142,15 @@ If the quote is **not** in `requested` or `draft`, server returns **`409`** with
 
 ---
 
-## Example (mobile pseudocode)
+## Service catalog (mobile UI)
+
+No dedicated HTTP catalog route yet. Load from Supabase with the owner's session (see `loadQuoteServiceCatalog` and [`docs/contracts/service-categories-data.md`](../../../../docs/contracts/service-categories-data.md)). Multi-price options require owner Pro access.
+
+---
+
+## Examples
+
+### Custom quote, no schedule
 
 ```http
 POST /api/quotes/send
@@ -130,7 +166,31 @@ X-Request-ID: mobile-abc-123
   "serviceName": "Full detail",
   "priceCents": 25000,
   "durationMinutes": 180,
-  "note": "Includes clay bar",
+  "note": "Includes clay bar"
+}
+```
+
+### Catalog quote with option + add-ons
+
+```json
+{
+  "businessSlug": "acme-detail",
+  "customerName": "Jane Doe",
+  "customerEmail": "jane@example.com",
+  "serviceName": "Full detail — Large SUV",
+  "serviceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "servicePriceOptionId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "servicePriceCents": 20000,
+  "addonDetails": [
+    {
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Engine bay",
+      "priceCents": 5000,
+      "durationMinutes": 30
+    }
+  ],
+  "priceCents": 25000,
+  "durationMinutes": 210,
   "scheduledDate": "2026-05-12",
   "scheduledStartTime": "09:30"
 }
@@ -159,6 +219,9 @@ Handlers emit **`[quotes-send]`** + a JSON payload on the same line:
 | No `Authorization`, no cookies         | **401**, generic error, `X-Request-ID` set                 |
 | Bad Bearer token                       | **401**                                                    |
 | Valid user, wrong `businessSlug` owner | **403** or **404** per handler                             |
+| Custom quote, no schedule              | **201** with `quoteId`, `publicUrl`, `expiresAt`           |
+| Catalog + add-ons body                 | **201**; DB has `service_id`, `addon_details`              |
+| Only date without time                 | **400**                                                    |
 | Valid body                             | **201** / **200** with `quoteId`, `publicUrl`, `expiresAt` |
 | Same user >60 sends / hour (staging)   | **429** + `Retry-After`                                    |
 | Malformed JSON                         | **400** `Invalid JSON body`                                |
@@ -173,6 +236,7 @@ Handlers emit **`[quotes-send]`** + a JSON payload on the same line:
 | `src/features/quotes/testing/quoteSendRouteLog.test.ts`       | Request id, response headers, email mask, `supabaseErrorForLogs`, truncation helpers |
 | `src/features/quotes/testing/ownerQuoteSendRateLimit.test.ts` | In-memory rate limit: 60 allows, 61st blocks (same user id)                          |
 | `src/features/quotes/testing/sendQuoteValidation.test.ts`     | Request JSON validation (shared with routes)                                         |
+| `src/features/quotes/testing/quoteServiceSnapshot.test.ts`    | `addonDetails` normalization                                                         |
 
 **Not** covered in CI (would need integration harness): full `POST` with real Supabase + cookie/Bearer against a deployed URL. Rely on staging QA above for end-to-end.
 
@@ -182,3 +246,4 @@ Handlers emit **`[quotes-send]`** + a JSON payload on the same line:
 
 - [README.md](./README.md) — full quotes API list
 - [QUOTES_TABLE.md](./QUOTES_TABLE.md) — DB columns
+- [`docs/contracts/mobile-quote-send.md`](../../../../docs/contracts/mobile-quote-send.md) — canonical mobile contract

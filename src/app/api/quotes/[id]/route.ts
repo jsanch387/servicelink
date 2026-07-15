@@ -1,6 +1,7 @@
 import { loadDashboardQuoteById } from '@/features/quotes/dashboard/server/loadDashboardQuoteById';
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
 import { validateUpdateQuoteBody } from '@/features/quotes/edit/validateUpdateQuoteBody';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
@@ -9,7 +10,7 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_req: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
     const quoteId = id?.trim();
@@ -20,7 +21,15 @@ export async function GET(_req: Request, { params }: RouteContext) {
       );
     }
 
-    const supabase = await createSupabaseServerClient();
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const { supabase } = auth;
     const resolved = await resolveCurrentBusinessId(supabase);
 
     if (!resolved.ok) {

@@ -49,6 +49,8 @@ export interface DashboardQuote {
   serviceAddressLine: string | null;
   /** Catalog service id when quote used a saved service. */
   serviceId: string | null;
+  /** Selected multi-price option id when the catalog service used one. */
+  servicePriceOptionId: string | null;
   /** Base service price (excludes add-ons) when catalog was used. */
   servicePriceCents: number | null;
   /** Denormalized add-ons snapshot (`quotes.addon_details`). */

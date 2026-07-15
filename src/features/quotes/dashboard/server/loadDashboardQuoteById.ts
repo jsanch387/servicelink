@@ -53,6 +53,7 @@ export async function loadDashboardQuoteById(
           customer_zip,
           service_address,
           service_id,
+          service_price_option_id,
           service_price_cents,
           addon_details
         `

@@ -38,6 +38,7 @@ export interface QuoteDbRow {
   customer_zip: string | null;
   service_address: string | null;
   service_id: string | null;
+  service_price_option_id: string | null;
   service_price_cents: number | null;
   addon_details: unknown;
 }

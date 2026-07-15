@@ -80,6 +80,7 @@ export function mapQuoteRowToDashboardQuote(
     serviceAddressLine: row.service_address,
     vehicleLine: buildVehicleLine(row),
     serviceId: row.service_id?.trim() || null,
+    servicePriceOptionId: row.service_price_option_id?.trim() || null,
     servicePriceCents:
       row.service_price_cents != null &&
       Number.isFinite(row.service_price_cents)
