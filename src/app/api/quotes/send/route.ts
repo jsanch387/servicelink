@@ -163,6 +163,10 @@ export async function POST(request: NextRequest) {
         note: body.note,
         scheduled_date: body.scheduledDate,
         scheduled_start_time: body.scheduledStartTimeForDb,
+        service_id: body.serviceId,
+        service_price_option_id: body.servicePriceOptionId,
+        service_price_cents: body.servicePriceCents,
+        addon_details: body.addonDetails,
         status: 'sent',
         sent_at: new Date().toISOString(),
       })
@@ -236,6 +240,7 @@ export async function POST(request: NextRequest) {
         customerRequestMessage: null,
         vehicleLine,
         publicQuoteUrl: publicUrl,
+        addonDetails: body.addonDetails,
       };
       const emailResult = await sendQuoteSentToCustomerEmail(
         body.customerEmail,

@@ -59,6 +59,46 @@ describe('validateQuoteRespondRequest', () => {
     expect(result.data.address.street).toBe('123 Main St');
     expect(result.data.address.unit).toBe(null);
     expect(result.data.displayLine).toContain('Miami');
+    expect(result.data.schedule).toBeNull();
+  });
+
+  it('accepts approve with schedule for customer-chosen slot', () => {
+    const result = validateQuoteRespondRequest({
+      token: 'abc',
+      decision: 'approve',
+      address: {
+        street: '123 Main St',
+        city: 'Miami',
+        state: 'FL',
+        zip: '33101',
+      },
+      schedule: {
+        scheduledDate: '2026-07-20',
+        scheduledStartTime: '10:30',
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    if (result.data.decision !== 'approve') return;
+    expect(result.data.schedule).toEqual({
+      scheduledDate: '2026-07-20',
+      scheduledStartTimeForDb: '10:30:00',
+    });
+  });
+
+  it('rejects approve with incomplete schedule', () => {
+    const result = validateQuoteRespondRequest({
+      token: 'abc',
+      decision: 'approve',
+      address: {
+        street: '123 Main St',
+        city: 'Miami',
+        state: 'FL',
+        zip: '33101',
+      },
+      schedule: { scheduledDate: '2026-07-20' },
+    });
+    expect(result.ok).toBe(false);
   });
 
   it('accepts approve with legacy long enough trimmed serviceAddress', () => {

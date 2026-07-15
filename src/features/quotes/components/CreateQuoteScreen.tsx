@@ -5,9 +5,6 @@ import {
   GlassCard,
   Input,
   PhoneInput,
-  PriceInput,
-  TextArea,
-  TimeSelect,
   WarningCallout,
   formatUsPhoneDigits,
 } from '@/components/shared';
@@ -15,7 +12,6 @@ import { API_ROUTES, ROUTES } from '@/constants/routes';
 import { DateSelector } from '@/features/availability/booking/components/DateSelector';
 import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
-import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { useDashboardQuoteDetail } from '@/features/quotes/dashboard/hooks/useDashboardQuoteDetail';
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
@@ -28,15 +24,27 @@ import {
 import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
+import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
+import type { QuoteAddonDetail } from '@/features/quotes/shared/quoteServiceSnapshot';
+import type { QuoteCatalogService } from '@/features/quotes/server/loadQuoteServiceCatalog';
+import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import {
-  SERVICE_EDIT_DURATION_ERROR,
+  QuoteServiceStep,
+  isQuoteCatalogPhaseReady,
+  isQuoteCatalogSelectionComplete,
+  type QuoteCatalogPhase,
+  type QuoteCatalogSelection,
+  type QuoteServiceMode,
+} from '@/features/quotes/components/QuoteServiceStep';
+import {
   isValidServiceEditDurationInput,
   parseServiceEditDurationForSave,
 } from '@/features/services/utils/serviceEditForm';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import React, {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -48,9 +56,15 @@ export type CreateQuoteScreenProps = {
   businessSlug: string | null;
   mode?: 'create' | 'edit';
   quoteId?: string;
+  /** Active catalog services for “from your services” on the service step. */
+  serviceCatalog?: QuoteCatalogService[];
+  serviceCategories?: ServiceCategoryRow[];
 };
 
-type Step = 'details' | 'schedule' | 'review' | 'sent';
+type Step = 'customer' | 'vehicle' | 'service' | 'schedule' | 'review' | 'sent';
+
+/** How the owner wants to handle scheduling on the date step. */
+type ScheduleMode = 'pick' | 'customer' | null;
 
 function getTodayAtMidnight() {
   const today = new Date();
@@ -98,6 +112,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   businessSlug,
   mode = 'create',
   quoteId,
+  serviceCatalog = [],
+  serviceCategories = [],
 }) => {
   const isEdit = mode === 'edit' && Boolean(quoteId?.trim());
   const editId = quoteId?.trim() ?? '';
@@ -117,7 +133,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   );
   const [customerRequestDetails, setCustomerRequestDetails] = useState('');
 
-  const [step, setStep] = useState<Step>('details');
+  const [step, setStep] = useState<Step>('customer');
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -128,8 +144,23 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [priceDigits, setPriceDigits] = useState('');
   const [durationHHmm, setDurationHHmm] = useState('01:00');
   const [note, setNote] = useState('');
+  const [serviceMode, setServiceMode] = useState<QuoteServiceMode>(null);
+  const [catalogPhase, setCatalogPhase] = useState<QuoteCatalogPhase>('list');
+  const [catalogSelection, setCatalogSelection] =
+    useState<QuoteCatalogSelection>({
+      serviceId: null,
+      priceOptionId: null,
+      addOnIds: [],
+    });
+  const [catalogAddonDetails, setCatalogAddonDetails] = useState<
+    QuoteAddonDetail[]
+  >([]);
+  const [catalogServicePriceCents, setCatalogServicePriceCents] = useState<
+    number | null
+  >(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>(null);
   const [sendingQuote, setSendingQuote] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -191,6 +222,15 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setPriceDigits(centsToWholeDollarDigits(quote.totalCents));
     const durPick = durationPickerValueFromQuote(quote);
     setDurationHHmm(durPick);
+    setServiceMode('custom');
+    setCatalogPhase('list');
+    setCatalogSelection({
+      serviceId: null,
+      priceOptionId: null,
+      addOnIds: [],
+    });
+    setCatalogAddonDetails([]);
+    setCatalogServicePriceCents(null);
     setPreferredTimingHint(null);
     setCustomerRequestDetails('');
     if (quote.source === 'customer_requested') {
@@ -207,7 +247,10 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     }
     setSelectedDate(parseLocalDateFromYmd(quote.scheduledDate));
     setSelectedTime(pickStartTimeHHmm(quote.scheduledTime));
-    setStep('details');
+    setScheduleMode(
+      quote.scheduledDate?.trim() && quote.scheduledTime?.trim() ? 'pick' : null
+    );
+    setStep('customer');
     setSendError(null);
 
     editHydratedRef.current = true;
@@ -227,36 +270,89 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     if (prevDurationRef.current !== durationHHmm) {
       setSelectedDate(null);
       setSelectedTime(null);
+      setScheduleMode(null);
     }
     prevDurationRef.current = durationHHmm;
   }, [durationHHmm, isEdit]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [step]);
+  }, [step, scheduleMode, catalogPhase, serviceMode]);
 
-  const canProceedDetails = useMemo(() => {
+  const canProceedCustomer = useMemo(() => {
     const phoneOk = customerPhone.length === 0 || customerPhone.length === 10;
     return (
-      customerName.trim().length > 0 &&
-      isValidEmail(customerEmail) &&
-      phoneOk &&
+      customerName.trim().length > 0 && isValidEmail(customerEmail) && phoneOk
+    );
+  }, [customerEmail, customerName, customerPhone.length]);
+
+  const canProceedService = useMemo(() => {
+    const fieldsOk =
       serviceName.trim().length > 0 &&
       priceDigits.trim().length > 0 &&
-      isValidServiceEditDurationInput(durationHHmm)
-    );
+      isValidServiceEditDurationInput(durationHHmm);
+    if (serviceMode === 'custom') return fieldsOk;
+    if (serviceMode === 'catalog') {
+      return isQuoteCatalogPhaseReady(
+        catalogPhase,
+        serviceCatalog,
+        catalogSelection
+      );
+    }
+    return false;
   }, [
-    customerEmail,
-    customerName,
-    customerPhone.length,
+    catalogPhase,
+    catalogSelection,
     durationHHmm,
     priceDigits,
+    serviceCatalog,
+    serviceMode,
     serviceName,
   ]);
 
-  const canProceedSchedule = selectedDate !== null && selectedTime !== null;
+  const handleCatalogDerivedChange = useCallback(
+    (derived: {
+      serviceName: string;
+      priceDigits: string;
+      durationHHmm: string;
+      servicePriceCents: number;
+      addonDetails: QuoteAddonDetail[];
+    }) => {
+      setServiceName(derived.serviceName);
+      setPriceDigits(derived.priceDigits);
+      setDurationHHmm(derived.durationHHmm);
+      setCatalogServicePriceCents(derived.servicePriceCents);
+      setCatalogAddonDetails(derived.addonDetails);
+    },
+    []
+  );
 
-  const canSend = canProceedDetails && canProceedSchedule;
+  const reviewAddOns = useMemo(() => {
+    if (serviceMode !== 'catalog') return null;
+    return catalogAddonDetails.length > 0 ? catalogAddonDetails : null;
+  }, [catalogAddonDetails, serviceMode]);
+
+  const reviewOptionLabel = useMemo(() => {
+    if (serviceMode !== 'catalog' || !catalogSelection.serviceId) return null;
+    const svc = serviceCatalog.find(s => s.id === catalogSelection.serviceId);
+    if (!svc || !catalogSelection.priceOptionId) return null;
+    return (
+      svc.priceOptions.find(o => o.id === catalogSelection.priceOptionId)
+        ?.label ?? null
+    );
+  }, [catalogSelection, serviceCatalog, serviceMode]);
+
+  const scheduleComplete = selectedDate !== null && selectedTime !== null;
+  const scheduleEmpty = selectedDate === null && selectedTime === null;
+  /** Allow review with no schedule, or with a full date+time (not a half pick). */
+  const canProceedSchedule =
+    scheduleMode === 'customer'
+      ? scheduleEmpty
+      : scheduleMode === 'pick'
+        ? scheduleComplete
+        : scheduleEmpty || scheduleComplete;
+
+  const canSend = canProceedCustomer && canProceedService && canProceedSchedule;
 
   const handleSelectDate = (d: Date) => {
     setSelectedDate(d);
@@ -274,7 +370,24 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     const parsedDollars = parseInt(priceDigits, 10);
     const priceCents = Number.isFinite(parsedDollars) ? parsedDollars * 100 : 0;
     const noteTrimmed = note.trim();
-    return {
+    const body: {
+      customerName: string;
+      customerEmail: string;
+      customerPhone?: string;
+      vehicleYear?: string;
+      vehicleMake?: string;
+      vehicleModel?: string;
+      serviceName: string;
+      priceCents: number;
+      durationMinutes: number;
+      note?: string;
+      scheduledDate?: string;
+      scheduledStartTime?: string;
+      serviceId?: string;
+      servicePriceOptionId?: string;
+      servicePriceCents?: number;
+      addonDetails?: QuoteAddonDetail[];
+    } = {
       customerName: customerName.trim(),
       customerEmail: customerEmail.trim(),
       customerPhone: customerPhone.length === 10 ? customerPhone : undefined,
@@ -285,13 +398,31 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       priceCents,
       durationMinutes,
       note: noteTrimmed || undefined,
-      scheduledDate: formatDateForApi(selectedDate!),
-      scheduledStartTime: selectedTime!,
     };
+    if (selectedDate && selectedTime) {
+      body.scheduledDate = formatDateForApi(selectedDate);
+      body.scheduledStartTime = selectedTime;
+    }
+    if (serviceMode === 'catalog' && catalogSelection.serviceId) {
+      body.serviceId = catalogSelection.serviceId;
+      if (catalogSelection.priceOptionId) {
+        body.servicePriceOptionId = catalogSelection.priceOptionId;
+      }
+      if (catalogServicePriceCents != null) {
+        body.servicePriceCents = catalogServicePriceCents;
+      }
+      if (catalogAddonDetails.length > 0) {
+        body.addonDetails = catalogAddonDetails;
+      }
+    }
+    return body;
   };
 
   const handleSubmitQuote = async () => {
-    if (!selectedDate || !selectedTime || !canSend || sendingQuote) return;
+    if (!canSend || sendingQuote) return;
+    if ((selectedDate && !selectedTime) || (!selectedDate && selectedTime)) {
+      return;
+    }
     setSendError(null);
     setSendingQuote(true);
 
@@ -443,7 +574,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
       <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 pb-32 pt-6 sm:px-6 sm:pb-32 sm:pt-8 lg:px-8 lg:pt-10">
-        {step === 'details' ? (
+        {step === 'customer' ? (
           <QuoteFlowHeader
             backHref={
               isEdit
@@ -460,13 +591,58 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
             }
             subtitle={
               isEdit && !isFinishingCustomerRequest
-                ? 'Update details, schedule, and save. Your customer will see changes the next time they open the link.'
-                : 'Add details, pick a time, and send your customer an approval link.'
+                ? 'Update customer, vehicle, service, and schedule, then save. Your customer will see changes the next time they open the link.'
+                : 'Customer, vehicle, service, then date — or let them choose when they accept.'
             }
           />
         ) : null}
 
-        {step === 'details' && (
+        {step === 'vehicle' ? (
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Vehicle
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Optional — add year, make, and model if you have them.
+            </p>
+          </div>
+        ) : null}
+
+        {step === 'service' ? (
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Service
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {serviceMode === 'catalog'
+                ? catalogPhase === 'list'
+                  ? 'Choose a service from your list.'
+                  : catalogPhase === 'option'
+                    ? 'Choose an option.'
+                    : catalogPhase === 'addons'
+                      ? 'Add anything extra, or continue.'
+                      : "Here's what you selected."
+                : serviceMode === 'custom'
+                  ? 'Enter the name, price, and duration.'
+                  : 'Choose a service from your list, or add a custom one.'}
+            </p>
+          </div>
+        ) : null}
+
+        {step === 'schedule' ? (
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Date &amp; time
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {scheduleMode === 'pick'
+                ? 'Pick an available slot for this quote.'
+                : 'Choose a date yourself, or let your customer pick when they accept.'}
+            </p>
+          </div>
+        ) : null}
+
+        {step === 'customer' && (
           <div className="w-full space-y-6">
             {customerRequestDetails.trim() ? (
               <div className="space-y-4">
@@ -493,23 +669,23 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               showBlur={true}
               className="w-full"
             >
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-200">
-                      Customer
-                    </p>
-                    <div className="mt-2 h-px w-full bg-white/10" aria-hidden />
-                  </div>
-                  <div className="space-y-5">
-                    <Input
-                      label="Name"
-                      placeholder="e.g. Jordan Lee"
-                      value={customerName}
-                      onChange={setCustomerName}
-                      required
-                      autoComplete="name"
-                    />
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-200">
+                    Customer
+                  </p>
+                  <div className="mt-2 h-px w-full bg-white/10" aria-hidden />
+                </div>
+                <div className="space-y-5">
+                  <Input
+                    label="Name"
+                    placeholder="e.g. Jordan Lee"
+                    value={customerName}
+                    onChange={setCustomerName}
+                    required
+                    autoComplete="name"
+                  />
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Input
                       label="Email"
                       placeholder="customer@email.com"
@@ -531,99 +707,95 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                       value={customerPhone}
                       onChange={setCustomerPhone}
                       required={false}
+                      showDigitHint={false}
                       error={
                         customerPhone.length > 0 && customerPhone.length < 10
                           ? 'Enter a full number or leave blank'
                           : undefined
                       }
                     />
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                      <Input
-                        label="Vehicle year"
-                        placeholder="e.g. 2020"
-                        value={vehicleYear}
-                        onChange={setVehicleYear}
-                        inputMode="numeric"
-                        maxLength={4}
-                        required={false}
-                      />
-                      <Input
-                        label="Vehicle make"
-                        placeholder="e.g. Toyota"
-                        value={vehicleMake}
-                        onChange={setVehicleMake}
-                        required={false}
-                      />
-                      <Input
-                        label="Vehicle model"
-                        placeholder="e.g. Camry"
-                        value={vehicleModel}
-                        onChange={setVehicleModel}
-                        required={false}
-                      />
-                    </div>
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-200">
-                      Service
-                    </p>
-                    <div className="mt-2 h-px w-full bg-white/10" aria-hidden />
-                  </div>
-                  <div className="space-y-5">
-                    <Input
-                      label="Service name"
-                      placeholder='e.g. "3 Muddy Razors"'
-                      value={serviceName}
-                      onChange={setServiceName}
-                      required
-                    />
-
-                    <PriceInput
-                      label="Price"
-                      placeholder="e.g. $600"
-                      value={priceDigits}
-                      onChange={setPriceDigits}
-                      required
-                    />
-
-                    <div className="min-w-0">
-                      <span className="mb-1.5 block text-left text-sm font-medium text-gray-200">
-                        Duration
-                        <span className="ml-1 text-red-400">*</span>
-                      </span>
-                      <TimeSelect
-                        variant="duration"
-                        value={durationHHmm}
-                        onChange={setDurationHHmm}
-                        durationPlaceholder="Select duration"
-                      />
-                      {durationHHmm.trim().length > 0 &&
-                      !parseServiceEditDurationForSave(durationHHmm).ok ? (
-                        <p className="mt-1.5 text-sm text-red-400">
-                          {SERVICE_EDIT_DURATION_ERROR}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-gray-200">Notes</p>
-                  <TextArea
-                    placeholder="Add any notes here for your customer."
-                    value={note}
-                    onChange={setNote}
-                    rows={3}
-                    maxLength={500}
-                    required={false}
-                  />
                 </div>
               </div>
             </GlassCard>
           </div>
+        )}
+
+        {step === 'vehicle' && (
+          <div className="w-full space-y-6">
+            <GlassCard
+              padding="md"
+              rounded="rounded-2xl"
+              blurColor="bg-zinc-500"
+              showBlur={true}
+              className="w-full"
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Input
+                  label="Vehicle year"
+                  placeholder="e.g. 2020"
+                  value={vehicleYear}
+                  onChange={setVehicleYear}
+                  inputMode="numeric"
+                  maxLength={4}
+                  required={false}
+                />
+                <Input
+                  label="Vehicle make"
+                  placeholder="e.g. Toyota"
+                  value={vehicleMake}
+                  onChange={setVehicleMake}
+                  required={false}
+                />
+                <Input
+                  label="Vehicle model"
+                  placeholder="e.g. Camry"
+                  value={vehicleModel}
+                  onChange={setVehicleModel}
+                  required={false}
+                />
+              </div>
+            </GlassCard>
+          </div>
+        )}
+
+        {step === 'service' && (
+          <QuoteServiceStep
+            catalog={serviceCatalog}
+            serviceCategories={serviceCategories}
+            mode={serviceMode}
+            onModeChange={next => {
+              if (next === 'catalog') {
+                setCatalogSelection({
+                  serviceId: null,
+                  priceOptionId: null,
+                  addOnIds: [],
+                });
+                setCatalogPhase('list');
+              }
+              if (next === 'custom' && serviceMode === 'catalog') {
+                setServiceName('');
+                setPriceDigits('');
+                setDurationHHmm('01:00');
+                setCatalogAddonDetails([]);
+                setCatalogServicePriceCents(null);
+              }
+              setServiceMode(next);
+            }}
+            catalogPhase={catalogPhase}
+            onCatalogPhaseChange={setCatalogPhase}
+            selection={catalogSelection}
+            onSelectionChange={setCatalogSelection}
+            serviceName={serviceName}
+            onServiceNameChange={setServiceName}
+            priceDigits={priceDigits}
+            onPriceDigitsChange={setPriceDigits}
+            durationHHmm={durationHHmm}
+            onDurationHHmmChange={setDurationHHmm}
+            note={note}
+            onNoteChange={setNote}
+            onCatalogDerivedChange={handleCatalogDerivedChange}
+          />
         )}
 
         {step === 'schedule' && (
@@ -639,53 +811,110 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 </span>
               </div>
             ) : null}
-            {!hasSavedAvailability && (
-              <WarningCallout>
-                We don&apos;t see a saved weekly schedule yet. Showing default
-                hours for slot suggestions —{' '}
-                <a
-                  href={ROUTES.DASHBOARD.AVAILABILITY}
-                  className="underline text-amber-200 hover:text-white"
+
+            {scheduleMode !== 'pick' ? (
+              <div
+                className="space-y-2"
+                role="radiogroup"
+                aria-label="Date and time options"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={false}
+                  onClick={() => setScheduleMode('pick')}
+                  className="flex w-full min-h-[52px] cursor-pointer touch-manipulation items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/[0.06]"
                 >
-                  set availability
-                </a>{' '}
-                for accurate open times.
-              </WarningCallout>
-            )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-white">
+                      Choose a date
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
+                      Pick date and time now on your calendar.
+                    </span>
+                  </span>
+                  <span
+                    className="h-6 w-6 shrink-0 rounded-full border-2 border-white/20"
+                    aria-hidden
+                  />
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={false}
+                  onClick={() => {
+                    setSelectedDate(null);
+                    setSelectedTime(null);
+                    setScheduleMode('customer');
+                    setStep('review');
+                  }}
+                  className="flex w-full min-h-[52px] cursor-pointer touch-manipulation items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-white">
+                      Let customer choose
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
+                      They&apos;ll pick a date when they accept the quote.
+                    </span>
+                  </span>
+                  <span
+                    className="h-6 w-6 shrink-0 rounded-full border-2 border-white/20"
+                    aria-hidden
+                  />
+                </button>
+              </div>
+            ) : (
+              <>
+                {!hasSavedAvailability && (
+                  <WarningCallout>
+                    We don&apos;t see a saved weekly schedule yet. Showing
+                    default hours for slot suggestions —{' '}
+                    <a
+                      href={ROUTES.DASHBOARD.AVAILABILITY}
+                      className="underline text-amber-200 hover:text-white"
+                    >
+                      set availability
+                    </a>{' '}
+                    for accurate open times.
+                  </WarningCallout>
+                )}
 
-            {!businessSlug?.trim() && (
-              <WarningCallout>
-                Add a public profile link to load your existing bookings into
-                this picker and avoid double-booking.
-              </WarningCallout>
-            )}
+                {!businessSlug?.trim() && (
+                  <WarningCallout>
+                    Add a public profile link to load your existing bookings
+                    into this picker and avoid double-booking.
+                  </WarningCallout>
+                )}
 
-            {(scheduleDataLoading || blockedLoading) && (
-              <p className="text-sm text-gray-400">Loading schedule…</p>
-            )}
+                {(scheduleDataLoading || blockedLoading) && (
+                  <p className="text-sm text-gray-400">Loading schedule…</p>
+                )}
 
-            <DateSelector
-              weeklySchedule={weeklySchedule}
-              serviceDurationMinutes={durationMinutes}
-              existingBookings={blockedSlots}
-              timeOffBlocks={timeOffBlocks}
-              selectedDate={selectedDate}
-              onSelectDate={handleSelectDate}
-              minDate={getTodayAtMidnight()}
-            />
-            <TimeSlotGrid
-              selectedDate={selectedDate}
-              serviceDurationMinutes={durationMinutes}
-              weeklySchedule={weeklySchedule}
-              existingBookings={blockedSlots}
-              timeOffBlocks={timeOffBlocks}
-              selectedTime={selectedTime}
-              onSelectTime={setSelectedTime}
-            />
+                <DateSelector
+                  weeklySchedule={weeklySchedule}
+                  serviceDurationMinutes={durationMinutes}
+                  existingBookings={blockedSlots}
+                  timeOffBlocks={timeOffBlocks}
+                  selectedDate={selectedDate}
+                  onSelectDate={handleSelectDate}
+                  minDate={getTodayAtMidnight()}
+                />
+                <TimeSlotGrid
+                  selectedDate={selectedDate}
+                  serviceDurationMinutes={durationMinutes}
+                  weeklySchedule={weeklySchedule}
+                  existingBookings={blockedSlots}
+                  timeOffBlocks={timeOffBlocks}
+                  selectedTime={selectedTime}
+                  onSelectTime={setSelectedTime}
+                />
+              </>
+            )}
           </div>
         )}
 
-        {step === 'review' && selectedDate && selectedTime && (
+        {step === 'review' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold tracking-tight text-white">
@@ -695,8 +924,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               </h2>
               <button
                 type="button"
-                onClick={() => setStep('details')}
-                className="text-sm font-medium text-zinc-400 underline underline-offset-4 transition-colors hover:text-white"
+                onClick={() => setStep('customer')}
+                className="cursor-pointer text-sm font-medium text-zinc-400 underline underline-offset-4 transition-colors hover:text-white"
               >
                 Edit
               </button>
@@ -713,10 +942,17 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <p className="mb-1 text-sm font-medium text-gray-500">
                     Service
                   </p>
-                  <p className="font-medium text-white">{serviceName.trim()}</p>
-                  <p className="mt-0.5 text-sm text-gray-400">
-                    {formatDurationMinutes(durationMinutes)}
-                  </p>
+                  <QuoteServiceSummaryCard
+                    serviceName={serviceName.trim()}
+                    optionLabel={reviewOptionLabel}
+                    durationMinutes={durationMinutes}
+                    totalCents={
+                      Number.isFinite(parseInt(priceDigits, 10))
+                        ? parseInt(priceDigits, 10) * 100
+                        : 0
+                    }
+                    addOns={reviewAddOns}
+                  />
                 </div>
                 <div className="h-px bg-white/10" />
 
@@ -724,12 +960,20 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <p className="mb-1 text-sm font-medium text-gray-500">
                     Date &amp; time
                   </p>
-                  <p className="font-medium text-white">
-                    {formatReviewDate(selectedDate)}
-                  </p>
-                  <p className="mt-0.5 text-sm text-gray-400">
-                    Starts {formatTime12(selectedTime)}
-                  </p>
+                  {scheduleComplete && selectedDate && selectedTime ? (
+                    <>
+                      <p className="font-medium text-white">
+                        {formatReviewDate(selectedDate)}
+                      </p>
+                      <p className="mt-0.5 text-sm text-gray-400">
+                        Starts {formatTime12(selectedTime)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-medium text-white">
+                      Customer will choose when accepting
+                    </p>
+                  )}
                 </div>
                 <div className="h-px bg-white/10" />
 
@@ -810,7 +1054,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           </div>
         )}
 
-        {step === 'sent' && selectedDate && selectedTime && (
+        {step === 'sent' && (
           <div className="flex w-full flex-col py-6 pb-14">
             <div className="mb-7 flex h-20 w-20 self-center items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/25">
               <CheckIcon className="h-10 w-10 text-white" />
@@ -839,15 +1083,20 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               </div>
               <div className="space-y-4 p-4 sm:p-6">
                 <div>
-                  <p className="mb-0.5 text-sm font-medium text-gray-500">
+                  <p className="mb-1.5 text-sm font-medium text-gray-500">
                     Service
                   </p>
-                  <p className="font-semibold text-white">
-                    {serviceName.trim()}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-400">
-                    {formatDurationMinutes(durationMinutes)}
-                  </p>
+                  <QuoteServiceSummaryCard
+                    serviceName={serviceName.trim()}
+                    optionLabel={reviewOptionLabel}
+                    durationMinutes={durationMinutes}
+                    totalCents={
+                      Number.isFinite(parseInt(priceDigits, 10))
+                        ? parseInt(priceDigits, 10) * 100
+                        : 0
+                    }
+                    addOns={reviewAddOns}
+                  />
                 </div>
                 <div className="h-px bg-white/10" />
                 <div>
@@ -892,12 +1141,20 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   <p className="mb-0.5 text-sm font-medium text-gray-500">
                     Date &amp; time
                   </p>
-                  <p className="font-medium text-white">
-                    {formatReviewDate(selectedDate)}
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Starts {formatTime12(selectedTime)}
-                  </p>
+                  {scheduleComplete && selectedDate && selectedTime ? (
+                    <>
+                      <p className="font-medium text-white">
+                        {formatReviewDate(selectedDate)}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Starts {formatTime12(selectedTime)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-medium text-white">
+                      Customer will choose when accepting
+                    </p>
+                  )}
                 </div>
                 {customerRequestDetails.trim() ? (
                   <>
@@ -940,7 +1197,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
                   : ROUTES.DASHBOARD.MAIN
               }
-              className="inline-flex min-h-[48px] items-center justify-center self-center rounded-xl bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100"
+              className="inline-flex min-h-[48px] cursor-pointer items-center justify-center self-center rounded-xl bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100"
             >
               {isEdit ? 'Back to quote' : 'Back to dashboard'}
             </Link>
@@ -954,26 +1211,26 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
           containerClassName="max-w-3xl min-w-0 px-0 sm:px-0"
           withDesktopSidebarOffset
         >
-          {step === 'details' && (
+          {step === 'customer' && (
             <Button
               type="button"
               variant="inverse"
               fullWidth
               className="font-semibold"
-              disabled={!canProceedDetails}
-              onClick={() => setStep('schedule')}
+              disabled={!canProceedCustomer}
+              onClick={() => setStep('vehicle')}
             >
-              Choose date &amp; time
+              Continue
             </Button>
           )}
-          {step === 'schedule' && (
+          {step === 'vehicle' && (
             <div className="flex items-stretch gap-3">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 className="shrink-0 self-auto px-5"
-                onClick={() => setStep('details')}
+                onClick={() => setStep('customer')}
               >
                 Back
               </Button>
@@ -982,21 +1239,171 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 variant="inverse"
                 size="sm"
                 className="min-w-0 flex-1 font-semibold"
-                disabled={!canProceedSchedule}
-                onClick={() => setStep('review')}
+                onClick={() => setStep('service')}
               >
-                Review quote
+                Continue
               </Button>
             </div>
           )}
-          {step === 'review' && selectedDate && selectedTime && (
+          {step === 'service' && (
             <div className="flex items-stretch gap-3">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 className="shrink-0 self-auto px-5"
-                onClick={() => setStep('schedule')}
+                onClick={() => {
+                  if (serviceMode === 'catalog') {
+                    if (catalogPhase === 'ready') {
+                      const svc = serviceCatalog.find(
+                        s => s.id === catalogSelection.serviceId
+                      );
+                      if (svc && svc.addOns.length > 0) {
+                        setCatalogPhase('addons');
+                        return;
+                      }
+                      if (
+                        svc?.priceOptionsEnabled &&
+                        svc.priceOptions.length > 0
+                      ) {
+                        setCatalogPhase('option');
+                        return;
+                      }
+                      setCatalogSelection({
+                        serviceId: null,
+                        priceOptionId: null,
+                        addOnIds: [],
+                      });
+                      setCatalogPhase('list');
+                      return;
+                    }
+                    if (catalogPhase === 'addons') {
+                      const svc = serviceCatalog.find(
+                        s => s.id === catalogSelection.serviceId
+                      );
+                      if (
+                        svc?.priceOptionsEnabled &&
+                        svc.priceOptions.length > 0
+                      ) {
+                        setCatalogPhase('option');
+                        return;
+                      }
+                      setCatalogSelection({
+                        serviceId: null,
+                        priceOptionId: null,
+                        addOnIds: [],
+                      });
+                      setCatalogPhase('list');
+                      return;
+                    }
+                    if (catalogPhase === 'option') {
+                      setCatalogSelection({
+                        serviceId: null,
+                        priceOptionId: null,
+                        addOnIds: [],
+                      });
+                      setCatalogPhase('list');
+                      return;
+                    }
+                    setCatalogPhase('list');
+                    setServiceMode(null);
+                    return;
+                  }
+                  if (serviceMode !== null) {
+                    setCatalogSelection({
+                      serviceId: null,
+                      priceOptionId: null,
+                      addOnIds: [],
+                    });
+                    setCatalogPhase('list');
+                    setServiceMode(null);
+                    return;
+                  }
+                  setStep('vehicle');
+                }}
+              >
+                Back
+              </Button>
+              {serviceMode !== null ? (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  size="sm"
+                  className="min-w-0 flex-1 font-semibold"
+                  disabled={!canProceedService}
+                  onClick={() => {
+                    if (
+                      serviceMode === 'catalog' &&
+                      catalogPhase === 'addons' &&
+                      isQuoteCatalogSelectionComplete(
+                        serviceCatalog,
+                        catalogSelection
+                      )
+                    ) {
+                      setCatalogPhase('ready');
+                      return;
+                    }
+                    if (scheduleComplete) {
+                      setScheduleMode('pick');
+                    } else {
+                      setScheduleMode(null);
+                    }
+                    setStep('schedule');
+                  }}
+                >
+                  Continue
+                </Button>
+              ) : null}
+            </div>
+          )}
+          {step === 'schedule' && (
+            <div className="flex items-stretch gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0 self-auto px-5"
+                onClick={() => {
+                  if (scheduleMode === 'pick') {
+                    setSelectedDate(null);
+                    setSelectedTime(null);
+                    setScheduleMode(null);
+                    return;
+                  }
+                  setStep('service');
+                }}
+              >
+                Back
+              </Button>
+              {scheduleMode === 'pick' ? (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  size="sm"
+                  className="min-w-0 flex-1 font-semibold"
+                  disabled={!scheduleComplete}
+                  onClick={() => setStep('review')}
+                >
+                  Review quote
+                </Button>
+              ) : null}
+            </div>
+          )}
+          {step === 'review' && (
+            <div className="flex items-stretch gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="shrink-0 self-auto px-5"
+                onClick={() => {
+                  if (scheduleComplete) {
+                    setScheduleMode('pick');
+                  } else {
+                    setScheduleMode(null);
+                  }
+                  setStep('schedule');
+                }}
               >
                 Back
               </Button>

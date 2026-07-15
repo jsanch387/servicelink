@@ -1,4 +1,6 @@
 /** Mirrors `public.quote_status` — used for dashboard UI until wired to API. */
+import type { QuoteAddonDetail } from '@/features/quotes/shared/quoteServiceSnapshot';
+
 export type DashboardQuoteStatus =
   | 'requested'
   | 'draft'
@@ -45,6 +47,12 @@ export interface DashboardQuote {
   serviceZip: string | null;
   /** Legacy / display single line from DB. */
   serviceAddressLine: string | null;
+  /** Catalog service id when quote used a saved service. */
+  serviceId: string | null;
+  /** Base service price (excludes add-ons) when catalog was used. */
+  servicePriceCents: number | null;
+  /** Denormalized add-ons snapshot (`quotes.addon_details`). */
+  addonDetails: QuoteAddonDetail[] | null;
   /** Raw token for public URL `/q/[token]` (mock only). */
   publicToken: string;
 }

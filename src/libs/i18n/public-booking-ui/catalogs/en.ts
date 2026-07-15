@@ -76,8 +76,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     reviewBooking: 'Review your booking',
     reviewBookingCta: 'Review Booking',
     notificationsConsentCheckboxLabel: 'Text me appointment updates',
-    notificationsConsentFinePrint: (businessName: string) =>
-      `From ${businessName}. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our`,
+    notificationsConsentFinePrint: () =>
+      'By checking this box, you agree to receive SMS appointment notifications from ServiceLink. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our',
     notificationsSmsFinePrintLinkLabel: 'Privacy Policy',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',

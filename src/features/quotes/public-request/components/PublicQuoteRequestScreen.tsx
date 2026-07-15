@@ -341,18 +341,18 @@ export const PublicQuoteRequestScreen: React.FC<
                 autoComplete="name"
                 error={errors.customerName}
               />
-              <Input
-                label={cf.email}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                value={form.customerEmail}
-                onChange={v => setField('customerEmail', v)}
-                placeholder="jane@example.com"
-                required
-                error={errors.customerEmail}
-              />
-              <div className="sm:max-w-xs">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input
+                  label={cf.email}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={form.customerEmail}
+                  onChange={v => setField('customerEmail', v)}
+                  placeholder="jane@example.com"
+                  required
+                  error={errors.customerEmail}
+                />
                 <PhoneInput
                   label={cf.phone}
                   value={form.customerPhone}

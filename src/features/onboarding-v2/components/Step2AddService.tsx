@@ -92,7 +92,8 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
 
   const buildServiceFromForm = (): OnboardingV2Service | null => {
     const descTrim = description.trim();
-    if (!name.trim() || !price.trim() || !durationHHmm || !descTrim) return null;
+    if (!name.trim() || !price.trim() || !durationHHmm || !descTrim)
+      return null;
     if (!isValidServiceDurationHHmm(durationHHmm)) return null;
     return {
       id: `temp-${Date.now()}`,

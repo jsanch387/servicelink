@@ -8,7 +8,12 @@ import {
   revertQuoteToRespondableState,
   type BusinessProfileForQuoteApproval,
 } from '@/features/quotes/server/quoteApprovalSideEffects';
+import { quoteStartTimeToHHmm } from '@/features/quotes/server/createBookingFromApprovedQuote';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
+import {
+  publicBookingSlotValidationMessage,
+  validateOwnerBookingSlot,
+} from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -143,10 +148,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, status: 'declined' });
     }
 
-    const { address, displayLine } = parsed.data as Extract<
+    const { address, displayLine, schedule } = parsed.data as Extract<
       ValidatedQuoteRespondRequest,
       { decision: 'approve' }
     >;
+
+    const quoteHasSchedule = Boolean(
+      String(q.scheduled_date ?? '').trim() &&
+        String(q.scheduled_start_time ?? '').trim()
+    );
+
+    if (!quoteHasSchedule && !schedule) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Choose a date and time to accept this quote',
+        },
+        { status: 400 }
+      );
+    }
 
     // approve
     if (status === 'approved' && bookingIdExisting) {
@@ -205,13 +225,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const slotDate =
+      schedule?.scheduledDate?.trim() || String(q.scheduled_date ?? '').trim();
+    const slotTime = quoteStartTimeToHHmm(
+      schedule?.scheduledStartTimeForDb ??
+        (q.scheduled_start_time as string | null | undefined)
+    );
+    const durationMinutes = Math.max(
+      1,
+      Math.round(Number(q.duration_minutes ?? 60))
+    );
+    const slotCheck = await validateOwnerBookingSlot(admin, {
+      businessId: String(q.business_id),
+      scheduledDate: slotDate,
+      startTimeHHmm: slotTime,
+      durationMinutes,
+    });
+    if (!slotCheck.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: publicBookingSlotValidationMessage(slotCheck.code),
+        },
+        { status: 409 }
+      );
+    }
+
     const previousStatus = status as 'sent' | 'viewed';
 
-    const primaryUpdate = {
+    const primaryUpdate: Record<string, unknown> = {
       status: 'approved',
       approved_at: nowIso,
       ...quoteTableColumnsFromServiceLocation(address),
     };
+    if (!quoteHasSchedule && schedule) {
+      primaryUpdate.scheduled_date = schedule.scheduledDate;
+      primaryUpdate.scheduled_start_time = schedule.scheduledStartTimeForDb;
+    }
 
     let { data: won, error: approveErr } = await db
       .from('quotes')
@@ -226,13 +276,18 @@ export async function POST(request: NextRequest) {
         q.note as string | null | undefined,
         displayLine
       );
+      const legacyUpdate: Record<string, unknown> = {
+        status: 'approved',
+        approved_at: nowIso,
+        note: legacyNote,
+      };
+      if (!quoteHasSchedule && schedule) {
+        legacyUpdate.scheduled_date = schedule.scheduledDate;
+        legacyUpdate.scheduled_start_time = schedule.scheduledStartTimeForDb;
+      }
       const legacyRes = await db
         .from('quotes')
-        .update({
-          status: 'approved',
-          approved_at: nowIso,
-          note: legacyNote,
-        })
+        .update(legacyUpdate)
         .eq('id', quoteId)
         .in('status', ['sent', 'viewed'])
         .select('*')

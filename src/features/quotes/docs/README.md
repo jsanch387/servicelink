@@ -199,7 +199,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Approve side effects:** When the customer approves (`status` was `sent` or `viewed`), the route atomically sets `quotes.status` to `approved`, stores `service_address` (legacy DBs without that column fall back to appending the address on `note`), then:
 
-1. Creates a V2 **`bookings`** row via `createBooking` (`service_name` from free-text quote; `service_id` null). **`quotes.booking_id`** is set only if the row still had no booking (avoids duplicate bookings under concurrent requests).
+1. Creates a V2 **`bookings`** row via `createBooking`. Catalog quotes pass through `service_id`, base `service_price_cents`, and `addon_details` when present; custom quotes still store free-text `service_name` with those fields null. **`quotes.booking_id`** is set only if the row still had no booking (avoids duplicate bookings under concurrent requests).
 2. Upserts **`customers`** for that business through the same path as public availability bookings (`upsertCustomerForBooking`); `phone` is stored as digits-only when present.
 3. Applies the same **free-tier lifetime booking cap** as `POST /api/public/bookings` (check before insert; counter increments only after the quote is successfully linked to the booking).
 4. Blocks approval if the slot overlaps the business’s **time-off** blocks (same check as public booking).

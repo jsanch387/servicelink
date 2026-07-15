@@ -29,6 +29,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     serviceState: null,
     serviceZip: null,
     serviceAddressLine: null,
+    serviceId: null,
+    servicePriceCents: null,
+    addonDetails: null,
     publicToken: 'demo-token-jordan-viewed',
   },
   {
@@ -57,6 +60,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     serviceState: null,
     serviceZip: null,
     serviceAddressLine: null,
+    serviceId: null,
+    servicePriceCents: null,
+    addonDetails: null,
     publicToken: 'demo-token-sam-sent',
   },
   {
@@ -85,6 +91,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     serviceState: null,
     serviceZip: null,
     serviceAddressLine: null,
+    serviceId: null,
+    servicePriceCents: null,
+    addonDetails: null,
     publicToken: 'demo-token-alex-draft',
   },
   {
@@ -114,6 +123,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     serviceState: null,
     serviceZip: null,
     serviceAddressLine: null,
+    serviceId: null,
+    servicePriceCents: null,
+    addonDetails: null,
     publicToken: 'demo-token-morgan-requested',
   },
   {
@@ -142,6 +154,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     serviceState: null,
     serviceZip: null,
     serviceAddressLine: null,
+    serviceId: null,
+    servicePriceCents: null,
+    addonDetails: null,
     publicToken: 'demo-token-casey-approved',
   },
   {
@@ -170,6 +185,9 @@ export const MOCK_DASHBOARD_QUOTES: DashboardQuote[] = [
     serviceState: null,
     serviceZip: null,
     serviceAddressLine: null,
+    serviceId: null,
+    servicePriceCents: null,
+    addonDetails: null,
     publicToken: 'demo-token-riley-declined',
   },
 ];

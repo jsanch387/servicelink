@@ -14,6 +14,7 @@ import { formatQuoteRequestServiceLocation } from '../utils/formatQuoteRequestSe
 import { parseDeleteQuoteApiResponse } from '../utils/parseDeleteQuoteApiResponse';
 import { isPendingCustomerQuoteRequest } from '../utils/pendingCustomerQuoteRequests';
 import { getPublicQuoteAbsoluteUrl } from '../utils/publicQuoteUrl';
+import { QuoteDetailLoadingSkeleton } from './QuoteDetailLoadingSkeleton';
 import { QuoteDetailContent } from './QuoteDetailScreen';
 
 interface QuoteRequestDetailScreenProps {
@@ -98,18 +99,10 @@ export const QuoteRequestDetailScreen: React.FC<
 
   if (loadStatus === 'loading') {
     return (
-      <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
-        <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:max-w-4xl sm:px-6 sm:py-10">
-          <QuoteFlowHeader
-            backHref={ROUTES.DASHBOARD.QUOTES_REQUESTS}
-            backLabel="Requests"
-          />
-          <div className="space-y-4">
-            <div className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
-            <div className="h-28 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
-          </div>
-        </div>
-      </main>
+      <QuoteDetailLoadingSkeleton
+        backHref={ROUTES.DASHBOARD.QUOTES_REQUESTS}
+        backLabel="Requests"
+      />
     );
   }
 
@@ -183,7 +176,6 @@ export const QuoteRequestDetailScreen: React.FC<
       onConfirmDelete={() => void handleDelete()}
       backHref={ROUTES.DASHBOARD.QUOTES_REQUESTS}
       backLabel="Requests"
-      headerSubtitle={`${apiQuote.serviceName || 'Request'} · Awaiting your quote`}
       showDeleteButton
       showQuoteLinkCard={false}
       showActivityCard={false}

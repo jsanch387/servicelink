@@ -49,13 +49,20 @@ export function buildQuoteSentToCustomerHtml(
 ): string {
   const businessName = escapeHtml(payload.businessName);
   const priceLabel = formatPriceWholeDollars(payload.priceCents);
-  const dateLabel = formatDateLong(payload.scheduledDate);
-  const timeLabel = formatTimeHHmm(payload.scheduledStartTime);
+  const hasSchedule = Boolean(
+    payload.scheduledDate?.trim() && payload.scheduledStartTime?.trim()
+  );
+  const dateLabel = hasSchedule
+    ? formatDateLong(payload.scheduledDate!.trim())
+    : "You'll choose when you accept";
   const durationPart = formatDurationHours(payload.durationMinutes);
-  const timeAndDuration =
-    durationPart.trim().length > 0
-      ? `${escapeHtml(timeLabel)} <span style="color:#94a3b8;">·</span> ${escapeHtml(durationPart)}`
-      : escapeHtml(timeLabel);
+  const timeAndDuration = hasSchedule
+    ? durationPart.trim().length > 0
+      ? `${escapeHtml(formatTimeHHmm(payload.scheduledStartTime!.trim()))} <span style="color:#94a3b8;">·</span> ${escapeHtml(durationPart)}`
+      : escapeHtml(formatTimeHHmm(payload.scheduledStartTime!.trim()))
+    : durationPart.trim().length > 0
+      ? escapeHtml(durationPart)
+      : '—';
 
   const vehicleRow = payload.vehicleLine?.trim()
     ? `
@@ -64,6 +71,17 @@ export function buildQuoteSentToCustomerHtml(
         <td class="detail-value" style="padding: 0 0 12px 0; vertical-align: top;">${escapeHtml(payload.vehicleLine.trim())}</td>
       </tr>`
     : '';
+
+  const addonRows = (payload.addonDetails ?? [])
+    .filter(a => a.name.trim())
+    .map(
+      a => `
+              <tr>
+                <td class="detail-label" style="padding: 0 16px 8px 0; vertical-align: top; width: 42%;">Add-on</td>
+                <td class="detail-value" style="padding: 0 0 8px 0; vertical-align: top;">${escapeHtml(a.name.trim())} <span style="color:#94a3b8;">(+${escapeHtml(formatPriceWholeDollars(a.priceCents))})</span></td>
+              </tr>`
+    )
+    .join('');
 
   const customerRequestBlock = payload.customerRequestMessage?.trim()
     ? `
@@ -208,6 +226,7 @@ export function buildQuoteSentToCustomerHtml(
                 <td class="detail-label" style="padding: 0 16px 12px 0; vertical-align: top; width: 42%;">Service</td>
                 <td class="detail-value" style="padding: 0 0 12px 0; vertical-align: top;">${escapeHtml(payload.serviceName)}</td>
               </tr>
+              ${addonRows}
               ${vehicleRow}
               <tr>
                 <td class="detail-label" style="padding: 0 16px 0 0; vertical-align: top;">Total</td>

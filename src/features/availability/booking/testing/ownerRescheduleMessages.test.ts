@@ -1,5 +1,6 @@
 import {
   ownerBookingSlotValidationMessage,
+  publicBookingSlotValidationMessage,
   type OwnerBookingSlotValidationCode,
 } from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import { describe, expect, it } from 'vitest';
@@ -28,5 +29,16 @@ describe('ownerBookingSlotValidationMessage', () => {
     expect(
       ownerBookingSlotValidationMessage('existing_booking_conflict')
     ).toMatch(/booked|slot/i);
+  });
+});
+
+describe('publicBookingSlotValidationMessage', () => {
+  it('does not use owner-only wording', () => {
+    expect(publicBookingSlotValidationMessage('outside_weekly_hours')).toMatch(
+      /business|available|slot/i
+    );
+    expect(
+      publicBookingSlotValidationMessage('outside_weekly_hours')
+    ).not.toMatch(/\byour working hours\b/i);
   });
 });

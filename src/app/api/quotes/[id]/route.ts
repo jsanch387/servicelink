@@ -121,6 +121,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         note: p.note,
         scheduled_date: p.scheduledDate,
         scheduled_start_time: p.scheduledStartTimeForDb,
+        service_id: p.serviceId,
+        service_price_option_id: p.servicePriceOptionId,
+        service_price_cents: p.servicePriceCents,
+        addon_details: p.addonDetails,
         updated_at: new Date().toISOString(),
       })
       .eq('business_id', resolved.businessId)

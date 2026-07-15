@@ -50,4 +50,13 @@ describe('buildQuoteSentToCustomerHtml', () => {
     const html = buildQuoteSentToCustomerHtml(basePayload());
     expect(html).toContain('https://example.com/q/test-token');
   });
+
+  it('shows customer-choose copy when schedule is omitted', () => {
+    const html = buildQuoteSentToCustomerHtml({
+      ...basePayload(),
+      scheduledDate: null,
+      scheduledStartTime: null,
+    });
+    expect(html).toContain('You&#039;ll choose when you accept');
+  });
 });

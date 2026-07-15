@@ -28,7 +28,11 @@ export const QuoteFlowHeader: React.FC<QuoteFlowHeaderProps> = ({
   fullWidthDividerAfterBack = false,
   hideDividerAfterTitle = false,
 }) => {
-  const backLinkMb = fullWidthDividerAfterBack ? 'mb-4' : 'mb-6';
+  const backLinkMb = fullWidthDividerAfterBack
+    ? 'mb-4'
+    : !title && hideDividerAfterTitle
+      ? 'mb-0'
+      : 'mb-6';
 
   return (
     <header className={`mb-6 sm:mb-8 ${className}`}>

@@ -4,6 +4,7 @@ import type {
   DashboardQuoteSource,
   DashboardQuoteStatus,
 } from '../types';
+import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 
 const VALID_STATUSES: DashboardQuoteStatus[] = [
   'requested',
@@ -78,6 +79,13 @@ export function mapQuoteRowToDashboardQuote(
     serviceZip: row.customer_zip,
     serviceAddressLine: row.service_address,
     vehicleLine: buildVehicleLine(row),
+    serviceId: row.service_id?.trim() || null,
+    servicePriceCents:
+      row.service_price_cents != null &&
+      Number.isFinite(row.service_price_cents)
+        ? row.service_price_cents
+        : null,
+    addonDetails: normalizeQuoteAddonDetails(row.addon_details),
     /**
      * Token string used for `/q/[token]`.
      * We support token hash format too (see `resolveQuoteTokenHash`).
