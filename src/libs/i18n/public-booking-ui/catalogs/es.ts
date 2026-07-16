@@ -15,8 +15,10 @@ export const publicBookingUiEs: PublicBookingUi = {
     backToAddOns: 'Volver a complementos',
     backToServices: 'Volver a servicios',
     backToBookings: 'Volver a reservas',
+    backToAppointmentType: 'Volver al tipo de cita',
   },
   common: {
+    back: 'Volver',
     continue: 'Continuar',
     select: 'Seleccionar',
     summary: 'Resumen',
@@ -41,7 +43,7 @@ export const publicBookingUiEs: PublicBookingUi = {
   },
   serviceDetails: {
     startingAt: 'Desde',
-    chooseOption: 'Elige una opción',
+    choosePricingOption: 'Elige una opción de precio',
     optionalAddOns: 'Complementos opcionales',
     dateAndTime: 'Fecha y hora',
     continue: 'Continuar',
@@ -64,10 +66,37 @@ export const publicBookingUiEs: PublicBookingUi = {
       'Estás creando una nueva cita. Elige un servicio abajo para continuar.',
     bookWithSubtitle:
       'Elige un servicio. Luego podrás agregar extras si los hay. Después elige fecha y hora.',
+    chooseAppointmentTypeSubtitle:
+      'Elige un servicio guardado o crea un trabajo personalizado.',
+    appointmentTypeAriaLabel: 'Cómo establecer el servicio',
+    fromServicesTitle: 'De tus servicios',
+    fromServicesDescription: 'Elige un servicio de tu lista.',
+    customJobTitle: 'Trabajo personalizado',
+    customJobSubtitle:
+      'Crea una cita que no esté conectada a un servicio guardado.',
+    customJobRowDescription:
+      'Úsalo para trabajos únicos o servicios que no están en tu lista.',
+    customJobNameLabel: 'Nombre del trabajo',
+    customJobNamePlaceholder: 'p. ej. Limpieza de ventanas',
+    customJobPriceLabel: 'Precio',
+    customJobPricePlaceholder: 'p. ej. $100',
+    customJobDurationLabel: 'Duración',
+    customJobDurationPlaceholder: 'Selecciona la duración',
+    customJobNotesLabel: 'Notas (opcional)',
+    customJobNotesPlaceholder:
+      'Agrega detalles o contexto sobre este trabajo personalizado.',
   },
   notAccepting: {
     title: 'Este negocio aún no acepta reservas.',
     body: 'Vuelve más tarde o contáctalos directamente.',
+    ownerFreeCapTitle: 'Alcanzaste el límite de tu plan gratuito',
+    ownerFreeCapBody: limit =>
+      `Usaste las ${limit} citas gratuitas. Actualiza a Pro para crear más reservas.`,
+    ownerBookingsOffTitle: 'No estás aceptando reservas ahora',
+    ownerBookingsOffBody:
+      'Activa Aceptar reservas en Disponibilidad y vuelve a intentar crear una cita.',
+    ownerBackToBookings: 'Volver a reservas',
+    ownerUpgradeCta: 'Actualizar a Pro',
   },
   calendar: {
     chooseTime: 'Elige la hora',
@@ -169,6 +198,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     customerDetails: 'Información del cliente',
     serviceAddress: 'Dirección del servicio',
     vehicle: 'Vehículo',
+    optionalVehicleDetails: 'Opcional — agrega los datos del vehículo.',
     fullName: 'Nombre completo',
     email: 'Correo electrónico',
     phone: 'Teléfono',
@@ -195,6 +225,9 @@ export const publicBookingUiEs: PublicBookingUi = {
     errVehicleMake: 'La marca del vehículo es obligatoria',
     errVehicleModel: 'El modelo del vehículo es obligatorio',
     emailOptional: 'Correo electrónico (opcional)',
+    noEmailConfirmationNotice:
+      'Sin correo electrónico, no se enviará una confirmación.',
+    smsComingSoon: 'Mensajes SMS próximamente.',
     errEmailInvalid: 'Introduce una dirección de correo válida',
     errValueTooLong: 'Este valor es demasiado largo',
   },

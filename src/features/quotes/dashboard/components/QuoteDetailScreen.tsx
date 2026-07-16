@@ -3,6 +3,7 @@
 import { Button, GlassCard, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import {
   copyTextToClipboard,
@@ -11,6 +12,11 @@ import {
 import {
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
+  EnvelopeIcon,
+  PencilSquareIcon,
+  PhoneIcon,
+  TrashIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon as CheckIconSolid } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
@@ -39,6 +45,7 @@ import {
   getQuoteStatusLabel,
 } from '../utils/quoteStatusUi';
 import { DeleteQuoteModalBody } from './DeleteQuoteModalBody';
+import { QuoteDetailLoadingSkeleton } from './QuoteDetailLoadingSkeleton';
 
 interface QuoteDetailScreenProps {
   quoteId: string;
@@ -122,19 +129,10 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
 
   if (loadStatus === 'loading') {
     return (
-      <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
-        <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:max-w-4xl sm:px-6 sm:py-10">
-          <QuoteFlowHeader
-            backHref={ROUTES.DASHBOARD.QUOTES}
-            backLabel="Quotes"
-          />
-          <div className="space-y-4">
-            <div className="h-40 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
-            <div className="h-28 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
-            <div className="h-28 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.03]" />
-          </div>
-        </div>
-      </main>
+      <QuoteDetailLoadingSkeleton
+        backHref={ROUTES.DASHBOARD.QUOTES}
+        backLabel="Quotes"
+      />
     );
   }
 
@@ -192,8 +190,6 @@ export interface QuoteDetailContentProps {
   onConfirmDelete: () => void;
   backHref?: string;
   backLabel?: string;
-  /** Replaces default subtitle under the customer name. */
-  headerSubtitle?: string;
   /** Callout below the header (e.g. sample preview). */
   infoBanner?: React.ReactNode;
   /** When set and the row is editable, used instead of the edit URL (e.g. new quote with prefill for demos). */
@@ -219,7 +215,6 @@ export function QuoteDetailContent({
   onConfirmDelete,
   backHref = ROUTES.DASHBOARD.QUOTES,
   backLabel = 'Quotes',
-  headerSubtitle,
   infoBanner,
   primaryHrefOverride,
   showDeleteButton = true,
@@ -229,8 +224,13 @@ export function QuoteDetailContent({
 }: QuoteDetailContentProps) {
   const blur = getQuoteStatusBlurClass(quote.status);
   const outcomeDot = getQuoteOutcomeDotClass(quote.status);
+  const customerNameDisplay = quote.customerName.trim() || null;
   const emailDisplay = getCustomerEmailDisplay(quote.customerEmail);
   const phoneLink = getCustomerPhoneLink(quote.customerPhone);
+  const hasCustomerDetails = Boolean(
+    customerNameDisplay || emailDisplay || phoneLink
+  );
+  const vehicleLine = quote.vehicleLine?.trim() || null;
   const hasPublicLink = Boolean(quote.publicToken.trim());
   const publicPath = getPublicQuotePath(quote.publicToken);
   const canEdit = isDashboardQuoteEditableByOwner(quote.status);
@@ -264,51 +264,43 @@ export function QuoteDetailContent({
         <QuoteFlowHeader
           backHref={backHref}
           backLabel={backLabel}
-          title={quote.customerName}
-          subtitle={
-            headerSubtitle?.trim() ||
-            quote.vehicleLine?.trim() ||
-            quote.serviceName ||
-            'Quote details'
-          }
+          hideDividerAfterTitle
         />
 
         {infoBanner ? <div className="mb-4">{infoBanner}</div> : null}
 
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.08] px-3 py-1.5 text-sm font-medium text-gray-200 ring-1 ring-inset ring-white/10">
-            {outcomeDot ? (
-              <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${outcomeDot}`}
-                aria-hidden
-              />
-            ) : null}
-            {getQuoteStatusLabel(quote.status)}
-          </span>
-          {quote.source === 'customer_requested' ? (
-            <span className="rounded-full bg-white/[0.06] px-3 py-1.5 text-sm font-medium text-gray-400 ring-1 ring-inset ring-white/10">
-              Customer request
-            </span>
-          ) : null}
-        </div>
-
         <div className="space-y-4 pb-28 sm:space-y-5 sm:pb-10">
-          <GlassCard
-            blurColor={blur}
-            rounded="rounded-2xl"
-            className="border-white/[0.08] bg-white/[0.03]"
-          >
-            <h2 className="text-sm font-semibold text-white">Summary</h2>
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="mb-1 text-xs text-gray-500">Service</p>
-                <p className="font-medium text-white">{quote.serviceName}</p>
-              </div>
-              {hasScheduledDate && !showActivityCard ? (
-                <>
-                  <div className="h-px bg-white/10" />
-                  <div>
-                    <p className="mb-1 text-xs text-gray-500">Scheduled</p>
+          <section className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-sm font-semibold text-gray-200">Summary</h2>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.07] px-2.5 py-1 text-xs font-medium text-gray-300 ring-1 ring-inset ring-white/10">
+                {outcomeDot ? (
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${outcomeDot}`}
+                    aria-hidden
+                  />
+                ) : null}
+                {getQuoteStatusLabel(quote.status)}
+              </span>
+            </div>
+            <GlassCard
+              blurColor={blur}
+              rounded="rounded-2xl"
+              className="border-white/[0.08] bg-white/[0.03]"
+            >
+              <div className="space-y-4">
+                <QuoteServiceSummaryCard
+                  serviceName={quote.serviceName}
+                  durationMinutes={quote.durationMinutes}
+                  totalCents={quote.totalCents}
+                  addOns={quote.addonDetails}
+                />
+
+                {hasScheduledDate && !showActivityCard ? (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                    <p className="mb-1 text-xs font-medium text-gray-500">
+                      Scheduled
+                    </p>
                     <p className="font-medium text-white">
                       {formatQuoteDetailDateLong(
                         `${quote.scheduledDate}T12:00:00`
@@ -320,238 +312,277 @@ export function QuoteDetailContent({
                       </p>
                     ) : null}
                   </div>
-                </>
-              ) : null}
-              {preferredTimingTrimmed ? (
-                <>
-                  <div className="h-px bg-white/10" />
-                  <div>
-                    <p className="mb-1 text-xs text-gray-500">Preferred time</p>
-                    <p className="font-medium text-white">
+                ) : null}
+
+                {preferredTimingTrimmed ? (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                    <p className="mb-1 text-xs font-medium text-gray-500">
+                      Preferred time
+                    </p>
+                    <p className="text-sm font-medium text-gray-200">
                       {preferredTimingTrimmed}
                     </p>
                   </div>
-                </>
-              ) : null}
-              {customerDetailsTrimmed ? (
-                <>
-                  <div className="h-px bg-white/10" />
-                  <div>
-                    <p className="mb-1 text-xs text-gray-500">Customer note</p>
+                ) : null}
+
+                {customerDetailsTrimmed ? (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                    <p className="mb-1.5 text-xs font-medium text-gray-500">
+                      Customer note
+                    </p>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
                       {customerDetailsTrimmed}
                     </p>
                   </div>
-                </>
-              ) : null}
-              {isCustomerRequestSource && ownerNoteTrimmed ? (
-                <>
-                  <div className="h-px bg-white/10" />
-                  <div>
-                    <p className="mb-1 text-xs text-gray-500">Your notes</p>
+                ) : null}
+
+                {isCustomerRequestSource && ownerNoteTrimmed ? (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                    <p className="mb-1.5 text-xs font-medium text-gray-500">
+                      Your notes
+                    </p>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
                       {ownerNoteTrimmed}
                     </p>
                   </div>
-                </>
-              ) : null}
-              {showOwnerNotesOnlyBlock ? (
-                <>
-                  <div className="h-px bg-white/10" />
-                  <div>
-                    <p className="mb-1 text-xs text-gray-500">Notes</p>
+                ) : null}
+
+                {showOwnerNotesOnlyBlock ? (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                    <p className="mb-1.5 text-xs font-medium text-gray-500">
+                      Notes
+                    </p>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
                       {ownerNoteTrimmed}
                     </p>
                   </div>
-                </>
-              ) : null}
-              <div className="h-px bg-white/10" />
-              <div className="flex items-center justify-between gap-4 rounded-lg bg-white/[0.03] px-3 py-3 sm:px-4 sm:py-3.5">
-                <p className="text-sm font-medium text-gray-300">Total</p>
-                <p className="text-right text-2xl font-bold tabular-nums text-white sm:text-3xl">
-                  {quote.totalCents > 0
-                    ? formatQuoteCurrency(quote.totalCents)
-                    : 'TBD'}
-                </p>
+                ) : null}
+
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.07] bg-white/[0.04] px-4 py-3.5">
+                  <p className="text-sm font-medium text-gray-300">Total</p>
+                  <p className="text-right text-2xl font-bold tabular-nums text-white sm:text-3xl">
+                    {quote.totalCents > 0
+                      ? formatQuoteCurrency(quote.totalCents)
+                      : 'TBD'}
+                  </p>
+                </div>
               </div>
-            </div>
-          </GlassCard>
-
-          <GlassCard
-            blurColor="bg-zinc-600"
-            rounded="rounded-2xl"
-            className="border-white/[0.08] bg-white/[0.03]"
-          >
-            <h2 className="text-sm font-semibold text-white">Customer</h2>
-            <ul className="mt-3 space-y-2 text-sm text-gray-500">
-              <li className="font-medium text-gray-400">
-                {quote.customerName}
-              </li>
-              {emailDisplay ? (
-                <li>
-                  <a
-                    href={`mailto:${emailDisplay}`}
-                    className="text-gray-500 underline decoration-white/15 underline-offset-2 transition-colors hover:text-gray-300 hover:decoration-white/30"
-                  >
-                    {emailDisplay}
-                  </a>
-                </li>
-              ) : null}
-              {phoneLink ? (
-                <li>
-                  <a
-                    href={`tel:${phoneLink.tel}`}
-                    className="text-gray-500 underline decoration-white/15 underline-offset-2 transition-colors hover:text-gray-300 hover:decoration-white/30 tabular-nums"
-                  >
-                    {phoneLink.display}
-                  </a>
-                </li>
-              ) : null}
-            </ul>
-          </GlassCard>
-
-          {quote.vehicleLine ? (
-            <GlassCard
-              blurColor="bg-zinc-600"
-              rounded="rounded-2xl"
-              className="border-white/[0.08] bg-white/[0.03]"
-            >
-              <h2 className="text-sm font-semibold text-white">Vehicle</h2>
-              <p className="mt-2 text-sm text-gray-300">{quote.vehicleLine}</p>
             </GlassCard>
+          </section>
+
+          {hasCustomerDetails ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold text-gray-200">Customer</h2>
+              <GlassCard
+                blurColor="bg-zinc-600"
+                rounded="rounded-2xl"
+                className="border-white/[0.08] bg-white/[0.03]"
+              >
+                <ul className="space-y-3 text-sm">
+                  {customerNameDisplay ? (
+                    <li className="flex items-center gap-3 font-medium text-gray-300">
+                      <UserIcon
+                        className="h-4 w-4 shrink-0 text-gray-500"
+                        aria-hidden
+                      />
+                      <span>{customerNameDisplay}</span>
+                    </li>
+                  ) : null}
+                  {emailDisplay ? (
+                    <li className="flex items-center gap-3">
+                      <EnvelopeIcon
+                        className="h-4 w-4 shrink-0 text-gray-500"
+                        aria-hidden
+                      />
+                      <a
+                        href={`mailto:${emailDisplay}`}
+                        className="break-all text-gray-400 underline decoration-white/15 underline-offset-2 transition-colors hover:text-gray-200 hover:decoration-white/30"
+                      >
+                        {emailDisplay}
+                      </a>
+                    </li>
+                  ) : null}
+                  {phoneLink ? (
+                    <li className="flex items-center gap-3">
+                      <PhoneIcon
+                        className="h-4 w-4 shrink-0 text-gray-500"
+                        aria-hidden
+                      />
+                      <a
+                        href={`tel:${phoneLink.tel}`}
+                        className="tabular-nums text-gray-400 underline decoration-white/15 underline-offset-2 transition-colors hover:text-gray-200 hover:decoration-white/30"
+                      >
+                        {phoneLink.display}
+                      </a>
+                    </li>
+                  ) : null}
+                </ul>
+              </GlassCard>
+            </section>
+          ) : null}
+
+          {vehicleLine ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold text-gray-200">Vehicle</h2>
+              <GlassCard
+                blurColor="bg-zinc-600"
+                rounded="rounded-2xl"
+                className="border-white/[0.08] bg-white/[0.03]"
+              >
+                <p className="text-sm text-gray-300">{vehicleLine}</p>
+              </GlassCard>
+            </section>
           ) : null}
 
           {serviceLocationLine ? (
-            <GlassCard
-              blurColor="bg-emerald-900/40"
-              rounded="rounded-2xl"
-              className="border-white/[0.08] bg-white/[0.03]"
-            >
-              <h2 className="text-sm font-semibold text-white">
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold text-gray-200">
                 Service location
               </h2>
-              <p className="mt-2 text-sm text-gray-300">
-                {serviceLocationLine}
-              </p>
-            </GlassCard>
+              <GlassCard
+                blurColor="bg-emerald-900/40"
+                rounded="rounded-2xl"
+                className="border-white/[0.08] bg-white/[0.03]"
+              >
+                <p className="text-sm text-gray-300">{serviceLocationLine}</p>
+              </GlassCard>
+            </section>
           ) : null}
 
           {showQuoteLinkCard ? (
-            <GlassCard
-              blurColor="bg-sky-600"
-              rounded="rounded-2xl"
-              className="border-white/[0.08] bg-white/[0.03]"
-            >
-              <h2 className="text-sm font-semibold text-white">Quote link</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                {hasPublicLink
-                  ? 'Send this to your customer so they can review the quote and accept or decline.'
-                  : 'A shareable link appears here after you send the quote.'}
-              </p>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={!hasPublicLink}
-                  onClick={onCopyLink}
-                  className={
-                    copied
-                      ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-50 ring-1 ring-inset ring-emerald-400/30'
-                      : ''
-                  }
-                  icon={
-                    copied ? (
-                      <CheckIconSolid
-                        className="h-4 w-4 text-emerald-400"
-                        aria-hidden
-                      />
-                    ) : (
-                      <ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
-                    )
-                  }
-                >
-                  {copied ? 'Copied' : 'Copy link'}
-                </Button>
-                <Button
-                  href={hasPublicLink ? publicPath : undefined}
-                  variant="secondary"
-                  size="sm"
-                  disabled={!hasPublicLink}
-                  icon={<ArrowTopRightOnSquareIcon className="h-4 w-4" />}
-                >
-                  View quote
-                </Button>
-              </div>
-            </GlassCard>
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold text-gray-200">
+                Quote link
+              </h2>
+              <GlassCard
+                blurColor="bg-sky-600"
+                rounded="rounded-2xl"
+                className="border-white/[0.08] bg-white/[0.03]"
+              >
+                <p className="text-sm text-gray-500">
+                  {hasPublicLink
+                    ? 'Send this to your customer so they can review the quote and accept or decline.'
+                    : 'A shareable link appears here after you send the quote.'}
+                </p>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={!hasPublicLink}
+                    onClick={onCopyLink}
+                    className={
+                      copied
+                        ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-50 ring-1 ring-inset ring-emerald-400/30'
+                        : ''
+                    }
+                    icon={
+                      copied ? (
+                        <CheckIconSolid
+                          className="h-4 w-4 text-emerald-400"
+                          aria-hidden
+                        />
+                      ) : (
+                        <ClipboardDocumentIcon
+                          className="h-4 w-4"
+                          aria-hidden
+                        />
+                      )
+                    }
+                  >
+                    {copied ? 'Copied' : 'Copy link'}
+                  </Button>
+                  <Button
+                    href={hasPublicLink ? publicPath : undefined}
+                    variant="secondary"
+                    size="sm"
+                    disabled={!hasPublicLink}
+                    icon={<ArrowTopRightOnSquareIcon className="h-4 w-4" />}
+                  >
+                    View quote
+                  </Button>
+                </div>
+              </GlassCard>
+            </section>
           ) : null}
 
           {showActivityCard ? (
-            <GlassCard
-              blurColor="bg-zinc-600"
-              rounded="rounded-2xl"
-              className="border-white/[0.08] bg-white/[0.03]"
-            >
-              <h2 className="text-sm font-semibold text-white">Activity</h2>
-              <dl className="mt-3 space-y-3 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-gray-500">Created</dt>
-                  <dd className="text-right text-gray-300">
-                    {formatQuoteDetailDateLong(quote.createdAt)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-gray-500">Last activity</dt>
-                  <dd className="text-right text-gray-300">
-                    {formatQuoteDetailDateLong(quote.activityAt)}
-                  </dd>
-                </div>
-                {quote.scheduledDate ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold text-gray-200">Activity</h2>
+              <GlassCard
+                blurColor="bg-zinc-600"
+                rounded="rounded-2xl"
+                className="border-white/[0.08] bg-white/[0.03]"
+              >
+                <dl className="space-y-3 text-sm">
                   <div className="flex justify-between gap-4">
-                    <dt className="text-gray-500">Scheduled</dt>
+                    <dt className="text-gray-500">Created</dt>
                     <dd className="text-right text-gray-300">
-                      {formatQuoteDetailDateLong(
-                        `${quote.scheduledDate}T12:00:00`
-                      )}
-                      {quote.scheduledTime
-                        ? ` · ${formatQuoteDetailTime12(quote.scheduledTime)}`
-                        : ''}
+                      {formatQuoteDetailDateLong(quote.createdAt)}
                     </dd>
                   </div>
-                ) : (
                   <div className="flex justify-between gap-4">
-                    <dt className="text-gray-500">Scheduled</dt>
-                    <dd className="text-right text-gray-500">Not set</dd>
+                    <dt className="text-gray-500">Last activity</dt>
+                    <dd className="text-right text-gray-300">
+                      {formatQuoteDetailDateLong(quote.activityAt)}
+                    </dd>
                   </div>
-                )}
-              </dl>
-            </GlassCard>
+                  {quote.scheduledDate ? (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-gray-500">Scheduled</dt>
+                      <dd className="text-right text-gray-300">
+                        {formatQuoteDetailDateLong(
+                          `${quote.scheduledDate}T12:00:00`
+                        )}
+                        {quote.scheduledTime
+                          ? ` · ${formatQuoteDetailTime12(quote.scheduledTime)}`
+                          : ''}
+                      </dd>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-gray-500">Scheduled</dt>
+                      <dd className="text-right text-gray-500">Not set</dd>
+                    </div>
+                  )}
+                </dl>
+              </GlassCard>
+            </section>
           ) : null}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            className={
+              showDeleteButton
+                ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
+                : 'grid grid-cols-1'
+            }
+          >
             <Button
               href={primaryHref}
               variant="inverse"
               size="md"
-              className="w-full sm:w-auto"
+              fullWidth
               disabled={!canEdit}
               title={
                 canEdit
                   ? undefined
                   : 'Editing is only available before the customer accepts or declines.'
               }
+              icon={<PencilSquareIcon className="h-4 w-4" aria-hidden />}
             >
               {isPendingRequest ? 'Create quote' : 'Edit quote'}
             </Button>
             {showDeleteButton ? (
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="md"
+                fullWidth
                 onClick={onOpenDelete}
-                className="w-full cursor-pointer py-3 text-center text-sm font-semibold text-rose-400/90 transition-colors hover:text-rose-300 sm:w-auto sm:py-2"
+                icon={<TrashIcon className="h-4 w-4" aria-hidden />}
               >
                 Delete quote
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>

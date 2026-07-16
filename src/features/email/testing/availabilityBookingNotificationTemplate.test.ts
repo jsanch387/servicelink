@@ -141,6 +141,79 @@ describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');
   });
+
+  it('includes notes when provided and omits the section when empty', () => {
+    const withNotes = buildAvailabilityBookingEmailHtml(
+      {
+        ...basePayload(),
+        customerNotes: 'Please use the side gate.\nPark in back.',
+      },
+      { audience: 'customer', businessName: 'Acme Detail' }
+    );
+    expect(withNotes).toContain('Notes');
+    expect(withNotes).toContain('Please use the side gate.');
+    expect(withNotes).toContain('<br />Park in back.');
+
+    const withoutNotes = buildAvailabilityBookingEmailHtml(basePayload(), {
+      audience: 'customer',
+      businessName: 'Acme Detail',
+    });
+    expect(withoutNotes).not.toContain('>Notes<');
+  });
+
+  it('omits email and vehicle rows when not provided', () => {
+    const html = buildAvailabilityBookingEmailHtml(
+      {
+        ...basePayload(),
+        customerEmail: '',
+        customerPhone: undefined,
+        customerVehicleYear: undefined,
+        customerVehicleMake: undefined,
+        customerVehicleModel: undefined,
+      },
+      { audience: 'customer', businessName: 'Acme Detail' }
+    );
+    expect(html).toContain('Name');
+    expect(html).not.toContain('>Email<');
+    expect(html).not.toContain('>Vehicle<');
+    expect(html).not.toContain('>Phone<');
+  });
+
+  it('shows $0.00 service price for custom jobs priced at zero', () => {
+    const html = buildAvailabilityBookingEmailHtml(
+      {
+        ...basePayload(),
+        servicePriceCents: 0,
+        totalPriceCents: 0,
+        selectedAddOns: [],
+      },
+      { audience: 'customer', businessName: 'Acme Detail' }
+    );
+    expect(html).toContain('$0.00');
+  });
+
+  it('owner-created copy differs from customer-booked copy', () => {
+    const ownerCreated = buildAvailabilityBookingEmailHtml(
+      { ...basePayload(), createdByOwner: true },
+      {
+        audience: 'owner',
+        dashboardBookingsUrl: 'https://app.example.com/dashboard/bookings',
+      }
+    );
+    expect(ownerCreated).toContain('Appointment created');
+    expect(ownerCreated).toContain('You scheduled this appointment for Jane');
+    expect(ownerCreated).toContain('created from your dashboard');
+
+    const customerBooked = buildAvailabilityBookingEmailHtml(basePayload(), {
+      audience: 'owner',
+      dashboardBookingsUrl: 'https://app.example.com/dashboard/bookings',
+    });
+    expect(customerBooked).toContain('New appointment');
+    expect(customerBooked).toContain('You have a new appointment');
+    expect(customerBooked).toContain(
+      'someone booked an appointment with your business'
+    );
+  });
 });
 
 describe('buildAvailabilityBookingEmailHtml — service location', () => {

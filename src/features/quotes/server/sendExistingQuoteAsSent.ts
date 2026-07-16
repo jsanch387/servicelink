@@ -85,6 +85,10 @@ export async function sendExistingQuoteAsSent(params: {
       note: p.note,
       scheduled_date: p.scheduledDate,
       scheduled_start_time: p.scheduledStartTimeForDb,
+      service_id: p.serviceId,
+      service_price_option_id: p.servicePriceOptionId,
+      service_price_cents: p.servicePriceCents,
+      addon_details: p.addonDetails,
       status: 'sent',
       sent_at: now,
       created_by_user_id: ownerUserId,
@@ -167,6 +171,7 @@ export async function sendExistingQuoteAsSent(params: {
       customerRequestMessage: customerRequestForEmail,
       vehicleLine,
       publicQuoteUrl: publicUrl,
+      addonDetails: p.addonDetails,
     };
     const emailResult = await sendQuoteSentToCustomerEmail(
       p.customerEmail,

@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, Input } from '@/components/shared';
+import { Button, GlassCard, Input } from '@/components/shared';
+import type { WeeklySchedule } from '@/features/availability/types/availability';
+import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
+import type { TimeOffInterval } from '@/features/availability/booking/types';
+import { DateSelector } from '@/features/availability/booking/components/DateSelector';
+import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
+import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -8,16 +14,52 @@ import React, { useEffect, useState } from 'react';
 interface PublicQuoteRespondActionsProps {
   token: string;
   initialStatus: string;
+  /** When true, customer must pick date/time before accepting. */
+  needsSchedule: boolean;
+  /** Owner has saved weekly hours — required for customer slot picking. */
+  availabilityConfigured: boolean;
+  businessSlug: string | null;
+  durationMinutes: number;
+  weeklySchedule: WeeklySchedule;
+  timeOffBlocks: TimeOffInterval[];
+}
+
+type FinalizeStep = 'schedule' | 'address';
+
+function getTodayAtMidnight() {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function formatDateForApi(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export const PublicQuoteRespondActions: React.FC<
   PublicQuoteRespondActionsProps
-> = ({ token, initialStatus }) => {
+> = ({
+  token,
+  initialStatus,
+  needsSchedule,
+  availabilityConfigured,
+  businessSlug,
+  durationMinutes,
+  weeklySchedule,
+  timeOffBlocks,
+}) => {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState<'approve' | 'decline' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [finalizeOpen, setFinalizeOpen] = useState(false);
+  const [finalizeStep, setFinalizeStep] = useState<FinalizeStep>(
+    needsSchedule ? 'schedule' : 'address'
+  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [street, setStreet] = useState('');
   const [unit, setUnit] = useState('');
   const [city, setCity] = useState('');
@@ -31,6 +73,12 @@ export const PublicQuoteRespondActions: React.FC<
   }>({});
 
   const canRespond = status === 'sent' || status === 'viewed';
+  const scheduleComplete = selectedDate !== null && selectedTime !== null;
+  const canPickSchedule = needsSchedule && availabilityConfigured;
+
+  const { blockedSlots, loading: blockedLoading } = usePublicBlockedSlots(
+    canPickSchedule ? (businessSlug ?? undefined) : undefined
+  );
 
   useEffect(() => {
     if (!finalizeOpen) return;
@@ -51,6 +99,7 @@ export const PublicQuoteRespondActions: React.FC<
   const closeFinalize = () => {
     setFinalizeOpen(false);
     setError(null);
+    setFinalizeStep(needsSchedule ? 'schedule' : 'address');
   };
 
   const submit = async (
@@ -79,6 +128,14 @@ export const PublicQuoteRespondActions: React.FC<
                 state: address.state,
                 zip: address.zip,
               },
+              ...(needsSchedule && selectedDate && selectedTime
+                ? {
+                    schedule: {
+                      scheduledDate: formatDateForApi(selectedDate),
+                      scheduledStartTime: selectedTime,
+                    },
+                  }
+                : {}),
             }
           : { token, decision };
       const res = await fetch('/api/quotes/respond', {
@@ -138,6 +195,12 @@ export const PublicQuoteRespondActions: React.FC<
       return;
     }
 
+    if (needsSchedule && !scheduleComplete) {
+      setError('Choose a date and time to accept this quote');
+      setFinalizeStep('schedule');
+      return;
+    }
+
     setAddressErrors({});
     await submit('approve', {
       street: streetVal,
@@ -160,6 +223,8 @@ export const PublicQuoteRespondActions: React.FC<
     );
   }
 
+  const schedule = weeklySchedule ?? DEFAULT_SCHEDULE;
+
   return (
     <>
       <div className="mt-6 space-y-3">
@@ -179,6 +244,13 @@ export const PublicQuoteRespondActions: React.FC<
             onClick={() => {
               setAddressErrors({});
               setError(null);
+              if (needsSchedule && !availabilityConfigured) {
+                setError(
+                  'This business has not set available hours yet. Please contact them to schedule.'
+                );
+                return;
+              }
+              setFinalizeStep(needsSchedule ? 'schedule' : 'address');
               setFinalizeOpen(true);
             }}
           >
@@ -204,7 +276,7 @@ export const PublicQuoteRespondActions: React.FC<
           className="fixed inset-0 z-[60] flex flex-col bg-[var(--dashboard-bg)]"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="finalize-address-intro"
+          aria-labelledby="finalize-intro"
         >
           <header
             className="flex-shrink-0 border-b border-white/10 px-4 py-3"
@@ -215,75 +287,140 @@ export const PublicQuoteRespondActions: React.FC<
             <div className="mx-auto flex w-full max-w-xl items-center gap-3">
               <button
                 type="button"
-                onClick={closeFinalize}
+                onClick={() => {
+                  if (finalizeStep === 'address' && needsSchedule) {
+                    setFinalizeStep('schedule');
+                    setError(null);
+                    return;
+                  }
+                  closeFinalize();
+                }}
                 disabled={loading !== null}
-                className="inline-flex items-center gap-2 rounded-lg px-1 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1.5 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ArrowLeftIcon className="h-5 w-5 shrink-0" aria-hidden />
-                <span>Back to quote</span>
+                <span>
+                  {finalizeStep === 'address' && needsSchedule
+                    ? 'Back to date'
+                    : 'Back to quote'}
+                </span>
               </button>
             </div>
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-32 pt-6 sm:pt-8">
             <div className="mx-auto w-full max-w-xl space-y-6">
-              <p
-                id="finalize-address-intro"
-                className="text-sm text-gray-400 sm:text-[15px]"
-              >
-                Add the address where this service should be performed.
-              </p>
+              {finalizeStep === 'schedule' ? (
+                <>
+                  <p
+                    id="finalize-intro"
+                    className="text-sm text-gray-400 sm:text-[15px]"
+                  >
+                    Choose a date and time for this service before you accept.
+                  </p>
+                  {blockedLoading ? (
+                    <p className="text-sm text-gray-400">Loading schedule…</p>
+                  ) : null}
+                  {!blockedLoading ? (
+                    <>
+                      <DateSelector
+                        weeklySchedule={schedule}
+                        serviceDurationMinutes={durationMinutes}
+                        existingBookings={blockedSlots}
+                        timeOffBlocks={timeOffBlocks}
+                        selectedDate={selectedDate}
+                        onSelectDate={d => {
+                          setSelectedDate(d);
+                          setSelectedTime(null);
+                        }}
+                        minDate={getTodayAtMidnight()}
+                      />
+                      <TimeSlotGrid
+                        selectedDate={selectedDate}
+                        serviceDurationMinutes={durationMinutes}
+                        weeklySchedule={schedule}
+                        existingBookings={blockedSlots}
+                        timeOffBlocks={timeOffBlocks}
+                        selectedTime={selectedTime}
+                        onSelectTime={setSelectedTime}
+                      />
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <h2
+                      id="finalize-intro"
+                      className="text-base font-semibold text-white"
+                    >
+                      Your Address
+                    </h2>
+                    <p className="mt-1.5 text-sm text-gray-400 sm:text-[15px]">
+                      Add the address where this service should be performed.
+                    </p>
+                  </div>
 
-              <section className="space-y-4">
-                <Input
-                  label="Street"
-                  placeholder="123 Main St"
-                  value={street}
-                  onChange={setStreet}
-                  autoComplete="street-address"
-                  required
-                  error={addressErrors.street}
-                />
-                <Input
-                  label="Unit (optional)"
-                  placeholder="Apt 4B"
-                  value={unit}
-                  onChange={setUnit}
-                  autoComplete="address-line2"
-                />
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <Input
-                    label="City"
-                    placeholder="Miami"
-                    value={city}
-                    onChange={setCity}
-                    autoComplete="address-level2"
-                    required
-                    error={addressErrors.city}
-                  />
-                  <Input
-                    label="State"
-                    placeholder="FL"
-                    value={state}
-                    onChange={value => setState(value.toUpperCase())}
-                    autoComplete="address-level1"
-                    required
-                    maxLength={2}
-                    error={addressErrors.state}
-                  />
-                  <Input
-                    label="ZIP"
-                    placeholder="33101"
-                    value={zip}
-                    onChange={setZip}
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                    required
-                    maxLength={10}
-                    error={addressErrors.zip}
-                  />
-                </div>
-              </section>
+                  <GlassCard
+                    padding="md"
+                    rounded="rounded-2xl"
+                    blurColor="bg-zinc-500"
+                    showBlur={true}
+                    className="w-full"
+                  >
+                    <section className="space-y-5">
+                      <Input
+                        label="Street"
+                        placeholder="123 Main St"
+                        value={street}
+                        onChange={setStreet}
+                        autoComplete="street-address"
+                        required
+                        error={addressErrors.street}
+                      />
+                      <Input
+                        label="Unit (optional)"
+                        placeholder="Apt 4B"
+                        value={unit}
+                        onChange={setUnit}
+                        autoComplete="address-line2"
+                      />
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <Input
+                          label="City"
+                          placeholder="Miami"
+                          value={city}
+                          onChange={setCity}
+                          autoComplete="address-level2"
+                          required
+                          error={addressErrors.city}
+                        />
+                        <Input
+                          label="State"
+                          placeholder="FL"
+                          value={state}
+                          onChange={value => setState(value.toUpperCase())}
+                          autoComplete="address-level1"
+                          required
+                          maxLength={2}
+                          error={addressErrors.state}
+                        />
+                        <Input
+                          label="ZIP"
+                          placeholder="33101"
+                          value={zip}
+                          onChange={setZip}
+                          inputMode="numeric"
+                          autoComplete="postal-code"
+                          required
+                          maxLength={10}
+                          error={addressErrors.zip}
+                        />
+                      </div>
+                    </section>
+                  </GlassCard>
+                </>
+              )}
 
               {error ? (
                 <p className="text-sm text-red-400" role="alert">
@@ -298,17 +435,35 @@ export const PublicQuoteRespondActions: React.FC<
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
             <div className="mx-auto w-full max-w-xl">
-              <Button
-                type="button"
-                variant="success"
-                size="md"
-                fullWidth
-                loading={loading === 'approve'}
-                disabled={loading !== null}
-                onClick={handleFinalize}
-              >
-                Finalize booking
-              </Button>
+              {finalizeStep === 'schedule' ? (
+                <Button
+                  type="button"
+                  variant="success"
+                  size="md"
+                  fullWidth
+                  disabled={
+                    loading !== null || !scheduleComplete || blockedLoading
+                  }
+                  onClick={() => {
+                    setError(null);
+                    setFinalizeStep('address');
+                  }}
+                >
+                  Continue
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="success"
+                  size="md"
+                  fullWidth
+                  loading={loading === 'approve'}
+                  disabled={loading !== null}
+                  onClick={handleFinalize}
+                >
+                  Finalize booking
+                </Button>
+              )}
             </div>
           </div>
         </div>

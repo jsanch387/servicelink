@@ -44,6 +44,25 @@ export function ownerBookingSlotValidationMessage(
   }
 }
 
+/** Customer-facing messages for public quote accept / public booking checks. */
+export function publicBookingSlotValidationMessage(
+  code: OwnerBookingSlotValidationCode
+): string {
+  switch (code) {
+    case 'availability_not_configured':
+      return 'This business is not ready to take online bookings yet. Please contact them to schedule.';
+    case 'outside_weekly_hours':
+      return 'That time is outside the business’s available hours. Please pick another slot.';
+    case 'time_off_conflict':
+      return 'That time is no longer available. Please pick another slot.';
+    case 'existing_booking_conflict':
+      return 'That time was just booked. Please pick another slot.';
+    case 'load_bookings_failed':
+    default:
+      return 'We could not verify availability. Please try again in a moment.';
+  }
+}
+
 function coerceWeeklySchedule(raw: unknown): WeeklySchedule | null {
   if (!raw || typeof raw !== 'object') return null;
   return raw as WeeklySchedule;

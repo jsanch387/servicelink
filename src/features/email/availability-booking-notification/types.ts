@@ -54,6 +54,10 @@ export interface AvailabilityBookingNotificationPayload {
   paymentSummary?: AvailabilityBookingPaymentSummary;
   /** Where service happens (mobile at customer vs shop visit). */
   serviceLocation?: AvailabilityBookingServiceLocationEmail;
+  /** Customer or job notes from the booking form (omitted in email when empty). */
+  customerNotes?: string;
+  /** Owner scheduled this appointment from the dashboard (not a public self-booking). */
+  createdByOwner?: boolean;
 }
 
 export interface AvailabilityBookingServiceLocationEmail {

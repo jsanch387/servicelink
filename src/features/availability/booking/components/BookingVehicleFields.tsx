@@ -28,6 +28,7 @@ interface BookingVehicleFieldsProps {
   onChange: (updates: Partial<BookingVehicleFieldValues>) => void;
   errors?: BookingVehicleFieldErrors;
   bookingFlowLocale?: PublicBookingFlowLocale;
+  required?: boolean;
 }
 
 export function BookingVehicleFields({
@@ -35,6 +36,7 @@ export function BookingVehicleFields({
   onChange,
   errors = {},
   bookingFlowLocale = 'en',
+  required = true,
 }: BookingVehicleFieldsProps) {
   const cf = publicBookingUi(bookingFlowLocale).customerForm;
 
@@ -46,7 +48,7 @@ export function BookingVehicleFields({
         onChange={v => onChange({ vehicleYear: sanitizeVehicleYearInput(v) })}
         placeholder="2018"
         error={errors.vehicleYear}
-        required
+        required={required}
         inputMode="numeric"
         maxLength={4}
       />
@@ -60,7 +62,7 @@ export function BookingVehicleFields({
         }
         placeholder="Toyota"
         error={errors.vehicleMake}
-        required
+        required={required}
         maxLength={BOOKING_VEHICLE_MAKE_MAX}
       />
       <Input
@@ -76,7 +78,7 @@ export function BookingVehicleFields({
         }
         placeholder="Camry"
         error={errors.vehicleModel}
-        required
+        required={required}
         maxLength={BOOKING_VEHICLE_MODEL_MAX}
       />
     </div>

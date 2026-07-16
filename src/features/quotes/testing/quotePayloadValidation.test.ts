@@ -30,6 +30,31 @@ describe('validateQuotePayloadFields', () => {
     if (r.ok) return;
     expect(r.error).toBe('Customer name is required');
   });
+
+  it('accepts omitting both scheduled date and time', () => {
+    const {
+      scheduledDate: _d,
+      scheduledStartTime: _t,
+      ...rest
+    } = validPayload();
+    const r = validateQuotePayloadFields(rest);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.scheduledDate).toBeNull();
+    expect(r.data.scheduledStartTimeForDb).toBeNull();
+  });
+
+  it('rejects providing only scheduled date', () => {
+    const r = validateQuotePayloadFields({
+      ...validPayload(),
+      scheduledStartTime: undefined,
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.error).toBe(
+      'Provide both scheduled date and start time, or omit both'
+    );
+  });
 });
 
 describe('validateSendQuoteBody + shared core', () => {

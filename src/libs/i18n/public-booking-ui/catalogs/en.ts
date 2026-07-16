@@ -15,8 +15,10 @@ export const publicBookingUiEn: PublicBookingUi = {
     backToAddOns: 'Back to add-ons',
     backToServices: 'Back to services',
     backToBookings: 'Back to bookings',
+    backToAppointmentType: 'Back to appointment type',
   },
   common: {
+    back: 'Back',
     continue: 'Continue',
     select: 'Select',
     summary: 'Summary',
@@ -41,7 +43,7 @@ export const publicBookingUiEn: PublicBookingUi = {
   },
   serviceDetails: {
     startingAt: 'Starting at',
-    chooseOption: 'Choose an option',
+    choosePricingOption: 'Choose pricing option',
     optionalAddOns: 'Optional add-ons',
     dateAndTime: 'Date & time',
     continue: 'Continue',
@@ -64,10 +66,36 @@ export const publicBookingUiEn: PublicBookingUi = {
       'You are creating a new appointment. Choose a service below to continue.',
     bookWithSubtitle:
       'Pick a service. You can add extras next if there are any. Then pick date and time.',
+    chooseAppointmentTypeSubtitle:
+      'Choose a saved service or create a custom job.',
+    appointmentTypeAriaLabel: 'How to set the service',
+    fromServicesTitle: 'From your services',
+    fromServicesDescription: 'Choose a service from your list.',
+    customJobTitle: 'Custom job',
+    customJobSubtitle:
+      'Create an appointment that is not tied to a saved service.',
+    customJobRowDescription:
+      'Use this for one-off work or services that are not in your list.',
+    customJobNameLabel: 'Job name',
+    customJobNamePlaceholder: 'e.g. Window cleaning',
+    customJobPriceLabel: 'Price',
+    customJobPricePlaceholder: 'e.g. $100',
+    customJobDurationLabel: 'Duration',
+    customJobDurationPlaceholder: 'Select duration',
+    customJobNotesLabel: 'Notes (optional)',
+    customJobNotesPlaceholder: 'Add details or context about this custom job.',
   },
   notAccepting: {
     title: "This business isn't accepting bookings yet.",
     body: 'Check back later or contact them directly.',
+    ownerFreeCapTitle: "You've reached your free plan limit",
+    ownerFreeCapBody: limit =>
+      `You've used all ${limit} free appointments. Upgrade to Pro to create more bookings.`,
+    ownerBookingsOffTitle: "You're not accepting bookings right now",
+    ownerBookingsOffBody:
+      'Turn on Accept bookings in Availability, then try creating an appointment again.',
+    ownerBackToBookings: 'Back to bookings',
+    ownerUpgradeCta: 'Upgrade to Pro',
   },
   calendar: {
     chooseTime: 'Choose time',
@@ -76,8 +104,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     reviewBooking: 'Review your booking',
     reviewBookingCta: 'Review Booking',
     notificationsConsentCheckboxLabel: 'Text me appointment updates',
-    notificationsConsentFinePrint: (businessName: string) =>
-      `From ${businessName}. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our`,
+    notificationsConsentFinePrint: () =>
+      'By checking this box, you agree to receive SMS appointment notifications from ServiceLink. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our',
     notificationsSmsFinePrintLinkLabel: 'Privacy Policy',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',
@@ -165,6 +193,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     customerDetails: 'Customer information',
     serviceAddress: 'Service address',
     vehicle: 'Vehicle',
+    optionalVehicleDetails: 'Optional — add vehicle details.',
     fullName: 'Full Name',
     email: 'Email',
     phone: 'Phone',
@@ -191,6 +220,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     errVehicleMake: 'Vehicle make is required',
     errVehicleModel: 'Vehicle model is required',
     emailOptional: 'Email (optional)',
+    noEmailConfirmationNotice: 'No email, no confirmation will be sent.',
+    smsComingSoon: 'SMS coming soon.',
     errEmailInvalid: 'Please enter a valid email address',
     errValueTooLong: 'This value is too long',
   },

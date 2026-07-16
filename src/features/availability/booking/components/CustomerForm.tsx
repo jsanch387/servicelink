@@ -11,6 +11,7 @@ import {
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { isValidEmail } from '@/features/auth/utils/validation';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import { BookingVehicleFields } from './BookingVehicleFields';
 import type { CustomerFormData } from '../types';
@@ -38,6 +39,8 @@ interface CustomerFormProps {
   step: CustomerFormStep;
   /** When true, show vehicle fields (year/make/model). */
   showVehicleFields?: boolean;
+  /** When false, visible vehicle fields can be left blank. */
+  requireVehicleFields?: boolean;
   /** When true, hide the submit button (parent uses sticky CTA). */
   hideSubmitButton?: boolean;
   submitLabel?: string;
@@ -93,11 +96,13 @@ function isVehicleNotesStepValid(
   requireVehicleFields: boolean
 ): boolean {
   if (data.notes.length > BOOKING_CUSTOMER_NOTES_MAX) return false;
-  if (!requireVehicleFields) return true;
 
   const vy = data.vehicleYear.trim();
   const vmk = data.vehicleMake.trim();
   const vmd = data.vehicleModel.trim();
+  const anyVehicle = vy.length > 0 || vmk.length > 0 || vmd.length > 0;
+  if (!requireVehicleFields && !anyVehicle) return true;
+
   if (!vy || !vmk || !vmd) return false;
   if (!isValidVehicleYearFourDigit(vy)) return false;
   if (vmk.length > BOOKING_VEHICLE_MAKE_MAX) return false;
@@ -135,6 +140,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   onSubmit,
   step,
   showVehicleFields = false,
+  requireVehicleFields = showVehicleFields,
   hideSubmitButton = false,
   submitLabel,
   id,
@@ -212,15 +218,18 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         const vy = value.vehicleYear.trim();
         const vmk = value.vehicleMake.trim();
         const vmd = value.vehicleModel.trim();
-        if (!vy) next.vehicleYear = cf.errVehicleYear;
-        else if (!isValidVehicleYearFourDigit(vy))
-          next.vehicleYear = cf.errVehicleYearInvalid;
-        if (!vmk) next.vehicleMake = cf.errVehicleMake;
-        else if (vmk.length > BOOKING_VEHICLE_MAKE_MAX)
-          next.vehicleMake = cf.errValueTooLong;
-        if (!vmd) next.vehicleModel = cf.errVehicleModel;
-        else if (vmd.length > BOOKING_VEHICLE_MODEL_MAX)
-          next.vehicleModel = cf.errValueTooLong;
+        const anyVehicle = vy.length > 0 || vmk.length > 0 || vmd.length > 0;
+        if (requireVehicleFields || anyVehicle) {
+          if (!vy) next.vehicleYear = cf.errVehicleYear;
+          else if (!isValidVehicleYearFourDigit(vy))
+            next.vehicleYear = cf.errVehicleYearInvalid;
+          if (!vmk) next.vehicleMake = cf.errVehicleMake;
+          else if (vmk.length > BOOKING_VEHICLE_MAKE_MAX)
+            next.vehicleMake = cf.errValueTooLong;
+          if (!vmd) next.vehicleModel = cf.errVehicleModel;
+          else if (vmd.length > BOOKING_VEHICLE_MODEL_MAX)
+            next.vehicleModel = cf.errValueTooLong;
+        }
       }
     }
 
@@ -248,14 +257,25 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         bookingFlowLocale={bookingFlowLocale}
       />
     ) : null;
+  const ownerNoEmailFooter =
+    isOwnerManualBooking && step === 'contact' && !emailTrim ? (
+      <div className="flex items-start gap-1.5 px-1 text-xs leading-relaxed text-zinc-500">
+        <InformationCircleIcon
+          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500"
+          aria-hidden
+        />
+        <p>
+          {cf.noEmailConfirmationNotice}{' '}
+          <span className="text-zinc-600">{cf.smsComingSoon}</span>
+        </p>
+      </div>
+    ) : null;
+  const contactFooter = ownerNoEmailFooter ?? notificationsConsentFooter;
 
   return (
     <form id={id} onSubmit={handleSubmit} className="space-y-6">
       {step === 'contact' && (
-        <FormStepSection
-          title={contactSectionTitle}
-          footer={notificationsConsentFooter}
-        >
+        <FormStepSection title={contactSectionTitle} footer={contactFooter}>
           <Input
             label={cf.fullName}
             value={value.fullName}
@@ -375,7 +395,12 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       {step === 'vehicleNotes' && (
         <div className="space-y-6">
           {showVehicleFields && (
-            <FormStepSection title={cf.vehicle}>
+            <FormStepSection
+              title={cf.vehicle}
+              description={
+                requireVehicleFields ? undefined : cf.optionalVehicleDetails
+              }
+            >
               <BookingVehicleFields
                 value={{
                   vehicleYear: value.vehicleYear,
@@ -389,6 +414,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                   vehicleModel: errors.vehicleModel,
                 }}
                 bookingFlowLocale={bookingFlowLocale}
+                required={requireVehicleFields}
               />
             </FormStepSection>
           )}

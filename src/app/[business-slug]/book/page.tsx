@@ -61,11 +61,18 @@ interface BookingRequestPageProps {
     serviceId?: string;
     addOnIds?: string;
     priceOptionId?: string;
+    customJob?: string;
+    customServiceName?: string;
+    customServicePriceCents?: string;
+    customServiceDurationMinutes?: string;
+    customJobNotes?: string;
     /** Matches last book/details sub-step before calendar (`price` | `addons`). */
     detailsStep?: string;
     skipDetails?: string;
     /** `owner` = business owner booking on a customer's behalf (from dashboard). */
     for?: string;
+    /** Owner-only: restore services list after returning from service details. */
+    entry?: string;
     /** Stripe Checkout return markers (set on success/cancel URLs). */
     checkout?: string;
     session_id?: string;
@@ -200,9 +207,15 @@ export default async function BookingRequestPage({
     serviceId,
     addOnIds,
     priceOptionId,
+    customJob,
+    customServiceName,
+    customServicePriceCents,
+    customServiceDurationMinutes,
+    customJobNotes,
     detailsStep: detailsStepRaw,
     skipDetails,
     for: bookingForParam,
+    entry: entryParam,
     checkout: checkoutParam,
     session_id: sessionIdParam,
     lang: langParam,
@@ -235,6 +248,12 @@ export default async function BookingRequestPage({
   const effectiveDetailsStep: BookDetailsStepQuery | undefined =
     detailsStepForBack ?? (addonIdList.length > 0 ? 'addons' : undefined);
   const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
+  const isCustomOwnerBooking =
+    isOwnerManualBooking &&
+    (customJob === '1' || customJob === 'true') &&
+    Boolean(customServiceName?.trim());
+  const ownerEntryMode =
+    isOwnerManualBooking && entryParam === 'services' ? 'services' : undefined;
   const skipDetailsFlag = skipDetails === '1' || skipDetails === 'true';
 
   // Fetch the business profile by slug
@@ -298,6 +317,7 @@ export default async function BookingRequestPage({
   const showAvailabilityServicePicker =
     effectiveUseAvailabilityBooking &&
     !showNotAcceptingBookings &&
+    !isCustomOwnerBooking &&
     !(serviceId && serviceId.trim());
 
   let availabilityPickerServices: BookServicePickerItem[] = [];
@@ -339,7 +359,7 @@ export default async function BookingRequestPage({
       .map(row => mapRowToPickerItem(row, ownerHasPro))
       .filter(s => s.id && s.name);
 
-    if (availabilityPickerServices.length === 1) {
+    if (availabilityPickerServices.length === 1 && !isOwnerManualBooking) {
       redirect(
         getBusinessBookDetailsUrl(slugForRoutes, {
           serviceId: availabilityPickerServices[0].id,
@@ -357,7 +377,25 @@ export default async function BookingRequestPage({
   let servicePriceForBooking: number | undefined;
   let selectedPriceOptionLabel: string | undefined;
 
-  if (trimmedServiceId) {
+  if (isCustomOwnerBooking) {
+    serviceName = customServiceName?.trim() ?? '';
+    const parsedDuration = Number.parseInt(
+      customServiceDurationMinutes?.trim() ?? '',
+      10
+    );
+    serviceDurationMinutes =
+      Number.isInteger(parsedDuration) && parsedDuration > 0
+        ? parsedDuration
+        : 60;
+    const parsedPriceCents = Number.parseInt(
+      customServicePriceCents?.trim() ?? '',
+      10
+    );
+    servicePriceForBooking =
+      Number.isInteger(parsedPriceCents) && parsedPriceCents >= 0
+        ? parsedPriceCents
+        : 0;
+  } else if (trimmedServiceId) {
     const resolved = await resolvePublicBookingService(
       adminClient,
       businessProfile.id,
@@ -442,18 +480,25 @@ export default async function BookingRequestPage({
   });
 
   if (isOwnerManualBooking) {
-    if (!serviceId?.trim()) {
+    if (!serviceId?.trim() && !isCustomOwnerBooking) {
       bookPageBackHref = ROUTES.DASHBOARD.BOOKINGS;
       bookPageBackLabel = ui.nav.backToBookings;
+    } else if (isCustomOwnerBooking) {
+      bookPageBackHref = getBusinessBookPath(slugForRoutes, {
+        forOwner: true,
+        lang: bookingFlowLocale,
+      });
+      bookPageBackLabel = ui.nav.backToAppointmentType;
     } else if (skipDetailsFlag) {
       bookPageBackHref = getBusinessBookPath(slugForRoutes, {
         forOwner: true,
+        entry: 'services',
         lang: bookingFlowLocale,
       });
       bookPageBackLabel = ui.nav.backToServices;
     } else {
       bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
-        serviceId: serviceId.trim(),
+        serviceId: trimmedServiceId,
         addOnIds: addOnIds?.trim(),
         priceOptionId: priceOptionId?.trim(),
         detailsStep: effectiveDetailsStep,
@@ -489,7 +534,7 @@ export default async function BookingRequestPage({
   /** V2 calendar + details + review render their own sticky back bar; avoid duplicate header. */
   const calendarFlowOwnsHeader =
     effectiveUseAvailabilityBooking &&
-    Boolean(trimmedServiceId) &&
+    (Boolean(trimmedServiceId) || isCustomOwnerBooking) &&
     !showAvailabilityServicePicker &&
     !showNotAcceptingBookings;
 
@@ -508,16 +553,22 @@ export default async function BookingRequestPage({
           <BookFlowSwitch
             useAvailabilityBooking={effectiveUseAvailabilityBooking}
             showNotAcceptingBookings={showNotAcceptingBookings}
+            reachedFreeCap={reachedFreeCap}
             businessName={businessProfile.business_name}
             businessId={businessProfile.id}
             businessSlug={slugForRoutes}
             showVehicleFields={showVehicleFields}
-            serviceId={serviceId?.trim() ?? undefined}
+            serviceId={
+              isCustomOwnerBooking ? undefined : serviceId?.trim() || undefined
+            }
             addOnIds={addOnIds?.trim() || undefined}
             selectedAddOns={selectedAddOns}
             serviceName={serviceName}
             servicePrice={servicePriceForBooking}
             serviceDurationMinutes={serviceDurationMinutes}
+            initialCustomerNotes={
+              isCustomOwnerBooking ? customJobNotes?.trim() : undefined
+            }
             selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
@@ -538,6 +589,7 @@ export default async function BookingRequestPage({
           services={availabilityPickerServices}
           serviceCategories={availabilityPickerCategories}
           isOwnerManualBooking={isOwnerManualBooking}
+          initialEntryMode={ownerEntryMode}
           bookingFlowLocale={bookingFlowLocale}
         />
       ) : (
@@ -545,16 +597,22 @@ export default async function BookingRequestPage({
           <BookFlowSwitch
             useAvailabilityBooking={effectiveUseAvailabilityBooking}
             showNotAcceptingBookings={showNotAcceptingBookings}
+            reachedFreeCap={reachedFreeCap}
             businessName={businessProfile.business_name}
             businessId={businessProfile.id}
             businessSlug={slugForRoutes}
             showVehicleFields={showVehicleFields}
-            serviceId={serviceId?.trim() ?? undefined}
+            serviceId={
+              isCustomOwnerBooking ? undefined : serviceId?.trim() || undefined
+            }
             addOnIds={addOnIds?.trim() || undefined}
             selectedAddOns={selectedAddOns}
             serviceName={serviceName}
             servicePrice={servicePriceForBooking}
             serviceDurationMinutes={serviceDurationMinutes}
+            initialCustomerNotes={
+              isCustomOwnerBooking ? customJobNotes?.trim() : undefined
+            }
             selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}

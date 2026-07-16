@@ -51,7 +51,11 @@ export async function loadDashboardQuoteById(
           customer_city,
           customer_state,
           customer_zip,
-          service_address
+          service_address,
+          service_id,
+          service_price_option_id,
+          service_price_cents,
+          addon_details
         `
     )
     .eq('business_id', businessId)

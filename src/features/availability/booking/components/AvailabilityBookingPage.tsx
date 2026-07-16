@@ -1,7 +1,11 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { API_ROUTES, type PublicBookingFlowLocale } from '@/constants/routes';
+import {
+  API_ROUTES,
+  ROUTES,
+  type PublicBookingFlowLocale,
+} from '@/constants/routes';
 import {
   bcp47ForBookingLocale,
   publicBookingUi,
@@ -190,6 +194,7 @@ export function AvailabilityBookingPage({
   selectedAddOns: selectedAddOnsProp,
   serviceName,
   serviceDurationMinutes = 60,
+  initialCustomerNotes,
   servicePriceCents,
   selectedPriceOptionLabel,
   weeklySchedule,
@@ -245,7 +250,9 @@ export function AvailabilityBookingPage({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [customerData, setCustomerData] = useState<CustomerFormData>(
-    INITIAL_CUSTOMER_FORM_DATA
+    initialCustomerNotes?.trim()
+      ? { ...INITIAL_CUSTOMER_FORM_DATA, notes: initialCustomerNotes.trim() }
+      : INITIAL_CUSTOMER_FORM_DATA
   );
 
   const serviceDateYmd = useMemo(
@@ -572,6 +579,7 @@ export function AvailabilityBookingPage({
   }, [amountDueNowCents, ui]);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
+  const requireVehicleFields = showVehicleFields && !isOwnerManualBooking;
   const canContinueFromDetails = isBookingDetailsSubStepValid(
     detailsSubStep,
     customerData,
@@ -579,6 +587,7 @@ export function AvailabilityBookingPage({
     customerServiceChoice,
     {
       showVehicleFields,
+      requireVehicleFields,
       emailOptional: true,
     }
   );
@@ -1132,58 +1141,66 @@ export function AvailabilityBookingPage({
     <>
       {/* Match ServiceDetailsScreen: full-width sticky bar; back row uses max-w-2xl + page gutters. */}
       <PublicFlowStickyBackHeader>
-        {step === 'schedule' && (
-          <Link href={exitCalendarFlowHref} className={headerClassName}>
-            <PublicFlowBackNavLabel label={exitCalendarFlowLabel} />
+        {isOwnerManualBooking ? (
+          <Link href={ROUTES.DASHBOARD.BOOKINGS} className={headerClassName}>
+            <PublicFlowBackNavLabel label={ui.nav.backToBookings} />
           </Link>
-        )}
-        {step === 'details' && (
-          <button
-            type="button"
-            onClick={handleDetailsBack}
-            className={headerClassName}
-          >
-            <PublicFlowBackNavLabel
-              label={
-                detailsSubStep === 'contact'
-                  ? ui.nav.backToDateTime
-                  : detailsSubStep === 'serviceChoice'
-                    ? backToContactLabel
-                    : detailsSubStep === 'address'
-                      ? serviceLocation.mode === 'both'
-                        ? ui.serviceLocation.backToServiceChoice
-                        : backToContactLabel
-                      : detailsSubStep === 'vehicleNotes'
-                        ? customerAddressEntryRequired(
-                            serviceLocation,
-                            customerServiceChoice
-                          )
-                          ? ui.nav.backToAddress
-                          : serviceLocation.mode === 'both'
+        ) : (
+          <>
+            {step === 'schedule' && (
+              <Link href={exitCalendarFlowHref} className={headerClassName}>
+                <PublicFlowBackNavLabel label={exitCalendarFlowLabel} />
+              </Link>
+            )}
+            {step === 'details' && (
+              <button
+                type="button"
+                onClick={handleDetailsBack}
+                className={headerClassName}
+              >
+                <PublicFlowBackNavLabel
+                  label={
+                    detailsSubStep === 'contact'
+                      ? ui.nav.backToDateTime
+                      : detailsSubStep === 'serviceChoice'
+                        ? backToContactLabel
+                        : detailsSubStep === 'address'
+                          ? serviceLocation.mode === 'both'
                             ? ui.serviceLocation.backToServiceChoice
                             : backToContactLabel
-                        : ui.nav.backToAddress
-              }
-            />
-          </button>
-        )}
-        {step === 'review' && (
-          <button
-            type="button"
-            onClick={openDetailsFromReview}
-            className={headerClassName}
-          >
-            <PublicFlowBackNavLabel label={ui.nav.backToDetails} />
-          </button>
-        )}
-        {step === 'payment' && (
-          <button
-            type="button"
-            onClick={() => setStep('review')}
-            className={headerClassName}
-          >
-            <PublicFlowBackNavLabel label={ui.nav.backToReview} />
-          </button>
+                          : detailsSubStep === 'vehicleNotes'
+                            ? customerAddressEntryRequired(
+                                serviceLocation,
+                                customerServiceChoice
+                              )
+                              ? ui.nav.backToAddress
+                              : serviceLocation.mode === 'both'
+                                ? ui.serviceLocation.backToServiceChoice
+                                : backToContactLabel
+                            : ui.nav.backToAddress
+                  }
+                />
+              </button>
+            )}
+            {step === 'review' && (
+              <button
+                type="button"
+                onClick={openDetailsFromReview}
+                className={headerClassName}
+              >
+                <PublicFlowBackNavLabel label={ui.nav.backToDetails} />
+              </button>
+            )}
+            {step === 'payment' && (
+              <button
+                type="button"
+                onClick={() => setStep('review')}
+                className={headerClassName}
+              >
+                <PublicFlowBackNavLabel label={ui.nav.backToReview} />
+              </button>
+            )}
+          </>
         )}
       </PublicFlowStickyBackHeader>
 
@@ -1274,6 +1291,7 @@ export function AvailabilityBookingPage({
                   onChange={setCustomerData}
                   onSubmit={handleDetailsSubStepSubmit}
                   showVehicleFields={showVehicleFields}
+                  requireVehicleFields={requireVehicleFields}
                   hideSubmitButton
                   submitLabel={detailsPrimaryCtaLabel}
                   bookingFlowLocale={bookingFlowLocale}
@@ -1584,7 +1602,54 @@ export function AvailabilityBookingPage({
           className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm p-4 safe-area-pb touch-manipulation"
           style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
         >
-          <div className="max-w-2xl mx-auto">
+          <div
+            className={`max-w-2xl mx-auto ${
+              isOwnerManualBooking ? 'grid grid-cols-2 gap-3' : ''
+            }`}
+          >
+            {isOwnerManualBooking && step === 'schedule' ? (
+              <Button
+                href={exitCalendarFlowHref}
+                variant="secondary"
+                fullWidth
+                className="font-semibold"
+              >
+                {ui.common.back}
+              </Button>
+            ) : null}
+            {isOwnerManualBooking && step === 'details' ? (
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                className="font-semibold"
+                onClick={handleDetailsBack}
+              >
+                {ui.common.back}
+              </Button>
+            ) : null}
+            {isOwnerManualBooking && step === 'review' ? (
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                className="font-semibold"
+                onClick={openDetailsFromReview}
+              >
+                {ui.common.back}
+              </Button>
+            ) : null}
+            {isOwnerManualBooking && step === 'payment' ? (
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                className="font-semibold"
+                onClick={() => setStep('review')}
+              >
+                {ui.common.back}
+              </Button>
+            ) : null}
             {step === 'schedule' && (
               <Button
                 type="button"
@@ -1602,6 +1667,7 @@ export function AvailabilityBookingPage({
               detailsSubStep === 'address' ||
               detailsSubStep === 'vehicleNotes' ? (
                 <Button
+                  key={`details-form-${detailsSubStep}`}
                   type="submit"
                   form={CUSTOMER_FORM_ID}
                   variant="inverse"
@@ -1613,6 +1679,7 @@ export function AvailabilityBookingPage({
                 </Button>
               ) : (
                 <Button
+                  key={`details-step-${detailsSubStep}`}
                   type="button"
                   variant="inverse"
                   fullWidth

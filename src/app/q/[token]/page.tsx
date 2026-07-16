@@ -1,7 +1,16 @@
 import { GlassCard } from '@/components/shared';
-import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import type { TimeOffInterval } from '@/features/availability/booking/types';
+import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import {
+  DEFAULT_SCHEDULE,
+  type WeeklySchedule,
+} from '@/features/availability/types/availability';
+import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
+import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
+import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { formatUsPhoneDigits } from '@/lib/formatUsPhone';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -88,7 +97,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteRow } = await db
     .from('quotes')
     .select(
-      'id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents'
     )
     .eq('id', link.quote_id)
     .maybeSingle();
@@ -97,6 +106,7 @@ export default async function PublicQuoteViewPage({
 
   const quote = quoteRow as {
     id: string;
+    business_id: string;
     source: string;
     customer_name: string;
     customer_email: string;
@@ -109,9 +119,13 @@ export default async function PublicQuoteViewPage({
     duration_minutes: number;
     note: string | null;
     request_message: string | null;
-    scheduled_date: string;
-    scheduled_start_time: string;
+    scheduled_date: string | null;
+    scheduled_start_time: string | null;
     status: string;
+    addon_details: unknown;
+    service_id: string | null;
+    service_price_option_id: string | null;
+    service_price_cents: number | null;
   };
 
   await db
@@ -136,7 +150,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteFresh } = await db
     .from('quotes')
     .select(
-      'id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents'
     )
     .eq('id', quote.id)
     .maybeSingle();
@@ -144,14 +158,45 @@ export default async function PublicQuoteViewPage({
   if (!quoteFresh) notFound();
 
   const displayQuote = quoteFresh as typeof quote;
+  const quoteAddOns = normalizeQuoteAddonDetails(displayQuote.addon_details);
   const isAccepted = displayQuote.status === 'approved';
   const isDeclined = displayQuote.status === 'declined';
+  const scheduledDate = displayQuote.scheduled_date?.trim() ?? '';
+  const scheduledStartTime = displayQuote.scheduled_start_time?.trim() ?? '';
+  const hasSchedule = Boolean(scheduledDate && scheduledStartTime);
+  const needsSchedule = !hasSchedule;
   const customerPhoneDigits =
     displayQuote.customer_phone?.replace(/\D/g, '') ?? '';
   const customerPhoneDisplay =
     customerPhoneDigits.length === 10
       ? formatUsPhoneDigits(customerPhoneDigits)
       : null;
+
+  const { data: profileRow } = await db
+    .from('business_profiles')
+    .select('business_slug')
+    .eq('id', displayQuote.business_id)
+    .maybeSingle();
+  const businessSlug =
+    (
+      profileRow as { business_slug?: string | null } | null
+    )?.business_slug?.trim() || null;
+
+  const availabilityRow = await getAvailabilityForBusiness(
+    supabase,
+    displayQuote.business_id
+  );
+  const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
+  const weeklySchedule: WeeklySchedule =
+    (availabilityRow?.weekly_schedule as WeeklySchedule | null | undefined) ??
+    DEFAULT_SCHEDULE;
+  const timeOffBlocks: TimeOffInterval[] = parseStoredTimeOffBlocks(
+    availabilityRow?.time_off_blocks
+  ).map(b => ({
+    date: b.date,
+    startTime: b.startTime,
+    endTime: b.endTime,
+  }));
 
   const isCustomerRequested = displayQuote.source === 'customer_requested';
   const requestRaw = customerRequestRawFromRow(displayQuote);
@@ -222,27 +267,35 @@ export default async function PublicQuoteViewPage({
         >
           <div className="space-y-4">
             <div>
-              <p className="mb-1 text-xs tracking-wider text-gray-500">
+              <p className="mb-1.5 text-xs tracking-wider text-gray-500">
                 Service
               </p>
-              <p className="font-medium text-white">
-                {displayQuote.service_name}
-              </p>
-              <p className="mt-0.5 text-sm text-gray-400">
-                {formatDurationMinutes(displayQuote.duration_minutes)}
-              </p>
+              <QuoteServiceSummaryCard
+                serviceName={displayQuote.service_name}
+                durationMinutes={displayQuote.duration_minutes}
+                totalCents={displayQuote.price_cents}
+                addOns={quoteAddOns}
+              />
             </div>
             <div className="h-px bg-white/10" />
             <div>
               <p className="mb-1 text-xs tracking-wider text-gray-500">
                 Date &amp; time
               </p>
-              <p className="font-medium text-white">
-                {formatDateLong(displayQuote.scheduled_date)}
-              </p>
-              <p className="mt-0.5 text-sm text-gray-400">
-                Starts {formatTime12(displayQuote.scheduled_start_time)}
-              </p>
+              {hasSchedule ? (
+                <>
+                  <p className="font-medium text-white">
+                    {formatDateLong(scheduledDate)}
+                  </p>
+                  <p className="mt-0.5 text-sm text-gray-400">
+                    Starts {formatTime12(scheduledStartTime)}
+                  </p>
+                </>
+              ) : (
+                <p className="font-medium text-white">
+                  You&apos;ll choose a date and time when you accept
+                </p>
+              )}
             </div>
             <div className="h-px bg-white/10" />
             <div>
@@ -321,6 +374,12 @@ export default async function PublicQuoteViewPage({
         <PublicQuoteRespondActions
           token={token.trim()}
           initialStatus={displayQuote.status}
+          needsSchedule={needsSchedule}
+          availabilityConfigured={availabilityConfigured}
+          businessSlug={businessSlug}
+          durationMinutes={Math.max(1, displayQuote.duration_minutes ?? 60)}
+          weeklySchedule={weeklySchedule}
+          timeOffBlocks={timeOffBlocks}
         />
       </div>
     </main>

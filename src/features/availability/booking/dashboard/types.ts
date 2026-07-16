@@ -31,6 +31,8 @@ export interface BookingPaymentSummaryDisplay {
 
 export interface AvailabilityBookingDisplay {
   id: string;
+  /** Server-derived origin of this booking; null for legacy/system rows. */
+  bookingSource?: 'public' | 'owner' | null;
   customerName: string;
   customerPhone: string;
   customerEmail: string;

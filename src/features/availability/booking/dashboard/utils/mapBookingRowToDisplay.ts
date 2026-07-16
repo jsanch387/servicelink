@@ -11,6 +11,7 @@ export interface BookingRow {
   id: string;
   business_id: string;
   business_slug: string | null;
+  booking_source?: string | null;
   service_id: string | null;
   service_name: string;
   service_price_cents: number | null;
@@ -96,6 +97,10 @@ export function mapBookingRowToDisplay(
 
   return {
     id: row.id,
+    bookingSource:
+      row.booking_source === 'public' || row.booking_source === 'owner'
+        ? row.booking_source
+        : null,
     customerName: row.customer_name,
     customerPhone: row.customer_phone ?? '',
     customerEmail: row.customer_email ?? '',

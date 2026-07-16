@@ -116,6 +116,7 @@ export function isBookingDetailsSubStepValid(
   customerChoice: CustomerServiceChoice,
   options: {
     showVehicleFields: boolean;
+    requireVehicleFields?: boolean;
     emailOptional: boolean;
   }
 ): boolean {
@@ -145,7 +146,7 @@ export function isBookingDetailsSubStepValid(
     return isCustomerFormStepValid(
       customer,
       step,
-      options.showVehicleFields,
+      options.requireVehicleFields ?? options.showVehicleFields,
       options.emailOptional
     );
   }
@@ -169,7 +170,8 @@ export function isBookingCustomerDetailsValid(
   serviceLocation: PublicBookingServiceLocation,
   customerChoice: CustomerServiceChoice,
   showVehicleFields: boolean,
-  emailOptional: boolean
+  emailOptional: boolean,
+  requireVehicleFields = showVehicleFields
 ): boolean {
   if (serviceLocation.mode === 'both' && customerChoice === null) {
     return false;
@@ -189,7 +191,7 @@ export function isBookingCustomerDetailsValid(
 
   return isCustomerFormValid(
     customer,
-    showVehicleFields,
+    requireVehicleFields,
     emailOptional,
     requireCustomerAddress
   );

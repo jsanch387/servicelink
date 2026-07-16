@@ -128,6 +128,12 @@ export const API_ROUTES = {
     '/api/business-profile/accept-quote-requests',
   /** Public: customer submits “request quote” from profile. */
   PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
+  /** Owner: list quotes or create and send a new quote. */
+  QUOTES: '/api/quotes',
+  QUOTE_SEND: '/api/quotes/send',
+  /** Owner: read, edit, or delete one quote. */
+  QUOTE_DETAIL: (quoteId: string) =>
+    `/api/quotes/${encodeURIComponent(quoteId.trim())}`,
   /** Public: start Stripe Checkout for a booking payment (deposit or full). */
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Public: fetch booking payment summary after successful checkout return. */
@@ -215,10 +221,18 @@ function appendPublicBookingFlowLang(
   q.set(PUBLIC_BOOKING_FLOW_LANG_QUERY, lang);
 }
 
+/** Owner book picker sub-screen restored via `?entry=` after leaving service details. */
+export type OwnerBookEntryQuery = 'services';
+
 /** Public booking flow (V1 request or V2 availability), same path customers use. */
 export function getBusinessBookPath(
   businessSlug: string,
-  options?: { forOwner?: boolean; lang?: PublicBookingFlowLocale | null }
+  options?: {
+    forOwner?: boolean;
+    lang?: PublicBookingFlowLocale | null;
+    /** Owner-only: open the saved-services list instead of the choice screen. */
+    entry?: OwnerBookEntryQuery | null;
+  }
 ): string {
   const s = businessSlug.trim();
   if (!s) return ROUTES.DASHBOARD.BOOKINGS;
@@ -227,9 +241,46 @@ export function getBusinessBookPath(
   if (options?.forOwner) {
     q.set('for', OWNER_MANUAL_BOOKING_FOR);
   }
+  if (options?.forOwner && options.entry === 'services') {
+    q.set('entry', 'services');
+  }
   appendPublicBookingFlowLang(q, options?.lang);
   const qs = q.toString();
   return qs ? `${base}?${qs}` : base;
+}
+
+export function getBusinessBookCustomScheduleUrl(
+  businessSlug: string,
+  params: {
+    serviceName: string;
+    priceCents?: number;
+    durationMinutes: number;
+    notes?: string;
+    forOwner?: boolean;
+    lang?: PublicBookingFlowLocale | null;
+  }
+): string {
+  const slug = businessSlug.trim();
+  const name = params.serviceName.trim();
+  const duration = Math.max(1, Math.round(params.durationMinutes));
+  if (!slug || !name || !Number.isFinite(duration)) {
+    return ROUTES.DASHBOARD.BOOKINGS;
+  }
+  const q = new URLSearchParams();
+  q.set('customJob', '1');
+  q.set('customServiceName', name);
+  q.set('customServiceDurationMinutes', String(duration));
+  if (params.priceCents != null && Number.isFinite(params.priceCents)) {
+    q.set('customServicePriceCents', String(Math.max(0, params.priceCents)));
+  }
+  if (params.notes?.trim()) {
+    q.set('customJobNotes', params.notes.trim());
+  }
+  if (params.forOwner) {
+    q.set('for', OWNER_MANUAL_BOOKING_FOR);
+  }
+  appendPublicBookingFlowLang(q, params.lang);
+  return `/${encodeURIComponent(slug)}/book?${q.toString()}`;
 }
 
 /**

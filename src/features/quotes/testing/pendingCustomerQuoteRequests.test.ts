@@ -33,6 +33,10 @@ function q(partial: Partial<DashboardQuote>): DashboardQuote {
     serviceState: partial.serviceState ?? null,
     serviceZip: partial.serviceZip ?? null,
     serviceAddressLine: partial.serviceAddressLine ?? null,
+    serviceId: partial.serviceId ?? null,
+    servicePriceOptionId: partial.servicePriceOptionId ?? null,
+    servicePriceCents: partial.servicePriceCents ?? null,
+    addonDetails: partial.addonDetails ?? null,
     publicToken: partial.publicToken ?? '',
   };
 }

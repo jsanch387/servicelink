@@ -70,42 +70,46 @@ Recommended practical transitions:
 
 Table: `public.quotes`
 
-| Column                    | Type                  | Nullable | Notes                                                                |
-| ------------------------- | --------------------- | -------: | -------------------------------------------------------------------- |
-| `id`                      | uuid                  |       no | PK, default `gen_random_uuid()`                                      |
-| `business_id`             | uuid                  |       no | FK -> `business_profiles(id)` `ON DELETE CASCADE`                    |
-| `source`                  | `public.quote_source` |       no | `owner_created` or `customer_requested`                              |
-| `created_by_user_id`      | uuid                  |      yes | Usually owner id; can be null for customer-requested intake rows     |
-| `requested_at`            | timestamptz           |      yes | Set for customer-requested rows                                      |
-| `customer_name`           | text                  |       no | Snapshot                                                             |
-| `customer_email`          | text                  |       no | Snapshot, format check                                               |
-| `customer_phone`          | text                  |      yes | Snapshot                                                             |
-| `vehicle_year`            | text                  |      yes | Optional snapshot                                                    |
-| `vehicle_make`            | text                  |      yes | Optional snapshot                                                    |
-| `vehicle_model`           | text                  |      yes | Optional snapshot                                                    |
-| `service_name`            | text                  |      yes | Nullable during request-stage; required once quote is sent/later     |
-| `price_cents`             | integer               |      yes | Nullable during request-stage; required once quote is sent/later     |
-| `duration_minutes`        | integer               |      yes | Nullable during request-stage; required once quote is sent/later     |
-| `note`                    | text                  |      yes | Optional owner note                                                  |
-| `request_message`         | text                  |      yes | Optional customer request note/message                               |
-| `scheduled_date`          | date                  |      yes | Nullable during request-stage; required once quote is sent/later     |
-| `scheduled_start_time`    | time                  |      yes | Nullable during request-stage; required once quote is sent/later     |
-| `timezone`                | text                  |      yes | Optional early; recommended before send                              |
-| `status`                  | `public.quote_status` |       no | Includes `requested`; defaults depend on flow                        |
-| `sent_at`                 | timestamptz           |      yes | Set when sent                                                        |
-| `viewed_at`               | timestamptz           |      yes | Set when viewed                                                      |
-| `approved_at`             | timestamptz           |      yes | Must exist if status=`approved`                                      |
-| `declined_at`             | timestamptz           |      yes | Must exist if status=`declined`                                      |
-| `expires_at`              | timestamptz           |      yes | Optional expiry control                                              |
-| `booking_id`              | uuid                  |      yes | Set when customer approves and a V2 `bookings` row is created        |
-| `service_address`         | text                  |      yes | Legacy single-line summary; still written as display line on approve |
-| `customer_street_address` | text                  |      yes | Service location street (mirrors `bookings.customer_street_address`) |
-| `customer_unit_apt`       | text                  |      yes | Unit / apt                                                           |
-| `customer_city`           | text                  |      yes | City                                                                 |
-| `customer_state`          | text                  |      yes | State (e.g. 2-letter)                                                |
-| `customer_zip`            | text                  |      yes | Postal / ZIP                                                         |
-| `created_at`              | timestamptz           |       no | Default `now()`                                                      |
-| `updated_at`              | timestamptz           |       no | Default `now()`, trigger maintained                                  |
+| Column                    | Type                  | Nullable | Notes                                                                                                                            |
+| ------------------------- | --------------------- | -------: | -------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                      | uuid                  |       no | PK, default `gen_random_uuid()`                                                                                                  |
+| `business_id`             | uuid                  |       no | FK -> `business_profiles(id)` `ON DELETE CASCADE`                                                                                |
+| `source`                  | `public.quote_source` |       no | `owner_created` or `customer_requested`                                                                                          |
+| `created_by_user_id`      | uuid                  |      yes | Usually owner id; can be null for customer-requested intake rows                                                                 |
+| `requested_at`            | timestamptz           |      yes | Set for customer-requested rows                                                                                                  |
+| `customer_name`           | text                  |       no | Snapshot                                                                                                                         |
+| `customer_email`          | text                  |       no | Snapshot, format check                                                                                                           |
+| `customer_phone`          | text                  |      yes | Snapshot                                                                                                                         |
+| `vehicle_year`            | text                  |      yes | Optional snapshot                                                                                                                |
+| `vehicle_make`            | text                  |      yes | Optional snapshot                                                                                                                |
+| `vehicle_model`           | text                  |      yes | Optional snapshot                                                                                                                |
+| `service_name`            | text                  |      yes | Nullable during request-stage; required once quote is sent/later. Catalog: `Name` or `Name — Option` (add-ons stored separately) |
+| `price_cents`             | integer               |      yes | Total price (service + add-ons); required once quote is sent/later                                                               |
+| `duration_minutes`        | integer               |      yes | Nullable during request-stage; required once quote is sent/later                                                                 |
+| `service_id`              | uuid                  |      yes | Optional FK/snapshot to catalog `services.id` when quote used a saved service                                                    |
+| `service_price_option_id` | uuid                  |      yes | Optional catalog price option id                                                                                                 |
+| `service_price_cents`     | integer               |      yes | Base service price before add-ons (catalog quotes)                                                                               |
+| `addon_details`           | jsonb                 |      yes | Snapshot array `{ id, name, priceCents, durationMinutes? }`                                                                      |
+| `note`                    | text                  |      yes | Optional owner note                                                                                                              |
+| `request_message`         | text                  |      yes | Optional customer request note/message                                                                                           |
+| `scheduled_date`          | date                  |      yes | Optional until customer accepts (or owner picks); **required when status=`approved`**                                            |
+| `scheduled_start_time`    | time                  |      yes | Optional until accept; **required when status=`approved`**                                                                       |
+| `timezone`                | text                  |      yes | Optional early; recommended before send                                                                                          |
+| `status`                  | `public.quote_status` |       no | Includes `requested`; defaults depend on flow                                                                                    |
+| `sent_at`                 | timestamptz           |      yes | Set when sent                                                                                                                    |
+| `viewed_at`               | timestamptz           |      yes | Set when viewed                                                                                                                  |
+| `approved_at`             | timestamptz           |      yes | Must exist if status=`approved`                                                                                                  |
+| `declined_at`             | timestamptz           |      yes | Must exist if status=`declined`                                                                                                  |
+| `expires_at`              | timestamptz           |      yes | Optional expiry control                                                                                                          |
+| `booking_id`              | uuid                  |      yes | Set when customer approves and a V2 `bookings` row is created                                                                    |
+| `service_address`         | text                  |      yes | Legacy single-line summary; still written as display line on approve                                                             |
+| `customer_street_address` | text                  |      yes | Service location street (mirrors `bookings.customer_street_address`)                                                             |
+| `customer_unit_apt`       | text                  |      yes | Unit / apt                                                                                                                       |
+| `customer_city`           | text                  |      yes | City                                                                                                                             |
+| `customer_state`          | text                  |      yes | State (e.g. 2-letter)                                                                                                            |
+| `customer_zip`            | text                  |      yes | Postal / ZIP                                                                                                                     |
+| `created_at`              | timestamptz           |       no | Default `now()`                                                                                                                  |
+| `updated_at`              | timestamptz           |       no | Default `now()`, trigger maintained                                                                                              |
 
 ---
 
@@ -117,7 +121,8 @@ Table: `public.quotes`
 - if `status='approved'`, `approved_at` must be non-null
 - if `status='declined'`, `declined_at` must be non-null
 - if `source='customer_requested'`, `requested_at` must be non-null
-- if status is `sent/viewed/approved/declined/expired/cancelled`, quote detail fields must be complete (`service_name`, `price_cents`, `duration_minutes`, `scheduled_date`, `scheduled_start_time`)
+- if status is `sent/viewed/approved/declined/expired/cancelled`, quote pricing fields must be complete (`service_name`, `price_cents`, `duration_minutes`)
+- schedule (`scheduled_date`, `scheduled_start_time`) is required when `status='approved'` (may be null while waiting for the customer to choose)
 
 `updated_at` maintained via trigger (`public.set_updated_at` + `trg_quotes_set_updated_at`).
 

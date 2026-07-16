@@ -3,14 +3,15 @@
  * `quotes.booking_id`, records the public-link response, and notifies the owner.
  */
 
-import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
-import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
+import {
+  publicBookingSlotValidationMessage,
+  validateOwnerBookingSlot,
+} from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import {
   checkFreeTierBookingCapAllowsCreate,
   persistFreeTierBookingIncrementAfterBooking,
 } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
 import { normalizePhoneForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
 import type { AvailabilityBookingNotificationPayload } from '@/features/email';
 import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
@@ -18,6 +19,7 @@ import {
   mergeQuoteRowWithRespondFallback,
   type QuoteRespondStructuredAddress,
 } from '@/features/quotes/public-view/quoteRespondAddress';
+import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -64,7 +66,19 @@ function rowToQuotePayload(
     vehicle_year: (row.vehicle_year as string | null) ?? null,
     vehicle_make: (row.vehicle_make as string | null) ?? null,
     vehicle_model: (row.vehicle_model as string | null) ?? null,
+    service_id: (row.service_id as string | null) ?? null,
+    service_price_cents: (row.service_price_cents as number | null) ?? null,
+    addon_details: row.addon_details ?? null,
   };
+}
+
+function buildQuoteBookingNotes(quote: QuoteRowForApprovedBooking): string {
+  const bookingNoteParts: string[] = [];
+  const reqMsg = quote.request_message?.trim();
+  if (reqMsg) bookingNoteParts.push(`Customer note:\n${reqMsg}`);
+  const ownerMsg = quote.note?.trim();
+  if (ownerMsg) bookingNoteParts.push(`Your notes:\n${ownerMsg}`);
+  return bookingNoteParts.join('\n\n');
 }
 
 function buildEmailPayload(
@@ -73,12 +87,19 @@ function buildEmailPayload(
   startTime: string,
   durationMinutes: number
 ): AvailabilityBookingNotificationPayload {
-  const base = quote.price_cents ?? 0;
+  const total = quote.price_cents ?? 0;
+  const addOns = normalizeQuoteAddonDetails(quote.addon_details) ?? [];
+  const basePrice =
+    quote.service_price_cents != null &&
+    Number.isFinite(quote.service_price_cents)
+      ? quote.service_price_cents
+      : total;
   const phoneDigits = normalizePhoneForLookup(quote.customer_phone);
   const street =
     quote.customer_street_address?.trim() ||
     quote.service_address?.trim() ||
     undefined;
+  const bookingNotes = buildQuoteBookingNotes(quote);
   return {
     customerName: quote.customer_name.trim(),
     customerEmail: quote.customer_email.trim(),
@@ -90,9 +111,10 @@ function buildEmailPayload(
     scheduledDate: quote.scheduled_date!.trim(),
     startTime,
     durationMinutes,
-    servicePriceCents: quote.price_cents ?? undefined,
-    selectedAddOns: [],
-    totalPriceCents: base,
+    servicePriceCents: basePrice,
+    selectedAddOns: addOns,
+    totalPriceCents: total,
+    customerNotes: bookingNotes || undefined,
     serviceLocation: buildAvailabilityBookingEmailServiceLocation({
       effectiveType: 'mobile',
       shopAddressLabel: null,
@@ -160,26 +182,17 @@ export async function finalizeApprovedQuoteToBooking(
     return { ok: false, httpStatus: 403, message: cap.message };
   }
 
-  const availabilityRow = await getAvailabilityForBusiness(
-    supabase,
-    quote.business_id
-  );
-  const timeOffIntervals = parseStoredTimeOffBlocks(
-    availabilityRow?.time_off_blocks
-  );
-  if (
-    bookingOverlapsTimeOff(
-      scheduledDate,
-      startTime,
-      durationMinutes,
-      timeOffIntervals
-    )
-  ) {
+  const availabilityCheck = await validateOwnerBookingSlot(supabase, {
+    businessId: quote.business_id,
+    scheduledDate,
+    startTimeHHmm: startTime,
+    durationMinutes,
+  });
+  if (!availabilityCheck.ok) {
     return {
       ok: false,
       httpStatus: 409,
-      message:
-        'That time is not available anymore. Please contact the business to reschedule.',
+      message: publicBookingSlotValidationMessage(availabilityCheck.code),
     };
   }
 

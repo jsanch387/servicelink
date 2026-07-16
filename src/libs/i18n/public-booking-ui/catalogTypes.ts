@@ -17,8 +17,10 @@ export type PublicBookingUi = {
     backToAddOns: string;
     backToServices: string;
     backToBookings: string;
+    backToAppointmentType: string;
   };
   common: {
+    back: string;
     continue: string;
     select: string;
     summary: string;
@@ -45,7 +47,7 @@ export type PublicBookingUi = {
   };
   serviceDetails: {
     startingAt: string;
-    chooseOption: string;
+    choosePricingOption: string;
     optionalAddOns: string;
     dateAndTime: string;
     continue: string;
@@ -65,10 +67,31 @@ export type PublicBookingUi = {
     bookWithTitle: (businessName: string) => string;
     createAppointmentSubtitle: string;
     bookWithSubtitle: string;
+    chooseAppointmentTypeSubtitle: string;
+    appointmentTypeAriaLabel: string;
+    fromServicesTitle: string;
+    fromServicesDescription: string;
+    customJobTitle: string;
+    customJobSubtitle: string;
+    customJobRowDescription: string;
+    customJobNameLabel: string;
+    customJobNamePlaceholder: string;
+    customJobPriceLabel: string;
+    customJobPricePlaceholder: string;
+    customJobDurationLabel: string;
+    customJobDurationPlaceholder: string;
+    customJobNotesLabel: string;
+    customJobNotesPlaceholder: string;
   };
   notAccepting: {
     title: string;
     body: string;
+    ownerFreeCapTitle: string;
+    ownerFreeCapBody: (limit: number) => string;
+    ownerBookingsOffTitle: string;
+    ownerBookingsOffBody: string;
+    ownerBackToBookings: string;
+    ownerUpgradeCta: string;
   };
   calendar: {
     chooseTime: string;
@@ -152,6 +175,7 @@ export type PublicBookingUi = {
     customerDetails: string;
     serviceAddress: string;
     vehicle: string;
+    optionalVehicleDetails: string;
     fullName: string;
     email: string;
     phone: string;
@@ -179,6 +203,8 @@ export type PublicBookingUi = {
     errVehicleModel: string;
     /** Label when owner books without requiring customer email */
     emailOptional: string;
+    noEmailConfirmationNotice: string;
+    smsComingSoon: string;
     errEmailInvalid: string;
     errValueTooLong: string;
   };

@@ -20,9 +20,11 @@ function makeProfilesQuery(data: unknown) {
 
 function makeBusinessQuery(data: unknown) {
   const maybeSingle = vi.fn().mockResolvedValue({ data, error: null });
-  const eq = vi.fn(() => ({ maybeSingle }));
+  const limit = vi.fn(() => ({ maybeSingle }));
+  const order = vi.fn(() => ({ limit }));
+  const eq = vi.fn(() => ({ order }));
   const select = vi.fn(() => ({ eq }));
-  return { select, eq, maybeSingle };
+  return { select, eq, order, limit, maybeSingle };
 }
 
 function makePaymentLookupQuery(data: unknown) {

@@ -1,6 +1,7 @@
 'use client';
 
-import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { Button } from '@/components/shared';
+import { ROUTES, type PublicBookingFlowLocale } from '@/constants/routes';
 import { AvailabilityBookingPage } from '@/features/availability/booking';
 import { BookFlowLoadingState } from '@/features/availability/booking/components/BookFlowLoadingState';
 import type {
@@ -13,6 +14,7 @@ import type { PublicBookingServiceLocation } from '@/features/business-profile/u
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
+import { FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { Suspense } from 'react';
 import { BookingRequestPageClient } from './BookingRequestPageClient';
 
@@ -20,6 +22,8 @@ interface BookFlowSwitchProps {
   useAvailabilityBooking: boolean;
   /** When true, show "This business isn't accepting bookings yet" (new users with V2 off). */
   showNotAcceptingBookings: boolean;
+  /** Free-tier lifetime booking cap reached (owner messaging differs from bookings-off). */
+  reachedFreeCap?: boolean;
   businessName: string;
   businessId: string;
   businessSlug: string;
@@ -33,6 +37,8 @@ interface BookFlowSwitchProps {
   serviceName: string;
   servicePrice?: number;
   serviceDurationMinutes?: number;
+  /** Custom owner job notes prefilled into the booking details form. */
+  initialCustomerNotes?: string;
   /** Label for chosen multi-price option (shown in calendar step). */
   selectedPriceOptionLabel?: string;
   weeklySchedule?: WeeklySchedule | null;
@@ -57,6 +63,7 @@ interface BookFlowSwitchProps {
 export function BookFlowSwitch({
   useAvailabilityBooking,
   showNotAcceptingBookings,
+  reachedFreeCap = false,
   businessName,
   businessId,
   businessSlug,
@@ -67,6 +74,7 @@ export function BookFlowSwitch({
   serviceName,
   servicePrice,
   serviceDurationMinutes = 60,
+  initialCustomerNotes,
   selectedPriceOptionLabel,
   weeklySchedule,
   timeOffBlocks = [],
@@ -82,6 +90,40 @@ export function BookFlowSwitch({
   const ui = publicBookingUi(bookingFlowLocale);
 
   if (showNotAcceptingBookings) {
+    if (isOwnerManualBooking) {
+      const title = reachedFreeCap
+        ? ui.notAccepting.ownerFreeCapTitle
+        : ui.notAccepting.ownerBookingsOffTitle;
+      const body = reachedFreeCap
+        ? ui.notAccepting.ownerFreeCapBody(FREE_BOOKINGS_LIMIT)
+        : ui.notAccepting.ownerBookingsOffBody;
+
+      return (
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
+          <p className="text-base font-medium text-gray-300">{title}</p>
+          <p className="mt-2 text-sm leading-relaxed text-gray-500">{body}</p>
+          <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+            <Button
+              href={ROUTES.DASHBOARD.BOOKINGS}
+              variant="secondary"
+              className="font-semibold"
+            >
+              {ui.notAccepting.ownerBackToBookings}
+            </Button>
+            {reachedFreeCap ? (
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="inverse"
+                className="font-semibold"
+              >
+                {ui.notAccepting.ownerUpgradeCta}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
         <p className="text-gray-300 text-base font-medium">
@@ -106,6 +148,7 @@ export function BookFlowSwitch({
           selectedAddOns={selectedAddOns}
           serviceName={serviceName || 'Booking'}
           serviceDurationMinutes={serviceDurationMinutes}
+          initialCustomerNotes={initialCustomerNotes}
           servicePriceCents={servicePrice}
           selectedPriceOptionLabel={selectedPriceOptionLabel}
           weeklySchedule={schedule}

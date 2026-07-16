@@ -5,6 +5,7 @@
 
 import { createBooking } from '@/features/availability/services/bookingService';
 import { normalizePhoneForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
+import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,6 +32,10 @@ export type QuoteRowForApprovedBooking = {
   vehicle_year: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
+  /** Catalog snapshot fields (nullable for custom / legacy quotes). */
+  service_id: string | null;
+  service_price_cents: number | null;
+  addon_details: unknown;
 };
 
 /** Postgres `time` often serializes as `HH:mm:ss`; templates expect `HH:mm`. */
@@ -91,11 +96,20 @@ export async function createBookingFromApprovedQuote(
     notes: bookingNotes,
   };
 
+  const addOns = normalizeQuoteAddonDetails(quote.addon_details) ?? undefined;
+  const basePriceCents =
+    quote.service_price_cents != null &&
+    Number.isFinite(quote.service_price_cents)
+      ? quote.service_price_cents
+      : (quote.price_cents ?? undefined);
+
   const { id: bookingId } = await createBooking(supabase, {
     businessId: quote.business_id,
     businessSlug: businessSlug.trim(),
+    serviceId: quote.service_id?.trim() || undefined,
     serviceName: serviceLabel,
-    servicePriceCents: quote.price_cents ?? undefined,
+    servicePriceCents: basePriceCents,
+    selectedAddOns: addOns,
     durationMinutes,
     scheduledDate,
     startTime,
