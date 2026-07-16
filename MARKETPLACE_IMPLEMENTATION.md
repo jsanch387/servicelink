@@ -129,17 +129,76 @@ interface Business {
 }
 ```
 
+## User Flow
+
+### Step 1: Search Page
+```
+┌─────────────────────────────────────────┐
+│         Find Service Pros               │
+│            Near You                     │
+│                                         │
+│  Connect with trusted detailing         │
+│  professionals in your area             │
+│                                         │
+│  ╔═══════════════════════════════════╗ │
+│  ║  Your Location                    ║ │
+│  ║  📍 [Enter address or zip code]   ║ │
+│  ║                                   ║ │
+│  ║  Service Type                     ║ │
+│  ║  ✨ Auto Detailing                ║ │
+│  ║                                   ║ │
+│  ║  [ 🔍 Search Services ]           ║ │
+│  ╚═══════════════════════════════════╝ │
+│                                         │
+│  Find trusted detailing professionals  │
+│  ready to help                          │
+└─────────────────────────────────────────┘
+```
+
+### Step 2: Results Page
+```
+┌─────────────────────────────────────────┐
+│  ← New Search                           │
+│                                         │
+│      Available Services                 │
+│      📍 Near [Location]                 │
+│                                         │
+│  ╔═══════════════════════════════════╗ │
+│  ║ ✨  Premium Auto Detail Co.       ║ │
+│  ║     ⭐ 4.9 (127 reviews)           ║ │
+│  ║     Full-service auto detailing... ║ │
+│  ║     📍 Downtown Area               ║ │
+│  ║                  [View Profile]    ║ │
+│  ╚═══════════════════════════════════╝ │
+│                                         │
+│  ╔═══════════════════════════════════╗ │
+│  ║ ✨  Elite Mobile Detailing        ║ │
+│  ║     ⭐ 4.8 (89 reviews)            ║ │
+│  ║     Professional mobile detailing..║ │
+│  ║     📍 Midtown                     ║ │
+│  ║                  [View Profile]    ║ │
+│  ╚═══════════════════════════════════╝ │
+│                                         │
+│  [Load More Results]                    │
+│  Showing 3 businesses                   │
+└─────────────────────────────────────────┘
+```
+
 ## Testing Checklist
 When you test locally:
-- [ ] Navigate to `/marketplace`
-- [ ] See hero text and search form
-- [ ] Enter a location
-- [ ] Click "Search Services"
+- [ ] Navigate to `/marketplace` directly in browser
+- [ ] See hero text "Find Service Pros Near You" with gradient effect
+- [ ] See search form with location input and service type
+- [ ] Enter a location (e.g., "12345" or "New York, NY")
+- [ ] Click "Search Services" button
 - [ ] See results page with 3 mock businesses
-- [ ] Click "New Search" to return
-- [ ] Click "View Profile" (opens business profile in new tab)
-- [ ] Verify responsive design on mobile
-- [ ] Check dark theme consistency
+- [ ] Verify each business card shows: logo placeholder, name, rating, reviews, description, location
+- [ ] Click "New Search" button to return to search page
+- [ ] Click "View Profile" on any business (should open business profile)
+- [ ] Verify responsive design on mobile (test at 375px width)
+- [ ] Check dark theme consistency with rest of app
+- [ ] Verify smooth transitions between search and results
+- [ ] Test with empty location (button should be disabled)
 
 ## Next Steps (Not Implemented)
 These were explicitly not requested for this phase:
