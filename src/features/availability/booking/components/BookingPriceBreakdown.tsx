@@ -2,6 +2,8 @@
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { BookingSaleAppliesNotice } from '@/features/marketing/components/BookingSaleAppliesNotice';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import { ClockIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import type { AddOnDisplay } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
@@ -41,131 +43,117 @@ export function BookingPriceBreakdown({
   bookingFlowLocale = 'en',
 }: BookingPriceBreakdownProps) {
   const TitleTag = serviceTitleTag;
+  const ui = publicBookingUi(bookingFlowLocale);
+  const displayDurationMinutes =
+    totalBookingDurationMinutes > 0
+      ? totalBookingDurationMinutes
+      : serviceDurationMinutes;
   const showSalePricing =
     Boolean(saleAppliesLine) &&
     saleSubtotalCents != null &&
     saleSubtotalCents > 0 &&
     saleEstimatedTotalCents != null &&
     saleEstimatedTotalCents < saleSubtotalCents;
+  const saleSavingsCents = showSalePricing
+    ? saleSubtotalCents! - saleEstimatedTotalCents!
+    : 0;
 
-  const renderTotalPrice = (cents: number, className: string) => (
-    <span
-      className={`${className} tabular-nums shrink-0 text-right min-w-[4.5rem]`}
-    >
-      ${(cents / 100).toFixed(2)}
+  const renderPrice = (cents: number, className: string, prefix = '') => (
+    <span className={`${className} shrink-0 text-right tabular-nums`}>
+      {prefix}${(cents / 100).toFixed(2)}
     </span>
   );
 
   return (
-    <section>
-      <div className="flex justify-between gap-4 items-start">
-        <div className="min-w-0 flex-1">
-          <TitleTag className="text-lg font-semibold text-white leading-snug">
-            {serviceName || 'Booking'}
-          </TitleTag>
-          <div className="mt-0.5 flex items-center gap-1 text-sm tabular-nums italic">
-            <p className="text-gray-400">
-              {formatDurationMinutes(serviceDurationMinutes, bookingFlowLocale)}
-            </p>
-            {serviceVariantLabel ? (
-              <>
-                <span
-                  aria-hidden="true"
-                  className="text-gray-500 not-italic leading-none"
-                >
-                  &bull;
-                </span>
-                <p className="text-gray-500 not-italic">
+    <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+      <div className="space-y-4 p-4">
+        <div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <TitleTag className="text-base font-semibold leading-snug text-white [overflow-wrap:anywhere]">
+                {serviceName || ui.common.service}
+              </TitleTag>
+              {serviceVariantLabel ? (
+                <span className="mt-1.5 inline-flex max-w-full whitespace-normal rounded-md bg-white/[0.06] px-2 py-0.5 text-xs text-zinc-300 [overflow-wrap:anywhere]">
                   {serviceVariantLabel}
-                </p>
-              </>
-            ) : null}
+                </span>
+              ) : null}
+            </div>
+            {servicePriceCents != null && servicePriceCents > 0
+              ? renderPrice(
+                  servicePriceCents,
+                  'pt-0.5 text-sm font-medium text-zinc-200'
+                )
+              : null}
           </div>
         </div>
-        {servicePriceCents != null && servicePriceCents > 0 ? (
-          selectedAddOns.length === 0 && showSalePricing ? (
-            <div className="flex items-baseline justify-end gap-2 whitespace-nowrap pt-0.5">
-              {renderTotalPrice(
-                saleSubtotalCents!,
-                'text-sm font-medium text-zinc-500 line-through decoration-zinc-500/70'
-              )}
-              {renderTotalPrice(
-                saleEstimatedTotalCents!,
-                'text-sm font-semibold text-white'
-              )}
-            </div>
-          ) : (
-            <span className="text-sm text-gray-300 tabular-nums shrink-0 text-right min-w-[4.5rem] pt-0.5">
-              ${(servicePriceCents / 100).toFixed(2)}
-            </span>
-          )
+
+        {selectedAddOns.length > 0 ? (
+          <div className="border-t border-white/10 pt-4">
+            <ul className="space-y-2.5">
+              {selectedAddOns.map(addOn => (
+                <li
+                  key={addOn.id}
+                  className="flex items-start justify-between gap-4 text-sm"
+                >
+                  <span className="min-w-0 text-zinc-200 [overflow-wrap:anywhere]">
+                    {addOn.name}
+                  </span>
+                  {renderPrice(addOn.priceCents, 'text-zinc-300', '+')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {saleAppliesLine ? (
+          <div className="border-t border-white/10 pt-4">
+            <BookingSaleAppliesNotice line={saleAppliesLine} />
+            {saleSavingsCents > 0 ? (
+              <p className="mt-2 text-sm font-medium text-emerald-300/90">
+                {ui.common.youSave(`$${(saleSavingsCents / 100).toFixed(2)}`)}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
-      {selectedAddOns.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-white/10 space-y-3">
-          <ul className="space-y-3">
-            {selectedAddOns.map(addOn => (
-              <li
-                key={addOn.id}
-                className="flex justify-between gap-4 items-start"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-300">{addOn.name}</p>
-                  {addOn.durationMinutes != null &&
-                  addOn.durationMinutes > 0 ? (
-                    <p className="text-sm text-gray-400 mt-0.5 tabular-nums italic">
-                      +{' '}
-                      {formatDurationMinutes(
-                        addOn.durationMinutes,
-                        bookingFlowLocale
-                      )}
-                    </p>
-                  ) : null}
-                </div>
-                <span className="text-sm text-gray-300 tabular-nums shrink-0 text-right min-w-[4.5rem] pt-0.5">
-                  + ${(addOn.priceCents / 100).toFixed(2)}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="flex justify-between items-start gap-4 pt-3 border-t border-white/10">
-            <p className="text-sm font-semibold text-white tabular-nums italic">
-              {formatDurationMinutes(
-                totalBookingDurationMinutes,
-                bookingFlowLocale
-              )}
-            </p>
+      <div className="grid grid-cols-2 border-t border-white/10 bg-white/[0.035]">
+        <div className="border-r border-white/10 px-4 py-3.5">
+          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            {ui.common.duration}
+          </p>
+          <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-white">
+            <ClockIcon className="h-4 w-4 text-zinc-500" aria-hidden="true" />
+            {formatDurationMinutes(displayDurationMinutes, bookingFlowLocale)}
+          </p>
+        </div>
+        <div className="px-4 py-3.5 text-right">
+          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            {ui.common.total}
+          </p>
+          <div className="mt-1">
             {totalPriceCents != null && totalPriceCents > 0 ? (
               showSalePricing ? (
-                <div className="flex items-baseline justify-end gap-2 whitespace-nowrap">
-                  {renderTotalPrice(
+                <div className="flex flex-wrap items-baseline justify-end gap-x-2">
+                  {renderPrice(
                     saleSubtotalCents!,
-                    'text-sm font-medium text-zinc-500 line-through decoration-zinc-500/70'
+                    'text-xs font-medium text-zinc-500 line-through decoration-zinc-500/70'
                   )}
-                  {renderTotalPrice(
+                  {renderPrice(
                     saleEstimatedTotalCents!,
-                    'text-base font-semibold text-white'
+                    'text-sm font-semibold text-white'
                   )}
                 </div>
               ) : (
-                renderTotalPrice(
-                  totalPriceCents,
-                  'text-base font-semibold text-white'
-                )
+                renderPrice(totalPriceCents, 'text-sm font-semibold text-white')
               )
-            ) : null}
+            ) : (
+              <span className="text-sm font-semibold text-white">$0.00</span>
+            )}
           </div>
-          {saleAppliesLine ? (
-            <BookingSaleAppliesNotice line={saleAppliesLine} />
-          ) : null}
         </div>
-      )}
-      {selectedAddOns.length === 0 && saleAppliesLine ? (
-        <div className="mt-2">
-          <BookingSaleAppliesNotice line={saleAppliesLine} />
-        </div>
-      ) : null}
+      </div>
     </section>
   );
 }

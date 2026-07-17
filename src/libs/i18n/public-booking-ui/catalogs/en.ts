@@ -107,6 +107,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     notificationsConsentFinePrint: () =>
       'By checking this box, you agree to receive SMS appointment notifications from ServiceLink. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our',
     notificationsSmsFinePrintLinkLabel: 'Privacy Policy',
+    notificationsSmsTermsLinkLabel: 'Terms of Service',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',
     chooseHowToPay: 'Choose how to pay',

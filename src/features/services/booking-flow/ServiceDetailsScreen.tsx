@@ -9,17 +9,12 @@ import {
   getPublicBusinessProfilePath,
   type BookDetailsStepQuery,
 } from '@/constants/routes';
-import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
-import { ServiceDescriptionFormatted } from '@/features/business-profile/components/ServiceDescriptionFormatted';
 import type {
   AddOnForBooking,
   PriceOptionForBooking,
   ServiceForBooking,
 } from '@/features/services/api/getServiceWithAddOnsForBooking';
-import {
-  bcp47ForBookingLocale,
-  publicBookingUi,
-} from '@/libs/i18n/publicBookingUi';
+import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   PublicFlowBackNavLabel,
   PublicFlowStickyBackHeader,
@@ -28,6 +23,7 @@ import {
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
+import { BookCalendarLoadingSkeleton } from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
 import { AddOnSelector } from './AddOnSelector';
 import { PriceOptionSelector } from './PriceOptionSelector';
 import { ServiceDetailsBookingSummary } from './ServiceDetailsBookingSummary';
@@ -52,14 +48,6 @@ interface ServiceDetailsScreenProps {
   isOwnerManualBooking?: boolean;
   /** Funnel locale from server (`?lang=` + cookie). */
   bookingFlowLocale?: PublicBookingFlowLocale;
-}
-
-function formatPrice(cents: number, locale: PublicBookingFlowLocale): string {
-  return new Intl.NumberFormat(bcp47ForBookingLocale(locale), {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
 }
 
 export function ServiceDetailsScreen({
@@ -104,7 +92,7 @@ export function ServiceDetailsScreen({
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<Set<string>>(
     () => new Set(initialAddOnIds ?? [])
   );
-  const [showDescription, setShowDescription] = useState(false);
+  const [isNavigatingToCalendar, setIsNavigatingToCalendar] = useState(false);
 
   const selectedPriceOption = useMemo(
     () =>
@@ -180,13 +168,6 @@ export function ServiceDetailsScreen({
   const showPrimaryAsLink =
     phase === 'price' && !showAddOnSection && canContinueFromPrice;
 
-  const showStartingAtOnly =
-    phase === 'price' && needsPriceStep && !selectedPriceOption;
-
-  const durationForHeader = showStartingAtOnly
-    ? service.durationMinutes
-    : baseDurationMinutes;
-
   const exitDetailsHref = isOwnerManualBooking
     ? getBusinessBookPath(businessSlug, {
         forOwner: true,
@@ -201,6 +182,10 @@ export function ServiceDetailsScreen({
     : ui.serviceDetails.backToProfile;
 
   const backNavClassName = publicFlowBackNavClassName;
+
+  if (isNavigatingToCalendar) {
+    return <BookCalendarLoadingSkeleton />;
+  }
 
   return (
     <>
@@ -232,73 +217,6 @@ export function ServiceDetailsScreen({
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
         <div className="flex-1 pb-28">
-          {!isOwnerManualBooking ? (
-            <section className="mb-6">
-              {/* Match calendar step: title + duration (left), price (right, same row as title) */}
-              <div className="flex justify-between gap-4 items-start mb-2">
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-lg font-semibold text-white leading-snug tracking-tight">
-                    {service.name}
-                  </h1>
-                  <div className="mt-0.5 flex items-center gap-1 text-sm tabular-nums italic">
-                    <p className="text-zinc-400">
-                      {formatDurationMinutes(
-                        durationForHeader,
-                        bookingFlowLocale
-                      )}
-                    </p>
-                    {selectedPriceOption &&
-                    (phase === 'price' || phase === 'addons') ? (
-                      <>
-                        <span
-                          aria-hidden="true"
-                          className="text-zinc-500 not-italic leading-none"
-                        >
-                          &bull;
-                        </span>
-                        <p className="text-zinc-500 not-italic">
-                          {selectedPriceOption.label}
-                        </p>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right pt-0.5 min-w-[4.5rem]">
-                  {showStartingAtOnly ? (
-                    <span className="text-sm text-zinc-400 tabular-nums leading-snug">
-                      {ui.serviceDetails.startingAt}{' '}
-                      {formatPrice(service.priceCents, bookingFlowLocale)}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-zinc-300 tabular-nums">
-                      {formatPrice(basePriceCents, bookingFlowLocale)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {!isOwnerManualBooking && service.description?.trim() ? (
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowDescription(prev => !prev)}
-                    className="text-sm text-zinc-200 hover:text-white transition-colors cursor-pointer"
-                    aria-expanded={showDescription}
-                  >
-                    {showDescription
-                      ? ui.serviceDetails.hideDescription
-                      : ui.serviceDetails.seeDescription}
-                  </button>
-                  {showDescription ? (
-                    <ServiceDescriptionFormatted
-                      description={service.description}
-                      className="mt-2 text-sm text-zinc-500"
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-            </section>
-          ) : null}
-
           {phase === 'price' && needsPriceStep && (
             <section className="mb-6">
               <h2 className="text-base font-semibold text-white mb-3">
@@ -336,6 +254,7 @@ export function ServiceDetailsScreen({
               selectedVariantLabel={selectedPriceOption?.label}
               selectedAddOns={selectedAddOns}
               totalCents={totalCents}
+              serviceLabel={ui.common.service}
               addOnsLabel={ui.common.addOns}
               totalLabel={ui.common.total}
               bookingFlowLocale={bookingFlowLocale}
@@ -394,6 +313,7 @@ export function ServiceDetailsScreen({
                 {showPrimaryAsLink ? (
                   <Button
                     href={primaryButtonHref}
+                    onClick={() => setIsNavigatingToCalendar(true)}
                     variant="inverse"
                     fullWidth
                     className="font-semibold"
@@ -421,6 +341,7 @@ export function ServiceDetailsScreen({
             {phase === 'addons' && (
               <Button
                 href={calendarUrl}
+                onClick={() => setIsNavigatingToCalendar(true)}
                 variant="inverse"
                 fullWidth
                 className="font-semibold"

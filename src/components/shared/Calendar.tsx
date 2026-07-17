@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -32,6 +32,10 @@ export interface CalendarProps {
   className?: string;
   /** Show year under month in header. Default true. */
   showYear?: boolean;
+  /** Locale used for the month label. */
+  locale?: string;
+  /** Allow the framed calendar to fill its parent on larger screens. */
+  wide?: boolean;
   /** No outer card frame (border, shadow, panel fill) — for embedding in a larger layout. */
   plain?: boolean;
 }
@@ -46,15 +50,38 @@ export const Calendar: React.FC<CalendarProps> = ({
   subtitle,
   className = '',
   showYear = true,
+  locale,
+  wide = false,
   plain = false,
 }) => {
-  const [viewDate, setViewDate] = useState(() => new Date());
+  const [viewDate, setViewDate] = useState(() => {
+    const today = new Date();
+    const initialDate = value ?? minDate ?? today;
+    return new Date(initialDate.getFullYear(), initialDate.getMonth(), 1);
+  });
 
   const month = viewDate.getMonth();
   const year = viewDate.getFullYear();
 
-  const minDateStr = minDate?.toISOString().slice(0, 10) ?? '';
-  const maxDateStr = maxDate?.toISOString().slice(0, 10) ?? '';
+  useEffect(() => {
+    if (!value) return;
+    setViewDate(new Date(value.getFullYear(), value.getMonth(), 1));
+  }, [value]);
+
+  const minDay = minDate
+    ? new Date(
+        minDate.getFullYear(),
+        minDate.getMonth(),
+        minDate.getDate()
+      ).getTime()
+    : null;
+  const maxDay = maxDate
+    ? new Date(
+        maxDate.getFullYear(),
+        maxDate.getMonth(),
+        maxDate.getDate()
+      ).getTime()
+    : null;
 
   const { days, firstDay } = useMemo(() => {
     const daysInMonth = getDaysInMonth(month, year);
@@ -65,9 +92,9 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const isDateSelectable = (d: number): boolean => {
     const date = new Date(year, month, d);
-    const dateStr = date.toISOString().slice(0, 10);
-    if (minDateStr && dateStr < minDateStr) return false;
-    if (maxDateStr && dateStr > maxDateStr) return false;
+    const day = date.getTime();
+    if (minDay != null && day < minDay) return false;
+    if (maxDay != null && day > maxDay) return false;
     if (isDateDisabled?.(date)) return false;
     return true;
   };
@@ -88,20 +115,36 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   const prevMonth = () => {
+    if (isPreviousMonthDisabled) return;
     setViewDate(new Date(year, month - 1, 1));
   };
 
   const nextMonth = () => {
+    if (isNextMonthDisabled) return;
     setViewDate(new Date(year, month + 1, 1));
   };
 
-  const monthLabel = new Date(year, month, 1).toLocaleString('default', {
+  const currentMonthIndex = year * 12 + month;
+  const minMonthIndex = minDate
+    ? minDate.getFullYear() * 12 + minDate.getMonth()
+    : null;
+  const maxMonthIndex = maxDate
+    ? maxDate.getFullYear() * 12 + maxDate.getMonth()
+    : null;
+  const isPreviousMonthDisabled =
+    minMonthIndex != null && currentMonthIndex <= minMonthIndex;
+  const isNextMonthDisabled =
+    maxMonthIndex != null && currentMonthIndex >= maxMonthIndex;
+
+  const monthLabel = new Date(year, month, 1).toLocaleString(locale, {
     month: 'long',
   });
 
   const frameClass = plain
     ? 'w-full sm:max-w-[360px] p-0 bg-transparent border-0 shadow-none rounded-none'
-    : 'w-full sm:max-w-[360px] rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 shadow-xl';
+    : `w-full ${
+        wide ? 'sm:max-w-none' : 'sm:max-w-[360px]'
+      } rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 shadow-xl`;
 
   return (
     <div className={`${frameClass} transition-all duration-300 ${className}`}>
@@ -120,36 +163,35 @@ export const Calendar: React.FC<CalendarProps> = ({
         </div>
       )}
 
-      {/* Header: month + year, prev/next */}
-      <div className="flex items-center justify-between mb-6 px-0.5">
-        <div>
-          <h3 className="text-xl font-bold text-gray-100 tracking-tight">
-            {monthLabel}
-          </h3>
-          {showYear && (
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">
-              {year}
-            </p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={prevMonth}
-            className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all active:scale-90 cursor-pointer"
-            aria-label="Previous month"
-          >
-            <ChevronLeftIcon className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={nextMonth}
-            className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all active:scale-90 cursor-pointer"
-            aria-label="Next month"
-          >
-            <ChevronRightIcon className="w-5 h-5" />
-          </button>
-        </div>
+      {/* Centered month navigation */}
+      <div className="mb-6 grid grid-cols-[44px_1fr_44px] items-center gap-3">
+        <button
+          type="button"
+          onClick={prevMonth}
+          disabled={isPreviousMonthDisabled}
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700"
+          aria-label="Previous month"
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </button>
+        <h3
+          className="text-center text-lg font-semibold tracking-tight text-gray-100"
+          aria-live="polite"
+        >
+          {monthLabel}
+          {showYear ? (
+            <span className="ml-1.5 font-normal text-gray-500">{year}</span>
+          ) : null}
+        </h3>
+        <button
+          type="button"
+          onClick={nextMonth}
+          disabled={isNextMonthDisabled}
+          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700"
+          aria-label="Next month"
+        >
+          <ChevronRightIcon className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Weekday labels – single letter */}
@@ -157,7 +199,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         {WEEKDAY_LABELS.map(day => (
           <span
             key={day}
-            className="text-[10px] font-bold text-gray-400 uppercase tracking-widest"
+            className="text-xs font-semibold uppercase tracking-wider text-zinc-300"
           >
             {day[0]}
           </span>
@@ -169,7 +211,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         {Array(firstDay)
           .fill(null)
           .map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square" />
+            <div key={`empty-${i}`} className="h-11" />
           ))}
         {days.map(d => {
           const selectable = isDateSelectable(d);
@@ -183,7 +225,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={!selectable}
               onClick={() => selectable && onChange(new Date(year, month, d))}
               className={`
-                relative aspect-square w-full min-h-[44px] flex items-center justify-center rounded-2xl text-[15px] font-medium transition-all duration-200
+                relative mx-auto flex h-11 w-11 max-w-full items-center justify-center rounded-xl text-[15px] font-medium transition-all duration-200
                 ${!selectable ? 'text-gray-600 cursor-not-allowed' : 'cursor-pointer'}
                 ${selected ? 'bg-white text-black shadow-[0_8px_20px_rgba(255,255,255,0.12)] scale-105 z-10' : ''}
                 ${!selected && selectable && today ? 'text-white border border-white/20' : ''}

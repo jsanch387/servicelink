@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import type { WeeklySchedule } from '../../types/availability';
 import type { ExistingBooking, TimeOffInterval } from '../types';
 import { generateTimeSlots } from '../utils/slotGeneration';
@@ -39,16 +39,32 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   selectDateHint = 'Select a date to see available times.',
   noSlotsHint = 'No available times for this date.',
 }) => {
-  const slots = selectedDate
-    ? generateTimeSlots(
-        selectedDate,
-        weeklySchedule,
-        serviceDurationMinutes,
-        existingBookings,
-        30,
-        timeOffBlocks
-      )
-    : [];
+  const slots = useMemo(
+    () =>
+      selectedDate
+        ? generateTimeSlots(
+            selectedDate,
+            weeklySchedule,
+            serviceDurationMinutes,
+            existingBookings,
+            30,
+            timeOffBlocks
+          )
+        : [],
+    [
+      existingBookings,
+      selectedDate,
+      serviceDurationMinutes,
+      timeOffBlocks,
+      weeklySchedule,
+    ]
+  );
+
+  useEffect(() => {
+    if (!selectedTime && slots.length > 0) {
+      onSelectTime(slots[0]);
+    }
+  }, [onSelectTime, selectedTime, slots]);
 
   if (!selectedDate) {
     return (
