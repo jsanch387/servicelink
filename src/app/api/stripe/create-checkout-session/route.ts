@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
                 error: isHealthy
                   ? 'You already have an active subscription. Manage billing in Settings.'
                   : 'We could not start a payment for your current subscription. Open Billing in Settings to update your payment method.',
+                code: isHealthy ? 'DUPLICATE_SUBSCRIPTION_BLOCKED' : 'PAYMENT_RETRY_REQUIRED',
               },
               { status: isHealthy ? 400 : 409 }
             );
