@@ -13,13 +13,11 @@
 - `hasMultipleActiveSubscriptions()` - Detects edge case of 2+ active subscriptions
 - Gracefully handles Stripe API errors to avoid blocking legitimate users
 
-### 2. Fixed Onboarding Trial Route
+### 2. Fixed Onboarding Trial Route — **REMOVED**
 **File:** `src/app/api/stripe/start-onboarding-trial/route.ts`
 
-**Added:** Active subscription check after customer creation (line ~207)
-- Queries Stripe before creating subscription
-- Blocks duplicate creation if customer has active/trialing subscriptions
-- Returns existing subscription data to continue onboarding flow
+The legacy 7-day Pro trial route has been fully decommissioned (not just guarded).
+Onboarding step 5 always completes via `POST /api/onboarding-v2/complete` (free tier).
 
 ### 3. Fixed Checkout Session Route
 **File:** `src/app/api/stripe/create-checkout-session/route.ts`
@@ -160,7 +158,7 @@ docs/stripe-subscription-edge-cases-analysis.md           (NEW)
 src/features/pricing/server/checkActiveSubscriptions.ts   (NEW)
 src/features/pricing/testing/checkActiveSubscriptions.test.ts (NEW)
 src/app/api/stripe/create-checkout-session/route.ts       (MODIFIED)
-src/app/api/stripe/start-onboarding-trial/route.ts        (MODIFIED)
+src/app/api/stripe/start-onboarding-trial/route.ts        (DELETED — legacy trial decommissioned)
 src/app/api/stripe/webhook/route.ts                       (MODIFIED)
 src/features/pricing/index.ts                             (MODIFIED)
 ```

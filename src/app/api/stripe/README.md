@@ -2,18 +2,18 @@
 
 Checkout for the Pro plan is handled by creating a Stripe Checkout Session and redirecting the user to Stripe. When payment succeeds, the webhook updates the user's profile to Pro.
 
-**Product summary (pricing strategy, trials, paywall, Free vs Pro):** see [`docs/pricing-strategy-and-model.md`](../../../../docs/pricing-strategy-and-model.md) and the full guide [`docs/subscription-and-pro-features.md`](../../../../docs/subscription-and-pro-features.md).
+**Product summary (pricing strategy, paywall, Free vs Pro):** see [`docs/pricing-strategy-and-model.md`](../../../../docs/pricing-strategy-and-model.md) and the full guide [`docs/subscription-and-pro-features.md`](../../../../docs/subscription-and-pro-features.md).
 
 ## Mobile app (iOS) — subscription APIs removed
 
-**As of 2026-05-19**, the ServiceLink iOS app **no longer** calls subscription checkout, onboarding trial, or billing portal APIs. New mobile signups complete onboarding via **`POST /api/onboarding-v2/complete`** (free tier). Plan changes happen on web (`myservicelink.app`). Mobile **still** uses Stripe Connect for merchant payments (`POST /api/stripe/connect/onboard`, `sync`, `express-dashboard`).
+**As of 2026-05-19**, the ServiceLink iOS app **no longer** calls subscription checkout or billing portal APIs. New mobile signups complete onboarding via **`POST /api/onboarding-v2/complete`** (free tier). Plan changes happen on web (`myservicelink.app`). Mobile **still** uses Stripe Connect for merchant payments (`POST /api/stripe/connect/onboard`, `sync`, `express-dashboard`).
 
-Removed / rejected for `client: "mobile"` or Bearer on trial routes:
+Removed / rejected for `client: "mobile"` or Bearer on billing routes:
 
 - `POST /api/stripe/create-checkout-session` with `{ "client": "mobile" }` → **410**
 - `POST /api/stripe/create-portal-session` with `{ "client": "mobile" }` → **410**
-- `POST /api/stripe/start-onboarding-trial` with Bearer token → **410**
 - `POST /api/stripe/confirm-onboarding-trial` — **route removed** (was mobile Checkout follow-up only)
+- `POST /api/stripe/start-onboarding-trial` — **route removed** (legacy 7-day Pro trial; onboarding completes free via `POST /api/onboarding-v2/complete`)
 
 Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`](../../../../docs/contracts/mobile-onboarding-complete.md). Connect: [`docs/contracts/mobile-stripe-connect-onboarding.md`](../../../../docs/contracts/mobile-stripe-connect-onboarding.md).
 
@@ -34,9 +34,9 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 
 ## Flow (web)
 
-1. User clicks **Get Pro** on `/dashboard/upgrade` (or the plan card links there first).
+1. User clicks **Get Pro** on `/dashboard/upgrade` (Free users only — see **Active Pro and `/dashboard/upgrade`** below).
 2. Client calls `POST /api/stripe/create-checkout-session`.
-3. API loads `profiles.stripe_customer_id` for the signed-in user, then creates a subscription Checkout Session and returns the session URL (see **One Stripe Customer per profile** below).
+3. API loads `profiles.stripe_customer_id` / `stripe_subscription_id`, runs **duplicate-subscription checks** (see below), then creates a subscription Checkout Session and returns the session URL (see **One Stripe Customer per profile**).
 4. Client redirects to Stripe Checkout.
 5. User completes payment on Stripe.
 6. Stripe sends `checkout.session.completed` to `POST /api/stripe/webhook`.
@@ -45,11 +45,31 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 
 **Debug:** Verbose **`[stripe:onboarding:…]`** `console.debug` lines are off by default. Set **`DEBUG_STRIPE_ONBOARDING=1`** to enable them. Normal **`[stripe:…]`** `console.info` / `console.warn` / `console.error` lines stay on for success and failure.
 
-## Onboarding step 5 (web) — silent trial (no Checkout redirect)
+## Duplicate subscription prevention
 
-When **`ONBOARDING_LEGACY_STRIPE_TRIAL`** is enabled, the in-app **Activate my link** button calls **`POST /api/stripe/start-onboarding-trial`** (session cookies only). The server creates a Stripe **Customer** (if needed) and a **Subscription** with **`trial_period_days: 7`** and the same trial end behavior as Checkout (`missing_payment_method: cancel`), then updates `profiles` and completes onboarding. **No Stripe-hosted page** — the user stays in ServiceLink.
+`POST /api/stripe/create-checkout-session` must not create a second Pro subscription while one is already `active` or `trialing` on the Stripe customer (legacy double-billing bug).
 
-Otherwise step 5 uses **`POST /api/onboarding-v2/complete`** (free tier, no Stripe subscription).
+1. If `profiles.stripe_subscription_id` points at a healthy or resumable subscription:
+   - **Open invoice** → Checkout in **payment** mode for that invoice (same subscription; card/Link retry).
+   - **No open invoice** and status is `active`/`trialing` → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
+   - Resumable failure status without an open invoice → **409** `PAYMENT_RETRY_REQUIRED` (use Settings → Customer Portal).
+2. Before creating a **new** subscription Checkout, the API lists Stripe subscriptions for `stripe_customer_id` (`active` + `trialing`). If any exist → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
+3. After `checkout.session.completed`, the webhook **logs an alert** if the customer somehow has 2+ active/trialing subscriptions (monitoring only — does not auto-cancel).
+
+Canceled / ended subscriptions are not blocked: resubscribe creates a new sub on the **same** `stripe_customer_id`.
+
+**Not supported in-app yet:** switching an existing monthly Pro price to yearly (or legacy $10 → $20) without cancel. Checkout will not open a second sub; use Customer Portal cancel → resubscribe, or change the price in the Stripe Dashboard.
+
+## Active Pro and `/dashboard/upgrade`
+
+- **Free** (and billing-locked cases that need reactivation): can open `/dashboard/upgrade` and start Checkout.
+- **Active billed Pro** (`isProAccess` true and Stripe billing history): middleware **redirects** `/dashboard/upgrade` → `/dashboard`. They manage billing from Settings → **Manage subscription** (portal).
+- UI backup: if the upgrade page ever renders for a Pro subscriber, it shows **Manage subscription**, not **Get Pro**.
+- API backup: checkout still returns `DUPLICATE_SUBSCRIPTION_BLOCKED`.
+
+## Onboarding step 5 (web)
+
+Step 5 **Activate my link** calls **`POST /api/onboarding-v2/complete`** (free tier, no Stripe subscription). The legacy silent 7-day Pro trial route (`POST /api/stripe/start-onboarding-trial`) has been removed.
 
 ## One Stripe Customer per profile (Checkout)
 
@@ -63,7 +83,7 @@ Otherwise step 5 uses **`POST /api/onboarding-v2/complete`** (free tier, no Stri
 
 ## Stripe Tax (Pro subscription checkout)
 
-Dashboard **Tax** settings alone do **not** add tax — Checkout sessions must pass **`automatic_tax: { enabled: true }`** (see `src/libs/stripe/checkoutAutomaticTax.ts`, used by `create-checkout-session` and legacy `start-onboarding-trial`).
+Dashboard **Tax** settings alone do **not** add tax — Checkout sessions must pass **`automatic_tax: { enabled: true }`** (see `src/libs/stripe/checkoutAutomaticTax.ts`, used by `create-checkout-session`).
 
 ### Stripe Dashboard setup
 
@@ -166,7 +186,7 @@ ALTER TABLE stripe_webhook_events
 
 ## Pro welcome email (first paid upgrade only)
 
-When a user reaches a **paid, active** Pro subscription for the **first time**, the webhook sends a one-time "Welcome to Pro" email (links to the Meta ads workshop). It fires from `checkout.session.completed` (direct paid checkout) and from `customer.subscription.updated` (trial → paid conversion), via `sendProWelcomeIfFirstPaidPro`.
+When a user reaches a **paid, active** Pro subscription for the **first time**, the webhook sends a one-time "Welcome to Pro" email (links to the Meta ads workshop). It fires from `checkout.session.completed` (direct paid checkout) and from `customer.subscription.updated` when status becomes paid `active` (e.g. legacy trial → paid), via `sendProWelcomeIfFirstPaidPro`.
 
 Once-only is enforced by an **atomic claim** on `profiles.pro_welcome_email_sent_at`: the timestamp is set only where it is still `NULL`. Renewals, status changes, and cancel → resubscribe (we always keep `stripe_customer_id`) can never re-send because the column is never cleared on downgrade. A send failure releases the claim so a later event can retry.
 

@@ -21,8 +21,8 @@ Mobile clients should align with:
 | **Plans**             | **Free** and **Pro** only (`PlanId` in `src/features/pricing/types.ts`).                                                                                                                                                                                                                                                                 |
 | **Pro price**         | Marketing copy uses **`PLANS.pro.price`** (currently `$20` for new signups); **live charge** comes from **Stripe** (`STRIPE_PRO_PRICE_ID` for new Checkout). **Grandfathered** subscribers keep their existing Stripe Price (e.g. `$10/mo`) until they cancel/resubscribe; Settings shows the amount from Stripe, not `PLANS.pro.price`. |
 | **Monetization goal** | Free tier is **usable** so businesses can start (with caps). Pro unlocks **scale** (bookings, branding, payments-adjacent features, quotes).                                                                                                                                                                                             |
-| **Stripe**            | **One Customer per profile** when `stripe_customer_id` is known — reuse on Checkout to avoid duplicate `cus_…` rows (see Stripe README).                                                                                                                                                                                                 |
-| **Trials**            | **7-day** subscription trial in Stripe (`trialing`). Same in-app **Pro entitlements** as a paying subscriber while the trial is valid.                                                                                                                                                                                                   |
+| **Stripe**            | **One Customer per profile** when `stripe_customer_id` is known — reuse on Checkout to avoid duplicate `cus_…` rows. **Duplicate subscriptions** blocked while `active`/`trialing` (see Stripe README).                                                                                                                                                                                                 |
+| **Trials**            | **Not offered** for new signups (onboarding is Free). Legacy Stripe `trialing` still grants Pro via `isProAccess` if any remain.                                                                                                                                                                                                   |
 
 ---
 
@@ -32,32 +32,32 @@ Use this table for product and support language. **Code:** `hasStripeBillingHist
 
 | Scenario                                                                                           | Dashboard / app                                                                                                                                  | Capabilities                                                                                                                                                      |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Free — never Stripe**                                                                            | **Full access** to the app on the **Free** plan. No subscription paywall.                                                                        | **Limited features:** e.g. lifetime booking cap, portfolio cap, no multi-price options, no public quote intake, no check-in SMS, etc. (see feature matrix below). |
-| **Free trial** (`subscription_status` **`trialing`**)                                              | **Full access** — same navigation as a paying subscriber during the trial.                                                                       | **Full Pro** feature set (all Pro gates pass via `isProAccess`).                                                                                                  |
-| **After trial ends** (still has `cus_…` / history, not `active`/`trialing`)                        | **Paywalled:** redirected to **`/dashboard/upgrade`** for all dashboard routes except that page. Not treated as “Free no Stripe” inside the app. | Must resubscribe or fix billing to use the dashboard again.                                                                                                       |
-| **Pro — paying** (`active`)                                                                        | **Full access.**                                                                                                                                 | **Full Pro** feature set.                                                                                                                                         |
+| **Free — never Stripe / canceled to Free**                                                         | **Full access** to the app on the **Free** plan. No subscription paywall.                                                                        | **Limited features:** e.g. lifetime booking cap, portfolio cap, no multi-price options, no public quote intake, no check-in SMS, etc. (see feature matrix below). |
+| **Legacy trial** (`subscription_status` **`trialing`**) — if any remain                            | **Full access** — same navigation as a paying subscriber while `trialing`.                                                                       | **Full Pro** feature set (all Pro gates pass via `isProAccess`).                                                                                                  |
+| **Billing locked** (`subscription_tier` still **`pro`**, `isProAccess` false)                      | **Paywalled:** redirected to **`/dashboard/upgrade`** until billing is healthy again.                                                            | Must resubscribe or fix billing.                                                                                                                                  |
+| **Pro — paying** (`active`)                                                                        | **Full access.** Active Pro visiting `/dashboard/upgrade` is redirected to `/dashboard`.                                                         | **Full Pro** feature set.                                                                                                                                         |
 | **Comped / manual Pro** (`pro` tier, **no** `stripe_customer_id`, **no** `stripe_subscription_id`) | **Full access.**                                                                                                                                 | **Full Pro** feature set.                                                                                                                                         |
 
-**Summary:** Free-without-Stripe = **app + limited features**. Trial = **app + full features**, then **paywall** if they do not convert. Pro = **app + full features**.
+**Summary:** Free = **app + limited features**. Pro / legacy trialing = **app + full features**. Hard paywall only when the profile is still marked **`pro`** without access (not the normal cancel/fail path, which syncs tier to **`free`**).
 
 ---
 
 ## Who gets dashboard access (web)
 
-After **onboarding is complete**, middleware (`src/middleware.ts`) applies two cohorts:
+After **onboarding is complete**, middleware (`src/middleware.ts`) applies:
 
-### A — Legacy / never billed (true Free)
+### A — Free tier (`subscription_tier` ≠ `pro`)
 
-If **`hasStripeBillingHistory`** is **false** — no `stripe_customer_id`, no `stripe_subscription_id`, and no **`subscription_status`** string on `profiles` — the user is **not** on the subscription paywall. They can use the **full Free** product (subject to Free limits below).
+Full Free dashboard access (subject to Free feature limits). This includes never-paid users **and** users synced to Free after cancel / failed payment (`syncProfileFromSubscriptionUpdated` / `downgradeProfileFromSubscriptionEnd`). A leftover `stripe_customer_id` alone does **not** paywall them.
 
-### B — Touched Stripe (trial, paid, or churned)
+### B — Pro tier with Stripe billing history
 
-If **any** of those three fields is set, **`hasStripeBillingHistory`** is **true**. Then the user must pass **`isProAccess()`** to open any **`/dashboard/**`** route **except** **`/dashboard/upgrade`\*\*.
+When **`subscription_tier === 'pro'`** and the profile has Stripe billing history (`needsPaidProResubscribeForDashboard`):
 
-- **`isProAccess` true** → normal dashboard navigation (Pro or `trialing`).
-- **`isProAccess` false** → redirect to **`/dashboard/upgrade`** until they subscribe or fix billing (hard paywall for churned trial / `past_due` / `canceled`, etc.).
+- **`isProAccess` true** → normal dashboard. Visiting **`/dashboard/upgrade`** redirects to **`/dashboard`**.
+- **`isProAccess` false** → redirect to **`/dashboard/upgrade`** until billing is healthy again (stuck/`past_due` while tier still `pro`, sync lag, etc.).
 
-So: **churned users with a saved `cus_…` are not “Free app users”; they are upgrade-only** until Pro is active again.
+Comped Pro (tier `pro`, no Stripe ids) is not in this gate and keeps full access.
 
 ---
 
@@ -82,14 +82,15 @@ Implemented in **`src/features/pricing/utils/isProAccess.ts`**. Used for **featu
 
 ---
 
-## Trial lifecycle (Stripe + database)
+## Subscription lifecycle (Stripe + database)
 
-| Phase                                     | Stripe                              | Typical `profiles`                                                                                                                                                    | Dashboard                                         |
-| ----------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| **On trial**                              | `trialing`                          | `subscription_tier` usually **`pro`**, `subscription_status` **`trialing`**                                                                                           | Full access (Pro)                                 |
-| **Trial converts**                        | `active`                            | `pro` / `active`                                                                                                                                                      | Full access                                       |
-| **Trial ends / payment fails / canceled** | `past_due`, `unpaid`, `canceled`, … | Webhook **`customer.subscription.updated`** → `syncProfileFromSubscriptionUpdated` sets **`subscription_tier`** to **`free`** unless status is `active` or `trialing` | Paywalled if `hasStripeBillingHistory`            |
-| **Subscription removed**                  | `customer.subscription.deleted`     | **`downgradeProfileFromSubscriptionEnd`**: `free`, clears **`stripe_subscription_id`** & period fields; **keeps** **`stripe_customer_id`**                            | Still paywalled until new **`active`/`trialing`** |
+| Phase                         | Stripe                              | Typical `profiles`                                                                                                                                                    | Dashboard                                                              |
+| ----------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Paid Pro**                  | `active`                            | `pro` / `active`                                                                                                                                                      | Full Pro; `/dashboard/upgrade` → redirect to `/dashboard`              |
+| **Legacy trial** (if any)     | `trialing`                          | `pro` / `trialing`                                                                                                                                                    | Full Pro                                                               |
+| **Payment fails**             | `past_due`, `unpaid`, …             | Webhook sync → **`subscription_tier` = `free`**, status from Stripe                                                                                                   | Free app access + Settings payment-failed banner → portal              |
+| **Cancel (period ended)**     | `customer.subscription.deleted`     | **`downgradeProfileFromSubscriptionEnd`**: `free`, clears **`stripe_subscription_id`**; **keeps** **`stripe_customer_id`**                                            | Free app access; can resubscribe (same customer)                       |
+| **Billing locked** (edge)     | not granting Pro                    | Tier still **`pro`** but `isProAccess` false                                                                                                                          | Paywalled to `/dashboard/upgrade` until fixed                          |
 
 ---
 

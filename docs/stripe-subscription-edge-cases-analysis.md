@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-20  
 **Issue:** Bug report - duplicate active subscriptions allowed  
-**Status:** ⚠️ CRITICAL BUGS IDENTIFIED
+**Status:** Duplicate-prevention checks added; **legacy onboarding free trial path has since been decommissioned** (`start-onboarding-trial` removed). Sections that analyze that route are historical.
 
 ---
 

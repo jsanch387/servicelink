@@ -34,7 +34,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
 type CheckoutRequestBody = {
-  source?: unknown;
   client?: unknown;
   billingInterval?: unknown;
 };
@@ -115,30 +114,17 @@ export async function POST(request: NextRequest) {
         ? profileRow.stripe_subscription_id.trim()
         : '';
 
-    const fromOnboarding =
-      body &&
-      typeof body === 'object' &&
-      body.source === 'onboarding_trial_bridge';
-    /** 7-day trial only for first Stripe customer; returning `cus_…` skips trial (same as paywall upgrade). */
-    const applyOnboardingTrial = fromOnboarding && !existingStripeCustomerId;
-
     onboardingStripeDebug('create-checkout', 'request', {
       userId: user.id,
       authMethod,
-      fromOnboarding,
-      applyOnboardingTrial,
       billingInterval,
       existingStripeCustomerIdSuffix: existingStripeCustomerId
         ? existingStripeCustomerId.slice(-8)
         : null,
     });
 
-    const successPath = fromOnboarding
-      ? '/dashboard/business-profile?onboarding=complete'
-      : '/dashboard/settings?checkout=success';
-    const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
-    const successUrl = `${baseUrl}${successPath}`;
-    const cancelUrl = `${baseUrl}${cancelPath}`;
+    const successUrl = `${baseUrl}/dashboard/settings?checkout=success`;
+    const cancelUrl = `${baseUrl}/dashboard/upgrade`;
 
     /** Prefer paying an open invoice on the existing subscription (card failed, Link retry, etc.). */
     if (existingStripeSubscriptionId) {
@@ -185,7 +171,7 @@ export async function POST(request: NextRequest) {
               : { customer_email: user.email ?? undefined }),
             metadata: {
               userId: user.id,
-              source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
+              source: 'upgrade',
             },
           } as unknown as Stripe.Checkout.SessionCreateParams);
 
@@ -307,19 +293,6 @@ export async function POST(request: NextRequest) {
       ...buildStripeCheckoutAutomaticTaxParams({
         hasExistingCustomer: Boolean(existingStripeCustomerId),
       }),
-      ...(applyOnboardingTrial
-        ? {
-            payment_method_collection: 'if_required' as const,
-            subscription_data: {
-              trial_period_days: 7,
-              trial_settings: {
-                end_behavior: {
-                  missing_payment_method: 'cancel',
-                },
-              },
-            },
-          }
-        : {}),
       success_url: successUrl,
       cancel_url: cancelUrl,
       ...(existingStripeCustomerId
@@ -327,7 +300,7 @@ export async function POST(request: NextRequest) {
         : { customer_email: user.email ?? undefined }),
       metadata: {
         userId: user.id,
-        source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
+        source: 'upgrade',
         billingInterval,
       },
     });
@@ -345,8 +318,6 @@ export async function POST(request: NextRequest) {
     onboardingStripeDebug('create-checkout', 'session created', {
       userId: user.id,
       sessionIdSuffix: session.id.slice(-8),
-      fromOnboarding,
-      applyOnboardingTrial,
       billingInterval,
     });
 
