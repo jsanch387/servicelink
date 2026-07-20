@@ -1,4 +1,6 @@
 import { ROUTES } from '@/constants/routes';
+import { GuideFaqAccordion } from '@/features/resources/components/GuideFaqAccordion';
+import { GuideProTip } from '@/features/resources/components/GuideCallouts';
 import Link from 'next/link';
 
 import {
@@ -28,13 +30,6 @@ export function BestBookingAppForMobileDetailersContent() {
         simple way for customers to see your services, pick a time, and confirm
         without playing phone tag.
       </p>
-      <p className={pClasses}>In this guide you will learn:</p>
-      <ul className={listClasses}>
-        <li>Why a booking app beats texts and DMs</li>
-        <li>What to look for in mobile detailing booking software</li>
-        <li>How common options compare</li>
-        <li>Where to put your booking link so more people use it</li>
-      </ul>
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>
@@ -100,8 +95,23 @@ export function BestBookingAppForMobileDetailersContent() {
         <h3 className={h3Classes}>5. Deposits or in-app payments</h3>
         <p className={pClasses}>
           For higher-ticket details, requiring a deposit at booking reduces
-          no-shows and filters out tire-kickers.
+          no-shows and filters out tire-kickers. Our guide on{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'stop-no-shows-deposits-mobile-detailing'
+            )}
+            className={linkClasses}
+          >
+            how to stop no-shows and take deposits
+          </Link>{' '}
+          covers how much to charge, a cancellation policy you can copy, and how
+          to collect deposits automatically.
         </p>
+        <GuideProTip>
+          If customers can book without putting anything down, some of them
+          never intended to show. Require a deposit on your booking link so the
+          calendar only fills with serious jobs.
+        </GuideProTip>
 
         <h3 className={h3Classes}>6. Customer info captured automatically</h3>
         <p className={pClasses}>
@@ -243,46 +253,38 @@ export function BestBookingAppForMobileDetailersContent() {
         </p>
       </section>
 
-      <section className={sectionClasses}>
-        <h2 className={h2Classes}>Frequently Asked Questions</h2>
-
-        <h3 className={h3Classes}>
-          What is the best booking app for mobile detailers?
-        </h3>
-        <p className={pClasses}>
-          The best app depends on your workflow, but most detailers need a
-          shareable booking link, service menu with clear pricing, controlled
-          availability, and optional deposits—not just a basic calendar.
-          ServiceLink is built around that flow for mobile service businesses.
-        </p>
-
-        <h3 className={h3Classes}>
-          Do my customers need to download an app to book?
-        </h3>
-        <p className={pClasses}>
-          No. With ServiceLink, customers open your booking link in their
-          browser, pick a service and time, and confirm—no account or app
-          download required on their end.
-        </p>
-
-        <h3 className={h3Classes}>
-          Can I require a deposit before confirming a booking?
-        </h3>
-        <p className={pClasses}>
-          Yes. You can collect a deposit or full payment at checkout so premium
-          details are locked in before you drive to the job.
-        </p>
-
-        <h3 className={h3Classes}>How fast can I set up a booking page?</h3>
-        <p className={pClasses}>
-          Most detailers add their services, set availability, and share their
-          link the same day—often in under ten minutes.{' '}
-          <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
-            Start free here
-          </Link>
-          .
-        </p>
-      </section>
+      <GuideFaqAccordion
+        items={[
+          {
+            question: 'What is the best booking app for mobile detailers?',
+            answer:
+              'The best app depends on your workflow, but most detailers need a shareable booking link, service menu with clear pricing, controlled availability, and optional deposits—not just a basic calendar. ServiceLink is built around that flow for mobile service businesses.',
+          },
+          {
+            question: 'Do my customers need to download an app to book?',
+            answer:
+              'No. With ServiceLink, customers open your booking link in their browser, pick a service and time, and confirm—no account or app download required on their end.',
+          },
+          {
+            question: 'Can I require a deposit before confirming a booking?',
+            answer:
+              'Yes. You can collect a deposit or full payment at checkout so premium details are locked in before you drive to the job.',
+          },
+          {
+            question: 'How fast can I set up a booking page?',
+            answer: (
+              <>
+                Most detailers add their services, set availability, and share
+                their link the same day—often in under ten minutes.{' '}
+                <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
+                  Start free here
+                </Link>
+                .
+              </>
+            ),
+          },
+        ]}
+      />
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Final Thoughts</h2>

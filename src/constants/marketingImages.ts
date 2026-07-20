@@ -4,6 +4,9 @@ export const MARKETING_IMAGES = {
     logo: '/brand/service-link-logo.png',
     favicon: '/brand/favicon.png',
     faviconIco: '/brand/favicon.ico',
+    /** Opaque dark-bg icon for Google Search / Organization schema only. */
+    googleSiteIcon: '/brand/google-site-icon.png',
+    googleSiteIcon48: '/brand/google-site-icon-48.png',
     openGraph: '/brand/open-graph.png',
   },
   features: {
@@ -16,6 +19,11 @@ export const MARKETING_IMAGES = {
   landing: {
     heroMock: '/marketing/landing/landing-page-mock.png',
     display: '/marketing/landing/landing-page-display.png',
+  },
+  resources: {
+    bookingApp: '/marketing/resources/guide-booking-app-cover.webp',
+    deposits: '/marketing/resources/guide-deposits-cover.webp',
+    instagram: '/marketing/resources/guide-instagram-cover.webp',
   },
   store: {
     googlePlay: '/store/google-play.png',

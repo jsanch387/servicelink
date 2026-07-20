@@ -1,7 +1,6 @@
 import { GUIDES } from '../data/guides';
 import {
   RESOURCES_CANONICAL_URL,
-  RESOURCES_FAQS,
   RESOURCES_HERO,
   RESOURCES_META_DESCRIPTION,
   RESOURCES_PAGE_SEO_TITLE,
@@ -25,6 +24,12 @@ export function ResourcesStructuredData() {
     '@id': ORGANIZATION_ID,
     name: 'ServiceLink',
     url: SITE_URL,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}/brand/google-site-icon.png`,
+      width: 512,
+      height: 512,
+    },
   };
 
   const breadcrumbSchema = {
@@ -69,32 +74,16 @@ export function ResourcesStructuredData() {
           headline: guide.title,
           description: guide.metaDescription || guide.subheading,
           url: `${SITE_URL}/resources/${guide.slug}`,
+          image: `${SITE_URL}${guide.coverImage}`,
           ...(guide.datePublished && { datePublished: guide.datePublished }),
+          ...(guide.dateModified && { dateModified: guide.dateModified }),
           publisher: { '@id': ORGANIZATION_ID },
         },
       })),
     },
   };
 
-  const faqSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: RESOURCES_FAQS.map(faq => ({
-      '@type': 'Question',
-      name: faq.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.answer,
-      },
-    })),
-  };
-
-  const schemas = [
-    organizationSchema,
-    breadcrumbSchema,
-    collectionPageSchema,
-    faqSchema,
-  ];
+  const schemas = [organizationSchema, breadcrumbSchema, collectionPageSchema];
 
   return (
     <>

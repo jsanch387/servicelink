@@ -1,9 +1,11 @@
 import { ROUTES } from '@/constants/routes';
-import { MARKETING_IMAGES } from '@/constants/marketingImages';
-import { Navigation } from '@/features/landing-page/components/Navigation';
+import { GuideKeyTakeaways } from '@/features/resources/components/GuideCallouts';
 import { GUIDES, getGuideBySlug } from '@/features/resources';
 import { getGuideContentComponent } from '@/features/resources/content';
+import { Footer } from '@/features/landing-page/components/Footer';
+import { Navigation } from '@/features/landing-page/components/Navigation';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -12,6 +14,15 @@ const SITE_URL =
 
 interface ResourceGuidePageProps {
   params: Promise<{ slug: string }>;
+}
+
+function formatGuideDate(datePublished?: string): string | null {
+  if (!datePublished) return null;
+  return new Date(datePublished).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 export function generateStaticParams() {
@@ -30,19 +41,23 @@ export async function generateMetadata({
 
   const description = guide.metaDescription || guide.subheading;
   const canonicalUrl = `${SITE_URL}/resources/${slug}`;
-  const keywords = (
-    guide.keywords ?? [
-      'mobile car detailing',
-      'booking link for detailers',
-      'ServiceLink',
-    ]
-  ).join(', ');
+  const keywordsList = guide.keywords ?? [
+    'mobile car detailing',
+    'booking link for detailers',
+    'ServiceLink',
+  ];
+  const keywords = keywordsList.join(', ');
   const socialTitle = `${guide.title} | ServiceLink`;
+  const publishedTime = guide.datePublished;
+  const modifiedTime = guide.dateModified || guide.datePublished;
 
   return {
     title: guide.title,
     description,
     keywords,
+    authors: [{ name: 'ServiceLink', url: SITE_URL }],
+    creator: 'ServiceLink',
+    publisher: 'ServiceLink',
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: socialTitle,
@@ -51,12 +66,17 @@ export async function generateMetadata({
       siteName: 'ServiceLink',
       type: 'article',
       locale: 'en_US',
+      ...(publishedTime && { publishedTime }),
+      ...(modifiedTime && { modifiedTime }),
+      authors: ['ServiceLink'],
+      section: 'Resources',
+      tags: [...keywordsList],
       images: [
         {
-          url: MARKETING_IMAGES.brand.openGraph,
+          url: guide.coverImage,
           width: 1200,
-          height: 630,
-          alt: guide.title,
+          height: 750,
+          alt: guide.coverImageAlt,
         },
       ],
     },
@@ -64,7 +84,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title: socialTitle,
       description,
-      images: [MARKETING_IMAGES.brand.openGraph],
+      images: [guide.coverImage],
     },
     robots: {
       index: true,
@@ -74,6 +94,7 @@ export async function generateMetadata({
         follow: true,
         'max-snippet': -1,
         'max-image-preview': 'large',
+        'max-video-preview': -1,
       },
     },
   };
@@ -91,6 +112,7 @@ export default async function ResourceGuidePage({
 
   const GuideContent = getGuideContentComponent(slug);
   const canonicalUrl = `${SITE_URL}/resources/${slug}`;
+  const dateLabel = formatGuideDate(guide.datePublished);
 
   const articleStructuredData = {
     '@context': 'https://schema.org',
@@ -99,6 +121,17 @@ export default async function ResourceGuidePage({
     description: guide.metaDescription || guide.subheading,
     url: canonicalUrl,
     inLanguage: 'en-US',
+    articleSection: 'Resources',
+    ...(guide.keywords?.length && {
+      keywords: guide.keywords.join(', '),
+    }),
+    image: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}${guide.coverImage}`,
+      width: 1200,
+      height: 750,
+      caption: guide.coverImageAlt,
+    },
     author: {
       '@type': 'Organization',
       name: 'ServiceLink',
@@ -112,6 +145,10 @@ export default async function ResourceGuidePage({
       '@type': 'Organization',
       name: 'ServiceLink',
       url: SITE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE_URL}/brand/service-link-logo.png`,
+      },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
@@ -161,7 +198,7 @@ export default async function ResourceGuidePage({
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--dashboard-bg)]">
+    <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
       {structuredDataScripts.map((schema, index) => (
         <script
           key={index}
@@ -172,11 +209,14 @@ export default async function ResourceGuidePage({
       <Navigation />
       <div className="h-16 sm:h-20 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 pb-12">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-14 pb-14 sm:pb-20">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
           <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <li>
-              <Link href="/" className="hover:text-white transition-colors">
+              <Link
+                href="/"
+                className="cursor-pointer hover:text-white transition-colors"
+              >
                 Home
               </Link>
             </li>
@@ -186,7 +226,7 @@ export default async function ResourceGuidePage({
             <li>
               <Link
                 href={ROUTES.RESOURCES}
-                className="hover:text-white transition-colors"
+                className="cursor-pointer hover:text-white transition-colors"
               >
                 Resources
               </Link>
@@ -202,14 +242,46 @@ export default async function ResourceGuidePage({
             </li>
           </ol>
         </nav>
+
         <article itemScope itemType="https://schema.org/Article">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-[1.1] mb-4">
             {guide.title}
           </h1>
-          <p className="text-gray-400 text-lg mb-10">{guide.subheading}</p>
+
+          {dateLabel ? (
+            <p className="text-sm text-gray-500 mb-6">
+              <time dateTime={guide.datePublished}>{dateLabel}</time>
+              <span aria-hidden className="mx-2 text-gray-600">
+                ·
+              </span>
+              <span>ServiceLink</span>
+            </p>
+          ) : (
+            <p className="text-sm text-gray-500 mb-6">ServiceLink</p>
+          )}
+
+          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-white/[0.04] border border-white/[0.06] mb-8">
+            <Image
+              src={guide.coverImage}
+              alt={guide.coverImageAlt}
+              fill
+              priority
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
+            />
+          </div>
+
+          <p className="text-gray-300 text-lg sm:text-xl leading-relaxed mb-8">
+            {guide.subheading}
+          </p>
+
+          {guide.keyTakeaways?.length ? (
+            <GuideKeyTakeaways items={guide.keyTakeaways} />
+          ) : null}
 
           {GuideContent ? (
-            <div className="prose prose-invert max-w-none">
+            <div className="max-w-none">
               <GuideContent />
             </div>
           ) : (
@@ -220,6 +292,7 @@ export default async function ResourceGuidePage({
           )}
         </article>
       </main>
+      <Footer />
     </div>
   );
 }
