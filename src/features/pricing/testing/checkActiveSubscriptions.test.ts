@@ -4,7 +4,10 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { checkActiveSubscriptions, hasMultipleActiveSubscriptions } from '../server/checkActiveSubscriptions';
+import {
+  checkActiveSubscriptions,
+  hasMultipleActiveSubscriptions,
+} from '../server/checkActiveSubscriptions';
 import type Stripe from 'stripe';
 
 describe('checkActiveSubscriptions', () => {
@@ -24,10 +27,14 @@ describe('checkActiveSubscriptions', () => {
   });
 
   it('returns active subscriptions when customer has one active', async () => {
-    const mockSub = { id: 'sub_active', status: 'active' } as Stripe.Subscription;
+    const mockSub = {
+      id: 'sub_active',
+      status: 'active',
+    } as Stripe.Subscription;
     const mockStripe = {
       subscriptions: {
-        list: vi.fn()
+        list: vi
+          .fn()
           .mockResolvedValueOnce({ data: [mockSub] }) // active
           .mockResolvedValueOnce({ data: [] }), // trialing
       },
@@ -42,10 +49,14 @@ describe('checkActiveSubscriptions', () => {
   });
 
   it('returns trialing subscriptions when customer has one trialing', async () => {
-    const mockSub = { id: 'sub_trial', status: 'trialing' } as Stripe.Subscription;
+    const mockSub = {
+      id: 'sub_trial',
+      status: 'trialing',
+    } as Stripe.Subscription;
     const mockStripe = {
       subscriptions: {
-        list: vi.fn()
+        list: vi
+          .fn()
           .mockResolvedValueOnce({ data: [] }) // active
           .mockResolvedValueOnce({ data: [mockSub] }), // trialing
       },
@@ -64,7 +75,8 @@ describe('checkActiveSubscriptions', () => {
     const mockSub2 = { id: 'sub_new', status: 'active' } as Stripe.Subscription;
     const mockStripe = {
       subscriptions: {
-        list: vi.fn()
+        list: vi
+          .fn()
           .mockResolvedValueOnce({ data: [mockSub1, mockSub2] }) // active
           .mockResolvedValueOnce({ data: [] }), // trialing
       },
@@ -121,7 +133,8 @@ describe('hasMultipleActiveSubscriptions', () => {
     const mockSub = { id: 'sub_1', status: 'active' } as Stripe.Subscription;
     const mockStripe = {
       subscriptions: {
-        list: vi.fn()
+        list: vi
+          .fn()
           .mockResolvedValueOnce({ data: [mockSub] })
           .mockResolvedValueOnce({ data: [] }),
       },
@@ -136,7 +149,8 @@ describe('hasMultipleActiveSubscriptions', () => {
     const mockSub2 = { id: 'sub_2', status: 'active' } as Stripe.Subscription;
     const mockStripe = {
       subscriptions: {
-        list: vi.fn()
+        list: vi
+          .fn()
           .mockResolvedValueOnce({ data: [mockSub1, mockSub2] })
           .mockResolvedValueOnce({ data: [] }),
       },

@@ -7,6 +7,7 @@
 ## ✅ What Was Done
 
 ### 1. Created New Helper Function
+
 **File:** `src/features/pricing/server/checkActiveSubscriptions.ts`
 
 - `checkActiveSubscriptions()` - Queries Stripe for all active and trialing subscriptions
@@ -14,12 +15,14 @@
 - Gracefully handles Stripe API errors to avoid blocking legitimate users
 
 ### 2. Fixed Onboarding Trial Route — **REMOVED**
+
 **File:** `src/app/api/stripe/start-onboarding-trial/route.ts`
 
 The legacy 7-day Pro trial route has been fully decommissioned (not just guarded).
 Onboarding step 5 always completes via `POST /api/onboarding-v2/complete` (free tier).
 
 ### 3. Fixed Checkout Session Route
+
 **File:** `src/app/api/stripe/create-checkout-session/route.ts`
 
 **Added TWO defensive checks:**
@@ -35,17 +38,21 @@ Onboarding step 5 always completes via `POST /api/onboarding-v2/complete` (free 
    - Returns clear error message to user
 
 ### 4. Added Webhook Monitoring
+
 **File:** `src/app/api/stripe/webhook/route.ts`
 
 **Added:** Multi-subscription detection in `checkout.session.completed` handler
+
 - Checks if customer has multiple active subscriptions after checkout completes
 - Logs critical alert if detected (should never happen with fixes in place)
 - Non-blocking monitoring for edge case detection
 
 ### 5. Created Comprehensive Analysis
+
 **File:** `docs/stripe-subscription-edge-cases-analysis.md`
 
 **90+ page detailed analysis covering:**
+
 - All 6 identified edge cases with severity ratings
 - Complete flow analysis of subscription lifecycle
 - Webhook handler audit
@@ -56,9 +63,11 @@ Onboarding step 5 always completes via `POST /api/onboarding-v2/complete` (free 
 - Migration plan for existing duplicate subscriptions
 
 ### 6. Added Unit Tests
+
 **File:** `src/features/pricing/testing/checkActiveSubscriptions.test.ts`
 
 **Test coverage:**
+
 - No subscriptions scenario
 - Single active subscription
 - Single trialing subscription
@@ -69,6 +78,7 @@ Onboarding step 5 always completes via `POST /api/onboarding-v2/complete` (free 
 ## 🔒 How It Works
 
 ### Before Fix:
+
 ```
 User with active sub_OLD ($10/mo)
   ↓
@@ -84,6 +94,7 @@ User completes checkout → sub_NEW ($20/mo) created
 ```
 
 ### After Fix:
+
 ```
 User with active sub_OLD ($10/mo)
   ↓
@@ -105,16 +116,19 @@ Returns: "You already have an active subscription..."
 ## 📊 Edge Cases Addressed
 
 ### Critical (Fixed):
+
 1. ✅ Duplicate subscriptions via stale DB data
 2. ✅ Duplicate subscriptions via subscription retrieve errors
 3. ✅ Duplicate subscriptions via race conditions
 
 ### Monitored:
+
 4. ✅ Multi-subscription detection in webhooks
 5. ✅ Webhook race condition handling
 6. ✅ Payment failure with multiple subs
 
 ### Already Working:
+
 - ✅ Legacy pricing grandfathering ($10 → $20)
 - ✅ Billing interval handling (monthly/yearly)
 - ✅ Payment failure notifications
@@ -125,6 +139,7 @@ Returns: "You already have an active subscription..."
 ## 🧪 Testing Recommendations
 
 ### Manual Testing (Before Deploy):
+
 1. User with no subscription → create new subscription ✅
 2. User with active subscription → attempt to create 2nd → blocked ✅
 3. User with cancelled subscription → can resubscribe ✅
@@ -132,6 +147,7 @@ Returns: "You already have an active subscription..."
 5. Simulate DB with wrong subscription_id → still blocked ✅
 
 ### Pre-Deploy Audit:
+
 ```sql
 -- Find all users with stripe_customer_id
 SELECT user_id, stripe_customer_id, stripe_subscription_id, subscription_status
@@ -146,6 +162,7 @@ WHERE stripe_customer_id IS NOT NULL;
 ```
 
 ### Post-Deploy Monitoring:
+
 - Watch for `DUPLICATE_SUBSCRIPTION_BLOCKED` errors in logs
 - Monitor for webhook alert: "Customer has multiple active subscriptions"
 - Track support tickets related to upgrade issues
@@ -168,11 +185,13 @@ src/features/pricing/index.ts                             (MODIFIED)
 ## 🚀 Deployment Notes
 
 ### Branch Information:
+
 - **Branch:** `cursor/fix-duplicate-subscriptions-1d81`
 - **Status:** Pushed to remote, ready for review
 - **PR URL:** https://github.com/jsanch387/servicelink/pull/new/cursor/fix-duplicate-subscriptions-1d81
 
 ### Pre-Deploy Checklist:
+
 - [ ] Review code changes in PR
 - [ ] Run pre-deploy audit query (find existing duplicates)
 - [ ] Cancel any duplicate subscriptions found
@@ -181,6 +200,7 @@ src/features/pricing/index.ts                             (MODIFIED)
 - [ ] Check for TypeScript/ESLint errors (requires `npm install`)
 
 ### Deploy Steps:
+
 1. Merge PR to main
 2. Deploy to production
 3. Monitor error logs for 24-48 hours
@@ -188,7 +208,9 @@ src/features/pricing/index.ts                             (MODIFIED)
 5. Adjust error messages based on user feedback
 
 ### Rollback Plan:
+
 If issues occur:
+
 1. Revert the 7 changed files
 2. Deploy previous version
 3. Investigate reported issues
@@ -197,17 +219,20 @@ If issues occur:
 ## 📈 Expected Impact
 
 ### User Experience:
+
 - ✅ Clear error message if trying to create duplicate
 - ✅ No confusion about multiple subscriptions
 - ✅ No unexpected double-billing
 
 ### Business Impact:
+
 - ✅ Prevents revenue loss from refunds
 - ✅ Reduces support ticket volume
 - ✅ Improves customer trust
 - ✅ Cleaner Stripe Dashboard data
 
 ### Technical Impact:
+
 - ✅ More reliable subscription management
 - ✅ Better error handling
 - ✅ Comprehensive monitoring
@@ -226,6 +251,7 @@ If issues occur:
 Your subscription system is **well-architected** overall. The analysis revealed:
 
 ### What's Working Great:
+
 - ✅ Webhook idempotency (no duplicate event processing)
 - ✅ Payment failure handling (one-time email, status sync)
 - ✅ Legacy pricing grandfathering (users keep $10 until cancel)
@@ -234,6 +260,7 @@ Your subscription system is **well-architected** overall. The analysis revealed:
 - ✅ Resubscribe flow (keeps customer ID, applies new price)
 
 ### What Was Missing (Now Fixed):
+
 - ❌ Active subscription validation before creation
 - ❌ Defensive error handling for retrieve failures
 - ❌ Multi-subscription monitoring
@@ -250,6 +277,7 @@ Your subscription system is **well-architected** overall. The analysis revealed:
 ## 📞 Support
 
 If you encounter issues:
+
 1. Check logs for `DUPLICATE_SUBSCRIPTION_BLOCKED` or multi-sub alerts
 2. Review comprehensive analysis doc for detailed flow explanations
 3. Run Stripe API queries to verify actual subscription state

@@ -14,9 +14,9 @@ See `e2e/subscriptions/README.md`.
 
 Use Stripe **test mode** + test card `4242 4242 4242 4242`.
 
-1. Free → `/dashboard/upgrade` → complete Checkout  
-2. Pro → try checkout again (should fail / show manage)  
-3. Settings → Manage subscription → portal (update card / cancel)  
+1. Free → `/dashboard/upgrade` → complete Checkout
+2. Pro → try checkout again (should fail / show manage)
+3. Settings → Manage subscription → portal (update card / cancel)
 4. After cancel settles → resubscribe (should reuse same Stripe customer)
 
 Forward webhooks locally when testing renewals/cancels:
