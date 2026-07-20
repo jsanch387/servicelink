@@ -47,6 +47,7 @@ import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
+import { hasMultipleActiveSubscriptions } from '@/features/pricing/server/checkActiveSubscriptions';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
@@ -989,6 +990,36 @@ export async function POST(request: NextRequest) {
         { error: 'Profile update failed' },
         { status: 500 }
       );
+    }
+
+    // MONITORING: Detect if customer has multiple active subscriptions (edge case alert)
+    const customerId =
+      typeof session.customer === 'string' ? session.customer : null;
+    if (customerId) {
+      try {
+        const hasMultiple = await hasMultipleActiveSubscriptions(
+          stripe,
+          customerId
+        );
+        if (hasMultiple) {
+          console.error(
+            '[stripe:webhook] ⚠️ ALERT: Customer has multiple active subscriptions after checkout',
+            {
+              eventId: event.id,
+              sessionId: session.id,
+              customerId: customerId.slice(-8),
+              userId,
+            }
+          );
+          // This should not happen with the duplicate prevention checks in place
+          // If this log appears, investigate immediately - customer is being double-charged
+        }
+      } catch (multiCheckErr) {
+        console.warn(
+          '[stripe:webhook] multi-subscription check failed (non-blocking)',
+          multiCheckErr
+        );
+      }
     }
 
     // First paid Pro upgrade only (direct paid checkout — no trial). Best-effort;

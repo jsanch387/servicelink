@@ -22,6 +22,7 @@ import {
   findOpenInvoiceIdForSubscriptionResume,
   isSubscriptionResumableViaInvoice,
 } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
+import { checkActiveSubscriptions } from '@/features/pricing/server/checkActiveSubscriptions';
 import type { BillingInterval } from '@/features/pricing/types';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
@@ -217,8 +218,79 @@ export async function POST(request: NextRequest) {
         }
       } catch (resumeErr) {
         console.warn(
-          `${LOG} existing subscription resume skipped; creating new checkout`,
+          `${LOG} existing subscription resume skipped; will check for active subscriptions before creating new`,
           resumeErr
+        );
+        // DEFENSIVE: Before falling through to create a new subscription,
+        // verify the customer doesn't have OTHER active subscriptions.
+        // This handles the case where DB has wrong/stale subscription_id.
+        if (existingStripeCustomerId) {
+          const activeCheck = await checkActiveSubscriptions(
+            stripe,
+            existingStripeCustomerId
+          );
+          if (activeCheck.hasActive) {
+            console.warn(
+              `${LOG} blocked duplicate subscription - customer has active subscription(s) despite retrieve error`,
+              {
+                userId: user.id,
+                customerId: existingStripeCustomerId.slice(-8),
+                dbSubscriptionId: existingStripeSubscriptionId.slice(-8),
+                activeSubIds: activeCheck.summary.subscriptionIds.map(id =>
+                  id.slice(-8)
+                ),
+              }
+            );
+            return NextResponse.json(
+              {
+                success: false,
+                error:
+                  'You have an active subscription. Please manage it in Settings or contact support if you need assistance.',
+                code: 'ACTIVE_SUBSCRIPTION_EXISTS',
+              },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
+    // CRITICAL: Before creating a new subscription checkout, verify customer
+    // has no active subscriptions. This is the final safety check.
+    if (existingStripeCustomerId) {
+      const activeCheck = await checkActiveSubscriptions(
+        stripe,
+        existingStripeCustomerId
+      );
+      if (activeCheck.hasActive) {
+        console.warn(
+          `${LOG} blocked duplicate subscription checkout - customer has active subscription(s)`,
+          {
+            userId: user.id,
+            customerId: existingStripeCustomerId.slice(-8),
+            activeCount: activeCheck.summary.activeCount,
+            trialingCount: activeCheck.summary.trialingCount,
+            existingSubIds: activeCheck.summary.subscriptionIds.map(id =>
+              id.slice(-8)
+            ),
+          }
+        );
+        onboardingStripeDebug(
+          'create-checkout',
+          'blocked: active subscription exists',
+          {
+            userId: user.id,
+            activeSubscriptionCount: activeCheck.activeSubscriptions.length,
+          }
+        );
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'You already have an active subscription. To change your plan, please cancel your current subscription in Settings first, or contact support for assistance.',
+            code: 'DUPLICATE_SUBSCRIPTION_BLOCKED',
+          },
+          { status: 400 }
         );
       }
     }

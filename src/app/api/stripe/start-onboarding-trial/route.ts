@@ -16,6 +16,7 @@ import { retrieveSubscriptionCurrentPeriodEndIso } from '@/features/pricing/serv
 import { buildTrialConfirmationPayload } from '@/features/pricing/server/trialConfirmationPayload';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
 import { STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO } from '@/features/pricing/utils/isProAccess';
+import { checkActiveSubscriptions } from '@/features/pricing/server/checkActiveSubscriptions';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getStripePlatform } from '@/libs/stripe';
 import { stripeSubscriptionAutomaticTaxParams } from '@/libs/stripe/checkoutAutomaticTax';
@@ -202,6 +203,55 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+    }
+
+    // CRITICAL: Check for any active subscriptions before creating a new one
+    // This prevents duplicate subscriptions that would charge the user twice
+    const activeCheck = await checkActiveSubscriptions(stripe, stripeCustomerId);
+    if (activeCheck.hasActive) {
+      console.warn(
+        `${LOG} blocked duplicate subscription attempt - customer has active subscription(s)`,
+        {
+          userId: user.id,
+          customerId: stripeCustomerId.slice(-8),
+          activeCount: activeCheck.summary.activeCount,
+          trialingCount: activeCheck.summary.trialingCount,
+          existingSubIds: activeCheck.summary.subscriptionIds.map(id =>
+            id.slice(-8)
+          ),
+        }
+      );
+      onboardingStripeDebug('start-trial', 'blocked: active subscription exists', {
+        userId: user.id,
+        activeSubscriptionCount: activeCheck.activeSubscriptions.length,
+      });
+
+      // Return success with existing subscription data to avoid blocking UX
+      // The user already has Pro access, so continue onboarding
+      const bridge = await runOnboardingTrialBridgeAfterSubscribe(
+        supabase,
+        user.id,
+        user.email
+      );
+      if (!bridge.success) {
+        console.error(`${LOG} onboarding bridge failed`, bridge.error);
+        return NextResponse.json(
+          { success: false, error: bridge.error ?? 'Onboarding update failed' },
+          { status: 500 }
+        );
+      }
+      const trial_confirmation = await buildTrialConfirmationPayload(
+        supabase,
+        stripe,
+        user.id
+      );
+      revalidatePath('/dashboard', 'layout');
+      console.info(`${LOG} success (blocked duplicate, existing active)`);
+      return NextResponse.json({
+        success: true,
+        alreadyActive: true,
+        ...(trial_confirmation ? { trial_confirmation } : {}),
+      });
     }
 
     const applyOnboardingTrial = !hadStripeCustomerAtEntry;
