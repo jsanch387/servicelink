@@ -1,8 +1,8 @@
 # Marketplace Location Data Plan
 
 Status: Draft  
-Current priority: Mobile detailing services  
-Last updated: July 17, 2026
+Current priority: Collect business service areas (web + mobile)  
+Last updated: July 20, 2026
 
 ## Goal
 
@@ -15,6 +15,63 @@ The current version should stay focused:
 - Businesses choose how far they are willing to travel.
 - Customers search by city, neighborhood, ZIP, or address.
 - Saving location data does not automatically publish a marketplace listing.
+
+## What is already working
+
+- Marketplace landing + search UI (`/marketplace`)
+- City / ZIP text search against existing `service_area` / `business_zip`
+- Results cards → public booking profile
+- MapTiler autocomplete + radius UI (web modal, localStorage only)
+
+## Next moves (bring this to life)
+
+### Ship now — Collect location (tomorrow)
+
+This is the highest-leverage move. Without saved service areas, there is no
+real marketplace network.
+
+1. Create `business_service_areas` (PostGIS + RLS).
+2. Persist modal confirm to the database (replace localStorage).
+3. Require service area on every login / dashboard entry until saved.
+4. Ship the same required flow on the mobile app.
+5. Prefill / edit when a primary service area already exists.
+
+Outcome: every returning business adds a searchable coverage center + radius.
+
+### Next after collection — Make search use real coverage
+
+Keep marketplace UI light. Improve matching once we have data.
+
+1. Geocode customer search (city / ZIP / address) → point.
+2. Match businesses whose service radius contains that point.
+3. Sort by distance (closest first), then rating / reviews.
+4. Show distance on result cards (e.g. “4.2 mi”).
+
+Do not block shipping collection on these search upgrades.
+
+### Later (still light) — Customer discovery upgrades
+
+Only after we have enough businesses with locations:
+
+1. “Use my current location” (browser geolocation → reverse geocode → search).
+2. Marketplace opt-in (separate from location completeness).
+3. Richer cards: photos, starting price, response time / availability signal.
+4. Result actions: View profile, See photos, Call / text.
+
+### Future (not V1)
+
+- Map view with coverage markers (never expose mobile home coords)
+- Multiple service areas / neighborhoods
+- Shop / branch physical locations table
+- Date availability filter
+- Instant book vs request
+- Activity-based listing pause / reconfirm
+
+## Why marketplace feels “the same” right now
+
+Search still uses free-text city/ZIP matching. The new location modal does not
+write to the database yet, so marketplace results cannot use radius data.
+Collection first → matching second.
 
 ## Core distinction
 
@@ -167,7 +224,21 @@ used to determine this broader intersection.
 - Customer point search
 - Existing marketplace eligibility rules
 
-## Deferred
+## Deferred customer experience notes
+
+Keep V1 light. Capture these for later product work:
+
+- “Use my location” on marketplace search
+- Distance-to-customer on result cards
+- View profile / See photos / Call (or text) actions on cards
+- Starting price and photo strip on cards
+- Availability / next open slot signal
+- Marketplace map (coverage, not home pins)
+- Date filter on search
+- Marketplace listing opt-in + verified / Pro trust badges
+- Listing pause when inactive for too long
+
+## Deferred location / map features
 
 - Multiple service areas
 - Customer-facing map
@@ -200,11 +271,13 @@ used to determine this broader intersection.
 
 ## Recommended implementation order
 
-1. Create `business_service_areas`.
-2. Save the existing modal selection to the database.
-3. Load saved data when the dashboard opens.
-4. Allow businesses to edit their service area.
-5. Replace city/free-text marketplace matching with PostGIS radius matching.
-6. Add marketplace opt-in separately.
-7. Add broad city/neighborhood intersection search.
-8. Design physical shop locations and map presentation later.
+1. Create `business_service_areas` + PostGIS.
+2. Save the existing modal selection to the database (web).
+3. Require location on login / dashboard until complete.
+4. Ship the same required collect-location flow on mobile.
+5. Allow businesses to edit their service area later.
+6. Replace city/free-text marketplace matching with PostGIS radius matching.
+7. Show distance on marketplace result cards.
+8. Add “Use my location” for customers.
+9. Add marketplace opt-in separately.
+10. Add richer cards / map / shops later.

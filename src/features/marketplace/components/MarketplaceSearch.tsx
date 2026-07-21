@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared/Button';
+import { reverseGeocodeMapTilerLocation } from '@/features/location/api/mapTilerGeocoding';
 import { LocationAutocomplete } from '@/features/location/components/LocationAutocomplete';
 import { MagnifyingGlassIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
@@ -37,14 +38,32 @@ export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
     setIsLocating(true);
     setLocationError('');
     navigator.geolocation.getCurrentPosition(
-      () => {
-        setLocationError(
-          'Current-location matching is coming next. Enter a city or ZIP for now.'
-        );
-        setIsLocating(false);
+      position => {
+        void (async () => {
+          try {
+            const resolved = await reverseGeocodeMapTilerLocation(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+            setLocation(resolved.searchValue);
+            await onSearch(resolved.searchValue);
+          } catch (error) {
+            setLocationError(
+              error instanceof Error
+                ? error.message
+                : 'We could not find a city near your location.'
+            );
+          } finally {
+            setIsLocating(false);
+          }
+        })();
       },
-      () => {
-        setLocationError('We could not access your location.');
+      error => {
+        setLocationError(
+          error.code === error.PERMISSION_DENIED
+            ? 'Location permission was denied. Enter a city or ZIP instead.'
+            : 'We could not access your location.'
+        );
         setIsLocating(false);
       },
       { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 }
@@ -82,7 +101,7 @@ export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
           variant="primary"
           size="lg"
           icon={<MagnifyingGlassIcon className="h-5 w-5" />}
-          disabled={!location.trim() || isSearching}
+          disabled={!location.trim() || isSearching || isLocating}
           loading={isSearching}
           fullWidth
           className="shrink-0 !min-h-[52px] !rounded-full !px-7 sm:!min-h-12 sm:!w-auto"
@@ -95,7 +114,7 @@ export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
         <button
           type="button"
           onClick={handleUseCurrentLocation}
-          disabled={isLocating}
+          disabled={isLocating || isSearching}
           className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-300 disabled:cursor-wait disabled:opacity-60"
         >
           <FiNavigation className="h-4 w-4" />

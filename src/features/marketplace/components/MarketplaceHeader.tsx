@@ -7,7 +7,7 @@ export function MarketplaceHeader() {
     <header className="relative z-20 border-b border-[var(--dashboard-border)] bg-[var(--dashboard-bg)]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6">
         <Logo
-          href={ROUTES.MARKETPLACE}
+          href={ROUTES.FIND_DETAILERS}
           size="md"
           logoSize="sm"
           className="gap-2"

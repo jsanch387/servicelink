@@ -194,6 +194,27 @@ function cacheLocations(key: string, locations: StructuredLocation[]): void {
   }
 }
 
+async function fetchMapTilerLocations(
+  path: string,
+  params: URLSearchParams,
+  signal?: AbortSignal
+): Promise<StructuredLocation[]> {
+  const response = await fetch(
+    `${MAPTILER_GEOCODING_URL}/${path}.json?${params.toString()}`,
+    { signal }
+  );
+
+  if (!response.ok) {
+    throw new Error('Location suggestions are unavailable.');
+  }
+
+  const result = (await response.json()) as MapTilerFeatureCollection;
+  return (result.features ?? []).flatMap(feature => {
+    const location = mapFeature(feature);
+    return location ? [location] : [];
+  });
+}
+
 export async function searchMapTilerLocations(
   query: string,
   mode: LocationAutocompleteMode,
@@ -214,21 +235,52 @@ export async function searchMapTilerLocations(
     limit: '5',
     types: 'place,municipality,locality,postal_code,address',
   });
-  const response = await fetch(
-    `${MAPTILER_GEOCODING_URL}/${encodeURIComponent(query.trim())}.json?${params.toString()}`,
-    { signal }
+  const locations = await fetchMapTilerLocations(
+    encodeURIComponent(query.trim()),
+    params,
+    signal
   );
-
-  if (!response.ok) {
-    throw new Error('Location suggestions are unavailable.');
-  }
-
-  const result = (await response.json()) as MapTilerFeatureCollection;
-  const locations = (result.features ?? []).flatMap(feature => {
-    const location = mapFeature(feature);
-    return location ? [location] : [];
-  });
 
   cacheLocations(cacheKey, locations);
   return locations;
+}
+
+/** Reverse-geocode coordinates into a city/ZIP search value. */
+export async function reverseGeocodeMapTilerLocation(
+  latitude: number,
+  longitude: number,
+  signal?: AbortSignal
+): Promise<StructuredLocation> {
+  const apiKey = getMapTilerBrowserKey();
+  if (!apiKey) throw new Error('MapTiler API key is not configured.');
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error('Unable to determine your location.');
+  }
+
+  const roundedLat = Math.round(latitude * 1000) / 1000;
+  const roundedLng = Math.round(longitude * 1000) / 1000;
+  const cacheKey = `reverse:${roundedLat},${roundedLng}`;
+  const cachedLocations = getCachedLocations(cacheKey);
+  if (cachedLocations?.[0]) return cachedLocations[0];
+
+  const params = new URLSearchParams({
+    key: apiKey,
+    country: 'us',
+    language: 'en',
+    limit: '1',
+    types: 'postal_code,place,municipality,locality',
+  });
+  const locations = await fetchMapTilerLocations(
+    `${roundedLng},${roundedLat}`,
+    params,
+    signal
+  );
+  const location = locations[0];
+  if (!location) {
+    throw new Error('We could not find a city near your location.');
+  }
+
+  cacheLocations(cacheKey, [location]);
+  return location;
 }
