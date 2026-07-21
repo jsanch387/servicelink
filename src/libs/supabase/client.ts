@@ -102,7 +102,11 @@ export type Database = {
           portfolio: any; // JSON array of portfolio items
           email: string | null;
           website: string | null;
-          social_media: any; // JSON object for social media links
+          /** Normalized handles by platform, e.g. `{ instagram, tiktok }`. */
+          social_media: {
+            instagram?: string;
+            tiktok?: string;
+          } | null;
           // NEW FIELDS FOR SLUG SYSTEM:
           business_slug: string | null; // Custom URL slug
           business_link: string | null; // Full public URL
@@ -142,7 +146,10 @@ export type Database = {
           portfolio?: any;
           email?: string | null;
           website?: string | null;
-          social_media?: any;
+          social_media?: {
+            instagram?: string;
+            tiktok?: string;
+          } | null;
           // NEW FIELDS FOR SLUG SYSTEM:
           business_slug?: string | null;
           business_link?: string | null;
@@ -175,7 +182,10 @@ export type Database = {
           portfolio?: any;
           email?: string | null;
           website?: string | null;
-          social_media?: any;
+          social_media?: {
+            instagram?: string;
+            tiktok?: string;
+          } | null;
           // NEW FIELDS FOR SLUG SYSTEM:
           business_slug?: string | null;
           business_link?: string | null;

@@ -165,7 +165,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       done: (businessProfile.services?.length ?? 0) > 0,
     },
   ] as const;
-  const profileCompletionTracker = !isPublic ? (
+  const isProfileComplete = completionChecks.every(item => item.done);
+  const showProfileCompletionTracker =
+    !isPublic && (editMode === 'edit' || !isProfileComplete);
+  const profileCompletionTracker = showProfileCompletionTracker ? (
     <ProfileCompletionTracker
       checks={completionChecks}
       onViewChecklist={() => setShowProfileChecklistModal(true)}

@@ -10,6 +10,7 @@ import type { BookingLinkLocalesUiState } from '../bookingLinkLocales';
 import { bookingLinkLocalesPersistFromUi } from '../bookingLinkLocales';
 import type { ServiceLocationUiState } from '../serviceLocationMode';
 import { serviceLocationPersistFromUi } from '../serviceLocationMode';
+import { socialMediaForPersist } from '../socialMedia';
 import type { EditingFormData, ImageFormData } from './editingTypes';
 import { validateEditingForm } from './editingValidation';
 
@@ -54,6 +55,10 @@ export function transformFormDataForAPI(
       bio: formData.bio,
       phone_number_call: formData.phone_number_call,
       phone_number_text: null, // Single number only; customers call this number
+      social_media: socialMediaForPersist({
+        instagram: formData.instagram,
+        tiktok: formData.tiktok,
+      }),
       logo_path: formData.logo_path,
       banner_path: formData.banner_path,
     },
