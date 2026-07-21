@@ -102,6 +102,8 @@ export const ROUTES = {
 export const AUTH_REQUIRED_PATH_PREFIXES = ['/dashboard'] as const;
 
 export const API_ROUTES = {
+  /** Public: find marketplace businesses by city/state or ZIP. */
+  MARKETPLACE_SEARCH: '/api/public/marketplace/search',
   /** Pro: Stripe Connect Express onboarding (Account Link); web cookies or Bearer (mobile). */
   STRIPE_CONNECT_ONBOARD: '/api/stripe/connect/onboard',
   /** Pro: refresh `payment_accounts` from Stripe (e.g. after Connect return on mobile). */

@@ -16,6 +16,7 @@ export {
   formatUsPhoneDigits,
 } from './PhoneInput';
 export { PriceInput } from './PriceInput';
+export { PublicFooter } from './PublicFooter';
 export { Select } from './Select';
 export { TextArea } from './TextArea';
 export { TimeSelect } from './TimeSelect';

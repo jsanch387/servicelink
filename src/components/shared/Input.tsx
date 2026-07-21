@@ -4,6 +4,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 
 interface InputProps {
+  id?: string;
   label?: string;
   placeholder?: string;
   value: string;
@@ -29,9 +30,11 @@ interface InputProps {
   leftIcon?: React.ReactNode;
   /** Max length for the input value (native maxLength). */
   maxLength?: number;
+  'aria-label'?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
+  id,
   label,
   placeholder,
   value,
@@ -47,6 +50,7 @@ export const Input: React.FC<InputProps> = ({
   inputMode,
   leftIcon,
   maxLength,
+  'aria-label': ariaLabel,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordType = type === 'password';
@@ -60,7 +64,10 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-left text-sm font-medium text-gray-200 mb-1.5">
+        <label
+          htmlFor={id}
+          className="block text-left text-sm font-medium text-gray-200 mb-1.5"
+        >
           {label}
           {required && <span className="text-red-400 ml-1">*</span>}
         </label>
@@ -72,6 +79,7 @@ export const Input: React.FC<InputProps> = ({
           </div>
         )}
         <input
+          id={id}
           type={inputType}
           value={value}
           onChange={e => onChange(e.target.value)}
@@ -82,6 +90,7 @@ export const Input: React.FC<InputProps> = ({
           autoComplete={autoComplete}
           inputMode={inputMode}
           maxLength={maxLength}
+          aria-label={ariaLabel}
           className={`
             w-full py-2.5 px-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-normal
             focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8

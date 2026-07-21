@@ -17,6 +17,13 @@ export const MARKETING_IMAGES = {
     heroMock: '/marketing/landing/landing-page-mock.png',
     display: '/marketing/landing/landing-page-display.png',
   },
+  marketplace: {
+    boat: '/marketplace/boat.png',
+    ceramic: '/marketplace/ceramic.png',
+    exterior: '/marketplace/exterior.png',
+    interiorOne: '/marketplace/inside-1.png',
+    interiorTwo: '/marketplace/interior-2.png',
+  },
   store: {
     googlePlay: '/store/google-play.png',
     appStoreSticker: '/store/appstore-sticker.svg',
