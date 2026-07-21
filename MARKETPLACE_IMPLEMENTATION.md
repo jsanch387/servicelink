@@ -4,9 +4,10 @@
 A clean, modern UI for customers to search for and discover detailing service providers in their area. This is a pure UI implementation with no backend integration yet.
 
 ## Route
-- **URL**: `myservicelink.app/marketplace`
-- **Route**: `/marketplace`
-- **Added to**: `src/constants/routes.ts` as `ROUTES.MARKETPLACE`
+- **URL**: `myservicelink.app/find-detailers`
+- **Route**: `/find-detailers`
+- **Added to**: `src/constants/routes.ts` as `ROUTES.FIND_DETAILERS`
+- **SEO Benefits**: Targets "find detailers" search intent, clear and descriptive
 
 ## Features Implemented
 
@@ -62,10 +63,10 @@ A clean, modern UI for customers to search for and discover detailing service pr
 ```
 src/
 ├── app/
-│   └── marketplace/
+│   └── find-detailers/
 │       └── page.tsx                    # Next.js route page
 ├── constants/
-│   └── routes.ts                       # Updated with MARKETPLACE route
+│   └── routes.ts                       # Updated with FIND_DETAILERS route
 └── features/
     └── marketplace/
         ├── index.ts                    # Public exports
@@ -84,7 +85,8 @@ src/
 - View toggle between search and results
 
 ### Metadata
-- SEO-ready with proper title and description
+- SEO-ready with proper title: "Find Detailers Near You | Auto Detailing Services"
+- Optimized description targeting "find detailers" search queries
 - Robots set to `noindex, nofollow` (as requested - not exposed to public yet)
 - OpenGraph tags for social sharing
 - Canonical URL set
@@ -186,7 +188,7 @@ interface Business {
 
 ## Testing Checklist
 When you test locally:
-- [ ] Navigate to `/marketplace` directly in browser
+- [ ] Navigate to `/find-detailers` directly in browser
 - [ ] See hero text "Find Service Pros Near You" with gradient effect
 - [ ] See search form with location input and service type
 - [ ] Enter a location (e.g., "12345" or "New York, NY")

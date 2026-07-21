@@ -14,7 +14,7 @@ export const ROUTES = {
   // Marketing pages
   FEATURES_PAGE: '/features',
   PRICING_PAGE: '/pricing',
-  MARKETPLACE: '/marketplace',
+  FIND_DETAILERS: '/find-detailers',
 
   // Public content (guides, blogs, SEO)
   RESOURCES: '/resources',
