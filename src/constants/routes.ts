@@ -129,6 +129,8 @@ export const API_ROUTES = {
   /** Owner: toggle `accept_quote_req` on current business. */
   BUSINESS_PROFILE_ACCEPT_QUOTE_REQUESTS:
     '/api/business-profile/accept-quote-requests',
+  /** Owner: upsert primary mobile service area (city + radius). */
+  BUSINESS_PROFILE_SERVICE_AREA: '/api/business-profile/service-area',
   /** Public: customer submits “request quote” from profile. */
   PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
   /** Owner: list quotes or create and send a new quote. */

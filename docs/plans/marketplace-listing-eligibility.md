@@ -1,7 +1,10 @@
 # Marketplace Listing Eligibility Checklist
 
 Status: Spec only (no UI yet)  
-Last updated: July 20, 2026
+Last updated: July 21, 2026
+
+**Related:** Service area collection is shipping now; public discovery stays
+behind `MARKETPLACE_PUBLIC_ENABLED`. See `docs/service-area-collection.md`.
 
 ## Goal
 
@@ -30,11 +33,11 @@ Do **not** invent a separate “Verified” badge for V1.
 
 Recommended later:
 
-| Signal | Meaning | When to show |
-| --- | --- | --- |
-| Pro | Paying / serious operator | While Pro entitlement is active |
-| Service area confirmed | Location + radius saved | After service area exists |
-| Active | Recent bookings or recent login | Optional later anti-ghost rule |
+| Signal                 | Meaning                         | When to show                    |
+| ---------------------- | ------------------------------- | ------------------------------- |
+| Pro                    | Paying / serious operator       | While Pro entitlement is active |
+| Service area confirmed | Location + radius saved         | After service area exists       |
+| Active                 | Recent bookings or recent login | Optional later anti-ghost rule  |
 
 V1 trust can simply be:
 

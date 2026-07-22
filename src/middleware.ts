@@ -1,4 +1,5 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
+import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
 import {
   isProAccess,
   needsPaidProResubscribeForDashboard,
@@ -13,6 +14,21 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   });
+
+  const pathname = request.nextUrl.pathname;
+
+  // Marketplace discovery is off by default until MARKETPLACE_PUBLIC_ENABLED=true.
+  if (!isMarketplacePublicEnabled()) {
+    if (pathname === ROUTES.FIND_DETAILERS) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    if (pathname.startsWith('/api/public/marketplace')) {
+      return NextResponse.json(
+        { success: false, error: 'Not found' },
+        { status: 404 }
+      );
+    }
+  }
 
   // MVP LAUNCH MODE: All routes enabled
   const supabase = createSupabaseMiddlewareClient(
@@ -79,7 +95,6 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/auth') ||
     request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname === '/signup';
-  const pathname = request.nextUrl.pathname;
   const requiresAuth = AUTH_REQUIRED_PATH_PREFIXES.some(
     prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );

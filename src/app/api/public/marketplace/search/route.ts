@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
 import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusinessProfileLive';
 import { MEDIA_CONFIG } from '@/features/media/media.types';
 import type {
@@ -65,6 +66,16 @@ function publicStorageUrl(
 }
 
 export async function GET(request: NextRequest) {
+  if (!isMarketplacePublicEnabled()) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Not found',
+      } satisfies MarketplaceSearchResponse,
+      { status: 404 }
+    );
+  }
+
   const rateLimited = await assertPublicMarketplaceSearchRateLimit(request);
   if (rateLimited) return rateLimited;
 

@@ -1,6 +1,14 @@
 'use client';
 
 import { Button, Modal, Select } from '@/components/shared';
+import {
+  buildServiceAreaPayload,
+  savePrimaryServiceArea,
+} from '@/features/business-profile/api/savePrimaryServiceArea';
+import {
+  SERVICE_AREA_PROMPT_DISMISSIBLE,
+  serviceAreaSessionSkipKey,
+} from '@/features/business-profile/constants/serviceAreaPrompt';
 import { LocationAutocomplete } from '@/features/location/components/LocationAutocomplete';
 import type { StructuredLocation } from '@/features/location/types/location';
 import React, { useEffect, useState } from 'react';
@@ -21,32 +29,49 @@ const SERVICE_RADIUS_OPTIONS = [
 
 interface BusinessLocationRequiredModalProps {
   businessProfileId: string;
-  initialServiceArea?: string | null;
-  initialZip?: string | null;
+  /** When true, owner already confirmed a primary service area in the DB. */
+  hasConfirmedServiceArea: boolean;
 }
 
 export function BusinessLocationRequiredModal({
   businessProfileId,
-  initialServiceArea,
-  initialZip,
+  hasConfirmedServiceArea,
 }: BusinessLocationRequiredModalProps) {
-  const storageKey = `servicelink:business-location:${businessProfileId}:ui-v2`;
+  const skipKey = serviceAreaSessionSkipKey(businessProfileId);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [locationQuery, setLocationQuery] = useState(
-    [initialServiceArea, initialZip].filter(Boolean).join(' ')
-  );
+  // Always start blank — do not prefill legacy service_area / business_zip.
+  const [locationQuery, setLocationQuery] = useState('');
   const [selectedLocation, setSelectedLocation] =
     useState<StructuredLocation | null>(null);
   const [radius, setRadius] = useState('25');
   const [locationError, setLocationError] = useState<string>();
   const [radiusError, setRadiusError] = useState<string>();
+  const [submitError, setSubmitError] = useState<string>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setIsOpen(window.localStorage.getItem(storageKey) === null);
-  }, [storageKey]);
+    if (hasConfirmedServiceArea) {
+      setIsOpen(false);
+      return;
+    }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (SERVICE_AREA_PROMPT_DISMISSIBLE) {
+      const skippedThisSession = window.sessionStorage.getItem(skipKey) === '1';
+      setIsOpen(!skippedThisSession);
+      return;
+    }
+
+    setIsOpen(true);
+  }, [hasConfirmedServiceArea, skipKey]);
+
+  const handleSkip = () => {
+    if (!SERVICE_AREA_PROMPT_DISMISSIBLE) return;
+    window.sessionStorage.setItem(skipKey, '1');
+    setIsOpen(false);
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextLocationError = selectedLocation
@@ -56,22 +81,24 @@ export function BusinessLocationRequiredModal({
 
     setLocationError(nextLocationError);
     setRadiusError(nextRadiusError);
+    setSubmitError(undefined);
     if (!selectedLocation || nextLocationError || nextRadiusError) return;
 
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        city: selectedLocation.city,
-        state: selectedLocation.state,
-        zip: selectedLocation.zip,
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
-        locationPlaceId: selectedLocation.providerId,
-        radiusMiles: Number(radius),
-        confirmedAt: new Date().toISOString(),
-      })
-    );
-    setIsOpen(false);
+    setIsSubmitting(true);
+    try {
+      const result = await savePrimaryServiceArea(
+        buildServiceAreaPayload(selectedLocation, Number(radius))
+      );
+      if (!result.success) {
+        setSubmitError(result.error || 'Unable to save service area.');
+        return;
+      }
+
+      window.sessionStorage.removeItem(skipKey);
+      setIsOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -119,7 +146,7 @@ export function BusinessLocationRequiredModal({
               setLocationError(undefined);
             }}
             mode="service-origin"
-            placeholder="Search city, state, ZIP, or address"
+            placeholder="Search city, state, or ZIP"
             required
             error={locationError}
           />
@@ -139,8 +166,9 @@ export function BusinessLocationRequiredModal({
           />
 
           <p className="text-xs leading-5 text-zinc-500">
-            We&apos;ll use this service area to help nearby customers find you
-            in search.
+            City and state are enough for your service area. Add a ZIP if you
+            want a more specific center. We&apos;ll use this to help nearby
+            customers find you in search.
           </p>
         </div>
 
@@ -156,10 +184,34 @@ export function BusinessLocationRequiredModal({
           </div>
         )}
 
-        <div className="mt-auto pt-6">
-          <Button type="submit" variant="inverse" size="md" fullWidth>
+        <div className="mt-auto space-y-3 pt-6">
+          {submitError ? (
+            <p className="text-sm text-red-400" role="alert">
+              {submitError}
+            </p>
+          ) : null}
+          <Button
+            type="submit"
+            variant="inverse"
+            size="md"
+            fullWidth
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
             Confirm service area
           </Button>
+          {SERVICE_AREA_PROMPT_DISMISSIBLE ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              fullWidth
+              onClick={handleSkip}
+              disabled={isSubmitting}
+            >
+              I&apos;ll add it later
+            </Button>
+          ) : null}
         </div>
       </form>
     </Modal>

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  formatLocationSuggestionKind,
   hasMapTilerBrowserKey,
   searchMapTilerLocations,
 } from '../api/mapTilerGeocoding';
@@ -142,6 +143,7 @@ export function LocationAutocomplete({
     setActiveIndex(-1);
     setProviderError('');
     setHasCompletedSearch(false);
+    onChange(location.label);
     onSelect(location);
   };
 
@@ -242,7 +244,7 @@ export function LocationAutocomplete({
 
       {showSuggestions && (
         <div
-          className={`absolute top-full z-[80] mt-2 overflow-hidden rounded-[1.75rem] border border-black/10 bg-[#f4f1ea]/[0.98] shadow-[0_24px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 backdrop-blur-2xl sm:mt-3 ${dropdownPositionClasses}`}
+          className={`absolute top-full z-[80] mt-2 overflow-hidden rounded-xl border border-black/10 bg-[#f4f1ea]/[0.98] shadow-[0_24px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 backdrop-blur-2xl sm:mt-3 ${dropdownPositionClasses}`}
         >
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent"
@@ -268,7 +270,7 @@ export function LocationAutocomplete({
             className="relative max-h-[min(18rem,36dvh)] space-y-1 overflow-y-auto overscroll-contain px-2.5 pb-2.5 sm:max-h-[min(16rem,30dvh)]"
           >
             {isLoading && suggestions.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-[1.35rem] px-3 py-4">
+              <div className="flex items-center gap-3 rounded-lg px-3 py-4">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-black/[0.035]">
                   <MagnifyingGlassIcon className="h-4 w-4 animate-pulse text-zinc-500" />
                 </span>
@@ -283,14 +285,14 @@ export function LocationAutocomplete({
               </div>
             ) : providerError ? (
               <div
-                className="flex items-center gap-3 rounded-[1.35rem] border border-red-200 bg-red-50/80 px-3 py-3.5"
+                className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50/80 px-3 py-3.5"
                 role="alert"
               >
                 <ExclamationCircleIcon className="h-5 w-5 shrink-0 text-red-500" />
                 <span className="text-sm text-red-700">{providerError}</span>
               </div>
             ) : suggestions.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-[1.35rem] px-3 py-4">
+              <div className="flex items-center gap-3 rounded-lg px-3 py-4">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-black/[0.03]">
                   <MapPinIcon className="h-4 w-4 text-zinc-500" />
                 </span>
@@ -314,7 +316,7 @@ export function LocationAutocomplete({
                   onMouseDown={event => event.preventDefault()}
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => pickLocation(location)}
-                  className={`group/option flex min-h-[58px] w-full cursor-pointer items-center gap-3 rounded-[1.35rem] border px-3 py-2.5 text-left transition-all duration-150 sm:min-h-[62px] ${
+                  className={`group/option flex min-h-[58px] w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all duration-150 sm:min-h-[62px] ${
                     activeIndex === index
                       ? 'border-zinc-950 bg-zinc-950 shadow-lg shadow-black/20'
                       : 'border-transparent hover:border-zinc-950 hover:bg-zinc-950 hover:shadow-lg hover:shadow-black/15'
@@ -339,19 +341,8 @@ export function LocationAutocomplete({
                             : 'text-zinc-950 group-hover/option:text-white'
                         }`}
                       >
-                        {location.city}, {location.state}
+                        {location.label}
                       </span>
-                      {location.zip && (
-                        <span
-                          className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide transition-colors ${
-                            activeIndex === index
-                              ? 'border-white/15 bg-white/10 text-zinc-300'
-                              : 'border-black/[0.08] bg-black/[0.035] text-zinc-500 group-hover/option:border-white/15 group-hover/option:bg-white/10 group-hover/option:text-zinc-300'
-                          }`}
-                        >
-                          {location.zip}
-                        </span>
-                      )}
                     </span>
                     <span
                       className={`mt-1 block truncate text-xs transition-colors ${
@@ -360,7 +351,7 @@ export function LocationAutocomplete({
                           : 'text-zinc-500 group-hover/option:text-zinc-400'
                       }`}
                     >
-                      {location.label}
+                      {formatLocationSuggestionKind(location.placeType)}
                     </span>
                   </span>
 

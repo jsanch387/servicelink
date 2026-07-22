@@ -1,7 +1,10 @@
+import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
 import { MarketplacePage } from '@/features/marketplace';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
+const marketplacePublicEnabled = isMarketplacePublicEnabled();
 
 export const metadata: Metadata = {
   title: 'Find Detailers Near You | Auto Detailing Services',
@@ -24,5 +27,9 @@ export const metadata: Metadata = {
 };
 
 export default function MarketplaceRoutePage() {
+  if (!marketplacePublicEnabled) {
+    notFound();
+  }
+
   return <MarketplacePage />;
 }

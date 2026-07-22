@@ -113,6 +113,34 @@ function stateAbbreviation(item?: MapTilerHierarchyItem): string {
   return US_STATE_ABBREVIATIONS[item.text] ?? '';
 }
 
+function formatLocationDisplayLabel(
+  city: string,
+  state: string,
+  zip: string
+): string {
+  const cityState = `${city}, ${state}`;
+  return zip ? `${cityState} ${zip}` : cityState;
+}
+
+/** User-facing suggestion hint — never show MapTiler jargon like "municipality". */
+export function formatLocationSuggestionKind(placeType: string): string {
+  switch (placeType) {
+    case 'postal_code':
+      return 'ZIP code';
+    case 'address':
+      return 'Address';
+    case 'neighborhood':
+    case 'neighbourhood':
+      return 'Neighborhood';
+    case 'place':
+    case 'municipality':
+    case 'locality':
+    case 'municipal_district':
+    default:
+      return 'City';
+  }
+}
+
 function mapFeature(feature: MapTilerFeature): StructuredLocation | null {
   const cityItem = findHierarchyItem(feature, [
     'place',
@@ -137,10 +165,13 @@ function mapFeature(feature: MapTilerFeature): StructuredLocation | null {
     return null;
   }
 
+  const displayLabel = formatLocationDisplayLabel(city, state, zip);
+
   return {
     providerId: feature.id,
-    label: feature.place_name,
-    searchValue: zip || `${city}, ${state}`,
+    // What the user clicked / what the input should show (not MapTiler place_name).
+    label: displayLabel,
+    searchValue: displayLabel,
     city,
     state,
     zip,
@@ -151,11 +182,7 @@ function mapFeature(feature: MapTilerFeature): StructuredLocation | null {
 }
 
 function getMapTilerBrowserKey(): string {
-  return (
-    process.env.NEXT_PUBLIC_MAPTILER_API_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim() ||
-    ''
-  );
+  return process.env.NEXT_PUBLIC_MAPTILER_API_KEY?.trim() || '';
 }
 
 export function hasMapTilerBrowserKey(): boolean {
@@ -233,7 +260,8 @@ export async function searchMapTilerLocations(
     language: 'en',
     autocomplete: 'true',
     limit: '5',
-    types: 'place,municipality,locality,postal_code,address',
+    // Prefer city / ZIP centers for service areas (not street addresses).
+    types: 'place,municipality,locality,postal_code',
   });
   const locations = await fetchMapTilerLocations(
     encodeURIComponent(query.trim()),

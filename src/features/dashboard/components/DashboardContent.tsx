@@ -37,6 +37,8 @@ interface DashboardData {
     created_at: string;
     updated_at: string;
   };
+  /** True when a primary row exists in `business_service_areas`. */
+  hasConfirmedServiceArea: boolean;
   slugData: {
     hasSlug: boolean;
     slug?: string;
@@ -98,8 +100,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     <main className="flex-1 pt-5 pb-24 sm:pt-6 sm:pb-8 lg:pt-8 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
       <BusinessLocationRequiredModal
         businessProfileId={businessProfile.id}
-        initialServiceArea={businessProfile.service_area}
-        initialZip={businessProfile.business_zip}
+        hasConfirmedServiceArea={dashboardData.hasConfirmedServiceArea}
       />
       <div className="max-w-6xl mx-auto w-full min-w-0">
         {/* Header */}

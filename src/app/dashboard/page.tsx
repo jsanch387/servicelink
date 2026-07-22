@@ -248,6 +248,17 @@ export default async function DashboardPage() {
       const legacyRequestBookingEnabled =
         profile.legacy_request_booking_enabled === true;
 
+      // Primary confirmed service area (collection prompt skips when present)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: primaryServiceArea } = await (supabase as any)
+        .from('business_service_areas')
+        .select('id')
+        .eq('business_profile_id', profile.id)
+        .eq('is_primary', true)
+        .eq('is_active', true)
+        .maybeSingle();
+      const hasConfirmedServiceArea = Boolean(primaryServiceArea?.id);
+
       // Prepare dashboard data
       const dashboardData = {
         businessProfile: {
@@ -260,6 +271,7 @@ export default async function DashboardPage() {
           created_at: profile.created_at,
           updated_at: profile.updated_at,
         },
+        hasConfirmedServiceArea,
         slugData: hasSlug
           ? {
               hasSlug: true,
