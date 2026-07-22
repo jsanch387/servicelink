@@ -23,7 +23,17 @@ Phase 2 adds Stripe **Tap to Pay on iPhone** to the mobile Complete sheet:
 | `POST` | `/api/payments/tap-to-pay/connection-token`                   | `payments/tap-to-pay/connection-token/route.ts` (merchant warm-up) |
 | `POST` | `/api/availability/bookings/{id}/tap-to-pay/connection-token` | `connection-token/route.ts`                                        |
 | `POST` | `/api/availability/bookings/{id}/tap-to-pay/intent`           | `intent/route.ts`                                                  |
+| `POST` | `/api/availability/bookings/{id}/tap-to-pay/client-event`     | `client-event/route.ts` → `recordTapToPayClientEvent.ts`           |
 | `POST` | `/api/availability/bookings/{id}/actions`                     | `handleJobCompletedAction.ts` (PI verify)                          |
+
+### Client diagnostic events
+
+`POST …/tap-to-pay/client-event` — best-effort mobile report after Tap to Pay success or failure. No Stripe calls. Updates `booking_tap_to_pay_intents` client_* columns when `paymentIntentId` matches a row for that booking + business.
+
+- Auth: same Bearer JWT as intent / connection-token
+- Missing or orphan `paymentIntentId` → `200 { success: true, updated: false }` (never 500)
+- Match → sets `client_stage`, `client_diagnostics`, `client_duration_ms`, bumps `client_report_count`; failure also sets `client_error_*`; success sets `client_success_at` without clearing prior errors
+- Handler: `recordTapToPayClientEvent.ts`
 
 ### Merchant warm-up connection token
 
@@ -77,6 +87,7 @@ Intent success response includes `terminalLocationId`, `stripeAccountId`, and `m
 | ------------------------- | --------------------------------------------------------------------------------- |
 | Shared types              | `tapToPayTypes.ts`                                                                |
 | Auth                      | `resolveTapToPayRouteAuth.ts`                                                     |
+| Client diagnostics        | `recordTapToPayClientEvent.ts`                                                    |
 | Preconditions             | `resolveTapToPayBookingContext.ts`                                                |
 | Terminal Location         | `ensureTerminalLocation.ts`, `buildTerminalLocationAddress.ts` (payments feature) |
 | Connection token body     | `parseTapToPayConnectionTokenBody.ts`                                             |
