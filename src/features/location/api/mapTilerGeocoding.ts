@@ -142,11 +142,12 @@ export function formatLocationSuggestionKind(placeType: string): string {
 }
 
 function mapFeature(feature: MapTilerFeature): StructuredLocation | null {
+  // Prefer locality/municipality over broader "place" (e.g. Pflugerville vs Austin metro).
   const cityItem = findHierarchyItem(feature, [
-    'place',
-    'municipality',
     'locality',
+    'municipality',
     'municipal_district',
+    'place',
   ]);
   const regionItem = findHierarchyItem(feature, ['region']);
   const zipItem = findHierarchyItem(feature, ['postal_code']);
@@ -288,27 +289,117 @@ export async function reverseGeocodeMapTilerLocation(
 
   const roundedLat = Math.round(latitude * 1000) / 1000;
   const roundedLng = Math.round(longitude * 1000) / 1000;
-  const cacheKey = `reverse:${roundedLat},${roundedLng}`;
+  // v4: prefer ZIP's canonical city (78660 → Pflugerville) over municipal edge cases.
+  const cacheKey = `reverse:v4:${roundedLat},${roundedLng}`;
   const cachedLocations = getCachedLocations(cacheKey);
   if (cachedLocations?.[0]) return cachedLocations[0];
 
-  const params = new URLSearchParams({
-    key: apiKey,
-    country: 'us',
-    language: 'en',
-    limit: '1',
-    types: 'postal_code,place,municipality,locality',
-  });
-  const locations = await fetchMapTilerLocations(
-    `${roundedLng},${roundedLat}`,
-    params,
-    signal
-  );
-  const location = locations[0];
-  if (!location) {
-    throw new Error('We could not find a city near your location.');
+  const path = `${roundedLng},${roundedLat}`;
+
+  // MapTiler reverse: one `types` value per request.
+  const [postalResults, municipalityResults] = await Promise.all([
+    fetchMapTilerLocations(
+      path,
+      new URLSearchParams({
+        key: apiKey,
+        country: 'us',
+        language: 'en',
+        limit: '1',
+        types: 'postal_code',
+      }),
+      signal
+    ),
+    fetchMapTilerLocations(
+      path,
+      new URLSearchParams({
+        key: apiKey,
+        country: 'us',
+        language: 'en',
+        limit: '1',
+        types: 'municipality',
+      }),
+      signal
+    ),
+  ]);
+
+  const postal = postalResults[0] ?? null;
+  const municipality = municipalityResults[0] ?? null;
+
+  // ZIP polygons can span cities (e.g. 78660 touches Austin + Pflugerville).
+  // Forward-geocode the ZIP for the city people associate with that mail code.
+  if (postal?.zip) {
+    const zipCanonical = await fetchMapTilerLocations(
+      encodeURIComponent(postal.zip),
+      new URLSearchParams({
+        key: apiKey,
+        country: 'us',
+        language: 'en',
+        limit: '1',
+        types: 'postal_code',
+        autocomplete: 'false',
+      }),
+      signal
+    );
+    const fromZip = zipCanonical[0];
+    if (fromZip?.city && fromZip.state) {
+      const merged: StructuredLocation = {
+        ...fromZip,
+        zip: postal.zip,
+        label: formatLocationDisplayLabel(
+          fromZip.city,
+          fromZip.state,
+          postal.zip
+        ),
+        searchValue: formatLocationDisplayLabel(
+          fromZip.city,
+          fromZip.state,
+          postal.zip
+        ),
+        // Keep the device point for future distance sorting.
+        latitude,
+        longitude,
+      };
+      cacheLocations(cacheKey, [merged]);
+      return merged;
+    }
   }
 
-  cacheLocations(cacheKey, [location]);
-  return location;
+  if (municipality) {
+    const zip = postal?.zip || municipality.zip || '';
+    const merged: StructuredLocation = {
+      ...municipality,
+      zip,
+      label: formatLocationDisplayLabel(
+        municipality.city,
+        municipality.state,
+        zip
+      ),
+      searchValue: formatLocationDisplayLabel(
+        municipality.city,
+        municipality.state,
+        zip
+      ),
+      latitude,
+      longitude,
+    };
+    cacheLocations(cacheKey, [merged]);
+    return merged;
+  }
+
+  if (postal) {
+    cacheLocations(cacheKey, [
+      {
+        ...postal,
+        latitude,
+        longitude,
+      },
+    ]);
+    return {
+      ...postal,
+      latitude,
+      longitude,
+    };
+  }
+
+  throw new Error('We could not find a city near your location.');
 }

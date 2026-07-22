@@ -13,6 +13,8 @@ export interface MarketplaceBusiness {
   locationMode: string;
   logoUrl: string | null;
   bannerUrl: string | null;
+  /** Up to 3 portfolio image URLs, ordered by gallery position. */
+  portfolioUrls: string[];
   services: MarketplaceServiceSummary[];
   rating: number | null;
   reviewCount: number;

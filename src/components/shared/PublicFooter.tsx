@@ -5,11 +5,14 @@ import { Logo } from './Logo';
 interface PublicFooterProps {
   tagline?: string;
   compact?: boolean;
+  /** When true, include a link to the public marketplace hub. */
+  showFindDetailers?: boolean;
 }
 
 export function PublicFooter({
   tagline = 'Built for the Pros',
   compact = false,
+  showFindDetailers = false,
 }: PublicFooterProps) {
   return (
     <footer
@@ -50,51 +53,62 @@ export function PublicFooter({
             compact ? 'gap-3 sm:gap-4' : 'gap-4 sm:gap-6 sm:text-sm'
           }`}
         >
+          {showFindDetailers ? (
+            <>
+              <Link
+                href={ROUTES.FIND_DETAILERS}
+                className="cursor-pointer transition-colors hover:text-white"
+              >
+                Find detailers
+              </Link>
+              <span className="text-gray-600">•</span>
+            </>
+          ) : null}
           <Link
             href={ROUTES.WORKSHOP}
-            className="transition-colors hover:text-white"
+            className="cursor-pointer transition-colors hover:text-white"
           >
             Workshop
           </Link>
           <span className="text-gray-600">•</span>
           <Link
             href={ROUTES.FEATURES_PAGE}
-            className="transition-colors hover:text-white"
+            className="cursor-pointer transition-colors hover:text-white"
           >
             Features
           </Link>
           <span className="text-gray-600">•</span>
           <Link
             href={ROUTES.PRICING_PAGE}
-            className="transition-colors hover:text-white"
+            className="cursor-pointer transition-colors hover:text-white"
           >
             Pricing
           </Link>
           <span className="text-gray-600">•</span>
           <Link
             href={ROUTES.RESOURCES}
-            className="transition-colors hover:text-white"
+            className="cursor-pointer transition-colors hover:text-white"
           >
             Resources
           </Link>
           <span className="text-gray-600">•</span>
           <Link
             href={ROUTES.CONTACT_PAGE}
-            className="transition-colors hover:text-white"
+            className="cursor-pointer transition-colors hover:text-white"
           >
             Contact
           </Link>
           <span className="text-gray-600">•</span>
           <Link
             href={ROUTES.TERMS}
-            className="transition-colors hover:text-white"
+            className="cursor-pointer transition-colors hover:text-white"
           >
             Terms of Service
           </Link>
           <span className="text-gray-600">•</span>
           <Link
             href={ROUTES.PRIVACY}
-            className="transition-colors hover:text-white"
+            className="cursor-pointer transition-colors hover:text-white"
           >
             Privacy Policy
           </Link>

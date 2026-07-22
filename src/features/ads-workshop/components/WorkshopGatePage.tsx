@@ -3,7 +3,7 @@
 import { ModernLoadingSpinner } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { Navigation } from '@/features/landing-page/components/Navigation';
+import { MarketingNavigation } from '@/features/landing-page/components/MarketingNavigation';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -45,7 +45,7 @@ export function WorkshopGatePage() {
 
   return (
     <div className="min-h-[100dvh] bg-[var(--dashboard-bg)] flex flex-col">
-      <Navigation />
+      <MarketingNavigation />
       <div className="h-14 sm:h-20 shrink-0" aria-hidden />
 
       <main className="flex-1 w-full max-w-lg sm:max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-10 md:py-14 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">

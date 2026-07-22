@@ -1,31 +1,31 @@
 # Marketplace Listing Eligibility Checklist
 
-Status: Spec only (no UI yet)  
-Last updated: July 21, 2026
+Status: Partially shipped (V1 live behind `MARKETPLACE_PUBLIC_ENABLED`)  
+Last updated: July 22, 2026
 
-**Related:** Service area collection is shipping now; public discovery stays
-behind `MARKETPLACE_PUBLIC_ENABLED`. See `docs/service-area-collection.md`.
+**Canonical feature docs:** `src/features/marketplace/docs/`  
+(FLOWS + SEARCH_AND_DATA). Prefer those for how search works today.
+
+**Related:** Service area collection — `docs/service-area-collection.md`.
 
 ## Goal
 
-Define who can appear in customer search (`/find-detailers`) before we add
-marketplace opt-in UI. Keep V1 light and trustworthy.
+Define who can appear in customer search (`/find-detailers`). Keep V1 light and trustworthy.
 
-## V1 listing rule (recommended)
+## V1 listing rule (shipped)
 
 A business may appear in marketplace search when **all** of the following are true:
 
 1. **Has an account** — owned `business_profiles` row linked to an auth user.
-2. **Pro / paid** — current Pro entitlement (paying or active trial if we allow it).
-3. **Public profile live** — existing `isPublicBusinessProfileLive` rules still pass
-   (slug, active services, subscription status, etc.).
-4. **Service area saved** — primary row in `business_service_areas` with city,
-   state, center point, and radius.
-5. **At least one active service** — bookable service exists.
-6. **Marketplace opt-in** — owner explicitly enables “Show me to nearby customers”
-   (separate from saving location).
+2. **Pro / paid** — current Pro entitlement (`isProAccess`).
+3. **Public profile live** — `isPublicBusinessProfileLive` rules pass.
+4. **At least one active service** — bookable service exists.
+5. **Location match** — primary `business_service_areas` within radius **or** legacy `service_area` / ZIP text match.
+6. **Not denylisted** — owner Auth email not in `marketplaceListingDenylist`.
 
-If any check fails → hide from search. Do not soft-show incomplete profiles.
+**Not required in shipped V1:** marketplace opt-in toggle. Eligible Pros are auto-included.
+
+If any check fails → hide from search.
 
 ## Verified badge (deferred)
 
@@ -39,25 +39,27 @@ Recommended later:
 | Service area confirmed | Location + radius saved         | After service area exists       |
 | Active                 | Recent bookings or recent login | Optional later anti-ghost rule  |
 
-V1 trust can simply be:
+V1 trust:
 
 - Only Pro businesses are eligible to list
 - Rating + review count on cards when available
 - No fake “Verified” checkmark until the rules above are productized
+- No Pro badge on marketplace cards (all listed are Pro)
 
 Open question: should Free users ever list? Default for launch: **No — Pro only**.
 
 ## Account / activity checklist
 
-### Required for listing (V1)
+### Required for listing (shipped V1)
 
-- [ ] Auth account exists
-- [ ] Business profile exists
-- [ ] Pro entitlement active
-- [ ] Public booking profile is live
-- [ ] Primary service area saved
-- [ ] Marketplace opt-in enabled
-- [ ] ≥ 1 active service
+- [x] Auth account exists
+- [x] Business profile exists
+- [x] Pro entitlement active
+- [x] Public booking profile is live
+- [x] Location match (BSA radius and/or legacy text)
+- [ ] Marketplace opt-in enabled ← **deferred**; auto-include for now
+- [x] ≥ 1 active service
+- [x] Manual denylist for test accounts
 
 ### Nice-to-have later (not blockers)
 
@@ -70,26 +72,24 @@ Open question: should Free users ever list? Default for launch: **No — Pro onl
 ## How someone gets listed (product flow)
 
 1. Sign up / log in
-2. Complete required service area (city/state + radius) — web + mobile
-3. Keep Pro active
-4. Enable marketplace listing (future toggle)
-5. Appear in `/find-detailers` search for customers in range
+2. Complete required service area (city/state + radius) — web + mobile (recommended; legacy text still works)
+3. Keep Pro active + public profile live + ≥ 1 service
+4. ~~Enable marketplace listing~~ — **not yet**; Pros appear automatically when matching
+5. Appear in `/find-detailers` for customers in range (or legacy city text)
 
-Location collection and listing opt-in stay separate:
-
-- Saving a service area does **not** auto-list the business
-- Opt-in does **not** skip Pro / live-profile / service-area checks
+Future: keep location collection and listing opt-in separate when opt-in ships.
 
 ## Anti-spam / quality notes
 
-- Rate-limit public search (already in place)
+- Rate-limit public search (in place)
 - Prefer Pro-only listing for launch quality
+- Manual Auth-email denylist for test/sandbox businesses
 - Later: pause listings with no activity for 60–90 days and ask for reconfirm
 - Never expose private mobile home coordinates in public APIs
 
-## Implementation notes (when we build it)
+## Implementation notes (future opt-in)
 
 - Add boolean on business profile or listings table, e.g. `marketplace_listed_at`
-- Search API filters: Pro + live + service area + opt-in
+- Search API filters: Pro + live + location + **opt-in**
 - Dashboard copy: “Show me to nearby customers”
 - No badge UI until eligibility rules are live and stable

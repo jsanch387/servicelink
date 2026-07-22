@@ -15,6 +15,9 @@ export const ROUTES = {
   FEATURES_PAGE: '/features',
   PRICING_PAGE: '/pricing',
   FIND_DETAILERS: '/find-detailers',
+  /** City SEO page; use getFindDetailersCityPath(slug). */
+  FIND_DETAILERS_CITY: (citySlug: string) =>
+    `/find-detailers/${encodeURIComponent(citySlug.trim().toLowerCase())}`,
 
   // Public content (guides, blogs, SEO)
   RESOURCES: '/resources',
@@ -399,6 +402,13 @@ export function getPublicBusinessProfilePath(
   const lang = options?.lang;
   if (!lang || lang === DEFAULT_PUBLIC_BOOKING_FLOW_LOCALE) return base;
   return `${base}?${PUBLIC_BOOKING_FLOW_LANG_QUERY}=${lang}`;
+}
+
+/** Marketplace city SEO page `/find-detailers/{city-slug}`. */
+export function getFindDetailersCityPath(citySlug: string): string {
+  const slug = citySlug.trim().toLowerCase();
+  if (!slug) return ROUTES.FIND_DETAILERS;
+  return ROUTES.FIND_DETAILERS_CITY(slug);
 }
 
 /** Public “request quote” wizard `/{slug}/quote` — adds `?lang=` for non-default locales. */

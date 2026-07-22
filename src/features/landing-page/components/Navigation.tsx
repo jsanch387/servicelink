@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
   Bars3Icon,
   CurrencyDollarIcon,
+  MagnifyingGlassIcon,
   Squares2X2Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -34,15 +35,33 @@ const PRODUCT_LINKS = [
   },
 ] as const;
 
+const FIND_DETAILERS_LINK = {
+  label: 'Find detailers',
+  href: ROUTES.FIND_DETAILERS,
+  description: 'Browse local detailing near you',
+  icon: MagnifyingGlassIcon,
+} as const;
+
 const MENU_ANIMATION_MS = 300;
 
-export const Navigation: React.FC = () => {
+interface NavigationProps {
+  /** When true, show a link to the public marketplace hub. */
+  showFindDetailers?: boolean;
+}
+
+export const Navigation: React.FC<NavigationProps> = ({
+  showFindDetailers = false,
+}) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileMenuMounted, setIsMobileMenuMounted] = useState(false);
   const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
   const { isAuthenticated, isInitialized } = useAuth();
   const pathname = usePathname();
+
+  const productLinks = showFindDetailers
+    ? [FIND_DETAILERS_LINK, ...PRODUCT_LINKS]
+    : PRODUCT_LINKS;
 
   useEffect(() => {
     setPortalReady(true);
@@ -124,7 +143,7 @@ export const Navigation: React.FC = () => {
                   Product
                 </p>
                 <ul className="space-y-0.5">
-                  {PRODUCT_LINKS.map(item => {
+                  {productLinks.map(item => {
                     const Icon = item.icon;
                     return (
                       <li key={item.href}>
@@ -207,6 +226,11 @@ export const Navigation: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+            {showFindDetailers ? (
+              <Link href={ROUTES.FIND_DETAILERS} className={navLinkClass}>
+                Find detailers
+              </Link>
+            ) : null}
             <Link href={ROUTES.FEATURES_PAGE} className={navLinkClass}>
               Features
             </Link>

@@ -19,7 +19,10 @@ export async function middleware(request: NextRequest) {
 
   // Marketplace discovery is off by default until MARKETPLACE_PUBLIC_ENABLED=true.
   if (!isMarketplacePublicEnabled()) {
-    if (pathname === ROUTES.FIND_DETAILERS) {
+    if (
+      pathname === ROUTES.FIND_DETAILERS ||
+      pathname.startsWith(`${ROUTES.FIND_DETAILERS}/`)
+    ) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     if (pathname.startsWith('/api/public/marketplace')) {
