@@ -13,6 +13,7 @@ type DashboardProfileRow = {
   business_name: string;
   business_type: string | null;
   service_area: string | null;
+  business_zip: string | null;
   bio: string | null;
   created_at: string;
   updated_at: string;
@@ -180,7 +181,7 @@ export default async function DashboardPage() {
         .from('business_profiles')
         .select(
           `
-          id, business_name, business_type, service_area, bio, created_at, updated_at,
+          id, business_name, business_type, service_area, business_zip, bio, created_at, updated_at,
           business_slug, business_link, legacy_request_booking_enabled,
           free_bookings_count,
           services:business_services(count),
@@ -247,6 +248,17 @@ export default async function DashboardPage() {
       const legacyRequestBookingEnabled =
         profile.legacy_request_booking_enabled === true;
 
+      // Primary confirmed service area (collection prompt skips when present)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: primaryServiceArea } = await (supabase as any)
+        .from('business_service_areas')
+        .select('id')
+        .eq('business_profile_id', profile.id)
+        .eq('is_primary', true)
+        .eq('is_active', true)
+        .maybeSingle();
+      const hasConfirmedServiceArea = Boolean(primaryServiceArea?.id);
+
       // Prepare dashboard data
       const dashboardData = {
         businessProfile: {
@@ -254,10 +266,12 @@ export default async function DashboardPage() {
           business_name: profile.business_name,
           business_type: profile.business_type,
           service_area: profile.service_area,
+          business_zip: profile.business_zip,
           bio: profile.bio,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
         },
+        hasConfirmedServiceArea,
         slugData: hasSlug
           ? {
               hasSlug: true,

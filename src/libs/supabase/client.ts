@@ -81,6 +81,68 @@ export type Database = {
           profile_welcome_modal_seen?: boolean;
         };
       };
+      business_service_areas: {
+        Row: {
+          id: string;
+          business_profile_id: string;
+          label: string;
+          city: string;
+          state_code: string;
+          postal_code: string | null;
+          country_code: string;
+          latitude: number;
+          longitude: number;
+          radius_miles: number;
+          place_type: string | null;
+          provider: string;
+          provider_place_id: string | null;
+          is_primary: boolean;
+          is_active: boolean;
+          verified_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_profile_id: string;
+          label: string;
+          city: string;
+          state_code: string;
+          postal_code?: string | null;
+          country_code?: string;
+          latitude: number;
+          longitude: number;
+          radius_miles: number;
+          place_type?: string | null;
+          provider?: string;
+          provider_place_id?: string | null;
+          is_primary?: boolean;
+          is_active?: boolean;
+          verified_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_profile_id?: string;
+          label?: string;
+          city?: string;
+          state_code?: string;
+          postal_code?: string | null;
+          country_code?: string;
+          latitude?: number;
+          longitude?: number;
+          radius_miles?: number;
+          place_type?: string | null;
+          provider?: string;
+          provider_place_id?: string | null;
+          is_primary?: boolean;
+          is_active?: boolean;
+          verified_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       business_profiles: {
         Row: {
           id: string;

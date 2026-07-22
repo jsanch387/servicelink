@@ -77,6 +77,9 @@ const profileIpRl: { current: Ratelimit | null | undefined } = {
 const profileIpSlugRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
+const marketplaceSearchIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
 const calendarFeedIcsIpRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
@@ -229,6 +232,21 @@ export async function assertPublicProfileGetRateLimits(
   if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;
+}
+
+/** GET /api/public/marketplace/search — public discovery; throttle scraping. */
+export async function assertPublicMarketplaceSearchRateLimit(
+  request: NextRequest
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const limiter = createLimiter(
+    marketplaceSearchIpRl,
+    'public_api:marketplace_search:ip',
+    240,
+    '1 h'
+  );
+  const result = await consume(limiter, `ip:${ip}`, 240, MS_HOUR);
+  return result.ok ? null : tooManyRequests(result.reset);
 }
 
 /**

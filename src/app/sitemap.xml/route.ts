@@ -1,11 +1,12 @@
 /**
  * Dynamic Sitemap Generation
  *
- * Generates a sitemap.xml file with all public pages: home, auth, legal,
- * resources (guides), and business profiles. Helps search engines and AI
- * crawlers discover and index content.
+ * Public marketing pages + **active Pro** business profiles only.
+ * Free / abandoned / churned accounts stay reachable via direct link but are
+ * omitted so Google crawl budget isn’t spent on thin tire-kicker pages.
  */
 
+import { isProAccess } from '@/features/pricing/utils/isProAccess';
 import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusinessProfileLive';
 import { GUIDES } from '@/features/resources';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -22,9 +23,49 @@ type IndexedSitemapProfile = SitemapBusinessProfileRow & {
   business_slug: string;
 };
 
+type SitemapOwnerRow = {
+  user_id: string;
+  onboarding_status: string | null;
+  subscription_tier: string | null;
+  subscription_current_period_end: string | null;
+  subscription_status: string | null;
+  stripe_subscription_id: string | null;
+  stripe_customer_id: string | null;
+};
+
+/** Keep `.in()` URL size under PostgREST limits (large UUID lists → 400 Bad Request). */
+const OWNER_LOOKUP_BATCH_SIZE = 100;
+
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate every hour
+
+async function fetchOwnersByUserId(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  ownerIds: string[]
+): Promise<Map<string, SitemapOwnerRow>> {
+  const ownersByUserId = new Map<string, SitemapOwnerRow>();
+
+  for (let i = 0; i < ownerIds.length; i += OWNER_LOOKUP_BATCH_SIZE) {
+    const batch = ownerIds.slice(i, i + OWNER_LOOKUP_BATCH_SIZE);
+    const { data: owners, error: ownersError } = await supabase
+      .from('profiles')
+      .select(
+        'user_id, onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+      )
+      .in('user_id', batch);
+
+    if (ownersError) {
+      throw ownersError;
+    }
+
+    for (const owner of (owners ?? []) as SitemapOwnerRow[]) {
+      ownersByUserId.set(owner.user_id, owner);
+    }
+  }
+
+  return ownersByUserId;
+}
 
 export async function GET() {
   try {
@@ -50,44 +91,43 @@ export async function GET() {
       ),
     ];
 
-    let ownersByUserId = new Map<string, Record<string, unknown>>();
+    let ownersByUserId = new Map<string, SitemapOwnerRow>();
     if (ownerIds.length > 0) {
-      const { data: owners, error: ownersError } = await supabase
-        .from('profiles')
-        .select(
-          'user_id, onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
-        )
-        .in('user_id', ownerIds);
-
-      if (ownersError) {
+      try {
+        ownersByUserId = await fetchOwnersByUserId(supabase, ownerIds);
+      } catch (ownersError) {
         console.error('Error fetching owners for sitemap:', ownersError);
         return new NextResponse('Error generating sitemap', { status: 500 });
       }
-
-      ownersByUserId = new Map(
-        (owners || []).map(o => [
-          (o as { user_id: string }).user_id,
-          o as Record<string, unknown>,
-        ])
-      );
     }
 
+    // Index only live Pro businesses (onboarding complete + current Pro access).
     const indexedProfiles = rows.filter((p): p is IndexedSitemapProfile => {
       const slug = p.business_slug;
       if (!slug?.trim()) return false;
       const pid = p.profile_id?.trim();
-      if (!pid) return true;
+      if (!pid) return false;
       const owner = ownersByUserId.get(pid);
       if (!owner) return false;
-      return isPublicBusinessProfileLive({
-        onboarding_status: owner.onboarding_status as string | null,
-        subscription_tier: owner.subscription_tier as string | null,
-        subscription_current_period_end:
-          owner.subscription_current_period_end as string | null,
-        subscription_status: owner.subscription_status as string | null,
-        stripe_subscription_id: owner.stripe_subscription_id as string | null,
-        stripe_customer_id: owner.stripe_customer_id as string | null,
-      });
+      if (
+        !isPublicBusinessProfileLive({
+          onboarding_status: owner.onboarding_status,
+          subscription_tier: owner.subscription_tier,
+          subscription_current_period_end: owner.subscription_current_period_end,
+          subscription_status: owner.subscription_status,
+          stripe_subscription_id: owner.stripe_subscription_id,
+          stripe_customer_id: owner.stripe_customer_id,
+        })
+      ) {
+        return false;
+      }
+      return isProAccess(
+        owner.subscription_tier,
+        owner.subscription_current_period_end,
+        owner.subscription_status,
+        owner.stripe_subscription_id,
+        owner.stripe_customer_id
+      );
     });
 
     const baseUrl =

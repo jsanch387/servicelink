@@ -12,6 +12,7 @@ import {
   useAnalytics,
   type DashboardLinkViewsPeriod,
 } from '@/features/analytics';
+import { BusinessLocationRequiredModal } from '@/features/business-profile/components/BusinessLocationRequiredModal';
 import {
   CreateLinkCard,
   LinkSharingCard,
@@ -31,10 +32,13 @@ interface DashboardData {
     business_name: string;
     business_type: string | null;
     service_area: string | null;
+    business_zip: string | null;
     bio: string | null;
     created_at: string;
     updated_at: string;
   };
+  /** True when a primary row exists in `business_service_areas`. */
+  hasConfirmedServiceArea: boolean;
   slugData: {
     hasSlug: boolean;
     slug?: string;
@@ -94,6 +98,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
   return (
     <main className="flex-1 pt-5 pb-24 sm:pt-6 sm:pb-8 lg:pt-8 lg:pb-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
+      <BusinessLocationRequiredModal
+        businessProfileId={businessProfile.id}
+        hasConfirmedServiceArea={dashboardData.hasConfirmedServiceArea}
+      />
       <div className="max-w-6xl mx-auto w-full min-w-0">
         {/* Header */}
         <div className="mb-5 sm:mb-6">
