@@ -111,12 +111,20 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages (except password reset:
   // recovery session is logged-in until they submit a new password; email-confirmed
-  // is a deliberate one-step UX after verify so users see success before dashboard.)
+  // is a deliberate one-step UX after verify so users see success before dashboard;
+  // auth/callback must run for OAuth + email-change PKCE while already logged in.)
   const isPasswordResetPage =
     request.nextUrl.pathname === ROUTES.AUTH.RESET_PASSWORD;
   const isEmailConfirmedPage =
     request.nextUrl.pathname === ROUTES.AUTH.EMAIL_CONFIRMED;
-  if (isAuthRoute && user && !isPasswordResetPage && !isEmailConfirmedPage) {
+  const isAuthCallbackPage = request.nextUrl.pathname === ROUTES.AUTH.CALLBACK;
+  if (
+    isAuthRoute &&
+    user &&
+    !isPasswordResetPage &&
+    !isEmailConfirmedPage &&
+    !isAuthCallbackPage
+  ) {
     return NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url));
   }
 

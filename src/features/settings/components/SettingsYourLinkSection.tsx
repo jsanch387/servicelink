@@ -120,11 +120,9 @@ export const SettingsYourLinkSection: React.FC<
         }}
       />
 
-      <div className="mb-3 flex items-center justify-between gap-3 min-w-0">
+      <div className="mb-2.5 flex items-center justify-between gap-3 min-w-0">
         <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-          <h2 className="text-lg sm:text-xl font-semibold text-white">
-            Your link
-          </h2>
+          <h2 className="text-base font-semibold text-white">Your link</h2>
           {!linkGenerated && (
             <RequiredLabel title="Add a link to share your profile" />
           )}

@@ -48,11 +48,9 @@ export const DeleteAccountSection: React.FC<DeleteAccountSectionProps> = ({
         onDeleted={handleDeleted}
       />
 
-      <section className="w-full min-w-0 space-y-4">
+      <section className="w-full min-w-0 space-y-3">
         {!embedded ? (
-          <h2 className="text-lg sm:text-xl font-semibold text-white">
-            Delete account
-          </h2>
+          <h2 className="text-base font-semibold text-white">Delete account</h2>
         ) : null}
         <GlassCard
           padding="none"

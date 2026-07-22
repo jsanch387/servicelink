@@ -18,10 +18,21 @@ export const dynamic = 'force-dynamic';
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{
+    checkout?: string;
+    email_notice?: string;
+    /** @deprecated Prefer `email_notice=updated` */
+    email_updated?: string;
+  }>;
 }) {
   const params = await searchParams;
   const checkoutSuccess = params?.checkout === 'success';
+  const emailNotice =
+    params?.email_notice === 'updated' || params?.email_notice === 'error'
+      ? params.email_notice
+      : params?.email_updated === '1'
+        ? ('updated' as const)
+        : null;
   try {
     const supabase = await createSupabaseServerClient();
 
@@ -147,6 +158,7 @@ export default async function SettingsPage({
       subscriptionBillingInterval,
       accountEmail: user.email ?? '',
       signedInWithGoogle,
+      pendingEmail: user.new_email ?? null,
     };
 
     return (
@@ -155,6 +167,7 @@ export default async function SettingsPage({
         businessProfile={businessProfile as any}
         settingsData={settingsData}
         checkoutSuccess={checkoutSuccess}
+        emailNotice={emailNotice}
       />
     );
   } catch {

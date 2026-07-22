@@ -26,4 +26,6 @@ export interface SettingsPageData {
   subscriptionBillingInterval?: BillingInterval | null;
   accountEmail?: string;
   signedInWithGoogle?: boolean;
+  /** Pending new email while Supabase email-change confirmation is outstanding. */
+  pendingEmail?: string | null;
 }

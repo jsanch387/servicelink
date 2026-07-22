@@ -28,7 +28,7 @@ Phase 2 adds Stripe **Tap to Pay on iPhone** to the mobile Complete sheet:
 
 ### Client diagnostic events
 
-`POST …/tap-to-pay/client-event` — best-effort mobile report after Tap to Pay success or failure. No Stripe calls. Updates `booking_tap_to_pay_intents` client_* columns when `paymentIntentId` matches a row for that booking + business.
+`POST …/tap-to-pay/client-event` — best-effort mobile report after Tap to Pay success or failure. No Stripe calls. Updates `booking_tap_to_pay_intents` client\_\* columns when `paymentIntentId` matches a row for that booking + business.
 
 - Auth: same Bearer JWT as intent / connection-token
 - Missing or orphan `paymentIntentId` → `200 { success: true, updated: false }` (never 500)

@@ -2,7 +2,10 @@
 
 Authenticated endpoints for the current user's ServiceLink account.
 
-Today this exposes a single destructive operation: **permanent account deletion**.
+| Method   | Purpose                                      |
+| -------- | -------------------------------------------- |
+| `DELETE` | Permanently delete the account               |
+| `PATCH`  | Request an email change (confirmation email) |
 
 The same endpoint is used by the Expo mobile app (Bearer auth) and the web Settings page (cookie auth). One implementation, two transports — see [`src/libs/api/getAuthenticatedUser.ts`](../../../libs/api/getAuthenticatedUser.ts).
 
@@ -25,6 +28,53 @@ The same endpoint is used by the Expo mobile app (Bearer auth) and the web Setti
 8. Spot-check **public** tables (optional): `profiles`, `business_profiles` for that user should be gone via cascades.
 
 **Phase 2 — Mobile (Expo)** — only after Phase 1 passes. Use the **Mobile app (Expo) implementation prompt** below.
+
+---
+
+## `PATCH /api/account` — request email change
+
+Starts an email change for the authenticated user via Supabase `auth.updateUser({ email })`. With **Secure email change** disabled in the Supabase project, only the **new** address must confirm; the address updates after that link is clicked.
+
+### Auth
+
+Same as delete: Bearer token (mobile) or cookie session (web).
+
+### Request body
+
+```json
+{ "newEmail": "new@example.com" }
+```
+
+### Responses
+
+| Status | `code`           | Meaning                                                |
+| ------ | ---------------- | ------------------------------------------------------ |
+| 200    | —                | Confirmation email sent. Body includes `pendingEmail`. |
+| 400    | `INVALID_BODY`   | Missing/invalid JSON or `newEmail`.                    |
+| 400    | `INVALID_EMAIL`  | `newEmail` failed validation.                          |
+| 400    | `SAME_EMAIL`     | New email matches the current one.                     |
+| 400    | `EMAIL_IN_USE`   | Another account already uses that email.               |
+| 400    | `UPDATE_FAILED`  | Supabase rejected the update (message in `error`).     |
+| 401    | `UNAUTHORIZED`   | Missing/invalid session.                               |
+| 429    | `RATE_LIMITED`   | 1 request / 60s per user and per IP.                   |
+| 500    | `INTERNAL_ERROR` | Unhandled server error.                                |
+
+After the user clicks the confirmation link, auth callback sends them to `/dashboard/settings?email_notice=updated` (or `email_notice=error` if confirmation fails).
+
+### Local testing (important)
+
+Confirmation emails use your **Supabase project** (often shared with production). If the `redirect_to` in the email link is `https://myservicelink.app` instead of `http://localhost:3000/auth/callback?...`, Supabase rejected the local URL and fell back to **Site URL**.
+
+1. Supabase Dashboard → **Authentication** → **URL Configuration**
+2. Under **Redirect URLs**, add:
+   - `http://localhost:3000/**`
+   - `http://127.0.0.1:3000/**`
+3. Keep Site URL as production (`https://myservicelink.app`) if you want.
+4. Request a **new** confirmation email from local Settings (wait ~60s if rate-limited).
+5. In the email link, confirm `redirect_to=` starts with `http://localhost:3000/auth/callback`.
+6. Click the link in the **same browser** you used for local login (PKCE).
+
+If a failed attempt already created a **second** auth user with the target email, delete that user in **Authentication → Users** before retrying, or you will get `EMAIL_IN_USE`.
 
 ---
 

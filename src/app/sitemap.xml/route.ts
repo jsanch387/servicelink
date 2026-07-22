@@ -113,7 +113,8 @@ export async function GET() {
         !isPublicBusinessProfileLive({
           onboarding_status: owner.onboarding_status,
           subscription_tier: owner.subscription_tier,
-          subscription_current_period_end: owner.subscription_current_period_end,
+          subscription_current_period_end:
+            owner.subscription_current_period_end,
           subscription_status: owner.subscription_status,
           stripe_subscription_id: owner.stripe_subscription_id,
           stripe_customer_id: owner.stripe_customer_id,
