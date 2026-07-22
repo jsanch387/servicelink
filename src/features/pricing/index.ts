@@ -49,3 +49,8 @@ export {
   isPublicBusinessProfileLive,
   type PublicProfileLiveOwnerFields,
 } from './utils/publicBusinessProfileLive';
+export {
+  checkActiveSubscriptions,
+  hasMultipleActiveSubscriptions,
+  type ActiveSubscriptionCheckResult,
+} from './server/checkActiveSubscriptions';

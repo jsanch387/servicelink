@@ -33,7 +33,15 @@ vi.mock('@/components/shared', () => ({
     disabled?: boolean;
   }) =>
     href ? (
-      <a href={href}>{children}</a>
+      <a
+        href={href}
+        onClick={event => {
+          event.preventDefault();
+          onClick?.();
+        }}
+      >
+        {children}
+      </a>
     ) : (
       <button type="button" onClick={onClick} disabled={disabled}>
         {children}
@@ -47,6 +55,13 @@ vi.mock('@/components/shared', () => ({
     <span>{label}</span>
   ),
 }));
+
+vi.mock(
+  '@/features/availability/booking/components/BookCalendarLoadingSkeleton',
+  () => ({
+    BookCalendarLoadingSkeleton: () => <div>calendar loading</div>,
+  })
+);
 
 vi.mock('@/features/services/booking-flow/PriceOptionSelector', () => ({
   PriceOptionSelector: ({
@@ -112,6 +127,29 @@ const priceOptions = [
 const addOns = [{ id: 'addon-1', name: 'Pet hair', priceCents: 3000 }];
 
 describe('ServiceDetailsScreen flow', () => {
+  it('keeps service details in the summary instead of repeating a header', () => {
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={baseService}
+        addOns={addOns}
+        priceOptions={priceOptions}
+      />
+    );
+
+    expect(
+      screen.getByRole('heading', { name: /choose pricing option/i })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole('heading', { name: baseService.name })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /see description/i })
+    ).toBeNull();
+    expect(screen.getByText('summary')).toBeTruthy();
+  });
+
   it('builds calendar URL with selected option, add-ons, and detailsStep=addons', async () => {
     const user = userEvent.setup();
     render(
@@ -157,6 +195,24 @@ describe('ServiceDetailsScreen flow', () => {
       'priceOptionId=opt-sedan'
     );
     expect(dateTimeLink.getAttribute('href')).toContain('detailsStep=price');
+  });
+
+  it('shows the calendar skeleton immediately after Date & Time is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={baseService}
+        addOns={[]}
+        priceOptions={priceOptions}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /pick sedan/i }));
+    await user.click(screen.getByRole('link', { name: /date & time/i }));
+
+    expect(screen.getByText('calendar loading')).toBeTruthy();
   });
 
   it('restores add-ons phase from calendar when detailsStep=addons is valid', () => {

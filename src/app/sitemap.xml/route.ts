@@ -142,14 +142,15 @@ export async function GET() {
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-${GUIDES.map(
-  guide => `  <url>
+${GUIDES.map(guide => {
+  const lastmod = guide.dateModified || guide.datePublished || currentDate;
+  return `  <url>
     <loc>${baseUrl}/resources/${guide.slug}</loc>
-    <lastmod>${currentDate}</lastmod>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-  </url>`
-).join('\n')}`;
+  </url>`;
+}).join('\n')}`;
 
     // Generate sitemap XML
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

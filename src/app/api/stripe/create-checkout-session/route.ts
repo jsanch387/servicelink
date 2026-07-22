@@ -22,6 +22,7 @@ import {
   findOpenInvoiceIdForSubscriptionResume,
   isSubscriptionResumableViaInvoice,
 } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
+import { checkActiveSubscriptions } from '@/features/pricing/server/checkActiveSubscriptions';
 import type { BillingInterval } from '@/features/pricing/types';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { getAppBaseUrl, getStripePlatform } from '@/libs/stripe';
@@ -33,7 +34,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
 type CheckoutRequestBody = {
-  source?: unknown;
   client?: unknown;
   billingInterval?: unknown;
 };
@@ -114,30 +114,17 @@ export async function POST(request: NextRequest) {
         ? profileRow.stripe_subscription_id.trim()
         : '';
 
-    const fromOnboarding =
-      body &&
-      typeof body === 'object' &&
-      body.source === 'onboarding_trial_bridge';
-    /** 7-day trial only for first Stripe customer; returning `cus_…` skips trial (same as paywall upgrade). */
-    const applyOnboardingTrial = fromOnboarding && !existingStripeCustomerId;
-
     onboardingStripeDebug('create-checkout', 'request', {
       userId: user.id,
       authMethod,
-      fromOnboarding,
-      applyOnboardingTrial,
       billingInterval,
       existingStripeCustomerIdSuffix: existingStripeCustomerId
         ? existingStripeCustomerId.slice(-8)
         : null,
     });
 
-    const successPath = fromOnboarding
-      ? '/dashboard/business-profile?onboarding=complete'
-      : '/dashboard/settings?checkout=success';
-    const cancelPath = fromOnboarding ? '/dashboard' : '/dashboard/upgrade';
-    const successUrl = `${baseUrl}${successPath}`;
-    const cancelUrl = `${baseUrl}${cancelPath}`;
+    const successUrl = `${baseUrl}/dashboard/settings?checkout=success`;
+    const cancelUrl = `${baseUrl}/dashboard/upgrade`;
 
     /** Prefer paying an open invoice on the existing subscription (card failed, Link retry, etc.). */
     if (existingStripeSubscriptionId) {
@@ -164,6 +151,9 @@ export async function POST(request: NextRequest) {
                 error: isHealthy
                   ? 'You already have an active subscription. Manage billing in Settings.'
                   : 'We could not start a payment for your current subscription. Open Billing in Settings to update your payment method.',
+                code: isHealthy
+                  ? 'DUPLICATE_SUBSCRIPTION_BLOCKED'
+                  : 'PAYMENT_RETRY_REQUIRED',
               },
               { status: isHealthy ? 400 : 409 }
             );
@@ -183,7 +173,7 @@ export async function POST(request: NextRequest) {
               : { customer_email: user.email ?? undefined }),
             metadata: {
               userId: user.id,
-              source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
+              source: 'upgrade',
             },
           } as unknown as Stripe.Checkout.SessionCreateParams);
 
@@ -217,8 +207,79 @@ export async function POST(request: NextRequest) {
         }
       } catch (resumeErr) {
         console.warn(
-          `${LOG} existing subscription resume skipped; creating new checkout`,
+          `${LOG} existing subscription resume skipped; will check for active subscriptions before creating new`,
           resumeErr
+        );
+        // DEFENSIVE: Before falling through to create a new subscription,
+        // verify the customer doesn't have OTHER active subscriptions.
+        // This handles the case where DB has wrong/stale subscription_id.
+        if (existingStripeCustomerId) {
+          const activeCheck = await checkActiveSubscriptions(
+            stripe,
+            existingStripeCustomerId
+          );
+          if (activeCheck.hasActive) {
+            console.warn(
+              `${LOG} blocked duplicate subscription - customer has active subscription(s) despite retrieve error`,
+              {
+                userId: user.id,
+                customerId: existingStripeCustomerId.slice(-8),
+                dbSubscriptionId: existingStripeSubscriptionId.slice(-8),
+                activeSubIds: activeCheck.summary.subscriptionIds.map(id =>
+                  id.slice(-8)
+                ),
+              }
+            );
+            return NextResponse.json(
+              {
+                success: false,
+                error:
+                  'You have an active subscription. Please manage it in Settings or contact support if you need assistance.',
+                code: 'ACTIVE_SUBSCRIPTION_EXISTS',
+              },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
+    // CRITICAL: Before creating a new subscription checkout, verify customer
+    // has no active subscriptions. This is the final safety check.
+    if (existingStripeCustomerId) {
+      const activeCheck = await checkActiveSubscriptions(
+        stripe,
+        existingStripeCustomerId
+      );
+      if (activeCheck.hasActive) {
+        console.warn(
+          `${LOG} blocked duplicate subscription checkout - customer has active subscription(s)`,
+          {
+            userId: user.id,
+            customerId: existingStripeCustomerId.slice(-8),
+            activeCount: activeCheck.summary.activeCount,
+            trialingCount: activeCheck.summary.trialingCount,
+            existingSubIds: activeCheck.summary.subscriptionIds.map(id =>
+              id.slice(-8)
+            ),
+          }
+        );
+        onboardingStripeDebug(
+          'create-checkout',
+          'blocked: active subscription exists',
+          {
+            userId: user.id,
+            activeSubscriptionCount: activeCheck.activeSubscriptions.length,
+          }
+        );
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'You already have an active subscription. To change your plan, please cancel your current subscription in Settings first, or contact support for assistance.',
+            code: 'DUPLICATE_SUBSCRIPTION_BLOCKED',
+          },
+          { status: 400 }
         );
       }
     }
@@ -234,19 +295,6 @@ export async function POST(request: NextRequest) {
       ...buildStripeCheckoutAutomaticTaxParams({
         hasExistingCustomer: Boolean(existingStripeCustomerId),
       }),
-      ...(applyOnboardingTrial
-        ? {
-            payment_method_collection: 'if_required' as const,
-            subscription_data: {
-              trial_period_days: 7,
-              trial_settings: {
-                end_behavior: {
-                  missing_payment_method: 'cancel',
-                },
-              },
-            },
-          }
-        : {}),
       success_url: successUrl,
       cancel_url: cancelUrl,
       ...(existingStripeCustomerId
@@ -254,7 +302,7 @@ export async function POST(request: NextRequest) {
         : { customer_email: user.email ?? undefined }),
       metadata: {
         userId: user.id,
-        source: fromOnboarding ? 'onboarding_trial_bridge' : 'upgrade',
+        source: 'upgrade',
         billingInterval,
       },
     });
@@ -272,8 +320,6 @@ export async function POST(request: NextRequest) {
     onboardingStripeDebug('create-checkout', 'session created', {
       userId: user.id,
       sessionIdSuffix: session.id.slice(-8),
-      fromOnboarding,
-      applyOnboardingTrial,
       billingInterval,
     });
 

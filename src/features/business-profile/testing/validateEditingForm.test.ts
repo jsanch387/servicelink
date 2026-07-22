@@ -13,6 +13,8 @@ const baseFormData: EditingFormData = {
   phone_number_call: '',
   phone_number_text: '',
   same_phone_for_both: false,
+  instagram: '',
+  tiktok: '',
   images: [],
 };
 

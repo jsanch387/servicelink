@@ -31,6 +31,9 @@ interface InputProps {
   /** Max length for the input value (native maxLength). */
   maxLength?: number;
   'aria-label'?: string;
+  onBlur?: () => void;
+  /** Soft helper under the field (hidden when `error` is set). */
+  hint?: React.ReactNode;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -51,6 +54,8 @@ export const Input: React.FC<InputProps> = ({
   leftIcon,
   maxLength,
   'aria-label': ariaLabel,
+  onBlur,
+  hint,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordType = type === 'password';
@@ -83,6 +88,7 @@ export const Input: React.FC<InputProps> = ({
           type={inputType}
           value={value}
           onChange={e => onChange(e.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
           required={required}
           disabled={disabled}
@@ -117,7 +123,11 @@ export const Input: React.FC<InputProps> = ({
           </button>
         )}
       </div>
-      {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
+      {error ? (
+        <p className="mt-1 text-sm text-red-400">{error}</p>
+      ) : hint ? (
+        <p className="mt-1.5 text-xs text-zinc-500">{hint}</p>
+      ) : null}
     </div>
   );
 };

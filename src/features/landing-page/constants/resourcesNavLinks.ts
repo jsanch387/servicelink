@@ -1,14 +1,63 @@
 import { ROUTES } from '@/constants/routes';
 
-export const RESOURCES_NAV_LINKS = [
+export type ResourcesNavItem = {
+  label: string;
+  href: string;
+  description: string;
+  icon: 'book' | 'calendar' | 'deposit' | 'instagram' | 'workshop';
+};
+
+export type ResourcesNavColumn = {
+  heading: string;
+  items: readonly ResourcesNavItem[];
+};
+
+/** Column-based Resources menu — keep items short and scannable. */
+export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] = [
   {
-    label: 'Guides & articles',
-    href: ROUTES.RESOURCES,
-    description: 'Free tips to grow your service business',
+    heading: 'Guides',
+    items: [
+      {
+        label: 'All guides',
+        href: ROUTES.RESOURCES,
+        description: 'Free tips to grow your business',
+        icon: 'book',
+      },
+      {
+        label: 'Best booking app',
+        href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
+        description: 'What to look for as a detailer',
+        icon: 'calendar',
+      },
+      {
+        label: 'Stop no-shows',
+        href: ROUTES.RESOURCE_GUIDE('stop-no-shows-deposits-mobile-detailing'),
+        description: 'Deposits and cancellation policy',
+        icon: 'deposit',
+      },
+      {
+        label: 'Instagram clients',
+        href: ROUTES.RESOURCE_GUIDE(
+          'how-mobile-detailers-get-clients-from-instagram-2026'
+        ),
+        description: 'Turn views into bookings',
+        icon: 'instagram',
+      },
+    ],
   },
   {
-    label: 'Free ads workshop',
-    href: ROUTES.WORKSHOP,
-    description: 'How to run local Meta ads that book jobs',
+    heading: 'Learn',
+    items: [
+      {
+        label: 'Free ads workshop',
+        href: ROUTES.WORKSHOP,
+        description: 'Local Meta ads that book jobs',
+        icon: 'workshop',
+      },
+    ],
   },
-] as const;
+];
+
+/** Flat list for mobile / shared consumers. */
+export const RESOURCES_NAV_LINKS: ResourcesNavItem[] =
+  RESOURCES_NAV_COLUMNS.flatMap(column => [...column.items]);

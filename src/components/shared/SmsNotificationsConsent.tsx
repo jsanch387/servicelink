@@ -51,6 +51,15 @@ export function SmsNotificationsConsent({
             >
               {ui.calendar.notificationsSmsFinePrintLinkLabel}
             </Link>
+            {' & '}
+            <Link
+              href={ROUTES.TERMS}
+              className="text-gray-400 underline underline-offset-2 hover:text-gray-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {ui.calendar.notificationsSmsTermsLinkLabel}
+            </Link>
           </span>
         </span>
       </label>

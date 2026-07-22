@@ -49,8 +49,10 @@ export function AddOnSelector({
             aria-pressed={isSelected}
             aria-label={`${addOn.name}, ${formatPrice(addOn.priceCents)}${extra ? `, + ${extra}` : ''}. ${isSelected ? 'Selected' : 'Not selected'}`}
           >
-            <span className="font-medium min-w-0">
-              <span className="block">{addOn.name}</span>
+            <span className="min-w-0 font-medium">
+              <span className="block [overflow-wrap:anywhere]">
+                {addOn.name}
+              </span>
               {extra ? (
                 <span className="block text-xs font-normal text-zinc-500 mt-0.5">
                   + {extra}

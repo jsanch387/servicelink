@@ -12,6 +12,7 @@ interface ServiceDetailsBookingSummaryProps {
   selectedVariantLabel?: string;
   selectedAddOns: ServiceAddOn[];
   totalCents: number;
+  serviceLabel: string;
   addOnsLabel: string;
   totalLabel: string;
   bookingFlowLocale?: PublicBookingFlowLocale;
@@ -28,62 +29,90 @@ export function ServiceDetailsBookingSummary({
   selectedVariantLabel,
   selectedAddOns,
   totalCents,
+  serviceLabel,
   addOnsLabel,
   totalLabel,
   bookingFlowLocale = 'en',
 }: ServiceDetailsBookingSummaryProps) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
-      <div>
-        <div className="flex justify-between items-baseline text-sm gap-3">
-          <span className="text-white font-semibold min-w-0">
-            {serviceName}
-            {selectedVariantLabel ? (
-              <span className="block text-zinc-400 font-normal text-xs mt-1">
-                {selectedVariantLabel}
-              </span>
-            ) : null}
-            <span className="mt-1 block text-xs font-normal text-zinc-500">
-              {formatDurationMinutes(serviceDurationMinutes, bookingFlowLocale)}
-            </span>
-          </span>
-          <span className="text-white font-semibold tabular-nums shrink-0">
-            {formatPrice(servicePriceCents)}
-          </span>
-        </div>
-      </div>
-      {selectedAddOns.length > 0 && (
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+      <div className="space-y-4 p-4">
         <div>
-          <p className="text-zinc-400 text-xs font-medium uppercase tracking-wider mb-1">
-            {addOnsLabel}
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
+            {serviceLabel}
           </p>
-          <div className="space-y-1">
-            {selectedAddOns.map(a => (
-              <div
-                key={a.id}
-                className="flex justify-between items-baseline text-sm text-white gap-2"
-              >
-                <span className="min-w-0">
-                  {a.name}
-                  {a.durationMinutes != null && a.durationMinutes > 0 ? (
-                    <span className="text-zinc-500 block text-xs mt-0.5 font-normal">
-                      +{' '}
-                      {formatDurationMinutes(
-                        a.durationMinutes,
-                        bookingFlowLocale
-                      )}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white [overflow-wrap:anywhere]">
+                {serviceName}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-400">
+                {selectedVariantLabel ? (
+                  <>
+                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                      {selectedVariantLabel}
                     </span>
-                  ) : null}
-                </span>
-                <span className="tabular-nums shrink-0">
-                  + {formatPrice(a.priceCents)}
+                    <span aria-hidden="true" className="text-zinc-600">
+                      &bull;
+                    </span>
+                  </>
+                ) : null}
+                <span>
+                  {formatDurationMinutes(
+                    serviceDurationMinutes,
+                    bookingFlowLocale
+                  )}
                 </span>
               </div>
-            ))}
+            </div>
+            <span className="shrink-0 text-sm font-semibold tabular-nums text-white">
+              {formatPrice(servicePriceCents)}
+            </span>
           </div>
         </div>
-      )}
-      <div className="flex justify-between items-baseline text-base font-semibold text-white pt-2 border-t border-white/10">
+
+        {selectedAddOns.length > 0 ? (
+          <div className="border-t border-white/10 pt-4">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
+              {addOnsLabel}
+            </p>
+            <div className="space-y-2.5">
+              {selectedAddOns.map(addOn => (
+                <div
+                  key={addOn.id}
+                  className="flex items-start justify-between gap-4 text-sm"
+                >
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-white">
+                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                      {addOn.name}
+                    </span>
+                    {addOn.durationMinutes != null &&
+                    addOn.durationMinutes > 0 ? (
+                      <>
+                        <span aria-hidden="true" className="text-zinc-600">
+                          &bull;
+                        </span>
+                        <span className="text-xs text-zinc-400">
+                          +
+                          {formatDurationMinutes(
+                            addOn.durationMinutes,
+                            bookingFlowLocale
+                          )}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+                  <span className="shrink-0 tabular-nums text-zinc-200">
+                    +{formatPrice(addOn.priceCents)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex items-baseline justify-between gap-4 border-t border-white/10 bg-white/[0.035] px-4 py-3.5 text-base font-semibold text-white">
         <span>{totalLabel}</span>
         <span className="tabular-nums">{formatPrice(totalCents)}</span>
       </div>

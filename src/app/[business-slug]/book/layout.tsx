@@ -4,7 +4,8 @@ import { BookFlowLoadingState } from '@/features/availability/booking/components
 
 /**
  * Shared shell for the public booking funnel (`/[slug]/book`, `/[slug]/book/details`, …).
- * Single Suspense boundary + loader for all nested book routes (avoids loading.tsx swaps).
+ * A neutral boundary avoids flashing destination-specific skeletons while the
+ * server determines whether options, add-ons, or a redirect are needed.
  */
 export default function BusinessBookRouteLayout({
   children,

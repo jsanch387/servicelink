@@ -11,6 +11,10 @@ export interface EditingFormData {
   phone_number_call: string;
   phone_number_text: string;
   same_phone_for_both: boolean;
+  /** Instagram handle or profile URL (normalized on save). */
+  instagram: string;
+  /** TikTok handle or profile URL (normalized on save). */
+  tiktok: string;
   cover_image_url?: string;
   logo_url?: string;
   logo_path?: string;

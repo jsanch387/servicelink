@@ -109,6 +109,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     notificationsConsentFinePrint: (businessName: string) =>
       `De ${businessName}. La frecuencia de mensajes puede variar. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestra`,
     notificationsSmsFinePrintLinkLabel: 'Política de Privacidad',
+    notificationsSmsTermsLinkLabel: 'Términos de Servicio',
     continueToPayment: 'Continuar al pago',
     confirmBooking: 'Confirmar reserva',
     chooseHowToPay: 'Elige cómo pagar',

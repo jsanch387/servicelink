@@ -110,8 +110,6 @@ export const API_ROUTES = {
   STRIPE_CONNECT_SYNC: '/api/stripe/connect/sync',
   /** Pro: one-time URL to the connected account’s Stripe Express Dashboard. */
   STRIPE_CONNECT_EXPRESS_DASHBOARD: '/api/stripe/connect/express-dashboard',
-  /** Onboarding step 5 (web): start Pro trial via Stripe Subscription API (no Checkout redirect). */
-  STRIPE_START_ONBOARDING_TRIAL: '/api/stripe/start-onboarding-trial',
   /**
    * Onboarding V2: mark onboarding complete + welcome-live email.
    * Web: cookies. Mobile: `Authorization: Bearer`. See `docs/contracts/mobile-onboarding-complete.md`.

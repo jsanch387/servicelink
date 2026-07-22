@@ -105,6 +105,8 @@ export type PublicBookingUi = {
     notificationsConsentFinePrint: (businessName: string) => string;
     /** Inline linked text to `/privacy` after consent copy. */
     notificationsSmsFinePrintLinkLabel: string;
+    /** Inline linked text to `/terms` after the privacy link. */
+    notificationsSmsTermsLinkLabel: string;
     continueToPayment: string;
     confirmBooking: string;
     chooseHowToPay: string;

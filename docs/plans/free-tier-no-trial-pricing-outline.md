@@ -1,6 +1,6 @@
 # Outline plan: Free-first pricing (no 7-day Pro trial), 5-booking cap, upgrade to unlock
 
-**Status:** Planning only — no implementation in this doc.  
+**Status:** Onboarding free-trial path is **decommissioned in code** (route, flag, trial-ending email, checkout `trial_period_days` removed). Remaining items below are product/cap decisions, not trial activation.
 **Goal:** New users land on **Free** (no Stripe trial). They can run the product with **five booking slots** (see **product decision** below), then must **upgrade to Pro** to accept more public bookings, create owner-side appointments/quotes as required, and use Pro-only surfaces. Remove the **7-day Pro trial** path that today ties onboarding to Stripe `trialing`.
 
 ---

@@ -12,17 +12,25 @@ export const LandingPageStructuredData: React.FC = () => {
     url: SITE_URL,
     description:
       'One link for your service business. Share it anywhere—customers see your services and book instantly.',
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}/brand/google-site-icon.png`,
+      width: 512,
+      height: 512,
+    },
+    image: `${SITE_URL}/brand/google-site-icon.png`,
   };
 
   const webSiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${SITE_URL}#website`,
     name: 'ServiceLink',
-    alternateName: 'MyServiceLink',
     url: SITE_URL,
     description:
       'One link for your service business. Share it anywhere—customers see your services and book instantly. Built for detailers, pressure washers, lawn care, and service pros.',
     publisher: { '@id': `${SITE_URL}#organization` },
+    inLanguage: 'en-US',
   };
 
   const faqSchema = {

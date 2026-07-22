@@ -1,5 +1,5 @@
 /**
- * Loading UI for /[slug]/book/details — mirrors service header, price options, summary, sticky CTA.
+ * Loading UI for /[slug]/book/details — mirrors price options, summary, and sticky CTA.
  * Skeleton styling aligned with public profile service cards (BusinessProfileLoadingState):
  * neutral-800 cards, border-neutral-700/50, inner neutral-700 bars, animate-pulse.
  */
@@ -14,17 +14,6 @@ export function BookServiceDetailsLoadingSkeleton() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-32">
-        {/* Service header — same line weights as profile text skeleton */}
-        <section className="mb-6 space-y-3">
-          <div className="h-7 max-w-md bg-neutral-700 rounded-lg animate-pulse" />
-          <div className="h-4 w-48 bg-neutral-700 rounded animate-pulse" />
-          <div className="space-y-2 pt-1">
-            <div className="h-4 w-full bg-neutral-700 rounded animate-pulse max-w-full" />
-            <div className="h-4 w-[92%] bg-neutral-700 rounded animate-pulse" />
-            <div className="h-4 w-[70%] bg-neutral-700 rounded animate-pulse" />
-          </div>
-        </section>
-
         {/* Price options — same card pattern as profile “Services” skeleton */}
         <section className="mb-6">
           <div className="h-5 w-40 bg-neutral-700 rounded mb-3 animate-pulse" />

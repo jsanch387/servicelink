@@ -69,6 +69,7 @@ const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1456318202654985';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  applicationName: 'ServiceLink',
   title: {
     default: 'ServiceLink | One Link. Your Services. Get Booked.',
     template: '%s | ServiceLink',
@@ -88,6 +89,12 @@ export const metadata: Metadata = {
         type: 'image/png',
       },
       { url: MARKETING_IMAGES.brand.faviconIco, sizes: 'any' },
+      // Google Search prefers a 48×48 opaque icon; keep after browser favicons.
+      {
+        url: MARKETING_IMAGES.brand.googleSiteIcon48,
+        sizes: '48x48',
+        type: 'image/png',
+      },
     ],
     shortcut: [{ url: MARKETING_IMAGES.brand.favicon, type: 'image/png' }],
     apple: [

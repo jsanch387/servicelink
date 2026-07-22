@@ -1,13 +1,15 @@
-import Link from 'next/link';
 import { ROUTES } from '@/constants/routes';
+import { GuideProTip } from '@/features/resources/components/GuideCallouts';
+import Link from 'next/link';
 
-const sectionClasses = 'mb-10';
-const h2Classes = 'text-xl sm:text-2xl font-bold text-white mt-10 mb-4';
-const h3Classes = 'text-lg font-semibold text-white mt-6 mb-3';
-const pClasses = 'text-gray-400 leading-relaxed mb-4';
-const listClasses = 'list-disc list-inside space-y-2 text-gray-400 mb-4 ml-2';
-const linkClasses =
-  'text-gray-300 underline hover:text-white transition-colors';
+import {
+  h2Classes,
+  h3Classes,
+  linkClasses,
+  listClasses,
+  pClasses,
+  sectionClasses,
+} from './guideContentStyles';
 
 export function HowMobileDetailersGetClientsInstagramContent() {
   return (
@@ -22,15 +24,8 @@ export function HowMobileDetailersGetClientsInstagramContent() {
       </p>
       <p className={pClasses}>
         The good news? You don’t need a big following. You just need to post the
-        the t kind of content and make it easy for people to book you.
+        right kind of content and make it easy for people to book you.
       </p>
-      <p className={pClasses}>In this guide you will learn:</p>
-      <ul className={listClasses}>
-        <li>How detailers get clients from social media</li>
-        <li>What type of videos work best</li>
-        <li>How to get local customers to find you</li>
-        <li>How to turn viewers into paying customers</li>
-      </ul>
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Why Detailing Videos Work So Well</h2>
@@ -172,6 +167,11 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           </Link>
           .
         </p>
+        <GuideProTip>
+          Every video should point back to one place to book. Put your
+          ServiceLink URL in your Instagram and TikTok bio so viewers can book
+          without sending a DM.
+        </GuideProTip>
       </section>
 
       <section className={sectionClasses}>

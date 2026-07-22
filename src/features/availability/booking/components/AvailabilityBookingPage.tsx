@@ -249,6 +249,7 @@ export function AvailabilityBookingPage({
     useState<CustomerServiceChoice>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const timeSlotsSectionRef = useRef<HTMLDivElement | null>(null);
   const [customerData, setCustomerData] = useState<CustomerFormData>(
     initialCustomerNotes?.trim()
       ? { ...INITIAL_CUSTOMER_FORM_DATA, notes: initialCustomerNotes.trim() }
@@ -1246,19 +1247,30 @@ export function AvailabilityBookingPage({
                   setSelectedDate(date);
                   setSelectedTime(null);
                 }}
+                onUserSelectDate={() => {
+                  window.requestAnimationFrame(() => {
+                    timeSlotsSectionRef.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                  });
+                }}
+                bookingFlowLocale={bookingFlowLocale}
               />
-              <TimeSlotGrid
-                selectedDate={selectedDate}
-                serviceDurationMinutes={totalBookingDurationMinutes}
-                weeklySchedule={weeklySchedule}
-                existingBookings={existingBookings}
-                timeOffBlocks={timeOffBlocksProp}
-                selectedTime={selectedTime}
-                onSelectTime={setSelectedTime}
-                heading={ui.calendar.chooseTime}
-                selectDateHint={ui.calendar.selectDateHint}
-                noSlotsHint={ui.calendar.noSlotsHint}
-              />
+              <div ref={timeSlotsSectionRef} className="scroll-mt-20">
+                <TimeSlotGrid
+                  selectedDate={selectedDate}
+                  serviceDurationMinutes={totalBookingDurationMinutes}
+                  weeklySchedule={weeklySchedule}
+                  existingBookings={existingBookings}
+                  timeOffBlocks={timeOffBlocksProp}
+                  selectedTime={selectedTime}
+                  onSelectTime={setSelectedTime}
+                  heading={ui.calendar.chooseTime}
+                  selectDateHint={ui.calendar.selectDateHint}
+                  noSlotsHint={ui.calendar.noSlotsHint}
+                />
+              </div>
             </div>
           )}
 

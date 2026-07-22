@@ -22,6 +22,10 @@ import {
 } from '../../utils/serviceLocationMode';
 import type { ServiceLocationUiState } from '../../utils/serviceLocationMode';
 import {
+  parseSocialMedia,
+  socialMediaForPersist,
+} from '../../utils/socialMedia';
+import {
   formatProfileLocationLabel,
   formatServiceArea,
   parseServiceAreaCityState,
@@ -118,23 +122,28 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   isFreeTier = false,
 }) => {
   // Form state
-  const [formData, setFormData] = useState<EditingFormData>({
-    business_name: businessProfile.business_name || '',
-    business_type: businessProfile.business_type || '',
-    service_area: businessProfile.service_area || '',
-    business_zip: businessProfile.business_zip || '',
-    bio: businessProfile.bio || '',
-    phone_number_call: businessProfile.phone_number_call || '',
-    phone_number_text: '', // Not used; we only store one number (call)
-    same_phone_for_both: false,
-    logo_path: businessProfile.logo_path || '',
-    banner_path: businessProfile.banner_path || '',
-    images:
-      businessProfile.images?.map(image => ({
-        id: image.id,
-        storage_path: image.storage_path,
-        position: image.position,
-      })) || [],
+  const [formData, setFormData] = useState<EditingFormData>(() => {
+    const social = parseSocialMedia(businessProfile.social_media);
+    return {
+      business_name: businessProfile.business_name || '',
+      business_type: businessProfile.business_type || '',
+      service_area: businessProfile.service_area || '',
+      business_zip: businessProfile.business_zip || '',
+      bio: businessProfile.bio || '',
+      phone_number_call: businessProfile.phone_number_call || '',
+      phone_number_text: '', // Not used; we only store one number (call)
+      same_phone_for_both: false,
+      instagram: social.instagram ? `@${social.instagram}` : '',
+      tiktok: social.tiktok ? `@${social.tiktok}` : '',
+      logo_path: businessProfile.logo_path || '',
+      banner_path: businessProfile.banner_path || '',
+      images:
+        businessProfile.images?.map(image => ({
+          id: image.id,
+          storage_path: image.storage_path,
+          position: image.position,
+        })) || [],
+    };
   });
 
   const [bookingLinkLocales, setBookingLinkLocales] =
@@ -316,6 +325,10 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
           serviceLocationPersistFromUi(serviceLocation);
         await onSave({
           ...(finalFormData as unknown as Record<string, unknown>),
+          social_media: socialMediaForPersist({
+            instagram: finalFormData.instagram,
+            tiktok: finalFormData.tiktok,
+          }),
           public_booking_locales: bookingPersist.public_booking_locales,
           public_booking_default_locale:
             bookingPersist.public_booking_default_locale,

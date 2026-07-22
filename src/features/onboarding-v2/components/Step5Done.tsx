@@ -3,7 +3,6 @@
 import { Button } from '@/components/shared';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
 import { IOS_APP_STORE_URL } from '@/constants/appStore';
-import { isOnboardingLegacyStripeTrialEnabled } from '@/features/pricing/config/onboardingLegacyStripeTrial';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { BoltIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
@@ -71,29 +70,6 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
     setError(null);
     setLoading(true);
     try {
-      if (isOnboardingLegacyStripeTrialEnabled()) {
-        const res = await fetch(API_ROUTES.STRIPE_START_ONBOARDING_TRIAL, {
-          method: 'POST',
-        });
-        const data = (await res.json()) as {
-          success?: boolean;
-          error?: string;
-        };
-
-        if (res.ok && data.success) {
-          trackCompleteRegistrationOnce();
-          if (IOS_APP_STORE_URL) {
-            setPhase('app-promo');
-          } else {
-            redirectToProfile();
-          }
-          return;
-        }
-
-        setError(data.error ?? 'Something went wrong.');
-        return;
-      }
-
       const res = await fetch(API_ROUTES.ONBOARDING_V2_COMPLETE, {
         method: 'POST',
       });

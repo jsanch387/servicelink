@@ -36,7 +36,6 @@ import {
 } from '@/features/business-profile/utils/publicServiceLocation';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
-  sendTrialEndingSoonEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
 import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
@@ -47,13 +46,14 @@ import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
+import { hasMultipleActiveSubscriptions } from '@/features/pricing/server/checkActiveSubscriptions';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
 import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
-import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/trialConfirmationPayload';
+import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/applyPlatformProCheckoutSessionCompleted';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -991,6 +991,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // MONITORING: Detect if customer has multiple active subscriptions (edge case alert)
+    const customerId =
+      typeof session.customer === 'string' ? session.customer : null;
+    if (customerId) {
+      try {
+        const hasMultiple = await hasMultipleActiveSubscriptions(
+          stripe,
+          customerId
+        );
+        if (hasMultiple) {
+          console.error(
+            '[stripe:webhook] ⚠️ ALERT: Customer has multiple active subscriptions after checkout',
+            {
+              eventId: event.id,
+              sessionId: session.id,
+              customerId: customerId.slice(-8),
+              userId,
+            }
+          );
+          // This should not happen with the duplicate prevention checks in place
+          // If this log appears, investigate immediately - customer is being double-charged
+        }
+      } catch (multiCheckErr) {
+        console.warn(
+          '[stripe:webhook] multi-subscription check failed (non-blocking)',
+          multiCheckErr
+        );
+      }
+    }
+
     // First paid Pro upgrade only (direct paid checkout — no trial). Best-effort;
     // the atomic claim inside guarantees once-only across retries/resubscribes.
     void sendProWelcomeIfFirstPaidPro(supabase, { userId }).catch(err => {
@@ -1216,69 +1246,6 @@ export async function POST(request: NextRequest) {
       console.warn(
         '[Stripe webhook] invoice.payment_failed no subscription on invoice',
         { eventId: event.id }
-      );
-    }
-  }
-
-  // Trial reminder before the first charge (Stripe emits this before trial end).
-  if (event.type === 'customer.subscription.trial_will_end') {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('stripe_webhook_events').insert({
-        event_id: event.id,
-        event_type: event.type,
-        processed_at: new Date().toISOString(),
-      });
-    } catch (insertError: unknown) {
-      const code = (insertError as { code?: string })?.code;
-      if (code === '23505') {
-        return NextResponse.json({ received: true }, { status: 200 });
-      }
-      console.error('Stripe webhook idempotency insert error:', insertError);
-      return NextResponse.json(
-        { error: 'Idempotency check failed' },
-        { status: 500 }
-      );
-    }
-
-    const subscription = event.data.object as Stripe.Subscription;
-    const trialEndIso =
-      typeof subscription.trial_end === 'number'
-        ? new Date(subscription.trial_end * 1000).toISOString()
-        : null;
-    let customerEmail: string | null = null;
-    try {
-      const stripe = getStripePlatform();
-      const customerRef = subscription.customer;
-      const customerId =
-        typeof customerRef === 'string' ? customerRef : customerRef?.id;
-      if (customerId) {
-        const customer = await stripe.customers.retrieve(customerId);
-        if (!('deleted' in customer) || customer.deleted !== true) {
-          customerEmail = customer.email ?? null;
-        }
-      }
-    } catch (err) {
-      console.error(
-        '[Stripe webhook] trial_will_end: failed to resolve customer email',
-        err
-      );
-    }
-
-    if (customerEmail?.trim()) {
-      const emailResult = await sendTrialEndingSoonEmail(customerEmail.trim(), {
-        trialEndsAtIso: trialEndIso,
-      });
-      if (!emailResult.sent) {
-        console.error(
-          '[Stripe webhook] trial_will_end: sendTrialEndingSoonEmail failed',
-          emailResult.error
-        );
-      }
-    } else {
-      console.warn(
-        '[Stripe webhook] trial_will_end: no customer email resolved',
-        { eventId: event.id, subscriptionId: subscription.id }
       );
     }
   }
