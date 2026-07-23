@@ -1,5 +1,6 @@
 /**
- * Service Details page (price options if enabled, then add-ons, then calendar).
+ * Service Details page (price options if enabled, then add-ons, then
+ * mobile/shop when the business offers both, then calendar).
  * Fetches service, active price options, and assigned add-ons.
  * Redirects straight to /book when there is nothing to configure here.
  */
@@ -8,6 +9,7 @@ import {
   OWNER_MANUAL_BOOKING_FOR,
   getBusinessBookPath,
   getBusinessBookScheduleUrl,
+  parseBookServiceLocationTypeQuery,
 } from '@/constants/routes';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -18,6 +20,7 @@ import { resolvePublicBookingFreeTierGate } from '@/features/availability/bookin
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { BookFlowClientRedirect } from '@/features/availability/booking/components/BookFlowClientRedirect';
@@ -35,8 +38,10 @@ interface ServiceDetailsPageProps {
     serviceId?: string;
     addOnIds?: string;
     priceOptionId?: string;
-    /** `price` | `addons` — restores sub-step when returning from calendar. */
+    /** `price` | `addons` | `location` — restores sub-step when returning from calendar. */
     detailsStep?: string;
+    /** `mobile` | `shop` — restores location choice when returning from calendar. */
+    serviceLocationType?: string;
     for?: string;
     lang?: string;
   }>;
@@ -74,6 +79,7 @@ export default async function ServiceDetailsPage({
     addOnIds,
     priceOptionId,
     detailsStep,
+    serviceLocationType: serviceLocationTypeRaw,
     for: bookingForParam,
     lang: langParam,
   } = await searchParams;
@@ -94,7 +100,7 @@ export default async function ServiceDetailsPage({
   const { data: profileMeta } = await adminClient
     .from('business_profiles')
     .select(
-      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale, profile_id, free_bookings_count'
+      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
     )
     .eq('business_slug', slug)
     .maybeSingle();
@@ -174,10 +180,14 @@ export default async function ServiceDetailsPage({
 
   const { service, addOns, priceOptions } = result;
 
+  const serviceLocation = buildPublicBookingServiceLocation(
+    profileMeta as Parameters<typeof buildPublicBookingServiceLocation>[0]
+  );
   const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
+  const needsLocationStep = serviceLocation.mode === 'both';
 
-  // No add-ons and no price choice needed: skip details and go straight to date selection
-  if (!needsPriceStep && addOns.length === 0) {
+  // Nothing to configure (no price options, add-ons, or mobile/shop choice)
+  if (!needsPriceStep && addOns.length === 0 && !needsLocationStep) {
     return (
       <BookFlowClientRedirect
         href={getBusinessBookScheduleUrl(slug, {
@@ -198,9 +208,15 @@ export default async function ServiceDetailsPage({
     : undefined;
 
   const initialDetailsStep =
-    detailsStep === 'addons' || detailsStep === 'price'
+    detailsStep === 'addons' ||
+    detailsStep === 'price' ||
+    detailsStep === 'location'
       ? detailsStep
       : undefined;
+
+  const initialServiceLocationType = parseBookServiceLocationTypeQuery(
+    serviceLocationTypeRaw
+  );
 
   return (
     <>
@@ -210,9 +226,11 @@ export default async function ServiceDetailsPage({
         service={service}
         addOns={addOns}
         priceOptions={priceOptions}
+        serviceLocation={serviceLocation}
         initialAddOnIds={initialAddOnIds}
         initialPriceOptionId={priceOptionId?.trim()}
         initialDetailsStep={initialDetailsStep}
+        initialServiceLocationType={initialServiceLocationType}
         isOwnerManualBooking={isOwnerManualBooking}
         bookingFlowLocale={bookingFlowLocale}
       />

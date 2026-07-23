@@ -6,7 +6,7 @@ import {
   isCustomerFormValid,
 } from '../components/CustomerForm';
 
-export type BookingDetailsSubStep = CustomerFormStep | 'serviceChoice';
+export type BookingDetailsSubStep = CustomerFormStep;
 
 export type CustomerServiceChoice = 'mobile' | 'shop' | null;
 
@@ -69,13 +69,10 @@ export function getNextDetailsSubStep(
   customerChoice: CustomerServiceChoice
 ): BookingDetailsSubStep | 'review' {
   if (current === 'contact') {
-    if (serviceLocation.mode === 'both') return 'serviceChoice';
-    if (serviceLocation.mode === 'shop_only') return 'vehicleNotes';
-    return 'address';
-  }
-
-  if (current === 'serviceChoice') {
-    return customerChoice === 'mobile' ? 'address' : 'vehicleNotes';
+    if (customerAddressEntryRequired(serviceLocation, customerChoice)) {
+      return 'address';
+    }
+    return 'vehicleNotes';
   }
 
   if (current === 'address') {
@@ -92,21 +89,27 @@ export function getPrevDetailsSubStep(
 ): BookingDetailsSubStep | 'schedule' {
   if (current === 'contact') return 'schedule';
 
-  if (current === 'serviceChoice') return 'contact';
-
   if (current === 'address') {
-    return serviceLocation.mode === 'both' ? 'serviceChoice' : 'contact';
+    return 'contact';
   }
 
   if (current === 'vehicleNotes') {
     if (customerAddressEntryRequired(serviceLocation, customerChoice)) {
       return 'address';
     }
-    if (serviceLocation.mode === 'both') return 'serviceChoice';
     return 'contact';
   }
 
   return 'contact';
+}
+
+export function isCustomerServiceLocationChoiceValid(
+  serviceLocation: PublicBookingServiceLocation,
+  customerChoice: CustomerServiceChoice
+): boolean {
+  if (serviceLocation.mode !== 'both') return true;
+  if (customerChoice !== 'mobile' && customerChoice !== 'shop') return false;
+  return shopBookingHasCompleteAddress(serviceLocation, customerChoice);
 }
 
 export function isBookingDetailsSubStepValid(
@@ -120,11 +123,6 @@ export function isBookingDetailsSubStepValid(
     emailOptional: boolean;
   }
 ): boolean {
-  if (step === 'serviceChoice') {
-    if (customerChoice !== 'mobile' && customerChoice !== 'shop') return false;
-    return shopBookingHasCompleteAddress(serviceLocation, customerChoice);
-  }
-
   const requireCustomerAddress = customerAddressEntryRequired(
     serviceLocation,
     customerChoice

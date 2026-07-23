@@ -104,7 +104,7 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 
 Businesses store **`service_location_mode`** (`mobile_only` | `shop_only` | `both`), **`shop_street_address`**, **`shop_unit`**, plus profile **`service_area`** (city/state) and **`business_zip`** on `business_profiles`. Dashboard edit saves these from the **Booking** tab.
 
-The public book flow branches on mode: **mobile** collects customer address; **shop** shows the business shop address and prefills it on submit; **both** lets the customer choose. APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
+The public book flow branches on mode: **mobile** collects customer address after schedule; **shop** shows the business shop address and prefills it on submit; **both** asks **mobile vs shop before date/time** (on `/book/details`, after price options / add-ons when those exist). APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
 
 ---
 

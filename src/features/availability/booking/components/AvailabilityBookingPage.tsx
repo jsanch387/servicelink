@@ -53,6 +53,7 @@ import {
   getNextDetailsSubStep,
   getPrevDetailsSubStep,
   isBookingDetailsSubStepValid,
+  isCustomerServiceLocationChoiceValid,
   prefillCustomerWithShopAddress,
   resolveCustomerServiceLocationPayload,
 } from '../utils/bookingServiceLocationFlow';
@@ -68,8 +69,13 @@ const CUSTOMER_FORM_ID = 'availability-booking-details-form';
 
 const BOOKING_CHECKOUT_RESUME_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-/** Sub-steps inside `/book` after service options/add-ons (calendar → form → review). */
-export type CalendarBookingStep = 'schedule' | 'details' | 'review' | 'payment';
+/** Sub-steps inside `/book` after service options/add-ons (location → calendar → form → review). */
+export type CalendarBookingStep =
+  | 'location'
+  | 'schedule'
+  | 'details'
+  | 'review'
+  | 'payment';
 
 type PaymentChoice = 'pay_now' | 'pay_in_person';
 
@@ -207,6 +213,7 @@ export function AvailabilityBookingPage({
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
   serviceLocation = DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION,
+  initialCustomerServiceChoice = null,
   activeSale = null,
 }: AvailabilityBookingPageProps) {
   const ui = useMemo(
@@ -216,6 +223,10 @@ export function AvailabilityBookingPage({
   const backToContactLabel = isOwnerManualBooking
     ? ui.nav.backToCustomerDetails
     : ui.nav.backToYourDetails;
+  const needsInlineLocationStep =
+    serviceLocation.mode === 'both' &&
+    initialCustomerServiceChoice !== 'mobile' &&
+    initialCustomerServiceChoice !== 'shop';
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
 
@@ -242,11 +253,19 @@ export function AvailabilityBookingPage({
     return serviceDurationMinutes + addOnMins;
   }, [serviceDurationMinutes, selectedAddOns]);
 
-  const [step, setStep] = useState<CalendarBookingStep>('schedule');
+  const [step, setStep] = useState<CalendarBookingStep>(() =>
+    needsInlineLocationStep ? 'location' : 'schedule'
+  );
   const [detailsSubStep, setDetailsSubStep] =
     useState<BookingDetailsSubStep>('contact');
   const [customerServiceChoice, setCustomerServiceChoice] =
-    useState<CustomerServiceChoice>(null);
+    useState<CustomerServiceChoice>(() =>
+      serviceLocation.mode === 'both' &&
+      (initialCustomerServiceChoice === 'mobile' ||
+        initialCustomerServiceChoice === 'shop')
+        ? initialCustomerServiceChoice
+        : null
+    );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const timeSlotsSectionRef = useRef<HTMLDivElement | null>(null);
@@ -580,6 +599,10 @@ export function AvailabilityBookingPage({
   }, [amountDueNowCents, ui]);
 
   const canContinueFromSchedule = Boolean(selectedDate && selectedTime);
+  const canContinueFromLocation = isCustomerServiceLocationChoiceValid(
+    serviceLocation,
+    customerServiceChoice
+  );
   const requireVehicleFields = showVehicleFields && !isOwnerManualBooking;
   const canContinueFromDetails = isBookingDetailsSubStepValid(
     detailsSubStep,
@@ -776,9 +799,13 @@ export function AvailabilityBookingPage({
 
   const openDetailsFromSchedule = () => {
     setDetailsSubStep('contact');
-    setCustomerServiceChoice(null);
     setAgreedToPublicNotifications(true);
     setStep('details');
+  };
+
+  const openScheduleFromLocation = () => {
+    if (!canContinueFromLocation) return;
+    setStep('schedule');
   };
 
   const openDetailsFromReview = () => {
@@ -796,10 +823,6 @@ export function AvailabilityBookingPage({
     if (next === 'review') {
       setStep('review');
       return;
-    }
-
-    if (detailsSubStep === 'serviceChoice' && next === 'address') {
-      setCustomerData(prev => clearCustomerServiceAddress(prev));
     }
 
     setDetailsSubStep(next);
@@ -1148,10 +1171,29 @@ export function AvailabilityBookingPage({
           </Link>
         ) : (
           <>
-            {step === 'schedule' && (
+            {step === 'location' && (
               <Link href={exitCalendarFlowHref} className={headerClassName}>
                 <PublicFlowBackNavLabel label={exitCalendarFlowLabel} />
               </Link>
+            )}
+            {step === 'schedule' && (
+              <>
+                {needsInlineLocationStep ? (
+                  <button
+                    type="button"
+                    onClick={() => setStep('location')}
+                    className={headerClassName}
+                  >
+                    <PublicFlowBackNavLabel
+                      label={ui.serviceLocation.backToServiceChoice}
+                    />
+                  </button>
+                ) : (
+                  <Link href={exitCalendarFlowHref} className={headerClassName}>
+                    <PublicFlowBackNavLabel label={exitCalendarFlowLabel} />
+                  </Link>
+                )}
+              </>
             )}
             {step === 'details' && (
               <button
@@ -1163,22 +1205,16 @@ export function AvailabilityBookingPage({
                   label={
                     detailsSubStep === 'contact'
                       ? ui.nav.backToDateTime
-                      : detailsSubStep === 'serviceChoice'
+                      : detailsSubStep === 'address'
                         ? backToContactLabel
-                        : detailsSubStep === 'address'
-                          ? serviceLocation.mode === 'both'
-                            ? ui.serviceLocation.backToServiceChoice
+                        : detailsSubStep === 'vehicleNotes'
+                          ? customerAddressEntryRequired(
+                              serviceLocation,
+                              customerServiceChoice
+                            )
+                            ? ui.nav.backToAddress
                             : backToContactLabel
-                          : detailsSubStep === 'vehicleNotes'
-                            ? customerAddressEntryRequired(
-                                serviceLocation,
-                                customerServiceChoice
-                              )
-                              ? ui.nav.backToAddress
-                              : serviceLocation.mode === 'both'
-                                ? ui.serviceLocation.backToServiceChoice
-                                : backToContactLabel
-                            : ui.nav.backToAddress
+                          : ui.nav.backToAddress
                   }
                 />
               </button>
@@ -1207,6 +1243,29 @@ export function AvailabilityBookingPage({
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
         <div className="flex-1 pb-28">
+          {/* Pre-schedule – Mobile vs shop (custom jobs / missing prior choice) */}
+          {step === 'location' && (
+            <div className="space-y-4">
+              <BookingServiceLocationChoice
+                value={customerServiceChoice}
+                onChange={choice => {
+                  setCustomerServiceChoice(choice);
+                  if (choice === 'mobile') {
+                    setCustomerData(prev => clearCustomerServiceAddress(prev));
+                  }
+                }}
+                bookingFlowLocale={bookingFlowLocale}
+                isOwnerManualBooking={isOwnerManualBooking}
+              />
+              {customerServiceChoice === 'shop' &&
+              !serviceLocation.hasCompleteShopAddress ? (
+                <p className="text-sm text-red-400" role="alert">
+                  {ui.serviceLocation.shopAddressIncomplete}
+                </p>
+              ) : null}
+            </div>
+          )}
+
           {/* Step 1 – Schedule */}
           {step === 'schedule' && (
             <div className="space-y-6">
@@ -1277,22 +1336,6 @@ export function AvailabilityBookingPage({
           {/* Step 2 – Details */}
           {step === 'details' && (
             <div>
-              {detailsSubStep === 'serviceChoice' ? (
-                <BookingServiceLocationChoice
-                  value={customerServiceChoice}
-                  onChange={choice => {
-                    setCustomerServiceChoice(choice);
-                    if (choice === 'mobile') {
-                      setCustomerData(prev =>
-                        clearCustomerServiceAddress(prev)
-                      );
-                    }
-                  }}
-                  bookingFlowLocale={bookingFlowLocale}
-                  isOwnerManualBooking={isOwnerManualBooking}
-                />
-              ) : null}
-
               {detailsSubStep === 'contact' ||
               detailsSubStep === 'address' ||
               detailsSubStep === 'vehicleNotes' ? (
@@ -1619,7 +1662,7 @@ export function AvailabilityBookingPage({
               isOwnerManualBooking ? 'grid grid-cols-2 gap-3' : ''
             }`}
           >
-            {isOwnerManualBooking && step === 'schedule' ? (
+            {isOwnerManualBooking && step === 'location' ? (
               <Button
                 href={exitCalendarFlowHref}
                 variant="secondary"
@@ -1628,6 +1671,28 @@ export function AvailabilityBookingPage({
               >
                 {ui.common.back}
               </Button>
+            ) : null}
+            {isOwnerManualBooking && step === 'schedule' ? (
+              needsInlineLocationStep ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                  onClick={() => setStep('location')}
+                >
+                  {ui.common.back}
+                </Button>
+              ) : (
+                <Button
+                  href={exitCalendarFlowHref}
+                  variant="secondary"
+                  fullWidth
+                  className="font-semibold"
+                >
+                  {ui.common.back}
+                </Button>
+              )
             ) : null}
             {isOwnerManualBooking && step === 'details' ? (
               <Button
@@ -1662,6 +1727,18 @@ export function AvailabilityBookingPage({
                 {ui.common.back}
               </Button>
             ) : null}
+            {step === 'location' && (
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                disabled={!canContinueFromLocation}
+                onClick={openScheduleFromLocation}
+              >
+                {ui.common.continue}
+              </Button>
+            )}
             {step === 'schedule' && (
               <Button
                 type="button"
@@ -1674,34 +1751,19 @@ export function AvailabilityBookingPage({
                 {ui.common.continue}
               </Button>
             )}
-            {step === 'details' &&
-              (detailsSubStep === 'contact' ||
-              detailsSubStep === 'address' ||
-              detailsSubStep === 'vehicleNotes' ? (
-                <Button
-                  key={`details-form-${detailsSubStep}`}
-                  type="submit"
-                  form={CUSTOMER_FORM_ID}
-                  variant="inverse"
-                  fullWidth
-                  className="font-semibold"
-                  disabled={!canContinueFromDetails}
-                >
-                  {detailsPrimaryCtaLabel}
-                </Button>
-              ) : (
-                <Button
-                  key={`details-step-${detailsSubStep}`}
-                  type="button"
-                  variant="inverse"
-                  fullWidth
-                  className="font-semibold"
-                  disabled={!canContinueFromDetails}
-                  onClick={handleDetailsSubStepSubmit}
-                >
-                  {detailsPrimaryCtaLabel}
-                </Button>
-              ))}
+            {step === 'details' && (
+              <Button
+                key={`details-form-${detailsSubStep}`}
+                type="submit"
+                form={CUSTOMER_FORM_ID}
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                disabled={!canContinueFromDetails}
+              >
+                {detailsPrimaryCtaLabel}
+              </Button>
+            )}
             {step === 'review' && (
               <Button
                 type="button"

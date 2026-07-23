@@ -104,6 +104,11 @@ export interface AvailabilityBookingPageProps {
   stripeCheckoutSessionId?: string | null;
   /** Business mobile / shop / both + resolved shop address for public booking. */
   serviceLocation: PublicBookingServiceLocation;
+  /**
+   * When the business offers both, choice is made on `/book/details` (or a
+   * pre-schedule step for custom owner jobs) and passed here.
+   */
+  initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   /** Live sale for this business (Pro only); auto-applies when appointment date qualifies. */
   activeSale?: PublicActiveSale | null;
 }

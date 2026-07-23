@@ -100,25 +100,73 @@ export async function selectFirstBookableService(
   );
 }
 
-/**
- * Advances service details (price option / add-ons) onto the schedule calendar.
- * Handles the common case where details client-redirects to `/book?serviceId=…`
- * while briefly showing the booking loader on the details URL.
- */
-export async function continueFromServiceDetails(page: Page): Promise<void> {
-  const onCalendar = () => {
-    try {
-      const url = new URL(page.url());
-      return (
-        /\/book\/?$/.test(url.pathname) && url.searchParams.has('serviceId')
-      );
-    } catch {
-      return false;
-    }
-  };
+function stickyPrimaryButton(page: Page, name: string | RegExp) {
+  return page.getByRole('button', { name }).last();
+}
 
-  if (!onCalendar()) {
-    // Wait for either calendar navigation (skip-details redirect) or details UI.
+function isOnScheduleCalendar(page: Page): boolean {
+  try {
+    const url = new URL(page.url());
+    return /\/book\/?$/.test(url.pathname) && url.searchParams.has('serviceId');
+  } catch {
+    return false;
+  }
+}
+
+async function waitForScheduleCalendarReady(page: Page): Promise<void> {
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
+/** Mobile vs shop when the business offers both (details page or pre-schedule). */
+export async function selectServiceLocationIfShown(
+  page: Page,
+  location: 'mobile' | 'shop' = 'shop'
+): Promise<boolean> {
+  const heading = page.getByRole('heading', {
+    name: /Where (?:should|will) service happen/i,
+  });
+  if (!(await heading.isVisible().catch(() => false))) {
+    return false;
+  }
+
+  const locationGroup = page.getByRole('radiogroup', {
+    name: /Where (?:should|will) service happen/i,
+  });
+  const target =
+    location === 'mobile'
+      ? locationGroup.getByRole('radio', {
+          name: /^(?:Mobile|At my address)/i,
+        })
+      : locationGroup.getByRole('radio', {
+          name: /^(?:Shop|At their shop)/i,
+        });
+
+  if (await target.isVisible().catch(() => false)) {
+    await target.click();
+  } else {
+    await locationGroup.getByRole('radio').first().click();
+  }
+  return true;
+}
+
+/**
+ * Advances service details (price → add-ons → mobile/shop when offered)
+ * onto the schedule calendar. Adaptive for services that skip any of those steps.
+ */
+export async function continueFromServiceDetails(
+  page: Page,
+  options?: {
+    location?: 'mobile' | 'shop';
+    /** When add-ons are shown, toggle the first one before continuing. */
+    toggleFirstAddOn?: boolean;
+  }
+): Promise<void> {
+  const locationChoice = options?.location ?? 'shop';
+  let shouldToggleFirstAddOn = options?.toggleFirstAddOn === true;
+
+  if (!isOnScheduleCalendar(page)) {
     await Promise.race([
       page.waitForURL(
         url =>
@@ -127,6 +175,11 @@ export async function continueFromServiceDetails(page: Page): Promise<void> {
       ),
       page
         .getByRole('radiogroup', { name: 'Choose a price option' })
+        .or(
+          page.getByRole('heading', {
+            name: /Where (?:should|will) service happen/i,
+          })
+        )
         .or(page.getByRole('link', { name: 'Date & time' }))
         .or(page.getByRole('button', { name: 'Date & time' }))
         .or(page.getByRole('button', { name: 'Continue' }))
@@ -135,45 +188,74 @@ export async function continueFromServiceDetails(page: Page): Promise<void> {
     ]);
   }
 
-  if (onCalendar()) {
-    await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible({
-      timeout: 15_000,
+  for (let guard = 0; guard < 8; guard++) {
+    if (isOnScheduleCalendar(page)) {
+      // Pre-schedule location for custom jobs / deep links without a prior choice.
+      if (await selectServiceLocationIfShown(page, locationChoice)) {
+        const cta = stickyPrimaryButton(page, 'Continue');
+        await expect(cta).toBeEnabled({ timeout: 10_000 });
+        await cta.click();
+        continue;
+      }
+      await waitForScheduleCalendarReady(page);
+      return;
+    }
+
+    const priceGroup = page.getByRole('radiogroup', {
+      name: 'Choose a price option',
     });
-    return;
-  }
+    if (await priceGroup.isVisible().catch(() => false)) {
+      await priceGroup.getByRole('radio').first().click();
+    }
 
-  const priceGroup = page.getByRole('radiogroup', {
-    name: 'Choose a price option',
-  });
-  if (await priceGroup.isVisible().catch(() => false)) {
-    await priceGroup.getByRole('radio').first().click();
-  }
+    if (await selectServiceLocationIfShown(page, locationChoice)) {
+      const dateAndTime = page
+        .getByRole('link', { name: 'Date & time' })
+        .or(page.getByRole('button', { name: 'Date & time' }));
+      await expect(dateAndTime).toBeEnabled({ timeout: 10_000 });
+      await dateAndTime.click();
+      await page.waitForURL(
+        url =>
+          /\/book\/?$/.test(url.pathname) && url.searchParams.has('serviceId'),
+        { timeout: 20_000 }
+      );
+      continue;
+    }
 
-  const dateAndTime = page
-    .getByRole('link', { name: 'Date & time' })
-    .or(page.getByRole('button', { name: 'Date & time' }));
-  const continueBtn = page.getByRole('button', { name: 'Continue' });
+    if (shouldToggleFirstAddOn) {
+      const addOnGroup = page.getByRole('group', { name: 'Optional add-ons' });
+      if (await addOnGroup.isVisible().catch(() => false)) {
+        const firstAddOn = addOnGroup.getByRole('button').first();
+        if (await firstAddOn.isVisible().catch(() => false)) {
+          await firstAddOn.click();
+          shouldToggleFirstAddOn = false;
+        }
+      }
+    }
 
-  if (await dateAndTime.isVisible().catch(() => false)) {
-    await dateAndTime.click();
-  } else if (await continueBtn.isVisible().catch(() => false)) {
-    await continueBtn.click();
-    const afterAddOns = page
+    const dateAndTime = page
       .getByRole('link', { name: 'Date & time' })
       .or(page.getByRole('button', { name: 'Date & time' }));
-    await expect(afterAddOns).toBeVisible({ timeout: 10_000 });
-    await afterAddOns.click();
-  } else {
+    if (await dateAndTime.isVisible().catch(() => false)) {
+      await dateAndTime.click();
+      await page.waitForURL(
+        url =>
+          /\/book\/?$/.test(url.pathname) && url.searchParams.has('serviceId'),
+        { timeout: 20_000 }
+      );
+      continue;
+    }
+
+    const continueBtn = page.getByRole('button', { name: 'Continue' });
+    if (await continueBtn.isVisible().catch(() => false)) {
+      await continueBtn.click();
+      continue;
+    }
+
     throw new Error('Could not continue from service details.');
   }
 
-  await page.waitForURL(
-    url => /\/book\/?$/.test(url.pathname) && url.searchParams.has('serviceId'),
-    { timeout: 20_000 }
-  );
-  await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible({
-    timeout: 15_000,
-  });
+  throw new Error('Stuck advancing service details before the calendar.');
 }
 
 /** Selects the first enabled calendar day that has at least one time slot. */
@@ -212,10 +294,6 @@ export async function selectFirstAvailableDateAndTime(
   }
 
   throw new Error('No available date/time slots found in the next few months.');
-}
-
-function stickyPrimaryButton(page: Page, name: string | RegExp) {
-  return page.getByRole('button', { name }).last();
 }
 
 export type PublicCustomerFixture = {
@@ -274,32 +352,8 @@ export async function fillCustomerDetailsThroughReview(
       return { vehicleFieldsShown, notesFieldShown };
     }
 
-    // Location choice (mobile vs shop)
-    if (
-      await page
-        .getByRole('heading', {
-          name: /Where (?:should|will) service happen/i,
-        })
-        .isVisible()
-        .catch(() => false)
-    ) {
-      const locationGroup = page.getByRole('radiogroup', {
-        name: /Where (?:should|will) service happen/i,
-      });
-      const requestedLocation = options?.location ?? 'shop';
-      const target =
-        requestedLocation === 'mobile'
-          ? locationGroup.getByRole('radio', {
-              name: /^(?:Mobile|At my address)/i,
-            })
-          : locationGroup.getByRole('radio', {
-              name: /^(?:Shop|At their shop)/i,
-            });
-      if (await target.isVisible().catch(() => false)) {
-        await target.click();
-      } else {
-        await locationGroup.getByRole('radio').first().click();
-      }
+    // Location choice (mobile vs shop) — rare fallback if still shown post-schedule
+    if (await selectServiceLocationIfShown(page, options?.location ?? 'shop')) {
       const cta = stickyPrimaryButton(page, 'Continue');
       await expect(cta).toBeEnabled({ timeout: 10_000 });
       await cta.click();
@@ -468,15 +522,24 @@ export async function confirmBookingWithoutStripe(page: Page): Promise<void> {
 export async function walkPublicBookingToReview(
   page: Page,
   slug: string,
-  options?: { serviceName?: string; customer?: PublicCustomerFixture }
+  options?: {
+    serviceName?: string;
+    customer?: PublicCustomerFixture;
+    location?: 'mobile' | 'shop';
+    toggleFirstAddOn?: boolean;
+  }
 ): Promise<void> {
   await openPublicBookFlow(page, slug);
   await selectFirstBookableService(page, options?.serviceName);
-  await continueFromServiceDetails(page);
+  await continueFromServiceDetails(page, {
+    location: options?.location,
+    toggleFirstAddOn: options?.toggleFirstAddOn,
+  });
   await selectFirstAvailableDateAndTime(page);
   await fillCustomerDetailsThroughReview(
     page,
-    options?.customer ?? defaultPublicCustomer()
+    options?.customer ?? defaultPublicCustomer(),
+    { location: options?.location }
   );
   await expect(
     page

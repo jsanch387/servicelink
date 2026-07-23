@@ -11,6 +11,7 @@ const WHITELIST = new Set([
   'priceOptionId',
   'skipDetails',
   'detailsStep',
+  'serviceLocationType',
   'for',
   PUBLIC_BOOKING_FLOW_LANG_QUERY,
 ]);

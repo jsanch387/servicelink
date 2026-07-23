@@ -302,7 +302,15 @@ export function getBusinessBookDetailsPath(
   });
 }
 
-export type BookDetailsStepQuery = 'price' | 'addons';
+export type BookDetailsStepQuery = 'price' | 'addons' | 'location';
+
+export type BookServiceLocationTypeQuery = 'mobile' | 'shop';
+
+export function parseBookServiceLocationTypeQuery(
+  value: string | null | undefined
+): BookServiceLocationTypeQuery | undefined {
+  return value === 'mobile' || value === 'shop' ? value : undefined;
+}
 
 export function getBusinessBookDetailsUrl(
   businessSlug: string,
@@ -311,8 +319,10 @@ export function getBusinessBookDetailsUrl(
     addOnIds?: string;
     /** Restores chosen multi-price option when linking back from the calendar step. */
     priceOptionId?: string;
-    /** Which details sub-step to open (`price` = choose option, `addons` = add-ons). */
+    /** Which details sub-step to open (`price` | `addons` | `location`). */
     detailsStep?: BookDetailsStepQuery;
+    /** Mobile vs shop when business offers both (restored on back navigation). */
+    serviceLocationType?: BookServiceLocationTypeQuery;
     forOwner?: boolean;
     lang?: PublicBookingFlowLocale | null;
   }
@@ -327,8 +337,18 @@ export function getBusinessBookDetailsUrl(
   if (params.priceOptionId?.trim()) {
     q.set('priceOptionId', params.priceOptionId.trim());
   }
-  if (params.detailsStep === 'addons' || params.detailsStep === 'price') {
+  if (
+    params.detailsStep === 'addons' ||
+    params.detailsStep === 'price' ||
+    params.detailsStep === 'location'
+  ) {
     q.set('detailsStep', params.detailsStep);
+  }
+  if (
+    params.serviceLocationType === 'mobile' ||
+    params.serviceLocationType === 'shop'
+  ) {
+    q.set('serviceLocationType', params.serviceLocationType);
   }
   if (params.forOwner) {
     q.set('for', OWNER_MANUAL_BOOKING_FOR);
@@ -348,6 +368,8 @@ export function getBusinessBookScheduleUrl(
     priceOptionId?: string;
     addOnIds?: string;
     detailsStep?: BookDetailsStepQuery;
+    /** Mobile vs shop when business offers both. */
+    serviceLocationType?: BookServiceLocationTypeQuery;
     /** When set, calendar opens after skipping configure (server redirect). */
     skipDetails?: boolean;
     forOwner?: boolean;
@@ -367,8 +389,18 @@ export function getBusinessBookScheduleUrl(
   if (params.addOnIds?.trim()) {
     q.set('addOnIds', params.addOnIds.trim());
   }
-  if (params.detailsStep === 'addons' || params.detailsStep === 'price') {
+  if (
+    params.detailsStep === 'addons' ||
+    params.detailsStep === 'price' ||
+    params.detailsStep === 'location'
+  ) {
     q.set('detailsStep', params.detailsStep);
+  }
+  if (
+    params.serviceLocationType === 'mobile' ||
+    params.serviceLocationType === 'shop'
+  ) {
+    q.set('serviceLocationType', params.serviceLocationType);
   }
   if (params.skipDetails) {
     q.set('skipDetails', '1');

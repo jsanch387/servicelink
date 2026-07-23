@@ -92,6 +92,16 @@ describe('public booking flow route helpers', () => {
         `/acme-auto/book/details?serviceId=svc-1&${PUBLIC_BOOKING_FLOW_LANG_QUERY}=es`
       );
     });
+
+    it('preserves location step and serviceLocationType', () => {
+      const u = getBusinessBookDetailsUrl('acme-auto', {
+        serviceId: 'svc-1',
+        detailsStep: 'location',
+        serviceLocationType: 'mobile',
+      });
+      expect(u).toContain('detailsStep=location');
+      expect(u).toContain('serviceLocationType=mobile');
+    });
   });
 
   describe('getBusinessBookScheduleUrl', () => {
@@ -104,6 +114,16 @@ describe('public booking flow route helpers', () => {
       expect(u).toContain('serviceId=svc-1');
       expect(u).toContain('skipDetails=1');
       expect(u).toContain(`${PUBLIC_BOOKING_FLOW_LANG_QUERY}=es`);
+    });
+
+    it('preserves serviceLocationType for both-mode bookings', () => {
+      const u = getBusinessBookScheduleUrl('acme-auto', {
+        serviceId: 'svc-1',
+        detailsStep: 'location',
+        serviceLocationType: 'shop',
+      });
+      expect(u).toContain('detailsStep=location');
+      expect(u).toContain('serviceLocationType=shop');
     });
   });
 });

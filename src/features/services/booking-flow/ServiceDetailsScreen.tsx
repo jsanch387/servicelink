@@ -8,7 +8,14 @@ import {
   getBusinessBookScheduleUrl,
   getPublicBusinessProfilePath,
   type BookDetailsStepQuery,
+  type BookServiceLocationTypeQuery,
 } from '@/constants/routes';
+import { BookingServiceLocationChoice } from '@/features/availability/booking/components/BookingServiceLocationSteps';
+import {
+  isCustomerServiceLocationChoiceValid,
+  type CustomerServiceChoice,
+} from '@/features/availability/booking/utils/bookingServiceLocationFlow';
+import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type {
   AddOnForBooking,
   PriceOptionForBooking,
@@ -29,6 +36,8 @@ import { PriceOptionSelector } from './PriceOptionSelector';
 import { ServiceDetailsBookingSummary } from './ServiceDetailsBookingSummary';
 import type { ServiceAddOn } from './types';
 
+type ServiceDetailsPhase = 'price' | 'addons' | 'location';
+
 interface ServiceDetailsScreenProps {
   businessSlug: string;
   serviceId: string;
@@ -38,16 +47,56 @@ interface ServiceDetailsScreenProps {
   addOns: AddOnForBooking[];
   /** Active price options when multi-price is on (may be empty). */
   priceOptions: PriceOptionForBooking[];
+  /** When mode is `both`, customer picks mobile vs shop before the calendar. */
+  serviceLocation: PublicBookingServiceLocation;
   /** Restore add-on selections when returning from calendar (from URL). */
   initialAddOnIds?: string[];
   /** Restore selected price option when returning from calendar / deep link. */
   initialPriceOptionId?: string;
-  /** Restore price vs add-ons sub-step when returning from calendar (`?detailsStep=`). */
+  /** Restore price / add-ons / location sub-step when returning from calendar. */
   initialDetailsStep?: BookDetailsStepQuery;
+  /** Restore mobile vs shop when returning from calendar. */
+  initialServiceLocationType?: BookServiceLocationTypeQuery;
   /** Preserves `for=owner` on the continue-to-calendar URL (dashboard manual booking). */
   isOwnerManualBooking?: boolean;
   /** Funnel locale from server (`?lang=` + cookie). */
   bookingFlowLocale?: PublicBookingFlowLocale;
+}
+
+function resolveInitialPhase(params: {
+  needsPriceStep: boolean;
+  showAddOnSection: boolean;
+  needsLocationStep: boolean;
+  initialDetailsStep?: BookDetailsStepQuery;
+  hasValidPriceOption: boolean;
+}): ServiceDetailsPhase {
+  const {
+    needsPriceStep,
+    showAddOnSection,
+    needsLocationStep,
+    initialDetailsStep,
+    hasValidPriceOption,
+  } = params;
+
+  if (
+    initialDetailsStep === 'location' &&
+    needsLocationStep &&
+    (!needsPriceStep || hasValidPriceOption)
+  ) {
+    return 'location';
+  }
+
+  if (
+    initialDetailsStep === 'addons' &&
+    showAddOnSection &&
+    (!needsPriceStep || hasValidPriceOption)
+  ) {
+    return 'addons';
+  }
+
+  if (needsPriceStep) return 'price';
+  if (showAddOnSection) return 'addons';
+  return 'location';
 }
 
 export function ServiceDetailsScreen({
@@ -56,9 +105,11 @@ export function ServiceDetailsScreen({
   service,
   addOns,
   priceOptions,
+  serviceLocation,
   initialAddOnIds,
   initialPriceOptionId,
   initialDetailsStep,
+  initialServiceLocationType,
   isOwnerManualBooking = false,
   bookingFlowLocale = 'en',
 }: ServiceDetailsScreenProps) {
@@ -67,6 +118,8 @@ export function ServiceDetailsScreen({
     [bookingFlowLocale]
   );
   const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
+  const showAddOnSection = addOns.length > 0;
+  const needsLocationStep = serviceLocation.mode === 'both';
 
   const validInitialOptionId =
     initialPriceOptionId &&
@@ -74,16 +127,15 @@ export function ServiceDetailsScreen({
       ? initialPriceOptionId
       : null;
 
-  const [phase, setPhase] = useState<'price' | 'addons'>(() => {
-    if (
-      initialDetailsStep === 'addons' &&
-      addOns.length > 0 &&
-      (!needsPriceStep || Boolean(validInitialOptionId))
-    ) {
-      return 'addons';
-    }
-    return needsPriceStep ? 'price' : 'addons';
-  });
+  const [phase, setPhase] = useState<ServiceDetailsPhase>(() =>
+    resolveInitialPhase({
+      needsPriceStep,
+      showAddOnSection,
+      needsLocationStep,
+      initialDetailsStep,
+      hasValidPriceOption: Boolean(validInitialOptionId),
+    })
+  );
 
   const [selectedPriceOptionId, setSelectedPriceOptionId] = useState<
     string | null
@@ -92,6 +144,12 @@ export function ServiceDetailsScreen({
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<Set<string>>(
     () => new Set(initialAddOnIds ?? [])
   );
+  const [customerServiceChoice, setCustomerServiceChoice] =
+    useState<CustomerServiceChoice>(() =>
+      needsLocationStep && initialServiceLocationType
+        ? initialServiceLocationType
+        : null
+    );
   const [isNavigatingToCalendar, setIsNavigatingToCalendar] = useState(false);
 
   const selectedPriceOption = useMemo(
@@ -127,6 +185,12 @@ export function ServiceDetailsScreen({
   };
 
   const buildCalendarUrl = useCallback(() => {
+    const detailsStepForBack: BookDetailsStepQuery = needsLocationStep
+      ? 'location'
+      : phase === 'addons'
+        ? 'addons'
+        : 'price';
+
     return getBusinessBookScheduleUrl(businessSlug, {
       serviceId,
       priceOptionId:
@@ -137,7 +201,12 @@ export function ServiceDetailsScreen({
         selectedAddOnIds.size > 0
           ? Array.from(selectedAddOnIds).join(',')
           : undefined,
-      detailsStep: phase === 'addons' ? 'addons' : 'price',
+      detailsStep: detailsStepForBack,
+      serviceLocationType:
+        needsLocationStep &&
+        (customerServiceChoice === 'mobile' || customerServiceChoice === 'shop')
+          ? customerServiceChoice
+          : undefined,
       forOwner: isOwnerManualBooking,
       lang: bookingFlowLocale,
     });
@@ -150,23 +219,54 @@ export function ServiceDetailsScreen({
     isOwnerManualBooking,
     phase,
     bookingFlowLocale,
+    needsLocationStep,
+    customerServiceChoice,
   ]);
 
   const calendarUrl = buildCalendarUrl();
 
   const canContinueFromPrice = Boolean(selectedPriceOptionId);
-  const showAddOnSection = addOns.length > 0;
+  const canContinueFromLocation = isCustomerServiceLocationChoiceValid(
+    serviceLocation,
+    customerServiceChoice
+  );
+  const showShopIncompleteError =
+    needsLocationStep &&
+    customerServiceChoice === 'shop' &&
+    !serviceLocation.hasCompleteShopAddress;
+
+  const advanceAfterPriceOrAddOns = () => {
+    if (needsLocationStep) {
+      setPhase('location');
+      return;
+    }
+  };
 
   const handlePriceStepContinue = () => {
     if (!canContinueFromPrice) return;
-    if (showAddOnSection) setPhase('addons');
+    if (showAddOnSection) {
+      setPhase('addons');
+      return;
+    }
+    advanceAfterPriceOrAddOns();
   };
 
-  const primaryButtonHref =
-    phase === 'price' && !showAddOnSection ? calendarUrl : undefined;
+  const handleAddOnsContinue = () => {
+    if (needsLocationStep) {
+      setPhase('location');
+    }
+  };
+
+  const goesStraightToCalendarFromPrice =
+    phase === 'price' && !showAddOnSection && !needsLocationStep;
+  const goesStraightToCalendarFromAddOns =
+    phase === 'addons' && !needsLocationStep;
+  const goesStraightToCalendarFromLocation = phase === 'location';
 
   const showPrimaryAsLink =
-    phase === 'price' && !showAddOnSection && canContinueFromPrice;
+    (goesStraightToCalendarFromPrice && canContinueFromPrice) ||
+    goesStraightToCalendarFromAddOns ||
+    (goesStraightToCalendarFromLocation && canContinueFromLocation);
 
   const exitDetailsHref = isOwnerManualBooking
     ? getBusinessBookPath(businessSlug, {
@@ -183,6 +283,37 @@ export function ServiceDetailsScreen({
 
   const backNavClassName = publicFlowBackNavClassName;
 
+  const handleDetailsBack = () => {
+    if (phase === 'location') {
+      if (showAddOnSection) {
+        setPhase('addons');
+        return;
+      }
+      if (needsPriceStep) {
+        setPhase('price');
+        return;
+      }
+    }
+    if (phase === 'addons' && needsPriceStep) {
+      setPhase('price');
+    }
+  };
+
+  const canGoBackWithinDetails =
+    (phase === 'addons' && needsPriceStep) ||
+    (phase === 'location' && (showAddOnSection || needsPriceStep));
+
+  const stickyBackLabel =
+    phase === 'location'
+      ? showAddOnSection
+        ? ui.nav.backToAddOns
+        : needsPriceStep
+          ? ui.serviceDetails.backToOptions
+          : exitDetailsLabel
+      : phase === 'addons' && needsPriceStep
+        ? ui.serviceDetails.backToOptions
+        : exitDetailsLabel;
+
   if (isNavigatingToCalendar) {
     return <BookCalendarLoadingSkeleton />;
   }
@@ -196,15 +327,13 @@ export function ServiceDetailsScreen({
           </Link>
         ) : (
           <>
-            {phase === 'addons' && needsPriceStep ? (
+            {canGoBackWithinDetails ? (
               <button
                 type="button"
-                onClick={() => setPhase('price')}
+                onClick={handleDetailsBack}
                 className={backNavClassName}
               >
-                <PublicFlowBackNavLabel
-                  label={ui.serviceDetails.backToOptions}
-                />
+                <PublicFlowBackNavLabel label={stickyBackLabel} />
               </button>
             ) : (
               <Link href={exitDetailsHref} className={backNavClassName}>
@@ -243,23 +372,41 @@ export function ServiceDetailsScreen({
             </section>
           )}
 
-          <section className="mb-8">
-            <h2 className="mb-3 text-base font-semibold text-white">
-              {ui.common.summary}
-            </h2>
-            <ServiceDetailsBookingSummary
-              serviceName={service.name}
-              servicePriceCents={basePriceCents}
-              serviceDurationMinutes={baseDurationMinutes}
-              selectedVariantLabel={selectedPriceOption?.label}
-              selectedAddOns={selectedAddOns}
-              totalCents={totalCents}
-              serviceLabel={ui.common.service}
-              addOnsLabel={ui.common.addOns}
-              totalLabel={ui.common.total}
-              bookingFlowLocale={bookingFlowLocale}
-            />
-          </section>
+          {phase === 'location' && needsLocationStep && (
+            <section className="mb-6">
+              <BookingServiceLocationChoice
+                value={customerServiceChoice}
+                onChange={setCustomerServiceChoice}
+                bookingFlowLocale={bookingFlowLocale}
+                isOwnerManualBooking={isOwnerManualBooking}
+              />
+              {showShopIncompleteError ? (
+                <p className="mt-3 text-sm text-red-400" role="alert">
+                  {ui.serviceLocation.shopAddressIncomplete}
+                </p>
+              ) : null}
+            </section>
+          )}
+
+          {phase !== 'location' ? (
+            <section className="mb-8">
+              <h2 className="mb-3 text-base font-semibold text-white">
+                {ui.common.summary}
+              </h2>
+              <ServiceDetailsBookingSummary
+                serviceName={service.name}
+                servicePriceCents={basePriceCents}
+                serviceDurationMinutes={baseDurationMinutes}
+                selectedVariantLabel={selectedPriceOption?.label}
+                selectedAddOns={selectedAddOns}
+                totalCents={totalCents}
+                serviceLabel={ui.common.service}
+                addOnsLabel={ui.common.addOns}
+                totalLabel={ui.common.total}
+                bookingFlowLocale={bookingFlowLocale}
+              />
+            </section>
+          ) : null}
         </div>
 
         <div
@@ -272,13 +419,13 @@ export function ServiceDetailsScreen({
             }`}
           >
             {isOwnerManualBooking ? (
-              phase === 'addons' && needsPriceStep ? (
+              canGoBackWithinDetails ? (
                 <Button
                   type="button"
                   variant="secondary"
                   fullWidth
                   className="font-semibold"
-                  onClick={() => setPhase('price')}
+                  onClick={handleDetailsBack}
                 >
                   {ui.common.back}
                 </Button>
@@ -293,6 +440,7 @@ export function ServiceDetailsScreen({
                 </Button>
               )
             ) : null}
+
             {phase === 'price' && showAddOnSection && (
               <Button
                 type="button"
@@ -308,11 +456,26 @@ export function ServiceDetailsScreen({
               </Button>
             )}
 
-            {phase === 'price' && !showAddOnSection && (
+            {phase === 'price' && !showAddOnSection && needsLocationStep && (
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                disabled={!canContinueFromPrice}
+                onClick={handlePriceStepContinue}
+                icon={<ChevronRightIcon className="h-5 w-5" />}
+                iconPosition="right"
+              >
+                {ui.serviceDetails.continue}
+              </Button>
+            )}
+
+            {phase === 'price' && !showAddOnSection && !needsLocationStep && (
               <>
                 {showPrimaryAsLink ? (
                   <Button
-                    href={primaryButtonHref}
+                    href={calendarUrl}
                     onClick={() => setIsNavigatingToCalendar(true)}
                     variant="inverse"
                     fullWidth
@@ -338,7 +501,21 @@ export function ServiceDetailsScreen({
               </>
             )}
 
-            {phase === 'addons' && (
+            {phase === 'addons' && needsLocationStep && (
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                onClick={handleAddOnsContinue}
+                icon={<ChevronRightIcon className="h-5 w-5" />}
+                iconPosition="right"
+              >
+                {ui.serviceDetails.continue}
+              </Button>
+            )}
+
+            {phase === 'addons' && !needsLocationStep && (
               <Button
                 href={calendarUrl}
                 onClick={() => setIsNavigatingToCalendar(true)}
@@ -350,6 +527,36 @@ export function ServiceDetailsScreen({
               >
                 {ui.serviceDetails.dateAndTime}
               </Button>
+            )}
+
+            {phase === 'location' && (
+              <>
+                {showPrimaryAsLink ? (
+                  <Button
+                    href={calendarUrl}
+                    onClick={() => setIsNavigatingToCalendar(true)}
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    icon={<ChevronRightIcon className="h-5 w-5" />}
+                    iconPosition="right"
+                  >
+                    {ui.serviceDetails.dateAndTime}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    disabled
+                    icon={<ChevronRightIcon className="h-5 w-5" />}
+                    iconPosition="right"
+                  >
+                    {ui.serviceDetails.dateAndTime}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

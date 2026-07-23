@@ -8,6 +8,7 @@ import {
   getNextDetailsSubStep,
   getPrevDetailsSubStep,
   isBookingDetailsSubStepValid,
+  isCustomerServiceLocationChoiceValid,
   prefillCustomerWithShopAddress,
 } from '../utils/bookingServiceLocationFlow';
 
@@ -71,12 +72,12 @@ const both: PublicBookingServiceLocation = {
 };
 
 describe('bookingServiceLocationFlow', () => {
-  it('mobile_only skips choice and requires address', () => {
+  it('mobile_only skips choice and requires address after contact', () => {
     expect(getNextDetailsSubStep('contact', mobileOnly, null)).toBe('address');
     expect(customerAddressEntryRequired(mobileOnly, null)).toBe(true);
   });
 
-  it('shop_only skips shop visit and goes to vehicle notes after contact', () => {
+  it('shop_only skips address and goes to vehicle notes after contact', () => {
     expect(getNextDetailsSubStep('contact', shopOnly, null)).toBe(
       'vehicleNotes'
     );
@@ -84,38 +85,27 @@ describe('bookingServiceLocationFlow', () => {
     expect(customerBookingUsesShop(shopOnly, null)).toBe(true);
   });
 
-  it('both mode shows choice then branches', () => {
-    expect(getNextDetailsSubStep('contact', both, null)).toBe('serviceChoice');
-    expect(getNextDetailsSubStep('serviceChoice', both, 'mobile')).toBe(
-      'address'
-    );
-    expect(getNextDetailsSubStep('serviceChoice', both, 'shop')).toBe(
-      'vehicleNotes'
-    );
+  it('both mode branches address from the pre-calendar location choice', () => {
+    expect(getNextDetailsSubStep('contact', both, 'mobile')).toBe('address');
+    expect(getNextDetailsSubStep('contact', both, 'shop')).toBe('vehicleNotes');
+    expect(customerAddressEntryRequired(both, 'mobile')).toBe(true);
+    expect(customerAddressEntryRequired(both, 'shop')).toBe(false);
   });
 
-  it('blocks shop path when shop address is incomplete', () => {
+  it('validates mobile vs shop choice before calendar', () => {
+    expect(isCustomerServiceLocationChoiceValid(both, null)).toBe(false);
+    expect(isCustomerServiceLocationChoiceValid(both, 'mobile')).toBe(true);
+    expect(isCustomerServiceLocationChoiceValid(both, 'shop')).toBe(true);
     expect(
-      isBookingDetailsSubStepValid(
-        'serviceChoice',
-        emptyCustomer,
-        both,
-        'shop',
-        {
-          showVehicleFields: false,
-          emailOptional: false,
-        }
-      )
-    ).toBe(true);
-    expect(
-      isBookingDetailsSubStepValid(
-        'serviceChoice',
-        emptyCustomer,
+      isCustomerServiceLocationChoiceValid(
         { ...both, hasCompleteShopAddress: false },
-        'shop',
-        { showVehicleFields: false, emailOptional: false }
+        'shop'
       )
     ).toBe(false);
+    expect(isCustomerServiceLocationChoiceValid(mobileOnly, null)).toBe(true);
+  });
+
+  it('blocks contact continue when shop address is incomplete', () => {
     expect(
       isBookingDetailsSubStepValid(
         'contact',
@@ -157,12 +147,6 @@ describe('bookingServiceLocationFlow', () => {
         emailOptional: false,
       })
     ).toBe(false);
-  });
-
-  it('service choice mobile always goes to address step', () => {
-    expect(getNextDetailsSubStep('serviceChoice', both, 'mobile')).toBe(
-      'address'
-    );
   });
 
   it('allows visible vehicle fields to be optional for owner manual booking', () => {
@@ -218,18 +202,17 @@ describe('bookingServiceLocationFlow', () => {
     ).toBe(false);
   });
 
-  it('navigates back from vehicle notes', () => {
+  it('navigates back from vehicle notes without a post-schedule location step', () => {
     expect(getPrevDetailsSubStep('vehicleNotes', mobileOnly, null)).toBe(
       'address'
     );
     expect(getPrevDetailsSubStep('vehicleNotes', shopOnly, null)).toBe(
       'contact'
     );
-    expect(getPrevDetailsSubStep('vehicleNotes', both, 'shop')).toBe(
-      'serviceChoice'
-    );
+    expect(getPrevDetailsSubStep('vehicleNotes', both, 'shop')).toBe('contact');
     expect(getPrevDetailsSubStep('vehicleNotes', both, 'mobile')).toBe(
       'address'
     );
+    expect(getPrevDetailsSubStep('address', both, 'mobile')).toBe('contact');
   });
 });

@@ -52,6 +52,8 @@ interface BookFlowSwitchProps {
   stripeCheckoutSessionId?: string | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
   serviceLocation: PublicBookingServiceLocation;
+  /** Pre-selected mobile/shop from `/book/details` when business offers both. */
+  initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   activeSale?: PublicActiveSale | null;
 }
 
@@ -85,6 +87,7 @@ export function BookFlowSwitch({
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
   serviceLocation,
+  initialCustomerServiceChoice = null,
   activeSale = null,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
@@ -160,6 +163,7 @@ export function BookFlowSwitch({
           stripeCheckoutSessionId={stripeCheckoutSessionId}
           bookingFlowLocale={bookingFlowLocale}
           serviceLocation={serviceLocation}
+          initialCustomerServiceChoice={initialCustomerServiceChoice}
           activeSale={activeSale}
         />
       </Suspense>
