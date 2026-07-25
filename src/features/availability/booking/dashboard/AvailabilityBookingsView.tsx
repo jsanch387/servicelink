@@ -2,7 +2,11 @@
 
 import { Button } from '@/components/shared';
 import { ROUTES, getBusinessBookPath } from '@/constants/routes';
-import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
+import {
+  blockCoversDate,
+  toTimeOffIntervalFields,
+  type BlockTimeEntry,
+} from '@/features/availability/types/blockTime';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import type {
   ExistingBooking,
@@ -245,17 +249,12 @@ export function AvailabilityBookingsView({
   );
 
   const plannerDayTimeOff = useMemo(
-    () => timeOffBlocks.filter(b => b.date === plannerDateKey),
+    () => timeOffBlocks.filter(b => blockCoversDate(b, plannerDateKey)),
     [timeOffBlocks, plannerDateKey]
   );
 
   const timeOffIntervalsForSlots = useMemo<TimeOffInterval[]>(
-    () =>
-      timeOffBlocks.map(b => ({
-        date: b.date,
-        startTime: b.startTime,
-        endTime: b.endTime,
-      })),
+    () => timeOffBlocks.map(toTimeOffIntervalFields),
     [timeOffBlocks]
   );
 

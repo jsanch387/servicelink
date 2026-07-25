@@ -27,6 +27,8 @@ interface DateSelectorProps {
   serviceDurationMinutes: number;
   existingBookings: ExistingBooking[];
   timeOffBlocks: TimeOffInterval[];
+  /** Lead time (`minimum_notice`); defaults to none. */
+  minimumNotice?: string;
   selectedDate: Date | null;
 
   onSelectDate: (date: Date) => void;
@@ -47,6 +49,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   serviceDurationMinutes,
   existingBookings,
   timeOffBlocks,
+  minimumNotice = 'none',
   selectedDate,
   onSelectDate,
   onUserSelectDate,
@@ -67,11 +70,18 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         serviceDurationMinutes,
         existingBookings,
         30,
-        timeOffBlocks
+        timeOffBlocks,
+        minimumNotice
       );
       return slots.length === 0;
     },
-    [weeklySchedule, serviceDurationMinutes, existingBookings, timeOffBlocks]
+    [
+      weeklySchedule,
+      serviceDurationMinutes,
+      existingBookings,
+      timeOffBlocks,
+      minimumNotice,
+    ]
   );
 
   useEffect(() => {

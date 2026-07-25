@@ -65,3 +65,6 @@ export { StructuredData } from './StructuredData';
 export { Switch } from './Switch';
 export { ToggleButton } from './ToggleButton';
 export { WarningCallout } from './WarningCallout';
+export { toast, ToastViewport } from './toast';
+export type { ToastOptions } from './toast';
+export type { ToastItem, ToastType } from './toast/toastStore';

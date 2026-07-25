@@ -1,9 +1,13 @@
 /**
  * Generate available time slots in 30-minute increments.
- * Respects weekly schedule, existing bookings, and owner time-off blocks.
+ * Respects weekly schedule, existing bookings, owner time-off, and lead time.
  */
 
 import type { DayKey, WeeklySchedule } from '../../types/availability';
+import {
+  isSlotAllowedByLeadTime,
+  toLocalYYYYMMDD,
+} from '../../utils/minimumNotice';
 import type { ExistingBooking, TimeOffInterval } from '../types';
 
 /**
@@ -79,7 +83,8 @@ export function parseTimeHHmm(s: string): number {
 
 /**
  * True if a booking [startTime, startTime + duration) overlaps any time-off
- * block on the same calendar day (half-open intervals: block end is exclusive).
+ * block that covers `scheduledDate` (inclusive date range).
+ * All-day blocks cover the whole day; otherwise half-open time intervals.
  */
 export function bookingOverlapsTimeOff(
   scheduledDate: string,
@@ -87,10 +92,15 @@ export function bookingOverlapsTimeOff(
   durationMinutes: number,
   timeOffBlocks: ReadonlyArray<TimeOffInterval>
 ): boolean {
+  const day = scheduledDate.trim();
   const sStart = parseTimeHHmm(startTime.trim());
   const sEnd = sStart + durationMinutes;
   return timeOffBlocks.some(b => {
-    if (b.date !== scheduledDate) return false;
+    const startDate = (b.startDate ?? b.date ?? '').trim();
+    const endDate = (b.endDate ?? b.date ?? startDate).trim();
+    if (!startDate || !endDate) return false;
+    if (day < startDate || day > endDate) return false;
+    if (b.allDay) return true;
     const bStart = parseTimeHHmm(b.startTime);
     const bEnd = parseTimeHHmm(b.endTime);
     return sStart < bEnd && sEnd > bStart;
@@ -103,22 +113,6 @@ function toHHmm(minutes: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
-/** Minutes from midnight for "now" in local time (used when selected date is today). */
-function getCurrentMinutesFromMidnight(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-}
-
-/** True if the given date is the same calendar day as today (local time). */
-function isToday(date: Date): boolean {
-  const now = new Date();
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
-}
-
 /** Slots are in 30-minute increments; returns array of "HH:mm" for the given date. */
 export function generateTimeSlots(
   selectedDate: Date,
@@ -126,17 +120,18 @@ export function generateTimeSlots(
   serviceDurationMinutes: number,
   existingBookings: ExistingBooking[],
   incrementMinutes: number = 30,
-  timeOffBlocks: ReadonlyArray<TimeOffInterval> = []
+  timeOffBlocks: ReadonlyArray<TimeOffInterval> = [],
+  /** `minimum_notice` from availability; owners can pass `'none'` to bypass. */
+  minimumNotice: string = 'none',
+  now: Date = new Date()
 ): string[] {
   const dayKey = getDayKey(selectedDate);
   const daySchedule = weeklySchedule[dayKey];
   if (!daySchedule.enabled) return [];
 
-  const dayStr = selectedDate.toISOString().slice(0, 10);
+  const dayStr = toLocalYYYYMMDD(selectedDate);
   const startMins = parseTimeHHmm(daySchedule.start);
   const endMins = parseTimeHHmm(daySchedule.end);
-
-  const nowMins = isToday(selectedDate) ? getCurrentMinutesFromMidnight() : -1;
 
   const slots: string[] = [];
   for (
@@ -144,9 +139,11 @@ export function generateTimeSlots(
     t + serviceDurationMinutes <= endMins;
     t += incrementMinutes
   ) {
-    if (nowMins >= 0 && t <= nowMins) continue;
-
     const slotStart = toHHmm(t);
+
+    if (!isSlotAllowedByLeadTime(dayStr, slotStart, minimumNotice, now)) {
+      continue;
+    }
 
     const overlapsBooking = existingBookings.some(b => {
       if (b.date !== dayStr) return false;

@@ -2,7 +2,10 @@ import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { MaintenanceEnrollmentAnchorForm } from '@/features/maintenance/components/MaintenanceEnrollmentAnchorForm';
 import { MaintenanceEnrollmentPaymentActions } from '@/features/maintenance/components/MaintenanceEnrollmentPaymentActions';
@@ -215,11 +218,7 @@ export default async function PublicMaintenanceEnrollmentPage({
   );
   const timeOffBlocks = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
-  ).map(b => ({
-    date: b.date,
-    startTime: b.startTime,
-    endTime: b.endTime,
-  }));
+  ).map(toTimeOffIntervalFields);
   const maintenanceDurationMinutes = Math.max(
     1,
     Math.round(Number(enrollment.duration_minutes ?? 60))

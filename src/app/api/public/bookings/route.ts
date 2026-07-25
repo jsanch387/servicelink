@@ -28,8 +28,12 @@ import {
   insertBookingPaymentsRowForNoCheckoutPublicBooking,
 } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
+import { isSlotAllowedByLeadTime } from '@/features/availability/utils/minimumNotice';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
   buildPublicBookingServiceLocation,
@@ -318,29 +322,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const availabilityRow = await getAvailabilityForBusiness(
-      supabase,
-      businessId
-    );
-    const timeOffIntervals = parseStoredTimeOffBlocks(
-      availabilityRow?.time_off_blocks
-    );
-    if (
-      bookingOverlapsTimeOff(
-        body.scheduledDate,
-        body.startTime.trim(),
-        body.durationMinutes,
-        timeOffIntervals
-      )
-    ) {
-      return publicBookingJson(
-        requestId,
-        {
-          success: false,
-          error: 'That time is not available. Please choose another slot.',
-        },
-        409
+    if (!ownerManualBooking) {
+      const availabilityRow = await getAvailabilityForBusiness(
+        supabase,
+        businessId
       );
+      const timeOffIntervals = parseStoredTimeOffBlocks(
+        availabilityRow?.time_off_blocks
+      ).map(toTimeOffIntervalFields);
+      if (
+        bookingOverlapsTimeOff(
+          body.scheduledDate,
+          body.startTime.trim(),
+          body.durationMinutes,
+          timeOffIntervals
+        )
+      ) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'That time is not available. Please choose another slot.',
+          },
+          409
+        );
+      }
+
+      if (
+        !isSlotAllowedByLeadTime(
+          body.scheduledDate,
+          body.startTime.trim(),
+          availabilityRow?.minimum_notice
+        )
+      ) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'That time is too soon to book. Please choose a later slot.',
+          },
+          409
+        );
+      }
     }
 
     const optionLabel = body.servicePriceOptionLabel?.trim();

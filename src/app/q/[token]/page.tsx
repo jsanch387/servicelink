@@ -5,7 +5,10 @@ import {
   DEFAULT_SCHEDULE,
   type WeeklySchedule,
 } from '@/features/availability/types/availability';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
@@ -192,11 +195,7 @@ export default async function PublicQuoteViewPage({
     DEFAULT_SCHEDULE;
   const timeOffBlocks: TimeOffInterval[] = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
-  ).map(b => ({
-    date: b.date,
-    startTime: b.startTime,
-    endTime: b.endTime,
-  }));
+  ).map(toTimeOffIntervalFields);
 
   const isCustomerRequested = displayQuote.source === 'customer_requested';
   const requestRaw = customerRequestRawFromRow(displayQuote);

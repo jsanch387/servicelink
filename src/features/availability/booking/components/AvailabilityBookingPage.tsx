@@ -205,6 +205,7 @@ export function AvailabilityBookingPage({
   selectedPriceOptionLabel,
   weeklySchedule,
   timeOffBlocks: timeOffBlocksProp = [],
+  minimumNotice = 'none',
   existingBookings: existingBookingsProp,
   isOwnerManualBooking = false,
   paymentSettings = null,
@@ -229,6 +230,7 @@ export function AvailabilityBookingPage({
     initialCustomerServiceChoice !== 'shop';
   const { blockedSlots } = usePublicBlockedSlots(businessSlug);
   const existingBookings = existingBookingsProp ?? blockedSlots;
+  const effectiveMinimumNotice = isOwnerManualBooking ? 'none' : minimumNotice;
 
   // Use server-resolved add-ons when provided; otherwise fall back to empty (addOnIds alone can't resolve without a fetch)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1300,7 +1302,8 @@ export function AvailabilityBookingPage({
                 weeklySchedule={weeklySchedule}
                 serviceDurationMinutes={totalBookingDurationMinutes}
                 existingBookings={existingBookings}
-                timeOffBlocks={timeOffBlocksProp}
+                timeOffBlocks={isOwnerManualBooking ? [] : timeOffBlocksProp}
+                minimumNotice={effectiveMinimumNotice}
                 selectedDate={selectedDate}
                 onSelectDate={date => {
                   setSelectedDate(date);
@@ -1322,7 +1325,8 @@ export function AvailabilityBookingPage({
                   serviceDurationMinutes={totalBookingDurationMinutes}
                   weeklySchedule={weeklySchedule}
                   existingBookings={existingBookings}
-                  timeOffBlocks={timeOffBlocksProp}
+                  timeOffBlocks={isOwnerManualBooking ? [] : timeOffBlocksProp}
+                  minimumNotice={effectiveMinimumNotice}
                   selectedTime={selectedTime}
                   onSelectTime={setSelectedTime}
                   heading={ui.calendar.chooseTime}

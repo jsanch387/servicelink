@@ -36,11 +36,18 @@ export interface ExistingBooking {
   durationMinutes: number;
 }
 
-/** Calendar date + local wall times for owner time-off (slot + API overlap checks). */
+/** Calendar date range + local wall times for owner time-off (slot + API overlap). */
 export interface TimeOffInterval {
-  date: string;
+  startDate: string;
+  endDate: string;
+  allDay: boolean;
   startTime: string;
   endTime: string;
+  /**
+   * Legacy single-day field. When present without start/end, treated as both.
+   * Prefer `startDate` / `endDate`.
+   */
+  date?: string;
 }
 
 export interface AddOnDisplay {
@@ -82,6 +89,11 @@ export interface AvailabilityBookingPageProps {
   weeklySchedule: WeeklySchedule;
   /** Owner time-off blocks for that day range (from `time_off_blocks`). */
   timeOffBlocks?: TimeOffInterval[];
+  /**
+   * Lead time from `business_availability.minimum_notice`.
+   * Ignored for owner manual bookings (treated as `'none'`).
+   */
+  minimumNotice?: string;
   /** Fetched from API when businessSlug is set; omit to use [] or fetch internally. */
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */

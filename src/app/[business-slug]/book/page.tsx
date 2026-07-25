@@ -23,7 +23,11 @@ import {
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { PublicBookingPaymentSettings } from '@/features/availability/booking/types';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import type { TimeOffInterval } from '@/features/availability/booking/types';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
@@ -297,9 +301,10 @@ export default async function BookingRequestPage({
   );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const weeklySchedule = availabilityRow?.weekly_schedule ?? null;
-  const timeOffBlocks = parseStoredTimeOffBlocks(
+  const timeOffBlocks: TimeOffInterval[] = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
-  );
+  ).map(toTimeOffIntervalFields);
+  const minimumNotice = availabilityRow?.minimum_notice ?? 'none';
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
@@ -587,6 +592,7 @@ export default async function BookingRequestPage({
             selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
+            minimumNotice={minimumNotice}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
@@ -632,6 +638,7 @@ export default async function BookingRequestPage({
             selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
+            minimumNotice={minimumNotice}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}

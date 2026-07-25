@@ -43,6 +43,8 @@ interface BookFlowSwitchProps {
   selectedPriceOptionLabel?: string;
   weeklySchedule?: WeeklySchedule | null;
   timeOffBlocks?: TimeOffInterval[];
+  /** Lead time from `minimum_notice`; skipped for owner manual bookings. */
+  minimumNotice?: string;
   isOwnerManualBooking?: boolean;
   paymentSettings?: PublicBookingPaymentSettings | null;
   /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
@@ -80,6 +82,7 @@ export function BookFlowSwitch({
   selectedPriceOptionLabel,
   weeklySchedule,
   timeOffBlocks = [],
+  minimumNotice = 'none',
   isOwnerManualBooking = false,
   paymentSettings = null,
   exitCalendarFlowHref,
@@ -156,6 +159,7 @@ export function BookFlowSwitch({
           selectedPriceOptionLabel={selectedPriceOptionLabel}
           weeklySchedule={schedule}
           timeOffBlocks={timeOffBlocks}
+          minimumNotice={isOwnerManualBooking ? 'none' : minimumNotice}
           isOwnerManualBooking={isOwnerManualBooking}
           paymentSettings={paymentSettings}
           exitCalendarFlowHref={exitCalendarFlowHref}

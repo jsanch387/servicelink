@@ -14,7 +14,7 @@ function getFirstDayOfMonth(month: number, year: number): number {
 }
 
 export interface CalendarProps {
-  /** Currently selected date (controlled). */
+  /** Currently selected date (controlled). Single-select mode. */
   value: Date | null;
   /** Called when user selects a date. */
   onChange: (date: Date) => void;
@@ -38,6 +38,14 @@ export interface CalendarProps {
   wide?: boolean;
   /** No outer card frame (border, shadow, panel fill) — for embedding in a larger layout. */
   plain?: boolean;
+  /** Weekday header format. Default `letter` (S M T…). Use `short` for Sun Mon…. */
+  weekdayFormat?: 'letter' | 'short';
+  /**
+   * Inclusive range highlight (Airbnb-style). When `rangeStart` is set, days in
+   * [rangeStart, rangeEnd ?? rangeStart] are highlighted. Parent owns click logic.
+   */
+  rangeStart?: Date | null;
+  rangeEnd?: Date | null;
 }
 
 export const Calendar: React.FC<CalendarProps> = ({
@@ -53,6 +61,9 @@ export const Calendar: React.FC<CalendarProps> = ({
   locale,
   wide = false,
   plain = false,
+  weekdayFormat = 'letter',
+  rangeStart = null,
+  rangeEnd = null,
 }) => {
   const [viewDate, setViewDate] = useState(() => {
     const today = new Date();
@@ -64,9 +75,10 @@ export const Calendar: React.FC<CalendarProps> = ({
   const year = viewDate.getFullYear();
 
   useEffect(() => {
-    if (!value) return;
-    setViewDate(new Date(value.getFullYear(), value.getMonth(), 1));
-  }, [value]);
+    const anchor = value ?? rangeStart;
+    if (!anchor) return;
+    setViewDate(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+  }, [value, rangeStart]);
 
   const minDay = minDate
     ? new Date(
@@ -105,6 +117,37 @@ export const Calendar: React.FC<CalendarProps> = ({
     value.getMonth() === month &&
     value.getFullYear() === year;
 
+  const dayTime = (d: number) => new Date(year, month, d).setHours(0, 0, 0, 0);
+
+  const rangeStartDay = rangeStart
+    ? new Date(
+        rangeStart.getFullYear(),
+        rangeStart.getMonth(),
+        rangeStart.getDate()
+      ).getTime()
+    : null;
+  const rangeEndDay = rangeEnd
+    ? new Date(
+        rangeEnd.getFullYear(),
+        rangeEnd.getMonth(),
+        rangeEnd.getDate()
+      ).getTime()
+    : rangeStartDay;
+
+  const isRangeEndpoint = (d: number): boolean => {
+    if (rangeStartDay == null) return false;
+    const t = dayTime(d);
+    return t === rangeStartDay || (rangeEndDay != null && t === rangeEndDay);
+  };
+
+  const isInRange = (d: number): boolean => {
+    if (rangeStartDay == null || rangeEndDay == null) return false;
+    const t = dayTime(d);
+    const lo = Math.min(rangeStartDay, rangeEndDay);
+    const hi = Math.max(rangeStartDay, rangeEndDay);
+    return t >= lo && t <= hi;
+  };
+
   const isToday = (d: number): boolean => {
     const today = new Date();
     return (
@@ -141,7 +184,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   });
 
   const frameClass = plain
-    ? 'w-full sm:max-w-[360px] p-0 bg-transparent border-0 shadow-none rounded-none'
+    ? `w-full ${wide ? 'max-w-none' : 'max-w-[360px]'} p-0 bg-transparent border-0 shadow-none rounded-none`
     : `w-full ${
         wide ? 'sm:max-w-none' : 'sm:max-w-[360px]'
       } rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 shadow-xl`;
@@ -164,7 +207,7 @@ export const Calendar: React.FC<CalendarProps> = ({
       )}
 
       {/* Centered month navigation */}
-      <div className="mb-6 grid grid-cols-[44px_1fr_44px] items-center gap-3">
+      <div className="mb-4 grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2">
         <button
           type="button"
           onClick={prevMonth}
@@ -194,28 +237,28 @@ export const Calendar: React.FC<CalendarProps> = ({
         </button>
       </div>
 
-      {/* Weekday labels – single letter */}
-      <div className="grid grid-cols-7 gap-1 text-center mb-4">
+      {/* Weekday labels + days share the same 7-col grid so columns line up */}
+      <div className="grid grid-cols-7 gap-1 text-center mb-1">
         {WEEKDAY_LABELS.map(day => (
           <span
             key={day}
-            className="text-xs font-semibold uppercase tracking-wider text-zinc-300"
+            className="flex h-8 items-center justify-center text-xs font-medium text-zinc-400"
           >
-            {day[0]}
+            {weekdayFormat === 'short' ? day : day[0]}
           </span>
         ))}
       </div>
 
-      {/* Days grid */}
-      <div className="grid grid-cols-7 gap-y-2 gap-x-1">
+      <div className="grid grid-cols-7 gap-1">
         {Array(firstDay)
           .fill(null)
           .map((_, i) => (
-            <div key={`empty-${i}`} className="h-11" />
+            <div key={`empty-${i}`} className="aspect-square" />
           ))}
         {days.map(d => {
           const selectable = isDateSelectable(d);
-          const selected = isSelected(d);
+          const selected = isSelected(d) || isRangeEndpoint(d);
+          const inRange = isInRange(d);
           const today = isToday(d);
 
           return (
@@ -225,11 +268,12 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={!selectable}
               onClick={() => selectable && onChange(new Date(year, month, d))}
               className={`
-                relative mx-auto flex h-11 w-11 max-w-full items-center justify-center rounded-xl text-[15px] font-medium transition-all duration-200
+                relative flex aspect-square w-full items-center justify-center rounded-xl text-[15px] font-medium transition-all duration-200
                 ${!selectable ? 'text-gray-600 cursor-not-allowed' : 'cursor-pointer'}
-                ${selected ? 'bg-white text-black shadow-[0_8px_20px_rgba(255,255,255,0.12)] scale-105 z-10' : ''}
-                ${!selected && selectable && today ? 'text-white border border-white/20' : ''}
-                ${!selected && selectable && !today ? 'text-white hover:bg-white/10' : ''}
+                ${selected ? 'bg-white text-black shadow-[0_8px_20px_rgba(255,255,255,0.12)] z-10' : ''}
+                ${!selected && inRange ? 'bg-white/20 text-white' : ''}
+                ${!selected && !inRange && selectable && today ? 'text-white border border-white/20' : ''}
+                ${!selected && !inRange && selectable && !today ? 'text-white hover:bg-white/10' : ''}
               `}
             >
               {d}

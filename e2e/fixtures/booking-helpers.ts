@@ -27,6 +27,27 @@ export async function resolvePublicBusinessSlug(page: Page): Promise<string> {
   );
 }
 
+/** Business profile id from dashboard API (owner session). */
+export async function resolvePublicBusinessId(page: Page): Promise<string> {
+  const response = await page.request.get('/api/dashboard/data');
+  if (!response.ok()) {
+    throw new Error(
+      `GET /api/dashboard/data failed (${response.status()}): ${await response.text()}`
+    );
+  }
+  const json = (await response.json()) as {
+    success?: boolean;
+    data?: { businessProfile?: { id?: string } };
+  };
+  const id = json.data?.businessProfile?.id?.trim();
+  if (!id) {
+    throw new Error(
+      'Could not resolve business profile id from dashboard data'
+    );
+  }
+  return id;
+}
+
 /**
  * Temporarily turn off deposits so public booking can Confirm without Stripe.
  * Restores deposits afterward (this E2E account normally uses deposits).
@@ -76,6 +97,17 @@ export async function selectFirstBookableService(
   page: Page,
   serviceName?: string
 ): Promise<void> {
+  // Category tabs may land on an empty group — switch until services appear.
+  const emptyCategory = page.getByText('No services in this category.');
+  if (await emptyCategory.isVisible().catch(() => false)) {
+    const tabs = page.getByRole('tab');
+    const tabCount = await tabs.count();
+    for (let i = 0; i < tabCount; i++) {
+      await tabs.nth(i).click();
+      if (!(await emptyCategory.isVisible().catch(() => false))) break;
+    }
+  }
+
   if (serviceName) {
     await page
       .getByRole('listitem')

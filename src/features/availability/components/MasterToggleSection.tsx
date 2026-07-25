@@ -18,7 +18,7 @@ export const MasterToggleSection: React.FC<MasterToggleSectionProps> = ({
     : 'Turn on to start accepting bookings.';
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 md:p-8 transition-colors hover:border-white/15">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:px-6 sm:py-4 transition-colors hover:border-white/15">
       <Switch
         checked={acceptBookings}
         onCheckedChange={onToggle}

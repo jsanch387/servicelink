@@ -1,8 +1,7 @@
 'use client';
 
-import { Button } from '@/components/shared';
-import { CheckIcon } from '@heroicons/react/24/solid';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, toast } from '@/components/shared';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAvailability } from '../hooks/useAvailability';
 import { useAvailabilityBookingStore } from '../stores/availabilityBookingStore';
 import {
@@ -12,6 +11,7 @@ import {
 import {
   DEFAULT_SCHEDULE,
   SELECTED_PRESET_VALUES,
+  isMinimumNoticeValue,
   type MinimumNoticeValue,
   type WeeklySchedule,
 } from '../types/availability';
@@ -21,8 +21,8 @@ import {
   PRESET_WEEKENDS_ONLY,
 } from '../utils/presets';
 import { BlockTimeSection } from './BlockTimeSection';
+import { LeadTimeSection } from './LeadTimeSection';
 import { MasterToggleSection } from './MasterToggleSection';
-// import { MinimumNoticeSection } from './MinimumNoticeSection';
 import type { PresetKey } from './QuickPresetsSection';
 import { WorkingHoursCard } from './WorkingHoursCard';
 
@@ -59,17 +59,15 @@ export const AvailabilityContent: React.FC = () => {
   const [selectedPreset, setSelectedPreset] = useState<PresetKey | null>(
     'mon_fri_9_5'
   );
-  const [showSaved, setShowSaved] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [timeOffBlocks, setTimeOffBlocks] = useState<BlockTimeEntry[]>([]);
-  const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync from API when data loads: no row = toggle off (first-time); has row = apply saved values
   useEffect(() => {
     if (loading) return;
     if (!availabilityData) {
       setAcceptBookings(false);
+      setMinimumNotice('none');
       setTimeOffBlocks([]);
       return;
     }
@@ -83,10 +81,11 @@ export const AvailabilityContent: React.FC = () => {
         ? (availabilityData.selected_preset as PresetKey)
         : 'custom';
     setSelectedPreset(preset);
-    const notice = availabilityData.minimum_notice as MinimumNoticeValue;
-    if (['none', '1h', '2h', '4h', '24h'].includes(notice)) {
-      setMinimumNotice(notice);
-    }
+    setMinimumNotice(
+      isMinimumNoticeValue(availabilityData.minimum_notice)
+        ? availabilityData.minimum_notice
+        : 'none'
+    );
     setTimeOffBlocks(
       parseStoredTimeOffBlocks(availabilityData.time_off_blocks)
     );
@@ -110,13 +109,11 @@ export const AvailabilityContent: React.FC = () => {
     [setAcceptBookings]
   );
 
-  // Used when MinimumNoticeSection is enabled
-  // const handleMinimumNoticeChange = useCallback((value: MinimumNoticeValue) => {
-  //   setMinimumNotice(value);
-  // }, []);
+  const handleLeadTimeChange = useCallback((value: MinimumNoticeValue) => {
+    setMinimumNotice(value);
+  }, []);
 
   const handleSave = useCallback(async () => {
-    setSaveError(null);
     setSaving(true);
     try {
       const res = await fetch('/api/availability', {
@@ -132,18 +129,13 @@ export const AvailabilityContent: React.FC = () => {
       });
       const json = await res.json();
       if (!res.ok) {
-        setSaveError(json.error ?? 'Failed to save');
+        toast.error(json.error ?? 'Failed to save availability');
         return;
       }
-      if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
-      setShowSaved(true);
-      savedTimeoutRef.current = setTimeout(() => {
-        setShowSaved(false);
-        savedTimeoutRef.current = null;
-      }, 2000);
+      toast.success('Availability saved');
       if (json.data) updateFromSave(json.data);
     } catch {
-      setSaveError('Failed to save');
+      toast.error('Failed to save availability');
     } finally {
       setSaving(false);
     }
@@ -203,15 +195,7 @@ export const AvailabilityContent: React.FC = () => {
     <main className="flex flex-col flex-1 min-h-screen bg-[var(--dashboard-bg)]">
       <div className="flex-1 overflow-y-auto py-6 sm:py-8 md:py-10 px-4 sm:px-6 lg:px-8 pb-24">
         <div className="max-w-2xl mx-auto relative">
-          {/* Subtle Saved indicator — stays in flow on small screens */}
-          {showSaved && (
-            <div className="absolute top-0 right-0 flex items-center gap-1.5 text-emerald-500 text-xs sm:text-sm">
-              <CheckIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-              <span>Saved</span>
-            </div>
-          )}
-
-          <div className="mb-6 sm:mb-8 md:mb-10 pr-16 sm:pr-20">
+          <div className="mb-6 sm:mb-8 md:mb-10">
             <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
               Availability
             </h1>
@@ -226,12 +210,6 @@ export const AvailabilityContent: React.FC = () => {
                 Turn on the toggle below to accept bookings. When it’s on,
                 customers can book based on the schedule you set for each day.
               </p>
-            </div>
-          )}
-
-          {saveError && (
-            <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-              <p className="text-sm text-red-200/90">{saveError}</p>
             </div>
           )}
 
@@ -259,14 +237,13 @@ export const AvailabilityContent: React.FC = () => {
               />
             </div>
 
-            {/* Minimum notice – commented out for now */}
-            {/* <div className={acceptBookings ? '' : 'opacity-50'}>
-              <MinimumNoticeSection
+            <div className={acceptBookings ? '' : 'opacity-50'}>
+              <LeadTimeSection
                 value={minimumNotice}
-                onChange={handleMinimumNoticeChange}
+                onChange={handleLeadTimeChange}
                 disabled={!acceptBookings}
               />
-            </div> */}
+            </div>
           </div>
         </div>
       </div>
@@ -283,7 +260,7 @@ export const AvailabilityContent: React.FC = () => {
             loading={saving}
             disabled={saving}
           >
-            {saving ? 'Saving…' : 'Save availability'}
+            {saving ? 'Saving' : 'Save availability'}
           </Button>
         </div>
       </div>

@@ -14,7 +14,10 @@ import {
   DEFAULT_SCHEDULE,
   type WeeklySchedule,
 } from '@/features/availability/types/availability';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -117,7 +120,7 @@ export async function validateOwnerBookingSlot(
 
     const timeOffIntervals = parseStoredTimeOffBlocks(
       availabilityRow?.time_off_blocks
-    );
+    ).map(toTimeOffIntervalFields);
     if (
       bookingOverlapsTimeOff(
         scheduledDate,

@@ -2,7 +2,10 @@
 
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import type { TimeOffInterval } from '@/features/availability/booking/types';
 import { useEffect, useState } from 'react';
 
@@ -42,13 +45,7 @@ export function useOwnerQuoteScheduling(): UseOwnerQuoteSchedulingResult {
             setHasSavedAvailability(false);
           }
           const parsed = parseStoredTimeOffBlocks(json.data.time_off_blocks);
-          setTimeOffBlocks(
-            parsed.map(b => ({
-              date: b.date,
-              startTime: b.startTime,
-              endTime: b.endTime,
-            }))
-          );
+          setTimeOffBlocks(parsed.map(toTimeOffIntervalFields));
         } else {
           setWeeklySchedule(DEFAULT_SCHEDULE);
           setHasSavedAvailability(false);

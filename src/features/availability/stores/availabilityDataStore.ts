@@ -5,8 +5,8 @@ import type { BusinessAvailabilityRow } from '../types/availability';
 
 /**
  * Caches the current user's business availability from the API.
- * - Fetch once per session; reuse when revisiting the availability page.
- * - After save, update cache from POST response (no refetch).
+ * - Availability screen refetches on mount; cache still avoids empty flashes.
+ * - After save, update cache from POST response (no extra GET required).
  */
 
 interface AvailabilityDataState {

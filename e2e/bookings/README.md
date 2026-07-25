@@ -5,6 +5,8 @@
 - Public booking happy paths for an **active sale** and **active promo code**.
 - Public booking **flow smoke** for `blacklabelauto` (through review / payment entry — no Stripe submit).
 - Authenticated owner appointment creation for **custom jobs** and **catalog services**, including optional customer fields, notes, pricing options, add-ons, persistence, and `booking_source`.
+- **Lead time:** owner sets lead time on Availability → public calendar hides days/slots that are too soon.
+- **Time off:** owner time-off blocks (all-day, timed, multi-day ranges) hide days/slots on the public booking calendar.
 
 **Out of scope:** Stripe Checkout redirect, redemption Uses count at job completion, stacking edge cases, and delivery assertions against third-party email providers.
 
@@ -57,8 +59,10 @@ Product rules: `src/features/marketing/docs/FLOWS.md`
 | `public-booking-discounts.spec.ts`   | Promo at checkout         | Marketing create → public book → apply promo → confirm                                                              |
 | `owner-appointment-creation.spec.ts` | Custom owner job          | Owner choice → custom name/price/duration/notes → optional email/vehicle → submit payload → persisted owner booking |
 | `owner-appointment-creation.spec.ts` | Catalog owner appointment | Service → pricing option/add-on when configured → customer/vehicle/notes → persisted snapshots                      |
+| `lead-time.spec.ts`                  | Lead time on public book  | Owner sets 1-day lead on Availability → public calendar disables today; restores prior `minimum_notice`             |
+| `time-off.spec.ts`                   | Time off on public book   | All-day / timed / multi-day ranges via API → public calendar hides days or morning slots; restores prior blocks     |
 
-Helpers: `e2e/fixtures/booking-helpers.ts`, `e2e/fixtures/marketing-helpers.ts`
+Helpers: `e2e/fixtures/booking-helpers.ts`, `e2e/fixtures/marketing-helpers.ts`, `e2e/fixtures/availability-helpers.ts`
 
 Run:
 
@@ -66,4 +70,6 @@ Run:
 npm run test:e2e -- e2e/bookings/public-booking-flow.spec.ts
 npm run test:e2e -- e2e/bookings/public-booking-discounts.spec.ts
 npm run test:e2e -- e2e/bookings/owner-appointment-creation.spec.ts
+npm run test:e2e -- e2e/bookings/lead-time.spec.ts
+npm run test:e2e -- e2e/bookings/time-off.spec.ts
 ```

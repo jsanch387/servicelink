@@ -1,15 +1,19 @@
 /**
  * Validates `timeOffBlocks` from POST /api/availability (camelCase client payload).
- * Used only on the server; returns JSONB-ready rows (snake_case).
+ * Used only on the server; returns JSONB-ready rows (snake_case canonical).
  */
 
 import {
-  normalizeWallClockHm,
+  ALL_DAY_END,
+  ALL_DAY_START,
+  isIsoDate,
+  normalizeTimeOffHm,
+  toStoredTimeOffBlock,
+  type BlockTimeEntry,
   type TimeOffBlockStored,
 } from '../types/blockTime';
 import { compareTime } from './timeOptions';
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_ENTRIES = 200;
 const MAX_ID_LEN = 80;
 const MAX_TITLE_LEN = 500;
@@ -18,9 +22,21 @@ export type ParseTimeOffBlocksResult =
   | { ok: true; value: TimeOffBlockStored[] }
   | { ok: false; error: string };
 
+function readString(
+  o: Record<string, unknown>,
+  ...keys: string[]
+): string | null {
+  for (const key of keys) {
+    const v = o[key];
+    if (typeof v === 'string' && v.trim()) return v.trim();
+  }
+  return null;
+}
+
 /**
  * Parses and validates the request body field (array or undefined).
  * Empty array if omitted or null.
+ * Accepts canonical range fields and legacy `{ date, startTime, endTime }`.
  */
 export function parseTimeOffBlocksFromRequestBody(
   raw: unknown
@@ -49,37 +65,54 @@ export function parseTimeOffBlocksFromRequestBody(
       return { ok: false, error: 'Each time-off block needs a valid id' };
     }
 
-    const date = typeof o.date === 'string' ? o.date.trim() : '';
-    if (!date || !ISO_DATE.test(date)) {
+    const legacyDate = readString(o, 'date');
+    const startDate =
+      readString(o, 'startDate', 'start_date') ?? legacyDate ?? '';
+    const endDate =
+      readString(o, 'endDate', 'end_date') ?? startDate ?? legacyDate ?? '';
+
+    if (
+      !startDate ||
+      !isIsoDate(startDate) ||
+      !endDate ||
+      !isIsoDate(endDate)
+    ) {
       return { ok: false, error: 'Invalid date on a time-off block' };
     }
-
-    const startRaw =
-      typeof o.startTime === 'string'
-        ? o.startTime
-        : typeof o.start_time === 'string'
-          ? o.start_time
-          : '';
-    const endRaw =
-      typeof o.endTime === 'string'
-        ? o.endTime
-        : typeof o.end_time === 'string'
-          ? o.end_time
-          : '';
-
-    const start_time = normalizeWallClockHm(startRaw);
-    const end_time = normalizeWallClockHm(endRaw);
-    if (!start_time || !end_time) {
+    if (endDate < startDate) {
       return {
         ok: false,
-        error: 'Invalid start or end time on a time-off block',
+        error: 'Each time-off block must end on or after its start date',
       };
     }
-    if (compareTime(end_time, start_time) <= 0) {
-      return {
-        ok: false,
-        error: 'Each time-off block must end after it starts',
-      };
+
+    const allDayRaw = o.allDay ?? o.all_day;
+    const allDay = typeof allDayRaw === 'boolean' ? allDayRaw : false;
+
+    let start_time: string;
+    let end_time: string;
+    if (allDay) {
+      start_time = ALL_DAY_START;
+      end_time = ALL_DAY_END;
+    } else {
+      const startRaw = readString(o, 'startTime', 'start_time') ?? '';
+      const endRaw = readString(o, 'endTime', 'end_time') ?? '';
+      const normalizedStart = normalizeTimeOffHm(startRaw);
+      const normalizedEnd = normalizeTimeOffHm(endRaw);
+      if (!normalizedStart || !normalizedEnd) {
+        return {
+          ok: false,
+          error: 'Invalid start or end time on a time-off block',
+        };
+      }
+      if (compareTime(normalizedEnd, normalizedStart) <= 0) {
+        return {
+          ok: false,
+          error: 'Each time-off block must end after it starts',
+        };
+      }
+      start_time = normalizedStart;
+      end_time = normalizedEnd;
     }
 
     let title = typeof o.title === 'string' ? o.title : '';
@@ -87,16 +120,16 @@ export function parseTimeOffBlocksFromRequestBody(
       title = title.slice(0, MAX_TITLE_LEN);
     }
 
-    const row: TimeOffBlockStored = {
+    const entry: BlockTimeEntry = {
       id: idRaw,
-      date,
-      start_time,
-      end_time,
+      startDate,
+      endDate,
+      allDay,
+      startTime: start_time,
+      endTime: end_time,
+      title: title.trim(),
     };
-    if (title.trim()) {
-      row.title = title.trim();
-    }
-    value.push(row);
+    value.push(toStoredTimeOffBlock(entry));
   }
 
   return { ok: true, value };

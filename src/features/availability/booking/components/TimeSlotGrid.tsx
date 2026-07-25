@@ -11,6 +11,8 @@ interface TimeSlotGridProps {
   weeklySchedule: WeeklySchedule;
   existingBookings: ExistingBooking[];
   timeOffBlocks: TimeOffInterval[];
+  /** Lead time (`minimum_notice`); defaults to none. */
+  minimumNotice?: string;
   selectedTime: string | null;
   onSelectTime: (time: string) => void;
   /** When false, omit the heading (parent supplies section title). */
@@ -31,6 +33,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   weeklySchedule,
   existingBookings,
   timeOffBlocks,
+  minimumNotice = 'none',
   selectedTime,
   onSelectTime,
   showHeading = true,
@@ -48,11 +51,13 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
             serviceDurationMinutes,
             existingBookings,
             30,
-            timeOffBlocks
+            timeOffBlocks,
+            minimumNotice
           )
         : [],
     [
       existingBookings,
+      minimumNotice,
       selectedDate,
       serviceDurationMinutes,
       timeOffBlocks,
