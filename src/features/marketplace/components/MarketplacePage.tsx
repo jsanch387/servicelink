@@ -92,10 +92,7 @@ export const MarketplacePage: React.FC = () => {
           </div>
         </main>
       )}
-      <PublicFooter
-        tagline="Find local detailing services"
-        compact={hasSearched}
-      />
+      <PublicFooter compact={hasSearched} />
     </div>
   );
 };

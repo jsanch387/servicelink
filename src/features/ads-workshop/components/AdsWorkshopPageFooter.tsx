@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ROUTES } from '@/constants/routes';
+import { SERVICELINK_LEGAL_NAME } from '@/constants/support';
 
 export function AdsWorkshopPageFooter() {
   const year = new Date().getFullYear();
@@ -7,7 +8,7 @@ export function AdsWorkshopPageFooter() {
   return (
     <footer className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10 text-center border-t border-white/[0.06]">
       <p className="text-xs text-gray-500 mb-4">
-        © {year} ServiceLink for Business. Built for mobile service operators.
+        © {year} {SERVICELINK_LEGAL_NAME}. Built for mobile service operators.
       </p>
       <nav
         className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-gray-500"
