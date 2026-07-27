@@ -43,7 +43,7 @@ function FooterLinkColumn({
         {title}
       </p>
       <ul className="flex flex-col gap-2.5">
-        {links.map((link) => (
+        {links.map(link => (
           <li key={link.href}>
             <Link href={link.href} className={linkClass}>
               {link.label}
@@ -72,13 +72,11 @@ export function PublicFooter({ compact = false }: PublicFooterProps) {
             className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
             aria-label="Footer"
           >
-            {[...PRODUCT_LINKS, ...SUPPORT_LINKS, ...LEGAL_LINKS].map(
-              (link) => (
-                <Link key={link.href} href={link.href} className={linkClass}>
-                  {link.label}
-                </Link>
-              )
-            )}
+            {[...PRODUCT_LINKS, ...SUPPORT_LINKS, ...LEGAL_LINKS].map(link => (
+              <Link key={link.href} href={link.href} className={linkClass}>
+                {link.label}
+              </Link>
+            ))}
           </nav>
         </div>
       </footer>
