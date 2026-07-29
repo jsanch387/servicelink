@@ -11,7 +11,6 @@ export type JobCompletedLogStage =
   | 'received'
   | 'validated'
   | 'rejected'
-  | 'amount_due'
   | 'persist_start'
   | 'persist_fees'
   | 'persist_payments'
@@ -57,7 +56,7 @@ function baseContext(trace: JobCompletedLogTrace): Record<string, string> {
   return ctx;
 }
 
-/** Log rejections and persist failures only — skip happy-path noise. */
+/** Log rejections (with compact money details when relevant). Happy path stays quiet. */
 export function logJobCompletedStage(
   trace: JobCompletedLogTrace,
   stage: JobCompletedLogStage,
@@ -67,8 +66,8 @@ export function logJobCompletedStage(
     return;
   }
 
-  const reason = String(extra?.reason ?? extra?.error ?? 'unknown');
   const ctx = baseContext(trace);
+  const reason = String(extra?.reason ?? extra?.error ?? 'unknown');
   const httpStatus =
     typeof extra?.httpStatus === 'number' ? extra.httpStatus : undefined;
 
@@ -77,6 +76,18 @@ export function logJobCompletedStage(
       ctx.biz ? ` biz=${ctx.biz}` : ''
     } status=${httpStatus ?? '?'} reason=${reason}`
   );
+
+  if (extra) {
+    const {
+      reason: _reason,
+      error: _error,
+      httpStatus: _httpStatus,
+      ...details
+    } = extra;
+    if (Object.keys(details).length > 0) {
+      console.warn(`${ROUTE_PREFIX} rejected details`, details);
+    }
+  }
 }
 
 export function logJobCompletedFinished(

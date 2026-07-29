@@ -4,10 +4,19 @@
  *
  * Discount (promo/sale snapshot) applies to service + add-ons only.
  * Session fees are full price. Deposits/paid online stay pre-discount.
+ *
+ * Money rules:
+ * 1. Line items from `job_details` when present (else top-level service + addons)
+ * 2. Frozen `discount_cents` on the booking wins over recomputing %
+ * 3. amountDue = line + fees − discount − paidOnline − sessionPayment
  */
 
 import type { DiscountType } from '@/features/marketing/types';
 import { applyDiscountToSubtotalCents } from '@/features/marketing/utils/applyDiscountToSubtotalCents';
+import {
+  resolveBookingLineSubtotalCents,
+  sumTopLevelAddonDetailsCents,
+} from '../utils/resolveBookingLineSubtotalCents';
 import type {
   JobCompletedSessionFeeInput,
   JobCompletedSessionPaymentInput,
@@ -17,13 +26,9 @@ export interface AddonDetailLine {
   priceCents?: number | null;
 }
 
+/** @deprecated Prefer sumTopLevelAddonDetailsCents — kept for existing imports. */
 export function sumAddonDetailsCents(addonDetails: unknown): number {
-  if (!Array.isArray(addonDetails)) return 0;
-  return addonDetails.reduce((sum, item) => {
-    if (!item || typeof item !== 'object') return sum;
-    const cents = (item as AddonDetailLine).priceCents;
-    return sum + (typeof cents === 'number' && cents >= 0 ? cents : 0);
-  }, 0);
+  return sumTopLevelAddonDetailsCents(addonDetails);
 }
 
 export function sumSessionFeesCents(
@@ -43,6 +48,11 @@ export interface BookingDiscountSnapshotInput {
 export interface BookingAmountDueInput {
   servicePriceCents: number | null | undefined;
   addonDetails: unknown;
+  /**
+   * Multi-job `job_details` — source of truth for service + add-on line items
+   * when present.
+   */
+  jobDetails?: unknown;
   sessionFees: JobCompletedSessionFeeInput[];
   paidOnlineAmountCents: number | null | undefined;
   sessionPayment: JobCompletedSessionPaymentInput | undefined;
@@ -73,6 +83,16 @@ function resolveLineDiscountCents(
   const source = discount.discountSource?.trim();
   if (source !== 'promo' && source !== 'sale') return 0;
 
+  // Frozen booking snapshot wins. Mobile Complete sheet shows discount_cents
+  // from the row; recomputing % on a drifted line total causes mismatches.
+  if (
+    typeof discount.discountCents === 'number' &&
+    Number.isFinite(discount.discountCents) &&
+    discount.discountCents > 0
+  ) {
+    return Math.min(lineSubtotalCents, Math.round(discount.discountCents));
+  }
+
   const type = discount.discountType;
   const value = discount.discountValue;
   if (
@@ -88,27 +108,22 @@ function resolveLineDiscountCents(
     ).discountCents;
   }
 
-  if (
-    typeof discount.discountCents === 'number' &&
-    Number.isFinite(discount.discountCents) &&
-    discount.discountCents > 0
-  ) {
-    return Math.min(lineSubtotalCents, Math.round(discount.discountCents));
-  }
-
   return 0;
 }
 
 export function computeBookingAmountDue(
   input: BookingAmountDueInput
 ): BookingAmountDueResult {
-  const serviceCents =
-    typeof input.servicePriceCents === 'number' && input.servicePriceCents >= 0
-      ? input.servicePriceCents
-      : 0;
-  const addonCents = sumAddonDetailsCents(input.addonDetails);
+  const line = resolveBookingLineSubtotalCents({
+    servicePriceCents: input.servicePriceCents,
+    addonDetails: input.addonDetails,
+    jobDetails: input.jobDetails,
+  });
+  const serviceCents = line.serviceCents;
+  const addonCents = line.addonCents;
+
   const sessionFeeCents = sumSessionFeesCents(input.sessionFees);
-  const lineSubtotalCents = serviceCents + addonCents;
+  const lineSubtotalCents = line.lineSubtotalCents;
   const discountCents = resolveLineDiscountCents(
     lineSubtotalCents,
     input.discount

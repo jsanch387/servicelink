@@ -286,25 +286,6 @@ const RESPONSIVE_STYLES = `
     .email-section-card {
       width: 100% !important;
     }
-    .email-detail-row .email-detail-label,
-    .email-detail-row .email-detail-value {
-      display: block !important;
-      width: 100% !important;
-      padding-right: 0 !important;
-    }
-    .email-detail-row .email-detail-label {
-      padding-bottom: 0 !important;
-      line-height: 18px !important;
-    }
-    .email-detail-row .email-detail-value {
-      text-align: left !important;
-      margin-top: 2px !important;
-      padding-bottom: 10px !important;
-      line-height: 20px !important;
-    }
-    .email-section-card > .email-detail-row:last-child .email-detail-value {
-      padding-bottom: 0 !important;
-    }
     .email-price-label {
       padding-right: 8px !important;
     }
@@ -335,11 +316,6 @@ export function wrapServiceLinkEmail(params: {
     <tr>
       <td align="center" class="email-outer-pad" style="padding:32px 12px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-container" style="max-width:600px;width:100%;margin:0 auto;">
-          <tr>
-            <td style="padding:0 0 28px 0;text-align:center;">
-              <span style="font-family:${SERVICE_LINK_EMAIL_FONT};font-size:20px;font-weight:600;letter-spacing:-0.4px;color:${TEXT_PRIMARY};">ServiceLink</span>
-            </td>
-          </tr>
           <tr>
             <td class="email-main-card" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:20px;padding:28px 20px 28px 20px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">

@@ -141,20 +141,62 @@ export interface AddOnAtBooking {
   durationMinutes?: number | null;
 }
 
+/** Per-job vehicle for owner multi-job visits (`jobs[]`). */
+export interface CreateBookingJobVehicle {
+  year?: string;
+  make?: string;
+  model?: string;
+}
+
+/**
+ * One job inside an owner multi-job visit (`jobs[]` on CreateBookingRequest).
+ * Visit-level who/where/when live on the parent request.
+ */
+export interface CreateBookingJobItem {
+  serviceName: string;
+  /** Catalog service id. Omit / null for a custom job. */
+  serviceId?: string | null;
+  servicePriceOptionLabel?: string | null;
+  /** Owner-edited price wins (integer cents ≥ 0). */
+  servicePriceCents: number;
+  selectedAddOns?: AddOnAtBooking[];
+  /** This job only (service + its add-ons). Integer ≥ 1. */
+  durationMinutes: number;
+  vehicle?: CreateBookingJobVehicle;
+  /** Mobile local id for support correlation — not persisted in v1. */
+  clientJobId?: string;
+  /** Optional sale preview fields — ignored; server recomputes. */
+  discountSource?: 'sale';
+  discountSaleId?: string;
+  discountType?: 'percentage' | 'fixed_amount';
+  discountValue?: number;
+  subtotalCents?: number;
+  discountCents?: number;
+  discountLabel?: string;
+}
+
 /** Payload for POST /api/public/bookings (client → API). */
 export interface CreateBookingRequest {
   businessSlug: string;
   businessId: string;
   serviceId?: string;
-  serviceName: string;
+  /**
+   * Legacy single-job: required when `jobs` is omitted.
+   * Multi-job (`jobs` present): omit; use each `jobs[i].serviceName`.
+   */
+  serviceName?: string;
   /** When set, appended to stored/display service name (multi-price option). */
   servicePriceOptionLabel?: string;
   servicePriceCents?: number;
   /** Add-ons selected by customer (stored with booking, shown in emails/dashboard). */
   selectedAddOns?: AddOnAtBooking[];
-  durationMinutes: number;
+  /**
+   * Legacy single-job: required when `jobs` is omitted.
+   * Multi-job: omit; visit duration = sum of job durations.
+   */
+  durationMinutes?: number;
   scheduledDate: string; // YYYY-MM-DD
-  startTime: string; // HH:mm
+  startTime: string; // HH:mm — visit arrival / first job start
   customer: CustomerFormData;
   /**
    * When checkout mode is `customer_choice` and the customer confirms without
@@ -166,6 +208,12 @@ export interface CreateBookingRequest {
    * authenticated session for this business; customer email may be omitted.
    */
   ownerManualBooking?: boolean;
+  /**
+   * Owner multi-job appointment (1…20). When present, creates **one** booking row
+   * with jobs stored in `job_details`. Appointment duration = sum of job durations.
+   * Only allowed when `ownerManualBooking` is true.
+   */
+  jobs?: CreateBookingJobItem[];
   /** Required when business offers both mobile and shop (`service_location_mode = both`). */
   customerServiceLocation?: 'mobile' | 'shop';
   /**
