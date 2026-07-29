@@ -4,8 +4,10 @@
  * Rules (must match mobile BookingCompleteInvoiceDesignSheet):
  * - When `job_details` has jobs → sum those service prices + per-job add-ons
  *   (ignore incomplete top-level `service_price_cents`).
+ * - If jobs exist but every job has empty `selectedAddOns`, fall back to
+ *   top-level `addon_details` (legacy / broken single-job rows).
  * - Otherwise → top-level `service_price_cents` + `addon_details`.
- * - Never double-count add-ons from both places when jobs exist.
+ * - Never double-count add-ons from both places when jobs carry add-ons.
  */
 
 import {
@@ -52,7 +54,13 @@ export function resolveBookingLineSubtotalCents(
   const jobs = parseStoredBookingJobDetails(input.jobDetails);
   if (jobs.length > 0) {
     const serviceCents = sumJobDetailsServiceCents(input.jobDetails);
-    const addonCents = sumJobDetailsAddonCents(input.jobDetails);
+    const jobAddonCents = sumJobDetailsAddonCents(input.jobDetails);
+    // Prefer per-job add-ons; if jobs carried none, use top-level rollup
+    // (covers older rows where edit/create left selectedAddOns empty).
+    const addonCents =
+      jobAddonCents > 0
+        ? jobAddonCents
+        : sumTopLevelAddonDetailsCents(input.addonDetails);
     return {
       fromJobs: true,
       jobCount: jobs.length,
