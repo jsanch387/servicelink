@@ -253,7 +253,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         {Array(firstDay)
           .fill(null)
           .map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square" />
+            <div key={`empty-${i}`} className="h-9" />
           ))}
         {days.map(d => {
           const selectable = isDateSelectable(d);
@@ -268,11 +268,11 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={!selectable}
               onClick={() => selectable && onChange(new Date(year, month, d))}
               className={`
-                relative flex aspect-square w-full items-center justify-center rounded-xl text-[15px] font-medium transition-all duration-200
-                ${!selectable ? 'text-gray-600 cursor-not-allowed' : 'cursor-pointer'}
-                ${selected ? 'bg-white text-black shadow-[0_8px_20px_rgba(255,255,255,0.12)] z-10' : ''}
+                relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition-colors duration-150
+                ${!selectable ? 'cursor-not-allowed text-gray-600' : 'cursor-pointer'}
+                ${selected ? 'bg-white text-black' : ''}
                 ${!selected && inRange ? 'bg-white/20 text-white' : ''}
-                ${!selected && !inRange && selectable && today ? 'text-white border border-white/20' : ''}
+                ${!selected && !inRange && selectable && today ? 'text-white ring-1 ring-white/25' : ''}
                 ${!selected && !inRange && selectable && !today ? 'text-white hover:bg-white/10' : ''}
               `}
             >

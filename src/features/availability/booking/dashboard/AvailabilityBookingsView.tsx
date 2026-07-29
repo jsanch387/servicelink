@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { ROUTES, getBusinessBookPath } from '@/constants/routes';
+import { ROUTES } from '@/constants/routes';
 import {
   blockCoversDate,
   toTimeOffIntervalFields,
@@ -154,7 +154,7 @@ export function AvailabilityBookingsView({
 
   const trimmedSlug = businessSlug?.trim() ?? '';
   const newAppointmentHref = trimmedSlug
-    ? getBusinessBookPath(trimmedSlug, { forOwner: true })
+    ? ROUTES.DASHBOARD.BOOKINGS_NEW
     : undefined;
 
   const manualBookingBlockedByCap = useMemo(() => {
