@@ -18,28 +18,28 @@ function basePayload(): AvailabilityBookingNotificationPayload {
 }
 
 describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
-  it('includes tightened mobile stacked detail-row spacing in layout CSS', () => {
+  it('keeps detail rows label-left / value-right on mobile (no stack)', () => {
     const html = buildAvailabilityBookingEmailHtml(basePayload(), {
       audience: 'customer',
       businessName: 'Acme Detail',
     });
-    expect(html).toContain('.email-detail-row .email-detail-label');
-    expect(html).toContain('padding-bottom: 0 !important');
-    expect(html).toContain('margin-top: 2px !important');
-    expect(html).toContain('padding-bottom: 10px !important');
-    expect(html).toContain(
-      '.email-section-card > .email-detail-row:last-child .email-detail-value'
+    expect(html).toContain('email-detail-label');
+    expect(html).toContain('email-detail-value');
+    expect(html).not.toContain(
+      '.email-detail-row .email-detail-label,\n    .email-detail-row .email-detail-value'
     );
+    expect(html).not.toContain('text-align: left !important');
   });
 
-  it('uses ServiceLink dark brand layout', () => {
+  it('uses dark brand layout without ServiceLink header mark', () => {
     const html = buildAvailabilityBookingEmailHtml(basePayload(), {
       audience: 'customer',
       businessName: 'Acme Detail',
     });
     expect(html).toContain('background-color:#0a0a0a');
     expect(html).toContain('background-color:#151515');
-    expect(html).toContain('ServiceLink');
+    expect(html).not.toContain('>ServiceLink</span>');
+    expect(html).toContain('ServiceLink'); // footer copyright
     expect(html).not.toContain('background-color:#f4f7f9');
   });
 
@@ -171,7 +171,10 @@ describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
         customerVehicleMake: undefined,
         customerVehicleModel: undefined,
       },
-      { audience: 'customer', businessName: 'Acme Detail' }
+      {
+        audience: 'owner',
+        dashboardBookingsUrl: 'https://example.com/bookings',
+      }
     );
     expect(html).toContain('Name');
     expect(html).not.toContain('>Email<');
@@ -290,9 +293,25 @@ describe('buildAvailabilityBookingEmailHtml — service location', () => {
       audience: 'customer',
       businessName: 'Acme Detail',
     });
-    expect(html).toContain('Your information');
+    expect(html).toContain('Your appointment');
+    expect(html).not.toContain('Your information');
     expect(html).not.toContain('text-transform:uppercase');
     expect(html).toContain('class="email-section"');
+  });
+
+  it('owner email includes customer card; customer email does not', () => {
+    const ownerHtml = buildAvailabilityBookingEmailHtml(basePayload(), {
+      audience: 'owner',
+      dashboardBookingsUrl: 'https://example.com/bookings',
+    });
+    const customerHtml = buildAvailabilityBookingEmailHtml(basePayload(), {
+      audience: 'customer',
+      businessName: 'Acme Detail',
+    });
+    expect(ownerHtml).toContain('Customer info');
+    expect(ownerHtml).toContain('jane@example.com');
+    expect(customerHtml).not.toContain('Your information');
+    expect(customerHtml).not.toContain('>Customer<');
   });
 
   it('wraps long service and add-on names in price details', () => {
@@ -315,6 +334,85 @@ describe('buildAvailabilityBookingEmailHtml — service location', () => {
     expect(html).toContain('&bull;');
   });
 
+  it('multi-job email shows receipt-style jobs and appointment sale total', () => {
+    const payload = {
+      customerName: 'Two Job',
+      customerEmail: 'test@example.com',
+      customerPhone: '5125551234',
+      serviceName: '2 jobs',
+      scheduledDate: '2026-07-27',
+      startTime: '09:00',
+      durationMinutes: 330,
+      totalPriceCents: 399_00,
+      discount: {
+        label: 'Summer Sale — 10% off',
+        discountCents: 39_90,
+        estimatedTotalCents: 359_10,
+      },
+      createdByOwner: true,
+      serviceLocation: {
+        type: 'mobile' as const,
+        formattedAddress: '123 Main St, Austin, TX 78701',
+      },
+      jobs: [
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceOptionLabel: 'SUV',
+          servicePriceCents: 210_00,
+          durationMinutes: 150,
+          customerVehicleYear: '2016',
+          customerVehicleMake: 'Chevy',
+          customerVehicleModel: 'Cruze',
+          totalPriceCents: 210_00,
+        },
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceOptionLabel: 'SUV',
+          servicePriceCents: 169_00,
+          selectedAddOns: [
+            { id: 'a1', name: 'Pet hair removal', priceCents: 20_00 },
+          ],
+          durationMinutes: 180,
+          customerVehicleYear: '2017',
+          customerVehicleMake: 'Toyota',
+          customerVehicleModel: 'Tacoma',
+          totalPriceCents: 189_00,
+        },
+      ],
+    };
+
+    const customerHtml = buildAvailabilityBookingEmailHtml(payload, {
+      audience: 'customer',
+      businessName: 'Acme Detail',
+    });
+    expect(customerHtml).toContain('When &amp; where');
+    expect(customerHtml).toContain('Jobs');
+    expect(customerHtml).toContain('Pricing');
+    expect(customerHtml).not.toContain('Your information');
+    expect(customerHtml).not.toContain('Job 1');
+    expect(customerHtml).toContain('$210.00');
+    expect(customerHtml).toContain('$169.00');
+    expect(customerHtml).toContain('$20.00');
+    expect(customerHtml).not.toContain('$189.00');
+    expect(customerHtml).toContain('2016 Chevy Cruze');
+    expect(customerHtml).toContain('Summer Sale — 10% off');
+    expect(customerHtml).toContain('-$39.90');
+    expect(customerHtml).toContain('$359.10');
+    expect(customerHtml).toContain('Subtotal');
+    expect(customerHtml).toContain('Total');
+    expect(customerHtml).toContain('Acme Detail · 2 jobs');
+
+    const ownerHtml = buildAvailabilityBookingEmailHtml(payload, {
+      audience: 'owner',
+      dashboardBookingsUrl: 'https://example.com/bookings',
+    });
+    expect(ownerHtml).toContain('Customer');
+    expect(ownerHtml).toContain('test@example.com');
+    expect(ownerHtml).toContain('(512) 555-1234');
+    expect(ownerHtml).toContain('When &amp; where');
+    expect(ownerHtml).toContain('2 jobs');
+  });
+
   it('spaces every section evenly including service address', () => {
     const html = buildAvailabilityBookingEmailHtml(
       {
@@ -328,7 +426,7 @@ describe('buildAvailabilityBookingEmailHtml — service location', () => {
     );
     const sectionCount = (html.match(/class="email-section"/g) ?? []).length;
     const marginMatches = html.match(/margin-top:24px/g) ?? [];
-    expect(sectionCount).toBeGreaterThan(3);
+    expect(sectionCount).toBeGreaterThanOrEqual(3);
     expect(marginMatches.length).toBe(sectionCount - 1);
   });
 });

@@ -5,8 +5,10 @@ import { BuildingStorefrontIcon } from '@heroicons/react/24/outline';
 import {
   formatBusinessProfileLinkLabel,
   type BookingInvoiceSnapshot,
+  type InvoiceSnapshotJob,
   type InvoiceSnapshotLine,
 } from '@/features/availability/booking/server/buildInvoiceSnapshot';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   groupInvoiceSnapshotLines,
   type InvoiceLineGroup,
@@ -125,12 +127,17 @@ function VisitSummary({
   serviceName,
   servicePriceOptionLabel,
   visitShort,
+  jobCount,
 }: {
   customerName: string;
   serviceName: string;
   servicePriceOptionLabel: string | null;
   visitShort: string;
+  jobCount?: number;
 }) {
+  const showOption =
+    Boolean(servicePriceOptionLabel?.trim()) && !(jobCount && jobCount > 1);
+
   return (
     <div className="mx-5 mb-6 rounded-xl bg-[#f7f5f0] px-4 py-3.5 sm:mx-6 md:mx-8 dark:bg-[#222]">
       <p
@@ -141,9 +148,9 @@ function VisitSummary({
       <p
         className={`mt-2 text-[13px] font-medium leading-snug text-[#555250] dark:text-[#bbb] ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
       >
-        {serviceName}
+        {jobCount && jobCount > 1 ? `${jobCount} jobs` : serviceName}
       </p>
-      {servicePriceOptionLabel ? (
+      {showOption ? (
         <p
           className={`mt-0.5 text-[13px] leading-snug text-[#888480] dark:text-[#aaa] ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
         >
@@ -155,6 +162,78 @@ function VisitSummary({
       >
         {visitShort}
       </p>
+    </div>
+  );
+}
+
+function JobReceiptBlock({
+  job,
+  isLast,
+}: {
+  job: InvoiceSnapshotJob;
+  isLast: boolean;
+}) {
+  const option = job.servicePriceOptionLabel?.trim() || null;
+  const vehicle = job.vehicleLabel?.trim() || null;
+  const duration =
+    job.durationMinutes > 0 ? formatDurationMinutes(job.durationMinutes) : null;
+  const meta = [vehicle, duration].filter(Boolean).join(' · ');
+
+  return (
+    <div
+      className={
+        isLast
+          ? undefined
+          : 'border-b border-[#ebe8e1] pb-4 dark:border-[#2a2a2a]'
+      }
+    >
+      <div className={PUBLIC_INVOICE_LINE_ROW_CLASS}>
+        <div className={`flex-1 ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}>
+          <p className="leading-snug text-[15px] font-medium text-[#1a1a1a] dark:text-[#f0f0f0]">
+            {job.serviceName}
+          </p>
+          {option ? (
+            <p className="mt-0.5 leading-snug text-[13px] text-[#888480] dark:text-[#aaa]">
+              {option}
+            </p>
+          ) : null}
+        </div>
+        <ChargeAmount amountCents={job.servicePriceCents} />
+      </div>
+      {meta ? (
+        <p
+          className={`mt-1 text-[13px] leading-snug text-[#888480] dark:text-[#aaa] ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
+        >
+          {meta}
+        </p>
+      ) : null}
+      {job.addOns.map(addOn => (
+        <div
+          key={`${addOn.name}-${addOn.priceCents}`}
+          className={`${PUBLIC_INVOICE_LINE_ROW_CLASS} mt-2`}
+        >
+          <p
+            className={`flex-1 leading-snug text-[13px] text-[#888480] dark:text-[#aaa] ${PUBLIC_INVOICE_TEXT_WRAP_CLASS}`}
+          >
+            {addOn.name}
+          </p>
+          <ChargeAmount amountCents={addOn.priceCents} size="sm" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function JobsChargesSection({ jobs }: { jobs: InvoiceSnapshotJob[] }) {
+  return (
+    <div className="space-y-4">
+      {jobs.map((job, index) => (
+        <JobReceiptBlock
+          key={`${job.serviceName}-${index}`}
+          job={job}
+          isLast={index === jobs.length - 1}
+        />
+      ))}
     </div>
   );
 }
@@ -319,9 +398,16 @@ export function PublicInvoicePageShell({
   const isPaidInFull =
     snapshot.totals.paidCents >= snapshot.totals.totalCents &&
     snapshot.totals.totalCents > 0;
+  const jobs = snapshot.jobs?.length ? snapshot.jobs : null;
   const chargeGroups = groupInvoiceSnapshotLines(
     normalizeInvoiceSnapshotLines(snapshot.lines)
   );
+  // When jobs are present, charges UI renders them; keep fees/discounts from groups.
+  const extraGroups = jobs
+    ? chargeGroups.filter(
+        group => group.id === 'session_fee' || group.id === 'discount'
+      )
+    : chargeGroups;
   const servicePriceOptionLabel =
     snapshot.booking.servicePriceOptionLabel?.trim() || null;
 
@@ -367,15 +453,17 @@ export function PublicInvoicePageShell({
             serviceName={snapshot.booking.serviceName}
             servicePriceOptionLabel={servicePriceOptionLabel}
             visitShort={visitShort}
+            jobCount={jobs?.length}
           />
 
           {/* Line items slip */}
           <div className="border-t border-[#ebe8e1] px-5 py-1 sm:px-6 md:px-8 dark:border-[#2a2a2a]">
             <p className={`py-3 ${PUBLIC_INVOICE_SECTION_LABEL_CLASS}`}>
-              Charges
+              {jobs ? 'Jobs' : 'Charges'}
             </p>
             <div className="space-y-5 pb-1">
-              {chargeGroups.map(group => (
+              {jobs ? <JobsChargesSection jobs={jobs} /> : null}
+              {extraGroups.map(group => (
                 <ChargeGroupSection key={group.id} group={group} />
               ))}
             </div>

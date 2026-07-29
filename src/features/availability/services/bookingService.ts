@@ -23,11 +23,19 @@ import {
   mapBookingRowToDisplay,
   type BookingRow,
 } from '../booking/dashboard/utils/mapBookingRowToDisplay';
+import { computeBookingAmountDue } from '../booking/server/computeBookingAmountDue';
 import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
+import type { BookingJobDetailsItem } from '../booking/utils/ownerManualBookingJobs';
 
 const TABLE = 'bookings';
 
 export type BookingSource = 'public' | 'owner';
+
+/** How the customer committed to pay when no Stripe checkout row is involved. */
+export type PublicBookingNoCheckoutPaymentMethod =
+  | 'pay_now'
+  | 'pay_in_person'
+  | 'none';
 
 export interface CreateBookingPayload {
   business_id: string;
@@ -54,6 +62,14 @@ export interface CreateBookingPayload {
   customer_notes: string | null;
   customer_id: string;
   service_location_type: 'mobile' | 'shop' | null;
+  /** Appointment id; equals booking id after insert for new appointments. */
+  visit_id: string;
+  /** Always 0 in the appointment-centric model. */
+  visit_job_index: number;
+  /** Number of jobs in this appointment (>= 1). */
+  visit_job_count: number;
+  /** Jobs line items; null for legacy single-job rows using top-level columns only. */
+  job_details: BookingJobDetailsItem[] | null;
   discount_source: 'sale' | 'promo' | null;
   discount_sale_id: string | null;
   discount_promo_code_id: string | null;
@@ -80,6 +96,10 @@ function mapCustomerToRow(
   | 'start_time'
   | 'customer_id'
   | 'service_location_type'
+  | 'visit_id'
+  | 'visit_job_index'
+  | 'visit_job_count'
+  | 'job_details'
   | 'discount_source'
   | 'discount_sale_id'
   | 'discount_promo_code_id'
@@ -106,8 +126,11 @@ function mapCustomerToRow(
 }
 
 /**
- * Inserts one booking row. Uses admin/service client so RLS does not block insert.
- * Caller must validate slot and resolve business by slug before calling.
+ * Inserts one booking row (one appointment). Uses admin/service client so RLS
+ * does not block insert. Caller must validate slot and resolve business by slug.
+ *
+ * Always sets visit columns. When `visitId` is omitted, `visit_id` is set equal
+ * to the new booking id after insert (appointment id === booking id).
  */
 export async function createBooking(
   supabase: SupabaseClient<Database>,
@@ -116,7 +139,7 @@ export async function createBooking(
     businessSlug: string;
     /** Server-derived origin. Omit for legacy/system flows with no direct source. */
     bookingSource?: BookingSource | null;
-    serviceId?: string;
+    serviceId?: string | null;
     serviceName: string;
     servicePriceCents?: number;
     selectedAddOns?: AddOnAtBooking[];
@@ -127,8 +150,12 @@ export async function createBooking(
     serviceLocationType?: 'mobile' | 'shop' | null;
     /** Server-resolved sale/promo snapshot; null clears discount columns. */
     discountSnapshot?: BookingDiscountSnapshot | null;
+    /** Optional jobs line items (owner multi-job appointment). */
+    jobDetails?: BookingJobDetailsItem[] | null;
+    /** Job count denormalized on the row; defaults from jobDetails length or 1. */
+    visitJobCount?: number;
   }
-): Promise<{ id: string; customerId: string }> {
+): Promise<{ id: string; customerId: string; visitId: string }> {
   const addonDetails =
     payload.selectedAddOns?.length && payload.selectedAddOns.length > 0
       ? payload.selectedAddOns
@@ -148,6 +175,15 @@ export async function createBooking(
     payload.discountSnapshot
   );
 
+  const jobDetails =
+    payload.jobDetails && payload.jobDetails.length > 0
+      ? payload.jobDetails
+      : null;
+  const visitJobCount =
+    payload.visitJobCount ??
+    (jobDetails?.length && jobDetails.length > 0 ? jobDetails.length : 1);
+  const provisionalVisitId = crypto.randomUUID();
+
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
@@ -162,6 +198,10 @@ export async function createBooking(
     ...mapCustomerToRow(payload.customer),
     customer_id: customerId,
     service_location_type: payload.serviceLocationType ?? null,
+    visit_id: provisionalVisitId,
+    visit_job_index: 0,
+    visit_job_count: visitJobCount,
+    job_details: jobDetails,
     ...discountColumns,
   };
 
@@ -182,7 +222,23 @@ export async function createBooking(
     );
   }
 
-  return { id: data.id, customerId: data.customer_id as string };
+  const bookingId = data.id as string;
+
+  // Appointment id = booking id.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: visitErr } = await (supabase as any)
+    .from(TABLE)
+    .update({ visit_id: bookingId })
+    .eq('id', bookingId);
+  if (visitErr) {
+    throw visitErr;
+  }
+
+  return {
+    id: bookingId,
+    customerId: data.customer_id as string,
+    visitId: bookingId,
+  };
 }
 
 /** Address / vehicle snapshot from the customer's most recent booking, if any. */
@@ -321,6 +377,8 @@ export async function createBookingForExistingCustomer(
       ? payload.selectedAddOns
       : null;
 
+  const provisionalVisitId = crypto.randomUUID();
+
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
@@ -335,6 +393,10 @@ export async function createBookingForExistingCustomer(
     ...mapCustomerToRow(customer),
     customer_id: payload.customerId,
     service_location_type: null,
+    visit_id: provisionalVisitId,
+    visit_job_index: 0,
+    visit_job_count: 1,
+    job_details: null,
     ...bookingDiscountColumnsFromSnapshot(null),
   };
 
@@ -352,14 +414,11 @@ export async function createBookingForExistingCustomer(
     throw new Error('Booking was created without customer_id');
   }
 
-  return { id: data.id };
-}
+  const bookingId = data.id as string;
+  await db.from(TABLE).update({ visit_id: bookingId }).eq('id', bookingId);
 
-/** How the customer committed to pay when no Stripe checkout row is involved. */
-export type PublicBookingNoCheckoutPaymentMethod =
-  | 'pay_now'
-  | 'pay_in_person'
-  | 'none';
+  return { id: bookingId };
+}
 
 /**
  * Inserts `booking_payments` for bookings created via POST /api/public/bookings
@@ -508,6 +567,29 @@ export async function listBookingsForBusiness(
     if (!payment) {
       return withReviewFlag;
     }
+
+    // Prefer amount-due math (includes job_details add-ons + sale/promo) over the
+    // stored payments row, which may still hold pre-discount gross for multi-job.
+    const amountDue = computeBookingAmountDue({
+      servicePriceCents: row.service_price_cents,
+      addonDetails: row.addon_details,
+      jobDetails: row.job_details,
+      sessionFees: [],
+      paidOnlineAmountCents: payment.paid_online_amount_cents,
+      sessionPayment: undefined,
+      discount: {
+        discountSource: row.discount_source,
+        discountType: row.discount_type,
+        discountValue:
+          typeof row.discount_value === 'number'
+            ? row.discount_value
+            : row.discount_value != null
+              ? Number(row.discount_value)
+              : null,
+        discountCents: row.discount_cents,
+      },
+    });
+
     return {
       ...withReviewFlag,
       payment: {
@@ -516,12 +598,9 @@ export async function listBookingsForBusiness(
           payment.payment_method_selected ?? 'none'
         ),
         currency: (payment.currency ?? 'usd').toLowerCase(),
-        totalAmountCents: Math.max(0, payment.total_amount_cents ?? 0),
-        paidOnlineAmountCents: Math.max(
-          0,
-          payment.paid_online_amount_cents ?? 0
-        ),
-        remainingAmountCents: Math.max(0, payment.remaining_amount_cents ?? 0),
+        totalAmountCents: amountDue.adjustedTotalCents,
+        paidOnlineAmountCents: amountDue.paidOnlineCents,
+        remainingAmountCents: Math.max(0, amountDue.amountDueCents),
       },
     };
   });

@@ -426,6 +426,7 @@ export async function persistJobCompletedTransaction(
     console.error('[job_completed] maintenance side effect', sideErr);
   }
 
+  const discountLine = snapshot.lines.find(line => line.kind === 'discount');
   const notification = await sendJobCompletedCustomerNotification({
     admin,
     businessId,
@@ -441,7 +442,27 @@ export async function persistJobCompletedTransaction(
     scheduledDate: snapshot.booking.scheduledDate,
     startTime: snapshot.booking.startTime,
     totalCents: snapshot.totals.totalCents,
+    subtotalCents: snapshot.totals.subtotalCents,
+    discount:
+      discountLine != null &&
+      typeof snapshot.totals.discountCents === 'number' &&
+      snapshot.totals.discountCents > 0
+        ? {
+            label: discountLine.label,
+            discountCents: snapshot.totals.discountCents,
+          }
+        : null,
     reviewUrl: snapshot.reviewUrl,
+    jobs: snapshot.jobs?.map(job => ({
+      serviceName: job.serviceName,
+      servicePriceOptionLabel: job.servicePriceOptionLabel,
+      servicePriceCents: job.servicePriceCents,
+      selectedAddOns: job.addOns,
+      durationMinutes: job.durationMinutes > 0 ? job.durationMinutes : null,
+      customerVehicleYear: job.vehicleYear || undefined,
+      customerVehicleMake: job.vehicleMake || undefined,
+      customerVehicleModel: job.vehicleModel || undefined,
+    })),
     requestId: input.requestId,
   });
 

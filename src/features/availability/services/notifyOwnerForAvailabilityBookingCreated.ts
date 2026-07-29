@@ -29,6 +29,8 @@ export async function notifyOwnerForAvailabilityBookingCreated(
     serviceSummaryLine: string | null;
     scheduledDate: string;
     emailPayload: AvailabilityBookingNotificationPayload;
+    /** When > 1, owner push/inbox body mentions job count. */
+    jobCount?: number;
   }
 ): Promise<void> {
   const { correlationId, profileId, bookingId, customerName } = params;
@@ -47,6 +49,10 @@ export async function notifyOwnerForAvailabilityBookingCreated(
   }
 
   const createdByOwner = params.emailPayload.createdByOwner === true;
+  const jobCount =
+    typeof params.jobCount === 'number' && params.jobCount > 0
+      ? params.jobCount
+      : (params.emailPayload.jobs?.length ?? 1);
   const title = notificationMinimalDisplayTitle(
     'availability_booking',
     'booking',
@@ -54,7 +60,9 @@ export async function notifyOwnerForAvailabilityBookingCreated(
     createdByOwner ? 'Appointment created' : null
   );
   const bodyText = createdByOwner
-    ? `For ${customerName}`
+    ? jobCount > 1
+      ? `${jobCount} jobs · ${customerName}`
+      : `For ${customerName}`
     : notificationInboxSubtitleFromCustomer(customerName);
 
   const { error: notifError } = await supabase.from('notifications').insert({

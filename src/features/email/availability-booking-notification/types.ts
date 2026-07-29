@@ -50,6 +50,11 @@ export interface AvailabilityBookingNotificationPayload {
     discountCents: number;
     estimatedTotalCents: number;
   };
+  /**
+   * Multi-job visit: one entry per job. When present (length ≥ 1), the template
+   * lists each job instead of the single top-level service section.
+   */
+  jobs?: AvailabilityBookingEmailJob[];
   /** Shown in both customer confirmation and owner notification when set. */
   paymentSummary?: AvailabilityBookingPaymentSummary;
   /** Where service happens (mobile at customer vs shop visit). */
@@ -58,6 +63,25 @@ export interface AvailabilityBookingNotificationPayload {
   customerNotes?: string;
   /** Owner scheduled this appointment from the dashboard (not a public self-booking). */
   createdByOwner?: boolean;
+}
+
+/** One job line in a multi-job visit confirmation email. */
+export interface AvailabilityBookingEmailJob {
+  serviceName: string;
+  servicePriceOptionLabel?: string;
+  servicePriceCents?: number;
+  selectedAddOns?: AddOnForEmail[];
+  durationMinutes: number;
+  customerVehicleYear?: string;
+  customerVehicleMake?: string;
+  customerVehicleModel?: string;
+  /** Gross job total (service + add-ons), pre-discount. */
+  totalPriceCents?: number;
+  discount?: {
+    label: string;
+    discountCents: number;
+    estimatedTotalCents: number;
+  };
 }
 
 export interface AvailabilityBookingServiceLocationEmail {

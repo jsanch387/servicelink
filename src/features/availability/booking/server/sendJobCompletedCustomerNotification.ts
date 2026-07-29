@@ -7,6 +7,7 @@ import {
   mapJobCompletedEmailFailureReason,
   sendJobCompletedInvoiceEmail,
 } from '@/features/email/job-completed/sendJobCompletedInvoiceEmail';
+import type { JobCompletedInvoiceEmailJob } from '@/features/email/job-completed/jobCompletedInvoiceTemplate';
 import { pausedSmsChannelOutcome } from '@/features/sms/config/smsOutboundPaused';
 import type { NotifyChannelOutcome } from '@/features/reviews/server/createReviewInviteIfEligible';
 import type { Database } from '@/libs/supabase/client';
@@ -28,7 +29,13 @@ export interface JobCompletedNotificationInput {
   scheduledDate?: string;
   startTime?: string;
   totalCents?: number;
+  subtotalCents?: number;
+  discount?: {
+    label: string;
+    discountCents: number;
+  } | null;
   reviewUrl?: string | null;
+  jobs?: JobCompletedInvoiceEmailJob[];
   requestId?: string;
 }
 
@@ -89,7 +96,10 @@ export async function sendJobCompletedCustomerNotification(
       scheduledDate: input.scheduledDate,
       startTime: input.startTime,
       totalCents: input.totalCents,
+      subtotalCents: input.subtotalCents,
+      discount: input.discount,
       reviewUrl: input.reviewUrl,
+      jobs: input.jobs,
     });
 
     if (emailResult.sent) {

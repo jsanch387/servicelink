@@ -39,6 +39,7 @@ interface BookingForJobCompleted {
   work_handoff_status: string | null;
   service_price_cents: number | null;
   addon_details: unknown;
+  job_details?: unknown | null;
   discount_source?: string | null;
   discount_type?: string | null;
   discount_value?: number | null;
@@ -119,7 +120,7 @@ export async function handleJobCompletedAction(opts: {
     (auth.supabase as any)
       .from('bookings')
       .select(
-        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details, discount_source, discount_type, discount_value, discount_cents'
+        'id, business_id, status, job_status, work_handoff_status, service_price_cents, addon_details, job_details, discount_source, discount_type, discount_value, discount_cents'
       )
       .eq('id', bookingId)
       .maybeSingle();
@@ -245,12 +246,16 @@ export async function handleJobCompletedAction(opts: {
     .maybeSingle();
 
   const payments = paymentsData as BookingPaymentsRow | null;
+  const sessionFees = parsed.body.sessionFees ?? [];
+  const sessionPayment = parsed.body.sessionPayment;
+
   const amountDue = computeBookingAmountDue({
     servicePriceCents: booking.service_price_cents,
     addonDetails: booking.addon_details,
-    sessionFees: parsed.body.sessionFees ?? [],
+    jobDetails: booking.job_details,
+    sessionFees,
     paidOnlineAmountCents: payments?.paid_online_amount_cents,
-    sessionPayment: parsed.body.sessionPayment,
+    sessionPayment,
     discount: {
       discountSource: booking.discount_source,
       discountType: booking.discount_type,
@@ -272,6 +277,15 @@ export async function handleJobCompletedAction(opts: {
         ? 'Payment is still due on this booking.'
         : 'payment_amount_mismatch',
       amountDueCents: amountDue.amountDueCents,
+      adjustedTotalCents: amountDue.adjustedTotalCents,
+      sessionPayCents: amountDue.sessionPayCents,
+      paidOnlineCents: amountDue.paidOnlineCents,
+      serviceCents: amountDue.serviceCents,
+      addonCents: amountDue.addonCents,
+      discountCents: amountDue.discountCents,
+      jobCount: Array.isArray(booking.job_details)
+        ? booking.job_details.length
+        : 0,
     });
     return NextResponse.json(
       {
