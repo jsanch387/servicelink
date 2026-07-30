@@ -16,12 +16,12 @@ export const CREATE_APPOINTMENT_STEP_META = [
   {
     key: 'pricing',
     title: 'Pricing',
-    subtitle: 'Choose a price tier for this service.',
+    subtitle: '',
   },
   {
     key: 'addons',
     title: 'Add-ons',
-    subtitle: 'Add extras if the customer wants them — or skip.',
+    subtitle: '',
   },
   {
     key: 'customer',

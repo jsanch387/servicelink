@@ -25,6 +25,11 @@ interface TimeSlotGridProps {
   selectDateHint?: string;
   /** Copy when the selected day has zero slots. */
   noSlotsHint?: string;
+  /**
+   * When false (owner create), starts may fall inside hours even if the visit
+   * runs past close. Default true matches public booking.
+   */
+  requireDurationWithinHours?: boolean;
 }
 
 export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
@@ -41,6 +46,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   headingSubtitle = null,
   selectDateHint = 'Select a date to see available times.',
   noSlotsHint = 'No available times for this date.',
+  requireDurationWithinHours = true,
 }) => {
   const slots = useMemo(
     () =>
@@ -52,12 +58,14 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
             existingBookings,
             30,
             timeOffBlocks,
-            minimumNotice
+            minimumNotice,
+            { requireDurationWithinHours }
           )
         : [],
     [
       existingBookings,
       minimumNotice,
+      requireDurationWithinHours,
       selectedDate,
       serviceDurationMinutes,
       timeOffBlocks,

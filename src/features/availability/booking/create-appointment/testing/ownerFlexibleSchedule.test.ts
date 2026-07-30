@@ -27,12 +27,4 @@ describe('buildOwnerFlexibleWeeklySchedule', () => {
     expect(flex.saturday.start).toBe('09:00');
     expect(flex.saturday.end).toBe('17:00');
   });
-
-  it('widens the day when the visit is longer than configured hours', () => {
-    const flex = buildOwnerFlexibleWeeklySchedule(baseSchedule, {
-      minWindowMinutes: 11 * 60,
-    });
-    expect(flex.monday.start).toBe('06:00');
-    expect(flex.monday.end).toBe('22:00');
-  });
 });

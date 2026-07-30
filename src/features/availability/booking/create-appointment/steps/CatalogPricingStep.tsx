@@ -16,16 +16,10 @@ export function CatalogPricingStep({
   onSelect,
 }: CatalogPricingStepProps) {
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-zinc-400">
-        Choose a price for{' '}
-        <span className="font-medium text-zinc-200">{service.name}</span>.
-      </p>
-      <PriceOptionSelector
-        options={service.priceOptions}
-        selectedId={selectedOptionId}
-        onSelect={onSelect}
-      />
-    </div>
+    <PriceOptionSelector
+      options={service.priceOptions}
+      selectedId={selectedOptionId}
+      onSelect={onSelect}
+    />
   );
 }

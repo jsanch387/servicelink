@@ -21,17 +21,10 @@ export function CatalogAddonsStep({
   );
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-zinc-400">
-        Add extras for{' '}
-        <span className="font-medium text-zinc-200">{service.name}</span> — or
-        skip.
-      </p>
-      <AddOnSelector
-        addOns={service.addOns}
-        selectedIds={selectedIds}
-        onToggle={onToggle}
-      />
-    </div>
+    <AddOnSelector
+      addOns={service.addOns}
+      selectedIds={selectedIds}
+      onToggle={onToggle}
+    />
   );
 }

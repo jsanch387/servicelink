@@ -7,6 +7,7 @@ export interface CreateFlowFooterProps {
   primaryLabel: string;
   onPrimary: () => void;
   primaryDisabled?: boolean;
+  primaryLoading?: boolean;
   secondaryLabel?: string;
   onSecondary?: () => void;
   secondaryDisabled?: boolean;
@@ -16,31 +17,39 @@ export function CreateFlowFooter({
   primaryLabel,
   onPrimary,
   primaryDisabled = false,
+  primaryLoading = false,
   secondaryLabel,
   onSecondary,
   secondaryDisabled = false,
 }: CreateFlowFooterProps) {
+  const hasSecondary = Boolean(secondaryLabel && onSecondary);
+
   return (
-    <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-      {secondaryLabel && onSecondary ? (
+    <div
+      className={`mt-8 grid gap-3 ${
+        hasSecondary ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
+      }`}
+    >
+      {hasSecondary ? (
         <Button
           type="button"
           variant="secondary"
           onClick={onSecondary}
-          disabled={secondaryDisabled}
-          className="w-full cursor-pointer border-0 bg-white/10 hover:border-0 hover:bg-white/15 sm:w-auto"
+          disabled={secondaryDisabled || primaryLoading}
+          fullWidth
+          className="order-2 cursor-pointer border-0 bg-white/10 hover:border-0 hover:bg-white/15 sm:order-1"
         >
           {secondaryLabel}
         </Button>
-      ) : (
-        <span className="hidden sm:block" />
-      )}
+      ) : null}
       <Button
         type="button"
         variant="primary"
         onClick={onPrimary}
         disabled={primaryDisabled}
-        className="w-full cursor-pointer sm:w-auto"
+        loading={primaryLoading}
+        fullWidth
+        className={`cursor-pointer ${hasSecondary ? 'order-1 sm:order-2' : ''}`}
       >
         {primaryLabel}
       </Button>

@@ -1,8 +1,7 @@
 'use client';
 
-import { Button } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import type { QuoteCatalogService } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import React from 'react';
@@ -11,13 +10,17 @@ import {
   CREATE_APPOINTMENT_STEP,
 } from './constants';
 import { AddAnotherJobCard } from './components/AddAnotherJobCard';
+import { CreateAppointmentErrorState } from './components/CreateAppointmentErrorState';
 import { CreateAppointmentHeader } from './components/CreateAppointmentHeader';
+import { CreateAppointmentSubmittingState } from './components/CreateAppointmentSubmittingState';
+import { CreateAppointmentSuccessState } from './components/CreateAppointmentSuccessState';
 import { CreateFlowFooter } from './components/CreateFlowFooter';
 import { SelectionSummaryCard } from './components/SelectionSummaryCard';
 import { useCreateAppointmentController } from './hooks/useCreateAppointmentController';
 import { AddressStep } from './steps/AddressStep';
 import { CatalogAddonsStep } from './steps/CatalogAddonsStep';
 import { CatalogPricingStep } from './steps/CatalogPricingStep';
+import { CustomJobStep } from './steps/CustomJobStep';
 import { CustomerStep } from './steps/CustomerStep';
 import { LocationStep } from './steps/LocationStep';
 import { ReviewStep } from './steps/ReviewStep';
@@ -34,17 +37,21 @@ export interface CreateAppointmentWizardProps {
   serviceCatalog: QuoteCatalogService[];
   serviceCategories: ServiceCategoryRow[];
   serviceLocation: PublicBookingServiceLocation;
+  activeSale?: PublicActiveSale | null;
 }
 
 export function CreateAppointmentWizard({
-  businessId: _businessId,
+  businessId,
   businessSlug,
-  businessName,
+  businessName: _businessName,
   serviceCatalog,
   serviceCategories,
   serviceLocation,
+  activeSale = null,
 }: CreateAppointmentWizardProps) {
   const ctrl = useCreateAppointmentController({
+    businessId,
+    businessSlug: businessSlug?.trim() || '',
     catalog: serviceCatalog,
     serviceLocation,
   });
@@ -55,6 +62,9 @@ export function CreateAppointmentWizard({
     progress,
     canContinue,
     appointmentConfirmed,
+    isSubmitting,
+    submitError,
+    clearSubmitError,
     committedJobs,
     draft,
     visit,
@@ -68,6 +78,7 @@ export function CreateAppointmentWizard({
     selectCatalogService,
     selectPricingOption,
     toggleAddon,
+    patchDraft,
     selectedService,
     shopAddressMissing,
     setLocationType,
@@ -76,12 +87,13 @@ export function CreateAppointmentWizard({
     patchVehicle,
     addAnotherJob,
     setSchedule,
+    setApplySale,
     visitDuration,
     reviewJobs,
   } = ctrl;
 
-  const primaryLabel =
-    step === CREATE_APPOINTMENT_STEP.REVIEW ? 'Confirm' : 'Continue';
+  const isReview = step === CREATE_APPOINTMENT_STEP.REVIEW;
+  const primaryLabel = isReview ? 'Confirm' : 'Continue';
   const secondaryLabel =
     step === CREATE_APPOINTMENT_STEP.SERVICE && servicePhase === 'path'
       ? jobIndex > 0
@@ -90,8 +102,8 @@ export function CreateAppointmentWizard({
       : 'Back';
 
   const showSummary =
-    Boolean(draft.serviceName.trim() || draft.isCustomJob) &&
-    step >= CREATE_APPOINTMENT_STEP.PRICING &&
+    Boolean(draft.serviceName.trim()) &&
+    step > CREATE_APPOINTMENT_STEP.PRICING &&
     step < CREATE_APPOINTMENT_STEP.ADDRESS;
 
   const addJobGate = canAddAnotherJob({
@@ -102,28 +114,39 @@ export function CreateAppointmentWizard({
     step === CREATE_APPOINTMENT_STEP.VEHICLE &&
     committedJobs.length + 1 < CREATE_APPOINTMENT_MAX_JOBS;
   const showAddAnotherOnReview =
-    step === CREATE_APPOINTMENT_STEP.REVIEW &&
-    committedJobs.length + 1 < CREATE_APPOINTMENT_MAX_JOBS;
+    isReview && committedJobs.length + 1 < CREATE_APPOINTMENT_MAX_JOBS;
+
+  if (isSubmitting) {
+    return (
+      <div className="min-h-screen py-8 sm:py-10">
+        <CreateAppointmentHeader compact hideBack />
+        <div className="mx-auto w-full max-w-xl px-4">
+          <CreateAppointmentSubmittingState />
+        </div>
+      </div>
+    );
+  }
 
   if (appointmentConfirmed) {
     return (
       <div className="min-h-screen py-8 sm:py-10">
-        <CreateAppointmentHeader
-          title="Appointment confirmed"
-          subtitle="You’re all set—it’s on your calendar. Check Bookings for details."
-        />
+        <CreateAppointmentHeader compact />
         <div className="mx-auto w-full max-w-xl px-4">
-          <Button
-            type="button"
-            variant="primary"
-            href={ROUTES.DASHBOARD.BOOKINGS}
-            className="mt-6 cursor-pointer"
-          >
-            Done
-          </Button>
-          <p className="mt-4 text-xs text-zinc-500">
-            Stub success — real POST lands in a later slice. ({businessName})
-          </p>
+          <CreateAppointmentSuccessState />
+        </div>
+      </div>
+    );
+  }
+
+  if (submitError) {
+    return (
+      <div className="min-h-screen py-8 sm:py-10">
+        <CreateAppointmentHeader compact />
+        <div className="mx-auto w-full max-w-xl px-4">
+          <CreateAppointmentErrorState
+            message={submitError}
+            onTryAgain={clearSubmitError}
+          />
         </div>
       </div>
     );
@@ -134,18 +157,10 @@ export function CreateAppointmentWizard({
   if (step === CREATE_APPOINTMENT_STEP.SERVICE) {
     body =
       servicePhase === 'path' ? (
-        <div className="space-y-4">
-          {jobIndex > 0 ? (
-            <p className="text-sm text-zinc-400">
-              Job {jobIndex + 1} of up to {CREATE_APPOINTMENT_MAX_JOBS}. Customer
-              and location stay the same.
-            </p>
-          ) : null}
-          <ServicePathChooser
-            value={servicePath}
-            onChange={chooseServicePath}
-          />
-        </div>
+        <ServicePathChooser
+          value={servicePath}
+          onChange={chooseServicePath}
+        />
       ) : (
         <ServiceCatalogListStep
           catalog={serviceCatalog}
@@ -154,14 +169,16 @@ export function CreateAppointmentWizard({
           onSelect={selectCatalogService}
         />
       );
-  } else if (step === CREATE_APPOINTMENT_STEP.PRICING && selectedService) {
-    body = (
+  } else if (step === CREATE_APPOINTMENT_STEP.PRICING) {
+    body = draft.isCustomJob ? (
+      <CustomJobStep draft={draft} onChange={patchDraft} />
+    ) : selectedService ? (
       <CatalogPricingStep
         service={selectedService}
         selectedOptionId={draft.pricingOption?.id ?? null}
         onSelect={selectPricingOption}
       />
-    );
+    ) : null;
   } else if (step === CREATE_APPOINTMENT_STEP.ADDONS && selectedService) {
     body = (
       <CatalogAddonsStep
@@ -189,18 +206,11 @@ export function CreateAppointmentWizard({
   } else if (step === CREATE_APPOINTMENT_STEP.VEHICLE) {
     body = (
       <div className="space-y-4">
-        {committedJobs.length > 0 ? (
-          <p className="text-sm text-zinc-400">
-            {committedJobs.length} job
-            {committedJobs.length === 1 ? '' : 's'} already on this visit
-            {committedJobs.map(j => ` · ${j.serviceName}`).join('')}
-          </p>
-        ) : null}
         <VehicleStep vehicle={draft.vehicle} onChange={patchVehicle} />
         {showAddAnotherJob ? (
           <AddAnotherJobCard
             onPress={addAnotherJob}
-            disabled={!addJobGate.ok || !canContinue}
+            disabled={!addJobGate.ok || !canContinue || isSubmitting}
           />
         ) : null}
       </div>
@@ -215,7 +225,7 @@ export function CreateAppointmentWizard({
         onChange={setSchedule}
       />
     );
-  } else if (step === CREATE_APPOINTMENT_STEP.REVIEW) {
+  } else if (isReview) {
     body = (
       <ReviewStep
         jobs={reviewJobs}
@@ -225,30 +235,39 @@ export function CreateAppointmentWizard({
         scheduledDate={visit.scheduledDate}
         startTime={visit.startTime}
         notes={visit.notes}
+        activeSale={activeSale}
+        applySale={visit.applySale}
+        onApplySaleChange={setApplySale}
         canAddAnotherJob={showAddAnotherOnReview}
         onAddAnotherJob={addAnotherJob}
-        addAnotherDisabled={!addJobGate.ok}
+        addAnotherDisabled={!addJobGate.ok || isSubmitting}
       />
     );
   }
 
   return (
     <div className="min-h-screen py-8 sm:py-10">
-      <CreateAppointmentHeader title={headerTitle} subtitle={headerSubtitle} />
+      <CreateAppointmentHeader
+        title={headerTitle}
+        subtitle={headerSubtitle}
+        compact={isReview}
+      />
 
       <div className="mx-auto w-full max-w-xl px-4">
-        <div
-          className="mb-6 h-1.5 overflow-hidden rounded-full bg-white/10"
-          role="progressbar"
-          aria-valuenow={Math.round(progress * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
+        {!isReview ? (
           <div
-            className="h-full rounded-full bg-white/80 transition-[width] duration-300"
-            style={{ width: `${Math.round(progress * 100)}%` }}
-          />
-        </div>
+            className="mb-6 h-1.5 overflow-hidden rounded-full bg-white/10"
+            role="progressbar"
+            aria-valuenow={Math.round(progress * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className="h-full rounded-full bg-white/80 transition-[width] duration-300"
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+        ) : null}
 
         {body}
 
@@ -267,9 +286,10 @@ export function CreateAppointmentWizard({
         <CreateFlowFooter
           primaryLabel={primaryLabel}
           onPrimary={goContinue}
-          primaryDisabled={!canContinue}
+          primaryDisabled={!canContinue || isSubmitting}
           secondaryLabel={secondaryLabel}
           onSecondary={secondaryLabel ? goBack : undefined}
+          secondaryDisabled={isSubmitting}
         />
       </div>
     </div>

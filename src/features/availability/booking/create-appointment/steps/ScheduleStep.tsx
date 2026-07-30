@@ -44,11 +44,8 @@ export function ScheduleStep({
   const duration = Math.max(30, visitDurationMinutes || 60);
 
   const flexibleSchedule: WeeklySchedule = useMemo(
-    () =>
-      buildOwnerFlexibleWeeklySchedule(weeklySchedule, {
-        minWindowMinutes: duration,
-      }),
-    [weeklySchedule, duration]
+    () => buildOwnerFlexibleWeeklySchedule(weeklySchedule),
+    [weeklySchedule]
   );
 
   const selectedDate = scheduledDate ? parseYmdLocal(scheduledDate) : null;
@@ -84,6 +81,7 @@ export function ScheduleStep({
         existingBookings={blockedSlots}
         timeOffBlocks={[]}
         minimumNotice="none"
+        requireDurationWithinHours={false}
         selectedTime={startTime}
         onSelectTime={time => {
           if (!scheduledDate) return;
@@ -91,7 +89,7 @@ export function ScheduleStep({
         }}
         heading="Time"
         selectDateHint="Select a date to see times."
-        noSlotsHint="No times fit this visit length on that day. Try another date."
+        noSlotsHint="No available times — try another day."
       />
     </div>
   );

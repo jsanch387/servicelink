@@ -7,11 +7,11 @@ import type {
 } from '../types';
 import {
   isAddressStepComplete,
+  isCustomJobPricingComplete,
   isCustomerStepComplete,
   isLocationStepComplete,
   isReviewVisitFieldsComplete,
   isVehicleStepComplete,
-  parseRequiredCustomJobPriceCents,
 } from './createAppointmentValidators';
 
 export interface CanContinueCreateAppointmentArgs {
@@ -68,12 +68,11 @@ export function canContinueCreateAppointmentStep(
 
   if (p.step === CREATE_APPOINTMENT_STEP.PRICING) {
     if (p.isCustomJob) {
-      const nameOk = Boolean(p.serviceName?.trim());
-      const priceOk =
-        parseRequiredCustomJobPriceCents(p.customPriceLabel) != null;
-      const durationOk =
-        typeof p.durationMinutes === 'number' && p.durationMinutes > 0;
-      return nameOk && priceOk && durationOk;
+      return isCustomJobPricingComplete({
+        serviceName: p.serviceName,
+        customPriceLabel: p.customPriceLabel,
+        durationMinutes: p.durationMinutes,
+      });
     }
     if (p.pricingSkipped) return true;
     return p.catalogPriceComplete !== false;
@@ -125,7 +124,15 @@ export function canContinueCreateAppointmentStep(
     const hasActiveJobDraft =
       Boolean(p.selectedServiceId) || Boolean(p.isCustomJob);
     if (!hasActiveJobDraft) return Boolean(p.hasCommittedJobs);
-    if (p.isCustomJob && !p.customJobComplete) return false;
+    if (p.isCustomJob) {
+      return (
+        isCustomJobPricingComplete({
+          serviceName: p.serviceName,
+          customPriceLabel: p.customPriceLabel,
+          durationMinutes: p.durationMinutes,
+        }) && isVehicleStepComplete(p.vehicle)
+      );
+    }
     if (!p.isCustomJob && p.catalogPriceComplete === false) return false;
     return isVehicleStepComplete(p.vehicle);
   }

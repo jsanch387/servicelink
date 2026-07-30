@@ -1,6 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { CreateAppointmentWizard } from '@/features/availability/booking/create-appointment';
 import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { loadOwnerBookingSale } from '@/features/marketing/server/loadOwnerBookingSale';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { loadQuoteServiceCatalog } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import { getServiceCategories } from '@/features/services/categories/api/getServiceCategories';
@@ -54,9 +55,10 @@ export default async function NewAppointmentPage() {
     redirect(ROUTES.DASHBOARD.BOOKINGS);
   }
 
-  const [serviceCatalog, categoriesResult] = await Promise.all([
+  const [serviceCatalog, categoriesResult, activeSale] = await Promise.all([
     loadQuoteServiceCatalog(supabase, business.id),
     getServiceCategories(business.id),
+    loadOwnerBookingSale(supabase, business.id),
   ]);
 
   const serviceLocation = buildPublicBookingServiceLocation(business);
@@ -69,6 +71,7 @@ export default async function NewAppointmentPage() {
       serviceCatalog={serviceCatalog}
       serviceCategories={categoriesResult.data ?? []}
       serviceLocation={serviceLocation}
+      activeSale={activeSale}
     />
   );
 }

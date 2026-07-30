@@ -45,7 +45,7 @@ export function getCreateAppointmentVisibleStepOrder(
   addressSkipped = false,
   jobIndex = 0
 ): number[] {
-  const o = [CREATE_APPOINTMENT_STEP.SERVICE];
+  const o: number[] = [CREATE_APPOINTMENT_STEP.SERVICE];
   if (!pricingSkipped) o.push(CREATE_APPOINTMENT_STEP.PRICING);
   if (!addonsSkipped) o.push(CREATE_APPOINTMENT_STEP.ADDONS);
   if (jobIndex === 0) {

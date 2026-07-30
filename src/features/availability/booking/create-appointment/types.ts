@@ -72,6 +72,8 @@ export interface CreateAppointmentVisitState {
   startTime: string | null;
   /** Appointment-level notes (not a customer profile field). */
   notes: string;
+  /** Owner opt-in to apply the business’s active sale on review. */
+  applySale: boolean;
 }
 
 export function emptyCustomer(): CreateAppointmentCustomer {
@@ -109,5 +111,6 @@ export function createEmptyVisit(): CreateAppointmentVisitState {
     scheduledDate: null,
     startTime: null,
     notes: '',
+    applySale: false,
   };
 }

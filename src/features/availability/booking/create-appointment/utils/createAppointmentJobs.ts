@@ -6,15 +6,27 @@ import type {
   CreateAppointmentJobDraft,
   CreateAppointmentJobSnapshot,
 } from '../types';
-import { isVehicleStepComplete } from './createAppointmentValidators';
+import {
+  isCustomJobPricingComplete,
+  isVehicleStepComplete,
+} from './createAppointmentValidators';
 
 export function snapshotJobDraft(
   draft: CreateAppointmentJobDraft
 ): CreateAppointmentJobSnapshot | null {
-  const hasService =
-    draft.isCustomJob ||
-    (Boolean(draft.serviceId) && Boolean(draft.serviceName.trim()));
-  if (!hasService) return null;
+  if (draft.isCustomJob) {
+    if (
+      !isCustomJobPricingComplete({
+        serviceName: draft.serviceName,
+        customPriceLabel: draft.customPriceLabel,
+        durationMinutes: draft.durationMinutes,
+      })
+    ) {
+      return null;
+    }
+  } else if (!draft.serviceId || !draft.serviceName.trim()) {
+    return null;
+  }
   if (!isVehicleStepComplete(draft.vehicle)) return null;
 
   const addonDuration = draft.selectedAddOns.reduce(

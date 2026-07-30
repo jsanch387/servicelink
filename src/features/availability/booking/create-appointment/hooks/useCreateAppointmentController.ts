@@ -24,18 +24,15 @@ import {
   isCatalogAddonsSkipped,
   isCatalogPricingSkipped,
 } from '../utils/catalogServiceHelpers';
-import {
-  canAddAnotherJob,
-  reviewJobsFromState,
-  snapshotJobDraft,
-  visitDurationMinutes,
-} from '../utils/createAppointmentJobs';
+import { canAddAnotherJob, reviewJobsFromState, snapshotJobDraft, visitDurationMinutes } from '../utils/createAppointmentJobs';
+import { buildOwnerCreateAppointmentBody } from '../utils/buildOwnerCreateAppointmentBody';
 import { canContinueCreateAppointmentStep } from '../utils/createFlowContinueGate';
 import {
   getCreateAppointmentProgressFraction,
   getNextStepOnContinue,
   getPreviousStepOnBack,
 } from '../utils/createFlowNavigation';
+import { CREATE_APPOINTMENT_SUBMIT_MIN_MS } from '../constants/submitStatus';
 
 export type ServiceStepPhase = 'path' | 'list';
 
@@ -96,6 +93,8 @@ function applyCatalogServiceToDraft(
 }
 
 export interface UseCreateAppointmentControllerOptions {
+  businessId: string;
+  businessSlug: string;
   catalog: QuoteCatalogService[];
   serviceLocation: PublicBookingServiceLocation;
   /** When true, schedule/review continue gates are bypassed (tests / stubs). */
@@ -105,10 +104,16 @@ export interface UseCreateAppointmentControllerOptions {
 export function useCreateAppointmentController(
   options: UseCreateAppointmentControllerOptions
 ) {
-  const { catalog, serviceLocation, stubAfterVehicle = false } = options;
+  const {
+    businessId,
+    businessSlug,
+    catalog,
+    serviceLocation,
+    stubAfterVehicle = false,
+  } = options;
 
   const reactId = useId();
-  const [step, setStep] = useState(CREATE_APPOINTMENT_STEP.SERVICE);
+  const [step, setStep] = useState<number>(CREATE_APPOINTMENT_STEP.SERVICE);
   const [servicePhase, setServicePhase] = useState<ServiceStepPhase>('path');
   const [servicePath, setServicePath] = useState<ServicePathChoice | null>(
     null
@@ -124,6 +129,11 @@ export function useCreateAppointmentController(
   const [appointmentConfirmed, setAppointmentConfirmed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [locationSeeded, setLocationSeeded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(
+    null
+  );
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const jobIndex = committedJobs.length;
   const hasScheduleSlot = Boolean(visit.scheduledDate && visit.startTime);
@@ -184,8 +194,14 @@ export function useCreateAppointmentController(
   );
 
   const progress = getCreateAppointmentProgressFraction(step, {
-    ...navOpts,
+    // Keep pricing/addons in the progress denominator even before a service
+    // is chosen — otherwise selecting a tiered service shrinks the bar.
     appointmentConfirmed,
+    pricingSkipped: false,
+    addonsSkipped: false,
+    locationSkipped,
+    addressSkipped,
+    jobIndex,
   });
 
   const stepMeta =
@@ -222,6 +238,9 @@ export function useCreateAppointmentController(
     selectedDateKey: visit.scheduledDate,
     selectedTime: visit.startTime,
     hasCommittedJobs: committedJobs.length > 0,
+    serviceName: draft.serviceName,
+    customPriceLabel: draft.customPriceLabel,
+    durationMinutes: draft.durationMinutes,
   });
 
   const patchCustomer = useCallback(
@@ -288,9 +307,19 @@ export function useCreateAppointmentController(
         isCustomJob: true,
         serviceId: null,
         serviceName: '',
+        customPriceLabel: '',
+        durationMinutes: 0,
+        servicePriceCents: 0,
       }));
     }
   }, []);
+
+  const patchDraft = useCallback(
+    (patch: Partial<CreateAppointmentJobDraft>) => {
+      setDraft(prev => ({ ...prev, ...patch }));
+    },
+    []
+  );
 
   const selectCatalogService = useCallback(
     (serviceId: string) => {
@@ -345,8 +374,83 @@ export function useCreateAppointmentController(
     [selectedService]
   );
 
+  const submitAppointment = useCallback(async () => {
+    if (isSubmitting) return;
+
+    const startedAt = Date.now();
+    const waitMinDisplay = async () => {
+      const elapsed = Date.now() - startedAt;
+      const remaining = CREATE_APPOINTMENT_SUBMIT_MIN_MS - elapsed;
+      if (remaining > 0) {
+        await new Promise<void>(resolve => {
+          window.setTimeout(resolve, remaining);
+        });
+      }
+    };
+
+    const jobs = reviewJobsFromState(committedJobs, draft);
+    if (jobs.length === 0) {
+      setNotice('Add at least one job before confirming.');
+      return;
+    }
+    if (!visit.scheduledDate || !visit.startTime || !visit.locationType) {
+      setNotice('Pick a date, time, and location before confirming.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setNotice(null);
+    setSubmitError(null);
+    try {
+      const body = buildOwnerCreateAppointmentBody({
+        businessId,
+        businessSlug,
+        visit,
+        jobs,
+      });
+      const res = await fetch('/api/public/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+        data?: { id?: string };
+      } | null;
+
+      await waitMinDisplay();
+
+      if (!res.ok || !json?.success) {
+        setSubmitError(
+          typeof json?.error === 'string' && json.error.trim()
+            ? json.error.trim()
+            : 'Could not create the appointment. Please try again.'
+        );
+        return;
+      }
+
+      setConfirmedBookingId(
+        typeof json.data?.id === 'string' ? json.data.id : null
+      );
+      setAppointmentConfirmed(true);
+    } catch {
+      await waitMinDisplay();
+      setSubmitError('Could not create the appointment. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    isSubmitting,
+    committedJobs,
+    draft,
+    visit,
+    businessId,
+    businessSlug,
+  ]);
+
   const goContinue = useCallback(() => {
-    if (!canContinue) return;
+    if (!canContinue || isSubmitting) return;
 
     if (step === CREATE_APPOINTMENT_STEP.SERVICE) {
       if (servicePhase === 'path') {
@@ -355,15 +459,6 @@ export function useCreateAppointmentController(
           return;
         }
         if (servicePath === 'custom') {
-          setDraft(prev => ({
-            ...prev,
-            isCustomJob: true,
-            serviceId: null,
-            serviceName: prev.serviceName || 'Custom job',
-            servicePriceCents: prev.servicePriceCents || 10000,
-            durationMinutes: prev.durationMinutes || 60,
-            customPriceLabel: prev.customPriceLabel || '100',
-          }));
           const next = getNextStepOnContinue({
             step,
             pricingSkipped: false,
@@ -388,7 +483,7 @@ export function useCreateAppointmentController(
     }
 
     if (step === CREATE_APPOINTMENT_STEP.REVIEW) {
-      setAppointmentConfirmed(true);
+      void submitAppointment();
       return;
     }
 
@@ -400,6 +495,7 @@ export function useCreateAppointmentController(
     setStep(next);
   }, [
     canContinue,
+    isSubmitting,
     step,
     servicePhase,
     servicePath,
@@ -408,6 +504,7 @@ export function useCreateAppointmentController(
     locationSkipped,
     addressSkipped,
     jobIndex,
+    submitAppointment,
   ]);
 
   const cancelInProgressExtraJob = useCallback(() => {
@@ -468,7 +565,7 @@ export function useCreateAppointmentController(
   }, [committedJobs.length, draft]);
 
   const goBack = useCallback(() => {
-    if (appointmentConfirmed) return;
+    if (appointmentConfirmed || isSubmitting) return;
 
     if (step === CREATE_APPOINTMENT_STEP.SERVICE) {
       if (servicePhase === 'list') {
@@ -494,6 +591,7 @@ export function useCreateAppointmentController(
     setStep(Math.max(0, prev));
   }, [
     appointmentConfirmed,
+    isSubmitting,
     step,
     servicePhase,
     jobIndex,
@@ -501,6 +599,10 @@ export function useCreateAppointmentController(
     servicePath,
     cancelInProgressExtraJob,
   ]);
+
+  const clearSubmitError = useCallback(() => {
+    setSubmitError(null);
+  }, []);
 
   const setSchedule = useCallback(
     (next: { scheduledDate: string; startTime: string | null }) => {
@@ -513,23 +615,36 @@ export function useCreateAppointmentController(
     []
   );
 
+  const setApplySale = useCallback((applySale: boolean) => {
+    setVisit(v => ({ ...v, applySale }));
+  }, []);
+
   const headerTitle = useMemo(() => {
     if (step === CREATE_APPOINTMENT_STEP.SERVICE && servicePhase === 'list') {
-      return jobIndex > 0
-        ? `Choose service · Job ${jobIndex + 1}`
-        : 'Choose a service';
+      return 'Choose a service';
+    }
+    if (step === CREATE_APPOINTMENT_STEP.PRICING && draft.isCustomJob) {
+      return 'Custom job';
     }
     return stepMeta.title;
-  }, [step, servicePhase, jobIndex, stepMeta.title]);
+  }, [step, servicePhase, draft.isCustomJob, stepMeta.title]);
 
-  const headerSubtitle = useMemo(() => {
+  const headerSubtitle = useMemo((): string | undefined => {
     if (step === CREATE_APPOINTMENT_STEP.SERVICE && servicePhase === 'list') {
-      return jobIndex > 0
-        ? 'Pick the next service for this visit.'
-        : 'Pick from what you already offer.';
+      return 'Pick from what you already offer.';
     }
-    return stepMeta.subtitle;
-  }, [step, servicePhase, jobIndex, stepMeta.subtitle]);
+    if (step === CREATE_APPOINTMENT_STEP.PRICING && draft.isCustomJob) {
+      return 'Name the work, then set duration and price.';
+    }
+    if (
+      step === CREATE_APPOINTMENT_STEP.PRICING ||
+      step === CREATE_APPOINTMENT_STEP.ADDONS
+    ) {
+      return undefined;
+    }
+    const subtitle = stepMeta.subtitle?.trim();
+    return subtitle || undefined;
+  }, [step, servicePhase, draft.isCustomJob, stepMeta.subtitle]);
 
   return {
     step,
@@ -539,6 +654,10 @@ export function useCreateAppointmentController(
     progress,
     canContinue,
     appointmentConfirmed,
+    confirmedBookingId,
+    isSubmitting,
+    submitError,
+    clearSubmitError,
     committedJobs,
     draft,
     visit,
@@ -555,6 +674,7 @@ export function useCreateAppointmentController(
     selectCatalogService,
     selectPricingOption,
     toggleAddon,
+    patchDraft,
     selectedService,
     pricingSkipped,
     addonsSkipped,
@@ -567,6 +687,7 @@ export function useCreateAppointmentController(
     patchVehicle,
     addAnotherJob,
     setSchedule,
+    setApplySale,
     visitDuration,
     reviewJobs,
     newLocalId,

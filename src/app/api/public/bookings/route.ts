@@ -66,6 +66,7 @@ import {
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
+import type { BookingDiscountSnapshot } from '@/features/marketing/server/bookingDiscountSnapshot';
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
@@ -506,29 +507,37 @@ export async function POST(request: NextRequest) {
       const singleCatalogServiceId =
         parsedJobs.length === 1 ? (parsedJobs[0].serviceId ?? null) : null;
 
-      // Sale applies once to the appointment subtotal (all jobs).
-      const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
-        businessId,
-        ownerHasPro,
-        serviceDateYmd: body.scheduledDate,
-        subtotalCents: visitGross,
-        promoCode: null,
-        customerPhone: sanitizedCustomer.phone,
-        customerEmail: sanitizedCustomer.email,
-        allowPromoCode: false,
-      });
-      if (!discountResolved.ok) {
-        return publicBookingJson(
-          requestId,
+      // Sale applies once to the appointment subtotal (all jobs), unless the
+      // owner opted out via applySale: false (web Review checkbox).
+      const ownerWantsSale = body.applySale !== false;
+      let discountSnapshot: BookingDiscountSnapshot | null = null;
+      if (ownerWantsSale) {
+        const discountResolved = await resolveBookingDiscountSnapshot(
+          supabase,
           {
-            success: false,
-            error: promoDiscountResolveErrorMessage(discountResolved.error),
-            errorCode: discountResolved.error,
-          },
-          400
+            businessId,
+            ownerHasPro,
+            serviceDateYmd: body.scheduledDate,
+            subtotalCents: visitGross,
+            promoCode: null,
+            customerPhone: sanitizedCustomer.phone,
+            customerEmail: sanitizedCustomer.email,
+            allowPromoCode: false,
+          }
         );
+        if (!discountResolved.ok) {
+          return publicBookingJson(
+            requestId,
+            {
+              success: false,
+              error: promoDiscountResolveErrorMessage(discountResolved.error),
+              errorCode: discountResolved.error,
+            },
+            400
+          );
+        }
+        discountSnapshot = discountResolved.snapshot;
       }
-      const discountSnapshot = discountResolved.snapshot;
 
       // Vehicle columns: copy only when there is exactly one job with a vehicle.
       const singleVehicle =
@@ -743,35 +752,39 @@ export async function POST(request: NextRequest) {
     );
     const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
 
-    // Owner manual booking: sale auto-apply only. Ignore client promo + discount
-    // preview fields — server recomputes snapshot from DB for scheduledDate.
+    // Owner manual booking: sale auto-apply only (unless applySale: false).
+    // Ignore client promo + discount preview fields — server recomputes.
     const enteredPromoCode = ownerManualBooking
       ? ''
       : normalizeEnteredPromoCode(
           typeof body.promoCode === 'string' ? body.promoCode : ''
         );
-    const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
-      businessId,
-      ownerHasPro,
-      serviceDateYmd: body.scheduledDate,
-      subtotalCents: totalPriceCentsForEmail,
-      promoCode: enteredPromoCode || null,
-      customerPhone: sanitizedCustomer.phone,
-      customerEmail: sanitizedCustomer.email,
-      allowPromoCode: !ownerManualBooking,
-    });
-    if (!discountResolved.ok) {
-      return publicBookingJson(
-        requestId,
-        {
-          success: false,
-          error: promoDiscountResolveErrorMessage(discountResolved.error),
-          errorCode: discountResolved.error,
-        },
-        400
-      );
+    const ownerWantsSale = !ownerManualBooking || body.applySale !== false;
+    let discountSnapshot: BookingDiscountSnapshot | null = null;
+    if (ownerWantsSale) {
+      const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
+        businessId,
+        ownerHasPro,
+        serviceDateYmd: body.scheduledDate,
+        subtotalCents: totalPriceCentsForEmail,
+        promoCode: enteredPromoCode || null,
+        customerPhone: sanitizedCustomer.phone,
+        customerEmail: sanitizedCustomer.email,
+        allowPromoCode: !ownerManualBooking,
+      });
+      if (!discountResolved.ok) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: promoDiscountResolveErrorMessage(discountResolved.error),
+            errorCode: discountResolved.error,
+          },
+          400
+        );
+      }
+      discountSnapshot = discountResolved.snapshot;
     }
-    const discountSnapshot = discountResolved.snapshot;
 
     const result = await createBooking(supabase, {
       businessId,

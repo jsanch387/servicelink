@@ -25,6 +25,33 @@ describe('createAppointmentJobs', () => {
     expect(snap?.serviceName).toBe('Wash');
   });
 
+  it('snapshots a complete custom draft', () => {
+    const draft = {
+      ...createEmptyJobDraft('j1'),
+      isCustomJob: true,
+      serviceName: 'Interior deep clean',
+      customPriceLabel: '150',
+      servicePriceCents: 15000,
+      durationMinutes: 90,
+    };
+    const snap = snapshotJobDraft(draft);
+    expect(snap?.isCustomJob).toBe(true);
+    expect(snap?.serviceName).toBe('Interior deep clean');
+    expect(snap?.durationMinutes).toBe(90);
+    expect(snap?.servicePriceCents).toBe(15000);
+  });
+
+  it('rejects incomplete custom drafts', () => {
+    const draft = {
+      ...createEmptyJobDraft('j1'),
+      isCustomJob: true,
+      serviceName: 'Almost',
+      customPriceLabel: '',
+      durationMinutes: 60,
+    };
+    expect(snapshotJobDraft(draft)).toBeNull();
+  });
+
   it('blocks add another at max jobs', () => {
     const draft = {
       ...createEmptyJobDraft('j1'),

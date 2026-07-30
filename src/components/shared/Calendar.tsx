@@ -249,11 +249,11 @@ export const Calendar: React.FC<CalendarProps> = ({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-y-1.5 gap-x-1">
         {Array(firstDay)
           .fill(null)
           .map((_, i) => (
-            <div key={`empty-${i}`} className="h-9" />
+            <div key={`empty-${i}`} className="h-11" />
           ))}
         {days.map(d => {
           const selectable = isDateSelectable(d);
@@ -268,7 +268,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={!selectable}
               onClick={() => selectable && onChange(new Date(year, month, d))}
               className={`
-                relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition-colors duration-150
+                relative mx-auto flex h-11 w-11 items-center justify-center rounded-xl text-sm font-medium transition-colors duration-150
                 ${!selectable ? 'cursor-not-allowed text-gray-600' : 'cursor-pointer'}
                 ${selected ? 'bg-white text-black' : ''}
                 ${!selected && inRange ? 'bg-white/20 text-white' : ''}

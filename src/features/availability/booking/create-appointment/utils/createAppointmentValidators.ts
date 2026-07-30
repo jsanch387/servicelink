@@ -113,9 +113,21 @@ export function parseRequiredCustomJobPriceCents(
   const raw = String(value ?? '')
     .replace(/\$/g, '')
     .trim();
-  if (!raw || !/\d/.test(raw)) return null;
-  const dollars = Number.parseFloat(raw);
-  if (!Number.isFinite(dollars)) return null;
-  const cents = Math.round(dollars * 100);
-  return cents > 0 ? cents : null;
+  if (!raw || !/^\d+$/.test(raw)) return null;
+  const dollars = Number.parseInt(raw, 10);
+  if (!Number.isFinite(dollars) || dollars < 0) return null;
+  return dollars * 100;
+}
+
+/** Custom job pricing step: name, price digits, and duration on the 30m grid. */
+export function isCustomJobPricingComplete(p: {
+  serviceName?: string;
+  customPriceLabel?: string;
+  durationMinutes?: number;
+}): boolean {
+  const nameOk = Boolean(p.serviceName?.trim());
+  const priceOk = parseRequiredCustomJobPriceCents(p.customPriceLabel) != null;
+  const durationOk =
+    typeof p.durationMinutes === 'number' && p.durationMinutes > 0;
+  return nameOk && priceOk && durationOk;
 }
