@@ -38,7 +38,6 @@ export interface SendAndRecordSmsParams {
    * the send is skipped. e.g. `"<bookingId>:booking_confirmation"`.
    */
   dedupeKey?: string | null;
-  recipientId?: string;
   correlationId?: string;
 }
 
@@ -129,7 +128,6 @@ export async function sendAndRecordSms(
     to: phone,
     type,
     message,
-    recipientId: params.recipientId,
     correlationId,
   });
 

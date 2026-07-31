@@ -1,12 +1,12 @@
 # SMS outbound paused (production)
 
-Outbound customer SMS is **intentionally disabled** until Pingram carrier approval and sender setup are ready in production. The SMS module (builders, logging, idempotency, `sendAndRecordSms`) stays in the codebase; **send calls at each product flow are commented out** so nothing is texted accidentally.
+Outbound customer SMS is **intentionally disabled** until Telnyx is wired and production sender setup is ready. The SMS module (builders, logging, idempotency, `sendAndRecordSms`) stays in the codebase; **send calls at each product flow are commented out** so nothing is texted accidentally.
 
 Email notifications continue where a customer email exists.
 
 ## Re-enable checklist
 
-1. Finish Pingram / carrier approval and production sender configuration.
+1. Finish Telnyx messaging integration and production sender configuration.
 2. Set `SMS_OUTBOUND_ENABLED=true` in the server environment (see `isSmsOutboundEnabled.ts`).
 3. Uncomment the blocks marked `SMS_OUTBOUND_PAUSED` in each file below.
 4. Restore SMS-first behavior tests that expect `sendAndRecordSms` to be called.

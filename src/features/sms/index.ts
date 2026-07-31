@@ -1,7 +1,7 @@
 /**
- * SMS feature – transactional SMS via Pingram.
+ * SMS feature – transactional customer SMS.
  * Public surface for sending booking-related SMS. Server-only; do not import
- * from client components.
+ * from client components. Provider wiring lives in `services/sendSms`.
  */
 
 export { sendSms } from './services/sendSms';

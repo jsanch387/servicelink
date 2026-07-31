@@ -260,7 +260,6 @@ export async function createReviewInviteIfEligible(
         reviewUrl: publicReviewUrl,
       }),
       dedupeKey: `${bookingId}:review_invite`,
-      recipientId: `booking:${bookingId}`,
       correlationId: bookingId,
     });
 

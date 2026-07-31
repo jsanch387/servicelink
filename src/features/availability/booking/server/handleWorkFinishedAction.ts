@@ -202,7 +202,6 @@ export async function handleWorkFinishedAction(opts: {
     to: booking.customer_phone,
     message: buildWorkFinishedSms({ businessName }),
     dedupeKey: `${booking.id}:work_finished`,
-    recipientId: `booking:${booking.id}`,
     correlationId: booking.id,
   });
 

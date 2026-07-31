@@ -329,7 +329,7 @@ Server helper: `requestReviewInviteForBooking` in `src/features/reviews/server/`
 | Variable                                  | Used for                        |
 | ----------------------------------------- | ------------------------------- |
 | `RESEND_API_KEY`                          | Review invite email (fallback)  |
-| `PINGRAM_API_KEY` / `PINGRAM_FROM_NUMBER` | Review invite SMS (priority)    |
+| SMS provider env (Telnyx, when wired)     | Review invite SMS (priority)    |
 | `SITE_URL` / `NEXT_PUBLIC_SITE_URL`       | Absolute `/review/{token}` link |
 
 ---

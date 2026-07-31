@@ -1,7 +1,8 @@
 /**
  * Normalize a free-form stored phone number to E.164 (e.g. +15551234567).
- * Pingram requires E.164. Returns null when the input cannot be confidently
- * normalized so callers skip the SMS rather than send to a bad number.
+ * SMS providers require E.164. Returns null when the input cannot be
+ * confidently normalized so callers skip the SMS rather than send to a bad
+ * number.
  *
  * Assumes US/CA (+1) for 10-digit numbers, matching the app's current
  * single-locale phone collection. Numbers already prefixed with `+` are kept.

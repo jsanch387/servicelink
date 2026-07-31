@@ -272,7 +272,6 @@ export async function POST(
       dedupeKey: config.oncePerBooking
         ? `${booking.id}:${config.smsType}`
         : null,
-      recipientId: `booking:${booking.id}`,
       correlationId: booking.id,
     });
 

@@ -1,6 +1,6 @@
 # Contract: Mobile — SMS notifications, message history & booking actions
 
-> **SMS outbound paused (2026-07):** Customer SMS is intentionally disabled until Pingram/carrier setup is complete. Lifecycle actions still transition `job_status` / `work_handoff_status`; responses include `sms: { sent: false, reason: "not_configured" }`. Email notifications remain active where documented. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS outbound paused (2026-07):** Customer SMS is intentionally disabled until Telnyx messaging is wired. Lifecycle actions still transition `job_status` / `work_handoff_status`; responses include `sms: { sent: false, reason: "not_configured" }`. Email notifications remain active where documented. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 This doc covers, for the native app:
 
@@ -11,7 +11,7 @@ This doc covers, for the native app:
 
 > **Done / Skip (`work_finished`):** see [`mobile-booking-work-finished.md`](./mobile-booking-work-finished.md) — cycle 1 of the extended lifecycle (SMS when owner taps Done).
 
-> **Golden rule:** the app never calls Pingram or sends SMS directly. The server holds the API key, normalizes numbers, enforces ownership, rate-limits (SMS costs money), logs every send, owns the message templates, and owns the state machine. The app triggers **actions** and **reads state**.
+> **Golden rule:** the app never calls the SMS provider or sends SMS directly. The server holds the API key, normalizes numbers, enforces ownership, rate-limits (SMS costs money), logs every send, owns the message templates, and owns the state machine. The app triggers **actions** and **reads state**.
 
 ---
 
@@ -42,7 +42,7 @@ Every outbound SMS attempt is a row in **`public.sms_messages`**. This is the so
 | `to_phone`               | text          | E.164 number actually used                                                                                                |
 | `body`                   | text          | exact message sent (display this in history)                                                                              |
 | `status`                 | text          | `queued` \| `sent` \| `delivered` \| `failed` \| `undelivered` \| `skipped_opt_out`                                       |
-| `provider`               | text          | `pingram`                                                                                                                 |
+| `provider`               | text          | SMS provider id when wired (e.g. `telnyx`); may be null until then                                                         |
 | `provider_message_id`    | text \| null  | provider id (for delivery webhooks; may be null for now)                                                                  |
 | `error`                  | text \| null  | failure reason                                                                                                            |
 | `dedupe_key`             | text \| null  | server idempotency key; ignore on the client                                                                              |
@@ -309,7 +309,7 @@ async function runBookingAction(opts: {
 - On `200`: update the chip to the returned `jobStatus`; success toast/haptic. For `job_completed`, the customer was reached if `sms.sent` **or** `email.sent`; only add the soft "couldn't reach customer" note when both are false. For other actions, add the note when `sms.sent === false`.
 - On `409`: the state moved on without you (already done / concurrent). Refetch the booking and re-render — no error toast. (Note: `job_completed` on an already-completed booking is **not** a `409` — it returns `200` with `sms.reason = "duplicate"`.)
 - On `429`: honor `Retry-After`, disable temporarily.
-- The server must have `PINGRAM_API_KEY` + a Pingram sender for SMS; if not, actions still transition state and report `sms.reason = "not_configured"`.
+- The server must have the SMS provider configured (Telnyx) and `SMS_OUTBOUND_ENABLED=true`; if not, actions still transition state and report `sms.reason = "not_configured"`.
 
 ---
 

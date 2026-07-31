@@ -120,7 +120,6 @@ export async function completeBookingWithSideEffects(
     to: updated.customer_phone,
     message: buildJobCompletedSms({ businessName }),
     dedupeKey: `${updated.id}:job_completed`,
-    recipientId: `booking:${updated.id}`,
     correlationId: updated.id,
   });
 
