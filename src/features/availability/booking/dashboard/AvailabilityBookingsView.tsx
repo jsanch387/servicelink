@@ -135,8 +135,15 @@ export function AvailabilityBookingsView({
   timeOffBlocks = [],
   weeklySchedule,
 }: AvailabilityBookingsViewProps) {
-  const { bookings, isLoading, error, updateBookingStatus, rescheduleBooking } =
-    useAvailabilityBookings();
+  const {
+    bookings,
+    isLoading,
+    error,
+    updateBookingStatus,
+    completeBookingJob,
+    rescheduleBooking,
+    deleteBooking,
+  } = useAvailabilityBookings();
   const [activeTab, setActiveTab] = useState<TabId>('upcoming');
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('list');
   const [plannerDateKey, setPlannerDateKey] = useState(() =>
@@ -273,13 +280,24 @@ export function AvailabilityBookingsView({
       }));
   }, [bookings, selectedBooking]);
 
-  const handleMarkCompleted = async (id: string) => {
+  const handleMarkCompleted = async (
+    id: string,
+    args?: {
+      sessionPayment?: {
+        method: 'cash' | 'payment_app' | 'other';
+        amountCents: number;
+      };
+    }
+  ) => {
     setUpdateError(null);
     setUpdatingId(id);
-    const result = await updateBookingStatus(id, 'completed');
+    const result = await completeBookingJob({
+      id,
+      sessionPayment: args?.sessionPayment,
+    });
     setUpdatingId(null);
     if (!result.success) {
-      setUpdateError(result.error ?? 'Failed to update booking');
+      setUpdateError(result.error ?? 'Failed to complete booking');
       return;
     }
     setSelectedBooking(null);
@@ -292,6 +310,18 @@ export function AvailabilityBookingsView({
     setUpdatingId(null);
     if (!result.success) {
       setUpdateError(result.error ?? 'Failed to cancel booking');
+      return;
+    }
+    setSelectedBooking(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    setUpdateError(null);
+    setUpdatingId(id);
+    const result = await deleteBooking(id);
+    setUpdatingId(null);
+    if (!result.success) {
+      setUpdateError(result.error ?? 'Failed to delete booking');
       return;
     }
     setSelectedBooking(null);
@@ -500,6 +530,7 @@ export function AvailabilityBookingsView({
           onClose={() => setSelectedBooking(null)}
           onMarkCompleted={handleMarkCompleted}
           onCancel={handleCancel}
+          onDelete={handleDelete}
           onReschedule={handleReschedule}
           isUpdating={updatingId === selectedBooking.id}
           isRescheduling={reschedulingId === selectedBooking.id}

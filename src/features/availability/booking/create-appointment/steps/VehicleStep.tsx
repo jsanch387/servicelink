@@ -27,8 +27,10 @@ export function VehicleStep({ vehicle, onChange }: VehicleStepProps) {
         }}
         onChange={updates => {
           const patch: Partial<CreateAppointmentVehicle> = {};
-          if (updates.vehicleYear !== undefined) patch.year = updates.vehicleYear;
-          if (updates.vehicleMake !== undefined) patch.make = updates.vehicleMake;
+          if (updates.vehicleYear !== undefined)
+            patch.year = updates.vehicleYear;
+          if (updates.vehicleMake !== undefined)
+            patch.make = updates.vehicleMake;
           if (updates.vehicleModel !== undefined)
             patch.model = updates.vehicleModel;
           onChange(patch);

@@ -5,7 +5,7 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import React, { useCallback } from 'react';
 import type { AvailabilityBookingDisplay } from './types';
-import { bookingCardServiceTitle } from './utils/bookingCardServiceTitle';
+import { bookingListServiceTitle } from './utils/bookingCardServiceTitle';
 import { formatListCardTimeForBooking } from './utils/formatListCardTime';
 
 interface AvailabilityBookingCardProps {
@@ -21,10 +21,6 @@ function formatVehicleLine(booking: AvailabilityBookingDisplay): string | null {
   ].filter(Boolean);
   if (parts.length === 0) return null;
   return parts.join(' ');
-}
-
-function serviceLineText(booking: AvailabilityBookingDisplay): string {
-  return bookingCardServiceTitle(booking.serviceName);
 }
 
 function StatusPill({
@@ -59,7 +55,7 @@ export function AvailabilityBookingCard({
   onClick,
 }: AvailabilityBookingCardProps) {
   const vehicleLine = formatVehicleLine(booking);
-  const servicesText = serviceLineText(booking);
+  const servicesText = bookingListServiceTitle(booking);
   const timeLabel = formatListCardTimeForBooking(booking);
 
   const handleKeyDown = useCallback(

@@ -37,6 +37,8 @@ interface DateSelectorProps {
   minDate?: Date;
   /** Calendar without outer card chrome (nested inside another panel). */
   plainCalendar?: boolean;
+  /** Smaller nav + day cells for tight modals. */
+  compactCalendar?: boolean;
   /** Shown above the month header (passed to shared Calendar). */
   calendarTitle?: string;
   /** Muted line under title (e.g. availability hint). */
@@ -60,6 +62,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   onUserSelectDate,
   minDate = new Date(),
   plainCalendar = false,
+  compactCalendar = false,
   calendarTitle,
   calendarSubtitle,
   requireAvailableSlots = true,
@@ -136,6 +139,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       isDateDisabled={isDateDisabled}
       showYear={true}
       plain={plainCalendar}
+      compact={compactCalendar}
       title={calendarTitle}
       subtitle={calendarSubtitle}
       locale={bcp47ForBookingLocale(bookingFlowLocale)}

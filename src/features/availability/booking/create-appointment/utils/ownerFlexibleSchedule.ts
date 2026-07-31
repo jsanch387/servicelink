@@ -1,4 +1,7 @@
-import type { DayKey, WeeklySchedule } from '@/features/availability/types/availability';
+import type {
+  DayKey,
+  WeeklySchedule,
+} from '@/features/availability/types/availability';
 
 const DAY_KEYS: DayKey[] = [
   'sunday',

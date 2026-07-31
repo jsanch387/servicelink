@@ -61,9 +61,7 @@ export function canAddAnotherJob(p: {
 }
 
 /** Duration of the active draft (base + add-on minutes). */
-export function draftDurationMinutes(
-  draft: CreateAppointmentJobDraft
-): number {
+export function draftDurationMinutes(draft: CreateAppointmentJobDraft): number {
   const addonDuration = draft.selectedAddOns.reduce(
     (s, a) => s + (a.durationMinutes > 0 ? a.durationMinutes : 0),
     0

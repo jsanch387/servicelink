@@ -1,7 +1,9 @@
 'use client';
 
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
 import type { QuoteCatalogService } from '@/features/quotes/server/loadQuoteServiceCatalog';
+import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import {
   CREATE_APPOINTMENT_STEP,
@@ -24,7 +26,12 @@ import {
   isCatalogAddonsSkipped,
   isCatalogPricingSkipped,
 } from '../utils/catalogServiceHelpers';
-import { canAddAnotherJob, reviewJobsFromState, snapshotJobDraft, visitDurationMinutes } from '../utils/createAppointmentJobs';
+import {
+  canAddAnotherJob,
+  reviewJobsFromState,
+  snapshotJobDraft,
+  visitDurationMinutes,
+} from '../utils/createAppointmentJobs';
 import { buildOwnerCreateAppointmentBody } from '../utils/buildOwnerCreateAppointmentBody';
 import { canContinueCreateAppointmentStep } from '../utils/createFlowContinueGate';
 import {
@@ -32,6 +39,7 @@ import {
   getNextStepOnContinue,
   getPreviousStepOnBack,
 } from '../utils/createFlowNavigation';
+import { buildOwnerFlexibleWeeklySchedule } from '../utils/ownerFlexibleSchedule';
 import { CREATE_APPOINTMENT_SUBMIT_MIN_MS } from '../constants/submitStatus';
 
 export type ServiceStepPhase = 'path' | 'list';
@@ -134,9 +142,25 @@ export function useCreateAppointmentController(
     null
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [scheduleExactConflict, setScheduleExactConflict] = useState(false);
+  const [showScheduleConflictModal, setShowScheduleConflictModal] =
+    useState(false);
 
   const jobIndex = committedJobs.length;
   const hasScheduleSlot = Boolean(visit.scheduledDate && visit.startTime);
+
+  // Prefetch once for the whole create session — ScheduleStep remounts on
+  // back/continue must not re-hit availability / blocked-slots APIs.
+  const { weeklySchedule, loading: scheduleLoading } =
+    useOwnerQuoteScheduling();
+  const { blockedSlots, loading: blockedSlotsLoading } = usePublicBlockedSlots(
+    businessSlug.trim() || undefined
+  );
+  const flexibleWeeklySchedule = useMemo(
+    () => buildOwnerFlexibleWeeklySchedule(weeklySchedule),
+    [weeklySchedule]
+  );
+  const scheduleDataLoading = scheduleLoading || blockedSlotsLoading;
 
   const visitDuration = useMemo(
     () => visitDurationMinutes(committedJobs, draft),
@@ -440,14 +464,7 @@ export function useCreateAppointmentController(
     } finally {
       setIsSubmitting(false);
     }
-  }, [
-    isSubmitting,
-    committedJobs,
-    draft,
-    visit,
-    businessId,
-    businessSlug,
-  ]);
+  }, [isSubmitting, committedJobs, draft, visit, businessId, businessSlug]);
 
   const goContinue = useCallback(() => {
     if (!canContinue || isSubmitting) return;
@@ -487,6 +504,11 @@ export function useCreateAppointmentController(
       return;
     }
 
+    if (step === CREATE_APPOINTMENT_STEP.SCHEDULE && scheduleExactConflict) {
+      setShowScheduleConflictModal(true);
+      return;
+    }
+
     const next = getNextStepOnContinue({
       step,
       ...navOpts,
@@ -505,7 +527,27 @@ export function useCreateAppointmentController(
     addressSkipped,
     jobIndex,
     submitAppointment,
+    scheduleExactConflict,
   ]);
+
+  const confirmScheduleDespiteConflict = useCallback(() => {
+    setShowScheduleConflictModal(false);
+    const next = getNextStepOnContinue({
+      step: CREATE_APPOINTMENT_STEP.SCHEDULE,
+      ...navOpts,
+      hasScheduleSlot,
+    });
+    setStep(next);
+  }, [navOpts, hasScheduleSlot]);
+
+  const dismissScheduleConflictModal = useCallback(() => {
+    setShowScheduleConflictModal(false);
+  }, []);
+
+  const setExactStartConflict = useCallback((hasConflict: boolean) => {
+    setScheduleExactConflict(hasConflict);
+    if (!hasConflict) setShowScheduleConflictModal(false);
+  }, []);
 
   const cancelInProgressExtraJob = useCallback(() => {
     if (committedJobs.length === 0) return;
@@ -606,6 +648,7 @@ export function useCreateAppointmentController(
 
   const setSchedule = useCallback(
     (next: { scheduledDate: string; startTime: string | null }) => {
+      setShowScheduleConflictModal(false);
       setVisit(v => ({
         ...v,
         scheduledDate: next.scheduledDate,
@@ -667,6 +710,11 @@ export function useCreateAppointmentController(
     setDraft,
     setVisit,
     goContinue,
+    confirmScheduleDespiteConflict,
+    dismissScheduleConflictModal,
+    setExactStartConflict,
+    showScheduleConflictModal,
+    scheduleExactConflict,
     goBack,
     servicePhase,
     servicePath,
@@ -690,6 +738,9 @@ export function useCreateAppointmentController(
     setApplySale,
     visitDuration,
     reviewJobs,
+    flexibleWeeklySchedule,
+    blockedSlots,
+    scheduleDataLoading,
     newLocalId,
   };
 }

@@ -12,9 +12,7 @@ export function CreateAppointmentSubmittingState() {
 
   useEffect(() => {
     const id = window.setInterval(() => {
-      setMessageIndex(
-        i => (i + 1) % CREATE_APPOINTMENT_SUBMIT_MESSAGES.length
-      );
+      setMessageIndex(i => (i + 1) % CREATE_APPOINTMENT_SUBMIT_MESSAGES.length);
     }, CREATE_APPOINTMENT_SUBMIT_MESSAGE_MS);
     return () => window.clearInterval(id);
   }, []);

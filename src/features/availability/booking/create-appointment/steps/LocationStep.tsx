@@ -34,7 +34,11 @@ export function LocationStep({
 }: LocationStepProps) {
   return (
     <div className="space-y-3">
-      <div className="space-y-2" role="radiogroup" aria-label="Service location">
+      <div
+        className="space-y-2"
+        role="radiogroup"
+        aria-label="Service location"
+      >
         {OPTIONS.map(option => {
           const selected = value === option.id;
           return (

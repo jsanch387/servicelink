@@ -1,5 +1,6 @@
 'use client';
 
+import { Button, Modal } from '@/components/shared';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import type { QuoteCatalogService } from '@/features/quotes/server/loadQuoteServiceCatalog';
@@ -71,6 +72,10 @@ export function CreateAppointmentWizard({
     jobIndex,
     notice,
     goContinue,
+    confirmScheduleDespiteConflict,
+    dismissScheduleConflictModal,
+    setExactStartConflict,
+    showScheduleConflictModal,
     goBack,
     servicePhase,
     servicePath,
@@ -89,6 +94,9 @@ export function CreateAppointmentWizard({
     setSchedule,
     setApplySale,
     visitDuration,
+    flexibleWeeklySchedule,
+    blockedSlots,
+    scheduleDataLoading,
     reviewJobs,
   } = ctrl;
 
@@ -157,10 +165,7 @@ export function CreateAppointmentWizard({
   if (step === CREATE_APPOINTMENT_STEP.SERVICE) {
     body =
       servicePhase === 'path' ? (
-        <ServicePathChooser
-          value={servicePath}
-          onChange={chooseServicePath}
-        />
+        <ServicePathChooser value={servicePath} onChange={chooseServicePath} />
       ) : (
         <ServiceCatalogListStep
           catalog={serviceCatalog}
@@ -188,9 +193,7 @@ export function CreateAppointmentWizard({
       />
     );
   } else if (step === CREATE_APPOINTMENT_STEP.CUSTOMER) {
-    body = (
-      <CustomerStep customer={visit.customer} onChange={patchCustomer} />
-    );
+    body = <CustomerStep customer={visit.customer} onChange={patchCustomer} />;
   } else if (step === CREATE_APPOINTMENT_STEP.LOCATION) {
     body = (
       <LocationStep
@@ -200,9 +203,7 @@ export function CreateAppointmentWizard({
       />
     );
   } else if (step === CREATE_APPOINTMENT_STEP.ADDRESS) {
-    body = (
-      <AddressStep address={visit.address} onChange={patchAddress} />
-    );
+    body = <AddressStep address={visit.address} onChange={patchAddress} />;
   } else if (step === CREATE_APPOINTMENT_STEP.VEHICLE) {
     body = (
       <div className="space-y-4">
@@ -218,11 +219,14 @@ export function CreateAppointmentWizard({
   } else if (step === CREATE_APPOINTMENT_STEP.SCHEDULE) {
     body = (
       <ScheduleStep
-        businessSlug={businessSlug}
         visitDurationMinutes={visitDuration}
         scheduledDate={visit.scheduledDate}
         startTime={visit.startTime}
+        weeklySchedule={flexibleWeeklySchedule}
+        existingBookings={blockedSlots}
+        scheduleLoading={scheduleDataLoading}
         onChange={setSchedule}
+        onExactStartConflictChange={setExactStartConflict}
       />
     );
   } else if (isReview) {
@@ -292,6 +296,41 @@ export function CreateAppointmentWizard({
           secondaryDisabled={isSubmitting}
         />
       </div>
+
+      <Modal
+        isOpen={showScheduleConflictModal}
+        onClose={dismissScheduleConflictModal}
+        title="Time already booked"
+        maxWidth="sm"
+        uniformHorizontalPadding16
+        titleClassName="font-bold"
+        contentClassName="!pt-4 sm:!pt-5 !pb-4 sm:!pb-5"
+      >
+        <p className="text-sm leading-relaxed text-gray-300">
+          You already have an appointment at this start time. Continue anyway if
+          you want to double-book it.
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            fullWidth
+            onClick={dismissScheduleConflictModal}
+          >
+            Change time
+          </Button>
+          <Button
+            type="button"
+            variant="inverse"
+            size="sm"
+            fullWidth
+            onClick={confirmScheduleDespiteConflict}
+          >
+            Continue
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

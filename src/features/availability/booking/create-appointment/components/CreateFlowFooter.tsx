@@ -37,7 +37,7 @@ export function CreateFlowFooter({
           onClick={onSecondary}
           disabled={secondaryDisabled || primaryLoading}
           fullWidth
-          className="order-2 cursor-pointer border-0 bg-white/10 hover:border-0 hover:bg-white/15 sm:order-1"
+          className="order-2 sm:order-1"
         >
           {secondaryLabel}
         </Button>

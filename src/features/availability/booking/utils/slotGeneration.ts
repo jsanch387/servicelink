@@ -151,10 +151,7 @@ export function generateTimeSlots(
 
   const slots: string[] = [];
   for (let t = startMins; t < endMins; t += incrementMinutes) {
-    if (
-      requireDurationWithinHours &&
-      t + serviceDurationMinutes > endMins
-    ) {
+    if (requireDurationWithinHours && t + serviceDurationMinutes > endMins) {
       break;
     }
 

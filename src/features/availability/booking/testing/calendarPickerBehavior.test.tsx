@@ -29,6 +29,31 @@ describe('public booking calendar behavior', () => {
     expect(previousButton.disabled).toBe(true);
   });
 
+  it('keeps the browsed month when selected value is a new Date for the same day', async () => {
+    const user = userEvent.setup();
+    const selected = new Date(2030, 6, 20);
+    const { rerender } = render(
+      <Calendar value={selected} onChange={vi.fn()} minDate={selected} />
+    );
+
+    expect(screen.getByText('July')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: /next month/i }));
+    expect(screen.getByText('August')).toBeTruthy();
+
+    // Parent re-render with a new Date instance for the same selected day.
+    rerender(
+      <Calendar
+        value={new Date(2030, 6, 20)}
+        onChange={vi.fn()}
+        minDate={new Date(2030, 6, 20)}
+      />
+    );
+
+    expect(screen.getByText('August')).toBeTruthy();
+    expect(screen.queryByText('July')).toBeNull();
+  });
+
   it('selects the first date with availability', async () => {
     const user = userEvent.setup();
     const onSelectDate = vi.fn();

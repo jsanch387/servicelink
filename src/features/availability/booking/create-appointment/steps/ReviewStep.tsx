@@ -98,11 +98,7 @@ export function ReviewStep({
 
   const salePricing = useMemo(
     () =>
-      computeBookingSalePricing(
-        visitSubtotalCents,
-        activeSale,
-        scheduledDate
-      ),
+      computeBookingSalePricing(visitSubtotalCents, activeSale, scheduledDate),
     [visitSubtotalCents, activeSale, scheduledDate]
   );
 
@@ -213,9 +209,7 @@ export function ReviewStep({
                 </div>
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-zinc-400">
-                    {saleDiscountLabel
-                      ? `Sale · ${saleDiscountLabel}`
-                      : 'Sale'}
+                    {saleDiscountLabel ? `Sale · ${saleDiscountLabel}` : 'Sale'}
                   </span>
                   <span className="tabular-nums text-emerald-400">
                     −{formatCatalogPriceCents(discountCents)}

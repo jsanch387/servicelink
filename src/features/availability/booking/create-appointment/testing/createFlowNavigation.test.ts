@@ -46,18 +46,19 @@ describe('createFlowNavigation', () => {
     );
   });
 
-  it('vehicle continue goes to schedule when no slot yet', () => {
+  it('vehicle continue on job 1 always goes to schedule', () => {
     expect(
       getNextStepOnContinue({
         step: CREATE_APPOINTMENT_STEP.VEHICLE,
         pricingSkipped: false,
         addonsSkipped: false,
-        hasScheduleSlot: false,
+        jobIndex: 0,
+        hasScheduleSlot: true,
       })
     ).toBe(CREATE_APPOINTMENT_STEP.SCHEDULE);
   });
 
-  it('vehicle continue goes to review when schedule already set', () => {
+  it('vehicle continue on job 2+ goes to review', () => {
     expect(
       getNextStepOnContinue({
         step: CREATE_APPOINTMENT_STEP.VEHICLE,

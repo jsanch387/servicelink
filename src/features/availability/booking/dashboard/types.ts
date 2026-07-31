@@ -19,6 +19,17 @@ export interface AddOnAtBookingDisplay {
   priceCents: number;
 }
 
+/** One job line on a multi-job (or single job_details) appointment. */
+export interface AvailabilityBookingJobDisplay {
+  serviceName: string;
+  servicePriceOptionLabel: string | null;
+  servicePriceCents: number;
+  durationMinutes: number;
+  selectedAddOns: AddOnAtBookingDisplay[];
+  /** Preformatted "YYYY Make Model", or null when unset. */
+  vehicleLabel: string | null;
+}
+
 export interface BookingPaymentSummaryDisplay {
   paymentStatus: string;
   /** `pay_now` (card), `pay_in_person`, or `none` (no in-app card charge). */
@@ -44,6 +55,11 @@ export interface AvailabilityBookingDisplay {
   servicePriceCents: number | null;
   /** Add-ons selected at booking time. */
   addonDetails: AddOnAtBookingDisplay[];
+  /**
+   * Per-job line items from `job_details` when present.
+   * Empty for legacy single-job rows that never wrote job_details.
+   */
+  jobs: AvailabilityBookingJobDisplay[];
   /** Discount snapshot from booking create (sale/promo), if any. */
   discount?: {
     source: 'sale' | 'promo';

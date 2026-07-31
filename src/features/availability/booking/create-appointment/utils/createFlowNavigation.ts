@@ -125,12 +125,12 @@ export function getNextStepOnContinue(p: {
   locationSkipped?: boolean;
   addressSkipped?: boolean;
   jobIndex?: number;
+  /** @deprecated Unused — job 1 always visits schedule; job 2+ skips it. */
   hasScheduleSlot?: boolean;
 }): number {
   const locationSkipped = p.locationSkipped ?? false;
   const addressSkipped = p.addressSkipped ?? false;
   const jobIndex = p.jobIndex ?? 0;
-  const hasScheduleSlot = p.hasScheduleSlot ?? false;
 
   const afterAddons = () =>
     getStepAfterAddons({ locationSkipped, addressSkipped, jobIndex });
@@ -167,7 +167,9 @@ export function getNextStepOnContinue(p: {
   }
 
   if (p.step === CREATE_APPOINTMENT_STEP.VEHICLE) {
-    return hasScheduleSlot
+    // Job 1 always lands on schedule (even if a time was picked earlier).
+    // Job 2+ already has the visit slot — go to review.
+    return jobIndex > 0
       ? CREATE_APPOINTMENT_STEP.REVIEW
       : CREATE_APPOINTMENT_STEP.SCHEDULE;
   }

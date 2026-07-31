@@ -88,7 +88,9 @@ export function emptyVehicle(): CreateAppointmentVehicle {
   return { year: '', make: '', model: '' };
 }
 
-export function createEmptyJobDraft(localId: string): CreateAppointmentJobDraft {
+export function createEmptyJobDraft(
+  localId: string
+): CreateAppointmentJobDraft {
   return {
     localId,
     isCustomJob: false,

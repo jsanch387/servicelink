@@ -4,8 +4,15 @@
  */
 
 import { normalizeWallClockHm } from '@/features/availability/types/blockTime';
-import type { AvailabilityBookingDisplay } from '../types';
-import { flattenJobDetailsAddOns } from '../../utils/parseStoredBookingJobDetails';
+import type {
+  AvailabilityBookingDisplay,
+  AvailabilityBookingJobDisplay,
+} from '../types';
+import {
+  flattenJobDetailsAddOns,
+  formatJobVehicleLine,
+  parseStoredBookingJobDetails,
+} from '../../utils/parseStoredBookingJobDetails';
 import { resolveBookingLineSubtotalCents } from '../../utils/resolveBookingLineSubtotalCents';
 
 /** Raw row from bookings table (select *). */
@@ -119,6 +126,21 @@ export function mapBookingRowToDisplay(
         }
       : null;
 
+  const jobs: AvailabilityBookingJobDisplay[] = parseStoredBookingJobDetails(
+    row.job_details
+  ).map(job => ({
+    serviceName: job.serviceName,
+    servicePriceOptionLabel: job.servicePriceOptionLabel,
+    servicePriceCents: job.servicePriceCents,
+    durationMinutes: job.durationMinutes,
+    selectedAddOns: job.selectedAddOns.map(a => ({
+      id: a.id,
+      name: a.name,
+      priceCents: a.priceCents,
+    })),
+    vehicleLabel: formatJobVehicleLine(job.vehicle),
+  }));
+
   return {
     id: row.id,
     bookingSource:
@@ -135,6 +157,7 @@ export function mapBookingRowToDisplay(
     serviceDurationMinutes: row.duration_minutes,
     servicePriceCents,
     addonDetails,
+    jobs,
     discount,
     date: row.scheduled_date,
     time: formatTimeDisplay(row.start_time ?? ''),
