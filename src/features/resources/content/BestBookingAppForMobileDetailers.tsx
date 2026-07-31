@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes';
+import { blogGuideSignupPath } from '@/features/marketing-attribution';
 import { GuideFaqAccordion } from '@/features/resources/components/GuideFaqAccordion';
 import { GuideProTip } from '@/features/resources/components/GuideCallouts';
 import Link from 'next/link';
@@ -217,7 +218,10 @@ export function BestBookingAppForMobileDetailersContent() {
         <p className={pClasses}>
           Most detailers are live in under ten minutes: add your services, set
           your availability, and share your link.{' '}
-          <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath('best-booking-app-for-mobile-detailers')}
+            className={linkClasses}
+          >
             Create your free booking link
           </Link>
           .
@@ -276,7 +280,12 @@ export function BestBookingAppForMobileDetailersContent() {
               <>
                 Most detailers add their services, set availability, and share
                 their link the same day—often in under ten minutes.{' '}
-                <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
+                <Link
+                  href={blogGuideSignupPath(
+                    'best-booking-app-for-mobile-detailers'
+                  )}
+                  className={linkClasses}
+                >
                   Start free here
                 </Link>
                 .
@@ -298,7 +307,10 @@ export function BestBookingAppForMobileDetailersContent() {
         <p className={pClasses}>
           Start with a simple booking link, share it everywhere customers find
           you, and let the app handle scheduling while you focus on the work.{' '}
-          <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath('best-booking-app-for-mobile-detailers')}
+            className={linkClasses}
+          >
             Get your free ServiceLink booking page
           </Link>
           .

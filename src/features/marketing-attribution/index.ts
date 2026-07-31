@@ -11,14 +11,29 @@ export type {
   SignupAttributionRow,
 } from './types';
 
+export type { SignupAttributionChannel } from './utils/deriveSignupChannel';
+export {
+  SIGNUP_ATTRIBUTION_CHANNELS,
+  deriveSignupAttributionChannel,
+} from './utils/deriveSignupChannel';
+
 export { MarketingAttributionRoot } from './components/MarketingAttributionRoot';
 export {
   captureMarketingUtmsFromSearchParams,
   getStoredMarketingUtms,
   hasMarketingUtmData,
+  isAppShellPath,
+  isNonAcquisitionReferrer,
+  isWeakMarketingAttribution,
   parseMarketingUtmsFromSearchParams,
   persistMarketingUtms,
 } from './utils/utmCapture';
+export {
+  blogGuideSignupPath,
+  blogIndexSignupPath,
+  buildMarketingSignupPath,
+  siteSignupPath,
+} from './utils/signupLinks';
 export {
   clearPendingSignupAttribution,
   hasPendingSignupAttribution,

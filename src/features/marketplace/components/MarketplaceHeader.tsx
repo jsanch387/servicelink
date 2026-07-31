@@ -1,5 +1,6 @@
 import { Logo } from '@/components/shared/Logo';
 import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import Link from 'next/link';
 
 export function MarketplaceHeader() {
@@ -24,7 +25,7 @@ export function MarketplaceHeader() {
             Sign in
           </Link>
           <Link
-            href={ROUTES.AUTH.SIGNUP}
+            href={siteSignupPath('marketplace')}
             className="cursor-pointer whitespace-nowrap rounded-[10px] border border-white/20 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/30 hover:bg-white/[0.1] sm:px-5"
           >
             List your business

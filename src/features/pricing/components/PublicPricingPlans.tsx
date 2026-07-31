@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import React, { useState } from 'react';
 import {
   PUBLIC_PRICING_FREE_PLAN_FEATURES,
@@ -49,7 +49,7 @@ export const PublicPricingPlans: React.FC<PublicPricingPlansProps> = ({
           emphasizeFeatureHighlights
           footer={
             <Button
-              href={ROUTES.AUTH.SIGNUP}
+              href={siteSignupPath('pricing')}
               variant="secondary"
               className="w-full"
             >
@@ -73,7 +73,7 @@ export const PublicPricingPlans: React.FC<PublicPricingPlansProps> = ({
           className="md:relative md:z-10"
           footer={
             <Button
-              href={ROUTES.AUTH.SIGNUP}
+              href={siteSignupPath('pricing')}
               variant="inverse"
               className="w-full"
             >

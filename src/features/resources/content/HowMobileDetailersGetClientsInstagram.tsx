@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes';
+import { blogGuideSignupPath } from '@/features/marketing-attribution';
 import { GuideProTip } from '@/features/resources/components/GuideCallouts';
 import Link from 'next/link';
 
@@ -162,7 +163,12 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           This is why many detailers use a booking link in their bio. Instead of
           answering many DMs, customers can simply click the link and book your
           service.{' '}
-          <Link href="/" className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath(
+              'how-mobile-detailers-get-clients-from-instagram-2026'
+            )}
+            className={linkClasses}
+          >
             Get a free booking link here
           </Link>
           .
@@ -189,7 +195,12 @@ export function HowMobileDetailersGetClientsInstagramContent() {
         </ul>
         <p className={pClasses}>
           Tools like{' '}
-          <Link href="/" className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath(
+              'how-mobile-detailers-get-clients-from-instagram-2026'
+            )}
+            className={linkClasses}
+          >
             ServiceLink
           </Link>{' '}
           help detailers create a simple booking page they can place in their
@@ -202,7 +213,12 @@ export function HowMobileDetailersGetClientsInstagramContent() {
         </ul>
         <p className={pClasses}>
           No long conversations in DMs. Just simple booking.{' '}
-          <Link href="/" className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath(
+              'how-mobile-detailers-get-clients-from-instagram-2026'
+            )}
+            className={linkClasses}
+          >
             Get your free booking page here
           </Link>
           . Not sure which tool to use? Read our guide on the{' '}
@@ -271,7 +287,12 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           <li>show before and after results</li>
           <li>
             make booking simple (
-            <Link href="/" className={linkClasses}>
+            <Link
+              href={blogGuideSignupPath(
+                'how-mobile-detailers-get-clients-from-instagram-2026'
+              )}
+              className={linkClasses}
+            >
               get a free booking link here
             </Link>
             )

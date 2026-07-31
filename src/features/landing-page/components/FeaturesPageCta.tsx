@@ -1,5 +1,5 @@
 import { FramedCtaButton } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 
 export function FeaturesPageCta() {
   return (
@@ -7,7 +7,9 @@ export function FeaturesPageCta() {
       className="mt-12 sm:mt-16 flex justify-center"
       aria-label="Get started with ServiceLink"
     >
-      <FramedCtaButton href={ROUTES.AUTH.SIGNUP}>Get Started</FramedCtaButton>
+      <FramedCtaButton href={siteSignupPath('features')}>
+        Get Started
+      </FramedCtaButton>
     </section>
   );
 }

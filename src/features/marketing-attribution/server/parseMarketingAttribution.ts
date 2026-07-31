@@ -1,4 +1,5 @@
 import type { MarketingUtmAttribution } from '../types';
+import { deriveSignupAttributionChannel } from '../utils/deriveSignupChannel';
 
 const MAX_LEN = 512;
 
@@ -38,6 +39,7 @@ export function toSignupAttributionRow(
       gclid: null,
       landing_path: null,
       referrer: null,
+      channel: deriveSignupAttributionChannel(undefined),
     };
   }
 
@@ -51,5 +53,6 @@ export function toSignupAttributionRow(
     gclid: attribution.gclid ?? null,
     landing_path: attribution.landingPath ?? null,
     referrer: attribution.referrer ?? null,
+    channel: deriveSignupAttributionChannel(attribution),
   };
 }

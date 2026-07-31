@@ -1,5 +1,5 @@
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import Image from 'next/image';
 import React from 'react';
 import { FramedCtaButton } from '../../../components/shared/FramedCtaButton';
@@ -100,7 +100,7 @@ export const HowItWorksSection: React.FC = () => {
         </div>
 
         <div className="mt-12 sm:mt-14 flex justify-center">
-          <FramedCtaButton href={ROUTES.AUTH.SIGNUP}>
+          <FramedCtaButton href={siteSignupPath('homepage')}>
             Start Booking Smarter
           </FramedCtaButton>
         </div>
