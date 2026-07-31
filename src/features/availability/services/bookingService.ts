@@ -23,7 +23,7 @@ import {
   mapBookingRowToDisplay,
   type BookingRow,
 } from '../booking/dashboard/utils/mapBookingRowToDisplay';
-import { computeBookingAmountDue } from '../booking/server/computeBookingAmountDue';
+import { attachPaymentSummaryToDisplay } from '../booking/dashboard/utils/attachPaymentSummaryToDisplay';
 import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
 import type { BookingJobDetailsItem } from '../booking/utils/ownerManualBookingJobs';
 
@@ -564,45 +564,7 @@ export async function listBookingsForBusiness(
       customerAlreadyReviewed,
       willSendReviewInviteOnComplete,
     };
-    if (!payment) {
-      return withReviewFlag;
-    }
-
-    // Prefer amount-due math (includes job_details add-ons + sale/promo) over the
-    // stored payments row, which may still hold pre-discount gross for multi-job.
-    const amountDue = computeBookingAmountDue({
-      servicePriceCents: row.service_price_cents,
-      addonDetails: row.addon_details,
-      jobDetails: row.job_details,
-      sessionFees: [],
-      paidOnlineAmountCents: payment.paid_online_amount_cents,
-      sessionPayment: undefined,
-      discount: {
-        discountSource: row.discount_source,
-        discountType: row.discount_type,
-        discountValue:
-          typeof row.discount_value === 'number'
-            ? row.discount_value
-            : row.discount_value != null
-              ? Number(row.discount_value)
-              : null,
-        discountCents: row.discount_cents,
-      },
-    });
-
-    return {
-      ...withReviewFlag,
-      payment: {
-        paymentStatus: payment.payment_status ?? 'not_required',
-        paymentMethodSelected: String(
-          payment.payment_method_selected ?? 'none'
-        ),
-        currency: (payment.currency ?? 'usd').toLowerCase(),
-        totalAmountCents: amountDue.adjustedTotalCents,
-        paidOnlineAmountCents: amountDue.paidOnlineCents,
-        remainingAmountCents: Math.max(0, amountDue.amountDueCents),
-      },
-    };
+    return attachPaymentSummaryToDisplay(withReviewFlag, row, payment);
   });
 }
 
@@ -747,4 +709,59 @@ export async function rescheduleBookingForOwner(
   }
 
   return { ok: true, row: updated as BookingRow };
+}
+
+export type DeleteBookingForOwnerResult =
+  | { ok: true }
+  | { ok: false; error: string; httpStatus: number };
+
+/**
+ * Permanently deletes a booking owned by the business. Related payment /
+ * invite rows cascade via FK. Use with authenticated client (RLS).
+ */
+export async function deleteBookingForOwner(
+  supabase: SupabaseClient<Database>,
+  params: { businessId: string; bookingId: string }
+): Promise<DeleteBookingForOwnerResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const bookingId = params.bookingId.trim();
+  const businessId = params.businessId.trim();
+
+  const { data: existing, error: loadErr } = await db
+    .from(TABLE)
+    .select('id')
+    .eq('id', bookingId)
+    .eq('business_id', businessId)
+    .maybeSingle();
+
+  if (loadErr) {
+    console.error('[deleteBookingForOwner] load', loadErr);
+    return {
+      ok: false,
+      error: 'Could not load this booking. Please try again.',
+      httpStatus: 500,
+    };
+  }
+
+  if (!existing) {
+    return { ok: false, error: 'Booking not found.', httpStatus: 404 };
+  }
+
+  const { error: deleteErr } = await db
+    .from(TABLE)
+    .delete()
+    .eq('id', bookingId)
+    .eq('business_id', businessId);
+
+  if (deleteErr) {
+    console.error('[deleteBookingForOwner] delete', deleteErr);
+    return {
+      ok: false,
+      error: 'Could not delete this booking. Please try again.',
+      httpStatus: 500,
+    };
+  }
+
+  return { ok: true };
 }

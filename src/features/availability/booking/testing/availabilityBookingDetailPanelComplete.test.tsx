@@ -21,6 +21,7 @@ function baseBooking(
     serviceDurationMinutes: 60,
     servicePriceCents: 150_00,
     addonDetails: [],
+    jobs: [],
     date: '2026-06-15',
     time: '2:00 PM',
     startTimeHHmm: '14:00',
@@ -33,12 +34,20 @@ function baseBooking(
     },
     notes: '',
     createdAt: '2026-01-10T12:00:00Z',
+    payment: {
+      paymentStatus: 'awaiting_payment',
+      paymentMethodSelected: 'none',
+      currency: 'usd',
+      totalAmountCents: 150_00,
+      paidOnlineAmountCents: 0,
+      remainingAmountCents: 150_00,
+    },
     ...overrides,
   };
 }
 
 describe('AvailabilityBookingDetailPanel complete confirmation', () => {
-  it('shows review invite copy when the customer has not reviewed yet', async () => {
+  it('opens complete modal with total and payment method tabs', async () => {
     const user = userEvent.setup();
     const onMarkCompleted = vi.fn();
 
@@ -51,6 +60,7 @@ describe('AvailabilityBookingDetailPanel complete confirmation', () => {
         onClose={vi.fn()}
         onMarkCompleted={onMarkCompleted}
         onCancel={vi.fn()}
+        onDelete={vi.fn()}
         weeklySchedule={DEFAULT_SCHEDULE}
         timeOffBlocks={[]}
         existingBookingsForSlotGrid={[]}
@@ -64,27 +74,38 @@ describe('AvailabilityBookingDetailPanel complete confirmation', () => {
     expect(
       screen.getByRole('heading', { name: /complete appointment/i })
     ).toBeTruthy();
-    expect(screen.getByText(/this wraps up the appointment/i)).toBeTruthy();
-    expect(screen.getByText(/leave a review/i)).toBeTruthy();
+    expect(screen.getByText('Total due')).toBeTruthy();
+    expect(screen.getAllByText('$150.00').length).toBeGreaterThan(0);
     expect(onMarkCompleted).not.toHaveBeenCalled();
 
+    await user.click(screen.getByRole('tab', { name: /^payment app$/i }));
     await user.click(screen.getByRole('button', { name: /mark as complete/i }));
 
-    expect(onMarkCompleted).toHaveBeenCalledWith('booking-1');
+    expect(onMarkCompleted).toHaveBeenCalledWith('booking-1', {
+      sessionPayment: { method: 'payment_app', amountCents: 150_00 },
+    });
   });
 
-  it('shows a simple confirm when the customer already reviewed', async () => {
+  it('shows already-paid state when balance is zero', async () => {
     const user = userEvent.setup();
 
     render(
       <AvailabilityBookingDetailPanel
         booking={baseBooking({
           customerAlreadyReviewed: true,
-          willSendReviewInviteOnComplete: false,
+          payment: {
+            paymentStatus: 'paid_full',
+            paymentMethodSelected: 'pay_now',
+            currency: 'usd',
+            totalAmountCents: 150_00,
+            paidOnlineAmountCents: 150_00,
+            remainingAmountCents: 0,
+          },
         })}
         onClose={vi.fn()}
         onMarkCompleted={vi.fn()}
         onCancel={vi.fn()}
+        onDelete={vi.fn()}
         weeklySchedule={DEFAULT_SCHEDULE}
         timeOffBlocks={[]}
         existingBookingsForSlotGrid={[]}
@@ -95,36 +116,10 @@ describe('AvailabilityBookingDetailPanel complete confirmation', () => {
       screen.getByRole('button', { name: /mark booking as completed/i })
     );
 
+    expect(screen.getByText(/already paid/i)).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: /^cash$/i })).toBeNull();
     expect(
-      screen.getByText(
-        /are you sure you want to mark this appointment complete/i
-      )
+      screen.getByRole('button', { name: /mark as complete/i })
     ).toBeTruthy();
-    expect(screen.queryByText(/leave a review/i)).toBeNull();
-  });
-
-  it('still shows review invite copy when eligible except for pending invite', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <AvailabilityBookingDetailPanel
-        booking={baseBooking({
-          customerAlreadyReviewed: false,
-          willSendReviewInviteOnComplete: false,
-        })}
-        onClose={vi.fn()}
-        onMarkCompleted={vi.fn()}
-        onCancel={vi.fn()}
-        weeklySchedule={DEFAULT_SCHEDULE}
-        timeOffBlocks={[]}
-        existingBookingsForSlotGrid={[]}
-      />
-    );
-
-    await user.click(
-      screen.getByRole('button', { name: /mark booking as completed/i })
-    );
-
-    expect(screen.getByText(/leave a review/i)).toBeTruthy();
   });
 });

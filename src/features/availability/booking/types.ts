@@ -235,4 +235,9 @@ export interface CreateBookingRequest {
   subtotalCents?: number;
   discountCents?: number;
   discountLabel?: string;
+  /**
+   * Owner create only. When `false`, skip auto-applied sale.
+   * Omitted / `true` keeps current behavior (apply if the date qualifies).
+   */
+  applySale?: boolean;
 }

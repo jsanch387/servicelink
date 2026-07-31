@@ -3,10 +3,16 @@
  *
  * Owner-only (RLS): update status (completed / cancelled) or reschedule
  * (scheduledDate + startTime for confirmed bookings).
+ *
+ * DELETE /api/availability/bookings/[id]
+ *
+ * Owner-only (RLS): permanently remove the booking.
  */
 
 import { mapBookingRowToDisplay } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
+import { attachPaymentSummaryToDisplay } from '@/features/availability/booking/dashboard/utils/attachPaymentSummaryToDisplay';
 import {
+  deleteBookingForOwner,
   rescheduleBookingForOwner,
   updateBookingStatus,
   type BookingStatusUpdate,
@@ -19,6 +25,29 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 const ALLOWED_STATUSES: BookingStatusUpdate[] = ['completed', 'cancelled'];
+
+async function loadPaymentRowForBooking(
+  supabase: SupabaseClient,
+  bookingId: string
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('booking_payments')
+    .select(
+      'payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
+    )
+    .eq('booking_id', bookingId)
+    .maybeSingle();
+
+  return data as {
+    payment_status: string | null;
+    payment_method_selected: string | null;
+    currency: string | null;
+    total_amount_cents: number | null;
+    paid_online_amount_cents: number | null;
+    remaining_amount_cents: number | null;
+  } | null;
+}
 
 async function getAuthAndBusinessId(supabase: SupabaseClient) {
   const {
@@ -134,9 +163,19 @@ export async function PATCH(
         );
       }
 
+      const payment = await loadPaymentRowForBooking(
+        supabase,
+        bookingId.trim()
+      );
+      const display = attachPaymentSummaryToDisplay(
+        mapBookingRowToDisplay(result.row),
+        result.row,
+        payment
+      );
+
       return NextResponse.json({
         success: true,
-        data: mapBookingRowToDisplay(result.row),
+        data: display,
       });
     }
 
@@ -184,6 +223,50 @@ export async function PATCH(
     console.error('[API] PATCH /api/availability/bookings/[id]:', err);
     return NextResponse.json(
       { success: false, error: 'Failed to update booking' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: bookingId } = await params;
+    if (!bookingId?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Booking ID required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const authResult = await getAuthAndBusinessId(supabase);
+    if ('status' in authResult) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
+    const result = await deleteBookingForOwner(supabase, {
+      businessId: authResult.businessId,
+      bookingId: bookingId.trim(),
+    });
+
+    if (!result.ok) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: result.httpStatus }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[API] DELETE /api/availability/bookings/[id]:', err);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete booking' },
       { status: 500 }
     );
   }

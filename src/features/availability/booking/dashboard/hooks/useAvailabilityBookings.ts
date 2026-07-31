@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { AvailabilityBookingDisplay } from '../types';
+import type { WebCompletePaymentMethod } from '../utils/webCompletePaymentMethods';
 
 const API_URL = '/api/availability/bookings';
 
@@ -10,6 +11,14 @@ type StatusUpdate = 'completed' | 'cancelled';
 export type RescheduleBookingResult =
   | { success: true; booking: AvailabilityBookingDisplay }
   | { success: false; error: string };
+
+export interface CompleteBookingJobArgs {
+  id: string;
+  sessionPayment?: {
+    method: WebCompletePaymentMethod;
+    amountCents: number;
+  };
+}
 
 /**
  * Fetches V2 bookings on every visit to the Bookings tab so the list is always fresh.
@@ -37,7 +46,6 @@ export function useAvailabilityBookings() {
       setError(null);
     } catch {
       setError('Failed to load bookings');
-      setBookings([]);
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +80,60 @@ export function useAvailabilityBookings() {
         return { success: true };
       } catch {
         return { success: false, error: 'Failed to update booking' };
+      }
+    },
+    []
+  );
+
+  /**
+   * Complete via `job_completed` (same as mobile): records offline collection,
+   * invoice, and status. Web never sends `tap_to_pay`.
+   */
+  const completeBookingJob = useCallback(
+    async (
+      args: CompleteBookingJobArgs
+    ): Promise<{ success: boolean; error?: string }> => {
+      const { id, sessionPayment } = args;
+      try {
+        const body: {
+          action: 'job_completed';
+          sessionFees: [];
+          sessionPayment?: {
+            method: WebCompletePaymentMethod;
+            amountCents: number;
+          };
+        } = {
+          action: 'job_completed',
+          sessionFees: [],
+        };
+        if (sessionPayment) {
+          body.sessionPayment = {
+            method: sessionPayment.method,
+            amountCents: sessionPayment.amountCents,
+          };
+        }
+
+        const res = await fetch(`${API_URL}/${id}/actions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const json = (await res.json()) as {
+          success?: boolean;
+          error?: string;
+        };
+        if (!res.ok || json.success === false) {
+          return {
+            success: false,
+            error: json.error ?? 'Failed to complete booking',
+          };
+        }
+        setBookings(prev =>
+          prev.map(b => (b.id === id ? { ...b, status: 'completed' } : b))
+        );
+        return { success: true };
+      } catch {
+        return { success: false, error: 'Failed to complete booking' };
       }
     },
     []
@@ -116,12 +178,37 @@ export function useAvailabilityBookings() {
     []
   );
 
+  const deleteBooking = useCallback(
+    async (id: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        const json = (await res.json().catch(() => ({}))) as {
+          success?: boolean;
+          error?: string;
+        };
+        if (!res.ok || json.success === false) {
+          return {
+            success: false,
+            error: json.error ?? 'Failed to delete booking',
+          };
+        }
+        setBookings(prev => prev.filter(b => b.id !== id));
+        return { success: true };
+      } catch {
+        return { success: false, error: 'Failed to delete booking' };
+      }
+    },
+    []
+  );
+
   return {
     bookings,
     isLoading,
     error,
     refetch: fetchBookings,
     updateBookingStatus,
+    completeBookingJob,
     rescheduleBooking,
+    deleteBooking,
   };
 }

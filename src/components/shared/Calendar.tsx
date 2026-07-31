@@ -38,6 +38,8 @@ export interface CalendarProps {
   wide?: boolean;
   /** No outer card frame (border, shadow, panel fill) — for embedding in a larger layout. */
   plain?: boolean;
+  /** Smaller nav + day cells for tight modals. */
+  compact?: boolean;
   /** Weekday header format. Default `letter` (S M T…). Use `short` for Sun Mon…. */
   weekdayFormat?: 'letter' | 'short';
   /**
@@ -61,6 +63,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   locale,
   wide = false,
   plain = false,
+  compact = false,
   weekdayFormat = 'letter',
   rangeStart = null,
   rangeEnd = null,
@@ -74,11 +77,37 @@ export const Calendar: React.FC<CalendarProps> = ({
   const month = viewDate.getMonth();
   const year = viewDate.getFullYear();
 
+  // Follow selection month only when the selected day actually changes —
+  // not when parents pass a new Date instance for the same day (avoids
+  // snapping back while the user is browsing another month).
+  const valueYear = value?.getFullYear();
+  const valueMonth = value?.getMonth();
+  const valueDate = value?.getDate();
+  const rangeStartYear = rangeStart?.getFullYear();
+  const rangeStartMonth = rangeStart?.getMonth();
+  const rangeStartDate = rangeStart?.getDate();
+
   useEffect(() => {
     const anchor = value ?? rangeStart;
     if (!anchor) return;
-    setViewDate(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  }, [value, rangeStart]);
+    const nextYear = anchor.getFullYear();
+    const nextMonth = anchor.getMonth();
+    setViewDate(prev => {
+      if (prev.getFullYear() === nextYear && prev.getMonth() === nextMonth) {
+        return prev;
+      }
+      return new Date(nextYear, nextMonth, 1);
+    });
+    // Intentionally depend on calendar day parts, not Date object identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- value/rangeStart read inside; day parts are the sync key
+  }, [
+    valueYear,
+    valueMonth,
+    valueDate,
+    rangeStartYear,
+    rangeStartMonth,
+    rangeStartDate,
+  ]);
 
   const minDay = minDate
     ? new Date(
@@ -207,18 +236,30 @@ export const Calendar: React.FC<CalendarProps> = ({
       )}
 
       {/* Centered month navigation */}
-      <div className="mb-4 grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2">
+      <div
+        className={
+          compact
+            ? 'mb-3 grid grid-cols-[1.75rem_1fr_1.75rem] items-center gap-1'
+            : 'mb-4 grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2'
+        }
+      >
         <button
           type="button"
           onClick={prevMonth}
           disabled={isPreviousMonthDisabled}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700"
+          className={
+            compact
+              ? 'flex h-7 w-7 cursor-pointer items-center justify-center text-gray-300 transition-colors hover:text-white disabled:cursor-not-allowed disabled:text-gray-700'
+              : 'flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700'
+          }
           aria-label="Previous month"
         >
-          <ChevronLeftIcon className="h-5 w-5" />
+          <ChevronLeftIcon className="h-5 w-5" strokeWidth={compact ? 3 : 2} />
         </button>
         <h3
-          className="text-center text-lg font-semibold tracking-tight text-gray-100"
+          className={`text-center font-semibold tracking-tight text-gray-100 ${
+            compact ? 'text-base' : 'text-lg'
+          }`}
           aria-live="polite"
         >
           {monthLabel}
@@ -230,30 +271,42 @@ export const Calendar: React.FC<CalendarProps> = ({
           type="button"
           onClick={nextMonth}
           disabled={isNextMonthDisabled}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700"
+          className={
+            compact
+              ? 'flex h-7 w-7 cursor-pointer items-center justify-center text-gray-300 transition-colors hover:text-white disabled:cursor-not-allowed disabled:text-gray-700'
+              : 'flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700'
+          }
           aria-label="Next month"
         >
-          <ChevronRightIcon className="h-5 w-5" />
+          <ChevronRightIcon className="h-5 w-5" strokeWidth={compact ? 3 : 2} />
         </button>
       </div>
 
       {/* Weekday labels + days share the same 7-col grid so columns line up */}
-      <div className="grid grid-cols-7 gap-1 text-center mb-1">
+      <div className="mb-1 grid grid-cols-7 gap-1 text-center">
         {WEEKDAY_LABELS.map(day => (
           <span
             key={day}
-            className="flex h-8 items-center justify-center text-xs font-medium text-zinc-400"
+            className={`flex items-center justify-center font-medium text-zinc-400 ${
+              compact ? 'h-7 text-[11px]' : 'h-8 text-xs'
+            }`}
           >
             {weekdayFormat === 'short' ? day : day[0]}
           </span>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div
+        className={
+          compact
+            ? 'grid grid-cols-7 gap-x-0.5 gap-y-1'
+            : 'grid grid-cols-7 gap-x-1 gap-y-1.5'
+        }
+      >
         {Array(firstDay)
           .fill(null)
           .map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square" />
+            <div key={`empty-${i}`} className={compact ? 'h-9' : 'h-11'} />
           ))}
         {days.map(d => {
           const selectable = isDateSelectable(d);
@@ -268,11 +321,12 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={!selectable}
               onClick={() => selectable && onChange(new Date(year, month, d))}
               className={`
-                relative flex aspect-square w-full items-center justify-center rounded-xl text-[15px] font-medium transition-all duration-200
-                ${!selectable ? 'text-gray-600 cursor-not-allowed' : 'cursor-pointer'}
-                ${selected ? 'bg-white text-black shadow-[0_8px_20px_rgba(255,255,255,0.12)] z-10' : ''}
+                relative mx-auto flex items-center justify-center font-medium transition-colors duration-150
+                ${compact ? 'h-9 w-9 rounded-lg text-[13px]' : 'h-11 w-11 rounded-xl text-sm'}
+                ${!selectable ? 'cursor-not-allowed text-gray-600' : 'cursor-pointer'}
+                ${selected ? 'bg-white text-black' : ''}
                 ${!selected && inRange ? 'bg-white/20 text-white' : ''}
-                ${!selected && !inRange && selectable && today ? 'text-white border border-white/20' : ''}
+                ${!selected && !inRange && selectable && today ? 'text-white ring-1 ring-white/25' : ''}
                 ${!selected && !inRange && selectable && !today ? 'text-white hover:bg-white/10' : ''}
               `}
             >

@@ -16,6 +16,7 @@ import {
   isDateKeyToday,
   parseTimeToMinutesFromDisplay,
 } from './dayPlannerUtils';
+import { bookingListServiceTitle } from './utils/bookingCardServiceTitle';
 import type { AvailabilityBookingDisplay } from './types';
 
 /** First hour row label (inclusive). */
@@ -292,7 +293,7 @@ export function DayPlannerView({
                     isCancelled ? 'text-white/30' : 'text-white/65'
                   }`}
                 >
-                  {booking.serviceName}
+                  {bookingListServiceTitle(booking)}
                 </span>
                 {addr ? (
                   <span

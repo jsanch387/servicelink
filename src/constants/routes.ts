@@ -61,6 +61,8 @@ export const ROUTES = {
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     BOOKINGS: '/dashboard/bookings',
+    /** Owner multi-job create appointment wizard. */
+    BOOKINGS_NEW: '/dashboard/bookings/new',
     REVIEWS: '/dashboard/reviews',
     /** Single review (owner dashboard). Pass UUID from your data layer. */
     REVIEW_DETAIL: (reviewId: string) =>

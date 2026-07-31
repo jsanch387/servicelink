@@ -113,6 +113,16 @@ function toHHmm(minutes: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
 
+export type GenerateTimeSlotsOptions = {
+  now?: Date;
+  /**
+   * When true (default), the full service duration must fit before close.
+   * When false (owner create), starts may fall inside hours even if the visit
+   * runs past close — conflicts still use the full duration.
+   */
+  requireDurationWithinHours?: boolean;
+};
+
 /** Slots are in 30-minute increments; returns array of "HH:mm" for the given date. */
 export function generateTimeSlots(
   selectedDate: Date,
@@ -123,8 +133,14 @@ export function generateTimeSlots(
   timeOffBlocks: ReadonlyArray<TimeOffInterval> = [],
   /** `minimum_notice` from availability; owners can pass `'none'` to bypass. */
   minimumNotice: string = 'none',
-  now: Date = new Date()
+  nowOrOptions: Date | GenerateTimeSlotsOptions = new Date()
 ): string[] {
+  const options: GenerateTimeSlotsOptions =
+    nowOrOptions instanceof Date ? { now: nowOrOptions } : nowOrOptions;
+  const now = options.now ?? new Date();
+  const requireDurationWithinHours =
+    options.requireDurationWithinHours !== false;
+
   const dayKey = getDayKey(selectedDate);
   const daySchedule = weeklySchedule[dayKey];
   if (!daySchedule.enabled) return [];
@@ -134,11 +150,11 @@ export function generateTimeSlots(
   const endMins = parseTimeHHmm(daySchedule.end);
 
   const slots: string[] = [];
-  for (
-    let t = startMins;
-    t + serviceDurationMinutes <= endMins;
-    t += incrementMinutes
-  ) {
+  for (let t = startMins; t < endMins; t += incrementMinutes) {
+    if (requireDurationWithinHours && t + serviceDurationMinutes > endMins) {
+      break;
+    }
+
     const slotStart = toHHmm(t);
 
     if (!isSlotAllowedByLeadTime(dayStr, slotStart, minimumNotice, now)) {
