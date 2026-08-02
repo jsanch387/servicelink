@@ -88,6 +88,7 @@ export async function sendAndRecordSms(
       to_phone: phone ?? rawPhone,
       body: message,
       status: 'queued',
+      provider: 'telnyx',
       dedupe_key: params.dedupeKey ?? null,
     })
     .select('id')
@@ -137,6 +138,7 @@ export async function sendAndRecordSms(
       await updateRow(admin, messageId, {
         status: 'sent',
         sent_at: new Date().toISOString(),
+        provider_message_id: result.providerMessageId,
       });
     } else {
       // Clear the dedupe key so the owner can retry a failed send.
@@ -161,6 +163,7 @@ async function updateRow(
     error?: string;
     sent_at?: string;
     dedupe_key?: string | null;
+    provider_message_id?: string | null;
   }
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

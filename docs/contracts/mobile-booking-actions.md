@@ -1,6 +1,6 @@
 # Contract: Mobile — SMS notifications, message history & booking actions
 
-> **SMS outbound paused (2026-07):** Customer SMS is intentionally disabled until Telnyx messaging is wired. Lifecycle actions still transition `job_status` / `work_handoff_status`; responses include `sms: { sent: false, reason: "not_configured" }`. Email notifications remain active where documented. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS (2026-08):** Telnyx is live for lifecycle actions (`on_the_way`, `job_started`, `work_finished`) and job-completed receipt SMS when `SMS_OUTBOUND_ENABLED=true`. Review-invite SMS remains paused — see [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 This doc covers, for the native app:
 
@@ -42,7 +42,7 @@ Every outbound SMS attempt is a row in **`public.sms_messages`**. This is the so
 | `to_phone`               | text          | E.164 number actually used                                                                                                |
 | `body`                   | text          | exact message sent (display this in history)                                                                              |
 | `status`                 | text          | `queued` \| `sent` \| `delivered` \| `failed` \| `undelivered` \| `skipped_opt_out`                                       |
-| `provider`               | text          | SMS provider id when wired (e.g. `telnyx`); may be null until then                                                         |
+| `provider`               | text          | SMS provider id when wired (e.g. `telnyx`); may be null until then                                                        |
 | `provider_message_id`    | text \| null  | provider id (for delivery webhooks; may be null for now)                                                                  |
 | `error`                  | text \| null  | failure reason                                                                                                            |
 | `dedupe_key`             | text \| null  | server idempotency key; ignore on the client                                                                              |

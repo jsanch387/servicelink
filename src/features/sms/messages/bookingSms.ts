@@ -1,15 +1,19 @@
 /**
- * Customer-facing SMS message templates for V2 availability bookings.
- * Keep messages short (single SMS segment where possible) and always include
- * opt-out language for carrier (A2P) compliance.
+ * Customer-facing SMS templates (ServiceLink toll-free sender).
+ * Brand is ServiceLink only — never include an individual business name.
+ * Keep messages short; opt-out always sits on its own line for clarity.
  */
 
 import { formatBookingWallTime } from '@/features/availability/booking/utils/formatBookingWallTime';
 
 const OPT_OUT = 'Reply STOP to opt out.';
 
+/** Body, blank line, then opt-out (carrier compliance). */
+function withOptOut(body: string): string {
+  return `${body.trim()}\n\n${OPT_OUT}`;
+}
+
 export interface BookingSmsContext {
-  businessName: string;
   /** YYYY-MM-DD */
   scheduledDate: string;
   /** HH:mm 24h wall time */
@@ -29,62 +33,78 @@ function formatBookingDate(scheduledDate: string): string {
   });
 }
 
-function formatWhen(ctx: BookingSmsContext): string {
-  return `${formatBookingDate(ctx.scheduledDate)} at ${formatBookingWallTime(ctx.startTime, 'en')}`;
+function formatDateAndTime(ctx: BookingSmsContext): {
+  date: string;
+  time: string;
+} {
+  return {
+    date: formatBookingDate(ctx.scheduledDate),
+    time: formatBookingWallTime(ctx.startTime, 'en'),
+  };
 }
 
 export function buildBookingConfirmedSms(ctx: BookingSmsContext): string {
-  return `Your appointment with ${ctx.businessName} is confirmed for ${formatWhen(ctx)}. ${OPT_OUT}`;
+  const { date, time } = formatDateAndTime(ctx);
+  return withOptOut(
+    `Your appointment is confirmed for ${date} at ${time}. Questions? Contact your service provider.`
+  );
 }
 
 export function buildBookingReminderSms(ctx: BookingSmsContext): string {
-  return `Reminder: your appointment with ${ctx.businessName} is coming up on ${formatWhen(ctx)}. ${OPT_OUT}`;
+  const { date, time } = formatDateAndTime(ctx);
+  return withOptOut(
+    `Reminder: Your appointment is coming up on ${date} at ${time}.`
+  );
 }
 
-/** Sent when the business marks themselves en route to the customer's appointment. */
+/** Sent when the business marks themselves en route. */
 export function buildOnMyWaySms(ctx: { businessName: string }): string {
-  return `${ctx.businessName} is on the way for your appointment. ${OPT_OUT}`;
+  const name = ctx.businessName.trim() || 'Your service provider';
+  return withOptOut(`${name} is on the way for your appointment.`);
 }
 
 /** Sent when the business marks the job as started / in progress. */
-export function buildJobStartedSms(ctx: { businessName: string }): string {
-  return `${ctx.businessName} has started your service. ${OPT_OUT}`;
-}
-
-/** Sent when the owner taps Done — physical work finished, before close-out. */
-export function buildWorkFinishedSms(ctx: { businessName: string }): string {
-  return `${ctx.businessName} has finished your service. Come take a look when you're ready. ${OPT_OUT}`;
-}
-
-/** Sent when the business marks the job complete. */
-export function buildJobCompletedSms(ctx: { businessName: string }): string {
-  return `${ctx.businessName} has completed your appointment. Thank you! ${OPT_OUT}`;
+export function buildJobStartedSms(): string {
+  return withOptOut(`Your service has started.`);
 }
 
 /**
- * Sent on job_completed when an invoice is issued. Review CTA lives on the
- * receipt page; SMS links to the receipt only.
+ * Sent when the owner taps Done — physical work finished, before close-out.
+ * Not in the public template list; kept generic (no business name).
+ */
+export function buildWorkFinishedSms(): string {
+  return withOptOut(`Your service is finished and ready for you.`);
+}
+
+/** Sent when the business marks the job complete (no receipt link). */
+export function buildJobCompletedSms(): string {
+  return withOptOut(`Your service is complete. Thank you!`);
+}
+
+/**
+ * Receipt SMS when an invoice link is issued on job complete.
+ * When review-eligible, soft-ask in the same text (CTA lives on the receipt page —
+ * no separate review SMS / review URL).
  */
 export function buildJobCompletedInvoiceSms(ctx: {
-  businessName: string;
   invoiceUrl: string;
-  includeReviewHint: boolean;
+  includeReviewHint?: boolean;
 }): string {
-  const name = ctx.businessName.trim() || 'Your provider';
   if (ctx.includeReviewHint) {
-    return `Thanks for choosing ${name}. I would appreciate it if you could leave us a review. ${ctx.invoiceUrl} ${OPT_OUT}`;
+    return withOptOut(
+      `Your receipt is ready: ${ctx.invoiceUrl}\nIf you can please leave us a review, we would appreciate that.`
+    );
   }
-  return `Thanks for choosing ${name}. View your receipt: ${ctx.invoiceUrl} ${OPT_OUT}`;
+  return withOptOut(`Your receipt is ready: ${ctx.invoiceUrl}`);
 }
 
 /**
- * Sent on completion when the customer is eligible to leave a review. This is
- * the single, priority completion notification — it folds the thank-you into a
- * review ask with the one-time review link (no separate "completed" text).
+ * Standalone review invite SMS (non-receipt paths only).
+ * Prefer {@link buildJobCompletedInvoiceSms} with `includeReviewHint` when a
+ * receipt is also being sent — avoid double-texting.
  */
-export function buildReviewRequestSms(ctx: {
-  businessName: string;
-  reviewUrl: string;
-}): string {
-  return `Thank you for choosing ${ctx.businessName}! Could you leave us a quick review? ${ctx.reviewUrl} ${OPT_OUT}`;
+export function buildReviewRequestSms(ctx: { reviewUrl: string }): string {
+  return withOptOut(
+    `Enjoyed your service? Leave a quick review: ${ctx.reviewUrl}`
+  );
 }

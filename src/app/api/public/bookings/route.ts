@@ -65,6 +65,7 @@ import {
   type AvailabilityBookingEmailJob,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
 import type { BookingDiscountSnapshot } from '@/features/marketing/server/bookingDiscountSnapshot';
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
@@ -711,6 +712,30 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // SMS: short confirmation ping. Email (above) carries full details.
+      // Both channels when both contacts exist — complementary, not exclusive.
+      let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
+        'skipped';
+      if (sanitizedCustomer.phone) {
+        const smsResult = await sendAndRecordSms({
+          admin: supabase,
+          businessId,
+          bookingId: result.id,
+          customerId: result.customerId,
+          type: 'booking_confirmation',
+          to: sanitizedCustomer.phone,
+          message: buildBookingConfirmedSms({
+            scheduledDate: body.scheduledDate,
+            startTime: body.startTime.trim(),
+          }),
+          dedupeKey: `${result.id}:booking_confirmation`,
+          correlationId: requestId,
+        });
+        customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
+      } else {
+        customerSmsOutcome = 'no_phone';
+      }
+
       logBookingTransaction(requestId, 'info', 'created', {
         bookingId: result.id,
         visitId: result.visitId,
@@ -718,6 +743,7 @@ export async function POST(request: NextRequest) {
         owner: 1,
         auth: ownerAuthMethod,
         email: customerConfirmationOutcome,
+        sms: customerSmsOutcome,
       });
       return publicBookingJson(
         requestId,
@@ -909,10 +935,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (booking_confirmation)
-    /*
+    // SMS: short confirmation ping. Email (above) carries full details.
+    // Both channels when both contacts exist — complementary, not exclusive.
+    let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
+      'skipped';
     if (sanitizedCustomer.phone) {
-      await sendAndRecordSms({
+      const smsResult = await sendAndRecordSms({
         admin: supabase,
         businessId,
         bookingId: result.id,
@@ -920,15 +948,16 @@ export async function POST(request: NextRequest) {
         type: 'booking_confirmation',
         to: sanitizedCustomer.phone,
         message: buildBookingConfirmedSms({
-          businessName: businessDisplayName,
           scheduledDate: body.scheduledDate,
           startTime: body.startTime.trim(),
         }),
         dedupeKey: `${result.id}:booking_confirmation`,
         correlationId: requestId,
       });
+      customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
+    } else {
+      customerSmsOutcome = 'no_phone';
     }
-    */
 
     logBookingTransaction(requestId, 'info', 'created', {
       bookingId: result.id,
@@ -936,6 +965,7 @@ export async function POST(request: NextRequest) {
       owner: ownerManualBooking ? 1 : 0,
       auth: ownerAuthMethod,
       email: customerConfirmationOutcome,
+      sms: customerSmsOutcome,
     });
     return publicBookingJson(
       requestId,

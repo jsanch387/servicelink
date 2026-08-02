@@ -474,3 +474,10 @@ export function getPublicInvoicePath(publicToken: string): string {
   if (!t) return '/i';
   return `/i/${encodeURIComponent(t)}`;
 }
+
+/** Short branded receipt link for SMS/email (`/r/{shortCode}`). */
+export function getPublicInvoiceShortPath(shortCode: string): string {
+  const c = shortCode.trim();
+  if (!c) return '/r';
+  return `/r/${encodeURIComponent(c)}`;
+}

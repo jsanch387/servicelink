@@ -1,14 +1,12 @@
 /**
- * Best-effort SMS send. Never throws: failures are logged and returned as a
- * result so callers (booking flows, cron) can continue. Mirrors how owner
- * email/push sends are treated as non-blocking side effects.
- *
- * Provider: none wired yet. Telnyx integration will plug in here. Until then
- * every call returns `not_configured`.
+ * Best-effort SMS send via Telnyx. Never throws: failures are logged and
+ * returned as a result so callers (booking flows, cron) can continue. Mirrors
+ * how owner email/push sends are treated as non-blocking side effects.
  */
 
 import { logSms } from '../server/smsLog';
 import { toE164 } from '../utils/toE164';
+import { getTelnyxClient, getTelnyxFromNumber } from './telnyxClient';
 
 export interface SendSmsParams {
   /** Raw or E.164 phone number. Normalized internally; invalid numbers are skipped. */
@@ -22,11 +20,16 @@ export interface SendSmsParams {
 }
 
 export type SendSmsResult =
-  | { sent: true }
+  | { sent: true; providerMessageId: string | null }
   | { sent: false; reason: 'not_configured' | 'invalid_number' | 'error' };
 
+function phoneLast4(e164: string): string {
+  const digits = e164.replace(/\D/g, '');
+  return digits.slice(-4) || '????';
+}
+
 export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
-  const { type, correlationId } = params;
+  const { type, message, correlationId } = params;
 
   const number = toE164(params.to);
   if (!number) {
@@ -34,7 +37,36 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
     return { sent: false, reason: 'invalid_number' };
   }
 
-  // No SMS provider configured yet — Telnyx will replace this branch.
-  logSms(correlationId, 'warn', 'skip_not_configured', { type });
-  return { sent: false, reason: 'not_configured' };
+  const client = getTelnyxClient();
+  const from = getTelnyxFromNumber();
+  if (!client || !from) {
+    logSms(correlationId, 'warn', 'skip_not_configured', { type });
+    return { sent: false, reason: 'not_configured' };
+  }
+
+  try {
+    const response = await client.messages.send({
+      from,
+      to: number,
+      text: message,
+      type: 'SMS',
+    });
+    const providerMessageId = response.data?.id ?? null;
+    logSms(correlationId, 'info', 'sent', {
+      type,
+      toLast4: phoneLast4(number),
+      from,
+      provider: 'telnyx',
+      providerMessageId: providerMessageId ?? undefined,
+    });
+    return { sent: true, providerMessageId };
+  } catch (e) {
+    logSms(correlationId, 'warn', 'send_failed', {
+      type,
+      toLast4: phoneLast4(number),
+      from,
+      error: e instanceof Error ? e.message.slice(0, 200) : String(e),
+    });
+    return { sent: false, reason: 'error' };
+  }
 }

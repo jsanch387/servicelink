@@ -68,7 +68,7 @@ function baseParams(admin: unknown, overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.SMS_OUTBOUND_ENABLED = 'true';
-  sendSmsMock.mockResolvedValue({ sent: true });
+  sendSmsMock.mockResolvedValue({ sent: true, providerMessageId: 'telnyx-1' });
 });
 
 describe('sendAndRecordSms', () => {

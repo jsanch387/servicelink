@@ -109,8 +109,6 @@ export async function completeBookingWithSideEffects(
   // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (web PATCH complete courtesy)
   /*
   const reason = reviewResult.ok ? reviewResult.reason : 'error';
-  const businessName =
-    (await loadBusinessName(admin, updated.business_id)) || 'Your appointment';
   const smsResult = await sendAndRecordSms({
     admin,
     businessId: updated.business_id,
@@ -118,7 +116,7 @@ export async function completeBookingWithSideEffects(
     customerId: updated.customer_id,
     type: 'job_completed',
     to: updated.customer_phone,
-    message: buildJobCompletedSms({ businessName }),
+    message: buildJobCompletedSms(),
     dedupeKey: `${updated.id}:job_completed`,
     correlationId: updated.id,
   });

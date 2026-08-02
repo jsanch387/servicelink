@@ -38,6 +38,7 @@ import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
 import { buildStripeCheckoutPaymentSummary } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
 import { ensureMaintenanceEnrollmentInitialBooking } from '@/features/maintenance/server/ensureMaintenanceEnrollmentInitialBooking';
@@ -796,10 +797,9 @@ export async function POST(request: NextRequest) {
               });
             }
           }
-          // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (booking_confirmation)
-          /*
+          // SMS ping + email details when both exist (complementary channels).
           if (bookingCheckoutNotifyContext.customerPhone) {
-            await sendAndRecordSms({
+            const smsResult = await sendAndRecordSms({
               admin: supabase,
               businessId: bookingCheckoutNotifyContext.businessId,
               bookingId: bookingCheckoutNotifyContext.bookingId,
@@ -807,15 +807,21 @@ export async function POST(request: NextRequest) {
               type: 'booking_confirmation',
               to: bookingCheckoutNotifyContext.customerPhone,
               message: buildBookingConfirmedSms({
-                businessName: bookingCheckoutNotifyContext.businessDisplayName,
                 scheduledDate: bookingCheckoutNotifyContext.scheduledDate,
                 startTime: bookingCheckoutNotifyContext.startTime,
               }),
               dedupeKey: `${bookingCheckoutNotifyContext.bookingId}:booking_confirmation`,
               correlationId: bookingCheckoutNotifyContext.eventId,
             });
+            logBookingCheckoutStage(
+              smsResult.sent ? 'customer_sms.sent' : 'customer_sms.failed',
+              {
+                eventId: bookingCheckoutNotifyContext.eventId,
+                sessionId: bookingCheckoutNotifyContext.sessionId,
+                bookingId: bookingCheckoutNotifyContext.bookingId,
+              }
+            );
           }
-          */
         } catch (err) {
           console.error(
             '[booking-checkout:webhook] deferred owner/customer notify failed',

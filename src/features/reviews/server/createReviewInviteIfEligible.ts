@@ -256,7 +256,6 @@ export async function createReviewInviteIfEligible(
       type: 'review_invite',
       to: phone,
       message: buildReviewRequestSms({
-        businessName: businessName || 'us',
         reviewUrl: publicReviewUrl,
       }),
       dedupeKey: `${bookingId}:review_invite`,

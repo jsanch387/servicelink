@@ -18,6 +18,7 @@ import {
   type BookingAmountDueResult,
 } from './computeBookingAmountDue';
 import { generateInvoicePublicToken } from './generateInvoicePublicToken';
+import { generateInvoiceShortCode } from './generateInvoiceShortCode';
 import type {
   JobCompletedRequestBody,
   JobCompletedSuccessResponse,
@@ -32,6 +33,13 @@ import { markTapToPayIntentJobCompleted } from './verifyTapToPayPaymentIntent';
 import type { WorkHandoffStatus } from '../workHandoffStatus';
 
 const SESSION_FEE_SOURCE = 'owner_complete_screen';
+const SHORT_CODE_INSERT_ATTEMPTS = 5;
+
+function isUniqueViolation(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const code = 'code' in err ? String((err as { code: unknown }).code) : '';
+  return code === '23505';
+}
 
 interface BookingPaymentsRow {
   id?: string;
@@ -239,23 +247,51 @@ async function insertBookingInvoice(
     snapshot: BookingInvoiceSnapshot;
     amountDue: BookingAmountDueResult;
   }
-): Promise<void> {
+): Promise<{ shortCode: string }> {
   const paidCents =
     args.amountDue.paidOnlineCents + args.amountDue.sessionPayCents;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any).from('booking_invoices').insert({
-    booking_id: args.bookingId,
-    business_id: args.businessId,
-    public_token: args.publicToken,
-    snapshot_json: args.snapshot,
-    subtotal_cents: args.amountDue.subtotalCents,
-    total_cents: args.amountDue.adjustedTotalCents,
-    paid_cents: paidCents,
-    status: 'paid',
-  });
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < SHORT_CODE_INSERT_ATTEMPTS; attempt++) {
+    const shortCode = generateInvoiceShortCode();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (admin as any).from('booking_invoices').insert({
+      booking_id: args.bookingId,
+      business_id: args.businessId,
+      public_token: args.publicToken,
+      short_code: shortCode,
+      snapshot_json: args.snapshot,
+      subtotal_cents: args.amountDue.subtotalCents,
+      total_cents: args.amountDue.adjustedTotalCents,
+      paid_cents: paidCents,
+      status: 'paid',
+    });
 
-  if (error) throw error;
+    if (!error) {
+      return { shortCode };
+    }
+
+    lastError = error;
+    // Retry only short_code collisions; other unique conflicts (booking_id) bubble.
+    const msg =
+      typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof (error as { message: unknown }).message === 'string'
+        ? (error as { message: string }).message
+        : '';
+    const looksLikeShortCodeClash =
+      isUniqueViolation(error) &&
+      (msg.includes('short_code') ||
+        msg.includes('booking_invoices_short_code'));
+    if (!looksLikeShortCodeClash) {
+      throw error;
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Could not allocate invoice short_code');
 }
 
 export async function persistJobCompletedTransaction(
@@ -328,6 +364,7 @@ export async function persistJobCompletedTransaction(
   });
 
   const publicToken = generateInvoicePublicToken();
+  let shortCode: string | null = null;
 
   try {
     await replaceSessionFeeLines(
@@ -353,13 +390,14 @@ export async function persistJobCompletedTransaction(
       });
     }
 
-    await insertBookingInvoice(admin, {
+    const inserted = await insertBookingInvoice(admin, {
       bookingId,
       businessId,
       publicToken,
       snapshot,
       amountDue,
     });
+    shortCode = inserted.shortCode;
 
     const transitioned = await markBookingCompleted(sessionClient, bookingId);
     if (!transitioned) {
@@ -437,6 +475,7 @@ export async function persistJobCompletedTransaction(
     customerName: booking.customer_name,
     businessName: business.name,
     invoicePublicToken: publicToken,
+    invoiceShortCode: shortCode,
     includeReviewHint,
     serviceName: snapshot.booking.serviceName,
     scheduledDate: snapshot.booking.scheduledDate,

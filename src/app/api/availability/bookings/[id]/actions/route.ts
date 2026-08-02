@@ -37,9 +37,9 @@ import {
   jobStatusLabel,
   type JobStatus,
 } from '@/features/availability/booking/jobStatus';
-import { isSmsOutboundEnabled } from '@/features/sms/config/isSmsOutboundEnabled';
-import { pausedSmsChannelOutcome } from '@/features/sms/config/smsOutboundPaused';
+import { sendAndRecordSms } from '@/features/sms';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -209,18 +209,16 @@ export async function POST(
       );
     }
 
-    // 7. Rate limit before mutating (caps SMS cost when outbound is enabled).
-    if (isSmsOutboundEnabled()) {
-      const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
-      if (!rate.ok) {
-        return NextResponse.json(
-          { success: false, error: 'Too many requests. Please slow down.' },
-          {
-            status: 429,
-            headers: { 'Retry-After': String(rate.retryAfterSec) },
-          }
-        );
-      }
+    // 7. Rate limit before mutating (caps both SMS cost and action spam).
+    const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
+    if (!rate.ok) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests. Please slow down.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rate.retryAfterSec) },
+        }
+      );
     }
 
     // 8. Apply the transition race-safely. The `IN (allowedFrom)` guard means a
@@ -258,11 +256,10 @@ export async function POST(
 
     // 9. Non-completing actions: best-effort customer notification (state
     // already changed above).
-    // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (on_the_way / job_started)
-    /*
-    const businessName = business.business_name?.trim() || 'Your appointment';
+    const businessName =
+      business.business_name?.trim() || 'Your service provider';
     const sendResult = await sendAndRecordSms({
-      admin,
+      admin: createSupabaseAdminClient(),
       businessId: business.id,
       bookingId: booking.id,
       customerId: null,
@@ -278,8 +275,6 @@ export async function POST(
     const sms = sendResult.sent
       ? { sent: true as const, messageId: sendResult.messageId }
       : { sent: false as const, reason: sendResult.reason };
-    */
-    const sms = pausedSmsChannelOutcome();
 
     return NextResponse.json({
       success: true,

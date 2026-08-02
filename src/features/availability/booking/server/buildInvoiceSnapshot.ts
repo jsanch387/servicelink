@@ -1,5 +1,6 @@
 import {
   getPublicInvoicePath,
+  getPublicInvoiceShortPath,
   getPublicReviewPath,
   getPublicBusinessProfilePath,
 } from '@/constants/routes';
@@ -315,4 +316,18 @@ export function buildInvoiceSnapshot(
 
 export function buildPublicInvoiceUrl(publicToken: string): string {
   return `${getAppBaseUrl()}${getPublicInvoicePath(publicToken)}`;
+}
+
+/** Prefer short `/r/…` links in customer SMS/email when a short_code exists. */
+export function buildPublicInvoiceShortUrl(shortCode: string): string {
+  return `${getAppBaseUrl()}${getPublicInvoiceShortPath(shortCode)}`;
+}
+
+export function buildCustomerInvoiceUrl(args: {
+  publicToken: string;
+  shortCode?: string | null;
+}): string {
+  const short = args.shortCode?.trim();
+  if (short) return buildPublicInvoiceShortUrl(short);
+  return buildPublicInvoiceUrl(args.publicToken);
 }
