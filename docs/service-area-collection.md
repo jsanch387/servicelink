@@ -7,26 +7,25 @@
 
 ## What’s live now
 
-| Piece                                            | Status                                                                          |
-| ------------------------------------------------ | ------------------------------------------------------------------------------- |
-| “Where do you serve?” dashboard modal            | Live                                                                            |
-| MapTiler city / ZIP autocomplete                 | Live                                                                            |
-| Persist primary area to `business_service_areas` | Live                                                                            |
-| Session skip (“I’ll add it later”)               | Live — re-prompts next visit                                                    |
-| Hide modal once primary area exists              | Live                                                                            |
-| Public `/find-detailers` + search API            | **Gated** (`MARKETPLACE_PUBLIC_ENABLED`) — see `src/features/marketplace/docs/` |
+| Piece                                            | Status                                      |
+| ------------------------------------------------ | ------------------------------------------- |
+| “Where do you serve?” dashboard modal            | Live                                        |
+| MapTiler city / ZIP autocomplete                 | Live                                        |
+| Persist primary area to `business_service_areas` | Live                                        |
+| Session skip (“I’ll add it later”)               | Live — re-prompts next visit                |
+| Hide modal once primary area exists              | Live                                        |
+| Public `/find-detailers` + search API            | Live — see `src/features/marketplace/docs/` |
 
 Address collection does **not** depend on the marketplace flag.
 
 ---
 
-## Marketplace flag (keep off until ready)
+## Marketplace flag
 
-|         |                                                                 |
-| ------- | --------------------------------------------------------------- |
-| Env var | `MARKETPLACE_PUBLIC_ENABLED`                                    |
-| Default | Off (anything other than exact `true`)                          |
-| Code    | `src/features/marketplace/config/isMarketplacePublicEnabled.ts` |
+|       |                                                                                  |
+| ----- | -------------------------------------------------------------------------------- |
+| Code  | `src/features/marketplace/config/isMarketplacePublicEnabled.ts`                  |
+| Value | Hardcoded `true` (launched). Set the constant to `false` to pull discovery back. |
 
 When **off**, all of these must fail closed:
 

@@ -1,4 +1,5 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
+import { bookingReferralCaptureRedirect } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
 import {
   isProAccess,
@@ -17,7 +18,7 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Marketplace discovery is off by default until MARKETPLACE_PUBLIC_ENABLED=true.
+  // Marketplace discovery is live; flip `isMarketplacePublicEnabled` to pull it.
   if (!isMarketplacePublicEnabled()) {
     if (
       pathname === ROUTES.FIND_DETAILERS ||
@@ -31,6 +32,13 @@ export async function middleware(request: NextRequest) {
         { status: 404 }
       );
     }
+  }
+
+  // `?ref=` becomes a cookie so the booking APIs can attribute the booking even
+  // though the customer goes through several pages before submitting.
+  const referralCapture = bookingReferralCaptureRedirect(request);
+  if (referralCapture) {
+    return referralCapture;
   }
 
   // MVP LAUNCH MODE: All routes enabled

@@ -8,7 +8,7 @@ Public customer discovery for auto detailers.
 
 | Concern                 | Where                                   |
 | ----------------------- | --------------------------------------- |
-| Feature flag            | `config/isMarketplacePublicEnabled.ts`  |
+| Kill switch             | `config/isMarketplacePublicEnabled.ts`  |
 | City SEO allowlist      | `config/marketplaceCities.ts`           |
 | Test account exclusions | `config/marketplaceListingDenylist.ts`  |
 | Search + eligibility    | `server/searchMarketplaceBusinesses.ts` |

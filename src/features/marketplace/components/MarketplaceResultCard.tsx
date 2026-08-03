@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { Card } from '@/components/shared/Card';
 import { getPublicBusinessProfilePath } from '@/constants/routes';
+import { MARKETPLACE_BOOKING_REFERRAL_SOURCE } from '@/features/booking-attribution/constants';
 import type { MarketplaceBusiness } from '../types/marketplace';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -95,7 +96,12 @@ export function MarketplaceResultCard({
 
   return (
     <Link
-      href={getPublicBusinessProfilePath(business.slug)}
+      href={getPublicBusinessProfilePath(business.slug, {
+        ref: MARKETPLACE_BOOKING_REFERRAL_SOURCE,
+      })}
+      // Viewport prefetching would run the `?ref=` capture for every card on
+      // screen, crediting a detailer the customer never opened.
+      prefetch={false}
       aria-label={`View and book ${business.name}`}
       className="group block h-full cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
     >

@@ -16,13 +16,12 @@ City slugs are defined in `config/marketplaceCities.ts` (e.g. `austin-tx` → se
 
 ---
 
-## Feature flag
+## Kill switch
 
-|         |                                                              |
-| ------- | ------------------------------------------------------------ |
-| Env     | `MARKETPLACE_PUBLIC_ENABLED=true` to expose public discovery |
-| Default | Off                                                          |
-| Helper  | `config/isMarketplacePublicEnabled.ts`                       |
+|        |                                                                   |
+| ------ | ----------------------------------------------------------------- |
+| Helper | `config/isMarketplacePublicEnabled.ts`                            |
+| Value  | Hardcoded `true` (launched); set the constant to `false` to pull. |
 
 When **off**:
 
@@ -49,7 +48,7 @@ flowchart TD
   F -->|No| H[Client GET /api/public/marketplace/search]
   C --> I[MarketplaceResults cards]
   H --> I
-  I --> J[Link to /business-slug public profile]
+  I --> J[Link to /business-slug?ref=marketplace public profile]
 ```
 
 ### Hub (`MarketplacePage`)
@@ -72,6 +71,14 @@ flowchart TD
 ### Shared search core
 
 All listing paths go through **`server/searchMarketplaceBusinesses.ts`** (see [SEARCH_AND_DATA.md](./SEARCH_AND_DATA.md)).
+
+---
+
+## Booking attribution
+
+Result cards link to `/{slug}?ref=marketplace`. Middleware swaps that param for a cookie and redirects to the clean URL, and whichever booking API the customer reaches stores `referral_source = 'marketplace'` on the booking. That is how we tell marketplace-driven bookings apart from direct ones — see [`features/booking-attribution/README.md`](../../booking-attribution/README.md).
+
+The `sr-only` crawlable links on city pages stay untagged so search engines index the canonical profile URL rather than a redirect.
 
 ---
 

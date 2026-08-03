@@ -23,6 +23,8 @@
 
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { CustomerFormData } from '@/features/availability/booking/types';
+import type { BookingReferralSource } from '@/features/booking-attribution/constants';
+import { parseBookingReferralSource } from '@/features/booking-attribution/utils/bookingReferralCookieValue';
 import {
   clientServiceLocationChoice,
   resolvePersistedBookingServiceLocationType,
@@ -143,6 +145,7 @@ type StoredBookingCheckoutPayload = {
   customerServiceLocation?: 'mobile' | 'shop';
   serviceLocationType?: 'mobile' | 'shop';
   promoCode?: string;
+  referralSource?: BookingReferralSource | null;
 };
 
 function customerFormFromCheckoutStored(
@@ -289,6 +292,7 @@ function parseStoredBookingCheckoutPayload(
       typeof p.promoCode === 'string'
         ? normalizeEnteredPromoCode(p.promoCode) || undefined
         : undefined,
+    referralSource: parseBookingReferralSource(p.referralSource),
   };
 }
 
@@ -607,6 +611,7 @@ export async function POST(request: NextRequest) {
         businessId: bookingPayload.businessId,
         businessSlug: bookingPayload.businessSlug,
         bookingSource: 'public',
+        referralSource: bookingPayload.referralSource ?? null,
         serviceId: bookingPayload.serviceId,
         serviceName: storedServiceName,
         servicePriceCents: bookingPayload.servicePriceCents,

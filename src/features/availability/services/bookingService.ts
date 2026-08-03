@@ -7,6 +7,7 @@ import {
   ownerBookingSlotValidationMessage,
   validateOwnerBookingSlot,
 } from '@/features/availability/booking/server/validateOwnerBookingSlot';
+import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
 import {
   customerAlreadyReviewedForBooking,
@@ -33,6 +34,7 @@ export interface CreateBookingPayload {
   business_id: string;
   business_slug: string | null;
   booking_source: BookingSource | null;
+  referral_source: BookingReferralSource | null;
   service_id: string | null;
   service_name: string;
   service_price_cents: number | null;
@@ -71,6 +73,7 @@ function mapCustomerToRow(
   | 'business_id'
   | 'business_slug'
   | 'booking_source'
+  | 'referral_source'
   | 'service_id'
   | 'service_name'
   | 'service_price_cents'
@@ -116,6 +119,8 @@ export async function createBooking(
     businessSlug: string;
     /** Server-derived origin. Omit for legacy/system flows with no direct source. */
     bookingSource?: BookingSource | null;
+    /** Channel that sent the customer here (cookie-based); null for direct visits. */
+    referralSource?: BookingReferralSource | null;
     serviceId?: string;
     serviceName: string;
     servicePriceCents?: number;
@@ -152,6 +157,7 @@ export async function createBooking(
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
     booking_source: payload.bookingSource ?? null,
+    referral_source: payload.referralSource ?? null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
     service_price_cents: payload.servicePriceCents ?? null,
@@ -325,6 +331,7 @@ export async function createBookingForExistingCustomer(
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
     booking_source: null,
+    referral_source: null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
     service_price_cents: payload.servicePriceCents ?? null,

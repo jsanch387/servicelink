@@ -8,6 +8,7 @@
  * submit booking requests without being logged in.
  */
 
+import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { BookingRequestService } from '@/features/booking-request/services/bookingRequestService';
 import { BookingRequestFormData } from '@/features/booking-request/types/bookingRequest';
 import {
@@ -174,6 +175,10 @@ export async function POST(request: NextRequest) {
       ipAddress: ipAddress || undefined,
       userAgent: userAgent || undefined,
       referrerUrl: referrerUrl || undefined,
+      referralSource: bookingReferralSourceForBusiness(
+        request,
+        body.businessSlug
+      ),
     });
 
     if (!result.success) {

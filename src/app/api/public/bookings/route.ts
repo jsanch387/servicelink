@@ -30,6 +30,7 @@ import {
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
   buildPublicBookingServiceLocation,
@@ -393,10 +394,16 @@ export async function POST(request: NextRequest) {
     }
     const discountSnapshot = discountResolved.snapshot;
 
+    // Owner-created bookings never belong to a customer acquisition channel.
+    const referralSource = ownerManualBooking
+      ? null
+      : bookingReferralSourceForBusiness(request, businessSlug);
+
     const result = await createBooking(supabase, {
       businessId,
       businessSlug,
       bookingSource: ownerManualBooking ? 'owner' : 'public',
+      referralSource,
       serviceId: body.serviceId,
       serviceName: storedServiceName,
       servicePriceCents: basePriceForEmail,
@@ -577,6 +584,7 @@ export async function POST(request: NextRequest) {
       owner: ownerManualBooking ? 1 : 0,
       auth: ownerAuthMethod,
       email: customerConfirmationOutcome,
+      ref: referralSource ?? 'direct',
     });
     return publicBookingJson(
       requestId,

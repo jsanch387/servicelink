@@ -5,6 +5,7 @@
  * Clean, modular database operations for booking request feature.
  */
 
+import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { createClient } from '@/libs/supabase';
 
 /**
@@ -46,6 +47,8 @@ export interface CreateBookingRequestData {
   ipAddress?: string;
   userAgent?: string;
   referrerUrl?: string;
+  /** Channel that sent the customer here (cookie-based); null for direct visits. */
+  referralSource?: BookingReferralSource | null;
 }
 
 export class BookingRequestService {
@@ -119,6 +122,7 @@ export class BookingRequestService {
         ip_address: data.ipAddress || null,
         user_agent: data.userAgent || null,
         referrer_url: data.referrerUrl || null,
+        referral_source: data.referralSource ?? null,
         status: 'pending', // Default status
         submitted_at: new Date().toISOString(),
       };
