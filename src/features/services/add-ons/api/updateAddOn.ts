@@ -10,6 +10,7 @@ import type { AddOnRow } from '../../components/add-ons/addOnTypes';
 
 export interface UpdateAddOnPayload {
   name: string;
+  description: string | null;
   price_cents: number;
   duration_minutes: number | null;
 }
@@ -34,6 +35,7 @@ export async function updateAddOn(
     type TableUpdate = Database['public']['Tables']['service_addons']['Update'];
     const updatePayload: TableUpdate = {
       name: payload.name.trim(),
+      description: payload.description?.trim() || null,
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes,
     };
@@ -69,6 +71,7 @@ export async function updateAddOn(
     const addOn: AddOnRow = {
       id: row.id,
       name: row.name,
+      description: row.description ?? null,
       price_cents: row.price_cents ?? 0,
       duration_minutes: row.duration_minutes ?? null,
       sort_order: null,

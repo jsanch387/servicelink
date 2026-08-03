@@ -41,7 +41,8 @@ export const AddOnManagementCard: React.FC<AddOnManagementCardProps> = ({
     >
       {/* Mobile: compact single-column. Desktop: same, actions inline */}
       <div className="flex flex-col gap-3 sm:gap-4">
-        {/* Name + price row, with optional extra duration under the name */}
+        {/* Name + price row, with optional duration under the name.
+            Description is intentionally omitted here — it's customer-facing only. */}
         <div className="flex items-start justify-between gap-3 min-w-0">
           <div className="min-w-0 flex-1">
             <h3 className={`${serviceListingNameClassName} min-w-0`}>

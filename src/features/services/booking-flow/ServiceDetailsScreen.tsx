@@ -368,6 +368,10 @@ export function ServiceDetailsScreen({
                 addOns={addOns as ServiceAddOn[]}
                 selectedIds={selectedAddOnIds}
                 onToggle={handleToggleAddOn}
+                labels={{
+                  seeDescription: ui.serviceDetails.seeDescription,
+                  hideDescription: ui.serviceDetails.hideDescription,
+                }}
               />
             </section>
           )}

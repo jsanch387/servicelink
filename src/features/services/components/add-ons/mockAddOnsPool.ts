@@ -15,6 +15,7 @@ export const MOCK_ADDONS_POOL: AddOnRow[] = [
   {
     id: nextAddOnId(),
     name: 'Pet Hair Removal',
+    description: null,
     price_cents: 2500,
     duration_minutes: null,
     sort_order: 0,
@@ -22,6 +23,7 @@ export const MOCK_ADDONS_POOL: AddOnRow[] = [
   {
     id: nextAddOnId(),
     name: 'Engine Bay Cleaning',
+    description: null,
     price_cents: 3000,
     duration_minutes: null,
     sort_order: 1,
@@ -29,6 +31,7 @@ export const MOCK_ADDONS_POOL: AddOnRow[] = [
   {
     id: nextAddOnId(),
     name: 'Headlight Restoration',
+    description: null,
     price_cents: 4000,
     duration_minutes: null,
     sort_order: 2,
@@ -36,6 +39,7 @@ export const MOCK_ADDONS_POOL: AddOnRow[] = [
   {
     id: nextAddOnId(),
     name: 'Odor Eliminator',
+    description: null,
     price_cents: 1500,
     duration_minutes: null,
     sort_order: 3,
@@ -43,6 +47,7 @@ export const MOCK_ADDONS_POOL: AddOnRow[] = [
   {
     id: nextAddOnId(),
     name: 'Clay Wax',
+    description: null,
     price_cents: 4500,
     duration_minutes: null,
     sort_order: 4,
@@ -50,6 +55,7 @@ export const MOCK_ADDONS_POOL: AddOnRow[] = [
   {
     id: nextAddOnId(),
     name: 'Tire Shine',
+    description: null,
     price_cents: 2000,
     duration_minutes: null,
     sort_order: 5,

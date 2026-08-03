@@ -6,6 +6,8 @@
 export interface ServiceAddOn {
   id: string;
   name: string;
+  /** Optional customer-facing detail shown behind a "See description" toggle. */
+  description?: string | null;
   priceCents: number;
   durationMinutes?: number | null;
 }

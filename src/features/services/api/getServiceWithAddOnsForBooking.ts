@@ -28,6 +28,8 @@ export interface PriceOptionForBooking {
 export interface AddOnForBooking {
   id: string;
   name: string;
+  /** Optional customer-facing detail shown behind a "See description" toggle. */
+  description?: string | null;
   priceCents: number;
   durationMinutes?: number | null;
 }
@@ -121,7 +123,7 @@ export async function getServiceWithAddOnsForBooking(
     if (addonIds.length > 0) {
       const { data: addonRows } = await supabase
         .from('service_addons')
-        .select('id, name, price_cents, duration_minutes')
+        .select('id, name, description, price_cents, duration_minutes')
         .eq('business_id', businessId)
         .in('id', addonIds);
 
@@ -129,11 +131,13 @@ export async function getServiceWithAddOnsForBooking(
         (r: {
           id: string;
           name: string;
+          description?: string | null;
           price_cents: number;
           duration_minutes?: number | null;
         }) => ({
           id: r.id,
           name: r.name,
+          description: r.description ?? null,
           priceCents: r.price_cents ?? 0,
           durationMinutes: r.duration_minutes ?? null,
         })

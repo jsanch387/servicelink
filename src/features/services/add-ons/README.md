@@ -10,7 +10,7 @@ Add-ons are optional extras (e.g. wax, rush delivery) that customers can add whe
 
 | Table                       | Purpose                                                                                                                                |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `service_addons`            | **Pool** – add-on definitions (name, price, optional **duration**). One row per add-on, scoped by `business_id`. No service link here. |
+| `service_addons`            | **Pool** – add-on definitions (name, optional **description**, price, optional **duration**). One row per add-on, scoped by `business_id`. No service link here. |
 | `service_addon_assignments` | **Junction** – which add-ons each service offers. Links `service_id` ↔ `addon_id`.                                                    |
 
 ### Why two tables?
@@ -31,6 +31,7 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 | `id`               | uuid              | Primary key                                                                                                                                                                                               |
 | `business_id`      | uuid              | FK → business_profiles. Scopes add-ons to a business.                                                                                                                                                     |
 | `name`             | text              | Add-on name (e.g. "Extra polish")                                                                                                                                                                         |
+| `description`      | text, nullable    | **Optional**, **customer-facing** detail about what the add-on includes. Empty input is stored as `null`. Capped at `ADD_ON_DESCRIPTION_MAX_LENGTH` (300) in the UI. Shown only in the public book flow (behind a "See description" toggle), not in the owner's add-on list. |
 | `price_cents`      | integer           | Price in cents                                                                                                                                                                                            |
 | `duration_minutes` | integer, nullable | **Optional** extra appointment time when this add-on is selected. Null/omit = price-only (no change to slot length). Same **30-minute grid** as services (see `addOnDurationForm.ts` + `timeOptions.ts`). |
 | `created_at`       | timestamptz       | Set on insert                                                                                                                                                                                             |
@@ -53,8 +54,9 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 
 ## User flow
 
-1. **Add-ons tab** – User creates add-ons (name, price, **optional duration**). Each insert goes into `service_addons` only.
+1. **Add-ons tab** – User creates add-ons (name, **optional description**, price, **optional duration**). Each insert goes into `service_addons` only.
 2. **Service edit** – When editing a service, user sees the full add-on pool and selects which to offer. On Save, service details and add-on assignments are persisted. Assignments are stored in `service_addon_assignments` (replace-all for that service).
+3. **Public book flow** – On the add-ons step, each add-on with a `description` renders a **"See description"** toggle (`AddOnSelector`). Copy comes from `publicBookingUi(...).serviceDetails.seeDescription` / `hideDescription`, so it follows the funnel locale.
 
 ---
 
@@ -64,8 +66,8 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 add-ons/
 ├── README.md           # This file
 ├── api/
-│   ├── createAddOn.ts  # Insert into service_addons (pool; optional duration_minutes)
-│   ├── updateAddOn.ts  # Update name, price_cents, duration_minutes (updated_at via trigger)
+│   ├── createAddOn.ts  # Insert into service_addons (pool; optional description + duration_minutes)
+│   ├── updateAddOn.ts  # Update name, description, price_cents, duration_minutes (updated_at via trigger)
 │   ├── deleteAddOn.ts  # Delete from service_addons (CASCADE clears assignments)
 │   └── getAddOns.ts    # Select from service_addons by business_id
 ├── actions/
