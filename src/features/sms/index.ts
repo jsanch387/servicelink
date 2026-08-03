@@ -1,7 +1,7 @@
 /**
- * SMS feature – transactional SMS via Pingram.
+ * SMS feature – transactional customer SMS.
  * Public surface for sending booking-related SMS. Server-only; do not import
- * from client components.
+ * from client components. Provider wiring lives in `services/sendSms`.
  */
 
 export { sendSms } from './services/sendSms';
@@ -27,7 +27,15 @@ export type { BookingSmsContext } from './messages/bookingSms';
 
 export { toE164 } from './utils/toE164';
 
-export { isSmsOutboundEnabled } from './config/isSmsOutboundEnabled';
+export {
+  isSmsOutboundEnabled,
+  SMS_OUTBOUND_ENABLED,
+} from './config/isSmsOutboundEnabled';
+export {
+  SMS_ROLLOUT_OWNER_EMAILS,
+  isOwnerEmailAllowedForSmsRollout,
+  isSmsRolloutAllowlistActive,
+} from './config/smsRolloutAllowlist';
 export {
   pausedSmsChannelOutcome,
   SMS_OUTBOUND_PAUSED_DOC,

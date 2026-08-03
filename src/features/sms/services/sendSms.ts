@@ -1,36 +1,32 @@
 /**
- * Best-effort SMS send via Pingram. Never throws: failures are logged and
+ * Best-effort SMS send via Telnyx. Never throws: failures are logged and
  * returned as a result so callers (booking flows, cron) can continue. Mirrors
  * how owner email/push sends are treated as non-blocking side effects.
  */
 
-import { ChannelsEnum } from 'pingram';
 import { logSms } from '../server/smsLog';
 import { toE164 } from '../utils/toE164';
-import { getPingramClient, getPingramFromNumber } from './pingramClient';
+import { getTelnyxClient, getTelnyxFromNumber } from './telnyxClient';
 
 export interface SendSmsParams {
   /** Raw or E.164 phone number. Normalized internally; invalid numbers are skipped. */
   to: string | null | undefined;
   /** Message body. Keep concise; opt-out language is provided by templates. */
   message: string;
-  /**
-   * Pingram notification "type" id (groups messages in the dashboard, e.g.
-   * `booking_confirmation`, `booking_reminder`). Created on first use.
-   */
+  /** Logical message type for logs (e.g. `booking_confirmation`, `on_the_way`). */
   type: string;
-  /**
-   * Stable recipient identifier for Pingram (`to.id`, required by the API).
-   * Defaults to the normalized phone number when omitted.
-   */
-  recipientId?: string;
   /** Optional request id for log correlation. */
   correlationId?: string;
 }
 
 export type SendSmsResult =
-  | { sent: true }
+  | { sent: true; providerMessageId: string | null }
   | { sent: false; reason: 'not_configured' | 'invalid_number' | 'error' };
+
+function phoneLast4(e164: string): string {
+  const digits = e164.replace(/\D/g, '');
+  return digits.slice(-4) || '????';
+}
 
 export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
   const { type, message, correlationId } = params;
@@ -41,26 +37,34 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
     return { sent: false, reason: 'invalid_number' };
   }
 
-  const client = getPingramClient();
-  if (!client) {
+  const client = getTelnyxClient();
+  const from = getTelnyxFromNumber();
+  if (!client || !from) {
     logSms(correlationId, 'warn', 'skip_not_configured', { type });
     return { sent: false, reason: 'not_configured' };
   }
 
-  const from = getPingramFromNumber();
-
   try {
-    await client.send({
-      type,
-      to: { id: params.recipientId?.trim() || number, number },
-      forceChannels: [ChannelsEnum.SMS],
-      sms: { message, ...(from ? { from } : {}) },
+    const response = await client.messages.send({
+      from,
+      to: number,
+      text: message,
+      type: 'SMS',
     });
-    logSms(correlationId, 'info', 'sent', { type });
-    return { sent: true };
+    const providerMessageId = response.data?.id ?? null;
+    logSms(correlationId, 'info', 'sent', {
+      type,
+      toLast4: phoneLast4(number),
+      from,
+      provider: 'telnyx',
+      providerMessageId: providerMessageId ?? undefined,
+    });
+    return { sent: true, providerMessageId };
   } catch (e) {
     logSms(correlationId, 'warn', 'send_failed', {
       type,
+      toLast4: phoneLast4(number),
+      from,
       error: e instanceof Error ? e.message.slice(0, 200) : String(e),
     });
     return { sent: false, reason: 'error' };

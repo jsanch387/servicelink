@@ -1,6 +1,6 @@
 # Contract: Mobile — Tap to Pay (Complete sheet / Phase 2)
 
-> **SMS outbound paused (2026-07):** After a successful tap, `job_completed` sends the invoice link via **email** when the customer has an email address. Do not expect receipt SMS. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS (2026-08):** After a successful tap, `job_completed` sends the receipt via **SMS first** (short `/r/…` link) when a phone is on file; email is the fallback if SMS does not send. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 Owner collects the **remaining balance** on-site using **Stripe Tap to Pay on iPhone**:
 
@@ -514,7 +514,7 @@ curl -sS -X POST "$ORIGIN/api/availability/bookings/$BOOKING_ID/actions" \
   }'
 ```
 
-Verify: `booking_payments.session_payment_stripe_payment_intent_id` set, invoice row exists, SMS contains `/i/` link.
+Verify: `booking_payments.session_payment_stripe_payment_intent_id` set, invoice row exists, SMS contains `/r/` (or `/i/`) link.
 
 ---
 

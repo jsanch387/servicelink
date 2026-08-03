@@ -34,7 +34,7 @@ export interface NotifyBookingActionConfig extends BaseBookingActionConfig {
   completesBooking?: false;
   /** `sms_messages.type` value for the logged message. */
   smsType: string;
-  /** Builds the customer SMS body. */
+  /** Builds the customer SMS body. Lifecycle pings may include business name. */
   buildMessage: (ctx: { businessName: string }) => string;
   /** When true, dedupe SMS with key `"<bookingId>:<smsType>"`. */
   oncePerBooking: boolean;
@@ -59,7 +59,7 @@ export const BOOKING_ACTIONS: Record<BookingActionType, BookingActionConfig> = {
   on_the_way: {
     type: 'on_the_way',
     smsType: 'on_the_way',
-    buildMessage: buildOnMyWaySms,
+    buildMessage: ({ businessName }) => buildOnMyWaySms({ businessName }),
     oncePerBooking: true,
     jobStatus: 'on_the_way',
     allowedFromJobStatus: ['not_started'],
@@ -68,7 +68,7 @@ export const BOOKING_ACTIONS: Record<BookingActionType, BookingActionConfig> = {
   job_started: {
     type: 'job_started',
     smsType: 'job_started',
-    buildMessage: buildJobStartedSms,
+    buildMessage: () => buildJobStartedSms(),
     oncePerBooking: true,
     jobStatus: 'in_progress',
     allowedFromJobStatus: ['not_started', 'on_the_way'],

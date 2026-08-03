@@ -2,11 +2,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BookingInvoiceSnapshot } from './buildInvoiceSnapshot';
 import { invoiceSnapshotNeedsBusinessHydration } from '../utils/invoiceSnapshotBusiness';
 import { loadBusinessProfileForInvoice } from './loadBusinessProfileForInvoice';
+import { isValidInvoiceShortCode } from './generateInvoiceShortCode';
 
 export type PublicInvoiceLoadReason = 'not_found' | 'invalid_token' | 'error';
 
 export interface PublicInvoiceContext {
   publicToken: string;
+  shortCode: string | null;
   snapshot: BookingInvoiceSnapshot;
   subtotalCents: number;
   totalCents: number;
@@ -55,6 +57,65 @@ async function hydrateInvoiceSnapshotBusiness(
   };
 }
 
+type InvoiceRow = {
+  public_token?: string;
+  short_code?: string | null;
+  snapshot_json?: unknown;
+  subtotal_cents?: number;
+  total_cents?: number;
+  paid_cents?: number;
+  status?: string;
+  business_id?: string;
+};
+
+async function mapInvoiceRow(
+  admin: SupabaseClient,
+  data: InvoiceRow
+): Promise<LoadPublicBookingInvoiceResult> {
+  const publicToken = String(data.public_token ?? '').trim();
+  if (!publicToken) {
+    return { ok: false, reason: 'error' };
+  }
+
+  const rawSnapshot = data.snapshot_json;
+  if (!isSnapshot(rawSnapshot)) {
+    return { ok: false, reason: 'error' };
+  }
+
+  const businessId =
+    rawSnapshot.business.id?.trim() || String(data.business_id ?? '').trim();
+
+  const snapshot = await hydrateInvoiceSnapshotBusiness(admin, {
+    ...rawSnapshot,
+    business: {
+      ...rawSnapshot.business,
+      id: businessId || rawSnapshot.business.id,
+    },
+  });
+
+  const shortCodeRaw = data.short_code;
+  const shortCode =
+    typeof shortCodeRaw === 'string' && shortCodeRaw.trim()
+      ? shortCodeRaw.trim()
+      : null;
+
+  return {
+    ok: true,
+    invoice: {
+      publicToken,
+      shortCode,
+      snapshot,
+      subtotalCents: Number(data.subtotal_cents ?? 0),
+      totalCents: Number(data.total_cents ?? 0),
+      paidCents: Number(data.paid_cents ?? 0),
+      status: String(data.status ?? 'paid'),
+    },
+  };
+}
+
+const INVOICE_SELECT =
+  'public_token, short_code, snapshot_json, subtotal_cents, total_cents, paid_cents, status, business_id';
+
 export async function loadPublicBookingInvoiceByToken(
   admin: SupabaseClient,
   rawToken: string
@@ -67,9 +128,7 @@ export async function loadPublicBookingInvoiceByToken(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('booking_invoices')
-    .select(
-      'public_token, snapshot_json, subtotal_cents, total_cents, paid_cents, status, business_id'
-    )
+    .select(INVOICE_SELECT)
     .eq('public_token', token)
     .maybeSingle();
 
@@ -82,34 +141,33 @@ export async function loadPublicBookingInvoiceByToken(
     return { ok: false, reason: 'not_found' };
   }
 
-  const rawSnapshot = (data as { snapshot_json?: unknown }).snapshot_json;
-  if (!isSnapshot(rawSnapshot)) {
+  return mapInvoiceRow(admin, data as InvoiceRow);
+}
+
+export async function loadPublicBookingInvoiceByShortCode(
+  admin: SupabaseClient,
+  rawCode: string
+): Promise<LoadPublicBookingInvoiceResult> {
+  const code = rawCode.trim();
+  if (!isValidInvoiceShortCode(code)) {
+    return { ok: false, reason: 'invalid_token' };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any)
+    .from('booking_invoices')
+    .select(INVOICE_SELECT)
+    .eq('short_code', code)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[invoice] loadPublicBookingInvoiceByShortCode', error);
     return { ok: false, reason: 'error' };
   }
 
-  const businessId =
-    rawSnapshot.business.id?.trim() ||
-    String((data as { business_id?: string }).business_id ?? '').trim();
+  if (!data) {
+    return { ok: false, reason: 'not_found' };
+  }
 
-  const snapshot = await hydrateInvoiceSnapshotBusiness(admin, {
-    ...rawSnapshot,
-    business: {
-      ...rawSnapshot.business,
-      id: businessId || rawSnapshot.business.id,
-    },
-  });
-
-  return {
-    ok: true,
-    invoice: {
-      publicToken: token,
-      snapshot,
-      subtotalCents: Number(
-        (data as { subtotal_cents?: number }).subtotal_cents ?? 0
-      ),
-      totalCents: Number((data as { total_cents?: number }).total_cents ?? 0),
-      paidCents: Number((data as { paid_cents?: number }).paid_cents ?? 0),
-      status: String((data as { status?: string }).status ?? 'paid'),
-    },
-  };
+  return mapInvoiceRow(admin, data as InvoiceRow);
 }

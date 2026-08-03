@@ -1,6 +1,6 @@
 # Contract: Mobile — `job_completed` (Complete sheet / Phase 1)
 
-> **SMS outbound paused (2026-07):** Completion still persists fees, payment, invoice, and marks the booking complete. Customer receipt is sent via **email** when `customer.email` is present (`email.sent: true`). `sms.reason` is `"not_configured"` while paused. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS (2026-08):** Completion persists fees, payment, invoice, and marks the booking complete. Receipt is **SMS-first** (short `/r/…` link when `short_code` exists); email is the fallback if SMS does not send. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 Owner closes out a field job from the **Complete** full-screen sheet: add fees, collect balance, tap **Complete**. This is **cycle 2** of the extended booking lifecycle — payment close-out, invoice, and customer notification.
 
@@ -106,12 +106,12 @@ Load `service_price_cents`, `addon_details`, and join/read `booking_payments` wh
 }
 ```
 
-| Field                         | Notes                                                                                     |
-| ----------------------------- | ----------------------------------------------------------------------------------------- |
-| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                                            |
-| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                                        |
-| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today)                      |
-| `sms` / `email`               | Always present. While SMS is paused: `sms.not_configured`; check `email.sent` for receipt |
+| Field                         | Notes                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                                                           |
+| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                                                       |
+| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today)                                     |
+| `sms` / `email`               | Always present. SMS-first: if `sms.sent`, email is skipped. Else check `email.sent` for receipt fallback |
 
 Customer invoice URL (for debugging): `{EXPO_PUBLIC_WEB_APP_URL}/i/{invoicePublicToken}`
 
@@ -182,9 +182,9 @@ Disable **Complete** until local `amountDueCents === 0`.
 
 ## Customer notification (what the owner’s customer receives)
 
-- **SMS (primary):** `Thanks for choosing {Business}. I would appreciate it if you could leave us a review. {receipt link}` when review-eligible; otherwise `Thanks for choosing {Business}. View your receipt: {link}`
+- **SMS (primary):** `Your receipt is ready: {link}` (+ soft review ask when eligible). Link prefers `/r/{shortCode}`.
 - **Email (fallback):** Same intent, only if SMS skipped/failed
-- **Link:** `/i/{invoicePublicToken}` — HTML receipt + review button when eligible
+- **Link:** `/r/{shortCode}` when available (fallback `/i/{invoicePublicToken}`) — HTML receipt + review button when eligible
 - **Never both** SMS and email on the same completion
 
 ---
@@ -215,7 +215,7 @@ curl -sS -X POST "$ORIGIN/api/availability/bookings/$BOOKING_ID/actions" \
   }'
 ```
 
-Verify: booking completed, fee lines + invoice row in DB, `invoicePublicToken` in response, SMS contains `/i/` link, page loads.
+Verify: booking completed, fee lines + invoice row in DB, `invoicePublicToken` in response, SMS contains `/r/` (or `/i/`) link, page loads.
 
 ---
 
