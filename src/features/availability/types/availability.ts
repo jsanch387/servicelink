@@ -22,7 +22,47 @@ export type DayKey =
 
 export type WeeklySchedule = Record<DayKey, DaySchedule>;
 
-export type MinimumNoticeValue = 'none' | '1h' | '2h' | '4h' | '24h';
+/** How far ahead a customer must book (stored as `minimum_notice`). */
+export const MINIMUM_NOTICE_VALUES = [
+  'none',
+  '30m',
+  '1h',
+  '2h',
+  '3h',
+  '4h',
+  '8h',
+  '12h',
+  '24h',
+  '48h',
+  '72h',
+  '1w',
+] as const;
+
+export type MinimumNoticeValue = (typeof MINIMUM_NOTICE_VALUES)[number];
+
+export const MINIMUM_NOTICE_OPTIONS: {
+  value: MinimumNoticeValue;
+  label: string;
+}[] = [
+  { value: 'none', label: 'No lead time' },
+  { value: '30m', label: '30 minutes' },
+  { value: '1h', label: '1 hour' },
+  { value: '2h', label: '2 hours' },
+  { value: '3h', label: '3 hours' },
+  { value: '4h', label: '4 hours' },
+  { value: '8h', label: '8 hours' },
+  { value: '12h', label: '12 hours' },
+  { value: '24h', label: '1 day' },
+  { value: '48h', label: '2 days' },
+  { value: '72h', label: '3 days' },
+  { value: '1w', label: '1 week' },
+];
+
+export function isMinimumNoticeValue(
+  value: string
+): value is MinimumNoticeValue {
+  return (MINIMUM_NOTICE_VALUES as readonly string[]).includes(value);
+}
 
 export const DEFAULT_SCHEDULE: WeeklySchedule = {
   monday: { enabled: true, start: '09:00', end: '17:00' },

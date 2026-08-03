@@ -32,6 +32,39 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    // Lightweight ownership only — do not use resolveTapToPayBookingContext
+    // (lifecycle gates would block best-effort diagnostics).
+    const { data: bookingData, error: bookingError } =
+      await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (auth.supabase as any)
+        .from('bookings')
+        .select('id, business_id')
+        .eq('id', bookingId)
+        .maybeSingle();
+
+    const booking = bookingData as {
+      id: string;
+      business_id: string;
+    } | null;
+
+    if (bookingError) {
+      console.error(
+        '[tap-to-pay] client-event booking load failed',
+        bookingError
+      );
+      return NextResponse.json(
+        { success: false, error: 'Could not save Tap to Pay client report.' },
+        { status: 500 }
+      );
+    }
+
+    if (!booking || booking.business_id !== auth.business.id) {
+      return NextResponse.json(
+        { success: false, error: 'Booking not found' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const outcomeRaw =
       body && typeof body === 'object' && !Array.isArray(body)

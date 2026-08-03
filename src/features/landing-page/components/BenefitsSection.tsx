@@ -1,4 +1,4 @@
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import {
   CheckIcon,
   ClockIcon,
@@ -167,7 +167,7 @@ export const BenefitsSection: React.FC = () => {
                 </p>
 
                 <Button
-                  href={ROUTES.AUTH.SIGNUP}
+                  href={siteSignupPath('homepage')}
                   variant="inverse"
                   size="lg"
                   className="font-bold"

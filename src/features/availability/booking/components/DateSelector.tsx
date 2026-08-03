@@ -27,6 +27,8 @@ interface DateSelectorProps {
   serviceDurationMinutes: number;
   existingBookings: ExistingBooking[];
   timeOffBlocks: TimeOffInterval[];
+  /** Lead time (`minimum_notice`); defaults to none. */
+  minimumNotice?: string;
   selectedDate: Date | null;
 
   onSelectDate: (date: Date) => void;
@@ -35,10 +37,17 @@ interface DateSelectorProps {
   minDate?: Date;
   /** Calendar without outer card chrome (nested inside another panel). */
   plainCalendar?: boolean;
+  /** Smaller nav + day cells for tight modals. */
+  compactCalendar?: boolean;
   /** Shown above the month header (passed to shared Calendar). */
   calendarTitle?: string;
   /** Muted line under title (e.g. availability hint). */
   calendarSubtitle?: string;
+  /**
+   * When false, only `minDate` / `maxDate` gate days (owner create).
+   * Default true keeps public booking behavior (closed / fully booked days off).
+   */
+  requireAvailableSlots?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -47,19 +56,24 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   serviceDurationMinutes,
   existingBookings,
   timeOffBlocks,
+  minimumNotice = 'none',
   selectedDate,
   onSelectDate,
   onUserSelectDate,
   minDate = new Date(),
   plainCalendar = false,
+  compactCalendar = false,
   calendarTitle,
   calendarSubtitle,
+  requireAvailableSlots = true,
   bookingFlowLocale = 'en',
 }) => {
   const isDateDisabled = useCallback(
     (date: Date) => {
+      if (!requireAvailableSlots) return false;
+
       const dayKey = getDayKey(date);
-      if (!weeklySchedule[dayKey].enabled) return true;
+      if (!weeklySchedule[dayKey]?.enabled) return true;
 
       const slots = generateTimeSlots(
         date,
@@ -67,11 +81,19 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         serviceDurationMinutes,
         existingBookings,
         30,
-        timeOffBlocks
+        timeOffBlocks,
+        minimumNotice
       );
       return slots.length === 0;
     },
-    [weeklySchedule, serviceDurationMinutes, existingBookings, timeOffBlocks]
+    [
+      requireAvailableSlots,
+      weeklySchedule,
+      serviceDurationMinutes,
+      existingBookings,
+      timeOffBlocks,
+      minimumNotice,
+    ]
   );
 
   useEffect(() => {
@@ -117,6 +139,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       isDateDisabled={isDateDisabled}
       showYear={true}
       plain={plainCalendar}
+      compact={compactCalendar}
       title={calendarTitle}
       subtitle={calendarSubtitle}
       locale={bcp47ForBookingLocale(bookingFlowLocale)}

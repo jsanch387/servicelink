@@ -1,4 +1,4 @@
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import {
   BanknotesIcon,
   ChatBubbleBottomCenterTextIcon,
@@ -72,7 +72,7 @@ export const DetailerFeaturesSection: React.FC = () => {
         </div>
 
         <div className="mt-8 sm:mt-10 flex justify-center">
-          <FramedCtaButton href={ROUTES.AUTH.SIGNUP}>
+          <FramedCtaButton href={siteSignupPath('homepage')}>
             Set Up Your Link
           </FramedCtaButton>
         </div>

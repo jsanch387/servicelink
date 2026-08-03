@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { MarketingAttributionRoot } from '@/features/marketing-attribution';
+import { ToastViewport } from '@/components/shared';
 import type { Metadata } from 'next';
 import {
   Geist,
@@ -207,6 +208,7 @@ export default function RootLayout({
           <MarketingAttributionRoot />
         </Suspense>
         {children}
+        <ToastViewport />
         <Analytics />
         <SpeedInsights />
       </body>

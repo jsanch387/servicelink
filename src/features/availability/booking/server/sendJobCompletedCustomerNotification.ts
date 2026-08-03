@@ -7,11 +7,18 @@ import {
   mapJobCompletedEmailFailureReason,
   sendJobCompletedInvoiceEmail,
 } from '@/features/email/job-completed/sendJobCompletedInvoiceEmail';
-import { pausedSmsChannelOutcome } from '@/features/sms/config/smsOutboundPaused';
+import type { JobCompletedInvoiceEmailJob } from '@/features/email/job-completed/jobCompletedInvoiceTemplate';
+import { buildJobCompletedInvoiceSms, sendAndRecordSms } from '@/features/sms';
 import type { NotifyChannelOutcome } from '@/features/reviews/server/createReviewInviteIfEligible';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { buildPublicInvoiceUrl } from './buildInvoiceSnapshot';
+import { buildCustomerInvoiceUrl } from './buildInvoiceSnapshot';
+import {
+  buildJobCompletedTrace,
+  logJobCompletedStage,
+  maskEmailForLog,
+  maskPhoneForLog,
+} from './jobCompletedRouteLog';
 
 export interface JobCompletedNotificationInput {
   admin: SupabaseClient<Database>;
@@ -23,12 +30,20 @@ export interface JobCompletedNotificationInput {
   customerName: string;
   businessName: string;
   invoicePublicToken: string;
+  /** Prefer for SMS/email customer links when present. */
+  invoiceShortCode?: string | null;
   includeReviewHint: boolean;
   serviceName?: string;
   scheduledDate?: string;
   startTime?: string;
   totalCents?: number;
+  subtotalCents?: number;
+  discount?: {
+    label: string;
+    discountCents: number;
+  } | null;
   reviewUrl?: string | null;
+  jobs?: JobCompletedInvoiceEmailJob[];
   requestId?: string;
 }
 
@@ -40,8 +55,16 @@ export interface JobCompletedNotificationResult {
 export async function sendJobCompletedCustomerNotification(
   input: JobCompletedNotificationInput
 ): Promise<JobCompletedNotificationResult> {
-  const invoiceUrl = buildPublicInvoiceUrl(input.invoicePublicToken);
+  const invoiceUrl = buildCustomerInvoiceUrl({
+    publicToken: input.invoicePublicToken,
+    shortCode: input.invoiceShortCode,
+  });
   const businessName = input.businessName.trim() || 'Your provider';
+  const trace = buildJobCompletedTrace({
+    requestId: input.requestId ?? input.bookingId,
+    bookingId: input.bookingId,
+    businessId: input.businessId,
+  });
 
   let sms: NotifyChannelOutcome = {
     sent: false,
@@ -57,29 +80,63 @@ export async function sendJobCompletedCustomerNotification(
   const phone = input.customerPhone?.trim() || '';
 
   if (phone) {
-    sms = pausedSmsChannelOutcome();
-  } else {
-    sms = { sent: false, messageId: null, reason: 'no_phone' };
-  }
+    logJobCompletedStage(trace, 'notify_sms', {
+      invoiceUrl,
+      invoicePublicToken: input.invoicePublicToken,
+      toPhone: maskPhoneForLog(phone),
+      includeReviewHint: input.includeReviewHint,
+    });
 
-  // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (job_completed invoice)
-  /*
-  if (phone) {
-    const smsResult = await sendAndRecordSms({ ... });
+    const smsResult = await sendAndRecordSms({
+      admin: input.admin,
+      businessId: input.businessId,
+      bookingId: input.bookingId,
+      customerId: input.customerId,
+      type: 'job_completed',
+      to: phone,
+      message: buildJobCompletedInvoiceSms({
+        invoiceUrl,
+        includeReviewHint: input.includeReviewHint,
+      }),
+      dedupeKey: `${input.bookingId}:job_completed`,
+      correlationId: input.bookingId,
+    });
+
     if (smsResult.sent) {
+      logJobCompletedStage(trace, 'notify_sms', {
+        invoiceUrl,
+        sent: true,
+        messageId: smsResult.messageId,
+      });
       return {
         sms: { sent: true, messageId: smsResult.messageId, reason: null },
         email,
       };
     }
     sms = { sent: false, messageId: null, reason: smsResult.reason };
+    logJobCompletedStage(trace, 'notify_sms', {
+      invoiceUrl,
+      sent: false,
+      reason: smsResult.reason,
+    });
   } else {
     sms = { sent: false, messageId: null, reason: 'no_phone' };
+    logJobCompletedStage(trace, 'notify_sms', {
+      invoiceUrl,
+      skipped: true,
+      reason: 'no_phone',
+    });
   }
-  */
 
   const recipient = input.customerEmail?.trim() || '';
   if (recipient) {
+    logJobCompletedStage(trace, 'notify_email', {
+      invoiceUrl,
+      toEmail: maskEmailForLog(recipient),
+      includeReviewHint: input.includeReviewHint,
+      smsFailedFirst: !sms.sent,
+    });
+
     const emailResult = await sendJobCompletedInvoiceEmail(recipient, {
       businessName,
       customerName: input.customerName,
@@ -89,7 +146,10 @@ export async function sendJobCompletedCustomerNotification(
       scheduledDate: input.scheduledDate,
       startTime: input.startTime,
       totalCents: input.totalCents,
+      subtotalCents: input.subtotalCents,
+      discount: input.discount,
       reviewUrl: input.reviewUrl,
+      jobs: input.jobs,
     });
 
     if (emailResult.sent) {

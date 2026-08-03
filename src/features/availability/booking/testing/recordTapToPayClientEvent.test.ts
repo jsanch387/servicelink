@@ -85,4 +85,45 @@ describe('recordTapToPayClientEvent', () => {
     expect(result).toEqual({ ok: true, updated: false });
     expect(from).not.toHaveBeenCalled();
   });
+
+  it('no-ops when paymentIntentId has no matching intent row', async () => {
+    maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const result = await recordTapToPayClientEvent({
+      businessId: 'biz-1',
+      bookingId: 'book-1',
+      outcome: 'failure',
+      body: {
+        stage: 'collect',
+        paymentIntentId: 'pi_orphaned',
+        code: 'READER_NOT_CONNECTED',
+      },
+    });
+    expect(result).toEqual({ ok: true, updated: false });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('strips nested objects and secrets from diagnostics', async () => {
+    const result = await recordTapToPayClientEvent({
+      businessId: 'biz-1',
+      bookingId: 'book-1',
+      outcome: 'failure',
+      body: {
+        stage: 'connect',
+        paymentIntentId: 'pi_123',
+        diagnostics: {
+          appVersion: '1.0.7',
+          nested: { a: 1 },
+          secret: 'pst_xxx',
+          readerWarm: false,
+        },
+      },
+    });
+
+    expect(result).toEqual({ ok: true, updated: true });
+    const patch = update.mock.calls[0][0];
+    expect(patch.client_diagnostics.appVersion).toBe('1.0.7');
+    expect(patch.client_diagnostics.readerWarm).toBe(false);
+    expect(patch.client_diagnostics.nested).toBeUndefined();
+    expect(patch.client_diagnostics.secret).toBeUndefined();
+  });
 });

@@ -12,7 +12,9 @@ import {
   getBusinessBookDetailsUrl,
   getBusinessBookPath,
   getPublicBusinessProfilePath,
+  parseBookServiceLocationTypeQuery,
   type BookDetailsStepQuery,
+  type BookServiceLocationTypeQuery,
 } from '@/constants/routes';
 import {
   BookServicePicker,
@@ -21,7 +23,11 @@ import {
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { PublicBookingPaymentSettings } from '@/features/availability/booking/types';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import type { TimeOffInterval } from '@/features/availability/booking/types';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
@@ -66,8 +72,10 @@ interface BookingRequestPageProps {
     customServicePriceCents?: string;
     customServiceDurationMinutes?: string;
     customJobNotes?: string;
-    /** Matches last book/details sub-step before calendar (`price` | `addons`). */
+    /** Matches last book/details sub-step before calendar (`price` | `addons` | `location`). */
     detailsStep?: string;
+    /** Mobile vs shop when business offers both. */
+    serviceLocationType?: string;
     skipDetails?: string;
     /** `owner` = business owner booking on a customer's behalf (from dashboard). */
     for?: string;
@@ -213,6 +221,7 @@ export default async function BookingRequestPage({
     customServiceDurationMinutes,
     customJobNotes,
     detailsStep: detailsStepRaw,
+    serviceLocationType: serviceLocationTypeRaw,
     skipDetails,
     for: bookingForParam,
     entry: entryParam,
@@ -235,9 +244,13 @@ export default async function BookingRequestPage({
       : null;
 
   const detailsStepForBack: BookDetailsStepQuery | undefined =
-    detailsStepRaw === 'addons' || detailsStepRaw === 'price'
+    detailsStepRaw === 'addons' ||
+    detailsStepRaw === 'price' ||
+    detailsStepRaw === 'location'
       ? detailsStepRaw
       : undefined;
+  const serviceLocationTypeForBack: BookServiceLocationTypeQuery | undefined =
+    parseBookServiceLocationTypeQuery(serviceLocationTypeRaw);
   const addonIdList = addOnIds?.trim()
     ? addOnIds
         .split(',')
@@ -288,9 +301,10 @@ export default async function BookingRequestPage({
   );
   const useAvailabilityBooking = availabilityRow?.accept_bookings === true;
   const weeklySchedule = availabilityRow?.weekly_schedule ?? null;
-  const timeOffBlocks = parseStoredTimeOffBlocks(
+  const timeOffBlocks: TimeOffInterval[] = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
-  );
+  ).map(toTimeOffIntervalFields);
+  const minimumNotice = availabilityRow?.minimum_notice ?? 'none';
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
@@ -502,15 +516,18 @@ export default async function BookingRequestPage({
         addOnIds: addOnIds?.trim(),
         priceOptionId: priceOptionId?.trim(),
         detailsStep: effectiveDetailsStep,
+        serviceLocationType: serviceLocationTypeForBack,
         forOwner: true,
         lang: bookingFlowLocale,
       });
       bookPageBackLabel =
-        effectiveDetailsStep === 'addons'
-          ? ui.nav.backToAddOns
-          : effectiveDetailsStep === 'price' && priceOptionId?.trim()
-            ? ui.nav.backToOptions
-            : ui.nav.backToService;
+        effectiveDetailsStep === 'location'
+          ? ui.serviceLocation.backToServiceChoice
+          : effectiveDetailsStep === 'addons'
+            ? ui.nav.backToAddOns
+            : effectiveDetailsStep === 'price' && priceOptionId?.trim()
+              ? ui.nav.backToOptions
+              : ui.nav.backToService;
     }
   } else if (serviceId?.trim() && !skipDetailsFlag) {
     bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
@@ -518,14 +535,17 @@ export default async function BookingRequestPage({
       addOnIds: addOnIds?.trim(),
       priceOptionId: priceOptionId?.trim(),
       detailsStep: effectiveDetailsStep,
+      serviceLocationType: serviceLocationTypeForBack,
       lang: bookingFlowLocale,
     });
     bookPageBackLabel =
-      effectiveDetailsStep === 'addons'
-        ? ui.nav.backToAddOns
-        : effectiveDetailsStep === 'price' && priceOptionId?.trim()
-          ? ui.nav.backToOptions
-          : ui.nav.backToService;
+      effectiveDetailsStep === 'location'
+        ? ui.serviceLocation.backToServiceChoice
+        : effectiveDetailsStep === 'addons'
+          ? ui.nav.backToAddOns
+          : effectiveDetailsStep === 'price' && priceOptionId?.trim()
+            ? ui.nav.backToOptions
+            : ui.nav.backToService;
   } else {
     bookPageBackHref = profilePath;
     bookPageBackLabel = ui.nav.backToProfile;
@@ -572,6 +592,7 @@ export default async function BookingRequestPage({
             selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
+            minimumNotice={minimumNotice}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
@@ -579,6 +600,7 @@ export default async function BookingRequestPage({
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             bookingFlowLocale={bookingFlowLocale}
             serviceLocation={serviceLocation}
+            initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
           />
         </div>
@@ -616,6 +638,7 @@ export default async function BookingRequestPage({
             selectedPriceOptionLabel={selectedPriceOptionLabel}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
+            minimumNotice={minimumNotice}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
@@ -623,6 +646,7 @@ export default async function BookingRequestPage({
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             bookingFlowLocale={bookingFlowLocale}
             serviceLocation={serviceLocation}
+            initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
           />
         </div>

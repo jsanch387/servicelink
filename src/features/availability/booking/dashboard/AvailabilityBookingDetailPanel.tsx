@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Modal } from '@/components/shared';
+import { Button } from '@/components/shared';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import {
   ArrowLeftIcon,
@@ -11,24 +11,32 @@ import {
   EnvelopeIcon,
   MapPinIcon,
   PhoneIcon,
+  TrashIcon,
   UserCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
-import { useEffect, useState } from 'react';
-import { DateSelector } from '../components/DateSelector';
-import { TimeSlotGrid } from '../components/TimeSlotGrid';
+import { useState } from 'react';
 import type { ExistingBooking, TimeOffInterval } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
-import { localDateKey } from './dayPlannerUtils';
+import { BookingDetailServiceSection } from './BookingDetailServiceSection';
+import {
+  CompleteAppointmentModal,
+  type CompleteAppointmentConfirmArgs,
+} from './CompleteAppointmentModal';
+import { RescheduleAppointmentModal } from './RescheduleAppointmentModal';
 import type { AvailabilityBookingDisplay } from './types';
-import { bookingServiceNameParts } from './utils/bookingCardServiceTitle';
 
 interface AvailabilityBookingDetailPanelProps {
   booking: AvailabilityBookingDisplay;
   onClose: () => void;
-  onMarkCompleted: (id: string) => void;
+  onMarkCompleted: (
+    id: string,
+    args?: CompleteAppointmentConfirmArgs
+  ) => void | Promise<void>;
   onCancel: (id: string) => void;
+  /** Permanently remove the booking (any status). */
+  onDelete: (id: string) => void | Promise<void>;
   /** Confirmed booking only: PATCH reschedule with calendar validation. */
   onReschedule?: (
     id: string,
@@ -84,6 +92,7 @@ export function AvailabilityBookingDetailPanel({
   onClose,
   onMarkCompleted,
   onCancel,
+  onDelete,
   onReschedule,
   isUpdating = false,
   isRescheduling = false,
@@ -93,30 +102,12 @@ export function AvailabilityBookingDetailPanel({
   existingBookingsForSlotGrid,
 }: AvailabilityBookingDetailPanelProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
-  const [rescheduleSuccess, setRescheduleSuccess] = useState(false);
-
-  /**
-   * Reset picker when opening the modal or switching bookings.
-   * Intentionally omits `booking.date` / `startTimeHHmm` so a successful reschedule
-   * (same id, new slot) does not reset the form and dismiss the confirmation step.
-   */
-  useEffect(() => {
-    if (!showRescheduleModal) return;
-    setRescheduleSuccess(false);
-    setRescheduleError(null);
-    setSelectedDate(new Date(`${booking.date}T12:00:00`));
-    setSelectedTime(booking.startTimeHHmm);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- init from latest booking only when modal opens or booking row changes
-  }, [showRescheduleModal, booking.id]);
 
   const closeRescheduleModal = () => {
     setShowRescheduleModal(false);
-    setRescheduleSuccess(false);
   };
 
   const fullAddress = formatFullAddress(booking.address);
@@ -128,23 +119,24 @@ export function AvailabilityBookingDetailPanel({
 
   const customerEmailTrimmed = (booking.customerEmail ?? '').trim();
   const hasEmail = customerEmailTrimmed.length > 0;
-  const customerAlreadyReviewed = booking.customerAlreadyReviewed === true;
-  // The review invite goes out SMS-first (phone) with an email fallback, so a
-  // reachable customer (phone or email) who hasn't reviewed gets the message.
-  const showReviewInviteMessage =
-    (hasPhone || hasEmail) && !customerAlreadyReviewed;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
   const showPaymentSection = Boolean(payment);
+  const jobs = booking.jobs ?? [];
+  const topLevelVehicle = formatVehicle(booking);
+  // Per-job vehicles live on job_details; only fall back to booking-level columns
+  // for legacy rows without jobs.
+  const showTopLevelVehicle = jobs.length === 0 && Boolean(topLevelVehicle);
 
   const paymentDetailVariant = payment
     ? (() => {
         const paid = payment.paidOnlineAmountCents;
         const rem = payment.remainingAmountCents;
         const method = payment.paymentMethodSelected?.trim().toLowerCase();
-        if (method === 'pay_in_person' && paid <= 0) {
-          return 'pay_in_person' as const;
+        // Owner-created (`none`) and customer pay-in-person: collect offline.
+        if ((method === 'pay_in_person' || method === 'none') && paid <= 0) {
+          return 'collect_offline' as const;
         }
         if (paid > 0 && rem > 0) {
           return 'deposit' as const;
@@ -176,23 +168,6 @@ export function AvailabilityBookingDetailPanel({
       : `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
   })();
 
-  const { name: serviceBaseName, optionLabel: serviceOptionLabel } =
-    bookingServiceNameParts(booking.serviceName);
-  const priceLineTotal =
-    (booking.servicePriceCents ?? 0) +
-    (booking.addonDetails ?? []).reduce((s, a) => s + a.priceCents, 0);
-  const bookingDiscount = booking.discount;
-  const showBookingDiscount =
-    bookingDiscount != null &&
-    bookingDiscount.discountCents > 0 &&
-    bookingDiscount.discountCents < priceLineTotal;
-  const priceEstimatedTotal = showBookingDiscount
-    ? Math.max(0, priceLineTotal - bookingDiscount.discountCents)
-    : priceLineTotal;
-  const showPriceBreakdown =
-    (booking.servicePriceCents != null && booking.servicePriceCents > 0) ||
-    (booking.addonDetails?.length ?? 0) > 0;
-
   const handleCancelClick = () => {
     setShowCancelConfirm(true);
   };
@@ -201,6 +176,21 @@ export function AvailabilityBookingDetailPanel({
     onCancel(booking.id);
     setShowCancelConfirm(false);
     // Panel closes when parent's handleCancel succeeds (setSelectedBooking(null))
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    // Keep dialog open with pending UI until parent finishes (closes panel on
+    // success, or leaves dialog up with isUpdating false on failure).
+    void onDelete(booking.id);
+  };
+
+  const closeDeleteConfirm = () => {
+    if (isUpdating) return;
+    setShowDeleteConfirm(false);
   };
 
   const closeCompleteConfirm = () => {
@@ -212,32 +202,22 @@ export function AvailabilityBookingDetailPanel({
     setShowCompleteConfirm(true);
   };
 
-  const handleCompleteConfirm = () => {
-    onMarkCompleted(booking.id);
+  const handleCompleteConfirm = (args: CompleteAppointmentConfirmArgs) => {
+    void onMarkCompleted(booking.id, args);
     // Panel closes when parent's handleMarkCompleted succeeds (setSelectedBooking(null))
   };
 
-  const handleRescheduleSave = async () => {
-    setRescheduleError(null);
+  const handleRescheduleSave = (
+    scheduledDate: string,
+    startTime: string
+  ): Promise<{ success: boolean; error?: string }> => {
     if (!onReschedule) {
-      closeRescheduleModal();
-      return;
+      return Promise.resolve({
+        success: false,
+        error: 'Reschedule unavailable.',
+      });
     }
-    if (!selectedDate || !selectedTime?.trim()) {
-      setRescheduleError('Choose a date and an available time.');
-      return;
-    }
-    const scheduledDate = localDateKey(selectedDate);
-    const result = await onReschedule(
-      booking.id,
-      scheduledDate,
-      selectedTime.trim()
-    );
-    if (!result.success) {
-      setRescheduleError(result.error ?? 'Could not save the new time.');
-      return;
-    }
-    setRescheduleSuccess(true);
+    return onReschedule(booking.id, scheduledDate, startTime);
   };
 
   const bookingActionTileClass =
@@ -250,7 +230,7 @@ export function AvailabilityBookingDetailPanel({
         aria-hidden
       />
       <div
-        className="fixed inset-0 z-50 flex min-h-0 min-w-0 flex-col overscroll-none bg-[#0f0f0f] animate-in slide-in-from-right duration-200 md:inset-y-0 md:left-auto md:right-0 md:w-full md:max-w-md md:border-l md:border-white/5 md:shadow-2xl"
+        className="fixed inset-0 z-50 flex min-h-0 min-w-0 flex-col overscroll-none bg-[#0f0f0f] animate-in slide-in-from-right duration-200 md:inset-y-0 md:left-auto md:right-0 md:w-full md:max-w-lg md:border-l md:border-white/5 md:shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="booking-detail-title"
@@ -273,7 +253,7 @@ export function AvailabilityBookingDetailPanel({
           </h2>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-5 [-webkit-overflow-scrolling:touch]">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain scrollbar-dark p-4 sm:p-5 [-webkit-overflow-scrolling:touch]">
           {isCancelled && (
             <div
               className="rounded-xl border border-rose-500/35 bg-rose-500/[0.09] px-4 py-3"
@@ -318,78 +298,8 @@ export function AvailabilityBookingDetailPanel({
             </div>
           </section>
 
-          {/* Service — what + pricing */}
-          <section>
-            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
-              Service
-            </h3>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] overflow-hidden">
-              <div className="p-4">
-                <p className="font-semibold text-white leading-snug">
-                  {serviceBaseName}
-                </p>
-                {serviceOptionLabel ? (
-                  <p className="mt-0.5 text-sm text-gray-400">
-                    {serviceOptionLabel}
-                  </p>
-                ) : null}
-              </div>
-
-              {showPriceBreakdown ? (
-                <div className="border-t border-white/[0.06] px-4 py-3 bg-white/[0.02]">
-                  <div className="space-y-1.5 text-sm">
-                    {booking.servicePriceCents != null &&
-                      booking.servicePriceCents > 0 && (
-                        <div className="flex justify-between items-baseline gap-3">
-                          <span className="text-gray-300">Service</span>
-                          <span className="text-gray-200 tabular-nums">
-                            ${(booking.servicePriceCents / 100).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                    {booking.addonDetails?.map(a => (
-                      <div
-                        key={a.id}
-                        className="flex justify-between items-baseline gap-3"
-                      >
-                        <span className="text-gray-300">{a.name}</span>
-                        <span className="text-gray-200 tabular-nums">
-                          +${(a.priceCents / 100).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                    {showBookingDiscount && bookingDiscount ? (
-                      <div className="flex justify-between items-baseline gap-3 pt-1">
-                        <span className="text-amber-200/90 min-w-0">
-                          {bookingDiscount.label}
-                        </span>
-                        <span className="text-amber-200/90 tabular-nums shrink-0">
-                          −${(bookingDiscount.discountCents / 100).toFixed(2)}
-                        </span>
-                      </div>
-                    ) : null}
-                    <div className="flex justify-between items-baseline gap-3 pt-2 mt-2 border-t border-white/[0.06]">
-                      <span className="font-medium text-white">Total</span>
-                      {showBookingDiscount ? (
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-sm text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
-                            ${(priceLineTotal / 100).toFixed(2)}
-                          </span>
-                          <span className="font-semibold text-white tabular-nums">
-                            ${(priceEstimatedTotal / 100).toFixed(2)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="font-semibold text-white tabular-nums">
-                          ${(priceLineTotal / 100).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </section>
+          {/* Service — what + pricing (multi-job when job_details present) */}
+          <BookingDetailServiceSection booking={booking} />
 
           {/* Payment */}
           {showPaymentSection && payment && paymentDetailVariant && (
@@ -398,12 +308,13 @@ export function AvailabilityBookingDetailPanel({
                 Payment
               </h3>
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
-                {paymentDetailVariant === 'pay_in_person' && (
+                {paymentDetailVariant === 'collect_offline' && (
                   <>
                     <p className="text-sm font-semibold text-white">
-                      Pay in person
+                      Collect in person
                     </p>
-                    {payment.totalAmountCents > 0 ? (
+                    {payment.totalAmountCents > 0 ||
+                    payment.remainingAmountCents > 0 ? (
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-gray-300">Amount due</span>
                         <span className="font-semibold text-white tabular-nums">
@@ -478,17 +389,24 @@ export function AvailabilityBookingDetailPanel({
 
           {/* Customer */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3 flex items-center gap-2">
-              <UserCircleIcon className="h-4 w-4" />
+            <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-500">
               Customer
             </h3>
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2">
-              <p className="font-semibold text-white">{booking.customerName}</p>
+            <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2">
+                <UserCircleIcon
+                  className="h-5 w-5 shrink-0 text-gray-400"
+                  aria-hidden
+                />
+                <p className="min-w-0 font-semibold text-white [overflow-wrap:anywhere]">
+                  {booking.customerName}
+                </p>
+              </div>
               {hasPhone ? (
                 <a
                   href={telHref}
                   aria-label="Call customer"
-                  className="flex items-center gap-2 text-blue-300 hover:text-blue-100 transition-colors hover:bg-blue-500/10"
+                  className="flex items-center gap-2 text-blue-300 transition-colors hover:bg-blue-500/10 hover:text-blue-100"
                 >
                   <PhoneIcon className="h-4 w-4" />
                   {phoneFormatted}
@@ -498,7 +416,7 @@ export function AvailabilityBookingDetailPanel({
                 <a
                   href={`mailto:${customerEmailTrimmed}`}
                   aria-label="Email customer"
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors hover:bg-white/[0.06]"
+                  className="flex items-center gap-2 text-gray-300 transition-colors hover:bg-white/[0.06] hover:text-white"
                 >
                   <EnvelopeIcon className="h-4 w-4" />
                   {customerEmailTrimmed}
@@ -532,19 +450,19 @@ export function AvailabilityBookingDetailPanel({
             </div>
           </section>
 
-          {/* Vehicle */}
-          {formatVehicle(booking) && (
+          {/* Vehicle — legacy single-job rows only; multi-job vehicles sit under each service */}
+          {showTopLevelVehicle && topLevelVehicle ? (
             <section>
               <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
                 Vehicle
               </h3>
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
                 <p className="text-gray-300 whitespace-pre-line">
-                  {formatVehicle(booking)}
+                  {topLevelVehicle}
                 </p>
               </div>
             </section>
-          )}
+          ) : null}
 
           {/* Notes */}
           {(booking.notes ?? '').trim() && (
@@ -560,274 +478,113 @@ export function AvailabilityBookingDetailPanel({
             </section>
           )}
 
-          {/* Actions – control panel (confirmed only) */}
-          {isConfirmed && (
-            <section className="pt-2">
-              <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-2">
-                Actions
-              </h3>
-              {updateError && (
-                <p className="text-sm text-rose-400 mb-2.5" role="alert">
-                  {updateError}
-                </p>
-              )}
-              <div
-                className="grid w-full grid-cols-3 gap-1.5 sm:gap-2"
-                role="group"
-                aria-label="Booking actions"
-                aria-busy={isUpdating}
+          {/* Actions – confirmed: full set; completed/cancelled: delete only */}
+          <section className="pt-2">
+            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-2">
+              Actions
+            </h3>
+            {updateError && (
+              <p className="text-sm text-rose-400 mb-2.5" role="alert">
+                {updateError}
+              </p>
+            )}
+            <div
+              className={
+                isConfirmed
+                  ? 'grid w-full grid-cols-2 gap-1.5 sm:gap-2'
+                  : 'grid w-full grid-cols-1 gap-1.5 sm:gap-2'
+              }
+              role="group"
+              aria-label="Booking actions"
+              aria-busy={isUpdating}
+            >
+              {isConfirmed ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={isUpdating || isRescheduling}
+                    onClick={() => setShowRescheduleModal(true)}
+                    className={bookingActionTileClass}
+                  >
+                    <ArrowPathIcon
+                      className="h-5 w-5 shrink-0 text-gray-500 group-hover:text-gray-300 sm:h-[22px] sm:w-[22px]"
+                      aria-hidden
+                    />
+                    <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                      Reschedule
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isUpdating || isRescheduling}
+                    onClick={handleCancelClick}
+                    aria-label="Cancel booking"
+                    className={bookingActionTileClass}
+                  >
+                    <XCircleIcon
+                      className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
+                      aria-hidden
+                    />
+                    <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                      Cancel
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isUpdating || isRescheduling}
+                    onClick={handleMarkCompletedClick}
+                    aria-label="Mark booking as completed"
+                    className={bookingActionTileClass}
+                  >
+                    <CheckCircleIcon
+                      className="h-5 w-5 shrink-0 text-emerald-500 group-hover:text-emerald-400 sm:h-[22px] sm:w-[22px]"
+                      aria-hidden
+                    />
+                    <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                      Complete
+                    </span>
+                  </button>
+                </>
+              ) : null}
+              <button
+                type="button"
+                disabled={isUpdating || isRescheduling}
+                onClick={handleDeleteClick}
+                aria-label="Delete booking"
+                className={bookingActionTileClass}
               >
-                <button
-                  type="button"
-                  disabled={isUpdating || isRescheduling}
-                  onClick={() => setShowRescheduleModal(true)}
-                  className={bookingActionTileClass}
-                >
-                  <ArrowPathIcon
-                    className="h-5 w-5 shrink-0 text-gray-500 group-hover:text-gray-300 sm:h-[22px] sm:w-[22px]"
-                    aria-hidden
-                  />
-                  <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
-                    Reschedule
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled={isUpdating || isRescheduling}
-                  onClick={handleCancelClick}
-                  aria-label="Cancel booking"
-                  className={bookingActionTileClass}
-                >
-                  <XCircleIcon
-                    className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
-                    aria-hidden
-                  />
-                  <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
-                    Cancel
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled={isUpdating || isRescheduling}
-                  onClick={handleMarkCompletedClick}
-                  aria-label="Mark booking as completed"
-                  className={bookingActionTileClass}
-                >
-                  <CheckCircleIcon
-                    className="h-5 w-5 shrink-0 text-emerald-500 group-hover:text-emerald-400 sm:h-[22px] sm:w-[22px]"
-                    aria-hidden
-                  />
-                  <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
-                    Complete
-                  </span>
-                </button>
-              </div>
-            </section>
-          )}
+                <TrashIcon
+                  className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
+                  aria-hidden
+                />
+                <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                  Delete
+                </span>
+              </button>
+            </div>
+          </section>
         </div>
       </div>
 
-      <Modal
+      <RescheduleAppointmentModal
         isOpen={showRescheduleModal}
+        booking={booking}
+        weeklySchedule={weeklySchedule}
+        timeOffBlocks={timeOffBlocks}
+        existingBookingsForSlotGrid={existingBookingsForSlotGrid}
+        isRescheduling={isRescheduling}
         onClose={closeRescheduleModal}
-        title="Reschedule appointment"
-        maxWidth="xl"
-        uniformHorizontalPadding16
-        titleClassName="font-bold"
-        contentClassName="scrollbar-hide !pt-4 sm:!pt-5 !pb-4 sm:!pb-5"
-      >
-        {rescheduleSuccess ? (
-          <>
-            <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-4 backdrop-blur-sm sm:rounded-2xl sm:px-5 sm:py-5">
-              <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left">
-                <CheckCircleSolidIcon
-                  className="h-11 w-11 shrink-0 text-emerald-400"
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <p className="text-base font-semibold text-white">
-                    Appointment updated
-                  </p>
-                  <p className="text-sm font-medium text-gray-200">
-                    {booking.serviceName}
-                  </p>
-                  <p className="text-sm leading-relaxed text-gray-400">
-                    {new Date(booking.date + 'T12:00:00').toLocaleDateString(
-                      'en-US',
-                      {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      }
-                    )}
-                    <span className="text-gray-600"> · </span>
-                    {booking.time}
-                    <span className="text-gray-600"> · </span>
-                    {formatDurationMinutes(booking.serviceDurationMinutes)}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-8 flex justify-end border-t border-white/[0.06] pt-6">
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="sm:w-auto sm:min-w-[10rem]"
-                onClick={closeRescheduleModal}
-              >
-                Done
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-gray-400">Pick a new date and time.</p>
+        onSave={handleRescheduleSave}
+      />
 
-            {rescheduleError ? (
-              <p className="mt-3 text-sm text-rose-400" role="alert">
-                {rescheduleError}
-              </p>
-            ) : null}
-
-            <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-3 sm:rounded-2xl sm:px-4 sm:py-3.5">
-              <p className="text-sm font-medium text-white">
-                {booking.serviceName}
-              </p>
-              <p className="mt-1 text-sm text-gray-400">
-                {new Date(booking.date + 'T12:00:00').toLocaleDateString(
-                  'en-US',
-                  {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  }
-                )}{' '}
-                · {booking.time} ·{' '}
-                {formatDurationMinutes(booking.serviceDurationMinutes)}
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-6 sm:mt-6 lg:mt-6">
-              <div className="lg:grid lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start lg:gap-8">
-                <div className="min-w-0">
-                  <DateSelector
-                    weeklySchedule={weeklySchedule}
-                    serviceDurationMinutes={booking.serviceDurationMinutes}
-                    existingBookings={existingBookingsForSlotGrid}
-                    timeOffBlocks={timeOffBlocks}
-                    selectedDate={selectedDate}
-                    onSelectDate={date => {
-                      setSelectedDate(date);
-                      setSelectedTime(null);
-                    }}
-                  />
-                </div>
-                <div className="min-w-0 pt-6 lg:pt-0">
-                  <TimeSlotGrid
-                    selectedDate={selectedDate}
-                    serviceDurationMinutes={booking.serviceDurationMinutes}
-                    weeklySchedule={weeklySchedule}
-                    existingBookings={existingBookingsForSlotGrid}
-                    timeOffBlocks={timeOffBlocks}
-                    selectedTime={selectedTime}
-                    onSelectTime={setSelectedTime}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col-reverse gap-2 border-t border-white/[0.06] pt-6 sm:flex-row sm:justify-end sm:gap-3 lg:mt-7">
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                className="sm:w-auto sm:min-w-[7rem]"
-                disabled={isRescheduling}
-                onClick={closeRescheduleModal}
-              >
-                Close
-              </Button>
-              <Button
-                type="button"
-                variant="inverse"
-                fullWidth
-                className="sm:w-auto sm:min-w-[10rem] min-h-[48px]"
-                disabled={isRescheduling || !onReschedule}
-                loading={isRescheduling}
-                onClick={() => void handleRescheduleSave()}
-                aria-label={
-                  isRescheduling ? 'Updating appointment' : 'Save new time'
-                }
-              >
-                {isRescheduling ? 'Updating' : 'Save new time'}
-              </Button>
-            </div>
-          </>
-        )}
-      </Modal>
-
-      <Modal
+      <CompleteAppointmentModal
         isOpen={showCompleteConfirm}
+        booking={booking}
+        isUpdating={isUpdating}
+        error={showCompleteConfirm ? updateError : null}
         onClose={closeCompleteConfirm}
-        title="Complete appointment?"
-        maxWidth="sm"
-        uniformHorizontalPadding16
-        titleClassName="font-bold"
-        contentClassName="!pt-4 sm:!pt-5 !pb-4 sm:!pb-5"
-        preventClose={isUpdating}
-      >
-        <div className="flex flex-col items-start gap-3">
-          <CheckCircleSolidIcon
-            className="h-9 w-9 shrink-0 text-emerald-400"
-            aria-hidden
-          />
-          <p className="text-left text-sm leading-relaxed text-gray-300">
-            {showReviewInviteMessage ? (
-              <>
-                This wraps up the appointment. We&apos;ll{' '}
-                {hasPhone ? 'text' : 'email'} the customer a link to leave a
-                review.
-              </>
-            ) : (
-              <>Are you sure you want to mark this appointment complete?</>
-            )}
-          </p>
-        </div>
-        {updateError && showCompleteConfirm && (
-          <p className="mt-4 text-sm text-rose-400" role="alert">
-            {updateError}
-          </p>
-        )}
-        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="w-full sm:w-auto"
-            disabled={isUpdating}
-            onClick={closeCompleteConfirm}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="inverse"
-            size="sm"
-            className="w-full sm:w-auto"
-            disabled={isUpdating}
-            loading={isUpdating}
-            onClick={handleCompleteConfirm}
-            aria-label={
-              isUpdating ? 'Marking appointment complete' : 'Mark as complete'
-            }
-          >
-            Complete
-          </Button>
-        </div>
-      </Modal>
+        onConfirm={handleCompleteConfirm}
+      />
 
       {/* Cancel confirmation dialog */}
       {showCancelConfirm && (
@@ -863,6 +620,55 @@ export function AvailabilityBookingDetailPanel({
                 onClick={handleCancelConfirm}
               >
                 {isUpdating ? 'Cancelling…' : 'Cancel booking'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div
+            className="bg-[#1c1c1e] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            role="alertdialog"
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-desc"
+            aria-busy={isUpdating}
+          >
+            <h3
+              id="delete-dialog-title"
+              className="text-lg font-bold text-white mb-2"
+            >
+              Delete booking?
+            </h3>
+            <p id="delete-dialog-desc" className="text-gray-400 text-sm mb-4">
+              This permanently removes the appointment from your schedule. It
+              cannot be undone.
+            </p>
+            {updateError ? (
+              <p className="mb-4 text-sm text-rose-400" role="alert">
+                {updateError}
+              </p>
+            ) : null}
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                fullWidth
+                disabled={isUpdating}
+                onClick={closeDeleteConfirm}
+              >
+                Keep
+              </Button>
+              <Button
+                variant="danger"
+                fullWidth
+                disabled={isUpdating}
+                loading={isUpdating}
+                onClick={handleDeleteConfirm}
+                aria-label={isUpdating ? 'Deleting booking' : 'Delete booking'}
+              >
+                Delete
               </Button>
             </div>
           </div>

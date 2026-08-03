@@ -191,6 +191,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       setIsSavingAddOn(true);
       const createResult = await createAddOnAction({
         name: data.name,
+        description: data.description,
         price_cents: data.price_cents ?? 0,
         duration_minutes: data.duration_minutes,
       });

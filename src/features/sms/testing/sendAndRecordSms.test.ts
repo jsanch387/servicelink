@@ -1,11 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendAndRecordSms } from '../services/sendAndRecordSms';
 
-const { sendSmsMock } = vi.hoisted(() => ({ sendSmsMock: vi.fn() }));
+const {
+  sendSmsMock,
+  canBusinessSendCustomerSmsMock,
+  isSmsOutboundEnabledMock,
+} = vi.hoisted(() => ({
+  sendSmsMock: vi.fn(),
+  canBusinessSendCustomerSmsMock: vi.fn(),
+  isSmsOutboundEnabledMock: vi.fn(() => true),
+}));
 
 // Mock only the low-level provider send; keep the real toE164 + logging.
 vi.mock('@/features/sms/services/sendSms', () => ({
   sendSms: sendSmsMock,
+}));
+
+vi.mock('@/features/sms/server/canBusinessSendCustomerSms', () => ({
+  canBusinessSendCustomerSms: canBusinessSendCustomerSmsMock,
+}));
+
+vi.mock('@/features/sms/config/isSmsOutboundEnabled', () => ({
+  isSmsOutboundEnabled: isSmsOutboundEnabledMock,
+  SMS_OUTBOUND_ENABLED: true,
 }));
 
 interface AdminOpts {
@@ -67,8 +84,9 @@ function baseParams(admin: unknown, overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.SMS_OUTBOUND_ENABLED = 'true';
-  sendSmsMock.mockResolvedValue({ sent: true });
+  isSmsOutboundEnabledMock.mockReturnValue(true);
+  sendSmsMock.mockResolvedValue({ sent: true, providerMessageId: 'telnyx-1' });
+  canBusinessSendCustomerSmsMock.mockResolvedValue({ ok: true });
 });
 
 describe('sendAndRecordSms', () => {
@@ -127,12 +145,26 @@ describe('sendAndRecordSms', () => {
   });
 
   it('outbound disabled: skips send and log with not_configured', async () => {
-    process.env.SMS_OUTBOUND_ENABLED = 'false';
+    isSmsOutboundEnabledMock.mockReturnValue(false);
     const { admin, inserts } = makeAdmin();
 
     const res = await sendAndRecordSms(baseParams(admin));
 
     expect(res).toEqual({ sent: false, reason: 'not_configured' });
+    expect(inserts).toHaveLength(0);
+    expect(sendSmsMock).not.toHaveBeenCalled();
+  });
+
+  it('not eligible (Pro/rollout): skips send and log with not_eligible', async () => {
+    canBusinessSendCustomerSmsMock.mockResolvedValue({
+      ok: false,
+      reason: 'not_in_rollout',
+    });
+    const { admin, inserts } = makeAdmin();
+
+    const res = await sendAndRecordSms(baseParams(admin));
+
+    expect(res).toEqual({ sent: false, reason: 'not_eligible' });
     expect(inserts).toHaveLength(0);
     expect(sendSmsMock).not.toHaveBeenCalled();
   });

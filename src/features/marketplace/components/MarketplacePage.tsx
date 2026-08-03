@@ -160,10 +160,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
           </div>
         </main>
       )}
-      <PublicFooter
-        tagline="Find local detailing services"
-        compact={hasSearched}
-      />
+      <PublicFooter compact={hasSearched} />
     </div>
   );
 };

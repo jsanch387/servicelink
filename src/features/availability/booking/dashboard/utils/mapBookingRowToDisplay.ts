@@ -4,7 +4,16 @@
  */
 
 import { normalizeWallClockHm } from '@/features/availability/types/blockTime';
-import type { AvailabilityBookingDisplay } from '../types';
+import type {
+  AvailabilityBookingDisplay,
+  AvailabilityBookingJobDisplay,
+} from '../types';
+import {
+  flattenJobDetailsAddOns,
+  formatJobVehicleLine,
+  parseStoredBookingJobDetails,
+} from '../../utils/parseStoredBookingJobDetails';
+import { resolveBookingLineSubtotalCents } from '../../utils/resolveBookingLineSubtotalCents';
 
 /** Raw row from bookings table (select *). */
 export interface BookingRow {
@@ -44,6 +53,10 @@ export interface BookingRow {
   discount_label?: string | null;
   discount_cents?: number | null;
   subtotal_cents?: number | null;
+  visit_id?: string | null;
+  visit_job_index?: number | null;
+  visit_job_count?: number | null;
+  job_details?: unknown | null;
 }
 
 /** Postgres time "HH:mm:ss" or "HH:mm" → "2:30 PM" */
@@ -61,9 +74,27 @@ function formatTimeDisplay(timeStr: string): string {
 export function mapBookingRowToDisplay(
   row: BookingRow
 ): AvailabilityBookingDisplay {
-  const addonDetails = Array.isArray(row.addon_details)
+  const topLevelAddons = Array.isArray(row.addon_details)
     ? row.addon_details
     : [];
+  // Multi-job appointments store add-ons inside job_details; surface them so
+  // Complete-sheet math (service + addon_details) matches the server.
+  const jobAddons = flattenJobDetailsAddOns(row.job_details);
+  const addonDetails =
+    topLevelAddons.length > 0
+      ? topLevelAddons
+      : jobAddons.map(a => ({
+          id: a.id,
+          name: a.name,
+          priceCents: a.priceCents,
+        }));
+
+  const line = resolveBookingLineSubtotalCents({
+    servicePriceCents: row.service_price_cents,
+    addonDetails: row.addon_details,
+    jobDetails: row.job_details,
+  });
+  const servicePriceCents = line.serviceCents;
 
   const discountCents =
     typeof row.discount_cents === 'number' &&
@@ -77,7 +108,7 @@ export function mapBookingRowToDisplay(
       : null;
   const discountLabel = row.discount_label?.trim() || '';
   const lineSubtotal =
-    (row.service_price_cents ?? 0) +
+    servicePriceCents +
     addonDetails.reduce((sum, a) => sum + (a.priceCents ?? 0), 0);
   const snapshotSubtotal =
     typeof row.subtotal_cents === 'number' &&
@@ -95,6 +126,21 @@ export function mapBookingRowToDisplay(
         }
       : null;
 
+  const jobs: AvailabilityBookingJobDisplay[] = parseStoredBookingJobDetails(
+    row.job_details
+  ).map(job => ({
+    serviceName: job.serviceName,
+    servicePriceOptionLabel: job.servicePriceOptionLabel,
+    servicePriceCents: job.servicePriceCents,
+    durationMinutes: job.durationMinutes,
+    selectedAddOns: job.selectedAddOns.map(a => ({
+      id: a.id,
+      name: a.name,
+      priceCents: a.priceCents,
+    })),
+    vehicleLabel: formatJobVehicleLine(job.vehicle),
+  }));
+
   return {
     id: row.id,
     bookingSource:
@@ -109,8 +155,9 @@ export function mapBookingRowToDisplay(
     customerVehicleModel: row.customer_vehicle_model ?? undefined,
     serviceName: row.service_name,
     serviceDurationMinutes: row.duration_minutes,
-    servicePriceCents: row.service_price_cents ?? 0,
+    servicePriceCents,
     addonDetails,
+    jobs,
     discount,
     date: row.scheduled_date,
     time: formatTimeDisplay(row.start_time ?? ''),

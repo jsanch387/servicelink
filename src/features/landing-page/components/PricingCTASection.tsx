@@ -1,6 +1,6 @@
 'use client';
 
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import { useState } from 'react';
 import { Button } from '@/components/shared';
 
@@ -46,7 +46,7 @@ export const PricingCTASection: React.FC = () => {
               className="bg-transparent border-none outline-none text-white font-bold w-full px-1 sm:px-2 text-sm sm:text-base"
             />
             <Button
-              href={ROUTES.AUTH.SIGNUP}
+              href={siteSignupPath('pricing')}
               variant="primary"
               size="xs"
               className="shrink-0 font-bold"
@@ -57,7 +57,7 @@ export const PricingCTASection: React.FC = () => {
 
           {/* Main CTA Button */}
           <Button
-            href={ROUTES.AUTH.SIGNUP}
+            href={siteSignupPath('pricing')}
             variant="inverse"
             size="lg"
             className="w-full max-w-sm font-bold"

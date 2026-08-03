@@ -127,6 +127,7 @@ Used when ops sends a **feature announcement** via `POST /api/internal/push/broa
 | `screen`         | `availability`               | Availability / calendar settings           |
 | `screen`         | `services`                   | Services management                        |
 | `screen`         | `profile`                    | Business profile edit                      |
+| `screen`         | `qr_code`                    | Business QR code (view / share)            |
 | `screen`         | `upgrade`                    | Pro / upgrade paywall                      |
 | `screen`         | `settings`                   | Account / settings                         |
 
@@ -282,6 +283,19 @@ Same `data` shape as broadcast, but requires `userId` instead of `testEmail`. Us
 }
 ```
 
+**QR codes launch → QR code screen:**
+
+```json
+{
+  "title": "QR codes are here",
+  "body": "You now have a QR code — tap to check it out or share it.",
+  "data": {
+    "reference_type": "screen",
+    "reference_id": "qr_code"
+  }
+}
+```
+
 **Deep link to a specific booking edit:**
 
 ```json
@@ -398,4 +412,5 @@ If a new slug requires server validation (e.g. allowlist), extend `parseInternal
 
 | Date       | Change                                                                   |
 | ---------- | ------------------------------------------------------------------------ |
+| 2026-07-22 | Added `screen` → `qr_code` slug + example broadcast payload              |
 | 2026-07-02 | Initial contract: push payload, routing tables, broadcast API, test mode |

@@ -4,11 +4,15 @@
 
 import { formatPhoneUsDisplay } from '@/lib/formatPhoneUs';
 import { escapeHtml } from '../utils/escapeHtml';
+import { buildEmailJobsReceiptCardHtml } from '../utils/emailJobsReceiptCard';
 import { formatDurationForEmail } from '../utils/formatDurationForEmail';
 import {
   serviceLinkEmailCta,
   serviceLinkEmailDetailRow,
+  serviceLinkEmailDiscountLineRow,
   serviceLinkEmailFootnote,
+  serviceLinkEmailPriceLineRow,
+  serviceLinkEmailPriceTotalRow,
   serviceLinkEmailSection,
   serviceLinkEmailServiceAndPricingContent,
   SERVICE_LINK_EMAIL_FONT,
@@ -82,17 +86,116 @@ function buildPaymentSummarySection(
   return paymentSummaryFootnoteHtml(block, options);
 }
 
+function formatVehicleLineFromParts(
+  year?: string,
+  make?: string,
+  model?: string
+): string | null {
+  const parts = [year?.trim(), make?.trim(), model?.trim()].filter(Boolean);
+  if (parts.length === 0) return null;
+  return parts.join(' ');
+}
+
 function formatVehicleLine(
   payload: AvailabilityBookingNotificationPayload
 ): string | null {
-  const parts = [
-    payload.customerVehicleYear?.trim(),
-    payload.customerVehicleMake?.trim(),
-    payload.customerVehicleModel?.trim(),
-  ].filter(Boolean);
+  return formatVehicleLineFromParts(
+    payload.customerVehicleYear,
+    payload.customerVehicleMake,
+    payload.customerVehicleModel
+  );
+}
 
-  if (parts.length === 0) return null;
-  return parts.join(' ');
+function buildMultiJobPricingRowsHtml(
+  payload: AvailabilityBookingNotificationPayload
+): string {
+  const jobs = payload.jobs ?? [];
+  let visitGross = 0;
+  for (const job of jobs) {
+    const serviceCents =
+      job.servicePriceCents != null && Number.isFinite(job.servicePriceCents)
+        ? job.servicePriceCents
+        : 0;
+    const addOns = job.selectedAddOns ?? [];
+    const gross =
+      job.totalPriceCents != null && Number.isFinite(job.totalPriceCents)
+        ? job.totalPriceCents
+        : serviceCents + addOns.reduce((s, a) => s + a.priceCents, 0);
+    visitGross += gross;
+  }
+
+  const grossForDisplay =
+    payload.totalPriceCents != null && Number.isFinite(payload.totalPriceCents)
+      ? payload.totalPriceCents
+      : visitGross;
+
+  const appointmentDiscount =
+    payload.discount != null && payload.discount.discountCents > 0
+      ? payload.discount
+      : null;
+
+  if (appointmentDiscount) {
+    const visitEstimated =
+      appointmentDiscount.estimatedTotalCents >= 0
+        ? appointmentDiscount.estimatedTotalCents
+        : Math.max(0, grossForDisplay - appointmentDiscount.discountCents);
+    return [
+      serviceLinkEmailPriceLineRow(
+        'Subtotal',
+        formatPriceCents(grossForDisplay)
+      ),
+      serviceLinkEmailDiscountLineRow(
+        appointmentDiscount.label,
+        `-${formatPriceCents(appointmentDiscount.discountCents)}`
+      ),
+      serviceLinkEmailPriceTotalRow('Total', formatPriceCents(visitEstimated)),
+    ].join('');
+  }
+
+  return [
+    serviceLinkEmailPriceLineRow('Subtotal', formatPriceCents(grossForDisplay)),
+    serviceLinkEmailPriceTotalRow('Total', formatPriceCents(grossForDisplay)),
+  ].join('');
+}
+
+function buildWhenAndWhereRowsHtml(
+  payload: AvailabilityBookingNotificationPayload,
+  options: AvailabilityBookingEmailOptions
+): string {
+  const timeLabel = formatTimeHHmm(payload.startTime);
+  const dateLabel = formatDateLong(payload.scheduledDate);
+  const durationLabel = formatDurationForEmail(payload.durationMinutes);
+  const loc = payload.serviceLocation;
+
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Date', value: dateLabel },
+    { label: 'Time', value: `${timeLabel} · ${durationLabel}` },
+  ];
+
+  if (loc?.formattedAddress) {
+    const addressLabel =
+      options.audience === 'customer' && loc.type === 'shop'
+        ? 'Shop'
+        : 'Address';
+    rows.push({ label: addressLabel, value: loc.formattedAddress });
+  }
+
+  return buildDetailRows(rows);
+}
+
+function buildOwnerCustomerRowsHtml(
+  payload: AvailabilityBookingNotificationPayload
+): string {
+  const rows: Array<{ label: string; value: string }> = [
+    { label: 'Name', value: payload.customerName },
+  ];
+  const email = payload.customerEmail?.trim();
+  if (email) rows.push({ label: 'Email', value: email });
+  const phone = payload.customerPhone?.trim();
+  if (phone) {
+    rows.push({ label: 'Phone', value: formatPhoneUsDisplay(phone) });
+  }
+  return buildDetailRows(rows);
 }
 
 function buildLocationSection(
@@ -236,13 +339,6 @@ export function buildAvailabilityBookingEmailHtml(
     addOns.length > 0 ||
     discountForEmail != null;
 
-  const phoneRow = payload.customerPhone?.trim()
-    ? {
-        label: 'Phone',
-        value: formatPhoneUsDisplay(payload.customerPhone.trim()),
-      }
-    : null;
-
   const appointmentRows: Array<{ label: string; value: string }> = [];
   if (options.audience === 'customer') {
     appointmentRows.push({
@@ -259,15 +355,6 @@ export function buildAvailabilityBookingEmailHtml(
   );
 
   const customerEmail = payload.customerEmail?.trim();
-  const customerInfoRows: Array<{ label: string; value: string }> = [
-    { label: 'Name', value: payload.customerName },
-  ];
-  if (customerEmail)
-    customerInfoRows.push({ label: 'Email', value: customerEmail });
-  if (phoneRow) customerInfoRows.push(phoneRow);
-  if (vehicleLine)
-    customerInfoRows.push({ label: 'Vehicle', value: vehicleLine });
-
   const ownerCustomerRows: Array<{ label: string; value: string }> = [
     { label: 'Name', value: payload.customerName },
   ];
@@ -279,6 +366,8 @@ export function buildAvailabilityBookingEmailHtml(
     { label: 'Date', value: dateLabel },
     { label: 'Time', value: `${timeLabel} (${durationLabel})` }
   );
+
+  const isMultiJob = (payload.jobs?.length ?? 0) > 0;
 
   const sectionHtmlParts: string[] = [];
   let sectionCount = 0;
@@ -292,15 +381,27 @@ export function buildAvailabilityBookingEmailHtml(
   };
 
   if (options.audience === 'owner') {
-    addSection('Customer info', buildDetailRows(ownerCustomerRows));
+    if (isMultiJob) {
+      addSection('Customer', buildOwnerCustomerRowsHtml(payload));
+      addSection('When & where', buildWhenAndWhereRowsHtml(payload, options));
+    } else {
+      addSection('Customer info', buildDetailRows(ownerCustomerRows));
+      buildLocationSection(payload, options, addSection);
+    }
   } else {
-    addSection('Your appointment', buildDetailRows(appointmentRows));
-    addSection('Your information', buildDetailRows(customerInfoRows));
+    // Customer emails: skip self contact card (they already know who they are).
+    if (isMultiJob) {
+      addSection('When & where', buildWhenAndWhereRowsHtml(payload, options));
+    } else {
+      addSection('Your appointment', buildDetailRows(appointmentRows));
+      buildLocationSection(payload, options, addSection);
+    }
   }
 
-  buildLocationSection(payload, options, addSection);
-
-  if (showServiceSection) {
+  if (isMultiJob) {
+    addSection('Jobs', buildEmailJobsReceiptCardHtml(payload.jobs));
+    addSection('Pricing', buildMultiJobPricingRowsHtml(payload));
+  } else if (showServiceSection) {
     addSection(
       'Service details',
       serviceLinkEmailServiceAndPricingContent({
@@ -332,6 +433,7 @@ export function buildAvailabilityBookingEmailHtml(
     .join('');
 
   const createdByOwner = payload.createdByOwner === true;
+  const jobCount = payload.jobs?.length ?? 0;
 
   const heading =
     options.audience === 'owner'
@@ -343,9 +445,13 @@ export function buildAvailabilityBookingEmailHtml(
   const subtitle =
     options.audience === 'owner'
       ? createdByOwner
-        ? `You scheduled this appointment for ${payload.customerName}. Here are the details:`
+        ? isMultiJob
+          ? `${jobCount} jobs`
+          : `You scheduled this appointment for ${payload.customerName}. Here are the details:`
         : 'You have a new appointment. Here are the details:'
-      : `Here are the details for your visit with ${options.businessName}:`;
+      : isMultiJob
+        ? `${options.businessName} · ${jobCount} jobs`
+        : `Here are the details for your visit with ${options.businessName}:`;
 
   const footerHtml =
     options.audience === 'owner'

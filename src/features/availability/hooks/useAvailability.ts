@@ -2,8 +2,9 @@
 
 /**
  * Loads and caches the current user's business availability.
- * - Fetches once per session; cached so revisiting the page does not refetch.
- * - After save, use updateFromSave(responseData) instead of refetching.
+ * - Refetches whenever the Availability screen mounts so lead time + time off
+ *   always match the DB (including canonical range / all-day blocks).
+ * - After save, use updateFromSave(responseData) to update cache immediately.
  */
 
 import { useCallback, useEffect } from 'react';
@@ -15,9 +16,8 @@ interface UseAvailabilityResult {
   loading: boolean;
   error: string | null;
   /** Update cache from a successful POST save (avoids refetch). */
-
   updateFromSave: (row: BusinessAvailabilityRow) => void;
-  /** Force a fresh fetch (e.g. when cache should be invalidated). */
+  /** Force a fresh fetch. */
   refetch: () => Promise<void>;
 }
 
@@ -26,7 +26,6 @@ export function useAvailability(
 ): UseAvailabilityResult {
   const row = useAvailabilityDataStore(s => s.row);
   const hasFetched = useAvailabilityDataStore(s => s.hasFetched);
-  const loading = useAvailabilityDataStore(s => s.loading);
   const error = useAvailabilityDataStore(s => s.error);
   const setRow = useAvailabilityDataStore(s => s.setRow);
   const setHasFetched = useAvailabilityDataStore(s => s.setHasFetched);
@@ -35,7 +34,8 @@ export function useAvailability(
   const updateFromSave = useAvailabilityDataStore(s => s.updateFromSave);
 
   const fetchAvailability = useCallback(async () => {
-    setLoading(true);
+    const isInitial = !useAvailabilityDataStore.getState().hasFetched;
+    if (isInitial) setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/availability');
@@ -62,14 +62,13 @@ export function useAvailability(
 
   useEffect(() => {
     if (!enabled) return;
-    if (!hasFetched && !loading) {
-      fetchAvailability();
-    }
-  }, [enabled, hasFetched, loading, fetchAvailability]);
+    void fetchAvailability();
+  }, [enabled, fetchAvailability]);
 
   return {
     data: enabled ? row : null,
-    loading: enabled ? (!hasFetched ? true : loading) : false,
+    // Full-page skeleton only on the first load; remounts refresh quietly.
+    loading: enabled && !hasFetched,
     error: enabled ? error : null,
     updateFromSave,
     refetch: enabled ? fetchAvailability : async () => {},

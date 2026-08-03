@@ -1,6 +1,6 @@
 'use client';
 
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import React from 'react';
 import { HeroAppStoreBadges } from './HeroAppStoreBadges';
 import { HeroCtaButton } from './HeroCtaButton';
@@ -32,7 +32,7 @@ export const HeroSection: React.FC = () => {
           business.
         </p>
 
-        <HeroCtaButton href={ROUTES.AUTH.SIGNUP} className="mb-0">
+        <HeroCtaButton href={siteSignupPath('homepage')} className="mb-0">
           Get Started
         </HeroCtaButton>
       </div>

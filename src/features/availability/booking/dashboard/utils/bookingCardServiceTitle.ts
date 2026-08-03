@@ -1,11 +1,41 @@
 /**
  * Compact service title for booking list cards.
- * Stored `service_name` may include a price-option suffix (`" — Option label"`).
+ * Stored `service_name` may include a price-option suffix (`" — Option label"`)
+ * and multi-job summary (`"Name — Opt + 1 more"`).
  */
+
+import type { AvailabilityBookingDisplay } from '../types';
+
 export function bookingCardServiceTitle(
   serviceName: string | null | undefined
 ): string {
-  return bookingServiceNameParts(serviceName).name;
+  const trimmed = (serviceName ?? '').trim();
+  if (!trimmed) return 'Service';
+
+  // Preserve multi-job list summary: "First — Opt + 2 more" → "First + 2 more"
+  const moreMatch = trimmed.match(/^(.*) \+ (\d+) more$/);
+  if (moreMatch) {
+    const head = moreMatch[1]?.trim() ?? '';
+    const moreCount = moreMatch[2];
+    const base = bookingServiceNameParts(head).name;
+    return `${base} + ${moreCount} more`;
+  }
+
+  return bookingServiceNameParts(trimmed).name;
+}
+
+/**
+ * List/calendar title: prefer live `jobs[]` when present so "+ N more" is correct.
+ */
+export function bookingListServiceTitle(
+  booking: Pick<AvailabilityBookingDisplay, 'serviceName' | 'jobs'>
+): string {
+  const jobs = booking.jobs ?? [];
+  if (jobs.length > 1) {
+    const first = jobs[0]?.serviceName?.trim() || 'Service';
+    return `${first} + ${jobs.length - 1} more`;
+  }
+  return bookingCardServiceTitle(booking.serviceName);
 }
 
 /** Split stored `service_name` into base name + optional price-option label. */

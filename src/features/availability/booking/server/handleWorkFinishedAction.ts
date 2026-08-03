@@ -3,11 +3,8 @@
  * See docs/contracts/mobile-booking-work-finished.md.
  */
 
-import {
-  isSmsOutboundEnabled,
-  pausedSmsChannelOutcome,
-  toE164,
-} from '@/features/sms';
+import { buildWorkFinishedSms, sendAndRecordSms, toE164 } from '@/features/sms';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
@@ -34,6 +31,25 @@ interface WorkFinishedAuth {
 
 function hasSendablePhone(phone: string | null | undefined): boolean {
   return toE164(phone?.trim() || '') !== null;
+}
+
+function smsOutcome(
+  sendResult:
+    | { sent: true; messageId: string | null }
+    | { sent: false; reason: string }
+) {
+  if (sendResult.sent) {
+    return {
+      sent: true as const,
+      messageId: sendResult.messageId,
+      reason: null,
+    };
+  }
+  return {
+    sent: false as const,
+    messageId: null,
+    reason: sendResult.reason,
+  };
 }
 
 export async function handleWorkFinishedAction(opts: {
@@ -105,11 +121,7 @@ export async function handleWorkFinishedAction(opts: {
     });
   }
 
-  if (
-    notify &&
-    isSmsOutboundEnabled() &&
-    !hasSendablePhone(booking.customer_phone)
-  ) {
+  if (notify && !hasSendablePhone(booking.customer_phone)) {
     return NextResponse.json(
       {
         success: false,
@@ -119,7 +131,7 @@ export async function handleWorkFinishedAction(opts: {
     );
   }
 
-  if (notify && isSmsOutboundEnabled()) {
+  if (notify) {
     const rate = await assertOwnerSmsSendRateLimits(request, auth.user.id);
     if (!rate.ok) {
       return NextResponse.json(
@@ -189,10 +201,7 @@ export async function handleWorkFinishedAction(opts: {
     });
   }
 
-  // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (work_finished)
-  /*
   const admin = createSupabaseAdminClient();
-  const businessName = business.business_name?.trim() || 'Your appointment';
   const sendResult = await sendAndRecordSms({
     admin,
     businessId: business.id,
@@ -200,9 +209,8 @@ export async function handleWorkFinishedAction(opts: {
     customerId: null,
     type: 'work_finished',
     to: booking.customer_phone,
-    message: buildWorkFinishedSms({ businessName }),
+    message: buildWorkFinishedSms(),
     dedupeKey: `${booking.id}:work_finished`,
-    recipientId: `booking:${booking.id}`,
     correlationId: booking.id,
   });
 
@@ -212,14 +220,5 @@ export async function handleWorkFinishedAction(opts: {
     jobStatus: 'in_progress',
     workHandoffStatus: 'notified',
     sms: smsOutcome(sendResult),
-  });
-  */
-
-  return NextResponse.json({
-    success: true,
-    action: WORK_FINISHED_ACTION,
-    jobStatus: 'in_progress',
-    workHandoffStatus: 'notified',
-    sms: pausedSmsChannelOutcome(),
   });
 }

@@ -2,6 +2,8 @@
 
 Use this when the **signed-in business owner** books an appointment **on behalf of a customer** from the native app. Mobile must mirror the web owner flow: choose a **catalog service** or **custom job**, schedule it, collect customer/optional vehicle/location/notes details, review, and submit. The server inserts the booking and payment summary row, records the source as owner-created, sends owner notifications, and (when present) sends the customer confirmation email.
 
+**Multi-job / multiple vehicles (preferred):** see [`mobile-owner-create-booking-multi-job.md`](./mobile-owner-create-booking-multi-job.md) — one POST with `jobs[]` creates **one appointment** (one booking row) containing 1…N job line items. Cancel/complete/pay use that single `id`. This document remains the **legacy single-job** body (still supported; response includes `visitId` + `jobCount: 1`).
+
 **Do not** insert rows directly into Supabase from the app for this flow — you would skip email, `booking_payments`, free-tier enforcement, time-off checks, and owner notifications.
 
 **Implementation:** `POST /api/public/bookings` in `src/app/api/public/bookings/route.ts`  
@@ -297,11 +299,14 @@ Response headers include:
 {
   "success": true,
   "data": {
-    "id": "<new booking uuid>"
+    "id": "<new booking uuid>",
+    "visitId": "<same as id>",
+    "jobCount": 1
   }
 }
 ```
 
+`id` is the appointment booking id. Extra visit fields are always present for forward compatibility with multi-job.
 **Server side effects (best-effort where noted):**
 
 1. **`bookings`** row created with status `confirmed`, `booking_source = 'owner'`, service/custom-job snapshot, add-ons, customer/contact/address/vehicle/notes snapshot, resolved `service_location_type`, and sale snapshot columns when applicable.

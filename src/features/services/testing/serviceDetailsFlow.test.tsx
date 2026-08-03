@@ -126,6 +126,26 @@ const priceOptions = [
 
 const addOns = [{ id: 'addon-1', name: 'Pet hair', priceCents: 3000 }];
 
+const mobileOnlyLocation = {
+  mode: 'mobile_only' as const,
+  profileLocationLabel: 'Austin, TX',
+  shopAddressLabel: null,
+  shopStreet: '',
+  shopUnit: '',
+  city: 'Austin',
+  state: 'TX',
+  zip: '78701',
+  hasCompleteShopAddress: false,
+};
+
+const bothLocation = {
+  ...mobileOnlyLocation,
+  mode: 'both' as const,
+  shopAddressLabel: '100 Main St, Austin, TX 78701',
+  shopStreet: '100 Main St',
+  hasCompleteShopAddress: true,
+};
+
 describe('ServiceDetailsScreen flow', () => {
   it('keeps service details in the summary instead of repeating a header', () => {
     render(
@@ -135,6 +155,7 @@ describe('ServiceDetailsScreen flow', () => {
         service={baseService}
         addOns={addOns}
         priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
       />
     );
 
@@ -159,6 +180,7 @@ describe('ServiceDetailsScreen flow', () => {
         service={baseService}
         addOns={addOns}
         priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
       />
     );
 
@@ -185,6 +207,7 @@ describe('ServiceDetailsScreen flow', () => {
         service={baseService}
         addOns={[]}
         priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
       />
     );
 
@@ -206,6 +229,7 @@ describe('ServiceDetailsScreen flow', () => {
         service={baseService}
         addOns={[]}
         priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
       />
     );
 
@@ -223,6 +247,7 @@ describe('ServiceDetailsScreen flow', () => {
         service={baseService}
         addOns={addOns}
         priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
         initialPriceOptionId="opt-sedan"
         initialDetailsStep="addons"
       />
@@ -232,5 +257,35 @@ describe('ServiceDetailsScreen flow', () => {
     expect(
       screen.getByRole('button', { name: /back to options/i })
     ).toBeTruthy();
+  });
+
+  it('asks for mobile vs shop before calendar when business offers both', async () => {
+    const user = userEvent.setup();
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={baseService}
+        addOns={addOns}
+        priceOptions={priceOptions}
+        serviceLocation={bothLocation}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /pick suv/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+
+    expect(
+      screen.getByRole('heading', { name: /where should service happen/i })
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole('radio', { name: /at my address/i }));
+
+    const dateTimeLink = screen.getByRole('link', { name: /date & time/i });
+    expect(dateTimeLink.getAttribute('href')).toContain(
+      'serviceLocationType=mobile'
+    );
+    expect(dateTimeLink.getAttribute('href')).toContain('detailsStep=location');
   });
 });

@@ -184,7 +184,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Scrollable Content */}
         <div
-          className={`min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pt-6 pb-6 sm:pt-8 sm:pb-8 ${contentHorizontalClass} ${contentClassName}`}
+          className={`min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-dark pt-6 pb-6 sm:pt-8 sm:pb-8 ${contentHorizontalClass} ${contentClassName}`}
           onWheel={handleContentScroll}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >

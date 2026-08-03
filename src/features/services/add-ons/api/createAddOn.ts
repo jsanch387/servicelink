@@ -11,6 +11,7 @@ import type { AddOnRow } from '../../components/add-ons/addOnTypes';
 
 export interface CreateAddOnPayload {
   name: string;
+  description?: string | null;
   price_cents: number;
   duration_minutes?: number | null;
 }
@@ -35,6 +36,7 @@ export async function createAddOn(
     const insertPayload: TableInsert = {
       business_id: businessId,
       name: payload.name.trim(),
+      description: payload.description?.trim() || null,
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes ?? null,
     };
@@ -61,6 +63,7 @@ export async function createAddOn(
     const addOn: AddOnRow = {
       id: row.id,
       name: row.name,
+      description: row.description ?? null,
       price_cents: row.price_cents ?? 0,
       duration_minutes: row.duration_minutes ?? null,
       sort_order: null,

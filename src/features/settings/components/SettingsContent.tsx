@@ -16,12 +16,15 @@ export interface SettingsContentProps {
   settingsData: SettingsPageData;
   /** True when redirected from Stripe with ?checkout=success (show Pro welcome once). */
   checkoutSuccess?: boolean;
+  /** From auth callback after email change confirm (`?email_notice=`). */
+  emailNotice?: 'updated' | 'error' | null;
 }
 
 export const SettingsContent: React.FC<SettingsContentProps> = ({
   businessProfile,
   settingsData,
   checkoutSuccess: checkoutSuccessProp = false,
+  emailNotice = null,
 }) => {
   const planId = settingsData.planId ?? 'free';
   const hasSlug = settingsData.slugData?.hasSlug || false;
@@ -61,6 +64,8 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
       <SettingsAccountSection
         accountEmail={settingsData.accountEmail}
         signedInWithGoogle={settingsData.signedInWithGoogle ?? false}
+        pendingEmail={settingsData.pendingEmail ?? null}
+        emailNotice={emailNotice}
       />
 
       {settingsData.accountEmail ? (

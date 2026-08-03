@@ -1,8 +1,10 @@
 # Admin email update (support)
 
-Use this when a customer signed up with a **typo'd email** they cannot access. They miss booking notifications and cannot complete app signup. Supabase Dashboard does not offer a simple “edit email” UI for existing users, and in-app self-service email change is **not** supported (Supabase “secure email change” requires confirmation links to **both** old and new inboxes — useless when the old address is wrong).
+Use this when a customer signed up with a **typo'd email** they cannot access. They miss booking notifications and cannot complete app signup. Supabase Dashboard does not offer a simple “edit email” UI for existing users. In-app **Settings → Update email** only requires confirming the **new** inbox (Secure email change is off) — still useless when they typed a bad address and need an immediate fix without waiting on email.
 
 **Fix:** run the admin script against production with the service role key. It updates `auth.users` immediately via `updateUserById` with `email_confirm: true`. Password is unchanged.
+
+For users who **can** access a real inbox, prefer in-app **Settings → Update email** (`PATCH /api/account`) — they confirm the new address only.
 
 ---
 

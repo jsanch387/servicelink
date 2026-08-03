@@ -71,6 +71,7 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
       if (addOnId) {
         const result = await updateAddOnAction(addOnId, {
           name: data.name,
+          description: data.description,
           price_cents: data.price_cents ?? 0,
           duration_minutes: data.duration_minutes,
         });
@@ -91,6 +92,7 @@ export const AddOnsContent: React.FC<AddOnsContentProps> = ({
 
       const result = await createAddOnAction({
         name: data.name,
+        description: data.description,
         price_cents: data.price_cents ?? 0,
         duration_minutes: data.duration_minutes,
       });

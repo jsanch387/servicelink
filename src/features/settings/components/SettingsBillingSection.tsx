@@ -45,11 +45,9 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
   }, []);
 
   return (
-    <section className="w-full min-w-0 space-y-4">
+    <section className="w-full min-w-0 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-semibold text-white">
-          Subscription
-        </h2>
+        <h2 className="text-base font-semibold text-white">Subscription</h2>
         {planId === 'pro' && subscriptionCancelAtPeriodEnd ? (
           <span className="inline-flex shrink-0 items-center rounded-md border border-zinc-600/40 bg-zinc-800/40 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
             Canceled

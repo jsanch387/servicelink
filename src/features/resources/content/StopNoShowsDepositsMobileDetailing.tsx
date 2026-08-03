@@ -1,4 +1,4 @@
-import { ROUTES } from '@/constants/routes';
+import { blogGuideSignupPath } from '@/features/marketing-attribution';
 import { GuideFaqAccordion } from '@/features/resources/components/GuideFaqAccordion';
 import { GuideProTip } from '@/features/resources/components/GuideCallouts';
 import { getGuideBySlug } from '@/features/resources/data/guides';
@@ -136,7 +136,12 @@ export function StopNoShowsDepositsMobileDetailingContent() {
         <GuideProTip>
           Charge more deposit on higher-ticket jobs. A $60 wash doesn’t need the
           same commitment as a $400 ceramic coating appointment.{' '}
-          <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath(
+              'stop-no-shows-deposits-mobile-detailing'
+            )}
+            className={linkClasses}
+          >
             Set your deposit on ServiceLink
           </Link>{' '}
           so customers pay when they book—not after you chase them.
@@ -234,7 +239,12 @@ export function StopNoShowsDepositsMobileDetailingContent() {
         <p className={pClasses}>
           You set the policy once. ServiceLink enforces it on every booking
           after that.{' '}
-          <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath(
+              'stop-no-shows-deposits-mobile-detailing'
+            )}
+            className={linkClasses}
+          >
             Create your free booking link
           </Link>{' '}
           and turn your policy into something customers actually see and follow
@@ -261,7 +271,12 @@ export function StopNoShowsDepositsMobileDetailingContent() {
         <p className={pClasses}>
           Write your policy, put a real deposit on it, and let your booking link
           enforce it every time.{' '}
-          <Link href={ROUTES.AUTH.SIGNUP} className={linkClasses}>
+          <Link
+            href={blogGuideSignupPath(
+              'stop-no-shows-deposits-mobile-detailing'
+            )}
+            className={linkClasses}
+          >
             Get your free ServiceLink booking page
           </Link>{' '}
           and stop losing afternoons to people who were never going to show up.

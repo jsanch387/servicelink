@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveBookingLineSubtotalCents } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
 import { applyDiscountToSubtotalCents } from '../utils/applyDiscountToSubtotalCents';
 import { formatPublicSaleDiscountLabel } from '../utils/formatPublicSaleDiscountLabel';
 import { getPromoCodeStatus } from '../utils/getPromoCodeStatus';
@@ -17,23 +18,14 @@ const PROMO_SELECT =
 
 function lineSubtotalCents(booking: {
   service_price_cents?: number | null;
-  addon_details?: { priceCents?: number }[] | null;
+  addon_details?: unknown;
+  job_details?: unknown;
 }): number {
-  const service =
-    typeof booking.service_price_cents === 'number' &&
-    Number.isFinite(booking.service_price_cents)
-      ? Math.max(0, Math.round(booking.service_price_cents))
-      : 0;
-  const addons = Array.isArray(booking.addon_details)
-    ? booking.addon_details.reduce((sum, a) => {
-        const cents =
-          typeof a?.priceCents === 'number' && Number.isFinite(a.priceCents)
-            ? Math.max(0, Math.round(a.priceCents))
-            : 0;
-        return sum + cents;
-      }, 0)
-    : 0;
-  return service + addons;
+  return resolveBookingLineSubtotalCents({
+    servicePriceCents: booking.service_price_cents,
+    addonDetails: booking.addon_details,
+    jobDetails: booking.job_details,
+  }).lineSubtotalCents;
 }
 
 async function resolveExistingPromoOnReschedule(
@@ -121,7 +113,8 @@ export async function resolveDiscountColumnsForReschedule(
     scheduledDateYmd: string;
     booking: {
       service_price_cents?: number | null;
-      addon_details?: { priceCents?: number }[] | null;
+      addon_details?: unknown;
+      job_details?: unknown;
       discount_source?: string | null;
       discount_promo_code_id?: string | null;
       customer_phone?: string | null;

@@ -1,16 +1,45 @@
 'use client';
 
-import { Button, Input, Modal, TimeSelect } from '@/components/shared';
+import {
+  Button,
+  Calendar,
+  Input,
+  Modal,
+  Switch,
+  TimeSelect,
+} from '@/components/shared';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { BlockTimeEntry } from '../types/blockTime';
+import {
+  normalizeBlockTimeEntry,
+  type BlockTimeEntry,
+} from '../types/blockTime';
+import { formatTimeOffDateRange } from '../utils/formatTimeOffDateRange';
+import { toLocalYYYYMMDD } from '../utils/minimumNotice';
 import { compareTime } from '../utils/timeOptions';
 
-function todayIsoDate(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function sameLocalDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function formatSelectedRangeLabel(
+  rangeStart: Date | null,
+  rangeEnd: Date | null
+): string | null {
+  if (!rangeStart) return null;
+  const end = rangeEnd ?? rangeStart;
+  const [lo, hi] =
+    rangeStart.getTime() <= end.getTime()
+      ? [rangeStart, end]
+      : [end, rangeStart];
+  return formatTimeOffDateRange(toLocalYYYYMMDD(lo), toLocalYYYYMMDD(hi));
 }
 
 /** Next 30-min slot after `start`; capped at 22:00 (matches working-hours range). */
@@ -40,129 +69,192 @@ export const AddBlockTimeModal: React.FC<AddBlockTimeModalProps> = ({
   onAdd,
   disabled = false,
 }) => {
-  const [date, setDate] = useState(todayIsoDate);
+  const [rangeStart, setRangeStart] = useState<Date | null>(null);
+  const [rangeEnd, setRangeEnd] = useState<Date | null>(null);
+  const [allDay, setAllDay] = useState(true);
   const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('12:00');
+  const [endTime, setEndTime] = useState('17:00');
   const [title, setTitle] = useState('');
+  const [minDate, setMinDate] = useState(() => startOfLocalDay(new Date()));
 
   useEffect(() => {
     if (!isOpen) return;
-    setDate(todayIsoDate());
+    const today = startOfLocalDay(new Date());
+    setMinDate(today);
+    setRangeStart(today);
+    setRangeEnd(null);
+    setAllDay(true);
     setStartTime('09:00');
-    setEndTime('12:00');
+    setEndTime('17:00');
     setTitle('');
   }, [isOpen]);
 
   const timeError = useMemo(() => {
+    if (allDay) return null;
     if (compareTime(endTime, startTime) <= 0) {
       return 'End must be after start.';
     }
     return null;
-  }, [startTime, endTime]);
+  }, [allDay, startTime, endTime]);
 
+  const hasRange = rangeStart != null;
   const canSubmit =
-    Boolean(date) &&
+    hasRange &&
     !timeError &&
     !disabled &&
-    compareTime(endTime, startTime) > 0;
+    (allDay || compareTime(endTime, startTime) > 0);
+
+  const selectedRangeLabel = formatSelectedRangeLabel(rangeStart, rangeEnd);
+
+  const handleDayClick = (date: Date) => {
+    const day = startOfLocalDay(date);
+    if (day.getTime() < minDate.getTime()) return;
+    if (!rangeStart || (rangeStart && rangeEnd)) {
+      setRangeStart(day);
+      setRangeEnd(null);
+      return;
+    }
+    if (sameLocalDay(day, rangeStart)) {
+      setRangeStart(null);
+      setRangeEnd(null);
+      return;
+    }
+    if (day.getTime() < rangeStart.getTime()) {
+      setRangeEnd(rangeStart);
+      setRangeStart(day);
+      return;
+    }
+    setRangeEnd(day);
+  };
+
+  const handleClearDates = () => {
+    setRangeStart(null);
+    setRangeEnd(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
-    onAdd({
-      date,
-      startTime,
-      endTime,
-      title: title.trim(),
-    });
+    if (!canSubmit || !rangeStart) return;
+    const start = rangeStart;
+    const end = rangeEnd ?? rangeStart;
+    const [lo, hi] =
+      start.getTime() <= end.getTime() ? [start, end] : [end, start];
+    onAdd(
+      normalizeBlockTimeEntry({
+        startDate: toLocalYYYYMMDD(lo),
+        endDate: toLocalYYYYMMDD(hi),
+        allDay,
+        startTime,
+        endTime,
+        title: title.trim(),
+      })
+    );
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add time off" maxWidth="md">
-      <form onSubmit={handleSubmit} className="space-y-5 min-w-0 max-w-full">
-        <div className="w-full min-w-0 max-w-full">
-          <label
-            htmlFor="block-time-date"
-            className="block text-sm font-medium text-gray-300 mb-2"
-          >
-            Date
-          </label>
-          {/*
-            Native date inputs have a wide intrinsic min-width on WebKit; border + clip on
-            the wrapper keeps the control aligned with TimeSelect / Input (same h-12 row).
-          */}
-          <div
-            className={`
-              flex h-12 w-full min-w-0 max-w-full items-center overflow-hidden rounded-xl
-              border border-white/10 bg-white/5 px-4
-              [color-scheme:dark]
-              transition-all duration-150
-              focus-within:border-white/30 focus-within:ring-2 focus-within:ring-white/20
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
-          >
-            <input
-              id="block-time-date"
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              disabled={disabled}
-              className="
-                min-h-0 min-w-0 flex-1 cursor-pointer border-0 bg-transparent py-0
-                text-base font-medium text-white shadow-none outline-none ring-0
-                focus:outline-none focus:ring-0
-                disabled:cursor-not-allowed
-                [&::-webkit-calendar-picker-indicator]:ml-1 [&::-webkit-calendar-picker-indicator]:shrink-0
-                [&::-webkit-datetime-edit-fields-wrapper]:min-w-0 [&::-webkit-datetime-edit-fields-wrapper]:p-0
-              "
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add time off"
+      maxWidth="lg"
+      panelClassName="h-[95dvh] max-h-[95dvh] sm:h-auto sm:max-h-[90vh]"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6 min-w-0 max-w-full">
+        {/* Dates */}
+        <section className="min-w-0 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-400">Dates</p>
+              <p
+                className={`mt-0.5 text-base font-semibold tracking-tight ${
+                  selectedRangeLabel ? 'text-white' : 'text-gray-500'
+                }`}
+              >
+                {selectedRangeLabel ?? 'Select dates'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearDates}
+              disabled={disabled || (!rangeStart && !rangeEnd)}
+              className="shrink-0 pt-0.5 text-sm text-gray-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 sm:p-4">
+            <Calendar
+              value={null}
+              onChange={handleDayClick}
+              minDate={minDate}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+              plain
+              wide
+              showYear
+              weekdayFormat="short"
             />
           </div>
-        </div>
+        </section>
 
-        <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="min-w-0">
-            <span className="block text-sm font-medium text-gray-300 mb-2">
-              Start
-            </span>
-            <TimeSelect
-              value={startTime}
-              onChange={next => {
-                setStartTime(next);
-                setEndTime(prev =>
-                  compareTime(prev, next) <= 0
-                    ? defaultEndAfterStart(next)
-                    : prev
-                );
-              }}
+        {/* Hours */}
+        <section className="min-w-0 space-y-3">
+          <p className="text-sm text-gray-400">Hours</p>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+            <Switch
+              checked={allDay}
+              onCheckedChange={setAllDay}
+              size="sm"
+              label="All day"
+              description="Unavailable the entire day"
               disabled={disabled}
-              aria-label="Start time"
             />
           </div>
-          <div className="min-w-0">
-            <span className="block text-sm font-medium text-gray-300 mb-2">
-              End
-            </span>
-            <TimeSelect
-              value={endTime}
-              onChange={setEndTime}
-              minTime={startTime}
-              disabled={disabled}
-              aria-label="End time"
-            />
-          </div>
-        </div>
 
-        {timeError && (
-          <p className="text-sm text-amber-200/90" role="alert">
-            {timeError}
-          </p>
-        )}
+          {!allDay ? (
+            <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4">
+              <div className="min-w-0">
+                <span className="block text-sm text-gray-400 mb-2">Start</span>
+                <TimeSelect
+                  value={startTime}
+                  onChange={next => {
+                    setStartTime(next);
+                    setEndTime(prev =>
+                      compareTime(prev, next) <= 0
+                        ? defaultEndAfterStart(next)
+                        : prev
+                    );
+                  }}
+                  disabled={disabled}
+                  aria-label="Start time"
+                />
+              </div>
+              <div className="min-w-0">
+                <span className="block text-sm text-gray-400 mb-2">End</span>
+                <TimeSelect
+                  value={endTime}
+                  onChange={setEndTime}
+                  minTime={startTime}
+                  disabled={disabled}
+                  aria-label="End time"
+                />
+              </div>
+            </div>
+          ) : null}
 
+          {timeError ? (
+            <p className="text-sm text-amber-200/90" role="alert">
+              {timeError}
+            </p>
+          ) : null}
+        </section>
+
+        {/* Note */}
         <Input
           className="min-w-0 max-w-full"
-          label="Note (optional)"
-          placeholder="Appointment, travel, etc."
+          label="Note"
+          placeholder="Vacation, travel, etc."
           value={title}
           onChange={setTitle}
           disabled={disabled}
@@ -171,14 +263,14 @@ export const AddBlockTimeModal: React.FC<AddBlockTimeModalProps> = ({
           inputClassName="min-h-[48px] h-12 min-w-0 max-w-full rounded-xl py-3 px-4 text-base sm:text-base"
         />
 
-        <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2 sm:justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1 sm:justify-end">
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
             disabled={disabled}
             fullWidth
-            className="sm:w-auto sm:min-w-[100px]"
+            className="sm:w-auto sm:flex-1"
           >
             Cancel
           </Button>
@@ -187,9 +279,9 @@ export const AddBlockTimeModal: React.FC<AddBlockTimeModalProps> = ({
             variant="inverse"
             disabled={!canSubmit}
             fullWidth
-            className="sm:w-auto sm:min-w-[160px] font-semibold"
+            className="sm:w-auto sm:flex-1 font-semibold"
           >
-            Add
+            Save
           </Button>
         </div>
       </form>

@@ -1,4 +1,8 @@
 import { Logo } from '@/components/shared';
+import {
+  SERVICELINK_SUPPORT_EMAIL,
+  SERVICELINK_SUPPORT_MAILTO,
+} from '@/constants/support';
 import Link from 'next/link';
 
 export default function PrivacyPage() {
@@ -301,10 +305,10 @@ export default function PrivacyPage() {
               If you have any questions about this Privacy Policy, please
               contact us at{' '}
               <a
-                href="mailto:app.servicelink@gmail.com"
+                href={SERVICELINK_SUPPORT_MAILTO}
                 className="text-orange-400 hover:text-orange-300 underline"
               >
-                app.servicelink@gmail.com
+                {SERVICELINK_SUPPORT_EMAIL}
               </a>
               .
             </p>

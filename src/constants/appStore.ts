@@ -6,6 +6,10 @@ export const IOS_APP_STORE_URL =
   process.env.NEXT_PUBLIC_IOS_APP_STORE_URL?.trim() ||
   'https://apps.apple.com/us/app/servicelink-for-business/id6768877250';
 
-/** Set `NEXT_PUBLIC_GOOGLE_PLAY_STORE_URL` when the Android app is live. */
+/**
+ * Official Google Play listing for the ServiceLink Android app.
+ * Set `NEXT_PUBLIC_GOOGLE_PLAY_STORE_URL` in env to override.
+ */
 export const GOOGLE_PLAY_STORE_URL =
-  process.env.NEXT_PUBLIC_GOOGLE_PLAY_STORE_URL?.trim() || '';
+  process.env.NEXT_PUBLIC_GOOGLE_PLAY_STORE_URL?.trim() ||
+  'https://play.google.com/store/apps/details?id=com.myservicelink.app';

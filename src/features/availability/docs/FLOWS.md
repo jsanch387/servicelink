@@ -51,7 +51,7 @@ This doc describes how the **owner availability** settings and **V2 (availabilit
   - Steps in **30-minute** increments. For each candidate slot `[slotStart, slotStart + duration]`:
     - Skips if the slot is in the past (when the selected date is today).
     - **Bookings overlap:** For each existing booking on that `scheduled_date`, range `[bStart, bStart + duration]`. Block if `slotStart < bEnd && slotEnd > bStart`.
-    - **Time-off overlap:** For each `time_off_blocks` entry on that calendar `date`, range `[offStart, offEnd)` (half-open). Block if the slot overlaps the same way (`slotStart < offEnd && slotEnd > offStart`).
+    - **Time-off overlap:** For each `time_off_blocks` entry whose inclusive `start_date`–`end_date` covers the calendar day: all-day blocks remove the whole day; timed blocks use `[offStart, offEnd)` (half-open) and the same window applies on each day in a multi-day range.
   - **`bookingOverlapsTimeOff`** is reused by **POST /api/public/bookings** to reject creates that fall inside a block (HTTP 409), even if the client is tampered with.
   - Returns available start times as `"HH:mm"` strings.
 
@@ -97,14 +97,14 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 ### Submitting a booking
 
 - **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, **`durationMinutes`** (total appointment minutes), **`selectedAddOns`** (optional), `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).
-- API resolves business by **slug**, loads **`time_off_blocks`** from `business_availability`, and **rejects** the request with **409** if the requested window overlaps any time-off block for that date.
+- API resolves business by **slug**. For **customer** bookings it loads **`time_off_blocks`** / **`minimum_notice`** and **rejects** with **409** on time-off overlap (single day, date range, all-day, or timed) or lead-time violations. **Owner manual booking** (`ownerManualBooking: true`, authenticated) skips both checks so owners can schedule whenever within the flow.
   - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
 
 #### Service location on the business profile
 
 Businesses store **`service_location_mode`** (`mobile_only` | `shop_only` | `both`), **`shop_street_address`**, **`shop_unit`**, plus profile **`service_area`** (city/state) and **`business_zip`** on `business_profiles`. Dashboard edit saves these from the **Booking** tab.
 
-The public book flow branches on mode: **mobile** collects customer address; **shop** shows the business shop address and prefills it on submit; **both** lets the customer choose. APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
+The public book flow branches on mode: **mobile** collects customer address after schedule; **shop** shows the business shop address and prefills it on submit; **both** asks **mobile vs shop before date/time** (on `/book/details`, after price options / add-ons when those exist). APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
 
 ---
 

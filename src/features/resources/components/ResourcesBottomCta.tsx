@@ -1,4 +1,5 @@
 import { HeroCtaButton } from '@/features/landing-page/components/HeroCtaButton';
+import { blogIndexSignupPath } from '@/features/marketing-attribution';
 import { ROUTES } from '@/constants/routes';
 import Link from 'next/link';
 
@@ -33,7 +34,7 @@ export function ResourcesBottomCta() {
         </p>
 
         <div className="mt-8 sm:mt-10 flex flex-col items-center gap-4">
-          <HeroCtaButton href={ROUTES.AUTH.SIGNUP}>
+          <HeroCtaButton href={blogIndexSignupPath()}>
             Create your booking link
           </HeroCtaButton>
           <Link

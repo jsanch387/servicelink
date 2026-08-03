@@ -1,11 +1,16 @@
 import {
   getPublicInvoicePath,
+  getPublicInvoiceShortPath,
   getPublicReviewPath,
   getPublicBusinessProfilePath,
 } from '@/constants/routes';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import type { JobCompletedSessionFeeInput } from './jobCompletedTypes';
 import type { BookingAmountDueResult } from './computeBookingAmountDue';
+import {
+  formatJobVehicleLine,
+  parseStoredBookingJobDetails,
+} from '../utils/parseStoredBookingJobDetails';
 import { parseStoredBookingServiceName } from '../utils/parseStoredBookingServiceName';
 
 export interface InvoiceSnapshotLine {
@@ -25,6 +30,21 @@ export interface InvoiceSnapshotPayment {
   label: string;
   method?: string;
   amountCents: number;
+}
+
+/** One job on a multi-job appointment receipt (from `job_details`). */
+export interface InvoiceSnapshotJob {
+  serviceName: string;
+  /** Pricing option — omit/null when the service has none. */
+  servicePriceOptionLabel: string | null;
+  servicePriceCents: number;
+  durationMinutes: number;
+  /** Display line e.g. "2016 Chevy Cruze" — null when no vehicle. */
+  vehicleLabel: string | null;
+  vehicleYear: string | null;
+  vehicleMake: string | null;
+  vehicleModel: string | null;
+  addOns: Array<{ name: string; priceCents: number }>;
 }
 
 export interface BookingInvoiceSnapshot {
@@ -48,6 +68,11 @@ export interface BookingInvoiceSnapshot {
     scheduledDate: string;
     startTime: string;
   };
+  /**
+   * Multi-job line items when the booking stored `job_details`.
+   * Older snapshots omit this — UI falls back to `lines`.
+   */
+  jobs?: InvoiceSnapshotJob[];
   lines: InvoiceSnapshotLine[];
   payments: InvoiceSnapshotPayment[];
   totals: {
@@ -83,6 +108,8 @@ interface BuildInvoiceSnapshotInput {
     addon_details: unknown;
     /** Customer-facing sale/promo label from booking snapshot. */
     discount_label?: string | null;
+    /** Multi-job appointment line items. */
+    job_details?: unknown | null;
   };
   sessionFees: JobCompletedSessionFeeInput[];
   amountDue: BookingAmountDueResult;
@@ -99,6 +126,51 @@ function addonLines(addonDetails: unknown): InvoiceSnapshotLine[] {
     if (!name || typeof cents !== 'number' || cents < 0) return [];
     return [{ kind: 'addon' as const, label: name, amountCents: cents }];
   });
+}
+
+function buildJobSnapshotParts(jobDetailsRaw: unknown): {
+  jobs: InvoiceSnapshotJob[];
+  lines: InvoiceSnapshotLine[];
+} {
+  const parsed = parseStoredBookingJobDetails(jobDetailsRaw);
+  if (parsed.length === 0) return { jobs: [], lines: [] };
+
+  const jobs: InvoiceSnapshotJob[] = [];
+  const lines: InvoiceSnapshotLine[] = [];
+
+  for (const job of parsed) {
+    const option = job.servicePriceOptionLabel?.trim() || null;
+    jobs.push({
+      serviceName: job.serviceName,
+      servicePriceOptionLabel: option,
+      servicePriceCents: job.servicePriceCents,
+      durationMinutes: job.durationMinutes,
+      vehicleLabel: formatJobVehicleLine(job.vehicle),
+      vehicleYear: job.vehicle?.year?.trim() || null,
+      vehicleMake: job.vehicle?.make?.trim() || null,
+      vehicleModel: job.vehicle?.model?.trim() || null,
+      addOns: job.selectedAddOns.map(a => ({
+        name: a.name,
+        priceCents: a.priceCents,
+      })),
+    });
+
+    lines.push({
+      kind: 'service',
+      label: job.serviceName,
+      detailLabel: option,
+      amountCents: job.servicePriceCents,
+    });
+    for (const addOn of job.selectedAddOns) {
+      lines.push({
+        kind: 'addon',
+        label: addOn.name,
+        amountCents: addOn.priceCents,
+      });
+    }
+  }
+
+  return { jobs, lines };
 }
 
 export function resolveBusinessProfileUrl(input: {
@@ -129,19 +201,23 @@ export function buildInvoiceSnapshot(
   const parsedService = parseStoredBookingServiceName(
     input.booking.service_name ?? ''
   );
-  const serviceCents = input.amountDue.serviceCents;
+  const jobParts = buildJobSnapshotParts(input.booking.job_details);
   const lines: InvoiceSnapshotLine[] = [];
 
-  if (serviceCents > 0) {
-    lines.push({
-      kind: 'service',
-      label: parsedService.serviceName || 'Service',
-      detailLabel: parsedService.priceOptionLabel,
-      amountCents: serviceCents,
-    });
+  if (jobParts.jobs.length > 0) {
+    lines.push(...jobParts.lines);
+  } else {
+    const serviceCents = input.amountDue.serviceCents;
+    if (serviceCents > 0) {
+      lines.push({
+        kind: 'service',
+        label: parsedService.serviceName || 'Service',
+        detailLabel: parsedService.priceOptionLabel,
+        amountCents: serviceCents,
+      });
+    }
+    lines.push(...addonLines(input.booking.addon_details));
   }
-
-  lines.push(...addonLines(input.booking.addon_details));
 
   for (const fee of input.sessionFees) {
     lines.push({
@@ -193,7 +269,7 @@ export function buildInvoiceSnapshot(
     businessSlug: input.business.businessSlug,
   });
 
-  return {
+  const snapshot: BookingInvoiceSnapshot = {
     version: 1,
     issuedAt: new Date().toISOString(),
     business: {
@@ -208,8 +284,15 @@ export function buildInvoiceSnapshot(
     },
     booking: {
       id: input.booking.id,
-      serviceName: parsedService.serviceName || 'Service',
-      servicePriceOptionLabel: parsedService.priceOptionLabel,
+      serviceName:
+        jobParts.jobs.length > 1
+          ? `${jobParts.jobs.length} jobs`
+          : parsedService.serviceName || 'Service',
+      servicePriceOptionLabel:
+        jobParts.jobs.length > 1
+          ? null
+          : (jobParts.jobs[0]?.servicePriceOptionLabel ??
+            parsedService.priceOptionLabel),
       scheduledDate: input.booking.scheduled_date,
       startTime: String(input.booking.start_time ?? '').trim(),
     },
@@ -223,8 +306,28 @@ export function buildInvoiceSnapshot(
     },
     reviewUrl,
   };
+
+  if (jobParts.jobs.length > 0) {
+    snapshot.jobs = jobParts.jobs;
+  }
+
+  return snapshot;
 }
 
 export function buildPublicInvoiceUrl(publicToken: string): string {
   return `${getAppBaseUrl()}${getPublicInvoicePath(publicToken)}`;
+}
+
+/** Prefer short `/r/…` links in customer SMS/email when a short_code exists. */
+export function buildPublicInvoiceShortUrl(shortCode: string): string {
+  return `${getAppBaseUrl()}${getPublicInvoiceShortPath(shortCode)}`;
+}
+
+export function buildCustomerInvoiceUrl(args: {
+  publicToken: string;
+  shortCode?: string | null;
+}): string {
+  const short = args.shortCode?.trim();
+  if (short) return buildPublicInvoiceShortUrl(short);
+  return buildPublicInvoiceUrl(args.publicToken);
 }

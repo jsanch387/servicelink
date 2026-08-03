@@ -10,6 +10,26 @@ export type RecordTapToPayClientEventResult =
 
 export type TapToPayClientEventOutcome = 'failure' | 'success';
 
+/** Keys that must never land in client_diagnostics (secrets / PII-ish). */
+const DIAGNOSTICS_DENYLIST = new Set([
+  'secret',
+  'clientsecret',
+  'client_secret',
+  'connectiontoken',
+  'connection_token',
+  'token',
+  'authorization',
+  'password',
+  'card',
+  'cardnumber',
+  'cvc',
+  'cvv',
+  'email',
+  'phone',
+  'customername',
+  'customer_name',
+]);
+
 function asTrimmedString(value: unknown, max: number): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
@@ -31,16 +51,21 @@ function asDiagnostics(
   const out: Record<string, string | number | boolean | null> = {};
   for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
     if (typeof key !== 'string' || key.length > 64) continue;
-    if (
-      raw === null ||
-      typeof raw === 'string' ||
-      typeof raw === 'number' ||
-      typeof raw === 'boolean'
-    ) {
-      out[key] =
-        typeof raw === 'string'
-          ? raw.slice(0, 200)
-          : (raw as number | boolean | null);
+    if (DIAGNOSTICS_DENYLIST.has(key.toLowerCase())) continue;
+    if (raw === null) {
+      out[key] = null;
+      continue;
+    }
+    if (typeof raw === 'string') {
+      out[key] = raw.slice(0, 200);
+      continue;
+    }
+    if (typeof raw === 'boolean') {
+      out[key] = raw;
+      continue;
+    }
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      out[key] = raw;
     }
   }
   return Object.keys(out).length > 0 ? out : null;
@@ -80,12 +105,21 @@ export async function recordTapToPayClientEvent(opts: {
     code,
     message,
     paymentIntentId,
+    httpStatus,
+    requestId,
+    durationMs,
     appVersion: diagnostics?.appVersion ?? null,
     osVersion: diagnostics?.osVersion ?? null,
+    deviceModel: diagnostics?.deviceModel ?? null,
     readerWarm: diagnostics?.readerWarm ?? null,
+    sessionInitialized: diagnostics?.sessionInitialized ?? null,
+    sessionHasConnectKey: diagnostics?.sessionHasConnectKey ?? null,
   });
 
   if (!paymentIntentId) {
+    console.warn(
+      '[tap-to-pay:client-event] no paymentIntentId — skipping intent row update'
+    );
     return { ok: true, updated: false };
   }
 
@@ -133,6 +167,14 @@ export async function recordTapToPayClientEvent(opts: {
   }
 
   if (!existing?.id) {
+    console.warn(
+      '[tap-to-pay:client-event] no matching intent row — skipping update',
+      {
+        paymentIntentId,
+        bookingId: opts.bookingId,
+        businessId: opts.businessId,
+      }
+    );
     return { ok: true, updated: false };
   }
 

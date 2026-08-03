@@ -7,6 +7,8 @@ import {
   getAvailabilityForBusiness,
   upsertAvailabilityForBusiness,
 } from '@/features/availability/services/availabilityService';
+import { isMinimumNoticeValue } from '@/features/availability/types/availability';
+import { normalizeAvailabilityRow } from '@/features/availability/utils/normalizeAvailabilityRow';
 import { parseTimeOffBlocksFromRequestBody } from '@/features/availability/utils/timeOffBlocksPayload';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -52,7 +54,10 @@ export async function GET() {
       authResult.businessId
     );
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({
+      success: true,
+      data: data ? normalizeAvailabilityRow(data) : null,
+    });
   } catch (err) {
     console.error('[API] GET /api/availability:', err);
     return NextResponse.json(
@@ -62,7 +67,6 @@ export async function GET() {
   }
 }
 
-const MINIMUM_NOTICE_VALUES = ['none', '1h', '2h', '4h', '24h'] as const;
 const SELECTED_PRESET_VALUES = [
   'mon_fri_9_5',
   'mon_sat_8_6',
@@ -87,7 +91,7 @@ export async function POST(request: NextRequest) {
     const schedule = body.schedule ?? null;
     const minimumNotice =
       typeof body.minimumNotice === 'string' &&
-      MINIMUM_NOTICE_VALUES.includes(body.minimumNotice)
+      isMinimumNoticeValue(body.minimumNotice)
         ? body.minimumNotice
         : 'none';
     const selectedPreset =
@@ -125,7 +129,10 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({
+      success: true,
+      data: normalizeAvailabilityRow(data),
+    });
   } catch (err) {
     console.error('[API] POST /api/availability:', err);
     return NextResponse.json(

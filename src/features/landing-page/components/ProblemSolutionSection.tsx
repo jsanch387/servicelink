@@ -1,5 +1,5 @@
 import { GlassCard } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import { FramedCtaButton } from '../../../components/shared/FramedCtaButton';
@@ -93,7 +93,7 @@ export const ProblemSolutionSection: React.FC = () => {
         </div>
 
         <div className="mt-10 sm:mt-12 flex justify-center">
-          <FramedCtaButton href={ROUTES.AUTH.SIGNUP}>
+          <FramedCtaButton href={siteSignupPath('homepage')}>
             Get Started
           </FramedCtaButton>
         </div>

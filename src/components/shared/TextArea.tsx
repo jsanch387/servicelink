@@ -71,7 +71,10 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
         />
         {showFooterRow && (
           <div
-            className={`mt-1.5 min-h-[2.25rem] flex items-center ${
+            className={`mt-1.5 flex items-center ${
+              // Reserve tap-target height only when footer actions are present.
+              footerStart != null ? 'min-h-[2.25rem]' : ''
+            } ${
               footerStart != null && showCharCounter
                 ? 'justify-between gap-3'
                 : footerStart != null

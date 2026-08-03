@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import {
   FEATURES_HERO,
   getFeaturesSeoFeatureList,
@@ -22,7 +23,10 @@ export function FeaturesPageSeoContent() {
       </ul>
       <p>
         <Link href={ROUTES.PRICING_PAGE}>View ServiceLink pricing</Link> or{' '}
-        <Link href={ROUTES.AUTH.SIGNUP}>create your free booking link</Link>.
+        <Link href={siteSignupPath('features')}>
+          create your free booking link
+        </Link>
+        .
       </p>
     </section>
   );

@@ -182,4 +182,78 @@ describe('buildInvoiceSnapshot', () => {
       amountCents: 1000,
     });
   });
+
+  it('builds per-job lines and jobs[] from job_details', () => {
+    const snapshot = buildInvoiceSnapshot({
+      business: {
+        id: 'biz-1',
+        name: 'Acme Detail',
+        businessSlug: 'acme-detail',
+      },
+      booking: {
+        id: 'booking-mj',
+        service_name: 'Signature Shinee — SUV + 1 more',
+        scheduled_date: '2026-07-27',
+        start_time: '09:00:00',
+        customer_name: 'Two Job',
+        customer_email: 'test@example.com',
+        customer_phone: null,
+        service_price_cents: 379_00,
+        addon_details: [],
+        job_details: [
+          {
+            serviceId: null,
+            serviceName: 'Signature Shinee',
+            servicePriceOptionLabel: 'SUV',
+            servicePriceCents: 210_00,
+            selectedAddOns: [],
+            durationMinutes: 150,
+            vehicle: { year: '2016', make: 'Chevy', model: 'Cruze' },
+          },
+          {
+            serviceId: null,
+            serviceName: 'Custom wash',
+            servicePriceOptionLabel: null,
+            servicePriceCents: 169_00,
+            selectedAddOns: [
+              { id: 'a1', name: 'Pet hair removal', priceCents: 20_00 },
+            ],
+            durationMinutes: 180,
+            vehicle: null,
+          },
+        ],
+      },
+      sessionFees: [],
+      amountDue: {
+        serviceCents: 379_00,
+        addonCents: 20_00,
+        sessionFeeCents: 0,
+        subtotalCents: 399_00,
+        discountCents: 0,
+        adjustedTotalCents: 399_00,
+        paidOnlineCents: 0,
+        sessionPayCents: 399_00,
+        amountDueCents: 0,
+      },
+      sessionPaymentMethod: 'cash',
+    });
+
+    expect(snapshot.booking.serviceName).toBe('2 jobs');
+    expect(snapshot.booking.servicePriceOptionLabel).toBeNull();
+    expect(snapshot.jobs).toHaveLength(2);
+    expect(snapshot.jobs?.[0]).toMatchObject({
+      serviceName: 'Signature Shinee',
+      servicePriceOptionLabel: 'SUV',
+      vehicleLabel: '2016 Chevy Cruze',
+      servicePriceCents: 210_00,
+    });
+    expect(snapshot.jobs?.[1]).toMatchObject({
+      serviceName: 'Custom wash',
+      servicePriceOptionLabel: null,
+      vehicleLabel: null,
+      addOns: [{ name: 'Pet hair removal', priceCents: 20_00 }],
+    });
+    expect(snapshot.lines.filter(l => l.kind === 'service')).toHaveLength(2);
+    expect(snapshot.lines.filter(l => l.kind === 'addon')).toHaveLength(1);
+  });
 });

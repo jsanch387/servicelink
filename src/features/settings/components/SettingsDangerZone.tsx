@@ -10,7 +10,7 @@ export interface SettingsDangerZoneProps {
 export const SettingsDangerZone: React.FC<SettingsDangerZoneProps> = ({
   accountEmail,
 }) => (
-  <section className="w-full min-w-0 border-t border-white/10 pt-10">
+  <section className="w-full min-w-0 border-t border-white/10 pt-7">
     <DeleteAccountSection accountEmail={accountEmail} />
   </section>
 );

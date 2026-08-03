@@ -1,4 +1,9 @@
 import { Logo } from '@/components/shared';
+import {
+  SERVICELINK_LEGAL_NAME,
+  SERVICELINK_SUPPORT_EMAIL,
+  SERVICELINK_SUPPORT_MAILTO,
+} from '@/constants/support';
 import Link from 'next/link';
 
 export default function TermsPage() {
@@ -34,8 +39,9 @@ export default function TermsPage() {
               1. Acceptance of Terms
             </h2>
             <p className="text-base leading-relaxed">
-              By accessing or using ServiceLink, you agree to these Terms of
-              Service. If you do not agree, please do not use the platform.
+              By accessing or using ServiceLink (operated by{' '}
+              {SERVICELINK_LEGAL_NAME}), you agree to these Terms of Service. If
+              you do not agree, please do not use the platform.
             </p>
           </section>
 
@@ -249,10 +255,10 @@ export default function TermsPage() {
               If you have any questions about these Terms of Service, please
               contact us at{' '}
               <a
-                href="mailto:app.servicelink@gmail.com"
+                href={SERVICELINK_SUPPORT_MAILTO}
                 className="text-orange-400 hover:text-orange-300 underline"
               >
-                app.servicelink@gmail.com
+                {SERVICELINK_SUPPORT_EMAIL}
               </a>
               .
             </p>

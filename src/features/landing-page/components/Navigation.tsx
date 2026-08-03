@@ -2,6 +2,7 @@
 
 import { Button, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { siteSignupPath } from '@/features/marketing-attribution';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
   Bars3Icon,
@@ -201,7 +202,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     Login
                   </Button>
                   <Button
-                    href={ROUTES.AUTH.SIGNUP}
+                    href={siteSignupPath('homepage')}
                     variant="primary"
                     size="sm"
                     fullWidth
@@ -259,7 +260,11 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="sm">
                   Login
                 </Button>
-                <Button href={ROUTES.AUTH.SIGNUP} variant="primary" size="sm">
+                <Button
+                  href={siteSignupPath('homepage')}
+                  variant="primary"
+                  size="sm"
+                >
                   Sign up
                 </Button>
               </>

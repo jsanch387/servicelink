@@ -43,6 +43,8 @@ interface BookFlowSwitchProps {
   selectedPriceOptionLabel?: string;
   weeklySchedule?: WeeklySchedule | null;
   timeOffBlocks?: TimeOffInterval[];
+  /** Lead time from `minimum_notice`; skipped for owner manual bookings. */
+  minimumNotice?: string;
   isOwnerManualBooking?: boolean;
   paymentSettings?: PublicBookingPaymentSettings | null;
   /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
@@ -52,6 +54,8 @@ interface BookFlowSwitchProps {
   stripeCheckoutSessionId?: string | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
   serviceLocation: PublicBookingServiceLocation;
+  /** Pre-selected mobile/shop from `/book/details` when business offers both. */
+  initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   activeSale?: PublicActiveSale | null;
 }
 
@@ -78,6 +82,7 @@ export function BookFlowSwitch({
   selectedPriceOptionLabel,
   weeklySchedule,
   timeOffBlocks = [],
+  minimumNotice = 'none',
   isOwnerManualBooking = false,
   paymentSettings = null,
   exitCalendarFlowHref,
@@ -85,6 +90,7 @@ export function BookFlowSwitch({
   stripeCheckoutSessionId = null,
   bookingFlowLocale = 'en',
   serviceLocation,
+  initialCustomerServiceChoice = null,
   activeSale = null,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
@@ -153,6 +159,7 @@ export function BookFlowSwitch({
           selectedPriceOptionLabel={selectedPriceOptionLabel}
           weeklySchedule={schedule}
           timeOffBlocks={timeOffBlocks}
+          minimumNotice={isOwnerManualBooking ? 'none' : minimumNotice}
           isOwnerManualBooking={isOwnerManualBooking}
           paymentSettings={paymentSettings}
           exitCalendarFlowHref={exitCalendarFlowHref}
@@ -160,6 +167,7 @@ export function BookFlowSwitch({
           stripeCheckoutSessionId={stripeCheckoutSessionId}
           bookingFlowLocale={bookingFlowLocale}
           serviceLocation={serviceLocation}
+          initialCustomerServiceChoice={initialCustomerServiceChoice}
           activeSale={activeSale}
         />
       </Suspense>

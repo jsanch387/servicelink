@@ -17,6 +17,18 @@ import {
   normalizeBookingCustomerInput,
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { coerceBookingCents } from '@/features/availability/booking/utils/coerceBookingCents';
+import {
+  appointmentFitsSameDay,
+  appointmentServiceNameSummary,
+  jobGrossCents,
+  normalizeStartTimeHHmm,
+  parseOwnerManualBookingJobs,
+  sumJobDurationMinutes,
+  sumJobGrossCents,
+  toBookingJobDetails,
+  type OwnerManualBookingJobInput,
+} from '@/features/availability/booking/utils/ownerManualBookingJobs';
+import { appointmentMoneyFieldsFromJobs } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
 import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
 import {
   getPublicBookingRequestId,
@@ -28,8 +40,12 @@ import {
   insertBookingPaymentsRowForNoCheckoutPublicBooking,
 } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
+import { isSlotAllowedByLeadTime } from '@/features/availability/utils/minimumNotice';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
-import { parseStoredTimeOffBlocks } from '@/features/availability/types/blockTime';
+import {
+  parseStoredTimeOffBlocks,
+  toTimeOffIntervalFields,
+} from '@/features/availability/types/blockTime';
 import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
@@ -47,9 +63,12 @@ import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/a
 import { buildPublicBookingNoCheckoutPaymentSummary } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
 import {
   sendAvailabilityBookingCustomerConfirmationEmail,
+  type AvailabilityBookingEmailJob,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
+import type { BookingDiscountSnapshot } from '@/features/marketing/server/bookingDiscountSnapshot';
 import { promoDiscountResolveErrorMessage } from '@/features/marketing/utils/promoDiscountResolveErrorMessage';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
@@ -76,6 +95,32 @@ export async function POST(request: NextRequest) {
   const requestId = getPublicBookingRequestId(request);
   try {
     const body = (await request.json()) as CreateBookingRequest;
+    const ownerManualBooking = body.ownerManualBooking === true;
+    const hasJobsArray = Array.isArray(body.jobs);
+
+    if (hasJobsArray && !ownerManualBooking) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: 'jobs is only supported for owner manual booking',
+        },
+        400
+      );
+    }
+
+    let parsedJobs: OwnerManualBookingJobInput[] | null = null;
+    if (hasJobsArray) {
+      const parsed = parseOwnerManualBookingJobs(body.jobs);
+      if (!parsed.ok) {
+        return publicBookingJson(
+          requestId,
+          { success: false, error: parsed.error },
+          400
+        );
+      }
+      parsedJobs = parsed.jobs;
+    }
 
     if (!body.businessSlug?.trim()) {
       return publicBookingJson(
@@ -84,12 +129,24 @@ export async function POST(request: NextRequest) {
         400
       );
     }
-    if (!body.serviceName?.trim()) {
-      return publicBookingJson(
-        requestId,
-        { success: false, error: 'Service name is required' },
-        400
-      );
+    if (!parsedJobs) {
+      if (!body.serviceName?.trim()) {
+        return publicBookingJson(
+          requestId,
+          { success: false, error: 'Service name is required' },
+          400
+        );
+      }
+      if (
+        typeof body.durationMinutes !== 'number' ||
+        body.durationMinutes < 1
+      ) {
+        return publicBookingJson(
+          requestId,
+          { success: false, error: 'Duration is required' },
+          400
+        );
+      }
     }
     if (
       !body.scheduledDate?.trim() ||
@@ -111,15 +168,17 @@ export async function POST(request: NextRequest) {
         400
       );
     }
-    if (typeof body.durationMinutes !== 'number' || body.durationMinutes < 1) {
-      return publicBookingJson(
-        requestId,
-        { success: false, error: 'Duration is required' },
-        400
-      );
+
+    let coercedCustomer = coerceCustomerFormData(body.customer);
+    // Per-job vehicle lives on jobs[]. Ignore customer vehicle when jobs present.
+    if (parsedJobs) {
+      coercedCustomer = {
+        ...coercedCustomer,
+        vehicleYear: '',
+        vehicleMake: '',
+        vehicleModel: '',
+      };
     }
-    const ownerManualBooking = body.ownerManualBooking === true;
-    const coercedCustomer = coerceCustomerFormData(body.customer);
 
     let ownerAuthMethod: 'bearer' | 'cookie' | 'public' = 'public';
 
@@ -319,106 +378,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const availabilityRow = await getAvailabilityForBusiness(
-      supabase,
-      businessId
-    );
-    const timeOffIntervals = parseStoredTimeOffBlocks(
-      availabilityRow?.time_off_blocks
-    );
-    if (
-      bookingOverlapsTimeOff(
-        body.scheduledDate,
-        body.startTime.trim(),
-        body.durationMinutes,
-        timeOffIntervals
-      )
-    ) {
-      return publicBookingJson(
-        requestId,
-        {
-          success: false,
-          error: 'That time is not available. Please choose another slot.',
-        },
-        409
+    if (!ownerManualBooking) {
+      const availabilityRow = await getAvailabilityForBusiness(
+        supabase,
+        businessId
       );
+      const timeOffIntervals = parseStoredTimeOffBlocks(
+        availabilityRow?.time_off_blocks
+      ).map(toTimeOffIntervalFields);
+      const durationMinutes = body.durationMinutes!;
+      if (
+        bookingOverlapsTimeOff(
+          body.scheduledDate,
+          body.startTime.trim(),
+          durationMinutes,
+          timeOffIntervals
+        )
+      ) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'That time is not available. Please choose another slot.',
+          },
+          409
+        );
+      }
+
+      if (
+        !isSlotAllowedByLeadTime(
+          body.scheduledDate,
+          body.startTime.trim(),
+          availabilityRow?.minimum_notice
+        )
+      ) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'That time is too soon to book. Please choose a later slot.',
+          },
+          409
+        );
+      }
     }
-
-    const optionLabel = body.servicePriceOptionLabel?.trim();
-    const storedServiceName = optionLabel
-      ? `${body.serviceName.trim()} — ${optionLabel}`
-      : body.serviceName.trim();
-
-    const selectedAddOnsForEmail = (body.selectedAddOns ?? []).map(addOn => ({
-      ...addOn,
-      priceCents: coerceBookingCents(addOn.priceCents),
-    }));
-    const basePriceForEmail = coerceBookingCents(body.servicePriceCents);
-    const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
-      (sum, addOn) => sum + addOn.priceCents,
-      0
-    );
-    const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
 
     const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {
       profileId,
       freeBookingsCount: p.free_bookings_count,
     });
-    // Owner manual booking: sale auto-apply only. Ignore client promo + discount
-    // preview fields — server recomputes snapshot from DB for scheduledDate.
-    const enteredPromoCode = ownerManualBooking
-      ? ''
-      : normalizeEnteredPromoCode(
-          typeof body.promoCode === 'string' ? body.promoCode : ''
-        );
-    const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
-      businessId,
-      ownerHasPro,
-      serviceDateYmd: body.scheduledDate,
-      subtotalCents: totalPriceCentsForEmail,
-      promoCode: enteredPromoCode || null,
-      customerPhone: sanitizedCustomer.phone,
-      customerEmail: sanitizedCustomer.email,
-      allowPromoCode: !ownerManualBooking,
-    });
-    if (!discountResolved.ok) {
-      return publicBookingJson(
-        requestId,
-        {
-          success: false,
-          error: promoDiscountResolveErrorMessage(discountResolved.error),
-          errorCode: discountResolved.error,
-        },
-        400
-      );
-    }
-    const discountSnapshot = discountResolved.snapshot;
-
-    // Owner-created bookings never belong to a customer acquisition channel.
-    const referralSource = ownerManualBooking
-      ? null
-      : bookingReferralSourceForBusiness(request, businessSlug);
-
-    const result = await createBooking(supabase, {
-      businessId,
-      businessSlug,
-      bookingSource: ownerManualBooking ? 'owner' : 'public',
-      referralSource,
-      serviceId: body.serviceId,
-      serviceName: storedServiceName,
-      servicePriceCents: basePriceForEmail,
-      selectedAddOns: selectedAddOnsForEmail,
-      durationMinutes: body.durationMinutes,
-      scheduledDate: body.scheduledDate,
-      startTime: body.startTime.trim(),
-      customer: sanitizedCustomer,
-      serviceLocationType: resolvePersistedBookingServiceLocationType({
-        clientChoice: locationResolved.effective ?? clientLocationChoice,
-        businessMode: serviceLocation.mode,
-      }),
-      discountSnapshot,
-    });
-
     const { data: paymentSettingsRow, error: paymentSettingsError } =
       await paymentSettingsOf(supabase)
         .select('payments_enabled, checkout_mode, currency')
@@ -445,11 +453,395 @@ export async function POST(request: NextRequest) {
         ? rawClientPm
         : null;
 
+    const persistedServiceLocationType =
+      resolvePersistedBookingServiceLocationType({
+        clientChoice: locationResolved.effective ?? clientLocationChoice,
+        businessMode: serviceLocation.mode,
+      });
+
+    const emailServiceLocation = buildAvailabilityBookingEmailServiceLocation({
+      effectiveType: locationResolved.effective,
+      shopAddressLabel: serviceLocation.shopAddressLabel,
+      customerStreet: sanitizedCustomer.streetAddress,
+      customerUnit: sanitizedCustomer.unitApt,
+      customerCity: sanitizedCustomer.city,
+      customerState: sanitizedCustomer.state,
+      customerZip: sanitizedCustomer.zip,
+    });
+
+    // -------------------------------------------------------------------------
+    // Owner multi-job appointment (`jobs[]`) — one booking row, jobs as line items
+    // -------------------------------------------------------------------------
+    if (parsedJobs) {
+      const visitStart = normalizeStartTimeHHmm(body.startTime.trim());
+      const visitDuration = sumJobDurationMinutes(parsedJobs);
+      if (
+        !visitStart ||
+        !appointmentFitsSameDay(body.startTime.trim(), visitDuration)
+      ) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error:
+              'Appointment must fit on the same calendar day. Shorten durations or choose an earlier start time.',
+          },
+          400
+        );
+      }
+
+      const visitGross = sumJobGrossCents(parsedJobs);
+      const jobDetails = toBookingJobDetails(parsedJobs);
+      const moneyFields = appointmentMoneyFieldsFromJobs(parsedJobs);
+      // Guard: denormalized columns must equal job_details gross.
+      if (moneyFields.visitGrossCents !== visitGross) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'Something went wrong. Please try again.',
+          },
+          500
+        );
+      }
+      const serviceNameSummary = appointmentServiceNameSummary(parsedJobs);
+      const singleCatalogServiceId =
+        parsedJobs.length === 1 ? (parsedJobs[0].serviceId ?? null) : null;
+
+      // Sale applies once to the appointment subtotal (all jobs), unless the
+      // owner opted out via applySale: false (web Review checkbox).
+      const ownerWantsSale = body.applySale !== false;
+      let discountSnapshot: BookingDiscountSnapshot | null = null;
+      if (ownerWantsSale) {
+        const discountResolved = await resolveBookingDiscountSnapshot(
+          supabase,
+          {
+            businessId,
+            ownerHasPro,
+            serviceDateYmd: body.scheduledDate,
+            subtotalCents: visitGross,
+            promoCode: null,
+            customerPhone: sanitizedCustomer.phone,
+            customerEmail: sanitizedCustomer.email,
+            allowPromoCode: false,
+          }
+        );
+        if (!discountResolved.ok) {
+          return publicBookingJson(
+            requestId,
+            {
+              success: false,
+              error: promoDiscountResolveErrorMessage(discountResolved.error),
+              errorCode: discountResolved.error,
+            },
+            400
+          );
+        }
+        discountSnapshot = discountResolved.snapshot;
+      }
+
+      // Vehicle columns: copy only when there is exactly one job with a vehicle.
+      const singleVehicle =
+        parsedJobs.length === 1 &&
+        (parsedJobs[0].vehicle.year ||
+          parsedJobs[0].vehicle.make ||
+          parsedJobs[0].vehicle.model)
+          ? parsedJobs[0].vehicle
+          : null;
+      const customerForInsert = {
+        ...sanitizedCustomer,
+        vehicleYear: singleVehicle?.year ?? '',
+        vehicleMake: singleVehicle?.make ?? '',
+        vehicleModel: singleVehicle?.model ?? '',
+      };
+
+      let result: { id: string; customerId: string; visitId: string };
+      try {
+        result = await createBooking(supabase, {
+          businessId,
+          businessSlug,
+          bookingSource: 'owner',
+          serviceId: singleCatalogServiceId,
+          serviceName: serviceNameSummary,
+          servicePriceCents: moneyFields.servicePriceCents,
+          // Flatten add-ons onto the booking row so Complete-sheet math
+          // (service_price_cents + addon_details) matches job_details.
+          selectedAddOns: moneyFields.selectedAddOns,
+          durationMinutes: visitDuration,
+          scheduledDate: body.scheduledDate,
+          startTime: visitStart,
+          customer: customerForInsert,
+          serviceLocationType: persistedServiceLocationType,
+          discountSnapshot,
+          jobDetails,
+          visitJobCount: parsedJobs.length,
+        });
+      } catch (createErr) {
+        logBookingTransaction(requestId, 'error', 'appointment_create_failed', {
+          err:
+            createErr instanceof Error
+              ? createErr.message.slice(0, 80)
+              : String(createErr).slice(0, 80),
+        });
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'Something went wrong. Please try again.',
+          },
+          500
+        );
+      }
+
+      try {
+        const visitTotalAfterDiscount = discountSnapshot
+          ? Math.max(0, visitGross - discountSnapshot.discountCents)
+          : visitGross;
+        await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
+          bookingId: result.id,
+          businessId,
+          totalAmountCents: visitTotalAfterDiscount,
+          currency: paySettings?.currency?.trim() || 'usd',
+          paymentsEnabled: paySettings?.payments_enabled === true,
+          checkoutMode: paySettings?.checkout_mode ?? null,
+          clientPaymentMethod,
+        });
+      } catch (payErr) {
+        logBookingTransaction(requestId, 'error', 'payments_failed', {
+          bookingId: result.id,
+          err:
+            payErr instanceof Error
+              ? payErr.message.slice(0, 80)
+              : String(payErr).slice(0, 80),
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('bookings').delete().eq('id', result.id);
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: 'Something went wrong. Please try again.',
+          },
+          500
+        );
+      }
+
+      const jobCount = parsedJobs.length;
+      const emailJobs: AvailabilityBookingEmailJob[] = parsedJobs.map(job => ({
+        serviceName: job.serviceName,
+        servicePriceOptionLabel:
+          job.servicePriceOptionLabel?.trim() || undefined,
+        servicePriceCents: job.servicePriceCents,
+        selectedAddOns: job.selectedAddOns,
+        durationMinutes: job.durationMinutes,
+        customerVehicleYear: job.vehicle.year || undefined,
+        customerVehicleMake: job.vehicle.make || undefined,
+        customerVehicleModel: job.vehicle.model || undefined,
+        totalPriceCents: jobGrossCents(job),
+      }));
+
+      const hasPriceLineItems = visitGross > 0;
+      const paymentSummary = buildPublicBookingNoCheckoutPaymentSummary({
+        paymentsEnabled: paySettings?.payments_enabled === true,
+        checkoutMode: paySettings?.checkout_mode,
+        clientPaymentMethod,
+        currency: paySettings?.currency?.trim() || 'usd',
+        totalPriceCents: visitGross,
+        hasPriceLineItems,
+      });
+
+      const serviceSummaryLine =
+        jobCount > 1 ? `${jobCount} jobs` : serviceNameSummary;
+
+      const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
+        customerName: sanitizedCustomer.fullName.trim(),
+        customerEmail: sanitizedCustomer.email,
+        customerPhone: sanitizedCustomer.phone?.trim(),
+        serviceName: serviceSummaryLine,
+        scheduledDate: body.scheduledDate,
+        startTime: visitStart,
+        durationMinutes: visitDuration,
+        totalPriceCents: visitGross,
+        ...(discountSnapshot
+          ? {
+              discount: {
+                label: discountSnapshot.discountLabel,
+                discountCents: discountSnapshot.discountCents,
+                estimatedTotalCents:
+                  discountSnapshot.subtotalCents -
+                  discountSnapshot.discountCents,
+              },
+            }
+          : {}),
+        jobs: emailJobs,
+        paymentSummary,
+        serviceLocation: emailServiceLocation,
+        customerNotes: sanitizedCustomer.notes?.trim() || undefined,
+        createdByOwner: true,
+      };
+
+      await notifyOwnerForAvailabilityBookingCreated(supabase, {
+        correlationId: requestId,
+        profileId,
+        bookingId: result.id,
+        customerName: sanitizedCustomer?.fullName?.trim() ?? 'A customer',
+        serviceSummaryLine,
+        scheduledDate: body.scheduledDate,
+        emailPayload: availabilityEmailPayload,
+        jobCount,
+      });
+
+      let customerConfirmationOutcome: 'sent' | 'failed' | 'skipped' =
+        'skipped';
+      if (sanitizedCustomer.email) {
+        try {
+          await sendAvailabilityBookingCustomerConfirmationEmail(
+            sanitizedCustomer.email,
+            businessDisplayName,
+            availabilityEmailPayload
+          );
+          customerConfirmationOutcome = 'sent';
+        } catch (emailErr) {
+          customerConfirmationOutcome = 'failed';
+          logBookingTransaction(requestId, 'warn', 'customer_mail', {
+            err:
+              emailErr instanceof Error
+                ? emailErr.message.slice(0, 72)
+                : String(emailErr).slice(0, 72),
+          });
+        }
+      }
+
+      // SMS: short confirmation ping. Email (above) carries full details.
+      // Both channels when both contacts exist — complementary, not exclusive.
+      let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
+        'skipped';
+      if (sanitizedCustomer.phone) {
+        const smsResult = await sendAndRecordSms({
+          admin: supabase,
+          businessId,
+          bookingId: result.id,
+          customerId: result.customerId,
+          type: 'booking_confirmation',
+          to: sanitizedCustomer.phone,
+          message: buildBookingConfirmedSms({
+            scheduledDate: body.scheduledDate,
+            startTime: body.startTime.trim(),
+          }),
+          dedupeKey: `${result.id}:booking_confirmation`,
+          correlationId: requestId,
+        });
+        customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
+      } else {
+        customerSmsOutcome = 'no_phone';
+      }
+
+      logBookingTransaction(requestId, 'info', 'created', {
+        bookingId: result.id,
+        visitId: result.visitId,
+        jobs: jobCount,
+        owner: 1,
+        auth: ownerAuthMethod,
+        email: customerConfirmationOutcome,
+        sms: customerSmsOutcome,
+      });
+      return publicBookingJson(
+        requestId,
+        {
+          success: true,
+          data: {
+            id: result.id,
+            visitId: result.visitId,
+            jobCount,
+          },
+        },
+        201
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // Legacy single-job body (public + owner)
+    // -------------------------------------------------------------------------
+    const optionLabel = body.servicePriceOptionLabel?.trim();
+    const storedServiceName = optionLabel
+      ? `${body.serviceName!.trim()} — ${optionLabel}`
+      : body.serviceName!.trim();
+
+    const selectedAddOnsForEmail = (body.selectedAddOns ?? []).map(addOn => ({
+      ...addOn,
+      priceCents: coerceBookingCents(addOn.priceCents),
+    }));
+    const basePriceForEmail = coerceBookingCents(body.servicePriceCents);
+    const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
+      (sum, addOn) => sum + addOn.priceCents,
+      0
+    );
+    const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
+
+    // Owner manual booking: sale auto-apply only (unless applySale: false).
+    // Ignore client promo + discount preview fields — server recomputes.
+    const enteredPromoCode = ownerManualBooking
+      ? ''
+      : normalizeEnteredPromoCode(
+          typeof body.promoCode === 'string' ? body.promoCode : ''
+        );
+    const ownerWantsSale = !ownerManualBooking || body.applySale !== false;
+    let discountSnapshot: BookingDiscountSnapshot | null = null;
+    if (ownerWantsSale) {
+      const discountResolved = await resolveBookingDiscountSnapshot(supabase, {
+        businessId,
+        ownerHasPro,
+        serviceDateYmd: body.scheduledDate,
+        subtotalCents: totalPriceCentsForEmail,
+        promoCode: enteredPromoCode || null,
+        customerPhone: sanitizedCustomer.phone,
+        customerEmail: sanitizedCustomer.email,
+        allowPromoCode: !ownerManualBooking,
+      });
+      if (!discountResolved.ok) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: promoDiscountResolveErrorMessage(discountResolved.error),
+            errorCode: discountResolved.error,
+          },
+          400
+        );
+      }
+      discountSnapshot = discountResolved.snapshot;
+    }
+
+    // Owner-created bookings never belong to a customer acquisition channel.
+    const referralSource = ownerManualBooking
+      ? null
+      : bookingReferralSourceForBusiness(request, businessSlug);
+
+    const result = await createBooking(supabase, {
+      businessId,
+      businessSlug,
+      bookingSource: ownerManualBooking ? 'owner' : 'public',
+      referralSource,
+      serviceId: body.serviceId,
+      serviceName: storedServiceName,
+      servicePriceCents: basePriceForEmail,
+      selectedAddOns: selectedAddOnsForEmail,
+      durationMinutes: body.durationMinutes!,
+      scheduledDate: body.scheduledDate,
+      startTime: body.startTime.trim(),
+      customer: sanitizedCustomer,
+      serviceLocationType: persistedServiceLocationType,
+      discountSnapshot,
+    });
+
     try {
+      const totalAfterDiscount = discountSnapshot
+        ? Math.max(0, totalPriceCentsForEmail - discountSnapshot.discountCents)
+        : totalPriceCentsForEmail;
       await insertBookingPaymentsRowForNoCheckoutPublicBooking(supabase, {
         bookingId: result.id,
         businessId,
-        totalAmountCents: totalPriceCentsForEmail,
+        totalAmountCents: totalAfterDiscount,
         currency: paySettings?.currency?.trim() || 'usd',
         paymentsEnabled: paySettings?.payments_enabled === true,
         checkoutMode: paySettings?.checkout_mode ?? null,
@@ -487,16 +879,6 @@ export async function POST(request: NextRequest) {
       hasPriceLineItems,
     });
 
-    const emailServiceLocation = buildAvailabilityBookingEmailServiceLocation({
-      effectiveType: locationResolved.effective,
-      shopAddressLabel: serviceLocation.shopAddressLabel,
-      customerStreet: sanitizedCustomer.streetAddress,
-      customerUnit: sanitizedCustomer.unitApt,
-      customerCity: sanitizedCustomer.city,
-      customerState: sanitizedCustomer.state,
-      customerZip: sanitizedCustomer.zip,
-    });
-
     const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
       customerName: sanitizedCustomer.fullName.trim(),
       customerEmail: sanitizedCustomer.email,
@@ -504,11 +886,11 @@ export async function POST(request: NextRequest) {
       customerVehicleYear: sanitizedCustomer.vehicleYear?.trim(),
       customerVehicleMake: sanitizedCustomer.vehicleMake?.trim(),
       customerVehicleModel: sanitizedCustomer.vehicleModel?.trim(),
-      serviceName: body.serviceName.trim(),
+      serviceName: body.serviceName!.trim(),
       servicePriceOptionLabel: optionLabel || undefined,
       scheduledDate: body.scheduledDate,
       startTime: body.startTime.trim(),
-      durationMinutes: body.durationMinutes,
+      durationMinutes: body.durationMinutes!,
       servicePriceCents: basePriceForEmail || undefined,
       selectedAddOns: selectedAddOnsForEmail,
       totalPriceCents: totalPriceCentsForEmail,
@@ -536,6 +918,7 @@ export async function POST(request: NextRequest) {
       serviceSummaryLine: storedServiceName,
       scheduledDate: body.scheduledDate,
       emailPayload: availabilityEmailPayload,
+      jobCount: 1,
     });
 
     let customerConfirmationOutcome: 'sent' | 'failed' | 'skipped' = 'skipped';
@@ -558,10 +941,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // SMS_OUTBOUND_PAUSED — docs/sms-outbound-paused.md (booking_confirmation)
-    /*
+    // SMS: short confirmation ping. Email (above) carries full details.
+    // Both channels when both contacts exist — complementary, not exclusive.
+    let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
+      'skipped';
     if (sanitizedCustomer.phone) {
-      await sendAndRecordSms({
+      const smsResult = await sendAndRecordSms({
         admin: supabase,
         businessId,
         bookingId: result.id,
@@ -569,26 +954,36 @@ export async function POST(request: NextRequest) {
         type: 'booking_confirmation',
         to: sanitizedCustomer.phone,
         message: buildBookingConfirmedSms({
-          businessName: businessDisplayName,
           scheduledDate: body.scheduledDate,
           startTime: body.startTime.trim(),
         }),
         dedupeKey: `${result.id}:booking_confirmation`,
         correlationId: requestId,
       });
+      customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
+    } else {
+      customerSmsOutcome = 'no_phone';
     }
-    */
 
     logBookingTransaction(requestId, 'info', 'created', {
       bookingId: result.id,
+      visitId: result.visitId,
       owner: ownerManualBooking ? 1 : 0,
       auth: ownerAuthMethod,
       email: customerConfirmationOutcome,
+      sms: customerSmsOutcome,
       ref: referralSource ?? 'direct',
     });
     return publicBookingJson(
       requestId,
-      { success: true, data: { id: result.id } },
+      {
+        success: true,
+        data: {
+          id: result.id,
+          visitId: result.visitId,
+          jobCount: 1,
+        },
+      },
       201
     );
   } catch (err) {

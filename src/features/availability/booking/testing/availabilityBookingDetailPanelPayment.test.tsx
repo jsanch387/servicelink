@@ -23,6 +23,7 @@ function baseBooking(
     serviceDurationMinutes: 60,
     servicePriceCents: 150_00,
     addonDetails: [],
+    jobs: [],
     date: '2026-06-15',
     time: '2:00 PM',
     startTimeHHmm: '14:00',
@@ -46,6 +47,7 @@ function renderPanel(booking: AvailabilityBookingDisplay) {
       onClose={vi.fn()}
       onMarkCompleted={vi.fn()}
       onCancel={vi.fn()}
+      onDelete={vi.fn()}
       weeklySchedule={DEFAULT_SCHEDULE}
       timeOffBlocks={[]}
       existingBookingsForSlotGrid={[]}
@@ -61,7 +63,7 @@ function getPaymentCard() {
 }
 
 describe('AvailabilityBookingDetailPanel payment section', () => {
-  it('shows Pay in person, Amount due, and formatted total when customer pays in person', () => {
+  it('shows Collect in person, Amount due, and formatted total when customer pays in person', () => {
     const payment: BookingPaymentSummaryDisplay = {
       paymentStatus: 'awaiting_payment',
       paymentMethodSelected: 'pay_in_person',
@@ -73,12 +75,12 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     renderPanel(baseBooking(payment));
 
     const card = getPaymentCard();
-    expect(within(card).getByText('Pay in person')).toBeTruthy();
+    expect(within(card).getByText('Collect in person')).toBeTruthy();
     expect(within(card).getByText('Amount due')).toBeTruthy();
     expect(within(card).getByText('$150.00')).toBeTruthy();
   });
 
-  it('shows no-amount note for pay in person when total is zero', () => {
+  it('shows no-amount note for collect in person when total is zero', () => {
     const payment: BookingPaymentSummaryDisplay = {
       paymentStatus: 'not_required',
       paymentMethodSelected: 'pay_in_person',
@@ -90,7 +92,7 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     renderPanel(baseBooking(payment));
 
     const card = getPaymentCard();
-    expect(within(card).getByText('Pay in person')).toBeTruthy();
+    expect(within(card).getByText('Collect in person')).toBeTruthy();
     expect(
       within(card).getByText(/no amount due for this appointment/i)
     ).toBeTruthy();
@@ -132,7 +134,7 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     expect(card.querySelectorAll('svg').length).toBeGreaterThan(0);
   });
 
-  it('shows fallback copy when no online payment and not pay in person', () => {
+  it('shows Collect in person with amount due for owner-created (none) bookings', () => {
     const payment: BookingPaymentSummaryDisplay = {
       paymentStatus: 'not_required',
       paymentMethodSelected: 'none',
@@ -144,11 +146,9 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     renderPanel(baseBooking(payment));
 
     const card = getPaymentCard();
-    expect(
-      within(card).getByText(
-        /no card payment through the app for this booking/i
-      )
-    ).toBeTruthy();
+    expect(within(card).getByText('Collect in person')).toBeTruthy();
+    expect(within(card).getByText('Amount due')).toBeTruthy();
+    expect(within(card).getByText('$80.00')).toBeTruthy();
   });
 
   it('does not render a payment block when booking has no payment summary', () => {

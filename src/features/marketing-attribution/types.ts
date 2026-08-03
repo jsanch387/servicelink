@@ -22,6 +22,7 @@ export type SignupAttributionRow = {
   gclid: string | null;
   landing_path: string | null;
   referrer: string | null;
+  channel: string | null;
   signed_up_at: string;
 };
 

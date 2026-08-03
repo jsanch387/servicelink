@@ -76,6 +76,192 @@ describe('computeBookingAmountDue', () => {
 
     expect(result.amountDueCents).toBe(-2000);
   });
+
+  it('includes add-ons from job_details when top-level addon_details is empty', () => {
+    const result = computeBookingAmountDue({
+      servicePriceCents: 379_00,
+      addonDetails: [],
+      jobDetails: [
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceCents: 210_00,
+          selectedAddOns: [],
+          durationMinutes: 150,
+          vehicle: null,
+          serviceId: null,
+          servicePriceOptionLabel: 'SUV',
+        },
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceCents: 169_00,
+          selectedAddOns: [{ id: 'a1', name: 'Pet hair', priceCents: 20_00 }],
+          durationMinutes: 180,
+          vehicle: null,
+          serviceId: null,
+          servicePriceOptionLabel: null,
+        },
+      ],
+      sessionFees: [],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 399_00 },
+    });
+
+    expect(result.serviceCents).toBe(379_00);
+    expect(result.addonCents).toBe(20_00);
+    expect(result.adjustedTotalCents).toBe(399_00);
+    expect(result.amountDueCents).toBe(0);
+  });
+
+  it('falls back to addon_details when job_details has empty selectedAddOns (live 9e76bc97)', () => {
+    // Single-job row: add-ons only on wrapped top-level addon_details;
+    // job_details[0].selectedAddOns = []. Mobile complete includes them;
+    // server must match or payment_amount_mismatch (-8500).
+    const result = computeBookingAmountDue({
+      servicePriceCents: 210_00,
+      addonDetails: {
+        addons: [
+          {
+            id: 'd1cc42e0-5624-4ef6-b4cf-9cfe42270c19',
+            name: 'Pet hair removal',
+            priceCents: 20_00,
+            durationMinutes: 30,
+          },
+          {
+            id: '6707f94e-d18c-495b-8b39-188a269cca40',
+            name: 'Engine Bay Steam & Dress',
+            priceCents: 65_00,
+            durationMinutes: 30,
+          },
+        ],
+      },
+      jobDetails: [
+        {
+          serviceId: '12dbbd1b-cb7a-43ab-aa51-35e6bd6a5be8',
+          serviceName: 'Signature Shinee',
+          servicePriceOptionLabel: 'SUV',
+          servicePriceCents: 210_00,
+          selectedAddOns: [],
+          durationMinutes: 150,
+          vehicle: { year: '2021', make: 'Toyota', model: 'Tacoma' },
+        },
+      ],
+      sessionFees: [],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 274_00 },
+      discount: {
+        discountSource: 'sale',
+        discountType: 'percentage',
+        discountValue: 10,
+        discountCents: 21_00,
+      },
+    });
+
+    expect(result.serviceCents).toBe(210_00);
+    expect(result.addonCents).toBe(85_00);
+    expect(result.discountCents).toBe(21_00);
+    expect(result.adjustedTotalCents).toBe(274_00);
+    expect(result.amountDueCents).toBe(0);
+  });
+
+  it('sums job_details service prices when top-level service_price_cents is incomplete', () => {
+    // Real bug: multi-job row stored only first job's service price (21000)
+    // while job_details has 21000 + 16900 and a $20 add-on; 10% sale.
+    const result = computeBookingAmountDue({
+      servicePriceCents: 210_00,
+      addonDetails: [],
+      jobDetails: [
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceCents: 210_00,
+          selectedAddOns: [],
+          durationMinutes: 150,
+          vehicle: null,
+          serviceId: null,
+          servicePriceOptionLabel: 'SUV',
+        },
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceCents: 169_00,
+          selectedAddOns: [
+            { id: 'a1', name: 'Pet hair removal', priceCents: 20_00 },
+          ],
+          durationMinutes: 180,
+          vehicle: null,
+          serviceId: null,
+          servicePriceOptionLabel: null,
+        },
+      ],
+      sessionFees: [],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 359_10 },
+      discount: {
+        discountSource: 'sale',
+        discountType: 'percentage',
+        discountValue: 10,
+        discountCents: 39_90,
+      },
+    });
+
+    expect(result.serviceCents).toBe(379_00);
+    expect(result.addonCents).toBe(20_00);
+    expect(result.discountCents).toBe(39_90);
+    expect(result.adjustedTotalCents).toBe(359_10);
+    expect(result.amountDueCents).toBe(0);
+  });
+
+  it('matches mobile Complete sheet for drifted sale snapshot vs job_details', () => {
+    // Live booking f27e0b39: lines sum $430, frozen sale −$39.90 → $390.10.
+    // Top-level service_price_cents only had job 1 ($210).
+    const result = computeBookingAmountDue({
+      servicePriceCents: 210_00,
+      addonDetails: {
+        addons: [
+          {
+            id: 'a1',
+            name: 'Pet hair removal',
+            priceCents: 20_00,
+          },
+        ],
+      },
+      jobDetails: [
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceCents: 210_00,
+          selectedAddOns: [
+            { id: 'a1', name: 'Pet hair removal', priceCents: 20_00 },
+          ],
+          durationMinutes: 180,
+          vehicle: null,
+          serviceId: null,
+          servicePriceOptionLabel: 'SUV',
+        },
+        {
+          serviceName: 'Signature Shinee',
+          servicePriceCents: 200_00,
+          selectedAddOns: [],
+          durationMinutes: 150,
+          vehicle: null,
+          serviceId: null,
+          servicePriceOptionLabel: 'SUV',
+        },
+      ],
+      sessionFees: [],
+      paidOnlineAmountCents: 0,
+      sessionPayment: { method: 'cash', amountCents: 390_10 },
+      discount: {
+        discountSource: 'sale',
+        discountType: 'percentage',
+        discountValue: 10,
+        discountCents: 39_90,
+      },
+    });
+
+    expect(result.serviceCents).toBe(410_00);
+    expect(result.addonCents).toBe(20_00);
+    expect(result.discountCents).toBe(39_90);
+    expect(result.adjustedTotalCents).toBe(390_10);
+    expect(result.amountDueCents).toBe(0);
+  });
 });
 
 describe('computeBookingRemainingAmountCents', () => {

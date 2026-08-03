@@ -12,6 +12,7 @@ export type {
 export { sendAvailabilityBookingCustomerConfirmationEmail } from './availability-booking-notification/sendAvailabilityBookingCustomerConfirmationEmail';
 export { sendAvailabilityBookingNotificationEmail } from './availability-booking-notification/sendAvailabilityBookingNotificationEmail';
 export type {
+  AvailabilityBookingEmailJob,
   AvailabilityBookingNotificationPayload,
   AvailabilityBookingPaymentSummary,
   SendAvailabilityBookingNotificationResult,

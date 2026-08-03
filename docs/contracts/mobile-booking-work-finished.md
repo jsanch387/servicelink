@@ -1,6 +1,6 @@
 # Contract: Mobile — `work_finished` (Done / Skip)
 
-> **SMS outbound paused (2026-07):** **Done** and **Skip** still set `work_handoff_status` (`notified` / `skipped`). No customer SMS is sent; `sms.reason` is `"not_configured"` on Done. **Done succeeds without a phone** while SMS is paused. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS (2026-07):** **Done** (`notify: true`) sends `work_finished` SMS via Telnyx when outbound is enabled; requires a sendable phone (`409` if missing). **Skip** never texts. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 Owner marks physical work complete **before** payment close-out and final booking completion. This is **cycle 1** of the extended booking lifecycle — the **Done / Skip** handoff step.
 

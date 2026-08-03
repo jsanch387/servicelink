@@ -18,6 +18,7 @@ import type { Database } from '@/libs/supabase/client';
 import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isSmsOutboundEnabled } from '../config/isSmsOutboundEnabled';
+import { canBusinessSendCustomerSms } from '../server/canBusinessSendCustomerSms';
 import { logSms } from '../server/smsLog';
 import { sendSms } from './sendSms';
 import { toE164 } from '../utils/toE164';
@@ -38,7 +39,6 @@ export interface SendAndRecordSmsParams {
    * the send is skipped. e.g. `"<bookingId>:booking_confirmation"`.
    */
   dedupeKey?: string | null;
-  recipientId?: string;
   correlationId?: string;
 }
 
@@ -51,6 +51,7 @@ export type SendAndRecordSmsResult =
         | 'invalid_number'
         | 'duplicate'
         | 'not_configured'
+        | 'not_eligible'
         | 'error';
     };
 
@@ -73,6 +74,19 @@ export async function sendAndRecordSms(
     return { sent: false, reason: 'not_configured' };
   }
 
+  const eligibility = await canBusinessSendCustomerSms(
+    admin,
+    params.businessId
+  );
+  if (!eligibility.ok) {
+    logSms(correlationId, 'info', 'skip_not_eligible', {
+      type,
+      businessId: params.businessId,
+      reason: eligibility.reason,
+    });
+    return { sent: false, reason: 'not_eligible' };
+  }
+
   const phone = toE164(rawPhone);
 
   // 1. Claim/log the attempt first (idempotent via dedupe_key).
@@ -89,6 +103,7 @@ export async function sendAndRecordSms(
       to_phone: phone ?? rawPhone,
       body: message,
       status: 'queued',
+      provider: 'telnyx',
       dedupe_key: params.dedupeKey ?? null,
     })
     .select('id')
@@ -129,7 +144,6 @@ export async function sendAndRecordSms(
     to: phone,
     type,
     message,
-    recipientId: params.recipientId,
     correlationId,
   });
 
@@ -139,6 +153,7 @@ export async function sendAndRecordSms(
       await updateRow(admin, messageId, {
         status: 'sent',
         sent_at: new Date().toISOString(),
+        provider_message_id: result.providerMessageId,
       });
     } else {
       // Clear the dedupe key so the owner can retry a failed send.
@@ -163,6 +178,7 @@ async function updateRow(
     error?: string;
     sent_at?: string;
     dedupe_key?: string | null;
+    provider_message_id?: string | null;
   }
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

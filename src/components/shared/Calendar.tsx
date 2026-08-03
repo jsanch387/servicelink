@@ -14,7 +14,7 @@ function getFirstDayOfMonth(month: number, year: number): number {
 }
 
 export interface CalendarProps {
-  /** Currently selected date (controlled). */
+  /** Currently selected date (controlled). Single-select mode. */
   value: Date | null;
   /** Called when user selects a date. */
   onChange: (date: Date) => void;
@@ -38,6 +38,16 @@ export interface CalendarProps {
   wide?: boolean;
   /** No outer card frame (border, shadow, panel fill) — for embedding in a larger layout. */
   plain?: boolean;
+  /** Smaller nav + day cells for tight modals. */
+  compact?: boolean;
+  /** Weekday header format. Default `letter` (S M T…). Use `short` for Sun Mon…. */
+  weekdayFormat?: 'letter' | 'short';
+  /**
+   * Inclusive range highlight (Airbnb-style). When `rangeStart` is set, days in
+   * [rangeStart, rangeEnd ?? rangeStart] are highlighted. Parent owns click logic.
+   */
+  rangeStart?: Date | null;
+  rangeEnd?: Date | null;
 }
 
 export const Calendar: React.FC<CalendarProps> = ({
@@ -53,6 +63,10 @@ export const Calendar: React.FC<CalendarProps> = ({
   locale,
   wide = false,
   plain = false,
+  compact = false,
+  weekdayFormat = 'letter',
+  rangeStart = null,
+  rangeEnd = null,
 }) => {
   const [viewDate, setViewDate] = useState(() => {
     const today = new Date();
@@ -63,10 +77,37 @@ export const Calendar: React.FC<CalendarProps> = ({
   const month = viewDate.getMonth();
   const year = viewDate.getFullYear();
 
+  // Follow selection month only when the selected day actually changes —
+  // not when parents pass a new Date instance for the same day (avoids
+  // snapping back while the user is browsing another month).
+  const valueYear = value?.getFullYear();
+  const valueMonth = value?.getMonth();
+  const valueDate = value?.getDate();
+  const rangeStartYear = rangeStart?.getFullYear();
+  const rangeStartMonth = rangeStart?.getMonth();
+  const rangeStartDate = rangeStart?.getDate();
+
   useEffect(() => {
-    if (!value) return;
-    setViewDate(new Date(value.getFullYear(), value.getMonth(), 1));
-  }, [value]);
+    const anchor = value ?? rangeStart;
+    if (!anchor) return;
+    const nextYear = anchor.getFullYear();
+    const nextMonth = anchor.getMonth();
+    setViewDate(prev => {
+      if (prev.getFullYear() === nextYear && prev.getMonth() === nextMonth) {
+        return prev;
+      }
+      return new Date(nextYear, nextMonth, 1);
+    });
+    // Intentionally depend on calendar day parts, not Date object identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- value/rangeStart read inside; day parts are the sync key
+  }, [
+    valueYear,
+    valueMonth,
+    valueDate,
+    rangeStartYear,
+    rangeStartMonth,
+    rangeStartDate,
+  ]);
 
   const minDay = minDate
     ? new Date(
@@ -105,6 +146,37 @@ export const Calendar: React.FC<CalendarProps> = ({
     value.getMonth() === month &&
     value.getFullYear() === year;
 
+  const dayTime = (d: number) => new Date(year, month, d).setHours(0, 0, 0, 0);
+
+  const rangeStartDay = rangeStart
+    ? new Date(
+        rangeStart.getFullYear(),
+        rangeStart.getMonth(),
+        rangeStart.getDate()
+      ).getTime()
+    : null;
+  const rangeEndDay = rangeEnd
+    ? new Date(
+        rangeEnd.getFullYear(),
+        rangeEnd.getMonth(),
+        rangeEnd.getDate()
+      ).getTime()
+    : rangeStartDay;
+
+  const isRangeEndpoint = (d: number): boolean => {
+    if (rangeStartDay == null) return false;
+    const t = dayTime(d);
+    return t === rangeStartDay || (rangeEndDay != null && t === rangeEndDay);
+  };
+
+  const isInRange = (d: number): boolean => {
+    if (rangeStartDay == null || rangeEndDay == null) return false;
+    const t = dayTime(d);
+    const lo = Math.min(rangeStartDay, rangeEndDay);
+    const hi = Math.max(rangeStartDay, rangeEndDay);
+    return t >= lo && t <= hi;
+  };
+
   const isToday = (d: number): boolean => {
     const today = new Date();
     return (
@@ -141,7 +213,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   });
 
   const frameClass = plain
-    ? 'w-full sm:max-w-[360px] p-0 bg-transparent border-0 shadow-none rounded-none'
+    ? `w-full ${wide ? 'max-w-none' : 'max-w-[360px]'} p-0 bg-transparent border-0 shadow-none rounded-none`
     : `w-full ${
         wide ? 'sm:max-w-none' : 'sm:max-w-[360px]'
       } rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 shadow-xl`;
@@ -164,18 +236,30 @@ export const Calendar: React.FC<CalendarProps> = ({
       )}
 
       {/* Centered month navigation */}
-      <div className="mb-6 grid grid-cols-[44px_1fr_44px] items-center gap-3">
+      <div
+        className={
+          compact
+            ? 'mb-3 grid grid-cols-[1.75rem_1fr_1.75rem] items-center gap-1'
+            : 'mb-4 grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2'
+        }
+      >
         <button
           type="button"
           onClick={prevMonth}
           disabled={isPreviousMonthDisabled}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700"
+          className={
+            compact
+              ? 'flex h-7 w-7 cursor-pointer items-center justify-center text-gray-300 transition-colors hover:text-white disabled:cursor-not-allowed disabled:text-gray-700'
+              : 'flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700'
+          }
           aria-label="Previous month"
         >
-          <ChevronLeftIcon className="h-5 w-5" />
+          <ChevronLeftIcon className="h-5 w-5" strokeWidth={compact ? 3 : 2} />
         </button>
         <h3
-          className="text-center text-lg font-semibold tracking-tight text-gray-100"
+          className={`text-center font-semibold tracking-tight text-gray-100 ${
+            compact ? 'text-base' : 'text-lg'
+          }`}
           aria-live="polite"
         >
           {monthLabel}
@@ -187,35 +271,47 @@ export const Calendar: React.FC<CalendarProps> = ({
           type="button"
           onClick={nextMonth}
           disabled={isNextMonthDisabled}
-          className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700"
+          className={
+            compact
+              ? 'flex h-7 w-7 cursor-pointer items-center justify-center text-gray-300 transition-colors hover:text-white disabled:cursor-not-allowed disabled:text-gray-700'
+              : 'flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-gray-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:border-white/[0.05] disabled:bg-white/[0.02] disabled:text-gray-700'
+          }
           aria-label="Next month"
         >
-          <ChevronRightIcon className="h-5 w-5" />
+          <ChevronRightIcon className="h-5 w-5" strokeWidth={compact ? 3 : 2} />
         </button>
       </div>
 
-      {/* Weekday labels – single letter */}
-      <div className="grid grid-cols-7 gap-1 text-center mb-4">
+      {/* Weekday labels + days share the same 7-col grid so columns line up */}
+      <div className="mb-1 grid grid-cols-7 gap-1 text-center">
         {WEEKDAY_LABELS.map(day => (
           <span
             key={day}
-            className="text-xs font-semibold uppercase tracking-wider text-zinc-300"
+            className={`flex items-center justify-center font-medium text-zinc-400 ${
+              compact ? 'h-7 text-[11px]' : 'h-8 text-xs'
+            }`}
           >
-            {day[0]}
+            {weekdayFormat === 'short' ? day : day[0]}
           </span>
         ))}
       </div>
 
-      {/* Days grid */}
-      <div className="grid grid-cols-7 gap-y-2 gap-x-1">
+      <div
+        className={
+          compact
+            ? 'grid grid-cols-7 gap-x-0.5 gap-y-1'
+            : 'grid grid-cols-7 gap-x-1 gap-y-1.5'
+        }
+      >
         {Array(firstDay)
           .fill(null)
           .map((_, i) => (
-            <div key={`empty-${i}`} className="h-11" />
+            <div key={`empty-${i}`} className={compact ? 'h-9' : 'h-11'} />
           ))}
         {days.map(d => {
           const selectable = isDateSelectable(d);
-          const selected = isSelected(d);
+          const selected = isSelected(d) || isRangeEndpoint(d);
+          const inRange = isInRange(d);
           const today = isToday(d);
 
           return (
@@ -225,11 +321,13 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={!selectable}
               onClick={() => selectable && onChange(new Date(year, month, d))}
               className={`
-                relative mx-auto flex h-11 w-11 max-w-full items-center justify-center rounded-xl text-[15px] font-medium transition-all duration-200
-                ${!selectable ? 'text-gray-600 cursor-not-allowed' : 'cursor-pointer'}
-                ${selected ? 'bg-white text-black shadow-[0_8px_20px_rgba(255,255,255,0.12)] scale-105 z-10' : ''}
-                ${!selected && selectable && today ? 'text-white border border-white/20' : ''}
-                ${!selected && selectable && !today ? 'text-white hover:bg-white/10' : ''}
+                relative mx-auto flex items-center justify-center font-medium transition-colors duration-150
+                ${compact ? 'h-9 w-9 rounded-lg text-[13px]' : 'h-11 w-11 rounded-xl text-sm'}
+                ${!selectable ? 'cursor-not-allowed text-gray-600' : 'cursor-pointer'}
+                ${selected ? 'bg-white text-black' : ''}
+                ${!selected && inRange ? 'bg-white/20 text-white' : ''}
+                ${!selected && !inRange && selectable && today ? 'text-white ring-1 ring-white/25' : ''}
+                ${!selected && !inRange && selectable && !today ? 'text-white hover:bg-white/10' : ''}
               `}
             >
               {d}
