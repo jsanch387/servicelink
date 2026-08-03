@@ -1,6 +1,6 @@
 # Contract: Mobile — SMS notifications, message history & booking actions
 
-> **SMS (2026-08):** Telnyx is live for lifecycle actions (`on_the_way`, `job_started`, `work_finished`) and job-completed receipt SMS when `SMS_OUTBOUND_ENABLED=true`. Review-invite SMS remains paused — see [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS (2026-08):** Telnyx is live for lifecycle actions (`on_the_way`, `job_started`, `work_finished`) and job-completed receipt SMS when the hardcoded `SMS_OUTBOUND_ENABLED` switch is on (Pro + temporary owner-email allowlist). Review-invite SMS remains paused — see [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 This doc covers, for the native app:
 
@@ -309,7 +309,7 @@ async function runBookingAction(opts: {
 - On `200`: update the chip to the returned `jobStatus`; success toast/haptic. For `job_completed`, the customer was reached if `sms.sent` **or** `email.sent`; only add the soft "couldn't reach customer" note when both are false. For other actions, add the note when `sms.sent === false`.
 - On `409`: the state moved on without you (already done / concurrent). Refetch the booking and re-render — no error toast. (Note: `job_completed` on an already-completed booking is **not** a `409` — it returns `200` with `sms.reason = "duplicate"`.)
 - On `429`: honor `Retry-After`, disable temporarily.
-- The server must have the SMS provider configured (Telnyx) and `SMS_OUTBOUND_ENABLED=true`; if not, actions still transition state and report `sms.reason = "not_configured"`.
+- The server must have the SMS provider configured (Telnyx) and the hardcoded `SMS_OUTBOUND_ENABLED` switch on; if not, actions still transition state and report `sms.reason = "not_configured"`. Ineligible Pro/rollout accounts report `sms.reason = "not_eligible"`.
 
 ---
 

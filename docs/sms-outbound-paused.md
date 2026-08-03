@@ -1,6 +1,8 @@
 # SMS outbound status
 
-Telnyx is wired into `sendSms`. Outbound sends require `SMS_OUTBOUND_ENABLED=true`.
+Telnyx is wired into `sendSms`. Outbound sends require the hardcoded master
+switch `SMS_OUTBOUND_ENABLED = true` in
+`src/features/sms/config/isSmsOutboundEnabled.ts`.
 
 ## Channel rule — booking confirmation
 
@@ -33,7 +35,21 @@ Lifecycle actions (`on_the_way`, etc.) remain SMS-only.
 ## Global safety switch
 
 `sendAndRecordSms` returns `{ sent: false, reason: 'not_configured' }` when
-`SMS_OUTBOUND_ENABLED` is not `true`.
+`SMS_OUTBOUND_ENABLED` is `false` in
+`src/features/sms/config/isSmsOutboundEnabled.ts` (hardcoded; no env var).
+
+## Eligibility (in addition to the master switch)
+
+Checked inside `sendAndRecordSms` before any send/log:
+
+1. **Pro** — business owner must pass `isProAccess` (paying / active Pro). No
+   per-business SMS toggle; Pro unlocks SMS automatically.
+2. **Temporary rollout allowlist** — owner auth email must be in
+   `SMS_ROLLOUT_OWNER_EMAILS` (`src/features/sms/config/smsRolloutAllowlist.ts`).
+   Today: `jesuss387@gmail.com` only. Clear that array (or remove the check) to
+   release SMS to all Pro owners.
+
+Ineligible sends return `{ sent: false, reason: 'not_eligible' }`.
 
 ## Related contracts
 
@@ -43,4 +59,4 @@ Lifecycle actions (`on_the_way`, etc.) remain SMS-only.
 
 ## Last updated
 
-2026-08-01 — Re-enabled job-completed receipt SMS (short `/r/…` link; email only if SMS does not send).
+2026-08-03 — Pro-only SMS + temporary owner-email rollout allowlist.

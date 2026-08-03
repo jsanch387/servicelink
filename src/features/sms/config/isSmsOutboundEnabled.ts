@@ -1,10 +1,15 @@
 /**
  * Master switch for outbound customer SMS.
  *
- * Set `SMS_OUTBOUND_ENABLED=true` when Telnyx + sender are ready. Until then,
- * callers still run their normal flow but no texts are sent (response reports
- * `not_configured`).
+ * Hardcoded on purpose (no env var). Flip to `false` to kill all customer SMS
+ * in one place. While `SMS_ROLLOUT_OWNER_EMAILS` is non-empty, only listed Pro
+ * owners can send; clear that allowlist to open SMS to all Pro owners.
+ *
+ * @see smsRolloutAllowlist.ts
+ * @see canBusinessSendCustomerSms
  */
+export const SMS_OUTBOUND_ENABLED = true;
+
 export function isSmsOutboundEnabled(): boolean {
-  return process.env.SMS_OUTBOUND_ENABLED?.trim().toLowerCase() === 'true';
+  return SMS_OUTBOUND_ENABLED;
 }

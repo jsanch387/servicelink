@@ -27,7 +27,15 @@ export type { BookingSmsContext } from './messages/bookingSms';
 
 export { toE164 } from './utils/toE164';
 
-export { isSmsOutboundEnabled } from './config/isSmsOutboundEnabled';
+export {
+  isSmsOutboundEnabled,
+  SMS_OUTBOUND_ENABLED,
+} from './config/isSmsOutboundEnabled';
+export {
+  SMS_ROLLOUT_OWNER_EMAILS,
+  isOwnerEmailAllowedForSmsRollout,
+  isSmsRolloutAllowlistActive,
+} from './config/smsRolloutAllowlist';
 export {
   pausedSmsChannelOutcome,
   SMS_OUTBOUND_PAUSED_DOC,
