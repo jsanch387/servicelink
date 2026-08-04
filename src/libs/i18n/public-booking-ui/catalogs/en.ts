@@ -306,13 +306,6 @@ export const publicBookingUiEn: PublicBookingUi = {
       `Active sale: ${saleName}, ${discount}`,
     saleMarqueeAnnouncement: (saleName, discountMain, offLabel) =>
       `${saleName}, ${discountMain} ${offLabel}`,
-    promoBannerBadge: 'Promo code',
-    promoBannerWhenYouBook: (code, discount) =>
-      `Use code ${code} at checkout for ${discount}`,
-    promoBannerAriaLabel: (code, discount) =>
-      `Active promo code: ${code}, ${discount}`,
-    promoBannerCopyCode: 'Copy',
-    promoBannerCopied: 'Copied',
   },
   quoteForm: {
     quoteDetails: 'Quote details',

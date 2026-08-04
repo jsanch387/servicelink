@@ -12,7 +12,6 @@ import {
   loadPublicReviewSummary,
   publicReviewSummaryFromLoadResult,
 } from '@/features/reviews';
-import { loadPublicActivePromoCodes } from '@/features/marketing/server/loadPublicActivePromoCodes';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -180,14 +179,11 @@ export default async function BusinessProfilePage({
   const publicProfileSlug =
     businessProfileData.business_slug?.trim() || undefined;
 
-  const [publicActiveSale, publicActivePromoCodes] = await Promise.all([
-    loadPublicActiveSale(admin, businessProfileData.id, {
-      ownerHasPro: hasProAccess,
-    }),
-    loadPublicActivePromoCodes(admin, businessProfileData.id, {
-      ownerHasPro: hasProAccess,
-    }),
-  ]);
+  const publicActiveSale = await loadPublicActiveSale(
+    admin,
+    businessProfileData.id,
+    { ownerHasPro: hasProAccess }
+  );
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -204,7 +200,6 @@ export default async function BusinessProfilePage({
         publicReviewSummary={publicReviewSummary}
         publicProfileSlug={publicProfileSlug}
         publicActiveSale={publicActiveSale}
-        publicActivePromoCodes={publicActivePromoCodes}
       />
     </div>
   );

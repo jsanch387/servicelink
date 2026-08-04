@@ -8,6 +8,7 @@ import type { Database } from '@/libs/supabase/client';
 import { sanitizeDbError } from '@/utils/sanitizeDbError';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AddOnRow } from '../../components/add-ons/addOnTypes';
+import { normalizeAddOnDescriptionForSave } from '../utils/addOnDescription';
 
 export interface CreateAddOnPayload {
   name: string;
@@ -31,12 +32,17 @@ export async function createAddOn(
   payload: CreateAddOnPayload
 ): Promise<CreateAddOnResult> {
   try {
+    const description = normalizeAddOnDescriptionForSave(payload.description);
+    if (!description.ok) {
+      return { success: false, data: null, error: description.error };
+    }
+
     type TableInsert = Database['public']['Tables']['service_addons']['Insert'];
 
     const insertPayload: TableInsert = {
       business_id: businessId,
       name: payload.name.trim(),
-      description: payload.description?.trim() || null,
+      description: description.description,
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes ?? null,
     };
