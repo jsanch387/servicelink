@@ -1,4 +1,4 @@
-import { Navigation } from '@/features/landing-page/components/Navigation';
+import { MarketingNavigation } from '@/features/landing-page/components/MarketingNavigation';
 import {
   PLANS,
   PricingComparisonTable,
@@ -11,7 +11,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
-      <Navigation />
+      <MarketingNavigation />
       <div className="h-16 sm:h-20 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">

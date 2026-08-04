@@ -3,7 +3,11 @@
  * Add-ons live in service_addons pool; assignment to services via service_addon_assignments.
  */
 
-/** Max characters for an add-on description. */
+/**
+ * Max characters for an add-on description. Mirrored by the
+ * `service_addons_description_length_check` constraint in Postgres — raising
+ * this without the matching migration makes long descriptions fail to save.
+ */
 export const ADD_ON_DESCRIPTION_MAX_LENGTH = 300;
 
 export interface AddOnRow {

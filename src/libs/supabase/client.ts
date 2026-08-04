@@ -513,6 +513,7 @@ export type Database = {
           ip_address: string | null;
           user_agent: string | null;
           referrer_url: string | null;
+          referral_source: string | null;
           notification_sent: boolean;
           notification_sent_at: string | null;
           created_at: string;
@@ -537,6 +538,7 @@ export type Database = {
           ip_address?: string | null;
           user_agent?: string | null;
           referrer_url?: string | null;
+          referral_source?: string | null;
           notification_sent?: boolean;
           notification_sent_at?: string | null;
           created_at?: string;

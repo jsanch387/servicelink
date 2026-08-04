@@ -312,13 +312,6 @@ export const publicBookingUiEs: PublicBookingUi = {
       `Oferta activa: ${saleName}, ${discount}`,
     saleMarqueeAnnouncement: (saleName, discountMain, offLabel) =>
       `${saleName}, ${discountMain} ${offLabel}`,
-    promoBannerBadge: 'Código promo',
-    promoBannerWhenYouBook: (code, discount) =>
-      `Usa el código ${code} al reservar para ${discount}`,
-    promoBannerAriaLabel: (code, discount) =>
-      `Código promo activo: ${code}, ${discount}`,
-    promoBannerCopyCode: 'Copiar',
-    promoBannerCopied: 'Copiado',
   },
   quoteForm: {
     quoteDetails: 'Detalles de la cotización',

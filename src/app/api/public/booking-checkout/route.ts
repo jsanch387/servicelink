@@ -18,6 +18,8 @@ import {
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
 import { prefillCustomerWithShopAddress } from '@/features/availability/booking/utils/bookingServiceLocationFlow';
 import { clientServiceLocationChoice } from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
+import type { BookingReferralSource } from '@/features/booking-attribution/constants';
+import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
   buildPublicBookingServiceLocation,
@@ -68,6 +70,8 @@ type BookingCheckoutDraftPayload = CreateBookingRequest & {
   paymentMethodSelected: 'pay_now' | 'pay_in_person' | 'none';
   depositType?: 'fixed' | 'percent' | null;
   depositValue?: number | null;
+  /** Added server-side from the referral cookie; the webhook persists it. */
+  referralSource?: BookingReferralSource | null;
 };
 
 function parseBookingCheckoutDraftPayload(
@@ -357,6 +361,7 @@ export async function POST(request: NextRequest) {
       customer: normalizedCustomer,
       customerServiceLocation: locationResolved.effective,
       serviceLocationType: locationResolved.effective,
+      referralSource: bookingReferralSourceForBusiness(request, businessSlug),
     };
     if (
       !Number.isFinite(amountCents) ||

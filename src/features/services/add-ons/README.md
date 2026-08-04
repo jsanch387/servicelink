@@ -31,7 +31,7 @@ One add-on (e.g. "Wax $10") can be offered by multiple services. One service can
 | `id`               | uuid              | Primary key                                                                                                                                                                                               |
 | `business_id`      | uuid              | FK → business_profiles. Scopes add-ons to a business.                                                                                                                                                     |
 | `name`             | text              | Add-on name (e.g. "Extra polish")                                                                                                                                                                         |
-| `description`      | text, nullable    | **Optional**, **customer-facing** detail about what the add-on includes. Empty input is stored as `null`. Capped at `ADD_ON_DESCRIPTION_MAX_LENGTH` (300) in the UI. Shown only in the public book flow (behind a "See description" toggle), not in the owner's add-on list. |
+| `description`      | text, nullable    | **Optional**, **customer-facing** detail about what the add-on includes. Empty input is stored as `null`. Capped at `ADD_ON_DESCRIPTION_MAX_LENGTH` (300) in the UI, on the server, and by the `service_addons_description_length_check` constraint — **all three must stay in sync**. Shown only in the public book flow (behind a "See description" toggle), not in the owner's add-on list. |
 | `price_cents`      | integer           | Price in cents                                                                                                                                                                                            |
 | `duration_minutes` | integer, nullable | **Optional** extra appointment time when this add-on is selected. Null/omit = price-only (no change to slot length). Same **30-minute grid** as services (see `addOnDurationForm.ts` + `timeOptions.ts`). |
 | `created_at`       | timestamptz       | Set on insert                                                                                                                                                                                             |
@@ -74,6 +74,8 @@ add-ons/
 │   ├── createAddOn.ts
 │   ├── updateAddOn.ts
 │   └── deleteAddOn.ts
+├── utils/
+│   └── addOnDescription.ts  # Trim + length guard shared by create and update
 └── (components live in components/add-ons/)
 ```
 

@@ -16,7 +16,6 @@ import {
   loadPublicReviewSummary,
   publicReviewSummaryFromLoadResult,
 } from '@/features/reviews';
-import { loadPublicActivePromoCodes } from '@/features/marketing/server/loadPublicActivePromoCodes';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import { MediaService } from '@/features/media';
 import {
@@ -254,14 +253,11 @@ export default async function PublicProfilePage({
     publicReviewSummaryResult
   );
 
-  const [publicActiveSale, publicActivePromoCodes] = await Promise.all([
-    loadPublicActiveSale(adminGate, businessProfile.id, {
-      ownerHasPro: ownerTier === 'pro',
-    }),
-    loadPublicActivePromoCodes(adminGate, businessProfile.id, {
-      ownerHasPro: ownerTier === 'pro',
-    }),
-  ]);
+  const publicActiveSale = await loadPublicActiveSale(
+    adminGate,
+    businessProfile.id,
+    { ownerHasPro: ownerTier === 'pro' }
+  );
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -283,7 +279,6 @@ export default async function PublicProfilePage({
         publicReviewSummary={publicReviewSummary}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
-        publicActivePromoCodes={publicActivePromoCodes}
       />
     </div>
   );

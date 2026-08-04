@@ -7,6 +7,7 @@ import type { Database } from '@/libs/supabase/client';
 import { sanitizeDbError } from '@/utils/sanitizeDbError';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AddOnRow } from '../../components/add-ons/addOnTypes';
+import { normalizeAddOnDescriptionForSave } from '../utils/addOnDescription';
 
 export interface UpdateAddOnPayload {
   name: string;
@@ -32,10 +33,15 @@ export async function updateAddOn(
   payload: UpdateAddOnPayload
 ): Promise<UpdateAddOnResult> {
   try {
+    const description = normalizeAddOnDescriptionForSave(payload.description);
+    if (!description.ok) {
+      return { success: false, data: null, error: description.error };
+    }
+
     type TableUpdate = Database['public']['Tables']['service_addons']['Update'];
     const updatePayload: TableUpdate = {
       name: payload.name.trim(),
-      description: payload.description?.trim() || null,
+      description: description.description,
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes,
     };

@@ -3,7 +3,7 @@
 import { ModernLoadingSpinner } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { Navigation } from '@/features/landing-page/components/Navigation';
+import { MarketingNavigation } from '@/features/landing-page/components/MarketingNavigation';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -29,7 +29,7 @@ export function WorkshopWatchPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[var(--dashboard-bg)] flex flex-col">
-      <Navigation />
+      <MarketingNavigation />
       <div className="h-14 sm:h-20 shrink-0" aria-hidden />
 
       <main

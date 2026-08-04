@@ -46,6 +46,7 @@ import {
   parseStoredTimeOffBlocks,
   toTimeOffIntervalFields,
 } from '@/features/availability/types/blockTime';
+import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
   buildPublicBookingServiceLocation,
@@ -426,7 +427,6 @@ export async function POST(request: NextRequest) {
       profileId,
       freeBookingsCount: p.free_bookings_count,
     });
-
     const { data: paymentSettingsRow, error: paymentSettingsError } =
       await paymentSettingsOf(supabase)
         .select('payments_enabled, checkout_mode, currency')
@@ -812,10 +812,16 @@ export async function POST(request: NextRequest) {
       discountSnapshot = discountResolved.snapshot;
     }
 
+    // Owner-created bookings never belong to a customer acquisition channel.
+    const referralSource = ownerManualBooking
+      ? null
+      : bookingReferralSourceForBusiness(request, businessSlug);
+
     const result = await createBooking(supabase, {
       businessId,
       businessSlug,
       bookingSource: ownerManualBooking ? 'owner' : 'public',
+      referralSource,
       serviceId: body.serviceId,
       serviceName: storedServiceName,
       servicePriceCents: basePriceForEmail,
@@ -966,6 +972,7 @@ export async function POST(request: NextRequest) {
       auth: ownerAuthMethod,
       email: customerConfirmationOutcome,
       sms: customerSmsOutcome,
+      ref: referralSource ?? 'direct',
     });
     return publicBookingJson(
       requestId,

@@ -9,7 +9,14 @@ import { Logo } from './Logo';
 
 interface PublicFooterProps {
   compact?: boolean;
+  /** When true, include a link to the public marketplace hub. */
+  showFindDetailers?: boolean;
 }
+
+const FIND_DETAILERS_LINK = {
+  href: ROUTES.FIND_DETAILERS,
+  label: 'Find detailers',
+} as const;
 
 const PRODUCT_LINKS = [
   { href: ROUTES.FEATURES_PAGE, label: 'Features' },
@@ -55,8 +62,14 @@ function FooterLinkColumn({
   );
 }
 
-export function PublicFooter({ compact = false }: PublicFooterProps) {
+export function PublicFooter({
+  compact = false,
+  showFindDetailers = false,
+}: PublicFooterProps) {
   const year = new Date().getFullYear();
+  const productLinks = showFindDetailers
+    ? [FIND_DETAILERS_LINK, ...PRODUCT_LINKS]
+    : PRODUCT_LINKS;
 
   if (compact) {
     return (
@@ -72,7 +85,7 @@ export function PublicFooter({ compact = false }: PublicFooterProps) {
             className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
             aria-label="Footer"
           >
-            {[...PRODUCT_LINKS, ...SUPPORT_LINKS, ...LEGAL_LINKS].map(link => (
+            {[...productLinks, ...SUPPORT_LINKS, ...LEGAL_LINKS].map(link => (
               <Link key={link.href} href={link.href} className={linkClass}>
                 {link.label}
               </Link>
@@ -93,7 +106,7 @@ export function PublicFooter({ compact = false }: PublicFooterProps) {
             className="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-12"
             aria-label="Footer"
           >
-            <FooterLinkColumn title="Product" links={PRODUCT_LINKS} />
+            <FooterLinkColumn title="Product" links={productLinks} />
             <FooterLinkColumn title="Support" links={SUPPORT_LINKS} />
             <FooterLinkColumn title="Legal" links={LEGAL_LINKS} />
           </nav>

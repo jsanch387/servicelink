@@ -5,12 +5,12 @@ import { FeaturesPageFaq } from './FeaturesPageFaq';
 import { FeaturesPageHero } from './FeaturesPageHero';
 import { FeaturesPageSeoContent } from './FeaturesPageSeoContent';
 import { Footer } from './Footer';
-import { Navigation } from './Navigation';
+import { MarketingNavigation } from './MarketingNavigation';
 
 export const FeaturesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
-      <Navigation />
+      <MarketingNavigation />
       <div className="h-16 sm:h-20 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
 

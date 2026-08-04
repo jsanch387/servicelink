@@ -1,5 +1,5 @@
 import { ContactForm } from '@/features/contact';
-import { Navigation } from '@/features/landing-page/components/Navigation';
+import { MarketingNavigation } from '@/features/landing-page/components/MarketingNavigation';
 import { ROUTES } from '@/constants/routes';
 import {
   SERVICELINK_SUPPORT_EMAIL,
@@ -10,7 +10,7 @@ import Link from 'next/link';
 export default function ContactPage() {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
-      <Navigation />
+      <MarketingNavigation />
       <div className="h-16 sm:h-20 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 pb-8 sm:pb-12">

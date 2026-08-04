@@ -6,6 +6,8 @@
  * omitted so Google crawl budget isn’t spent on thin tire-kicker pages.
  */
 
+import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
+import { MARKETPLACE_CITIES } from '@/features/marketplace/config/marketplaceCities';
 import { isProAccess } from '@/features/pricing/utils/isProAccess';
 import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusinessProfileLive';
 import { GUIDES } from '@/features/resources';
@@ -198,6 +200,24 @@ ${GUIDES.map(guide => {
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>${resourcesUrls}
+${
+  isMarketplacePublicEnabled()
+    ? `  <url>
+    <loc>${baseUrl}/find-detailers</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+${MARKETPLACE_CITIES.map(
+  city => `  <url>
+    <loc>${baseUrl}/find-detailers/${city.slug}</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>`
+).join('\n')}`
+    : ''
+}
 ${indexedProfiles
   .map(
     profile => `  <url>

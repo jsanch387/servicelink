@@ -8,17 +8,23 @@ import React, { useState } from 'react';
 import { FiNavigation } from 'react-icons/fi';
 
 interface MarketplaceSearchProps {
+  location: string;
+  onLocationChange: (value: string) => void;
   onSearch: (location: string) => Promise<void>;
   isSearching?: boolean;
   searchError?: string;
+  /** Tighter layout when shown above results. */
+  compact?: boolean;
 }
 
 export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
+  location,
+  onLocationChange,
   onSearch,
   isSearching = false,
   searchError = '',
+  compact = false,
 }) => {
-  const [location, setLocation] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState('');
 
@@ -45,8 +51,9 @@ export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
               position.coords.latitude,
               position.coords.longitude
             );
-            setLocation(resolved.searchValue);
-            await onSearch(resolved.searchValue);
+            // Keep the exact resolved label in the input; search uses the same value.
+            onLocationChange(resolved.label);
+            await onSearch(resolved.searchValue || resolved.label);
           } catch (error) {
             setLocationError(
               error instanceof Error
@@ -66,12 +73,16 @@ export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
         );
         setIsLocating(false);
       },
-      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 }
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 15_000 }
     );
   };
 
   return (
-    <div className="mx-auto mt-10 w-full max-w-2xl sm:mt-12">
+    <div
+      className={
+        compact ? 'w-full max-w-2xl' : 'mx-auto mt-10 w-full max-w-2xl sm:mt-12'
+      }
+    >
       <form
         onSubmit={handleSubmit}
         className="flex flex-col gap-3 sm:min-h-14 sm:flex-row sm:items-center sm:gap-3 sm:rounded-full sm:border sm:border-white/15 sm:bg-white/[0.06] sm:p-1 sm:pl-5 sm:shadow-[0_20px_60px_rgba(0,0,0,0.28),0_0_40px_rgba(255,255,255,0.035)] sm:backdrop-blur-2xl"
@@ -83,12 +94,13 @@ export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
             placeholder="City or ZIP code"
             value={location}
             onChange={value => {
-              setLocation(value);
+              onLocationChange(value);
               setLocationError('');
             }}
             onSelect={selectedLocation => {
-              setLocation(selectedLocation.searchValue);
+              onLocationChange(selectedLocation.label);
               setLocationError('');
+              void onSearch(selectedLocation.searchValue);
             }}
             mode="customer-search"
             required
@@ -110,7 +122,7 @@ export const MarketplaceSearch: React.FC<MarketplaceSearchProps> = ({
         </Button>
       </form>
 
-      <div className="mt-4 text-center">
+      <div className={`text-center ${compact ? 'mt-3' : 'mt-4'}`}>
         <button
           type="button"
           onClick={handleUseCurrentLocation}

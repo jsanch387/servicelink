@@ -14,8 +14,6 @@ import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
-import { PublicActivePromoCodeTicketBanner } from '@/features/marketing/components/PublicActivePromoCodeTicketBanner';
-import type { PublicActivePromoCode } from '@/features/marketing/types/publicActivePromoCode';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
@@ -88,8 +86,6 @@ interface BusinessProfileViewProps {
   publicProfileSlug?: string;
   /** Live sale to announce on the public booking link (Pro owners only). */
   publicActiveSale?: PublicActiveSale | null;
-  /** Live promo codes to show as tickets on the public booking link (Pro owners only). */
-  publicActivePromoCodes?: PublicActivePromoCode[];
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -108,7 +104,6 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicReviewSummary = null,
   publicProfileSlug,
   publicActiveSale = null,
-  publicActivePromoCodes = [],
 }) => {
   const showReviewsTab = Boolean(
     publicReviewSummary &&
@@ -508,19 +503,6 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                     compactTopPadding={isPublic && publicFreeBookingsCapReached}
                     bookingFlowLocale={bookingFlowLocale}
                     publicActiveSale={publicActiveSale}
-                    belowCategoryFilters={
-                      publicActivePromoCodes.length > 0 ? (
-                        <div className="space-y-3">
-                          {publicActivePromoCodes.map(promo => (
-                            <PublicActivePromoCodeTicketBanner
-                              key={promo.code}
-                              promo={promo}
-                              bookingFlowLocale={bookingFlowLocale}
-                            />
-                          ))}
-                        </div>
-                      ) : null
-                    }
                   />
                 </>
               ) : activeTab === 'gallery' ? (

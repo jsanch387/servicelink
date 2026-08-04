@@ -2,12 +2,12 @@ import { MarketingGalaxyBackground } from '@/components/shared';
 import React from 'react';
 import { DetailerFeaturesSection } from './DetailerFeaturesSection';
 import { FAQSection } from './FAQSection';
-import { Footer } from './Footer';
 import { HeroSection } from './HeroSection';
 import { HowItWorksSection } from './HowItWorksSection';
 import { LandingPageStructuredData } from './LandingPageStructuredData';
 import { LandingPricingSection } from './LandingPricingSection';
-import { Navigation } from './Navigation';
+import { MarketingFooter } from './MarketingFooter';
+import { MarketingNavigation } from './MarketingNavigation';
 import { ProblemSolutionSection } from './ProblemSolutionSection';
 import { TestimonialsSection } from './TestimonialsSection';
 import { TrustedByStripSection } from './TrustedByStripSection';
@@ -18,7 +18,7 @@ export const LandingPage: React.FC = () => {
       <LandingPageStructuredData />
       <MarketingGalaxyBackground />
       <div className="relative z-10">
-        <Navigation />
+        <MarketingNavigation />
         <main id="main-content" aria-label="Main content">
           <HeroSection />
           <TestimonialsSection />
@@ -29,7 +29,7 @@ export const LandingPage: React.FC = () => {
           <LandingPricingSection />
           <FAQSection />
         </main>
-        <Footer />
+        <MarketingFooter />
       </div>
     </div>
   );

@@ -1,8 +1,11 @@
 'use client';
 
 import { PublicFooter } from '@/components/shared';
+import { getFindDetailersCityPath, ROUTES } from '@/constants/routes';
 import { searchMarketplace } from '../api/searchMarketplace';
+import { matchMarketplaceCity } from '../config/marketplaceCities';
 import type { MarketplaceBusiness } from '../types/marketplace';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
 import { MarketplaceDiscovery } from './MarketplaceDiscovery';
 import { MarketplaceHeader } from './MarketplaceHeader';
@@ -13,28 +16,53 @@ import { MarketplaceSearch } from './MarketplaceSearch';
 import { MarketplaceShowcase } from './MarketplaceShowcase';
 import { MarketplaceTrustSignal } from './MarketplaceTrustSignal';
 
-export const MarketplacePage: React.FC = () => {
-  const [hasSearched, setHasSearched] = React.useState(false);
-  const [searchParams, setSearchParams] = React.useState<{
-    location: string;
-  } | null>(null);
-  const [businesses, setBusinesses] = React.useState<MarketplaceBusiness[]>([]);
+interface MarketplacePageProps {
+  /** Prefill from a city SEO page or shared link. */
+  initialLocation?: string;
+  initialBusinesses?: MarketplaceBusiness[];
+  /** When set, this page is a published city URL. */
+  citySlug?: string;
+}
+
+export const MarketplacePage: React.FC<MarketplacePageProps> = ({
+  initialLocation = '',
+  initialBusinesses = [],
+  citySlug,
+}) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const hasInitialResults = initialBusinesses.length > 0 || Boolean(citySlug);
+
+  const [hasSearched, setHasSearched] = React.useState(hasInitialResults);
+  const [locationQuery, setLocationQuery] = React.useState(
+    initialLocation || ''
+  );
+  const [searchedLocation, setSearchedLocation] = React.useState(
+    initialLocation || ''
+  );
+  const [businesses, setBusinesses] =
+    React.useState<MarketplaceBusiness[]>(initialBusinesses);
   const [isSearching, setIsSearching] = React.useState(false);
   const [searchError, setSearchError] = React.useState('');
+  const autoSearchedRef = React.useRef(false);
 
-  React.useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [hasSearched]);
+  const runClientSearch = React.useCallback(async (location: string) => {
+    const nextLocation = location.trim();
+    if (!nextLocation) return;
 
-  const handleSearch = async (location: string) => {
+    // Switch to results layout immediately so skeletons can show while fetching.
     setIsSearching(true);
     setSearchError('');
+    setHasSearched(true);
+    setSearchedLocation(nextLocation);
+    setBusinesses([]);
 
     try {
-      const result = await searchMarketplace(location);
+      const result = await searchMarketplace(nextLocation);
+      setLocationQuery(result.location || nextLocation);
       setBusinesses(result.businesses);
-      setSearchParams({ location: result.location });
-      setHasSearched(true);
+      setSearchedLocation(result.location);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       setSearchError(
         error instanceof Error
@@ -44,14 +72,55 @@ export const MarketplacePage: React.FC = () => {
     } finally {
       setIsSearching(false);
     }
+  }, []);
+
+  const handleSearch = async (location: string) => {
+    const nextLocation = location.trim();
+    if (!nextLocation) return;
+
+    const matchedCity = matchMarketplaceCity(nextLocation);
+    if (matchedCity && matchedCity.slug !== citySlug) {
+      router.push(getFindDetailersCityPath(matchedCity.slug));
+      return;
+    }
+
+    if (!matchedCity && citySlug) {
+      router.push(
+        `${ROUTES.FIND_DETAILERS}?location=${encodeURIComponent(nextLocation)}`
+      );
+      return;
+    }
+
+    await runClientSearch(nextLocation);
   };
 
-  const handleNewSearch = () => {
-    setHasSearched(false);
-    setSearchParams(null);
-    setBusinesses([]);
-    setSearchError('');
-  };
+  // Hub share links: /find-detailers?location=Austin,%20TX
+  React.useEffect(() => {
+    if (citySlug || autoSearchedRef.current) return;
+    const locationParam = searchParams.get('location')?.trim();
+    if (!locationParam) return;
+
+    autoSearchedRef.current = true;
+    const matchedCity = matchMarketplaceCity(locationParam);
+    if (matchedCity) {
+      router.replace(getFindDetailersCityPath(matchedCity.slug));
+      return;
+    }
+
+    setLocationQuery(locationParam);
+    void runClientSearch(locationParam);
+  }, [citySlug, router, runClientSearch, searchParams]);
+
+  const search = (
+    <MarketplaceSearch
+      location={locationQuery}
+      onLocationChange={setLocationQuery}
+      onSearch={handleSearch}
+      isSearching={isSearching}
+      searchError={searchError}
+      compact={hasSearched}
+    />
+  );
 
   return (
     <div className="flex min-h-screen flex-col overflow-hidden bg-[var(--dashboard-bg)] text-white">
@@ -68,11 +137,7 @@ export const MarketplacePage: React.FC = () => {
 
             <div className="relative mx-auto max-w-6xl">
               <MarketplaceHero />
-              <MarketplaceSearch
-                onSearch={handleSearch}
-                isSearching={isSearching}
-                searchError={searchError}
-              />
+              {search}
               <MarketplaceTrustSignal />
             </div>
           </section>
@@ -83,12 +148,15 @@ export const MarketplacePage: React.FC = () => {
       ) : (
         <main className="relative flex-1 px-4 py-6 sm:px-6 sm:py-10 lg:px-8 lg:py-14">
           <div className="pointer-events-none absolute left-1/2 top-[-24rem] h-[44rem] w-[44rem] -translate-x-1/2 rounded-full bg-white/[0.07] blur-[120px]" />
-          <div className="relative mx-auto max-w-6xl">
-            <MarketplaceResults
-              location={searchParams?.location || ''}
-              businesses={businesses}
-              onNewSearch={handleNewSearch}
-            />
+          <div className="relative mx-auto max-w-6xl space-y-8 sm:space-y-10">
+            <div className="relative z-30 flex justify-center">{search}</div>
+            <div className="relative z-0">
+              <MarketplaceResults
+                location={searchedLocation || locationQuery}
+                businesses={businesses}
+                isSearching={isSearching}
+              />
+            </div>
           </div>
         </main>
       )}

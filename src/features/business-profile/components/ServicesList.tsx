@@ -34,8 +34,6 @@ interface ServicesListProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** Live sale — shows struck-through prices on eligible service cards. */
   publicActiveSale?: PublicActiveSale | null;
-  /** Rendered after category filters and before service cards (e.g. promo tickets). */
-  belowCategoryFilters?: React.ReactNode;
 }
 
 export const ServicesList: React.FC<ServicesListProps> = ({
@@ -49,7 +47,6 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   compactTopPadding = false,
   bookingFlowLocale = 'en',
   publicActiveSale = null,
-  belowCategoryFilters = null,
 }) => {
   const bookingUi = publicBookingUi(bookingFlowLocale);
   const services = useMemo(
@@ -126,20 +123,10 @@ export const ServicesList: React.FC<ServicesListProps> = ({
             />
           ) : null}
 
-          {belowCategoryFilters ? (
-            <div className={showCategoryFilters ? 'mt-3' : undefined}>
-              {belowCategoryFilters}
-            </div>
-          ) : null}
-
           {displayServices.length > 0 ? (
             <div
               className={`grid grid-cols-1 gap-4 ${
-                belowCategoryFilters
-                  ? 'mt-2'
-                  : showCategoryFilters
-                    ? 'mt-3'
-                    : ''
+                showCategoryFilters ? 'mt-3' : ''
               }`}
             >
               {displayServices.map(service => (

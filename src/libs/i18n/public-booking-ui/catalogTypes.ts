@@ -295,11 +295,6 @@ export type PublicBookingUi = {
       discountMain: string,
       offLabel: string
     ) => string;
-    promoBannerBadge: string;
-    promoBannerWhenYouBook: (code: string, discount: string) => string;
-    promoBannerAriaLabel: (code: string, discount: string) => string;
-    promoBannerCopyCode: string;
-    promoBannerCopied: string;
   };
   quoteForm: {
     quoteDetails: string;
