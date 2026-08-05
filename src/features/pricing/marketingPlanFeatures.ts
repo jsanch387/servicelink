@@ -11,6 +11,7 @@ export const MARKETING_FREE_PLAN_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Shareable booking page & online scheduling' },
   { text: 'Services, availability calendar & dashboard' },
   { text: 'Client CRM & visit history' },
+  { text: 'Email confirmations for you and clients' },
   { text: `Up to ${FREE_MAX_PORTFOLIO_IMAGES} gallery photos` },
 ];
 
@@ -24,11 +25,13 @@ export const PRO_TAP_TO_PAY_FEATURE_TEXT =
 /** Feature bullets for Pro tier on marketing / upgrade plan cards. */
 export const MARKETING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings on your public page', highlight: true },
+  { text: 'SMS notifications for clients', highlight: true },
   {
     text: PRO_TAP_TO_PAY_FEATURE_TEXT,
     highlight: true,
   },
   { text: 'Accept card payments & collect deposits', highlight: true },
+  { text: 'Listed in the detailer marketplace', highlight: true },
   { text: 'Client CRM — notes, history, and check-ins' },
   { text: 'Create and accept quote requests' },
   { text: 'Email confirmations for you and clients' },
@@ -47,11 +50,13 @@ export const PUBLIC_PRICING_PRO_PLAN_FEATURES = MARKETING_PRO_PLAN_FEATURES;
  */
 export const POST_ONBOARDING_PRO_NUDGE_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings', highlight: true },
+  { text: 'SMS notifications for clients', highlight: true },
   {
     text: PRO_TAP_TO_PAY_FEATURE_TEXT,
     highlight: true,
   },
   { text: 'Accept payments & deposits in the app', highlight: true },
+  { text: 'Listed in the detailer marketplace', highlight: true },
   { text: 'Client CRM, quotes, and email confirmations' },
   { text: 'Multiple price options per service' },
   { text: 'Verified badge & more gallery photos' },

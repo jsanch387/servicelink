@@ -2,8 +2,8 @@
  * Master switch for outbound customer SMS.
  *
  * Hardcoded on purpose (no env var). Flip to `false` to kill all customer SMS
- * in one place. While `SMS_ROLLOUT_OWNER_EMAILS` is non-empty, only listed Pro
- * owners can send; clear that allowlist to open SMS to all Pro owners.
+ * in one place. Pro eligibility is enforced in `canBusinessSendCustomerSms`
+ * (optional email allowlist only if `SMS_ROLLOUT_OWNER_EMAILS` is non-empty).
  *
  * @see smsRolloutAllowlist.ts
  * @see canBusinessSendCustomerSms

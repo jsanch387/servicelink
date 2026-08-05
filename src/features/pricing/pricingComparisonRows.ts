@@ -24,6 +24,11 @@ export const PRICING_COMPARISON_ROWS: readonly PricingComparisonRow[] = [
     pro: { kind: 'text', value: 'Unlimited' },
   },
   {
+    feature: 'SMS notifications',
+    free: { kind: 'excluded' },
+    pro: { kind: 'included' },
+  },
+  {
     feature: 'Booking page & scheduling',
     free: { kind: 'included' },
     pro: { kind: 'included' },
@@ -41,6 +46,11 @@ export const PRICING_COMPARISON_ROWS: readonly PricingComparisonRow[] = [
   {
     feature: 'Email booking notifications',
     free: { kind: 'included' },
+    pro: { kind: 'included' },
+  },
+  {
+    feature: 'Listed on the detailer marketplace',
+    free: { kind: 'excluded' },
     pro: { kind: 'included' },
   },
   {

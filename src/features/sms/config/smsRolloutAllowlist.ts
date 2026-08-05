@@ -2,14 +2,11 @@
  * Temporary SMS rollout allowlist (owner auth emails, lowercase).
  *
  * While this list is non-empty, only Pro businesses whose owner email is listed
- * may send customer SMS. Clear the array (or remove the check) to release SMS
- * to all Pro owners.
+ * may send customer SMS. Empty = all Pro owners (current production state).
  *
  * @see canBusinessSendCustomerSms
  */
-export const SMS_ROLLOUT_OWNER_EMAILS: readonly string[] = [
-  'jesuss387@gmail.com',
-];
+export const SMS_ROLLOUT_OWNER_EMAILS: readonly string[] = [];
 
 export function isSmsRolloutAllowlistActive(): boolean {
   return SMS_ROLLOUT_OWNER_EMAILS.length > 0;

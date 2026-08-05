@@ -19,10 +19,7 @@ export default function PricingPage() {
           Pricing
         </h1>
         <p className="text-gray-400 text-center mb-12 sm:mb-16 max-w-2xl mx-auto text-sm sm:text-base">
-          Get started on {free.name} with your booking page, scheduling, and
-          core tools — no credit card required. Upgrade to {pro.name} when you
-          want unlimited bookings, payments on your iPhone at the job, quotes,
-          and more. Pay monthly or save two months with yearly billing.
+          Start free, then upgrade when you&apos;re ready.
         </p>
 
         <PublicPricingPlans className="max-w-4xl mx-auto" />

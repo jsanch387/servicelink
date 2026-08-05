@@ -74,35 +74,29 @@ describe('canBusinessSendCustomerSms', () => {
     isProAccessMock.mockReturnValue(true);
   });
 
-  it('allows Pro owner on the rollout allowlist', async () => {
+  it('allows any Pro owner when the rollout allowlist is empty', async () => {
     const { admin, getUserById } = makeAdmin({
-      email: 'jesuss387@gmail.com',
+      email: 'anyone@example.com',
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await canBusinessSendCustomerSms(admin as any, 'biz-1');
 
     expect(res).toEqual({ ok: true });
-    expect(getUserById).toHaveBeenCalledWith('user-1');
+    expect(getUserById).not.toHaveBeenCalled();
   });
 
   it('rejects non-Pro owners', async () => {
     isProAccessMock.mockReturnValue(false);
-    const { admin } = makeAdmin({ email: 'jesuss387@gmail.com' });
+    const { admin, getUserById } = makeAdmin({
+      email: 'anyone@example.com',
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await canBusinessSendCustomerSms(admin as any, 'biz-1');
 
     expect(res).toEqual({ ok: false, reason: 'not_pro' });
-  });
-
-  it('rejects Pro owners not on the rollout allowlist', async () => {
-    const { admin } = makeAdmin({ email: 'other@example.com' });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await canBusinessSendCustomerSms(admin as any, 'biz-1');
-
-    expect(res).toEqual({ ok: false, reason: 'not_in_rollout' });
+    expect(getUserById).not.toHaveBeenCalled();
   });
 
   it('rejects when business has no profile_id', async () => {

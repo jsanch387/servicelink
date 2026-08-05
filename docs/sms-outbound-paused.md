@@ -44,10 +44,9 @@ Checked inside `sendAndRecordSms` before any send/log:
 
 1. **Pro** — business owner must pass `isProAccess` (paying / active Pro). No
    per-business SMS toggle; Pro unlocks SMS automatically.
-2. **Temporary rollout allowlist** — owner auth email must be in
-   `SMS_ROLLOUT_OWNER_EMAILS` (`src/features/sms/config/smsRolloutAllowlist.ts`).
-   Today: `jesuss387@gmail.com` only. Clear that array (or remove the check) to
-   release SMS to all Pro owners.
+2. **Optional rollout allowlist** — if `SMS_ROLLOUT_OWNER_EMAILS` is non-empty
+   (`src/features/sms/config/smsRolloutAllowlist.ts`), only listed owner emails
+   may send. Empty (current) = all Pro owners.
 
 Ineligible sends return `{ sent: false, reason: 'not_eligible' }`.
 
@@ -59,4 +58,5 @@ Ineligible sends return `{ sent: false, reason: 'not_eligible' }`.
 
 ## Last updated
 
-2026-08-03 — Pro-only SMS + temporary owner-email rollout allowlist.
+2026-08-04 — SMS open to all Pro owners (rollout allowlist cleared).
+

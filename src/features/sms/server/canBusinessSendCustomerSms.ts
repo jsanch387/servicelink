@@ -3,7 +3,7 @@
  *
  * Gates (all required):
  * 1. Owner has Pro access ({@link isProAccess})
- * 2. Temporary rollout allowlist (owner email) — remove when releasing broadly
+ * 2. Temporary rollout allowlist (owner email) — only when the list is non-empty
  *
  * Master switch {@link isSmsOutboundEnabled} is checked separately in
  * `sendAndRecordSms`.
@@ -12,7 +12,10 @@
 import { isProAccess } from '@/features/pricing/utils/isProAccess';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isOwnerEmailAllowedForSmsRollout } from '../config/smsRolloutAllowlist';
+import {
+  isOwnerEmailAllowedForSmsRollout,
+  isSmsRolloutAllowlistActive,
+} from '../config/smsRolloutAllowlist';
 
 export type BusinessSmsEligibility =
   | { ok: true }
@@ -78,15 +81,17 @@ export async function canBusinessSendCustomerSms(
       return { ok: false, reason: 'not_pro' };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const authResult = await (admin as any).auth.admin.getUserById(profileId);
-    const email =
-      (authResult?.data?.user?.email as string | undefined) ??
-      (authResult?.user?.email as string | undefined) ??
-      null;
+    if (isSmsRolloutAllowlistActive()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const authResult = await (admin as any).auth.admin.getUserById(profileId);
+      const email =
+        (authResult?.data?.user?.email as string | undefined) ??
+        (authResult?.user?.email as string | undefined) ??
+        null;
 
-    if (!isOwnerEmailAllowedForSmsRollout(email)) {
-      return { ok: false, reason: 'not_in_rollout' };
+      if (!isOwnerEmailAllowedForSmsRollout(email)) {
+        return { ok: false, reason: 'not_in_rollout' };
+      }
     }
 
     return { ok: true };
