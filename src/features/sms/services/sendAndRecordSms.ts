@@ -20,7 +20,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isSmsOutboundEnabled } from '../config/isSmsOutboundEnabled';
 import { canBusinessSendCustomerSms } from '../server/canBusinessSendCustomerSms';
 import { logSms } from '../server/smsLog';
-import { sendSms } from './sendSms';
+import { sendSms, type SendSmsResult } from './sendSms';
+import { isTelnyxSmsConfigured } from './telnyxClient';
 import { toE164 } from '../utils/toE164';
 
 export interface SendAndRecordSmsParams {
@@ -71,6 +72,13 @@ export async function sendAndRecordSms(
 
   if (!isSmsOutboundEnabled()) {
     logSms(correlationId, 'info', 'skip_outbound_disabled', { type });
+    return { sent: false, reason: 'not_configured' };
+  }
+
+  // Infra / entitlement skips: do not insert — avoids flooding sms_messages with
+  // noise from free-tier businesses or environments without Telnyx credentials.
+  if (!isTelnyxSmsConfigured()) {
+    logSms(correlationId, 'warn', 'skip_not_configured', { type });
     return { sent: false, reason: 'not_configured' };
   }
 
@@ -159,7 +167,7 @@ export async function sendAndRecordSms(
       // Clear the dedupe key so the owner can retry a failed send.
       await updateRow(admin, messageId, {
         status: 'failed',
-        error: result.reason,
+        error: smsFailureErrorForDb(result),
         dedupe_key: null,
       });
     }
@@ -168,6 +176,16 @@ export async function sendAndRecordSms(
   return result.sent
     ? { sent: true, messageId }
     : { sent: false, reason: result.reason };
+}
+
+/** Persist a useful failure string in `sms_messages.error` (not just `"error"`). */
+function smsFailureErrorForDb(
+  result: Extract<SendSmsResult, { sent: false }>
+): string {
+  if (result.reason === 'error' && result.detail) {
+    return result.detail;
+  }
+  return result.reason;
 }
 
 async function updateRow(

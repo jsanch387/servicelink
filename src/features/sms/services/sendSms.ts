@@ -21,11 +21,45 @@ export interface SendSmsParams {
 
 export type SendSmsResult =
   | { sent: true; providerMessageId: string | null }
-  | { sent: false; reason: 'not_configured' | 'invalid_number' | 'error' };
+  | {
+      sent: false;
+      reason: 'not_configured' | 'invalid_number' | 'error';
+      /** Provider/exception detail for DB + ops (truncated). */
+      detail?: string;
+    };
+
+/** Max length stored in `sms_messages.error` / returned as `detail`. */
+const ERROR_DETAIL_MAX = 500;
 
 function phoneLast4(e164: string): string {
   const digits = e164.replace(/\D/g, '');
   return digits.slice(-4) || '????';
+}
+
+function truncateErrorDetail(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= ERROR_DETAIL_MAX) return trimmed;
+  return `${trimmed.slice(0, ERROR_DETAIL_MAX - 1)}…`;
+}
+
+/** Best-effort string from a thrown Telnyx / network error. */
+export function formatSmsProviderError(error: unknown): string {
+  if (error instanceof Error) {
+    const withStatus = error as Error & {
+      statusCode?: number;
+      status?: number;
+      error?: { errors?: Array<{ code?: string; title?: string; detail?: string }> };
+    };
+    const status = withStatus.statusCode ?? withStatus.status;
+    const first = withStatus.error?.errors?.[0];
+    const parts = [
+      status != null ? `HTTP ${status}` : null,
+      first?.code ? `code=${first.code}` : null,
+      first?.title || first?.detail || error.message || null,
+    ].filter(Boolean);
+    return truncateErrorDetail(parts.join(': ') || 'unknown_error');
+  }
+  return truncateErrorDetail(String(error) || 'unknown_error');
 }
 
 export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
@@ -61,12 +95,13 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
     });
     return { sent: true, providerMessageId };
   } catch (e) {
+    const detail = formatSmsProviderError(e);
     logSms(correlationId, 'warn', 'send_failed', {
       type,
       toLast4: phoneLast4(number),
       from,
-      error: e instanceof Error ? e.message.slice(0, 200) : String(e),
+      error: detail.slice(0, 200),
     });
-    return { sent: false, reason: 'error' };
+    return { sent: false, reason: 'error', detail };
   }
 }

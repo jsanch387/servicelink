@@ -28,3 +28,8 @@ export function getTelnyxClient(): Telnyx | null {
 export function getTelnyxFromNumber(): string | undefined {
   return process.env.TELNYX_FROM_NUMBER?.trim() || undefined;
 }
+
+/** True when both Telnyx API key and from-number are set. */
+export function isTelnyxSmsConfigured(): boolean {
+  return Boolean(getTelnyxClient() && getTelnyxFromNumber());
+}

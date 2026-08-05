@@ -5,10 +5,12 @@ const {
   sendSmsMock,
   canBusinessSendCustomerSmsMock,
   isSmsOutboundEnabledMock,
+  isTelnyxSmsConfiguredMock,
 } = vi.hoisted(() => ({
   sendSmsMock: vi.fn(),
   canBusinessSendCustomerSmsMock: vi.fn(),
   isSmsOutboundEnabledMock: vi.fn(() => true),
+  isTelnyxSmsConfiguredMock: vi.fn(() => true),
 }));
 
 // Mock only the low-level provider send; keep the real toE164 + logging.
@@ -23,6 +25,10 @@ vi.mock('@/features/sms/server/canBusinessSendCustomerSms', () => ({
 vi.mock('@/features/sms/config/isSmsOutboundEnabled', () => ({
   isSmsOutboundEnabled: isSmsOutboundEnabledMock,
   SMS_OUTBOUND_ENABLED: true,
+}));
+
+vi.mock('@/features/sms/services/telnyxClient', () => ({
+  isTelnyxSmsConfigured: isTelnyxSmsConfiguredMock,
 }));
 
 interface AdminOpts {
@@ -85,6 +91,7 @@ function baseParams(admin: unknown, overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   isSmsOutboundEnabledMock.mockReturnValue(true);
+  isTelnyxSmsConfiguredMock.mockReturnValue(true);
   sendSmsMock.mockResolvedValue({ sent: true, providerMessageId: 'telnyx-1' });
   canBusinessSendCustomerSmsMock.mockResolvedValue({ ok: true });
 });
@@ -186,7 +193,25 @@ describe('sendAndRecordSms', () => {
     });
   });
 
-  it('send failure: records failed and clears dedupe key (retryable)', async () => {
+  it('send failure: records provider detail and clears dedupe key (retryable)', async () => {
+    sendSmsMock.mockResolvedValue({
+      sent: false,
+      reason: 'error',
+      detail: 'HTTP 400: code=40001: Invalid destination',
+    });
+    const { admin, updates } = makeAdmin();
+
+    const res = await sendAndRecordSms(baseParams(admin));
+
+    expect(res).toEqual({ sent: false, reason: 'error' });
+    expect(updates[0].patch).toMatchObject({
+      status: 'failed',
+      error: 'HTTP 400: code=40001: Invalid destination',
+      dedupe_key: null,
+    });
+  });
+
+  it('send failure without detail: stores reason code', async () => {
     sendSmsMock.mockResolvedValue({ sent: false, reason: 'error' });
     const { admin, updates } = makeAdmin();
 
@@ -200,17 +225,15 @@ describe('sendAndRecordSms', () => {
     });
   });
 
-  it('not_configured: records failed and clears dedupe key', async () => {
-    sendSmsMock.mockResolvedValue({ sent: false, reason: 'not_configured' });
-    const { admin, updates } = makeAdmin();
+  it('not_configured (missing Telnyx): skips send and log without inserting', async () => {
+    isTelnyxSmsConfiguredMock.mockReturnValue(false);
+    const { admin, inserts } = makeAdmin();
 
     const res = await sendAndRecordSms(baseParams(admin));
 
     expect(res).toEqual({ sent: false, reason: 'not_configured' });
-    expect(updates[0].patch).toMatchObject({
-      status: 'failed',
-      error: 'not_configured',
-    });
+    expect(inserts).toHaveLength(0);
+    expect(sendSmsMock).not.toHaveBeenCalled();
   });
 
   it('still sends when the log insert fails for a non-duplicate reason', async () => {
