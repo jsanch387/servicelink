@@ -12,9 +12,10 @@ export const SERVICE_CARD_DESCRIPTION_COLLAPSED_MAX_MOBILE = 140;
 export const SERVICE_CARD_DESCRIPTION_COLLAPSED_MAX_DESKTOP = 220;
 
 /**
- * Collapsed description cap for service cards (5 × leading-relaxed lines).
- * Uses max-height instead of line-clamp so bullet rows from
- * ServiceDescriptionFormatted still truncate and measure correctly.
+ * Collapsed description cap for service cards (~5 leading-relaxed lines).
+ * Uses max-height (not CSS line-clamp) so multiline / bullet rows from
+ * ServiceDescriptionFormatted still truncate; overflow is measured for
+ * See more / See less.
  */
 export const SERVICE_CARD_DESCRIPTION_CLAMP_CLASS =
   'max-h-[7.625rem] overflow-hidden sm:max-h-[7.125rem]';

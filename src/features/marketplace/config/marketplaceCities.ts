@@ -10,8 +10,9 @@ export interface MarketplaceCity {
 }
 
 /**
- * Soft-launch city allowlist. Only these get SEO city URLs + sitemap entries.
- * Expand as Pro density grows — avoid empty city pages.
+ * Featured / sitemap city allowlist. These get priority SEO URLs in the
+ * sitemap and hub crawl links. Any other valid location can still resolve to
+ * `/find-detailers/{slug}` via {@link resolveMarketplaceCityFromSlug}.
  */
 export const MARKETPLACE_CITIES: readonly MarketplaceCity[] = [
   {

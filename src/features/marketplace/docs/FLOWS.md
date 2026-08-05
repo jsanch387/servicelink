@@ -4,15 +4,15 @@ Last updated: July 22, 2026
 
 ## What this feature is
 
-Customers search for nearby **auto detailers** and open a public business profile to book. Soft-launch surface:
+Customers search for nearby **auto detailers** and open a public business profile to book.
 
-| Route                                          | Role                                            |
-| ---------------------------------------------- | ----------------------------------------------- |
-| `/find-detailers`                              | Hub — hero, search, marketing sections          |
-| `/find-detailers/{city-slug}`                  | SEO city page — SSR listings for a curated city |
-| `GET /api/public/marketplace/search?location=` | Client search API (rate-limited)                |
+| Route                                          | Role                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| `/find-detailers`                              | Hub — hero, search, marketing sections                       |
+| `/find-detailers/{city-slug}`                  | City results page — SSR listings (any valid city / ZIP slug) |
+| `GET /api/public/marketplace/search?location=` | Client search API (rate-limited)                             |
 
-City slugs are defined in `config/marketplaceCities.ts` (e.g. `austin-tx` → search query `Austin, TX`).
+Curated metros in `config/marketplaceCities.ts` stay in the sitemap + hub crawl links. Any other location (e.g. `los-angeles-ca`, `78701`) resolves dynamically via `resolveMarketplaceCityFromSlug`.
 
 ---
 
@@ -39,34 +39,31 @@ Owner **service area collection** does **not** depend on this flag.
 
 ```mermaid
 flowchart TD
-  A[Customer opens /find-detailers] --> B{City SEO page?}
+  A[Customer opens /find-detailers] --> B{City page?}
   B -->|Yes /find-detailers/slug| C[SSR: searchMarketplaceBusinesses]
   B -->|No hub| D[MarketplacePage hero + search]
   D --> E[User submits city / ZIP / geolocation]
-  E --> F{Match curated city?}
-  F -->|Yes| G[Navigate to /find-detailers/slug]
-  F -->|No| H[Client GET /api/public/marketplace/search]
+  E --> F[Slugify location]
+  F --> G[Navigate to /find-detailers/slug]
   C --> I[MarketplaceResults cards]
-  H --> I
+  G --> C
   I --> J[Link to /business-slug?ref=marketplace public profile]
 ```
 
 ### Hub (`MarketplacePage`)
 
-1. Renders hero + `MarketplaceSearch` until a search has run (or `?location=` / city SSR seeds results).
-2. On submit:
-   - If query matches a curated city → `router.push` to that city URL (shareable SEO page).
-   - If on a city page and query does **not** match that city → send to hub with `?location=`.
-   - Else → client search via `api/searchMarketplace.ts`.
-3. While fetching: results layout + **skeleton cards** (`MarketplaceResultsSkeleton`).
+1. Renders hero + `MarketplaceSearch` until a search has run (or city SSR seeds results).
+2. On submit: slugify the location and `router.push` to `/find-detailers/{slug}` (shareable SEO + analytics path). Legacy `?location=` links redirect to the same city URL.
+3. While fetching on the same city page: results layout + **skeleton cards** (`MarketplaceResultsSkeleton`).
 4. Cards: `MarketplaceResultCard` — adaptive 1/2/3 photo strip, logo, rating, area, location mode, “From $X”, View.
 
-### City SEO page (`app/find-detailers/[city]/page.tsx`)
+### City page (`app/find-detailers/[city]/page.tsx`)
 
-1. Resolve slug via `getMarketplaceCityBySlug`.
+1. Resolve slug via `resolveMarketplaceCityFromSlug` (curated or dynamic).
 2. SSR call `searchMarketplaceBusinesses(city.searchQuery)`.
 3. Pass `initialBusinesses` + `citySlug` into `MarketplacePage`.
 4. Emit ItemList / CollectionPage JSON-LD; crawlable `sr-only` links to profiles.
+5. Index when curated **or** the page has at least one listing; empty dynamic cities stay `noindex,follow`.
 
 ### Shared search core
 
@@ -114,7 +111,7 @@ App wiring (not under the feature folder):
 - **Pro-only auto-inclusion** — no owner marketplace opt-in toggle yet.
 - **No marketplace Pro badges on cards** — everyone listed is Pro; badge would be noise.
 - **Manual denylist** — test/internal Auth emails excluded in `config/marketplaceListingDenylist.ts`.
-- **Cities** — only curated metro cities get dedicated SEO URLs; expand when density exists.
+- **Cities** — any valid city/ZIP gets a `/find-detailers/{slug}` URL; curated metros stay in the sitemap for crawl priority. Empty dynamic city pages are `noindex` until they have listings.
 - Ads / shares should land on `/find-detailers` or a city URL, not the marketing home.
 
 ---

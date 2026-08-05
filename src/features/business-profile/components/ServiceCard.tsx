@@ -14,14 +14,10 @@ import { getServiceSalePriceCents } from '@/features/marketing/utils/getServiceS
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { ChevronRightIcon, ClockIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { ServiceDescriptionFormatted } from './ServiceDescriptionFormatted';
-import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport';
-import {
-  serviceCardDescriptionCollapsedMaxChars,
-  serviceCardDescriptionNeedsExpand,
-  truncateServiceDescriptionForCardPreview,
-} from '../utils/serviceDescriptionDisplay';
+import { useServiceDescriptionClamp } from '../hooks/useServiceDescriptionClamp';
+import { SERVICE_CARD_DESCRIPTION_CLAMP_CLASS } from '../utils/serviceDescriptionDisplay';
 
 interface Service {
   id?: string;
@@ -76,17 +72,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const description = service.description || '';
-  const isDesktop = useIsDesktopViewport();
-  const collapsedMaxChars = serviceCardDescriptionCollapsedMaxChars(isDesktop);
-  const descriptionNeedsExpand = serviceCardDescriptionNeedsExpand(
+  const { ref: descriptionClampRef, isTruncatable } = useServiceDescriptionClamp(
     description,
-    collapsedMaxChars
+    isDescriptionExpanded
   );
-  const collapsedDescriptionPreview = useMemo(
-    () =>
-      truncateServiceDescriptionForCardPreview(description, collapsedMaxChars),
-    [description, collapsedMaxChars]
-  );
+  const showDescriptionToggle = isTruncatable || isDescriptionExpanded;
 
   const effectiveDurationMinutes =
     service.duration_minutes != null && service.duration_minutes > 0
@@ -174,42 +164,32 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
       </div>
 
-      {!hideDescription ? (
+      {!hideDescription && description.trim() ? (
         <div className="border-t border-white/[0.04] mb-3 sm:mb-4" />
       ) : null}
 
-      {!hideDescription ? (
+      {!hideDescription && description.trim() ? (
         <div className="mb-0">
-          {descriptionNeedsExpand && !isDescriptionExpanded ? (
-            <p className="m-0 leading-relaxed break-words text-zinc-400 text-[15px] sm:text-sm">
-              {collapsedDescriptionPreview}
-              {'... '}
-              <button
-                type="button"
-                onClick={() => setIsDescriptionExpanded(true)}
-                className="inline font-medium text-white hover:text-zinc-200 active:text-zinc-200 transition-colors cursor-pointer touch-manipulation"
-                aria-expanded={false}
-              >
-                {ui.serviceCard.seeMore}
-              </button>
-            </p>
-          ) : (
-            <div>
-              <div className="text-zinc-400 text-[15px] sm:text-sm">
-                <ServiceDescriptionFormatted description={description} />
-              </div>
-              {descriptionNeedsExpand && isDescriptionExpanded ? (
-                <button
-                  type="button"
-                  onClick={() => setIsDescriptionExpanded(false)}
-                  className="mt-2 inline-flex text-sm font-medium text-white hover:text-zinc-200 active:text-zinc-200 transition-colors cursor-pointer touch-manipulation"
-                  aria-expanded
-                >
-                  {ui.serviceCard.seeLess}
-                </button>
-              ) : null}
-            </div>
-          )}
+          <div
+            ref={descriptionClampRef}
+            className={`text-zinc-400 text-[15px] sm:text-sm ${
+              isDescriptionExpanded ? '' : SERVICE_CARD_DESCRIPTION_CLAMP_CLASS
+            }`.trim()}
+          >
+            <ServiceDescriptionFormatted description={description} />
+          </div>
+          {showDescriptionToggle ? (
+            <button
+              type="button"
+              onClick={() => setIsDescriptionExpanded(prev => !prev)}
+              className="mt-2 inline-flex text-sm font-medium text-white hover:text-zinc-200 active:text-zinc-200 transition-colors cursor-pointer touch-manipulation"
+              aria-expanded={isDescriptionExpanded}
+            >
+              {isDescriptionExpanded
+                ? ui.serviceCard.seeLess
+                : ui.serviceCard.seeMore}
+            </button>
+          ) : null}
         </div>
       ) : null}
 

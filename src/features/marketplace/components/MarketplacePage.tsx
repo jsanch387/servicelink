@@ -1,9 +1,9 @@
 'use client';
 
 import { PublicFooter } from '@/components/shared';
-import { getFindDetailersCityPath, ROUTES } from '@/constants/routes';
+import { getFindDetailersCityPath } from '@/constants/routes';
 import { searchMarketplace } from '../api/searchMarketplace';
-import { matchMarketplaceCity } from '../config/marketplaceCities';
+import { locationToMarketplaceSlug } from '../utils/marketplaceLocationSlug';
 import type { MarketplaceBusiness } from '../types/marketplace';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
@@ -78,38 +78,37 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
     const nextLocation = location.trim();
     if (!nextLocation) return;
 
-    const matchedCity = matchMarketplaceCity(nextLocation);
-    if (matchedCity && matchedCity.slug !== citySlug) {
-      router.push(getFindDetailersCityPath(matchedCity.slug));
+    const slug = locationToMarketplaceSlug(nextLocation);
+    if (!slug) {
+      setSearchError('Enter a city, state, or five-digit ZIP code.');
       return;
     }
 
-    if (!matchedCity && citySlug) {
-      router.push(
-        `${ROUTES.FIND_DETAILERS}?location=${encodeURIComponent(nextLocation)}`
-      );
+    // Every location gets a shareable / SEO URL (analytics sees the path).
+    if (slug !== citySlug) {
+      router.push(getFindDetailersCityPath(slug));
       return;
     }
 
     await runClientSearch(nextLocation);
   };
 
-  // Hub share links: /find-detailers?location=Austin,%20TX
+  // Legacy share links: /find-detailers?location=Los%20Angeles,%20CA → city URL
   React.useEffect(() => {
     if (citySlug || autoSearchedRef.current) return;
     const locationParam = searchParams.get('location')?.trim();
     if (!locationParam) return;
 
     autoSearchedRef.current = true;
-    const matchedCity = matchMarketplaceCity(locationParam);
-    if (matchedCity) {
-      router.replace(getFindDetailersCityPath(matchedCity.slug));
+    const slug = locationToMarketplaceSlug(locationParam);
+    if (slug) {
+      router.replace(getFindDetailersCityPath(slug));
       return;
     }
 
     setLocationQuery(locationParam);
-    void runClientSearch(locationParam);
-  }, [citySlug, router, runClientSearch, searchParams]);
+    setSearchError('Enter a city, state, or five-digit ZIP code.');
+  }, [citySlug, router, searchParams]);
 
   const search = (
     <MarketplaceSearch

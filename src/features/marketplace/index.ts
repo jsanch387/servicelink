@@ -5,3 +5,9 @@ export {
   getMarketplaceCityBySlug,
   matchMarketplaceCity,
 } from './config/marketplaceCities';
+export {
+  isCuratedMarketplaceCitySlug,
+  locationToMarketplaceSlug,
+  resolveMarketplaceCityFromSlug,
+} from './utils/marketplaceLocationSlug';
+export { parseMarketplaceLocation } from './utils/parseMarketplaceLocation';

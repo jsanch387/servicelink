@@ -1,6 +1,5 @@
 import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
 import {
-  getMarketplaceCityBySlug,
   MARKETPLACE_CITIES,
   marketplaceCityDescription,
   marketplaceCityTitle,
@@ -9,6 +8,10 @@ import { MarketplacePage } from '@/features/marketplace';
 import { buildMarketplaceCityItemListJsonLd } from '@/features/marketplace/seo/marketplaceCityJsonLd';
 import { searchMarketplaceBusinesses } from '@/features/marketplace/server/searchMarketplaceBusinesses';
 import type { MarketplaceBusiness } from '@/features/marketplace/types/marketplace';
+import {
+  isCuratedMarketplaceCitySlug,
+  resolveMarketplaceCityFromSlug,
+} from '@/features/marketplace/utils/marketplaceLocationSlug';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import {
   getFindDetailersCityPath,
@@ -17,16 +20,37 @@ import {
 } from '@/constants/routes';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
+import { cache, Suspense } from 'react';
 
 const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
 ).replace(/\/$/, '');
 const marketplacePublicEnabled = isMarketplacePublicEnabled();
 
+/** Prefetch curated cities at build time; any other valid slug is on-demand. */
 export function generateStaticParams() {
   return MARKETPLACE_CITIES.map(city => ({ city: city.slug }));
 }
+
+export const dynamicParams = true;
+
+const loadCityPageData = cache(async (citySlug: string) => {
+  const city = resolveMarketplaceCityFromSlug(citySlug);
+  if (!city) return null;
+
+  let businesses: MarketplaceBusiness[] = [];
+  let location = city.displayName;
+
+  try {
+    const result = await searchMarketplaceBusinesses(city.searchQuery);
+    businesses = result.businesses;
+    location = result.location || city.displayName;
+  } catch (error) {
+    console.error('[marketplace] city page search failed', city.slug, error);
+  }
+
+  return { city, businesses, location };
+});
 
 export async function generateMetadata({
   params,
@@ -34,14 +58,18 @@ export async function generateMetadata({
   params: Promise<{ city: string }>;
 }): Promise<Metadata> {
   const { city: citySlug } = await params;
-  const city = getMarketplaceCityBySlug(citySlug);
-  if (!city) {
+  const data = await loadCityPageData(citySlug);
+  if (!data) {
     return { title: 'Detailers not found' };
   }
 
+  const { city, businesses } = data;
   const cityPath = getFindDetailersCityPath(city.slug);
   const title = marketplaceCityTitle(city);
-  const description = marketplaceCityDescription(city);
+  const description = marketplaceCityDescription(city, businesses.length);
+  const isCurated = isCuratedMarketplaceCitySlug(city.slug);
+  const shouldIndex =
+    marketplacePublicEnabled && (isCurated || businesses.length > 0);
 
   return {
     title,
@@ -69,9 +97,9 @@ export async function generateMetadata({
     alternates: {
       canonical: `${siteUrl}${cityPath}`,
     },
-    robots: marketplacePublicEnabled
+    robots: shouldIndex
       ? { index: true, follow: true }
-      : { index: false, follow: false },
+      : { index: false, follow: true },
   };
 }
 
@@ -85,23 +113,13 @@ export default async function FindDetailersCityPage({
   }
 
   const { city: citySlug } = await params;
-  const city = getMarketplaceCityBySlug(citySlug);
-  if (!city) {
+  const data = await loadCityPageData(citySlug);
+  if (!data) {
     notFound();
   }
 
+  const { city, businesses, location } = data;
   const cityPath = getFindDetailersCityPath(city.slug);
-  let businesses: MarketplaceBusiness[] = [];
-  let location = city.displayName;
-
-  try {
-    const result = await searchMarketplaceBusinesses(city.searchQuery);
-    businesses = result.businesses;
-    location = result.location || city.displayName;
-  } catch (error) {
-    console.error('[marketplace] city page search failed', city.slug, error);
-  }
-
   const jsonLd = buildMarketplaceCityItemListJsonLd({
     city,
     cityPath,

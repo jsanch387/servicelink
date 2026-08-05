@@ -5,19 +5,17 @@ import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusi
 import { MEDIA_CONFIG } from '@/features/media/media.types';
 import { isMarketplaceListingDeniedByEmail } from '../config/marketplaceListingDenylist';
 import type { MarketplaceBusiness } from '../types/marketplace';
+import {
+  parseMarketplaceLocation,
+  type ParsedMarketplaceLocation,
+} from '../utils/parseMarketplaceLocation';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { geocodeMarketplaceSearchPoint } from './geocodeMarketplaceSearchPoint';
 import { haversineMiles } from './haversineMiles';
 
-const MAX_LOCATION_LENGTH = 100;
-const MAX_RESULTS = 50;
+export type { ParsedMarketplaceLocation };
 
-export interface ParsedMarketplaceLocation {
-  display: string;
-  city: string | null;
-  state: string | null;
-  zip: string | null;
-}
+const MAX_RESULTS = 50;
 
 export interface MarketplaceSearchResult {
   location: string;
@@ -54,34 +52,6 @@ function normalizeWords(value: string): string {
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-export function parseMarketplaceLocation(
-  value: string
-): ParsedMarketplaceLocation | null {
-  const display = value.replace(/\s+/g, ' ').trim();
-  if (!display || display.length > MAX_LOCATION_LENGTH) return null;
-
-  const zip = display.match(/\b\d{5}\b/)?.[0] ?? null;
-  if (zip && /^\d{5}$/.test(display)) {
-    return { display, city: null, state: null, zip };
-  }
-
-  const [beforeComma = '', afterComma = ''] = display.split(',');
-  const cityCandidate = beforeComma || display;
-  const state =
-    afterComma
-      .trim()
-      .match(/^([a-z]{2})\b/i)?.[1]
-      ?.toUpperCase() ??
-    display.match(/\s([a-z]{2})$/i)?.[1]?.toUpperCase() ??
-    null;
-  const city = normalizeWords(
-    cityCandidate.replace(/\s+[a-z]{2}$/i, '').trim()
-  );
-
-  if (city.length < 2 || city === 'current location') return null;
-  return { display, city, state, zip };
 }
 
 function publicStorageUrl(

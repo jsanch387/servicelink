@@ -28,10 +28,14 @@ export function buildMarketplaceCityItemListJsonLd(input: {
     about: {
       '@type': 'City',
       name: input.city.name,
-      containedInPlace: {
-        '@type': 'State',
-        name: input.city.stateCode,
-      },
+      ...(input.city.stateCode
+        ? {
+            containedInPlace: {
+              '@type': 'State',
+              name: input.city.stateCode,
+            },
+          }
+        : {}),
     },
     mainEntity: {
       '@type': 'ItemList',
