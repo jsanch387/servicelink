@@ -10,7 +10,10 @@
  * Env: STRIPE_SECRET_KEY
  */
 
-import type { CreateBookingRequest } from '@/features/availability/booking/types';
+import type {
+  CreateBookingJobItem,
+  CreateBookingRequest,
+} from '@/features/availability/booking/types';
 import {
   bookingCustomerPayloadErrorMessage,
   normalizeBookingCustomerInput,
@@ -18,6 +21,15 @@ import {
 import { buildBookPageCheckoutReturnUrl } from '@/features/availability/booking/utils/bookingCheckoutReturnUrl';
 import { prefillCustomerWithShopAddress } from '@/features/availability/booking/utils/bookingServiceLocationFlow';
 import { clientServiceLocationChoice } from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
+import {
+  parseOwnerManualBookingJobs,
+  sumJobDurationMinutes,
+  sumJobGrossCents,
+  appointmentServiceNameSummary,
+} from '@/features/availability/booking/utils/ownerManualBookingJobs';
+import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constants/publicBookingJobs';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import { isJobVehicleComplete } from '@/features/availability/booking/utils/visitJobVehicles';
 import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -145,16 +157,51 @@ function parseBookingCheckoutDraftPayload(
       ? normalizeEnteredPromoCode(payload.promoCode)
       : '';
 
+  let jobs: CreateBookingJobItem[] | undefined;
+  let resolvedServiceName = serviceName;
+  let resolvedDurationMinutes = durationMinutes;
+  let resolvedTotalPriceCents = totalPriceCents;
+
+  if (Array.isArray(payload.jobs)) {
+    const parsed = parseOwnerManualBookingJobs(payload.jobs);
+    if (!parsed.ok) return null;
+    if (parsed.jobs.length > PUBLIC_BOOKING_MAX_JOBS) return null;
+    if (parsed.jobs.some(j => !j.serviceId)) return null;
+    jobs = parsed.jobs.map(j => ({
+      serviceId: j.serviceId,
+      serviceName: j.serviceName,
+      servicePriceOptionLabel: j.servicePriceOptionLabel,
+      servicePriceCents: j.servicePriceCents,
+      selectedAddOns: j.selectedAddOns,
+      durationMinutes: j.durationMinutes,
+      vehicle:
+        j.vehicle.year || j.vehicle.make || j.vehicle.model
+          ? {
+              year: j.vehicle.year,
+              make: j.vehicle.make,
+              model: j.vehicle.model,
+            }
+          : undefined,
+      clientJobId: j.clientJobId,
+    }));
+    resolvedServiceName = appointmentServiceNameSummary(parsed.jobs);
+    resolvedDurationMinutes = sumJobDurationMinutes(parsed.jobs);
+    // Prefer client total when present (sale/promo display); else sum jobs.
+    if (!Number.isFinite(resolvedTotalPriceCents)) {
+      resolvedTotalPriceCents = sumJobGrossCents(parsed.jobs);
+    }
+  }
+
   if (
     !businessSlug ||
     !businessId ||
-    !serviceName ||
+    !resolvedServiceName ||
     !/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) ||
     !/^\d{1,2}:\d{2}$/.test(startTime) ||
-    !Number.isFinite(durationMinutes) ||
-    durationMinutes < 1 ||
+    !Number.isFinite(resolvedDurationMinutes) ||
+    resolvedDurationMinutes < 1 ||
     !fullName ||
-    !Number.isFinite(totalPriceCents) ||
+    !Number.isFinite(resolvedTotalPriceCents) ||
     !Number.isFinite(requiredOnlineAmountCents)
   ) {
     return null;
@@ -167,7 +214,7 @@ function parseBookingCheckoutDraftPayload(
       typeof payload.serviceId === 'string'
         ? payload.serviceId.trim()
         : undefined,
-    serviceName,
+    serviceName: resolvedServiceName,
     servicePriceOptionLabel:
       typeof payload.servicePriceOptionLabel === 'string'
         ? payload.servicePriceOptionLabel.trim()
@@ -180,7 +227,7 @@ function parseBookingCheckoutDraftPayload(
     selectedAddOns: Array.isArray(payload.selectedAddOns)
       ? (payload.selectedAddOns as CreateBookingRequest['selectedAddOns'])
       : undefined,
-    durationMinutes,
+    durationMinutes: resolvedDurationMinutes,
     scheduledDate,
     startTime,
     customer: {
@@ -203,7 +250,7 @@ function parseBookingCheckoutDraftPayload(
         typeof customer?.vehicleModel === 'string' ? customer.vehicleModel : '',
       notes: typeof customer?.notes === 'string' ? customer.notes : '',
     },
-    totalPriceCents,
+    totalPriceCents: resolvedTotalPriceCents,
     requiredOnlineAmountCents,
     paymentMethodSelected: paymentMethod,
     depositType,
@@ -211,6 +258,7 @@ function parseBookingCheckoutDraftPayload(
     customerServiceLocation,
     serviceLocationType,
     ...(promoCodeRaw ? { promoCode: promoCodeRaw } : {}),
+    ...(jobs ? { jobs } : {}),
   };
 }
 
@@ -271,7 +319,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+        'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, business_type'
       )
       .eq('business_slug', businessSlug)
       .single();
@@ -333,9 +381,34 @@ export async function POST(request: NextRequest) {
       locationResolved.effective
     );
 
+    const requireVehicleFields = isVehicleRelatedBusinessType(
+      (profile as { business_type?: string | null }).business_type
+    );
+    const checkoutJobs = Array.isArray(parsedBookingPayload.jobs)
+      ? parsedBookingPayload.jobs
+      : null;
+
+    if (requireVehicleFields && checkoutJobs) {
+      const incompleteJob = checkoutJobs.findIndex(
+        job => !isJobVehicleComplete(job.vehicle ?? {})
+      );
+      if (incompleteJob >= 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Job ${incompleteJob + 1}: vehicle year, make, and model are required`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const customerPayloadErr = bookingCustomerPayloadErrorMessage(
       parsedBookingPayload.customer,
-      { requireCustomerAddress }
+      {
+        requireCustomerAddress,
+        requireVehicleFields: requireVehicleFields && !checkoutJobs,
+      }
     );
     if (customerPayloadErr) {
       logCheckoutDev('reject: invalid customer payload', {

@@ -610,6 +610,45 @@ export type Database = {
           updated_at?: string;
         };
       };
+      /**
+       * Flexible customer items (vehicles now; pets/boats later).
+       * `asset_type` + JSON `attributes` avoids one table per industry.
+       */
+      customer_assets: {
+        Row: {
+          id: string;
+          business_id: string;
+          customer_id: string;
+          asset_type: string;
+          label: string;
+          attributes: Record<string, unknown>;
+          fingerprint: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          customer_id: string;
+          asset_type: string;
+          label: string;
+          attributes?: Record<string, unknown>;
+          fingerprint: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          customer_id?: string;
+          asset_type?: string;
+          label?: string;
+          attributes?: Record<string, unknown>;
+          fingerprint?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       notifications: {
         Row: {
           id: string;

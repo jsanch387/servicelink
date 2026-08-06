@@ -42,16 +42,16 @@ Intended schema (create/migrate in Supabase SQL editor or migrations):
 
 ## Customer creation when a V2 booking is confirmed
 
-**Single code path:** There is only one server function that inserts a **`bookings`** row for the availability flow: **`createBooking`** in **`src/features/availability/services/bookingService.ts`**. It is called from **`POST /api/public/bookings`**.
+**Single insert path for availability bookings:** **`createBooking`** in **`src/features/availability/services/bookingService.ts`**. Call sites:
 
-Both of these product flows hit that same endpoint and therefore share customer logic automatically:
+| Flow                          | How it reaches `createBooking`                                                                 |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Public profile**            | Customer completes book flow → `POST /api/public/bookings`.                                    |
+| **Owner booking for someone** | Dashboard / mobile with `ownerManualBooking` → same `POST /api/public/bookings`.               |
+| **Paid public checkout**      | Stripe `checkout.session.completed` webhook → `createBooking` from stored checkout payload.    |
+| **Quote approve → booking**   | Quote approve helpers that create a V2 booking also go through `createBooking` where applicable. |
 
-| Flow                          | How it reaches `createBooking`                                                               |
-| ----------------------------- | -------------------------------------------------------------------------------------------- |
-| **Public profile**            | Customer completes book flow → client `POST /api/public/bookings`.                           |
-| **Owner booking for someone** | Dashboard opens book flow with `?for=owner` → same submit → **`POST /api/public/bookings`**. |
-
-There is **no second insert path** for V2 bookings today; if you add another API that inserts into `bookings`, call **`upsertCustomerForBooking`** the same way (or always route through **`createBooking`**).
+If you add another API that inserts into **`bookings`**, route through **`createBooking`** (or call **`upsertCustomerForBooking`** + asset upsert the same way).
 
 ### Server helpers (this feature)
 
@@ -59,6 +59,9 @@ There is **no second insert path** for V2 bookings today; if you add another API
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`server/normalizeCustomerContact.ts`** | `normalizeEmailForLookup`, `normalizePhoneForLookup` (digits-only phone).                                                                                                                                                  |
 | **`server/upsertCustomerForBooking.ts`** | **`upsertCustomerForBooking(supabase, businessId, input)`** — find-or-create `customers` row. Uses a small internal cast for `.from('customers')` until the repo’s `Database` type matches Supabase client generics fully. |
+| **`utils/customerAssetTypes.ts`**        | Vehicle fingerprint / label / attribute helpers (shared; not server-only).                                                                                                                                                 |
+| **`server/upsertCustomerAssets.ts`**     | Deduped upsert into **`customer_assets`** after a booking is created.                                                                                                                                                      |
+| **`server/listCustomerAssetsByPhone.ts`** | Lookup assets by business + phone (for a future returning-customer UI).                                                                                                                                                   |
 
 ### Dedupe rules
 
@@ -74,11 +77,38 @@ There is **no second insert path** for V2 bookings today; if you add another API
 
 After **`upsertCustomerForBooking`**, **`createBooking`** sets **`customer_id`** on the inserted **`bookings`** row alongside existing customer snapshot columns (`customer_name`, `customer_email`, etc.).
 
+It also upserts **`customer_assets`** for any complete vehicles on the booking (top-level customer vehicle and/or per-job vehicles in `job_details`). Asset upsert failures are logged and do not fail the booking.
+
+---
+
+## Database: `public.customer_assets`
+
+Flexible CRM “items” for a customer — **vehicles now**, pets/boats later — without one table per industry.
+
+| Column                      | Type          | Notes                                          |
+| --------------------------- | ------------- | ---------------------------------------------- |
+| `id`                        | `uuid`        | PK                                             |
+| `business_id`               | `uuid`        | FK → `business_profiles(id)`                   |
+| `customer_id`               | `uuid`        | FK → `customers(id)` ON DELETE CASCADE         |
+| `asset_type`                | `text`        | e.g. `vehicle`, later `pet` / `boat`           |
+| `label`                     | `text`        | Display: `2018 Toyota Camry`                   |
+| `attributes`                | `jsonb`       | Type-specific: vehicle `{ year, make, model }` |
+| `fingerprint`               | `text`        | Dedupe key within `(customer_id, asset_type)`  |
+| `created_at` / `updated_at` | `timestamptz` |                                                |
+
+**Unique:** `(customer_id, asset_type, fingerprint)`.
+
+**SQL:** `docs/migrations/001_customer_assets.sql` (idempotent; already applied on the primary Supabase project).
+
+**Persistence today:** On every successful `createBooking`, complete vehicles from the customer snapshot and/or `job_details` are upserted (dedupe by fingerprint). Failures are logged and do **not** fail the booking.
+
+**Public book UI:** Saved-vehicle chips / phone lookup are **deferred** (launch focus is capture + simple booking). The endpoint **`GET /api/public/customer-assets?businessSlug=&phone=`** and `SavedCustomerAssetsPicker` exist for a later returning-customer experience; the public form does not show them yet.
+
 ---
 
 ## TypeScript: generated DB types
 
-App-level Supabase `Database` types live in **`src/libs/supabase/client.ts`**. The `customers` table is declared under `public.Tables.customers` so `from('customers')` is typed in API routes and server code.
+App-level Supabase `Database` types live in **`src/libs/supabase/client.ts`**. The `customers` and `customer_assets` tables are declared under `public.Tables` so `from('customers')` / `from('customer_assets')` are typed in API routes and server code.
 
 Row type alias used in the feature: **`CustomerDbRow`** → `src/features/customer-management/api/customerDbRow.ts`.
 
@@ -160,9 +190,9 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 | `components/` | Page sections, table, cards, drawer, modal body, skeletons, empty states                                           |
 | `hooks/`      | `useCustomerManagement`                                                                                            |
 | `api/`        | Client fetch, response typing, DB row type, `mapCustomerRowToRecord`                                               |
-| `server/`     | `resolveCurrentBusinessId`, `normalizeCustomerContact`, `upsertCustomerForBooking`, `aggregateBookingsPerCustomer` |
+| `server/`     | `resolveCurrentBusinessId`, `normalizeCustomerContact`, `upsertCustomerForBooking`, `upsertCustomerAssets`, `listCustomerAssetsByPhone`, `aggregateBookingsPerCustomer` |
 | `constants/`  | `CUSTOMER_STATUS_FILTERS`                                                                                          |
-| `utils/`      | Formatting, search match, date helpers                                                                             |
+| `utils/`      | Formatting, search match, date helpers, `customerAssetTypes`                                                       |
 
 **Public exports:** `src/features/customer-management/index.ts` (page, hook, types).
 
@@ -173,6 +203,7 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 1. **Server-side aggregates** or a view for last booking, visit count, spend, `new` vs `returning` (use **`bookings.customer_id`** + join).
 2. **`DELETE /api/customers/[id]`** (or PATCH) and wire **delete** in the hook to Supabase.
 3. **Optimistic UI / revalidation** after mutations (e.g. React Query or `router.refresh()`).
+4. **Returning-customer book UX:** wire `GET /api/public/customer-assets` + `SavedCustomerAssetsPicker` so customers can confirm prior vehicles after phone entry (assets are already persisted on create).
 
 ---
 

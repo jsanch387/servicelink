@@ -72,12 +72,14 @@ const both: PublicBookingServiceLocation = {
 };
 
 describe('bookingServiceLocationFlow', () => {
-  it('mobile_only skips choice and requires address after contact', () => {
-    expect(getNextDetailsSubStep('contact', mobileOnly, null)).toBe('address');
+  it('contact (with address fields collapsed in) always leads to vehicle notes', () => {
+    expect(getNextDetailsSubStep('contact', mobileOnly, null)).toBe(
+      'vehicleNotes'
+    );
     expect(customerAddressEntryRequired(mobileOnly, null)).toBe(true);
   });
 
-  it('shop_only skips address and goes to vehicle notes after contact', () => {
+  it('shop_only does not require address fields on the contact screen', () => {
     expect(getNextDetailsSubStep('contact', shopOnly, null)).toBe(
       'vehicleNotes'
     );
@@ -85,8 +87,10 @@ describe('bookingServiceLocationFlow', () => {
     expect(customerBookingUsesShop(shopOnly, null)).toBe(true);
   });
 
-  it('both mode branches address from the pre-calendar location choice', () => {
-    expect(getNextDetailsSubStep('contact', both, 'mobile')).toBe('address');
+  it('both mode requires address fields on contact only when customer chose mobile', () => {
+    expect(getNextDetailsSubStep('contact', both, 'mobile')).toBe(
+      'vehicleNotes'
+    );
     expect(getNextDetailsSubStep('contact', both, 'shop')).toBe('vehicleNotes');
     expect(customerAddressEntryRequired(both, 'mobile')).toBe(true);
     expect(customerAddressEntryRequired(both, 'shop')).toBe(false);
@@ -139,14 +143,46 @@ describe('bookingServiceLocationFlow', () => {
     expect(cleared.fullName).toBe('Jane');
   });
 
-  it('does not treat address as valid on mobile path when choice is shop', () => {
-    const prefilled = prefillCustomerWithShopAddress(contactOnlyCustomer, both);
+  it('requires address fields on the contact screen when the customer chose mobile', () => {
     expect(
-      isBookingDetailsSubStepValid('address', prefilled, both, 'shop', {
-        showVehicleFields: false,
-        emailOptional: false,
-      })
+      isBookingDetailsSubStepValid(
+        'contact',
+        contactOnlyCustomer,
+        both,
+        'mobile',
+        {
+          showVehicleFields: false,
+          emailOptional: true,
+        }
+      )
     ).toBe(false);
+    expect(
+      isBookingDetailsSubStepValid(
+        'contact',
+        customerWithAddress,
+        both,
+        'mobile',
+        {
+          showVehicleFields: false,
+          emailOptional: true,
+        }
+      )
+    ).toBe(true);
+  });
+
+  it('does not require address fields on the contact screen when the customer chose shop', () => {
+    expect(
+      isBookingDetailsSubStepValid(
+        'contact',
+        contactOnlyCustomer,
+        both,
+        'shop',
+        {
+          showVehicleFields: false,
+          emailOptional: true,
+        }
+      )
+    ).toBe(true);
   });
 
   it('allows visible vehicle fields to be optional for owner manual booking', () => {
@@ -202,17 +238,17 @@ describe('bookingServiceLocationFlow', () => {
     ).toBe(false);
   });
 
-  it('navigates back from vehicle notes without a post-schedule location step', () => {
+  it('navigates back from vehicle notes to the merged contact screen', () => {
     expect(getPrevDetailsSubStep('vehicleNotes', mobileOnly, null)).toBe(
-      'address'
+      'contact'
     );
     expect(getPrevDetailsSubStep('vehicleNotes', shopOnly, null)).toBe(
       'contact'
     );
     expect(getPrevDetailsSubStep('vehicleNotes', both, 'shop')).toBe('contact');
     expect(getPrevDetailsSubStep('vehicleNotes', both, 'mobile')).toBe(
-      'address'
+      'contact'
     );
-    expect(getPrevDetailsSubStep('address', both, 'mobile')).toBe('contact');
+    expect(getPrevDetailsSubStep('contact', both, 'mobile')).toBe('schedule');
   });
 });

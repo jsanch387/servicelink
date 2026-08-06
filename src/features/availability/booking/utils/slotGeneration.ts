@@ -181,3 +181,61 @@ export function generateTimeSlots(
   }
   return slots;
 }
+
+export type EarliestAvailableSlot = {
+  date: Date;
+  time: string;
+};
+
+/**
+ * Scans forward day-by-day for the first date with an open slot (same
+ * algorithm as `DateSelector`'s auto-select), returning that date + its
+ * earliest time together. Powers the "Next available" quick-pick card so we
+ * don't need to wait for the calendar to mount and auto-select.
+ */
+export function findEarliestAvailableSlot(args: {
+  weeklySchedule: WeeklySchedule;
+  serviceDurationMinutes: number;
+  existingBookings: ExistingBooking[];
+  timeOffBlocks?: ReadonlyArray<TimeOffInterval>;
+  minimumNotice?: string;
+  minDate?: Date;
+  now?: Date;
+  maxDaysAhead?: number;
+}): EarliestAvailableSlot | null {
+  const {
+    weeklySchedule,
+    serviceDurationMinutes,
+    existingBookings,
+    timeOffBlocks = [],
+    minimumNotice = 'none',
+    minDate = new Date(),
+    now = new Date(),
+    maxDaysAhead = 366,
+  } = args;
+
+  const earliestDate = new Date(
+    minDate.getFullYear(),
+    minDate.getMonth(),
+    minDate.getDate()
+  );
+
+  for (let offset = 0; offset < maxDaysAhead; offset += 1) {
+    const candidate = new Date(earliestDate);
+    candidate.setDate(earliestDate.getDate() + offset);
+    const slots = generateTimeSlots(
+      candidate,
+      weeklySchedule,
+      serviceDurationMinutes,
+      existingBookings,
+      30,
+      timeOffBlocks,
+      minimumNotice,
+      { now, requireDurationWithinHours: true }
+    );
+    if (slots.length > 0) {
+      return { date: candidate, time: slots[0] };
+    }
+  }
+  return null;
+}

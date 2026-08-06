@@ -72,10 +72,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const description = service.description || '';
-  const { ref: descriptionClampRef, isTruncatable } = useServiceDescriptionClamp(
-    description,
-    isDescriptionExpanded
-  );
+  const { ref: descriptionClampRef, isTruncatable } =
+    useServiceDescriptionClamp(description, isDescriptionExpanded);
   const showDescriptionToggle = isTruncatable || isDescriptionExpanded;
 
   const effectiveDurationMinutes =

@@ -146,6 +146,8 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Public: fetch booking payment summary after successful checkout return. */
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
+  /** Public: returning-customer saved vehicles/pets for the book flow. */
+  PUBLIC_CUSTOMER_ASSETS: '/api/public/customer-assets',
   /** Public: validate a promo code for booking checkout preview. */
   PUBLIC_PROMO_CODE_VALIDATE: '/api/public/promo-codes/validate',
   /** Public: subscribed ICS feed for a business (path includes signed token). */
@@ -247,6 +249,11 @@ export function getBusinessBookPath(
     lang?: PublicBookingFlowLocale | null;
     /** Owner-only: open the saved-services list instead of the choice screen. */
     entry?: OwnerBookEntryQuery | null;
+    /**
+     * Public multi-job: customer is adding another service to the current visit.
+     * Without this, a fresh book start clears the visit cart.
+     */
+    addJob?: boolean;
   }
 ): string {
   const s = businessSlug.trim();
@@ -258,6 +265,9 @@ export function getBusinessBookPath(
   }
   if (options?.forOwner && options.entry === 'services') {
     q.set('entry', 'services');
+  }
+  if (options?.addJob) {
+    q.set('addJob', '1');
   }
   appendPublicBookingFlowLang(q, options?.lang);
   const qs = q.toString();
@@ -305,12 +315,21 @@ export function getBusinessBookCustomScheduleUrl(
 export function getBusinessBookDetailsPath(
   businessSlug: string,
   serviceId: string,
-  options?: { forOwner?: boolean; lang?: PublicBookingFlowLocale | null }
+  options?: {
+    forOwner?: boolean;
+    lang?: PublicBookingFlowLocale | null;
+    /** Append to current public multi-job visit cart. */
+    addJob?: boolean;
+    /** Replace the sole visit job and keep contact/schedule draft. */
+    editVisit?: boolean;
+  }
 ): string {
   return getBusinessBookDetailsUrl(businessSlug, {
     serviceId,
     forOwner: options?.forOwner,
     lang: options?.lang,
+    addJob: options?.addJob,
+    editVisit: options?.editVisit,
   });
 }
 
@@ -337,6 +356,10 @@ export function getBusinessBookDetailsUrl(
     serviceLocationType?: BookServiceLocationTypeQuery;
     forOwner?: boolean;
     lang?: PublicBookingFlowLocale | null;
+    /** Append to current public multi-job visit cart (do not clear). */
+    addJob?: boolean;
+    /** Replace the sole visit job and keep contact/schedule draft. */
+    editVisit?: boolean;
   }
 ): string {
   const slug = businessSlug.trim();
@@ -365,14 +388,48 @@ export function getBusinessBookDetailsUrl(
   if (params.forOwner) {
     q.set('for', OWNER_MANUAL_BOOKING_FOR);
   }
+  if (params.addJob) {
+    q.set('addJob', '1');
+  }
+  if (params.editVisit) {
+    q.set('editVisit', '1');
+  }
   appendPublicBookingFlowLang(q, params.lang);
   return `/${encodeURIComponent(slug)}/book/details?${q.toString()}`;
 }
 
 /**
- * Calendar + post-schedule steps live on `/[slug]/book` with query params.
- * Prefer this over string templates so `lang` and other keys stay consistent.
+ * Multi-job public visit calendar (`/book?visit=1`). Jobs live in sessionStorage.
  */
+export function getBusinessBookVisitUrl(
+  businessSlug: string,
+  params?: {
+    serviceLocationType?: BookServiceLocationTypeQuery;
+    lang?: PublicBookingFlowLocale | null;
+    checkout?: string;
+    session_id?: string;
+  }
+): string {
+  const slug = businessSlug.trim();
+  if (!slug) return ROUTES.DASHBOARD.BOOKINGS;
+  const q = new URLSearchParams();
+  q.set('visit', '1');
+  if (
+    params?.serviceLocationType === 'mobile' ||
+    params?.serviceLocationType === 'shop'
+  ) {
+    q.set('serviceLocationType', params.serviceLocationType);
+  }
+  if (params?.checkout?.trim()) {
+    q.set('checkout', params.checkout.trim());
+  }
+  if (params?.session_id?.trim()) {
+    q.set('session_id', params.session_id.trim());
+  }
+  appendPublicBookingFlowLang(q, params?.lang);
+  return `/${encodeURIComponent(slug)}/book?${q.toString()}`;
+}
+
 export function getBusinessBookScheduleUrl(
   businessSlug: string,
   params: {

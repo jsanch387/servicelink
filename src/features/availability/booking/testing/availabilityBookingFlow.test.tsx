@@ -73,7 +73,7 @@ vi.mock('@/features/availability/booking/components/CustomerForm', () => ({
     onAgreedToNotificationsChange,
   }: {
     id: string;
-    step: 'contact' | 'address' | 'vehicleNotes';
+    step: 'contact' | 'vehicleNotes';
     onSubmit: () => void;
     showNotificationsConsent?: boolean;
     agreedToNotifications?: boolean;
@@ -132,10 +132,27 @@ function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
   );
 }
 
+/**
+ * Schedule step now leads with a "Next available" quick-pick card; expand
+ * the full calendar (mocked Pick date / Pick time buttons) to exercise the
+ * manual date/time selection flow these tests cover.
+ */
+async function openFullCalendar(
+  user: ReturnType<typeof userEvent.setup>,
+  locale: 'en' | 'es' = 'en'
+) {
+  await user.click(
+    screen.getByRole('button', {
+      name: locale === 'es' ? /elegir otra hora/i : /choose a different time/i,
+    })
+  );
+}
+
 async function advanceDetailsToReview(
   user: ReturnType<typeof userEvent.setup>
 ) {
-  await user.click(screen.getByRole('button', { name: /^continue$/i }));
+  // Contact + service address are collapsed into one screen, so only one
+  // "Continue" click is needed before reaching the vehicle/notes screen.
   await user.click(screen.getByRole('button', { name: /^continue$/i }));
   await user.click(screen.getByRole('button', { name: /review booking/i }));
 }
@@ -151,6 +168,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
       '/acme-auto/book/details?serviceId=svc-1'
     );
 
+    await openFullCalendar(user);
     await user.click(screen.getByRole('button', { name: /pick date/i }));
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
@@ -172,6 +190,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
     const user = userEvent.setup();
     renderBookingFlow();
 
+    await openFullCalendar(user);
     await user.click(screen.getByRole('button', { name: /pick date/i }));
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
@@ -205,6 +224,7 @@ describe('AvailabilityBookingPage flow navigation', () => {
     const user = userEvent.setup();
     renderBookingFlow();
 
+    await openFullCalendar(user);
     await user.click(screen.getByRole('button', { name: /pick date/i }));
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
@@ -219,7 +239,6 @@ describe('AvailabilityBookingPage flow navigation', () => {
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
     expect(screen.queryByText(/please check the box/i)).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
     await user.click(screen.getByRole('button', { name: /review booking/i }));
     await user.click(screen.getByRole('button', { name: /confirm booking/i }));
 
@@ -243,6 +262,7 @@ describe('AvailabilityBookingPage (Spanish locale)', () => {
 
     expect(screen.getByRole('button', { name: /^continuar$/i })).toBeTruthy();
 
+    await openFullCalendar(user, 'es');
     await user.click(screen.getByRole('button', { name: /pick date/i }));
     await user.click(screen.getByRole('button', { name: /pick time/i }));
     await user.click(screen.getByRole('button', { name: /^continuar$/i }));

@@ -48,7 +48,9 @@ export function formatSmsProviderError(error: unknown): string {
     const withStatus = error as Error & {
       statusCode?: number;
       status?: number;
-      error?: { errors?: Array<{ code?: string; title?: string; detail?: string }> };
+      error?: {
+        errors?: Array<{ code?: string; title?: string; detail?: string }>;
+      };
     };
     const status = withStatus.statusCode ?? withStatus.status;
     const first = withStatus.error?.errors?.[0];

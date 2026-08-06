@@ -9,6 +9,7 @@ import {
 } from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
+import { upsertCustomerVehiclesFromBooking } from '@/features/customer-management/server/upsertCustomerAssets';
 import {
   customerAlreadyReviewedForBooking,
   loadReviewInviteEligibilityContext,
@@ -238,6 +239,27 @@ export async function createBooking(
     .eq('id', bookingId);
   if (visitErr) {
     throw visitErr;
+  }
+
+  // Persist reusable customer assets (vehicles now; pets/boats later).
+  // Failures here must not roll back the booking — CRM enrichment only.
+  try {
+    await upsertCustomerVehiclesFromBooking(supabase, {
+      businessId: payload.businessId,
+      customerId: data.customer_id as string,
+      customerVehicle: {
+        year: payload.customer.vehicleYear,
+        make: payload.customer.vehicleMake,
+        model: payload.customer.vehicleModel,
+      },
+      jobVehicles: (jobDetails ?? []).map(job => job.vehicle ?? null),
+    });
+  } catch (assetErr) {
+    console.error('[createBooking] customer asset upsert failed', {
+      bookingId,
+      customerId: data.customer_id,
+      error: assetErr,
+    });
   }
 
   return {

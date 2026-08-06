@@ -30,14 +30,14 @@ This doc describes how the **owner availability** settings and **V2 (availabilit
 
 ## 2. Public V2 booking flow (customer books a time)
 
-**Purpose:** Customer picks a date, then an exact time slot from available slots, fills in details, and submits. One row is created in `bookings`.
+**Purpose:** Customer picks service(s), schedules one visit slot, fills contact/details, and submits. One row is created in `bookings` (single-job or multi-job via `job_details`). Step order and cart rules: **[public-multi-job-booking.md](../../../../docs/contracts/public-multi-job-booking.md)**.
 
 ### How the public page decides V1 vs V2
 
 - **Route:** `/[business-slug]/book` (e.g. `/johns-plumbing/book`).
 - Server loads `business_profiles` by slug and `business_availability` by `business_id` (admin client so RLS doesn’t block).
-- If `business_availability.accept_bookings === true` → render **V2** (availability calendar + slot picker). Otherwise → render **V1** (request booking form).
-- For V2, the page passes `weeklySchedule`, **`timeOffBlocks`** (parsed from `time_off_blocks`), `serviceDurationMinutes`, `serviceId`, `serviceName`, etc., to the client. **Existing booking** blocked slots are fetched client-side (see below); **time off** is already on the props from SSR.
+- If `business_availability.accept_bookings === true` → render **V2** (service picker → details → visit calendar + slot picker). Otherwise → render **V1** (request booking form).
+- For V2, the page passes `weeklySchedule`, **`timeOffBlocks`** (parsed from `time_off_blocks`), catalog services, location mode, etc., to the client. Visit duration comes from the session cart (sum of jobs). **Existing booking** blocked slots are fetched client-side (see below); **time off** is already on the props from SSR.
 
 ### Time slots: how they are generated
 
@@ -85,10 +85,10 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 #### Add-on optional duration (`service_addons.duration_minutes`)
 
 - **Database:** `service_addons` may include **`duration_minutes`** (nullable). Empty/null means the add-on does **not** extend the appointment length (price-only add-on).
-- **Public booking path:** Customer picks a service on **`/[slug]/book/details`** (`ServiceDetailsScreen`), optionally toggles add-ons, then continues to **`/[slug]/book?serviceId=…&addOnIds=…`**. The book page resolves add-on IDs with **`getAddOnsByIdsForBooking`** (scoped by `business_id`) and passes full add-on objects (including `duration_minutes`) into **`AvailabilityBookingPage`**.
-- **Totals on the client:** **`totalBookingDurationMinutes`** = base `serviceDurationMinutes` + Σ add-on minutes (ignore null/0). Same value drives the **price breakdown** (`BookingPriceBreakdown`), slot generation, and submit payload.
-- **Submit payload:** **`durationMinutes`** must be that **total** length. Optional **`selectedAddOns`**: `{ id, name, priceCents, durationMinutes? }[]` — stored on the booking as **`addon_details`** (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md)).
-- **Server note:** The API validates **`durationMinutes`** as a positive number and uses it for time-off overlap; it does **not** currently recompute duration from `serviceId` + add-on rows in the database (trust the client for normal UI flow).
+- **Public booking path (current):** Customer picks a service on **`/[slug]/book`**, configures price + add-ons on **`/[slug]/book/details`** (`ServiceDetailsScreen` — one combined details phase; add-ons reveal after a pricing option when multi-price is on), then continues into the **visit** calendar at **`/[slug]/book?visit=1`** (session cart). Multi-job: see **[public-multi-job-booking.md](../../../../docs/contracts/public-multi-job-booking.md)**.
+- **Totals on the client:** **`totalBookingDurationMinutes`** = sum of job durations (service + selected add-ons per job). Same value drives slot generation, quick “next available”, and submit.
+- **Submit payload:** Either legacy single-job fields (`serviceId`, `durationMinutes`, `selectedAddOns`, …) or **`jobs[]`** for multi-job. Stored as **`addon_details`** / **`job_details`** (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md)).
+- **Server note:** The API validates **`durationMinutes`** (or summed job durations) as a positive number and uses it for time-off overlap; it does **not** currently recompute duration from catalog rows in the database (trust the client for normal UI flow).
 
 #### Service & add-on duration pickers (30-minute grid)
 
@@ -96,15 +96,16 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 
 ### Submitting a booking
 
-- **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, `businessId`, `serviceId`, `serviceName`, `servicePriceCents`, **`durationMinutes`** (total appointment minutes), **`selectedAddOns`** (optional), `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address, notes).
+- **POST /api/public/bookings** – Public (no auth). Body: `businessSlug`, plus either single-job fields or **`jobs[]`**, `scheduledDate` (YYYY-MM-DD), `startTime` (HH:mm), `customer` (name, email, phone, address when mobile, notes).
 - API resolves business by **slug**. For **customer** bookings it loads **`time_off_blocks`** / **`minimum_notice`** and **rejects** with **409** on time-off overlap (single day, date range, all-day, or timed) or lead-time violations. **Owner manual booking** (`ownerManualBooking: true`, authenticated) skips both checks so owners can schedule whenever within the flow.
-  - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
+  - Then calls `createBooking(adminClient, payload)`, which **upserts** a `customers` row (dedupe by phone then email per business), sets **`bookings.customer_id`**, upserts **`customer_assets`** for complete vehicles, and inserts the booking with status `confirmed`. Overlap with **other bookings** is not re-checked at submit time today (UI + blocked-slots API reduce double-booking; a future improvement could add a server-side booking overlap check).
+- **Paid path:** `POST /api/public/booking-checkout` stores the payload; Stripe webhook calls the same `createBooking`.
 
 #### Service location on the business profile
 
 Businesses store **`service_location_mode`** (`mobile_only` | `shop_only` | `both`), **`shop_street_address`**, **`shop_unit`**, plus profile **`service_area`** (city/state) and **`business_zip`** on `business_profiles`. Dashboard edit saves these from the **Booking** tab.
 
-The public book flow branches on mode: **mobile** collects customer address after schedule; **shop** shows the business shop address and prefills it on submit; **both** asks **mobile vs shop before date/time** (on `/book/details`, after price options / add-ons when those exist). APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
+The public book flow branches on mode: **mobile** collects customer address on the **contact** step (same screen as name/phone); **shop** shows the business shop address and prefills it on submit; **both** asks **mobile vs shop on `/book/details`** (after price / add-ons when those exist), then schedule. APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
 
 ---
 

@@ -59,4 +59,3 @@ Ineligible sends return `{ sent: false, reason: 'not_eligible' }`.
 ## Last updated
 
 2026-08-04 — SMS open to all Pro owners (rollout allowlist cleared).
-

@@ -10,10 +10,18 @@ import {
 import {
   getBusinessBookDetailsPath,
   getBusinessBookCustomScheduleUrl,
+  getBusinessBookVisitUrl,
   type PublicBookingFlowLocale,
 } from '@/constants/routes';
 import { BookFlowServiceRow } from '@/features/availability/booking/components/BookFlowServiceRow';
 import { BOOKING_CUSTOMER_NOTES_MAX } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
+import {
+  clearPublicBookingJobsCart,
+  loadPublicBookingJobsCart,
+  type PublicBookingJobDraft,
+} from '@/features/availability/booking/utils/publicBookingJobsCart';
+import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constants/publicBookingJobs';
+import { PublicBookingStepTracker } from '@/features/availability/booking/components/PublicBookingStepTracker';
 import { PublicServiceCategoryFilters } from '@/features/business-profile/components/PublicServiceCategoryFilters';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import { SERVICE_CATEGORY_UNCATEGORIZED_FILTER_ID } from '@/features/services/categories/types/serviceCategories';
@@ -26,6 +34,7 @@ import {
   parseServiceEditDurationForSave,
 } from '@/features/services/utils/serviceEditForm';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -51,6 +60,11 @@ export interface BookServicePickerProps {
   /** Owner-only: restore services list after returning from service details. */
   initialEntryMode?: 'choice' | 'services' | 'custom';
   bookingFlowLocale?: PublicBookingFlowLocale;
+  /**
+   * Public multi-job: picking another service for the current visit.
+   * When false, any leftover visit cart is cleared on mount.
+   */
+  addingAnotherJob?: boolean;
 }
 
 function filterPickerServicesByCategory(
@@ -63,12 +77,17 @@ function filterPickerServicesByCategory(
   return services.filter(service => service.category_id === activeFilterId);
 }
 
-function OwnerBookingPickerFooter({ children }: { children: ReactNode }) {
+function BookingPickerFooter({ children }: { children: ReactNode }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4 backdrop-blur-sm safe-area-pb">
       <div className="mx-auto max-w-2xl">{children}</div>
     </div>
   );
+}
+
+function jobLineLabel(job: PublicBookingJobDraft): string {
+  const option = job.servicePriceOptionLabel?.trim();
+  return option ? `${job.serviceName} — ${option}` : job.serviceName;
 }
 
 /**
@@ -83,6 +102,7 @@ export function BookServicePicker({
   isOwnerManualBooking = false,
   initialEntryMode,
   bookingFlowLocale = 'en',
+  addingAnotherJob = false,
 }: BookServicePickerProps) {
   const router = useRouter();
   const ui = publicBookingUi(bookingFlowLocale);
@@ -120,6 +140,34 @@ export function BookServicePicker({
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     null
   );
+  const [cartJobs, setCartJobs] = useState<PublicBookingJobDraft[]>([]);
+  const cartJobCount = cartJobs.length;
+  /** Unfinished visit in this tab — offer explicit resume, never auto-jump. */
+  const [showUnfinishedResume, setShowUnfinishedResume] = useState(false);
+
+  useEffect(() => {
+    if (isOwnerManualBooking) {
+      setCartJobs([]);
+      setShowUnfinishedResume(false);
+      return;
+    }
+    const cart = loadPublicBookingJobsCart(businessSlug);
+    const jobs = cart?.jobs ?? [];
+    if (addingAnotherJob) {
+      setCartJobs(jobs);
+      setShowUnfinishedResume(false);
+      return;
+    }
+    // Fresh book start: offer resume if something is in progress; otherwise clear.
+    if (jobs.length > 0) {
+      setCartJobs(jobs);
+      setShowUnfinishedResume(true);
+      return;
+    }
+    clearPublicBookingJobsCart(businessSlug);
+    setCartJobs([]);
+    setShowUnfinishedResume(false);
+  }, [businessSlug, isOwnerManualBooking, addingAnotherJob]);
 
   useEffect(() => {
     if (categoryOptions.length === 0) {
@@ -279,7 +327,7 @@ export function BookServicePicker({
           />
         </div>
 
-        <OwnerBookingPickerFooter>
+        <BookingPickerFooter>
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
@@ -313,7 +361,7 @@ export function BookServicePicker({
               {ui.common.continue}
             </Button>
           </div>
-        </OwnerBookingPickerFooter>
+        </BookingPickerFooter>
       </div>
     );
   }
@@ -337,12 +385,41 @@ export function BookServicePicker({
     );
   }
 
+  const showAddAnotherCart =
+    !isOwnerManualBooking && addingAnotherJob && cartJobCount > 0;
+
+  const startOverUnfinishedBooking = () => {
+    clearPublicBookingJobsCart(businessSlug);
+    setCartJobs([]);
+    setShowUnfinishedResume(false);
+    setSelectedServiceId(null);
+  };
+
+  const continueToSelectedService = () => {
+    if (!selectedServiceId) return;
+    // Picking a new service on a fresh start replaces any unfinished visit.
+    if (!addingAnotherJob && !isOwnerManualBooking) {
+      clearPublicBookingJobsCart(businessSlug);
+      setCartJobs([]);
+      setShowUnfinishedResume(false);
+    }
+    router.push(
+      getBusinessBookDetailsPath(businessSlug, selectedServiceId, {
+        forOwner: isOwnerManualBooking,
+        lang: bookingFlowLocale,
+        addJob: addingAnotherJob,
+      })
+    );
+  };
+
   return (
-    <div
-      className={`${containerClassName} ${
-        isOwnerManualBooking ? '!pb-28 sm:!pb-32' : ''
-      }`}
-    >
+    <div className={`${containerClassName} !pb-28 sm:!pb-32`}>
+      {!isOwnerManualBooking ? (
+        <PublicBookingStepTracker
+          currentStage="service"
+          labels={ui.stepTracker}
+        />
+      ) : null}
       <header className="mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
           {isOwnerManualBooking
@@ -352,9 +429,109 @@ export function BookServicePicker({
         <p className="text-sm text-gray-400 mt-1 leading-relaxed">
           {isOwnerManualBooking
             ? ui.bookPicker.createAppointmentSubtitle
-            : ui.bookPicker.bookWithSubtitle}
+            : showAddAnotherCart
+              ? ui.bookPicker.addingToBookingSubtitle(cartJobCount)
+              : ui.bookPicker.bookWithSubtitle}
         </p>
       </header>
+
+      {showUnfinishedResume && cartJobCount > 0 ? (
+        <div className="mb-5 rounded-2xl border border-sky-500/25 bg-sky-500/[0.07] p-4">
+          <div className="flex items-start gap-3">
+            <span
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-300"
+              aria-hidden
+            >
+              <ShoppingBagIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">
+                {ui.bookPicker.unfinishedBookingTitle}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-sky-100/80">
+                {ui.bookPicker.unfinishedBookingBody(cartJobCount)}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {cartJobs.map(job => (
+                  <li
+                    key={job.localId}
+                    className="truncate text-xs leading-relaxed text-zinc-400"
+                  >
+                    {jobLineLabel(job)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Button
+              href={getBusinessBookVisitUrl(businessSlug, {
+                lang: bookingFlowLocale,
+              })}
+              variant="inverse"
+              fullWidth
+              className="font-semibold"
+            >
+              {ui.bookPicker.continueUnfinishedBooking}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              className="font-semibold"
+              onClick={startOverUnfinishedBooking}
+            >
+              {ui.bookPicker.startOverBooking}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {showAddAnotherCart ? (
+        <div className="mb-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
+          <div className="flex items-start gap-3">
+            <span
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300"
+              aria-hidden
+            >
+              <ShoppingBagIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">
+                {ui.bookPicker.yourBookingTitle(cartJobCount)}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {cartJobs.map(job => (
+                  <li
+                    key={job.localId}
+                    className="truncate text-xs leading-relaxed text-emerald-100/80"
+                  >
+                    {jobLineLabel(job)}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-zinc-400">
+                {ui.bookPicker.addingAnotherHint}
+              </p>
+              {cartJobCount >= PUBLIC_BOOKING_MAX_JOBS ? (
+                <p className="mt-2 text-xs text-amber-400/90">
+                  {ui.multiJob.maxJobsReached}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <Button
+            href={getBusinessBookVisitUrl(businessSlug, {
+              lang: bookingFlowLocale,
+            })}
+            variant="secondary"
+            fullWidth
+            className="mt-3 font-semibold"
+          >
+            {ui.bookPicker.cancelAddService}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         {showCategoryFilters ? (
@@ -379,13 +556,15 @@ export function BookServicePicker({
                     priceOptionsEnabled: s.priceOptionsEnabled,
                     hours_to_complete: s.hours_to_complete,
                     duration_minutes: s.duration_minutes,
+                    description: s.description,
                   }}
                   businessSlug={businessSlug}
                   manualBookingForCustomer={isOwnerManualBooking}
                   bookingFlowLocale={bookingFlowLocale}
                   isSelected={selectedServiceId === s.id}
                   onSelect={() => setSelectedServiceId(s.id)}
-                  navigateOnSelect={!isOwnerManualBooking}
+                  navigateOnSelect={false}
+                  addJob={addingAnotherJob}
                 />
               </div>
             ))}
@@ -396,8 +575,9 @@ export function BookServicePicker({
           </p>
         )}
       </div>
-      {isOwnerManualBooking ? (
-        <OwnerBookingPickerFooter>
+
+      <BookingPickerFooter>
+        {isOwnerManualBooking ? (
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
@@ -414,21 +594,24 @@ export function BookServicePicker({
               fullWidth
               className="font-semibold"
               disabled={!selectedServiceId}
-              onClick={() => {
-                if (!selectedServiceId) return;
-                router.push(
-                  getBusinessBookDetailsPath(businessSlug, selectedServiceId, {
-                    forOwner: true,
-                    lang: bookingFlowLocale,
-                  })
-                );
-              }}
+              onClick={continueToSelectedService}
             >
               {ui.common.continue}
             </Button>
           </div>
-        </OwnerBookingPickerFooter>
-      ) : null}
+        ) : (
+          <Button
+            type="button"
+            variant="inverse"
+            fullWidth
+            className="font-semibold"
+            disabled={!selectedServiceId}
+            onClick={continueToSelectedService}
+          >
+            {ui.common.continue}
+          </Button>
+        )}
+      </BookingPickerFooter>
     </div>
   );
 }
