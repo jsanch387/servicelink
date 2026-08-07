@@ -115,23 +115,25 @@ Parse city/state from DB: `parseServiceAreaCityState(profile.service_area)`.
 
 **Status:** Implemented on `/:slug/book`. The flow reads `service_location_mode` and shop fields from `business_profiles` and branches accordingly.
 
-| `service_location_mode` | Customer experience                                                                                         |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `mobile_only`           | After service setup → calendar → contact → address → vehicle/notes → review                                 |
-| `shop_only`             | After service setup → calendar → contact → vehicle/notes → review (shop address prefilled on submit)        |
-| `both`                  | After price options / add-ons (or immediately after service if neither) → **mobile vs shop** → calendar → … |
+| `service_location_mode` | Customer experience                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `mobile_only`           | Service details → visit calendar → **contact + address** (one screen) → vehicle/notes → review                         |
+| `shop_only`             | Service details → visit calendar → contact → vehicle/notes → review (shop address prefilled on submit)                 |
+| `both`                  | Price / add-ons (combined) → **mobile vs shop** on `/book/details` → visit calendar → contact (+ address if mobile) → … |
 
-Location choice is collected **before date/time** on `/book/details` (and as a pre-schedule step on `/book` for custom owner jobs that skip details). Query param: `serviceLocationType=mobile|shop`.
+Location choice is collected **before date/time** on `/book/details` when mode is `both` (and as a pre-schedule step on `/book` for custom owner jobs that skip details). Query param: `serviceLocationType=mobile|shop`.
+
+Public multi-job visit cart + step order: **[public-multi-job-booking.md](../../../../docs/contracts/public-multi-job-booking.md)**.
 
 **Touch points:**
 
-- `src/app/[business-slug]/book/page.tsx` — SSR loads location columns; passes choice into calendar
+- `src/app/[business-slug]/book/page.tsx` — SSR loads location columns; visit cart / picker
 - `src/app/[business-slug]/book/details/page.tsx` — service setup + location choice when `both`
-- `src/features/services/booking-flow/ServiceDetailsScreen.tsx` — price → add-ons → location phases
+- `src/features/services/booking-flow/ServiceDetailsScreen.tsx` — combined price + add-ons → location phases
 - `src/features/business-profile/utils/publicServiceLocation.ts` — `buildPublicBookingServiceLocation`
-- `src/features/availability/booking/utils/bookingServiceLocationFlow.ts` — post-schedule address branching
+- `src/features/availability/booking/utils/bookingServiceLocationFlow.ts` — contact/address merge + validation
 - `src/features/availability/booking/components/BookingServiceLocationSteps.tsx` — choice UI
-- `src/features/availability/booking/components/AvailabilityBookingPage.tsx` — calendar + details
+- `src/features/availability/booking/components/AvailabilityBookingPage.tsx` — schedule + details + review
 - `POST /api/public/bookings` and `POST /api/public/booking-checkout` — server-side address rules + shop prefill
 
 See also: `src/features/availability/docs/FLOWS.md` §2 (public V2 booking).

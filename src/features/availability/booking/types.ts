@@ -123,6 +123,17 @@ export interface AvailabilityBookingPageProps {
   initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   /** Live sale for this business (Pro only); auto-applies when appointment date qualifies. */
   activeSale?: PublicActiveSale | null;
+  /**
+   * Public multi-job visit (`/book?visit=1`). When set, price/duration/submit use
+   * `jobs[]` instead of the single-service URL fields.
+   */
+  bookingJobs?: PublicBookingJobDraft[];
+  /** Link to service picker to append another job (public multi-job only). */
+  addAnotherJobHref?: string;
+  onRemoveBookingJob?: (localId: string) => void;
+  onBookingJobsChange?: (jobs: PublicBookingJobDraft[]) => void;
+  /** Clears the visit cart after a successful public multi-job create. */
+  onPublicMultiJobBookingCreated?: () => void;
 }
 
 export interface BookingSubmission {
@@ -140,6 +151,27 @@ export interface AddOnAtBooking {
   priceCents: number;
   durationMinutes?: number | null;
 }
+
+/** Per-job vehicle draft for public multi-job cart. */
+export type PublicBookingJobVehicleDraft = {
+  year: string;
+  make: string;
+  model: string;
+};
+
+/**
+ * One catalog job in the public visit cart (sessionStorage → `jobs[]` on create).
+ */
+export type PublicBookingJobDraft = {
+  localId: string;
+  serviceId: string;
+  serviceName: string;
+  servicePriceOptionLabel: string | null;
+  servicePriceCents: number;
+  selectedAddOns: AddOnAtBooking[];
+  durationMinutes: number;
+  vehicle: PublicBookingJobVehicleDraft;
+};
 
 /** Per-job vehicle for owner multi-job visits (`jobs[]`). */
 export interface CreateBookingJobVehicle {
@@ -209,9 +241,9 @@ export interface CreateBookingRequest {
    */
   ownerManualBooking?: boolean;
   /**
-   * Owner multi-job appointment (1…20). When present, creates **one** booking row
-   * with jobs stored in `job_details`. Appointment duration = sum of job durations.
-   * Only allowed when `ownerManualBooking` is true.
+   * Multi-job appointment (1…N). When present, creates **one** booking row with
+   * jobs stored in `job_details`. Appointment duration = sum of job durations.
+   * Owner: up to 20 (custom jobs allowed). Public: up to 4, catalog `serviceId` required.
    */
   jobs?: CreateBookingJobItem[];
   /** Required when business offers both mobile and shop (`service_location_mode = both`). */

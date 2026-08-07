@@ -24,6 +24,11 @@ import { buildPublicBookingServiceLocation } from '@/features/business-profile/u
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { BookFlowClientRedirect } from '@/features/availability/booking/components/BookFlowClientRedirect';
+import { CommitPublicJobAndRedirect } from '@/features/availability/booking/components/CommitPublicJobAndRedirect';
+import {
+  isPublicBookingAddJobQuery,
+  isPublicBookingEditVisitQuery,
+} from '@/features/availability/booking/constants/publicBookingJobs';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -44,6 +49,10 @@ interface ServiceDetailsPageProps {
     serviceLocationType?: string;
     for?: string;
     lang?: string;
+    /** Append to multi-job visit cart instead of starting fresh. */
+    addJob?: string;
+    /** Edit the sole visit job and keep contact/schedule draft. */
+    editVisit?: string;
   }>;
 }
 
@@ -82,8 +91,12 @@ export default async function ServiceDetailsPage({
     serviceLocationType: serviceLocationTypeRaw,
     for: bookingForParam,
     lang: langParam,
+    addJob: addJobParam,
+    editVisit: editVisitParam,
   } = await searchParams;
   const isOwnerManualBooking = bookingForParam === OWNER_MANUAL_BOOKING_FOR;
+  const addingAnotherJob = isPublicBookingAddJobQuery(addJobParam);
+  const editingVisitJob = isPublicBookingEditVisitQuery(editVisitParam);
 
   const langFromQuery =
     typeof langParam === 'string'
@@ -188,14 +201,28 @@ export default async function ServiceDetailsPage({
 
   // Nothing to configure (no price options, add-ons, or mobile/shop choice)
   if (!needsPriceStep && addOns.length === 0 && !needsLocationStep) {
+    if (isOwnerManualBooking) {
+      return (
+        <BookFlowClientRedirect
+          href={getBusinessBookScheduleUrl(slug, {
+            serviceId: serviceId.trim(),
+            skipDetails: true,
+            forOwner: true,
+            lang: bookingFlowLocale,
+          })}
+        />
+      );
+    }
     return (
-      <BookFlowClientRedirect
-        href={getBusinessBookScheduleUrl(slug, {
-          serviceId: serviceId.trim(),
-          skipDetails: true,
-          forOwner: isOwnerManualBooking,
-          lang: bookingFlowLocale,
-        })}
+      <CommitPublicJobAndRedirect
+        businessSlug={slug}
+        serviceId={service.id}
+        serviceName={service.name}
+        servicePriceCents={service.priceCents}
+        durationMinutes={Math.max(1, service.durationMinutes)}
+        lang={bookingFlowLocale}
+        addingAnotherJob={addingAnotherJob}
+        editingVisitJob={editingVisitJob}
       />
     );
   }
@@ -233,6 +260,8 @@ export default async function ServiceDetailsPage({
         initialServiceLocationType={initialServiceLocationType}
         isOwnerManualBooking={isOwnerManualBooking}
         bookingFlowLocale={bookingFlowLocale}
+        addingAnotherJob={addingAnotherJob}
+        editingVisitJob={editingVisitJob}
       />
     </>
   );

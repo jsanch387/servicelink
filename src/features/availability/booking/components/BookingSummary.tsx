@@ -88,6 +88,11 @@ interface BookingSummaryProps {
   shopAddressLabel?: string | null;
   /** Owner manual shop booking — omit address on review (owner already knows shop). */
   hideServiceAddress?: boolean;
+  /**
+   * Multi-job visits list services above this summary — hide the single-service
+   * name/variant/add-on block (still show visit total when priced).
+   */
+  hideServiceLines?: boolean;
 }
 
 export const BookingSummary: React.FC<BookingSummaryProps> = ({
@@ -109,6 +114,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   isShopBooking = false,
   shopAddressLabel = null,
   hideServiceAddress = false,
+  hideServiceLines = false,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const sl = ui.serviceLocation;
@@ -243,45 +249,9 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
-        <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-white leading-snug">
-              {serviceName}
-            </p>
-            {serviceVariantLabel ? (
-              <p className="mt-0.5 text-sm text-gray-400">
-                {serviceVariantLabel}
-              </p>
-            ) : null}
-          </div>
-          {showServicePrice ? (
-            <span className="text-sm text-gray-300 tabular-nums shrink-0 pt-0.5">
-              {formatCents(servicePriceCents!)}
-            </span>
-          ) : null}
-        </div>
-
-        {hasAddOns ? (
-          <ul className="px-4 pb-3 space-y-2 border-t border-white/[0.06] pt-3 mx-0">
-            {selectedAddOns.map(addOn => (
-              <li
-                key={addOn.id}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <span className="text-gray-300 min-w-0 truncate">
-                  {addOn.name}
-                </span>
-                <span className="text-gray-400 tabular-nums shrink-0">
-                  +{formatCents(addOn.priceCents)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        {showPriceFooter ? (
-          <div className="px-4 py-3 border-t border-white/[0.06] space-y-2">
+      {hideServiceLines ? (
+        hasPrice ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden px-4 py-3 space-y-2">
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-gray-300">
                 {ui.common.bookingTotal}
@@ -312,8 +282,80 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
               </div>
             ) : null}
           </div>
-        ) : null}
-      </div>
+        ) : null
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+          <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-white leading-snug">
+                {serviceName}
+              </p>
+              {serviceVariantLabel ? (
+                <p className="mt-0.5 text-sm text-gray-400">
+                  {serviceVariantLabel}
+                </p>
+              ) : null}
+            </div>
+            {showServicePrice ? (
+              <span className="text-sm text-gray-300 tabular-nums shrink-0 pt-0.5">
+                {formatCents(servicePriceCents!)}
+              </span>
+            ) : null}
+          </div>
+
+          {hasAddOns ? (
+            <ul className="px-4 pb-3 space-y-2 border-t border-white/[0.06] pt-3 mx-0">
+              {selectedAddOns.map(addOn => (
+                <li
+                  key={addOn.id}
+                  className="flex items-center justify-between gap-3 text-sm"
+                >
+                  <span className="text-gray-300 min-w-0 truncate">
+                    {addOn.name}
+                  </span>
+                  <span className="text-gray-400 tabular-nums shrink-0">
+                    +{formatCents(addOn.priceCents)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {showPriceFooter ? (
+            <div className="px-4 py-3 border-t border-white/[0.06] space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-gray-300">
+                  {ui.common.bookingTotal}
+                </span>
+                {showSalePricing ? (
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
+                      {formatCents(saleSubtotalCents!)}
+                    </span>
+                    <span className="text-sm font-semibold text-white tabular-nums">
+                      {formatCents(saleEstimatedTotalCents!)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm font-semibold text-white tabular-nums">
+                    {formatCents(totalPriceCents!)}
+                  </span>
+                )}
+              </div>
+              {saleAppliesLine ? (
+                <div className="space-y-1.5">
+                  <BookingSaleAppliesNotice line={saleAppliesLine} />
+                  {saleDiscountCents != null && saleDiscountCents > 0 ? (
+                    <p className="text-sm font-medium text-emerald-300/90">
+                      {ui.common.youSave(formatCents(saleDiscountCents))}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
         {detailRows.map((row, index) => (

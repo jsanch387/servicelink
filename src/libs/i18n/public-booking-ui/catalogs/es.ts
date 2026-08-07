@@ -39,6 +39,10 @@ export const publicBookingUiEs: PublicBookingUi = {
     contact: 'Contacto',
     address: 'Dirección',
     dateAndTime: 'Fecha y hora',
+    schedule: 'Horario',
+    customer: 'Cliente',
+    subtotal: 'Subtotal',
+    visitTotal: 'Total de la visita',
     emailNotProvided: 'Sin correo electrónico',
   },
   serviceDetails: {
@@ -53,6 +57,18 @@ export const publicBookingUiEs: PublicBookingUi = {
     seeDescription: 'Ver descripción',
     hideDescription: 'Ocultar descripción',
   },
+  stepTracker: {
+    service: 'Servicio',
+    time: 'Hora',
+    details: 'Detalles',
+    confirm: 'Confirmar',
+  },
+  quickSchedule: {
+    nextAvailableLabel: 'Próximo disponible',
+    bookThisTime: 'Reservar esta hora',
+    chooseDifferentTime: 'Elegir otra hora',
+    backToFirstAvailable: 'Volver a la primera disponible',
+  },
   bookPicker: {
     noServicesOwnerTitle: 'Aún no hay servicios para elegir.',
     noServicesPublicTitle: 'Aún no hay servicios.',
@@ -65,7 +81,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     createAppointmentSubtitle:
       'Estás creando una nueva cita. Elige un servicio abajo para continuar.',
     bookWithSubtitle:
-      'Elige un servicio. Luego podrás agregar extras si los hay. Después elige fecha y hora.',
+      'Elige un servicio abajo y continúa. Puedes agregar más servicios después.',
     chooseAppointmentTypeSubtitle:
       'Elige un servicio guardado o crea un trabajo personalizado.',
     appointmentTypeAriaLabel: 'Cómo establecer el servicio',
@@ -85,6 +101,46 @@ export const publicBookingUiEs: PublicBookingUi = {
     customJobNotesLabel: 'Notas (opcional)',
     customJobNotesPlaceholder:
       'Agrega detalles o contexto sobre este trabajo personalizado.',
+    addingToBookingSubtitle: count =>
+      count === 1
+        ? 'Genial — ya tienes 1 servicio. Elige otro abajo para agregarlo.'
+        : `Genial — ya tienes ${count} servicios. Elige otro abajo para agregarlo.`,
+    yourBookingTitle: count =>
+      count === 1
+        ? '1 servicio ya en tu reserva'
+        : `${count} servicios ya en tu reserva`,
+    addingAnotherHint: 'Selecciona un servicio abajo y continúa.',
+    cancelAddService: 'Volver a tu reserva',
+    continueToSchedule: 'Continuar',
+    seeDescription: 'Ver descripción',
+    hideDescription: 'Ocultar descripción',
+    unfinishedBookingTitle: '¿Continuar donde lo dejaste?',
+    unfinishedBookingBody: count =>
+      count === 1
+        ? 'Todavía tienes 1 servicio guardado en este navegador. Continúa esa reserva o empieza de nuevo.'
+        : `Todavía tienes ${count} servicios guardados en este navegador. Continúa esa reserva o empieza de nuevo.`,
+    continueUnfinishedBooking: 'Continuar reserva',
+    startOverBooking: 'Empezar de nuevo',
+  },
+  multiJob: {
+    yourServices: 'Servicios en esta reserva',
+    jobLabel: n => `Servicio ${n}`,
+    remove: 'Quitar',
+    addAnotherService: 'Agregar otro servicio',
+    addAnotherVehicle: 'Agregar otro vehículo',
+    visitSummary: count => `${count} servicios`,
+    vehiclePerService: 'Vehículo para cada servicio',
+    maxJobsReached: 'Puedes agregar hasta 4 servicios en una reserva.',
+    vehicleRequiredToast:
+      'Agrega año, marca y modelo de cada servicio antes de continuar.',
+    vehicleRequiredToastForJob: name =>
+      `Agrega año, marca y modelo de ${name} antes de continuar.`,
+    maxJobsReachedToast:
+      'Ya tienes 4 servicios en esta reserva. Quita uno para agregar otro.',
+    couldNotAddServiceToast:
+      'No se pudo agregar ese servicio. Vuelve e inténtalo de nuevo.',
+    retimingRequired:
+      'Tu reserva es más larga ahora. Elige una hora de inicio que cubra toda la visita.',
   },
   notAccepting: {
     title: 'Este negocio aún no acepta reservas.',
@@ -200,6 +256,9 @@ export const publicBookingUiEs: PublicBookingUi = {
     serviceAddress: 'Dirección del servicio',
     vehicle: 'Vehículo',
     optionalVehicleDetails: 'Opcional — agrega los datos del vehículo.',
+    savedVehiclesTitle: 'Tus vehículos guardados',
+    savedVehiclesLoading: 'Buscando tus vehículos…',
+    savedVehiclesHint: 'Toca uno para completar año, marca y modelo.',
     fullName: 'Nombre completo',
     email: 'Correo electrónico',
     phone: 'Teléfono',

@@ -23,6 +23,7 @@ interface PhoneInputProps {
   showDigitHint?: boolean;
   /** When true, show a phone icon inside the input (left side). */
   showIcon?: boolean;
+  onBlur?: () => void;
 }
 
 /**
@@ -42,6 +43,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   name,
   showDigitHint = true,
   showIcon = false,
+  onBlur,
 }) => {
   const digits = value.replace(/\D/g, '').slice(0, US_PHONE_DIGIT_COUNT);
   const [displayValue, setDisplayValue] = useState(() =>
@@ -69,6 +71,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
         autoComplete="tel"
         value={displayValue}
         onChange={handleChange}
+        onBlur={onBlur}
         placeholder={placeholder}
         required={required}
         error={error}

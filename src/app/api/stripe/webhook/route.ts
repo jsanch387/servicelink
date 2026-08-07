@@ -22,13 +22,26 @@
  */
 
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
-import type { CustomerFormData } from '@/features/availability/booking/types';
+import type {
+  CreateBookingJobItem,
+  CustomerFormData,
+} from '@/features/availability/booking/types';
 import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { parseBookingReferralSource } from '@/features/booking-attribution/utils/bookingReferralCookieValue';
 import {
   clientServiceLocationChoice,
   resolvePersistedBookingServiceLocationType,
 } from '@/features/availability/booking/utils/resolveBookingServiceLocationType';
+import {
+  appointmentServiceNameSummary,
+  jobGrossCents,
+  parseOwnerManualBookingJobs,
+  sumJobDurationMinutes,
+  sumJobGrossCents,
+  toBookingJobDetails,
+} from '@/features/availability/booking/utils/ownerManualBookingJobs';
+import { appointmentMoneyFieldsFromJobs } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
+import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constants/publicBookingJobs';
 import { createBooking } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
@@ -147,6 +160,7 @@ type StoredBookingCheckoutPayload = {
   serviceLocationType?: 'mobile' | 'shop';
   promoCode?: string;
   referralSource?: BookingReferralSource | null;
+  jobs?: CreateBookingJobItem[];
 };
 
 function customerFormFromCheckoutStored(
@@ -294,6 +308,9 @@ function parseStoredBookingCheckoutPayload(
         ? normalizeEnteredPromoCode(p.promoCode) || undefined
         : undefined,
     referralSource: parseBookingReferralSource(p.referralSource),
+    ...(Array.isArray(p.jobs)
+      ? { jobs: p.jobs as CreateBookingJobItem[] }
+      : {}),
   };
 }
 
@@ -560,13 +577,59 @@ export async function POST(request: NextRequest) {
         locationResolved.effective ??
         (serviceLocation.mode === 'shop_only' ? 'shop' : 'mobile');
 
-      const selectedAddOnsForEmail = bookingPayload.selectedAddOns ?? [];
-      const basePriceForEmail = bookingPayload.servicePriceCents ?? 0;
-      const addOnTotalForEmail = selectedAddOnsForEmail.reduce(
-        (sum, addOn) => sum + (addOn.priceCents ?? 0),
-        0
+      const parsedJobsResult = Array.isArray(bookingPayload.jobs)
+        ? parseOwnerManualBookingJobs(bookingPayload.jobs)
+        : null;
+      const parsedJobs =
+        parsedJobsResult?.ok &&
+        parsedJobsResult.jobs.length >= 1 &&
+        parsedJobsResult.jobs.length <= PUBLIC_BOOKING_MAX_JOBS &&
+        parsedJobsResult.jobs.every(j => j.serviceId)
+          ? parsedJobsResult.jobs
+          : null;
+
+      const selectedAddOnsForEmail = parsedJobs
+        ? appointmentMoneyFieldsFromJobs(parsedJobs).selectedAddOns
+        : (bookingPayload.selectedAddOns ?? []);
+      const basePriceForEmail = parsedJobs
+        ? appointmentMoneyFieldsFromJobs(parsedJobs).servicePriceCents
+        : (bookingPayload.servicePriceCents ?? 0);
+      const visitGross = parsedJobs
+        ? sumJobGrossCents(parsedJobs)
+        : basePriceForEmail +
+          selectedAddOnsForEmail.reduce(
+            (sum, addOn) => sum + (addOn.priceCents ?? 0),
+            0
+          );
+      const totalPriceCentsForEmail = visitGross;
+      const durationMinutes = parsedJobs
+        ? sumJobDurationMinutes(parsedJobs)
+        : bookingPayload.durationMinutes;
+      const serviceNameForBooking = parsedJobs
+        ? appointmentServiceNameSummary(parsedJobs)
+        : storedServiceName;
+      const jobDetails = parsedJobs ? toBookingJobDetails(parsedJobs) : null;
+      const singleCatalogServiceId = parsedJobs
+        ? parsedJobs.length === 1
+          ? (parsedJobs[0].serviceId ?? null)
+          : null
+        : bookingPayload.serviceId;
+      const singleVehicle =
+        parsedJobs &&
+        parsedJobs.length === 1 &&
+        (parsedJobs[0].vehicle.year ||
+          parsedJobs[0].vehicle.make ||
+          parsedJobs[0].vehicle.model)
+          ? parsedJobs[0].vehicle
+          : null;
+      const customerForCreate = customerFormFromCheckoutStored(
+        bookingPayload.customer
       );
-      const totalPriceCentsForEmail = basePriceForEmail + addOnTotalForEmail;
+      if (parsedJobs) {
+        customerForCreate.vehicleYear = singleVehicle?.year ?? '';
+        customerForCreate.vehicleMake = singleVehicle?.make ?? '';
+        customerForCreate.vehicleModel = singleVehicle?.model ?? '';
+      }
 
       const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {
         profileId: capProfile.profile_id,
@@ -613,19 +676,25 @@ export async function POST(request: NextRequest) {
         businessSlug: bookingPayload.businessSlug,
         bookingSource: 'public',
         referralSource: bookingPayload.referralSource ?? null,
-        serviceId: bookingPayload.serviceId,
-        serviceName: storedServiceName,
-        servicePriceCents: bookingPayload.servicePriceCents,
-        selectedAddOns: bookingPayload.selectedAddOns,
-        durationMinutes: bookingPayload.durationMinutes,
+        serviceId: singleCatalogServiceId,
+        serviceName: serviceNameForBooking,
+        servicePriceCents: basePriceForEmail,
+        selectedAddOns: selectedAddOnsForEmail,
+        durationMinutes,
         scheduledDate: bookingPayload.scheduledDate,
         startTime: bookingPayload.startTime,
-        customer: customerFormFromCheckoutStored(bookingPayload.customer),
+        customer: customerForCreate,
         serviceLocationType: resolvePersistedBookingServiceLocationType({
           clientChoice: effectiveLocationType,
           businessMode: serviceLocation.mode,
         }),
         discountSnapshot,
+        ...(jobDetails
+          ? {
+              jobDetails,
+              visitJobCount: parsedJobs!.length,
+            }
+          : {}),
       });
       logBookingCheckoutStage('booking.created', {
         eventId: event.id,
@@ -643,9 +712,7 @@ export async function POST(request: NextRequest) {
           ? session.currency.trim().toLowerCase()
           : 'usd';
       const hasPriceLineItems =
-        (typeof bookingPayload.servicePriceCents === 'number' &&
-          bookingPayload.servicePriceCents > 0) ||
-        selectedAddOnsForEmail.length > 0;
+        basePriceForEmail > 0 || selectedAddOnsForEmail.length > 0;
       const emailServiceLocation = buildAvailabilityBookingEmailServiceLocation(
         {
           effectiveType: effectiveLocationType,
@@ -660,21 +727,39 @@ export async function POST(request: NextRequest) {
       const profileId = capProfile.profile_id ?? null;
       const businessDisplayName =
         capProfile.business_name?.trim() || bookingPayload.businessSlug;
+      const jobCount = parsedJobs?.length ?? 1;
+      const emailJobs = parsedJobs?.map(job => ({
+        serviceName: job.serviceName,
+        servicePriceOptionLabel:
+          job.servicePriceOptionLabel?.trim() || undefined,
+        servicePriceCents: job.servicePriceCents,
+        selectedAddOns: job.selectedAddOns,
+        durationMinutes: job.durationMinutes,
+        customerVehicleYear: job.vehicle.year || undefined,
+        customerVehicleMake: job.vehicle.make || undefined,
+        customerVehicleModel: job.vehicle.model || undefined,
+        totalPriceCents: jobGrossCents(job),
+      }));
       const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
         customerName: bookingPayload.customer.fullName.trim(),
         customerEmail: resolvedCustomerEmail,
         customerPhone: bookingPayload.customer.phone?.trim(),
-        customerVehicleYear: bookingPayload.customer.vehicleYear?.trim(),
-        customerVehicleMake: bookingPayload.customer.vehicleMake?.trim(),
-        customerVehicleModel: bookingPayload.customer.vehicleModel?.trim(),
-        serviceName: bookingPayload.serviceName.trim(),
-        servicePriceOptionLabel: optionLabel || undefined,
+        customerVehicleYear: customerForCreate.vehicleYear?.trim() || undefined,
+        customerVehicleMake: customerForCreate.vehicleMake?.trim() || undefined,
+        customerVehicleModel:
+          customerForCreate.vehicleModel?.trim() || undefined,
+        serviceName:
+          jobCount > 1 ? `${jobCount} jobs` : serviceNameForBooking.trim(),
+        servicePriceOptionLabel: parsedJobs
+          ? undefined
+          : optionLabel || undefined,
         scheduledDate: bookingPayload.scheduledDate,
         startTime: bookingPayload.startTime,
-        durationMinutes: bookingPayload.durationMinutes,
-        servicePriceCents: bookingPayload.servicePriceCents,
+        durationMinutes,
+        servicePriceCents: basePriceForEmail,
         selectedAddOns: selectedAddOnsForEmail,
         totalPriceCents: totalPriceCentsForEmail,
+        ...(emailJobs ? { jobs: emailJobs } : {}),
         ...(discountSnapshot
           ? {
               discount: {

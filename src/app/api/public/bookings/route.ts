@@ -18,6 +18,12 @@ import {
 } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import { coerceBookingCents } from '@/features/availability/booking/utils/coerceBookingCents';
 import {
+  PUBLIC_BOOKING_MAX_JOBS,
+  PUBLIC_BOOKING_MAX_JOBS_MESSAGE,
+} from '@/features/availability/booking/constants/publicBookingJobs';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import { isJobVehicleComplete } from '@/features/availability/booking/utils/visitJobVehicles';
+import {
   appointmentFitsSameDay,
   appointmentServiceNameSummary,
   jobGrossCents,
@@ -98,17 +104,6 @@ export async function POST(request: NextRequest) {
     const ownerManualBooking = body.ownerManualBooking === true;
     const hasJobsArray = Array.isArray(body.jobs);
 
-    if (hasJobsArray && !ownerManualBooking) {
-      return publicBookingJson(
-        requestId,
-        {
-          success: false,
-          error: 'jobs is only supported for owner manual booking',
-        },
-        400
-      );
-    }
-
     let parsedJobs: OwnerManualBookingJobInput[] | null = null;
     if (hasJobsArray) {
       const parsed = parseOwnerManualBookingJobs(body.jobs);
@@ -118,6 +113,27 @@ export async function POST(request: NextRequest) {
           { success: false, error: parsed.error },
           400
         );
+      }
+      // Public customers: catalog services only, capped at UI max.
+      if (!ownerManualBooking) {
+        if (parsed.jobs.length > PUBLIC_BOOKING_MAX_JOBS) {
+          return publicBookingJson(
+            requestId,
+            { success: false, error: PUBLIC_BOOKING_MAX_JOBS_MESSAGE },
+            400
+          );
+        }
+        const missingCatalog = parsed.jobs.findIndex(j => !j.serviceId);
+        if (missingCatalog >= 0) {
+          return publicBookingJson(
+            requestId,
+            {
+              success: false,
+              error: `Job ${missingCatalog + 1}: catalog service is required`,
+            },
+            400
+          );
+        }
       }
       parsedJobs = parsed.jobs;
     }
@@ -187,7 +203,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+        'id, business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, business_type'
       )
       .eq('business_slug', body.businessSlug.trim())
       .single();
@@ -285,9 +301,35 @@ export async function POST(request: NextRequest) {
       locationResolved.effective
     );
 
+    const requireVehicleFields =
+      !ownerManualBooking &&
+      isVehicleRelatedBusinessType(
+        (profile as { business_type?: string | null }).business_type
+      );
+
+    if (requireVehicleFields && parsedJobs) {
+      const incompleteJob = parsedJobs.findIndex(
+        job => !isJobVehicleComplete(job.vehicle)
+      );
+      if (incompleteJob >= 0) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: `Job ${incompleteJob + 1}: vehicle year, make, and model are required`,
+          },
+          400
+        );
+      }
+    }
+
     const customerPayloadErr = bookingCustomerPayloadErrorMessage(
       coercedCustomer,
-      { requireCustomerAddress }
+      {
+        requireCustomerAddress,
+        // Multi-job vehicles live on jobs[]; only require top-level for single-job.
+        requireVehicleFields: requireVehicleFields && !parsedJobs,
+      }
     );
     if (customerPayloadErr) {
       return publicBookingJson(
@@ -386,7 +428,9 @@ export async function POST(request: NextRequest) {
       const timeOffIntervals = parseStoredTimeOffBlocks(
         availabilityRow?.time_off_blocks
       ).map(toTimeOffIntervalFields);
-      const durationMinutes = body.durationMinutes!;
+      const durationMinutes = parsedJobs
+        ? sumJobDurationMinutes(parsedJobs)
+        : body.durationMinutes!;
       if (
         bookingOverlapsTimeOff(
           body.scheduledDate,
@@ -470,7 +514,8 @@ export async function POST(request: NextRequest) {
     });
 
     // -------------------------------------------------------------------------
-    // Owner multi-job appointment (`jobs[]`) — one booking row, jobs as line items
+    // Multi-job appointment (`jobs[]`) — one booking row, jobs as line items
+    // (owner manual or public customer visit)
     // -------------------------------------------------------------------------
     if (parsedJobs) {
       const visitStart = normalizeStartTimeHHmm(body.startTime.trim());
@@ -510,7 +555,13 @@ export async function POST(request: NextRequest) {
 
       // Sale applies once to the appointment subtotal (all jobs), unless the
       // owner opted out via applySale: false (web Review checkbox).
-      const ownerWantsSale = body.applySale !== false;
+      // Public: always apply qualifying sale; promo allowed.
+      const ownerWantsSale = !ownerManualBooking || body.applySale !== false;
+      const enteredPromoCode = ownerManualBooking
+        ? ''
+        : normalizeEnteredPromoCode(
+            typeof body.promoCode === 'string' ? body.promoCode : ''
+          );
       let discountSnapshot: BookingDiscountSnapshot | null = null;
       if (ownerWantsSale) {
         const discountResolved = await resolveBookingDiscountSnapshot(
@@ -520,10 +571,10 @@ export async function POST(request: NextRequest) {
             ownerHasPro,
             serviceDateYmd: body.scheduledDate,
             subtotalCents: visitGross,
-            promoCode: null,
+            promoCode: enteredPromoCode || null,
             customerPhone: sanitizedCustomer.phone,
             customerEmail: sanitizedCustomer.email,
-            allowPromoCode: false,
+            allowPromoCode: !ownerManualBooking,
           }
         );
         if (!discountResolved.ok) {
@@ -555,12 +606,17 @@ export async function POST(request: NextRequest) {
         vehicleModel: singleVehicle?.model ?? '',
       };
 
+      const referralSource = ownerManualBooking
+        ? null
+        : bookingReferralSourceForBusiness(request, businessSlug);
+
       let result: { id: string; customerId: string; visitId: string };
       try {
         result = await createBooking(supabase, {
           businessId,
           businessSlug,
-          bookingSource: 'owner',
+          bookingSource: ownerManualBooking ? 'owner' : 'public',
+          referralSource,
           serviceId: singleCatalogServiceId,
           serviceName: serviceNameSummary,
           servicePriceCents: moneyFields.servicePriceCents,
@@ -677,7 +733,7 @@ export async function POST(request: NextRequest) {
         paymentSummary,
         serviceLocation: emailServiceLocation,
         customerNotes: sanitizedCustomer.notes?.trim() || undefined,
-        createdByOwner: true,
+        createdByOwner: ownerManualBooking || undefined,
       };
 
       await notifyOwnerForAvailabilityBookingCreated(supabase, {
@@ -740,7 +796,7 @@ export async function POST(request: NextRequest) {
         bookingId: result.id,
         visitId: result.visitId,
         jobs: jobCount,
-        owner: 1,
+        owner: ownerManualBooking ? 1 : 0,
         auth: ownerAuthMethod,
         email: customerConfirmationOutcome,
         sms: customerSmsOutcome,

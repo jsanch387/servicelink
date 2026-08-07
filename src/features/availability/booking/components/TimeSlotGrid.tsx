@@ -32,6 +32,11 @@ interface TimeSlotGridProps {
   requireDurationWithinHours?: boolean;
   /** Compact slots for tight modals (e.g. reschedule). */
   compact?: boolean;
+  /**
+   * Auto-pick the first open slot when none is selected.
+   * Disable after a multi-job retime so the customer consciously picks a new time.
+   */
+  autoSelectFirstAvailable?: boolean;
 }
 
 export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
@@ -50,6 +55,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   noSlotsHint = 'No available times for this date.',
   requireDurationWithinHours = true,
   compact = false,
+  autoSelectFirstAvailable = true,
 }) => {
   const slots = useMemo(
     () =>
@@ -77,10 +83,11 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   );
 
   useEffect(() => {
+    if (!autoSelectFirstAvailable) return;
     if (!selectedTime && slots.length > 0) {
       onSelectTime(slots[0]);
     }
-  }, [onSelectTime, selectedTime, slots]);
+  }, [autoSelectFirstAvailable, onSelectTime, selectedTime, slots]);
 
   if (!selectedDate) {
     return (

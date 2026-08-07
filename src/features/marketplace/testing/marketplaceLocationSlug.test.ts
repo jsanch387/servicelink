@@ -33,9 +33,7 @@ describe('locationToMarketplaceSlug', () => {
   });
 
   it('builds dynamic slugs for any city', () => {
-    expect(locationToMarketplaceSlug('Los Angeles, CA')).toBe(
-      'los-angeles-ca'
-    );
+    expect(locationToMarketplaceSlug('Los Angeles, CA')).toBe('los-angeles-ca');
     expect(locationToMarketplaceSlug('Los Angeles')).toBe('los-angeles');
     expect(locationToMarketplaceSlug('78701')).toBe('78701');
   });

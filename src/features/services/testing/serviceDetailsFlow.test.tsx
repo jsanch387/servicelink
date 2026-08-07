@@ -1,8 +1,15 @@
 import { ServiceDetailsScreen } from '@/features/services/booking-flow/ServiceDetailsScreen';
+import { loadPublicBookingJobsCart } from '@/features/availability/booking/utils/publicBookingJobsCart';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const mockRouterPush = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockRouterPush, replace: vi.fn() }),
+}));
 
 vi.mock('next/link', () => ({
   default: ({
@@ -108,6 +115,8 @@ vi.mock(
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
+  mockRouterPush.mockClear();
 });
 
 const baseService = {
@@ -171,7 +180,29 @@ describe('ServiceDetailsScreen flow', () => {
     expect(screen.getByText('summary')).toBeTruthy();
   });
 
-  it('builds calendar URL with selected option, add-ons, and detailsStep=addons', async () => {
+  it('shows pricing options first, then reveals add-ons after a selection', async () => {
+    const user = userEvent.setup();
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={baseService}
+        addOns={addOns}
+        priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
+      />
+    );
+
+    expect(
+      screen.getByRole('heading', { name: /choose pricing option/i })
+    ).toBeTruthy();
+    expect(screen.queryByText(/optional add-ons/i)).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /pick sedan/i }));
+    expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
+  });
+
+  it('commits the selected option and add-ons to the visit cart, then navigates to the calendar', async () => {
     const user = userEvent.setup();
     render(
       <ServiceDetailsScreen
@@ -185,20 +216,19 @@ describe('ServiceDetailsScreen flow', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /pick suv/i }));
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
     await user.click(screen.getByRole('button', { name: /toggle pet hair/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    const dateTimeLink = screen.getByRole('link', { name: /date & time/i });
-    expect(dateTimeLink.getAttribute('href')).toContain('/acme-auto/book?');
-    expect(dateTimeLink.getAttribute('href')).toContain('serviceId=svc-1');
-    expect(dateTimeLink.getAttribute('href')).toContain(
-      'priceOptionId=opt-suv'
-    );
-    expect(dateTimeLink.getAttribute('href')).toContain('addOnIds=addon-1');
-    expect(dateTimeLink.getAttribute('href')).toContain('detailsStep=addons');
+    const cart = loadPublicBookingJobsCart('acme-auto');
+    expect(cart?.jobs).toHaveLength(1);
+    expect(cart?.jobs[0].serviceId).toBe('svc-1');
+    expect(cart?.jobs[0].servicePriceOptionLabel).toBe('SUV');
+    expect(cart?.jobs[0].selectedAddOns.map(a => a.name)).toEqual(['Pet hair']);
+    expect(mockRouterPush).toHaveBeenCalledTimes(1);
+    expect(mockRouterPush.mock.calls[0][0]).toContain('/acme-auto/book');
   });
 
-  it('uses detailsStep=price when no add-on step exists', async () => {
+  it('commits the selected option to the cart when there are no add-ons', async () => {
     const user = userEvent.setup();
     render(
       <ServiceDetailsScreen
@@ -212,15 +242,32 @@ describe('ServiceDetailsScreen flow', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /pick sedan/i }));
-    const dateTimeLink = screen.getByRole('link', { name: /date & time/i });
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    expect(dateTimeLink.getAttribute('href')).toContain(
-      'priceOptionId=opt-sedan'
-    );
-    expect(dateTimeLink.getAttribute('href')).toContain('detailsStep=price');
+    const cart = loadPublicBookingJobsCart('acme-auto');
+    expect(cart?.jobs[0].servicePriceOptionLabel).toBe('Sedan');
+    expect(cart?.jobs[0].selectedAddOns).toHaveLength(0);
   });
 
-  it('shows the calendar skeleton immediately after Date & Time is clicked', async () => {
+  it('hides optional add-ons until a pricing option is selected', async () => {
+    const user = userEvent.setup();
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={baseService}
+        addOns={addOns}
+        priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
+      />
+    );
+
+    expect(screen.queryByText(/optional add-ons/i)).toBeNull();
+    await user.click(screen.getByRole('button', { name: /pick sedan/i }));
+    expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
+  });
+
+  it('shows the calendar skeleton immediately after Continue is clicked', async () => {
     const user = userEvent.setup();
     render(
       <ServiceDetailsScreen
@@ -234,12 +281,41 @@ describe('ServiceDetailsScreen flow', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /pick sedan/i }));
-    await user.click(screen.getByRole('link', { name: /date & time/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
     expect(screen.getByText('calendar loading')).toBeTruthy();
   });
 
-  it('restores add-ons phase from calendar when detailsStep=addons is valid', () => {
+  it('owner manual booking navigates via URL with priceOptionId, add-ons, and detailsStep', async () => {
+    const user = userEvent.setup();
+    render(
+      <ServiceDetailsScreen
+        businessSlug="acme-auto"
+        serviceId="svc-1"
+        service={baseService}
+        addOns={addOns}
+        priceOptions={priceOptions}
+        serviceLocation={mobileOnlyLocation}
+        isOwnerManualBooking
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /pick suv/i }));
+    await user.click(screen.getByRole('button', { name: /toggle pet hair/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
+
+    expect(mockRouterPush).toHaveBeenCalledTimes(1);
+    const pushedUrl = mockRouterPush.mock.calls[0][0] as string;
+    expect(pushedUrl).toContain('/acme-auto/book?');
+    expect(pushedUrl).toContain('serviceId=svc-1');
+    expect(pushedUrl).toContain('priceOptionId=opt-suv');
+    expect(pushedUrl).toContain('addOnIds=addon-1');
+    expect(pushedUrl).toContain('detailsStep=price');
+    // Owner path doesn't touch the public cart.
+    expect(loadPublicBookingJobsCart('acme-auto')).toBeNull();
+  });
+
+  it('restores the combined details screen from a legacy detailsStep=addons deep link', () => {
     render(
       <ServiceDetailsScreen
         businessSlug="acme-auto"
@@ -253,10 +329,10 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
-    expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
     expect(
-      screen.getByRole('button', { name: /back to options/i })
+      screen.getByRole('heading', { name: /choose pricing option/i })
     ).toBeTruthy();
+    expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
   });
 
   it('asks for mobile vs shop before calendar when business offers both', async () => {
@@ -274,18 +350,19 @@ describe('ServiceDetailsScreen flow', () => {
 
     await user.click(screen.getByRole('button', { name: /pick suv/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
-    await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
     expect(
       screen.getByRole('heading', { name: /where should service happen/i })
     ).toBeTruthy();
 
     await user.click(screen.getByRole('radio', { name: /at my address/i }));
+    await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    const dateTimeLink = screen.getByRole('link', { name: /date & time/i });
-    expect(dateTimeLink.getAttribute('href')).toContain(
+    const cart = loadPublicBookingJobsCart('acme-auto');
+    expect(cart?.serviceLocationType).toBe('mobile');
+    expect(mockRouterPush).toHaveBeenCalledTimes(1);
+    expect(mockRouterPush.mock.calls[0][0]).toContain(
       'serviceLocationType=mobile'
     );
-    expect(dateTimeLink.getAttribute('href')).toContain('detailsStep=location');
   });
 });

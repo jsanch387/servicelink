@@ -49,12 +49,14 @@ function baseCustomer(
 function CustomerFormHarness(props: {
   initial: CustomerFormData;
   step?: CustomerFormStep;
+  showAddressFields?: boolean;
   showVehicleFields?: boolean;
   onSubmit: () => void;
 }) {
   const {
     initial,
     step = 'contact',
+    showAddressFields = false,
     showVehicleFields = false,
     onSubmit,
   } = props;
@@ -63,6 +65,7 @@ function CustomerFormHarness(props: {
     <CustomerForm
       id="customer-form-input-test"
       step={step}
+      showAddressFields={showAddressFields}
       value={value}
       onChange={setValue}
       onSubmit={onSubmit}
@@ -80,7 +83,8 @@ describe('CustomerForm input constraints (public booking details)', () => {
     render(
       <CustomerFormHarness
         initial={baseCustomer({ zip: '' })}
-        step="address"
+        step="contact"
+        showAddressFields
         onSubmit={vi.fn()}
       />
     );
@@ -94,7 +98,8 @@ describe('CustomerForm input constraints (public booking details)', () => {
     render(
       <CustomerFormHarness
         initial={baseCustomer({ zip: '' })}
-        step="address"
+        step="contact"
+        showAddressFields
         onSubmit={vi.fn()}
       />
     );
@@ -150,7 +155,8 @@ describe('CustomerForm input constraints (public booking details)', () => {
     render(
       <CustomerFormHarness
         initial={baseCustomer()}
-        step="address"
+        step="contact"
+        showAddressFields
         onSubmit={vi.fn()}
       />
     );
@@ -166,7 +172,8 @@ describe('CustomerForm input constraints (public booking details)', () => {
     render(
       <CustomerFormHarness
         initial={baseCustomer()}
-        step="address"
+        step="contact"
+        showAddressFields
         onSubmit={vi.fn()}
       />
     );
@@ -194,7 +201,8 @@ describe('CustomerForm input constraints (public booking details)', () => {
     render(
       <CustomerFormHarness
         initial={baseCustomer()}
-        step="address"
+        step="contact"
+        showAddressFields
         onSubmit={vi.fn()}
       />
     );

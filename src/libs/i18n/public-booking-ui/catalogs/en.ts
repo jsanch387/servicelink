@@ -39,6 +39,10 @@ export const publicBookingUiEn: PublicBookingUi = {
     contact: 'Contact',
     address: 'Address',
     dateAndTime: 'Date & time',
+    schedule: 'Schedule',
+    customer: 'Customer',
+    subtotal: 'Subtotal',
+    visitTotal: 'Visit total',
     emailNotProvided: 'No email provided',
   },
   serviceDetails: {
@@ -53,6 +57,18 @@ export const publicBookingUiEn: PublicBookingUi = {
     seeDescription: 'See description',
     hideDescription: 'Hide description',
   },
+  stepTracker: {
+    service: 'Service',
+    time: 'Time',
+    details: 'Details',
+    confirm: 'Confirm',
+  },
+  quickSchedule: {
+    nextAvailableLabel: 'Next available',
+    bookThisTime: 'Book this time',
+    chooseDifferentTime: 'Choose a different time',
+    backToFirstAvailable: 'Back to first available',
+  },
   bookPicker: {
     noServicesOwnerTitle: 'No services to pick yet.',
     noServicesPublicTitle: 'No services yet.',
@@ -65,7 +81,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     createAppointmentSubtitle:
       'You are creating a new appointment. Choose a service below to continue.',
     bookWithSubtitle:
-      'Pick a service. You can add extras next if there are any. Then pick date and time.',
+      'Pick a service below, then continue. You can add more services later.',
     chooseAppointmentTypeSubtitle:
       'Choose a saved service or create a custom job.',
     appointmentTypeAriaLabel: 'How to set the service',
@@ -84,6 +100,46 @@ export const publicBookingUiEn: PublicBookingUi = {
     customJobDurationPlaceholder: 'Select duration',
     customJobNotesLabel: 'Notes (optional)',
     customJobNotesPlaceholder: 'Add details or context about this custom job.',
+    addingToBookingSubtitle: count =>
+      count === 1
+        ? 'Nice — you already have 1 service. Pick another below to add it.'
+        : `Nice — you already have ${count} services. Pick another below to add it.`,
+    yourBookingTitle: count =>
+      count === 1
+        ? '1 service already on your booking'
+        : `${count} services already on your booking`,
+    addingAnotherHint: 'Select a service below, then continue.',
+    cancelAddService: 'Back to your booking',
+    continueToSchedule: 'Continue',
+    seeDescription: 'See description',
+    hideDescription: 'Hide description',
+    unfinishedBookingTitle: 'Pick up where you left off?',
+    unfinishedBookingBody: count =>
+      count === 1
+        ? 'You still have 1 service saved in this browser. Continue that booking, or start fresh.'
+        : `You still have ${count} services saved in this browser. Continue that booking, or start fresh.`,
+    continueUnfinishedBooking: 'Continue booking',
+    startOverBooking: 'Start over',
+  },
+  multiJob: {
+    yourServices: 'Services on this booking',
+    jobLabel: n => `Service ${n}`,
+    remove: 'Remove',
+    addAnotherService: 'Add another service',
+    addAnotherVehicle: 'Add another vehicle',
+    visitSummary: count => `${count} services`,
+    vehiclePerService: 'Vehicle for each service',
+    maxJobsReached: 'You can add up to 4 services on one booking.',
+    vehicleRequiredToast:
+      'Add year, make, and model for each service before continuing.',
+    vehicleRequiredToastForJob: name =>
+      `Add year, make, and model for ${name} before continuing.`,
+    maxJobsReachedToast:
+      'You already have 4 services on this booking. Remove one to add another.',
+    couldNotAddServiceToast:
+      "Couldn't add that service. Go back and try again.",
+    retimingRequired:
+      'Your booking is longer now. Pick a start time that fits the full visit.',
   },
   notAccepting: {
     title: "This business isn't accepting bookings yet.",
@@ -195,6 +251,9 @@ export const publicBookingUiEn: PublicBookingUi = {
     serviceAddress: 'Service address',
     vehicle: 'Vehicle',
     optionalVehicleDetails: 'Optional — add vehicle details.',
+    savedVehiclesTitle: 'Your saved vehicles',
+    savedVehiclesLoading: 'Looking up your vehicles…',
+    savedVehiclesHint: 'Tap one to fill year, make, and model.',
     fullName: 'Full Name',
     email: 'Email',
     phone: 'Phone',

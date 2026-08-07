@@ -29,6 +29,8 @@ interface BookingVehicleFieldsProps {
   errors?: BookingVehicleFieldErrors;
   bookingFlowLocale?: PublicBookingFlowLocale;
   required?: boolean;
+  /** Inline (onBlur) validation hook — called with the field that lost focus. */
+  onBlurField?: (field: keyof BookingVehicleFieldValues) => void;
 }
 
 export function BookingVehicleFields({
@@ -37,6 +39,7 @@ export function BookingVehicleFields({
   errors = {},
   bookingFlowLocale = 'en',
   required = true,
+  onBlurField,
 }: BookingVehicleFieldsProps) {
   const cf = publicBookingUi(bookingFlowLocale).customerForm;
 
@@ -46,6 +49,7 @@ export function BookingVehicleFields({
         label={cf.year}
         value={value.vehicleYear}
         onChange={v => onChange({ vehicleYear: sanitizeVehicleYearInput(v) })}
+        onBlur={onBlurField ? () => onBlurField('vehicleYear') : undefined}
         placeholder="2018"
         error={errors.vehicleYear}
         required={required}
@@ -60,6 +64,7 @@ export function BookingVehicleFields({
             vehicleMake: sanitizeVehicleTextInput(v, BOOKING_VEHICLE_MAKE_MAX),
           })
         }
+        onBlur={onBlurField ? () => onBlurField('vehicleMake') : undefined}
         placeholder="Toyota"
         error={errors.vehicleMake}
         required={required}
@@ -76,6 +81,7 @@ export function BookingVehicleFields({
             ),
           })
         }
+        onBlur={onBlurField ? () => onBlurField('vehicleModel') : undefined}
         placeholder="Camry"
         error={errors.vehicleModel}
         required={required}

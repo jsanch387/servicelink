@@ -65,41 +65,20 @@ export function prefillCustomerWithShopAddress(
 
 export function getNextDetailsSubStep(
   current: BookingDetailsSubStep,
-  serviceLocation: PublicBookingServiceLocation,
-  customerChoice: CustomerServiceChoice
+  _serviceLocation: PublicBookingServiceLocation,
+  _customerChoice: CustomerServiceChoice
 ): BookingDetailsSubStep | 'review' {
-  if (current === 'contact') {
-    if (customerAddressEntryRequired(serviceLocation, customerChoice)) {
-      return 'address';
-    }
-    return 'vehicleNotes';
-  }
-
-  if (current === 'address') {
-    return 'vehicleNotes';
-  }
-
+  // Contact + service address are collapsed into a single 'contact' screen.
+  if (current === 'contact') return 'vehicleNotes';
   return 'review';
 }
 
 export function getPrevDetailsSubStep(
   current: BookingDetailsSubStep,
-  serviceLocation: PublicBookingServiceLocation,
-  customerChoice: CustomerServiceChoice
+  _serviceLocation: PublicBookingServiceLocation,
+  _customerChoice: CustomerServiceChoice
 ): BookingDetailsSubStep | 'schedule' {
   if (current === 'contact') return 'schedule';
-
-  if (current === 'address') {
-    return 'contact';
-  }
-
-  if (current === 'vehicleNotes') {
-    if (customerAddressEntryRequired(serviceLocation, customerChoice)) {
-      return 'address';
-    }
-    return 'contact';
-  }
-
   return 'contact';
 }
 
@@ -128,24 +107,19 @@ export function isBookingDetailsSubStepValid(
     customerChoice
   );
 
-  if (step === 'address' || step === 'contact' || step === 'vehicleNotes') {
+  if (step === 'contact' || step === 'vehicleNotes') {
     if (
       step === 'contact' &&
       !shopBookingHasCompleteAddress(serviceLocation, customerChoice)
     ) {
       return false;
     }
-    if (step === 'address') {
-      if (!requireCustomerAddress) return false;
-      if (serviceLocation.mode === 'both' && customerChoice !== 'mobile') {
-        return false;
-      }
-    }
     return isCustomerFormStepValid(
       customer,
       step,
       options.requireVehicleFields ?? options.showVehicleFields,
-      options.emailOptional
+      options.emailOptional,
+      requireCustomerAddress
     );
   }
 

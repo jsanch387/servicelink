@@ -42,6 +42,10 @@ export type PublicBookingUi = {
     contact: string;
     address: string;
     dateAndTime: string;
+    schedule: string;
+    customer: string;
+    subtotal: string;
+    visitTotal: string;
     /** Summary row when customer email was left blank */
     emailNotProvided: string;
   };
@@ -57,6 +61,20 @@ export type PublicBookingUi = {
     /** Expand collapsed service description on options / add-ons steps. */
     seeDescription: string;
     hideDescription: string;
+  };
+  /** Slim 4-stage progress indicator shown across the public booking funnel. */
+  stepTracker: {
+    service: string;
+    time: string;
+    details: string;
+    confirm: string;
+  };
+  /** "First available" quick-pick card shown above the full calendar. */
+  quickSchedule: {
+    nextAvailableLabel: string;
+    bookThisTime: string;
+    chooseDifferentTime: string;
+    backToFirstAvailable: string;
   };
   bookPicker: {
     noServicesOwnerTitle: string;
@@ -82,6 +100,41 @@ export type PublicBookingUi = {
     customJobDurationPlaceholder: string;
     customJobNotesLabel: string;
     customJobNotesPlaceholder: string;
+    /** When the visit cart already has jobs and the customer is adding another. */
+    addingToBookingSubtitle: (count: number) => string;
+    /** Compact cart card heading while adding another service. */
+    yourBookingTitle: (count: number) => string;
+    /** Hint under the cart card. */
+    addingAnotherHint: string;
+    /** Escape hatch while adding another service — returns to the visit without adding. */
+    cancelAddService: string;
+    continueToSchedule: string;
+    /** Expand/collapse service description on the picker row. */
+    seeDescription: string;
+    hideDescription: string;
+    /** Unfinished visit found in this tab — explicit resume, never silent. */
+    unfinishedBookingTitle: string;
+    unfinishedBookingBody: (count: number) => string;
+    continueUnfinishedBooking: string;
+    startOverBooking: string;
+  };
+  multiJob: {
+    yourServices: string;
+    jobLabel: (n: number) => string;
+    remove: string;
+    addAnotherService: string;
+    addAnotherVehicle: string;
+    visitSummary: (count: number) => string;
+    vehiclePerService: string;
+    maxJobsReached: string;
+    /** Toast when Continue is blocked because a job is missing vehicle details. */
+    vehicleRequiredToast: string;
+    vehicleRequiredToastForJob: (serviceName: string) => string;
+    /** Toast when add-another hits the visit job cap. */
+    maxJobsReachedToast: string;
+    couldNotAddServiceToast: string;
+    /** Shown when adding jobs made the saved start time no longer fit that day. */
+    retimingRequired: string;
   };
   notAccepting: {
     title: string;
@@ -178,6 +231,10 @@ export type PublicBookingUi = {
     serviceAddress: string;
     vehicle: string;
     optionalVehicleDetails: string;
+    /** Returning customer: chips of previously saved vehicles. */
+    savedVehiclesTitle: string;
+    savedVehiclesLoading: string;
+    savedVehiclesHint: string;
     fullName: string;
     email: string;
     phone: string;

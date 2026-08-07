@@ -11,6 +11,7 @@ import {
   ROUTES,
   getBusinessBookDetailsUrl,
   getBusinessBookPath,
+  getBusinessBookVisitUrl,
   getPublicBusinessProfilePath,
   parseBookServiceLocationTypeQuery,
   type BookDetailsStepQuery,
@@ -20,6 +21,8 @@ import {
   BookServicePicker,
   type BookServicePickerItem,
 } from '@/features/availability/booking/components/BookServicePicker';
+import { PublicVisitBookingClient } from '@/features/availability/booking/components/PublicVisitBookingClient';
+import { isPublicBookingAddJobQuery } from '@/features/availability/booking/constants/publicBookingJobs';
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import type { PublicBookingPaymentSettings } from '@/features/availability/booking/types';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
@@ -85,6 +88,10 @@ interface BookingRequestPageProps {
     checkout?: string;
     session_id?: string;
     lang?: string;
+    /** Multi-job visit cart schedule flow (`visit=1`). */
+    visit?: string;
+    /** Append another service to the current visit cart. */
+    addJob?: string;
   }>;
 }
 
@@ -228,7 +235,12 @@ export default async function BookingRequestPage({
     checkout: checkoutParam,
     session_id: sessionIdParam,
     lang: langParam,
+    visit: visitParam,
+    addJob: addJobParam,
   } = sp;
+
+  const isPublicMultiJobVisit = visitParam === '1' || visitParam === 'true';
+  const isAddingAnotherJob = isPublicBookingAddJobQuery(addJobParam);
 
   const langFromQuery =
     typeof langParam === 'string'
@@ -332,6 +344,7 @@ export default async function BookingRequestPage({
     effectiveUseAvailabilityBooking &&
     !showNotAcceptingBookings &&
     !isCustomOwnerBooking &&
+    !isPublicMultiJobVisit &&
     !(serviceId && serviceId.trim());
 
   let availabilityPickerServices: BookServicePickerItem[] = [];
@@ -529,6 +542,17 @@ export default async function BookingRequestPage({
               ? ui.nav.backToOptions
               : ui.nav.backToService;
     }
+  } else if (isAddingAnotherJob) {
+    bookPageBackHref = getBusinessBookVisitUrl(slugForRoutes, {
+      lang: bookingFlowLocale,
+      serviceLocationType: serviceLocationTypeForBack,
+    });
+    bookPageBackLabel = ui.bookPicker.cancelAddService;
+  } else if (isPublicMultiJobVisit) {
+    bookPageBackHref = getBusinessBookPath(slugForRoutes, {
+      lang: bookingFlowLocale,
+    });
+    bookPageBackLabel = ui.nav.backToServices;
   } else if (serviceId?.trim() && !skipDetailsFlag) {
     bookPageBackHref = getBusinessBookDetailsUrl(slugForRoutes, {
       serviceId: serviceId.trim(),
@@ -554,7 +578,9 @@ export default async function BookingRequestPage({
   /** V2 calendar + details + review render their own sticky back bar; avoid duplicate header. */
   const calendarFlowOwnsHeader =
     effectiveUseAvailabilityBooking &&
-    (Boolean(trimmedServiceId) || isCustomOwnerBooking) &&
+    (Boolean(trimmedServiceId) ||
+      isCustomOwnerBooking ||
+      isPublicMultiJobVisit) &&
     !showAvailabilityServicePicker &&
     !showNotAcceptingBookings;
 
@@ -568,7 +594,27 @@ export default async function BookingRequestPage({
         </PublicFlowStickyBackHeader>
       )}
 
-      {calendarFlowOwnsHeader ? (
+      {calendarFlowOwnsHeader && isPublicMultiJobVisit ? (
+        <div className="pb-16 sm:pb-24">
+          <PublicVisitBookingClient
+            businessName={businessProfile.business_name}
+            businessId={businessProfile.id}
+            businessSlug={slugForRoutes}
+            showVehicleFields={showVehicleFields}
+            weeklySchedule={weeklySchedule}
+            timeOffBlocks={timeOffBlocks}
+            minimumNotice={minimumNotice}
+            paymentSettings={paymentSettings}
+            bookingFlowLocale={bookingFlowLocale}
+            serviceLocation={serviceLocation}
+            initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
+            activeSale={activeSale}
+            stripeCheckoutSessionId={stripeCheckoutSessionId}
+            exitCalendarFlowHref={bookPageBackHref}
+            exitCalendarFlowLabel={bookPageBackLabel}
+          />
+        </div>
+      ) : calendarFlowOwnsHeader ? (
         <div className="pb-16 sm:pb-24">
           <BookFlowSwitch
             useAvailabilityBooking={effectiveUseAvailabilityBooking}
@@ -613,6 +659,7 @@ export default async function BookingRequestPage({
           isOwnerManualBooking={isOwnerManualBooking}
           initialEntryMode={ownerEntryMode}
           bookingFlowLocale={bookingFlowLocale}
+          addingAnotherJob={isAddingAnotherJob}
         />
       ) : (
         <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 pt-6 sm:pt-8">

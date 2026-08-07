@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import { Button, toast } from '@/components/shared';
 import {
   API_ROUTES,
   ROUTES,
@@ -31,6 +31,24 @@ import {
   loadBookingCheckoutResumeDraft,
   saveBookingCheckoutResumeDraft,
 } from '../utils/bookingCheckoutResumeStorage';
+import {
+  buildPublicMultiJobBookingBody,
+  publicMultiJobCheckoutTotals,
+} from '../utils/buildPublicMultiJobBookingBody';
+import {
+  loadPublicBookingJobsCart,
+  persistPublicBookingJobsCartJobs,
+  publicBookingJobDisplayName,
+  sumPublicBookingJobsDurationMinutes,
+  sumPublicBookingJobsGrossCents,
+  type PublicBookingJobDraft,
+} from '../utils/publicBookingJobsCart';
+import {
+  buildPublicBookingVisitDraft,
+  resolveResumePublicVisitState,
+  savePublicBookingVisitDraft,
+} from '../utils/publicBookingVisitDraft';
+import { PUBLIC_BOOKING_MAX_JOBS } from '../constants/publicBookingJobs';
 import { formatBookingWallTime } from '../utils/formatBookingWallTime';
 import { INITIAL_CUSTOMER_FORM_DATA } from '../utils/initialFormData';
 import { publicBookingFlowUserFacingError } from '../utils/publicBookingFlowUserFacingError';
@@ -42,8 +60,11 @@ import {
 } from './BookingPromoCodeField';
 import { BookingSuccess } from './BookingSuccess';
 import { BookingSummary } from './BookingSummary';
+import { PublicMultiJobReviewSummary } from './PublicMultiJobReviewSummary';
 import { CustomerForm } from './CustomerForm';
+import { BookingVehicleFields } from './BookingVehicleFields';
 import { BookingServiceLocationChoice } from './BookingServiceLocationSteps';
+import { AddAnotherJobCard } from '../create-appointment/components/AddAnotherJobCard';
 import {
   type BookingDetailsSubStep,
   type CustomerServiceChoice,
@@ -64,6 +85,20 @@ import { formatPublicSaleDiscountLabel } from '@/features/marketing/utils/format
 import { formatServiceDateYmd } from '@/features/marketing/utils/isServiceDateInSaleWindow';
 import { DateSelector } from './DateSelector';
 import { TimeSlotGrid } from './TimeSlotGrid';
+import { QuickScheduleCard } from './QuickScheduleCard';
+import {
+  PublicBookingStepTracker,
+  type PublicBookingTrackerStage,
+} from './PublicBookingStepTracker';
+import {
+  findEarliestAvailableSlot,
+  generateTimeSlots,
+} from '../utils/slotGeneration';
+import { appointmentFitsSameDay } from '../utils/ownerManualBookingJobs';
+import {
+  areVisitJobVehiclesComplete,
+  firstIncompleteVisitJob,
+} from '../utils/visitJobVehicles';
 
 const CUSTOMER_FORM_ID = 'availability-booking-details-form';
 
@@ -216,11 +251,31 @@ export function AvailabilityBookingPage({
   serviceLocation = DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION,
   initialCustomerServiceChoice = null,
   activeSale = null,
+  bookingJobs: bookingJobsProp,
+  addAnotherJobHref,
+  onRemoveBookingJob,
+  onBookingJobsChange,
+  onPublicMultiJobBookingCreated,
 }: AvailabilityBookingPageProps) {
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const isMultiJobVisit =
+    Array.isArray(bookingJobsProp) && bookingJobsProp.length >= 1;
+  const [visitJobs, setVisitJobs] = useState<PublicBookingJobDraft[]>(
+    () => bookingJobsProp ?? []
+  );
+  useEffect(() => {
+    if (bookingJobsProp) setVisitJobs(bookingJobsProp);
+  }, [bookingJobsProp]);
+
+  const updateVisitJobs = (next: PublicBookingJobDraft[]) => {
+    setVisitJobs(next);
+    onBookingJobsChange?.(next);
+    persistPublicBookingJobsCartJobs(businessSlug, next);
+  };
+
   const backToContactLabel = isOwnerManualBooking
     ? ui.nav.backToCustomerDetails
     : ui.nav.backToYourDetails;
@@ -237,6 +292,9 @@ export function AvailabilityBookingPage({
   const selectedAddOns: AddOnDisplay[] = selectedAddOnsProp ?? [];
 
   const totalPriceCents = useMemo(() => {
+    if (isMultiJobVisit) {
+      return sumPublicBookingJobsGrossCents(visitJobs);
+    }
     const base = Number(servicePriceCents);
     const safeBase = Number.isFinite(base) ? Math.max(0, base) : 0;
     const addOnTotal = selectedAddOns.reduce((sum, a) => {
@@ -245,37 +303,279 @@ export function AvailabilityBookingPage({
     }, 0);
     const t = safeBase + addOnTotal;
     return Number.isFinite(t) ? t : 0;
-  }, [servicePriceCents, selectedAddOns]);
+  }, [isMultiJobVisit, visitJobs, servicePriceCents, selectedAddOns]);
 
   const totalBookingDurationMinutes = useMemo(() => {
+    if (isMultiJobVisit) {
+      return sumPublicBookingJobsDurationMinutes(visitJobs);
+    }
     const addOnMins = selectedAddOns.reduce((sum, a) => {
       const m = a.durationMinutes;
       return sum + (m != null && m > 0 ? m : 0);
     }, 0);
     return serviceDurationMinutes + addOnMins;
-  }, [serviceDurationMinutes, selectedAddOns]);
+  }, [isMultiJobVisit, visitJobs, serviceDurationMinutes, selectedAddOns]);
 
-  const [step, setStep] = useState<CalendarBookingStep>(() =>
-    needsInlineLocationStep ? 'location' : 'schedule'
+  const displayServiceName = isMultiJobVisit
+    ? visitJobs.length > 1
+      ? ui.multiJob.visitSummary(visitJobs.length)
+      : publicBookingJobDisplayName(visitJobs[0])
+    : serviceName;
+
+  // Multi-job: vehicles live on each job, not the customer form.
+  const effectiveShowVehicleFields = showVehicleFields && !isMultiJobVisit;
+
+  // Hydrate once on client mount (visit page only mounts after cart load).
+  const multiJobBoot = useMemo(() => {
+    if (!isMultiJobVisit) return null;
+    return resolveResumePublicVisitState({
+      draft: loadPublicBookingJobsCart(businessSlug)?.visitDraft ?? null,
+      visitDurationMinutes: sumPublicBookingJobsDurationMinutes(
+        bookingJobsProp ?? []
+      ),
+      needsInlineLocationStep,
+    });
+    // Intentionally once — resume is sessionStorage snapshot at mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [step, setStep] = useState<CalendarBookingStep>(() => {
+    if (multiJobBoot) return multiJobBoot.step;
+    // Customer path: calendar first (matches service-details “Date & time” CTA).
+    return needsInlineLocationStep ? 'location' : 'schedule';
+  });
+  const [detailsSubStep, setDetailsSubStep] = useState<BookingDetailsSubStep>(
+    () => multiJobBoot?.detailsSubStep ?? 'contact'
   );
-  const [detailsSubStep, setDetailsSubStep] =
-    useState<BookingDetailsSubStep>('contact');
   const [customerServiceChoice, setCustomerServiceChoice] =
-    useState<CustomerServiceChoice>(() =>
-      serviceLocation.mode === 'both' &&
-      (initialCustomerServiceChoice === 'mobile' ||
-        initialCustomerServiceChoice === 'shop')
+    useState<CustomerServiceChoice>(() => {
+      if (
+        multiJobBoot?.customerServiceChoice === 'mobile' ||
+        multiJobBoot?.customerServiceChoice === 'shop'
+      ) {
+        return multiJobBoot.customerServiceChoice;
+      }
+      return serviceLocation.mode === 'both' &&
+        (initialCustomerServiceChoice === 'mobile' ||
+          initialCustomerServiceChoice === 'shop')
         ? initialCustomerServiceChoice
-        : null
-    );
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const timeSlotsSectionRef = useRef<HTMLDivElement | null>(null);
-  const [customerData, setCustomerData] = useState<CustomerFormData>(
-    initialCustomerNotes?.trim()
-      ? { ...INITIAL_CUSTOMER_FORM_DATA, notes: initialCustomerNotes.trim() }
-      : INITIAL_CUSTOMER_FORM_DATA
+        : null;
+    });
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    () => multiJobBoot?.selectedDate ?? null
   );
+  const [selectedTime, setSelectedTime] = useState<string | null>(
+    () => multiJobBoot?.selectedTime ?? null
+  );
+  const timeSlotsSectionRef = useRef<HTMLDivElement | null>(null);
+  const visitDraftRestoredRef = useRef(Boolean(multiJobBoot));
+  const [scheduleNeedsRetiming, setScheduleNeedsRetiming] = useState(
+    () => multiJobBoot?.scheduleNeedsRetiming ?? false
+  );
+  /**
+   * Quick-pick ("first available, let's take it") is collapsed behind the
+   * full calendar once the customer asks for a different date/time, or when
+   * a re-time notice needs the full picker visible.
+   */
+  const [showFullCalendar, setShowFullCalendar] = useState(
+    () => multiJobBoot?.scheduleNeedsRetiming ?? false
+  );
+  const [customerData, setCustomerData] = useState<CustomerFormData>(() => {
+    if (multiJobBoot) {
+      return {
+        ...multiJobBoot.customerData,
+        ...(initialCustomerNotes?.trim() &&
+        !multiJobBoot.customerData.notes.trim()
+          ? { notes: initialCustomerNotes.trim() }
+          : {}),
+      };
+    }
+    return initialCustomerNotes?.trim()
+      ? { ...INITIAL_CUSTOMER_FORM_DATA, notes: initialCustomerNotes.trim() }
+      : INITIAL_CUSTOMER_FORM_DATA;
+  });
+  /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
+  const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
+    useState(() => multiJobBoot?.agreedToNotifications ?? true);
+  const router = useRouter();
+
+  // Restore contact/address/schedule after Cancel or finishing “add another”
+  // when boot hydration was skipped (e.g. rare SSR path).
+  useEffect(() => {
+    if (!isMultiJobVisit || visitDraftRestoredRef.current) return;
+    visitDraftRestoredRef.current = true;
+    const resumed = resolveResumePublicVisitState({
+      draft: loadPublicBookingJobsCart(businessSlug)?.visitDraft ?? null,
+      visitDurationMinutes: sumPublicBookingJobsDurationMinutes(visitJobs),
+      needsInlineLocationStep,
+    });
+    setCustomerData(prev => ({
+      ...prev,
+      ...resumed.customerData,
+      ...(initialCustomerNotes?.trim() && !resumed.customerData.notes.trim()
+        ? { notes: initialCustomerNotes.trim() }
+        : {}),
+    }));
+    setSelectedDate(resumed.selectedDate);
+    setSelectedTime(resumed.selectedTime);
+    setStep(resumed.step);
+    setDetailsSubStep(resumed.detailsSubStep);
+    if (resumed.customerServiceChoice) {
+      setCustomerServiceChoice(resumed.customerServiceChoice);
+    }
+    setAgreedToPublicNotifications(resumed.agreedToNotifications);
+    setScheduleNeedsRetiming(resumed.scheduleNeedsRetiming);
+  }, [
+    isMultiJobVisit,
+    businessSlug,
+    visitJobs,
+    needsInlineLocationStep,
+    initialCustomerNotes,
+  ]);
+
+  const persistVisitDraft = (overrides?: {
+    step?: CalendarBookingStep;
+    detailsSubStep?: BookingDetailsSubStep;
+    selectedDate?: Date | null;
+    selectedTime?: string | null;
+  }) => {
+    if (!isMultiJobVisit) return;
+    savePublicBookingVisitDraft(
+      businessSlug,
+      buildPublicBookingVisitDraft({
+        customerData,
+        selectedDate:
+          overrides && 'selectedDate' in overrides
+            ? (overrides.selectedDate ?? null)
+            : selectedDate,
+        selectedTime:
+          overrides && 'selectedTime' in overrides
+            ? (overrides.selectedTime ?? null)
+            : selectedTime,
+        step: overrides?.step ?? step,
+        detailsSubStep: overrides?.detailsSubStep ?? detailsSubStep,
+        customerServiceChoice,
+        agreedToNotifications: agreedToPublicNotifications,
+      })
+    );
+  };
+
+  const persistVisitDraftAndAddAnother = () => {
+    if (!addAnotherJobHref) return;
+    // Always resume on vehicles after adding another service (owner job-2+ path).
+    persistVisitDraft({ step: 'details', detailsSubStep: 'vehicleNotes' });
+    router.push(addAnotherJobHref);
+  };
+
+  const removeVisitJob = (localId: string) => {
+    if (visitJobs.length <= 1) return;
+    if (onRemoveBookingJob) {
+      onRemoveBookingJob(localId);
+    } else {
+      updateVisitJobs(visitJobs.filter(j => j.localId !== localId));
+    }
+  };
+
+  /**
+   * Only re-validate the chosen slot when the visit actually got LONGER
+   * (add-another) since we last confirmed it fits — not on every render
+   * (e.g. the async existing-bookings fetch resolving after an optimistic
+   * first pick would otherwise wrongly trigger a "pick a new time" prompt
+   * on a customer's very first pass through the calendar).
+   */
+  /**
+   * Start at 0 so a remount after "add another" (new longer duration + restored
+   * slot) always revalidates. Same-duration updates after the first pass still
+   * skip, avoiding a false retime when existing bookings load async.
+   */
+  const lastConfirmedDurationRef = useRef(0);
+  useEffect(() => {
+    if (!isMultiJobVisit || !selectedDate || !selectedTime) {
+      lastConfirmedDurationRef.current = totalBookingDurationMinutes;
+      return;
+    }
+
+    const duration = totalBookingDurationMinutes;
+    const previousDuration = lastConfirmedDurationRef.current;
+    if (duration <= previousDuration) {
+      // Same or shorter visit — the already-selected slot still works.
+      lastConfirmedDurationRef.current = duration;
+      return;
+    }
+    lastConfirmedDurationRef.current = duration;
+
+    if (!appointmentFitsSameDay(selectedTime, duration)) {
+      setSelectedTime(null);
+      setScheduleNeedsRetiming(true);
+      setShowFullCalendar(true);
+      if (step !== 'schedule') setStep('schedule');
+      return;
+    }
+
+    const slots = generateTimeSlots(
+      selectedDate,
+      weeklySchedule,
+      duration,
+      existingBookings,
+      30,
+      isOwnerManualBooking ? [] : timeOffBlocksProp,
+      effectiveMinimumNotice,
+      { requireDurationWithinHours: true }
+    );
+    if (!slots.includes(selectedTime)) {
+      setSelectedTime(null);
+      setScheduleNeedsRetiming(true);
+      setShowFullCalendar(true);
+      if (step !== 'schedule') setStep('schedule');
+    }
+  }, [
+    isMultiJobVisit,
+    selectedDate,
+    selectedTime,
+    totalBookingDurationMinutes,
+    weeklySchedule,
+    existingBookings,
+    isOwnerManualBooking,
+    timeOffBlocksProp,
+    effectiveMinimumNotice,
+    step,
+  ]);
+
+  /** Powers the "Next available" one-tap quick-pick card above the calendar. */
+  const earliestAvailableSlot = useMemo(
+    () =>
+      findEarliestAvailableSlot({
+        weeklySchedule,
+        serviceDurationMinutes: totalBookingDurationMinutes,
+        existingBookings,
+        timeOffBlocks: isOwnerManualBooking ? [] : timeOffBlocksProp,
+        minimumNotice: effectiveMinimumNotice,
+      }),
+    [
+      weeklySchedule,
+      totalBookingDurationMinutes,
+      existingBookings,
+      isOwnerManualBooking,
+      timeOffBlocksProp,
+      effectiveMinimumNotice,
+    ]
+  );
+
+  const handleQuickBookEarliest = () => {
+    if (!earliestAvailableSlot) return;
+    setSelectedDate(earliestAvailableSlot.date);
+    setSelectedTime(earliestAvailableSlot.time);
+    setScheduleNeedsRetiming(false);
+    persistVisitDraft({
+      step: 'details',
+      detailsSubStep: 'contact',
+      selectedDate: earliestAvailableSlot.date,
+      selectedTime: earliestAvailableSlot.time,
+    });
+    setDetailsSubStep('contact');
+    setAgreedToPublicNotifications(true);
+    setStep('details');
+  };
 
   const serviceDateYmd = useMemo(
     () => (selectedDate ? formatServiceDateYmd(selectedDate) : null),
@@ -483,11 +783,7 @@ export function AvailabilityBookingPage({
   } | null>(null);
   const [customerPaymentChoice, setCustomerPaymentChoice] =
     useState<PaymentChoice | null>(null);
-  /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
-  const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
-    useState(true);
 
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchKey = searchParams.toString();
@@ -606,20 +902,36 @@ export function AvailabilityBookingPage({
     customerServiceChoice
   );
   const requireVehicleFields = showVehicleFields && !isOwnerManualBooking;
-  const canContinueFromDetails = isBookingDetailsSubStepValid(
+  const detailsFormValid = isBookingDetailsSubStepValid(
     detailsSubStep,
     customerData,
     serviceLocation,
     customerServiceChoice,
     {
-      showVehicleFields,
-      requireVehicleFields,
+      showVehicleFields: effectiveShowVehicleFields,
+      requireVehicleFields: effectiveShowVehicleFields && requireVehicleFields,
       emailOptional: true,
     }
   );
+  const multiJobVehiclesIncomplete =
+    detailsSubStep === 'vehicleNotes' &&
+    isMultiJobVisit &&
+    requireVehicleFields &&
+    !areVisitJobVehiclesComplete(visitJobs);
+
+  const toastMultiJobVehicleRequired = () => {
+    const incomplete = firstIncompleteVisitJob(visitJobs);
+    toast.error(
+      incomplete
+        ? ui.multiJob.vehicleRequiredToastForJob(incomplete.serviceName)
+        : ui.multiJob.vehicleRequiredToast
+    );
+  };
   const detailsPrimaryCtaLabel =
     detailsSubStep === 'vehicleNotes'
-      ? ui.calendar.reviewBookingCta
+      ? isMultiJobVisit && (!selectedDate || !selectedTime)
+        ? ui.bookPicker.continueToSchedule
+        : ui.calendar.reviewBookingCta
       : ui.common.continue;
   const canContinueFromPayment =
     !isSubmitting &&
@@ -720,6 +1032,9 @@ export function AvailabilityBookingPage({
                 customerVehicleModel: json.data.booking.customerVehicleModel,
               });
               clearBookingCheckoutResumeDraft(businessSlug, serviceId);
+              if (isMultiJobVisit) {
+                onPublicMultiJobBookingCreated?.();
+              }
               stripCheckoutParamsFromUrl();
               return;
             }
@@ -788,6 +1103,8 @@ export function AvailabilityBookingPage({
     searchParams,
     stripeCheckoutSessionId,
     ui,
+    isMultiJobVisit,
+    onPublicMultiJobBookingCreated,
   ]);
 
   // Scroll to top when step changes so user sees the top of the form (especially on mobile)
@@ -799,7 +1116,9 @@ export function AvailabilityBookingPage({
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [step, detailsSubStep]);
 
-  const openDetailsFromSchedule = () => {
+  const continueFromSchedule = () => {
+    // Customer path: date & time → your information.
+    persistVisitDraft({ step: 'details', detailsSubStep: 'contact' });
     setDetailsSubStep('contact');
     setAgreedToPublicNotifications(true);
     setStep('details');
@@ -816,6 +1135,11 @@ export function AvailabilityBookingPage({
   };
 
   const handleDetailsSubStepSubmit = () => {
+    if (multiJobVehiclesIncomplete) {
+      toastMultiJobVehicleRequired();
+      return;
+    }
+
     const next = getNextDetailsSubStep(
       detailsSubStep,
       serviceLocation,
@@ -823,11 +1147,21 @@ export function AvailabilityBookingPage({
     );
 
     if (next === 'review') {
+      if (!selectedDate || !selectedTime) {
+        persistVisitDraft({
+          step: 'schedule',
+          detailsSubStep: 'vehicleNotes',
+        });
+        setStep('schedule');
+        return;
+      }
+      persistVisitDraft({ step: 'review', detailsSubStep: 'vehicleNotes' });
       setStep('review');
       return;
     }
 
     setDetailsSubStep(next);
+    persistVisitDraft({ detailsSubStep: next, step: 'details' });
   };
 
   const handleDetailsBack = () => {
@@ -874,42 +1208,27 @@ export function AvailabilityBookingPage({
         ? window.location.origin
         : 'http://localhost:3000'
     ).toString();
-    const payload = {
-      businessSlug,
-      amountCents: Math.round(amountToChargeCents),
-      serviceName: serviceName?.trim() || 'Service',
-      bookingPayload: selectedDate
+
+    const scheduledDateStr = selectedDate
+      ? (serviceDateYmd ?? selectedDate.toISOString().slice(0, 10))
+      : '';
+
+    const multiJobPayload =
+      isMultiJobVisit && selectedDate
         ? {
-            businessSlug,
-            businessId,
-            serviceId,
-            serviceName: serviceName?.trim() || 'Service',
-            servicePriceOptionLabel:
-              selectedPriceOptionLabel?.trim() || undefined,
-            servicePriceCents:
-              servicePriceCents != null ? Math.max(0, servicePriceCents) : 0,
-            selectedAddOns:
-              selectedAddOns.length > 0
-                ? selectedAddOns.map(a => ({
-                    id: a.id,
-                    name: a.name,
-                    priceCents: a.priceCents,
-                    durationMinutes: a.durationMinutes ?? undefined,
-                  }))
-                : [],
-            durationMinutes: totalBookingDurationMinutes,
-            scheduledDate:
-              serviceDateYmd ?? selectedDate.toISOString().slice(0, 10),
-            startTime: selectedTime ?? '',
-            customer: {
-              ...customerForSubmit,
-            },
-            ...(customerServiceLocationPayload
-              ? {
-                  customerServiceLocation: customerServiceLocationPayload,
-                  serviceLocationType: customerServiceLocationPayload,
-                }
-              : {}),
+            ...buildPublicMultiJobBookingBody({
+              businessId,
+              businessSlug,
+              jobs: visitJobs,
+              scheduledDate: scheduledDateStr,
+              startTime: selectedTime ?? '',
+              customer: customerForSubmit,
+              customerServiceLocation:
+                customerServiceLocationPayload ?? undefined,
+              paymentMethodSelected: customerPaymentChoice ?? 'none',
+              promoCode: appliedPromo?.code,
+            }),
+            ...publicMultiJobCheckoutTotals(visitJobs),
             totalPriceCents: bookingDisplayTotalCents,
             requiredOnlineAmountCents: Math.round(amountToChargeCents),
             paymentMethodSelected: customerPaymentChoice ?? 'none',
@@ -919,9 +1238,58 @@ export function AvailabilityBookingPage({
             depositValue: requiresDepositNow
               ? (paymentSettings?.depositValue ?? null)
               : null,
-            ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
           }
-        : null,
+        : null;
+
+    const payload = {
+      businessSlug,
+      amountCents: Math.round(amountToChargeCents),
+      serviceName: displayServiceName?.trim() || 'Service',
+      bookingPayload: multiJobPayload
+        ? multiJobPayload
+        : selectedDate
+          ? {
+              businessSlug,
+              businessId,
+              serviceId,
+              serviceName: serviceName?.trim() || 'Service',
+              servicePriceOptionLabel:
+                selectedPriceOptionLabel?.trim() || undefined,
+              servicePriceCents:
+                servicePriceCents != null ? Math.max(0, servicePriceCents) : 0,
+              selectedAddOns:
+                selectedAddOns.length > 0
+                  ? selectedAddOns.map(a => ({
+                      id: a.id,
+                      name: a.name,
+                      priceCents: a.priceCents,
+                      durationMinutes: a.durationMinutes ?? undefined,
+                    }))
+                  : [],
+              durationMinutes: totalBookingDurationMinutes,
+              scheduledDate: scheduledDateStr,
+              startTime: selectedTime ?? '',
+              customer: {
+                ...customerForSubmit,
+              },
+              ...(customerServiceLocationPayload
+                ? {
+                    customerServiceLocation: customerServiceLocationPayload,
+                    serviceLocationType: customerServiceLocationPayload,
+                  }
+                : {}),
+              totalPriceCents: bookingDisplayTotalCents,
+              requiredOnlineAmountCents: Math.round(amountToChargeCents),
+              paymentMethodSelected: customerPaymentChoice ?? 'none',
+              depositType: requiresDepositNow
+                ? (paymentSettings?.depositType ?? null)
+                : null,
+              depositValue: requiresDepositNow
+                ? (paymentSettings?.depositValue ?? null)
+                : null,
+              ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
+            }
+          : null,
       ...(resumeQueryForCheckout
         ? { resumeQuery: resumeQueryForCheckout }
         : {}),
@@ -1000,42 +1368,57 @@ export function AvailabilityBookingPage({
           ? ('pay_in_person' as const)
           : ('none' as const);
 
+      const body = isMultiJobVisit
+        ? buildPublicMultiJobBookingBody({
+            businessId,
+            businessSlug,
+            jobs: visitJobs,
+            scheduledDate,
+            startTime: selectedTime,
+            customer: customerForSubmit,
+            customerServiceLocation:
+              customerServiceLocationPayload ?? undefined,
+            paymentMethodSelected: paymentMethodForPublicCreate,
+            promoCode: appliedPromo?.code,
+          })
+        : {
+            businessSlug,
+            businessId,
+            serviceId,
+            serviceName,
+            servicePriceOptionLabel:
+              selectedPriceOptionLabel?.trim() || undefined,
+            servicePriceCents: servicePriceCents ?? undefined,
+            selectedAddOns:
+              selectedAddOns.length > 0
+                ? selectedAddOns.map(a => ({
+                    id: a.id,
+                    name: a.name,
+                    priceCents: a.priceCents,
+                    durationMinutes: a.durationMinutes ?? undefined,
+                  }))
+                : undefined,
+            durationMinutes: totalBookingDurationMinutes,
+            scheduledDate,
+            startTime: selectedTime,
+            customer: customerForSubmit,
+            ...(customerServiceLocationPayload
+              ? {
+                  customerServiceLocation: customerServiceLocationPayload,
+                  serviceLocationType: customerServiceLocationPayload,
+                }
+              : {}),
+            paymentMethodSelected: paymentMethodForPublicCreate,
+            ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
+            ...(!isOwnerManualBooking && appliedPromo?.code
+              ? { promoCode: appliedPromo.code }
+              : {}),
+          };
+
       const res = await fetch('/api/public/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessSlug,
-          businessId,
-          serviceId,
-          serviceName,
-          servicePriceOptionLabel:
-            selectedPriceOptionLabel?.trim() || undefined,
-          servicePriceCents: servicePriceCents ?? undefined,
-          selectedAddOns:
-            selectedAddOns.length > 0
-              ? selectedAddOns.map(a => ({
-                  id: a.id,
-                  name: a.name,
-                  priceCents: a.priceCents,
-                  durationMinutes: a.durationMinutes ?? undefined,
-                }))
-              : undefined,
-          durationMinutes: totalBookingDurationMinutes,
-          scheduledDate,
-          startTime: selectedTime,
-          customer: customerForSubmit,
-          ...(customerServiceLocationPayload
-            ? {
-                customerServiceLocation: customerServiceLocationPayload,
-                serviceLocationType: customerServiceLocationPayload,
-              }
-            : {}),
-          paymentMethodSelected: paymentMethodForPublicCreate,
-          ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
-          ...(!isOwnerManualBooking && appliedPromo?.code
-            ? { promoCode: appliedPromo.code }
-            : {}),
-        }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -1047,6 +1430,9 @@ export function AvailabilityBookingPage({
           )
         );
         return;
+      }
+      if (isMultiJobVisit) {
+        onPublicMultiJobBookingCreated?.();
       }
       setSubmittedData({
         date: scheduledDate,
@@ -1067,10 +1453,14 @@ export function AvailabilityBookingPage({
       <BookingSuccess
         businessName={businessName}
         businessSlug={businessSlug}
-        serviceName={serviceName}
-        serviceVariantLabel={selectedPriceOptionLabel}
-        servicePriceCents={servicePriceCents}
-        selectedAddOns={submittedData.selectedAddOns}
+        serviceName={displayServiceName}
+        serviceVariantLabel={
+          isMultiJobVisit ? undefined : selectedPriceOptionLabel
+        }
+        servicePriceCents={
+          isMultiJobVisit ? totalPriceCents : servicePriceCents
+        }
+        selectedAddOns={isMultiJobVisit ? [] : submittedData.selectedAddOns}
         totalPriceCents={totalPriceCents}
         saleSubtotalCents={
           bookingDiscountPricing.applies
@@ -1138,6 +1528,13 @@ export function AvailabilityBookingPage({
   }
 
   const headerClassName = publicFlowBackNavClassName;
+
+  const trackerStage: PublicBookingTrackerStage =
+    step === 'details'
+      ? 'details'
+      : step === 'review' || step === 'payment'
+        ? 'confirm'
+        : 'time';
 
   const promoCodeField = (
     <BookingPromoCodeField
@@ -1207,16 +1604,7 @@ export function AvailabilityBookingPage({
                   label={
                     detailsSubStep === 'contact'
                       ? ui.nav.backToDateTime
-                      : detailsSubStep === 'address'
-                        ? backToContactLabel
-                        : detailsSubStep === 'vehicleNotes'
-                          ? customerAddressEntryRequired(
-                              serviceLocation,
-                              customerServiceChoice
-                            )
-                            ? ui.nav.backToAddress
-                            : backToContactLabel
-                          : ui.nav.backToAddress
+                      : backToContactLabel
                   }
                 />
               </button>
@@ -1245,6 +1633,12 @@ export function AvailabilityBookingPage({
 
       <div className="flex flex-col min-h-[60vh] max-w-2xl mx-auto px-4 sm:px-6 pt-6 pb-16 sm:pb-24 w-full">
         <div className="flex-1 pb-28">
+          {!isOwnerManualBooking ? (
+            <PublicBookingStepTracker
+              currentStage={trackerStage}
+              labels={ui.stepTracker}
+            />
+          ) : null}
           {/* Pre-schedule – Mobile vs shop (custom jobs / missing prior choice) */}
           {step === 'location' && (
             <div className="space-y-4">
@@ -1272,11 +1666,19 @@ export function AvailabilityBookingPage({
           {step === 'schedule' && (
             <div className="space-y-6">
               <BookingPriceBreakdown
-                serviceName={serviceName}
-                serviceDurationMinutes={serviceDurationMinutes}
-                servicePriceCents={servicePriceCents}
-                serviceVariantLabel={selectedPriceOptionLabel}
-                selectedAddOns={selectedAddOns}
+                serviceName={displayServiceName}
+                serviceDurationMinutes={
+                  isMultiJobVisit
+                    ? totalBookingDurationMinutes
+                    : serviceDurationMinutes
+                }
+                servicePriceCents={
+                  isMultiJobVisit ? totalPriceCents : servicePriceCents
+                }
+                serviceVariantLabel={
+                  isMultiJobVisit ? undefined : selectedPriceOptionLabel
+                }
+                selectedAddOns={isMultiJobVisit ? [] : selectedAddOns}
                 totalBookingDurationMinutes={totalBookingDurationMinutes}
                 totalPriceCents={totalPriceCents}
                 saleSubtotalCents={
@@ -1298,58 +1700,100 @@ export function AvailabilityBookingPage({
                 }
                 bookingFlowLocale={bookingFlowLocale}
               />
-              <DateSelector
-                weeklySchedule={weeklySchedule}
-                serviceDurationMinutes={totalBookingDurationMinutes}
-                existingBookings={existingBookings}
-                timeOffBlocks={isOwnerManualBooking ? [] : timeOffBlocksProp}
-                minimumNotice={effectiveMinimumNotice}
-                selectedDate={selectedDate}
-                onSelectDate={date => {
-                  setSelectedDate(date);
-                  setSelectedTime(null);
-                }}
-                onUserSelectDate={() => {
-                  window.requestAnimationFrame(() => {
-                    timeSlotsSectionRef.current?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'start',
-                    });
-                  });
-                }}
-                bookingFlowLocale={bookingFlowLocale}
-              />
-              <div ref={timeSlotsSectionRef} className="scroll-mt-20">
-                <TimeSlotGrid
-                  selectedDate={selectedDate}
-                  serviceDurationMinutes={totalBookingDurationMinutes}
-                  weeklySchedule={weeklySchedule}
-                  existingBookings={existingBookings}
-                  timeOffBlocks={isOwnerManualBooking ? [] : timeOffBlocksProp}
-                  minimumNotice={effectiveMinimumNotice}
-                  selectedTime={selectedTime}
-                  onSelectTime={setSelectedTime}
-                  heading={ui.calendar.chooseTime}
-                  selectDateHint={ui.calendar.selectDateHint}
-                  noSlotsHint={ui.calendar.noSlotsHint}
+              {scheduleNeedsRetiming ? (
+                <p
+                  className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100"
+                  role="status"
+                >
+                  {ui.multiJob.retimingRequired}
+                </p>
+              ) : null}
+              {!isOwnerManualBooking &&
+              !showFullCalendar &&
+              earliestAvailableSlot ? (
+                <QuickScheduleCard
+                  date={earliestAvailableSlot.date}
+                  time={earliestAvailableSlot.time}
+                  bookingFlowLocale={bookingFlowLocale}
+                  onBookThisTime={handleQuickBookEarliest}
+                  onChooseDifferentTime={() => setShowFullCalendar(true)}
+                  labels={ui.quickSchedule}
                 />
-              </div>
+              ) : (
+                <>
+                  {!isOwnerManualBooking && earliestAvailableSlot ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowFullCalendar(false)}
+                      className="cursor-pointer text-sm font-medium text-gray-400 transition-colors hover:text-white"
+                    >
+                      {ui.quickSchedule.backToFirstAvailable}
+                    </button>
+                  ) : null}
+                  <DateSelector
+                    weeklySchedule={weeklySchedule}
+                    serviceDurationMinutes={totalBookingDurationMinutes}
+                    existingBookings={existingBookings}
+                    timeOffBlocks={
+                      isOwnerManualBooking ? [] : timeOffBlocksProp
+                    }
+                    minimumNotice={effectiveMinimumNotice}
+                    selectedDate={selectedDate}
+                    onSelectDate={date => {
+                      setSelectedDate(date);
+                      setSelectedTime(null);
+                    }}
+                    onUserSelectDate={() => {
+                      window.requestAnimationFrame(() => {
+                        timeSlotsSectionRef.current?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        });
+                      });
+                    }}
+                    bookingFlowLocale={bookingFlowLocale}
+                  />
+                  <div ref={timeSlotsSectionRef} className="scroll-mt-20">
+                    <TimeSlotGrid
+                      selectedDate={selectedDate}
+                      serviceDurationMinutes={totalBookingDurationMinutes}
+                      weeklySchedule={weeklySchedule}
+                      existingBookings={existingBookings}
+                      timeOffBlocks={
+                        isOwnerManualBooking ? [] : timeOffBlocksProp
+                      }
+                      minimumNotice={effectiveMinimumNotice}
+                      selectedTime={selectedTime}
+                      onSelectTime={time => {
+                        setSelectedTime(time);
+                        setScheduleNeedsRetiming(false);
+                      }}
+                      autoSelectFirstAvailable={!scheduleNeedsRetiming}
+                      heading={ui.calendar.chooseTime}
+                      selectDateHint={ui.calendar.selectDateHint}
+                      noSlotsHint={ui.calendar.noSlotsHint}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
           {/* Step 2 – Details */}
           {step === 'details' && (
-            <div>
-              {detailsSubStep === 'contact' ||
-              detailsSubStep === 'address' ||
-              detailsSubStep === 'vehicleNotes' ? (
+            <div className="space-y-6">
+              {detailsSubStep === 'contact' ? (
                 <CustomerForm
                   id={CUSTOMER_FORM_ID}
-                  step={detailsSubStep}
+                  step="contact"
+                  showAddressFields={customerAddressEntryRequired(
+                    serviceLocation,
+                    customerServiceChoice
+                  )}
                   value={customerData}
                   onChange={setCustomerData}
                   onSubmit={handleDetailsSubStepSubmit}
-                  showVehicleFields={showVehicleFields}
+                  showVehicleFields={effectiveShowVehicleFields}
                   requireVehicleFields={requireVehicleFields}
                   hideSubmitButton
                   submitLabel={detailsPrimaryCtaLabel}
@@ -1362,61 +1806,276 @@ export function AvailabilityBookingPage({
                   onAgreedToNotificationsChange={setAgreedToPublicNotifications}
                 />
               ) : null}
+              {detailsSubStep === 'vehicleNotes' ? (
+                <>
+                  {isMultiJobVisit && showVehicleFields ? (
+                    <div className="space-y-4">
+                      <h2 className="text-base font-semibold text-white">
+                        {ui.multiJob.vehiclePerService}
+                      </h2>
+                      {visitJobs.map(job => (
+                        <div
+                          key={job.localId}
+                          className="rounded-xl border border-white/10 p-4"
+                        >
+                          <div className="mb-3 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-white">
+                                {job.serviceName}
+                              </p>
+                              {job.servicePriceOptionLabel?.trim() ? (
+                                <p className="mt-0.5 text-sm text-gray-400">
+                                  {job.servicePriceOptionLabel.trim()}
+                                </p>
+                              ) : null}
+                            </div>
+                            {visitJobs.length > 1 ? (
+                              <button
+                                type="button"
+                                className="cursor-pointer shrink-0 text-xs text-red-400 hover:text-red-300"
+                                onClick={() => removeVisitJob(job.localId)}
+                              >
+                                {ui.multiJob.remove}
+                              </button>
+                            ) : null}
+                          </div>
+                          <BookingVehicleFields
+                            value={{
+                              vehicleYear: job.vehicle.year,
+                              vehicleMake: job.vehicle.make,
+                              vehicleModel: job.vehicle.model,
+                            }}
+                            onChange={updates => {
+                              updateVisitJobs(
+                                visitJobs.map(j =>
+                                  j.localId === job.localId
+                                    ? {
+                                        ...j,
+                                        vehicle: {
+                                          year:
+                                            updates.vehicleYear ??
+                                            j.vehicle.year,
+                                          make:
+                                            updates.vehicleMake ??
+                                            j.vehicle.make,
+                                          model:
+                                            updates.vehicleModel ??
+                                            j.vehicle.model,
+                                        },
+                                      }
+                                    : j
+                                )
+                              );
+                            }}
+                            bookingFlowLocale={bookingFlowLocale}
+                            required={requireVehicleFields}
+                          />
+                        </div>
+                      ))}
+                      {addAnotherJobHref &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS ? (
+                        <AddAnotherJobCard
+                          label={ui.multiJob.addAnotherService}
+                          onPress={persistVisitDraftAndAddAnother}
+                        />
+                      ) : visitJobs.length >= PUBLIC_BOOKING_MAX_JOBS ? (
+                        <p className="text-xs text-amber-400/90">
+                          {ui.multiJob.maxJobsReached}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {isMultiJobVisit && !showVehicleFields ? (
+                    <div className="space-y-3">
+                      {visitJobs.length > 1 ? (
+                        <ul className="space-y-2">
+                          {visitJobs.map(job => (
+                            <li
+                              key={job.localId}
+                              className="flex items-start justify-between gap-3 rounded-xl border border-white/10 px-4 py-3"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-white">
+                                  {job.serviceName}
+                                </p>
+                                {job.servicePriceOptionLabel?.trim() ? (
+                                  <p className="mt-0.5 text-sm text-gray-400">
+                                    {job.servicePriceOptionLabel.trim()}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <button
+                                type="button"
+                                className="cursor-pointer shrink-0 text-xs text-red-400 hover:text-red-300"
+                                onClick={() => removeVisitJob(job.localId)}
+                              >
+                                {ui.multiJob.remove}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {addAnotherJobHref &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS ? (
+                        <AddAnotherJobCard
+                          label={ui.multiJob.addAnotherService}
+                          onPress={persistVisitDraftAndAddAnother}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <CustomerForm
+                    id={CUSTOMER_FORM_ID}
+                    step="vehicleNotes"
+                    value={customerData}
+                    onChange={setCustomerData}
+                    onSubmit={handleDetailsSubStepSubmit}
+                    showVehicleFields={effectiveShowVehicleFields}
+                    requireVehicleFields={
+                      effectiveShowVehicleFields && requireVehicleFields
+                    }
+                    hideSubmitButton
+                    submitLabel={detailsPrimaryCtaLabel}
+                    bookingFlowLocale={bookingFlowLocale}
+                    emailOptional
+                    isOwnerManualBooking={isOwnerManualBooking}
+                    showNotificationsConsent={!isOwnerManualBooking}
+                    businessName={businessName}
+                    agreedToNotifications={agreedToPublicNotifications}
+                    onAgreedToNotificationsChange={
+                      setAgreedToPublicNotifications
+                    }
+                  />
+                </>
+              ) : null}
             </div>
           )}
 
           {/* Step 3 – Confirm */}
-          {step === 'review' && selectedDate && selectedTime && (
+          {step === 'review' && (
             <div className="space-y-4">
               {submitError && (
                 <p className="text-sm text-red-400" role="alert">
                   {submitError}
                 </p>
               )}
-              <BookingSummary
-                serviceName={serviceName}
-                serviceDurationMinutes={serviceDurationMinutes}
-                totalAppointmentMinutes={totalBookingDurationMinutes}
-                servicePriceCents={servicePriceCents}
-                serviceVariantLabel={selectedPriceOptionLabel}
-                selectedAddOns={selectedAddOns}
-                totalPriceCents={totalPriceCents}
-                saleSubtotalCents={
-                  bookingDiscountPricing.applies
-                    ? bookingDiscountPricing.subtotalCents
-                    : undefined
-                }
-                saleEstimatedTotalCents={
-                  bookingDiscountPricing.applies
-                    ? bookingDiscountPricing.estimatedTotalCents
-                    : undefined
-                }
-                saleDiscountCents={
-                  bookingDiscountPricing.applies
-                    ? bookingDiscountPricing.discountCents
-                    : undefined
-                }
-                saleAppliesLine={saleAppliesLine}
-                date={serviceDateYmd ?? ''}
-                startTimeHhmm={selectedTime}
-                customer={customerForSubmit}
-                bookingFlowLocale={bookingFlowLocale}
-                isShopBooking={customerBookingUsesShop(
-                  serviceLocation,
-                  customerServiceChoice
-                )}
-                shopAddressLabel={serviceLocation.shopAddressLabel}
-                hideServiceAddress={
-                  isOwnerManualBooking &&
-                  customerBookingUsesShop(
-                    serviceLocation,
-                    customerServiceChoice
-                  )
-                }
-              />
-              {!shouldShowPaymentStep && !isOwnerManualBooking
-                ? promoCodeField
-                : null}
+              {!selectedDate || !selectedTime ? (
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+                  <p className="text-sm text-gray-300">
+                    {ui.calendar.selectDateHint}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    fullWidth
+                    className="font-semibold"
+                    onClick={() => setStep('schedule')}
+                  >
+                    {ui.serviceDetails.dateAndTime}
+                  </Button>
+                </div>
+              ) : isMultiJobVisit ? (
+                <>
+                  <PublicMultiJobReviewSummary
+                    jobs={visitJobs}
+                    customer={customerForSubmit}
+                    scheduledDateYmd={serviceDateYmd ?? ''}
+                    startTimeHhmm={selectedTime}
+                    bookingFlowLocale={bookingFlowLocale}
+                    isShopBooking={customerBookingUsesShop(
+                      serviceLocation,
+                      customerServiceChoice
+                    )}
+                    shopAddressLabel={serviceLocation.shopAddressLabel}
+                    hideServiceAddress={
+                      isOwnerManualBooking &&
+                      customerBookingUsesShop(
+                        serviceLocation,
+                        customerServiceChoice
+                      )
+                    }
+                    saleSubtotalCents={
+                      bookingDiscountPricing.applies
+                        ? bookingDiscountPricing.subtotalCents
+                        : undefined
+                    }
+                    saleEstimatedTotalCents={
+                      bookingDiscountPricing.applies
+                        ? bookingDiscountPricing.estimatedTotalCents
+                        : undefined
+                    }
+                    saleDiscountCents={
+                      bookingDiscountPricing.applies
+                        ? bookingDiscountPricing.discountCents
+                        : undefined
+                    }
+                    saleAppliesLine={saleAppliesLine}
+                    canAddAnotherJob={
+                      Boolean(addAnotherJobHref) &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS
+                    }
+                    onAddAnotherJob={
+                      addAnotherJobHref
+                        ? persistVisitDraftAndAddAnother
+                        : undefined
+                    }
+                    addAnotherLabel={ui.multiJob.addAnotherService}
+                    canRemoveJob={visitJobs.length > 1}
+                    onRemoveJob={removeVisitJob}
+                    removeLabel={ui.multiJob.remove}
+                  />
+                  {!shouldShowPaymentStep && !isOwnerManualBooking
+                    ? promoCodeField
+                    : null}
+                </>
+              ) : (
+                <>
+                  <BookingSummary
+                    serviceName={displayServiceName}
+                    serviceDurationMinutes={serviceDurationMinutes}
+                    totalAppointmentMinutes={totalBookingDurationMinutes}
+                    servicePriceCents={servicePriceCents}
+                    serviceVariantLabel={selectedPriceOptionLabel}
+                    selectedAddOns={selectedAddOns}
+                    totalPriceCents={totalPriceCents}
+                    saleSubtotalCents={
+                      bookingDiscountPricing.applies
+                        ? bookingDiscountPricing.subtotalCents
+                        : undefined
+                    }
+                    saleEstimatedTotalCents={
+                      bookingDiscountPricing.applies
+                        ? bookingDiscountPricing.estimatedTotalCents
+                        : undefined
+                    }
+                    saleDiscountCents={
+                      bookingDiscountPricing.applies
+                        ? bookingDiscountPricing.discountCents
+                        : undefined
+                    }
+                    saleAppliesLine={saleAppliesLine}
+                    date={serviceDateYmd ?? ''}
+                    startTimeHhmm={selectedTime}
+                    customer={customerForSubmit}
+                    bookingFlowLocale={bookingFlowLocale}
+                    isShopBooking={customerBookingUsesShop(
+                      serviceLocation,
+                      customerServiceChoice
+                    )}
+                    shopAddressLabel={serviceLocation.shopAddressLabel}
+                    hideServiceAddress={
+                      isOwnerManualBooking &&
+                      customerBookingUsesShop(
+                        serviceLocation,
+                        customerServiceChoice
+                      )
+                    }
+                  />
+                  {!shouldShowPaymentStep && !isOwnerManualBooking
+                    ? promoCodeField
+                    : null}
+                </>
+              )}
             </div>
           )}
 
@@ -1750,7 +2409,7 @@ export function AvailabilityBookingPage({
                 fullWidth
                 className="font-semibold"
                 disabled={!canContinueFromSchedule}
-                onClick={openDetailsFromSchedule}
+                onClick={continueFromSchedule}
               >
                 {ui.common.continue}
               </Button>
@@ -1758,12 +2417,19 @@ export function AvailabilityBookingPage({
             {step === 'details' && (
               <Button
                 key={`details-form-${detailsSubStep}`}
-                type="submit"
+                // When vehicles are incomplete, stay clickable as a button so we
+                // can toast the next step instead of a silent disabled state.
+                type={multiJobVehiclesIncomplete ? 'button' : 'submit'}
                 form={CUSTOMER_FORM_ID}
                 variant="inverse"
                 fullWidth
                 className="font-semibold"
-                disabled={!canContinueFromDetails}
+                disabled={!detailsFormValid}
+                onClick={
+                  multiJobVehiclesIncomplete
+                    ? toastMultiJobVehicleRequired
+                    : undefined
+                }
               >
                 {detailsPrimaryCtaLabel}
               </Button>

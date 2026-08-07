@@ -15,10 +15,10 @@ Related docs:
 
 ## Product intent
 
-1. Customer completes date/time, details, and review on `/[slug]/book` (with `serviceId` and optional add-ons from `/book/details`).
+1. Customer finishes the public visit flow (service/details → schedule → contact → review on `/[slug]/book?visit=1`, after `/book/details`). Payload may be single-job fields or **`jobs[]`** (see [public-multi-job-booking.md](../../../../docs/contracts/public-multi-job-booking.md)).
 2. If the business requires **card payment online** (full or deposit), they click pay → **Stripe Checkout** (hosted) on the **connected account**.
 3. **No `bookings` row exists until payment succeeds** (webhook path). That avoids “ghost” appointments for abandoned checkouts.
-4. After success, Stripe redirects back to the app; the customer sees a **payment confirmation** screen and receives **emails** (owner + customer), same template family as other availability booking emails.
+4. After success, Stripe redirects back to the app; the customer sees a **payment confirmation** screen and receives **emails** (owner + customer), same template family as other availability booking emails. Session cart is cleared on success.
 5. Non-card paths (payments off, pay in person, or confirm without checkout) still use **`POST /api/public/bookings`** and do not create `booking_checkout_sessions`.
 
 ---

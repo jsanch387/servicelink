@@ -69,9 +69,14 @@ export function coerceCustomerFormData(raw: unknown): CustomerFormData {
  */
 export function bookingCustomerPayloadErrorMessage(
   c: CustomerFormData,
-  options?: { requireCustomerAddress?: boolean }
+  options?: {
+    requireCustomerAddress?: boolean;
+    /** When true, year/make/model are required (vehicle-related public booking). */
+    requireVehicleFields?: boolean;
+  }
 ): string | null {
   const requireCustomerAddress = options?.requireCustomerAddress !== false;
+  const requireVehicleFields = options?.requireVehicleFields === true;
   const name = c.fullName.trim();
   if (!name) return 'Customer name is required';
   if (name.length > BOOKING_CUSTOMER_FULL_NAME_MAX)
@@ -117,7 +122,7 @@ export function bookingCustomerPayloadErrorMessage(
   const vmk = (c.vehicleMake ?? '').trim();
   const vmd = (c.vehicleModel ?? '').trim();
   const anyVehicle = vy.length > 0 || vmk.length > 0 || vmd.length > 0;
-  if (anyVehicle) {
+  if (requireVehicleFields || anyVehicle) {
     if (!vy || !vmk || !vmd) {
       return 'Vehicle year, make, and model are required';
     }
