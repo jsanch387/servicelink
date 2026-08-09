@@ -1,0 +1,43 @@
+@keyframes subscription-plan-ready-ring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes subscription-plan-ready-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes subscription-plan-ready-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subscription-plan-ready-ring {
+  stroke-dasharray: 176;
+  stroke-dashoffset: 176;
+  animation: subscription-plan-ready-ring 0.55s ease-out forwards;
+  transform-origin: center;
+}
+
+.subscription-plan-ready-check {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: subscription-plan-ready-check 0.4s ease-out 0.35s forwards;
+}
+
+.subscription-plan-ready-content {
+  animation: subscription-plan-ready-rise 0.45s ease-out 0.2s both;
+}
+
+.subscription-plan-ready-card {
+  animation: subscription-plan-ready-rise 0.45s ease-out 0.4s both;
+}

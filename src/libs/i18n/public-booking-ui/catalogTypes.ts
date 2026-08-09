@@ -303,6 +303,40 @@ export type PublicBookingUi = {
     seeLess: string;
     contactForQuote: string;
   };
+  /** Customer subscription plans on the public booking link. */
+  subscriptions: {
+    subscriptionsTab: string;
+    subscribeCta: string;
+    popularBadge: string;
+    contactForPrice: string;
+    cadencePickerLabel: string;
+    cadencePickerAriaLabel: string;
+    /** Modal after Subscribe — plan summary + how it works. */
+    detailsModalTitle: string;
+    closeDetailsAriaLabel: string;
+    howItWorksTitle: string;
+    howItWorksSteps: readonly [string, string, string];
+    continueToCheckoutCta: string;
+    checkoutComingSoon: string;
+    /** Short price suffix, e.g. "/mo". */
+    cadenceSuffix: {
+      week: string;
+      weeks: (count: number) => string;
+      month: string;
+      months: (count: number) => string;
+      year: string;
+      years: (count: number) => string;
+    };
+    /** Cadence picker labels, e.g. "Every 2 weeks". */
+    cadenceLabel: {
+      weekly: string;
+      everyWeeks: (count: number) => string;
+      monthly: string;
+      everyMonths: (count: number) => string;
+      yearly: string;
+      everyYears: (count: number) => string;
+    };
+  };
   profile: {
     requestQuote: string;
     contactPhoneCta: string;

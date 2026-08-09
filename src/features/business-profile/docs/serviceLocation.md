@@ -115,10 +115,10 @@ Parse city/state from DB: `parseServiceAreaCityState(profile.service_area)`.
 
 **Status:** Implemented on `/:slug/book`. The flow reads `service_location_mode` and shop fields from `business_profiles` and branches accordingly.
 
-| `service_location_mode` | Customer experience                                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `mobile_only`           | Service details → visit calendar → **contact + address** (one screen) → vehicle/notes → review                         |
-| `shop_only`             | Service details → visit calendar → contact → vehicle/notes → review (shop address prefilled on submit)                 |
+| `service_location_mode` | Customer experience                                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `mobile_only`           | Service details → visit calendar → **contact + address** (one screen) → vehicle/notes → review                          |
+| `shop_only`             | Service details → visit calendar → contact → vehicle/notes → review (shop address prefilled on submit)                  |
 | `both`                  | Price / add-ons (combined) → **mobile vs shop** on `/book/details` → visit calendar → contact (+ address if mobile) → … |
 
 Location choice is collected **before date/time** on `/book/details` when mode is `both` (and as a pre-schedule step on `/book` for custom owner jobs that skip details). Query param: `serviceLocationType=mobile|shop`.

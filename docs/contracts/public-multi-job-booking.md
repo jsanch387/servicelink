@@ -7,21 +7,21 @@ Customers can book **1…4 catalog services** on one appointment (e.g. two cars)
 
 ## Product rules
 
-| Rule                   | Value                                      |
-| ---------------------- | ------------------------------------------ |
-| Max jobs (public)      | 4                                          |
-| Custom jobs            | Not allowed (catalog `serviceId` required) |
-| Location               | One for the whole visit                    |
-| Payment / promo / sale | Once on appointment subtotal               |
-| Free-tier              | +1 per visit (not per job)                 |
+| Rule                   | Value                                                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Max jobs (public)      | 4                                                                                                              |
+| Custom jobs            | Not allowed (catalog `serviceId` required)                                                                     |
+| Location               | One for the whole visit                                                                                        |
+| Payment / promo / sale | Once on appointment subtotal                                                                                   |
+| Free-tier              | +1 per visit (not per job)                                                                                     |
 | Vehicles               | Required for vehicle-related business types (`Auto & Detailing`, `Mobile Repair`); per job on multi-job visits |
 
 ## Flow
 
 Collapsed for fewer full-screen hops. Progress indicator: **Service → Time → Details → Confirm**.
 
-1. **`/book`** — pick a service (select, then Continue). Optional collapsible **See description**.  
-   - If this tab already has an unfinished visit cart: show **Continue booking** / **Start over** (never silent resume onto confirm).  
+1. **`/book`** — pick a service (select, then Continue). Optional collapsible **See description**.
+   - If this tab already has an unfinished visit cart: show **Continue booking** / **Start over** (never silent resume onto confirm).
    - **Add another** uses `?addJob=1` and keeps the cart.
 2. **`/book/details`** — pricing option + optional add-ons on one screen (add-ons appear after a price option is chosen when multi-price is on). Location choice (`both`) stays a separate phase. CTA label is **Continue**.
 3. Continue commits the job to the **sessionStorage cart** → **`/book?visit=1`**.

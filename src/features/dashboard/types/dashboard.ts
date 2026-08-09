@@ -26,6 +26,8 @@ export interface DashboardStats {
 export interface DashboardProps {
   children?: React.ReactNode;
   isOnboardingCompleted?: boolean;
+  /** Memberships / Subscriptions nav — email rollout allowlist. */
+  showMembershipsNav?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -45,4 +47,5 @@ export interface DashboardSidebarProps {
 
   setOpen: (_open: boolean) => void;
   isOnboardingCompleted?: boolean;
+  showMembershipsNav?: boolean;
 }

@@ -4,6 +4,7 @@ import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
 import {
+  ArrowPathRoundedSquareIcon,
   BanknotesIcon,
   CalendarIcon,
   ClipboardDocumentListIcon,
@@ -97,10 +98,27 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   open,
   setOpen,
   isOnboardingCompleted = false,
+  showMembershipsNav = false,
 }) => {
   const pathname = usePathname();
 
-  const navigation = allNavigationItems.filter(
+  const membershipsNavItem = {
+    name: 'Subscriptions',
+    href: ROUTES.DASHBOARD.SUBSCRIPTIONS,
+    icon: ArrowPathRoundedSquareIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/subscriptions',
+  };
+
+  const navigationItems = showMembershipsNav
+    ? allNavigationItems.flatMap(item =>
+        item.href === ROUTES.DASHBOARD.SERVICES
+          ? [item, membershipsNavItem]
+          : [item]
+      )
+    : allNavigationItems;
+
+  const navigation = navigationItems.filter(
     item => !item.requiresOnboarding || isOnboardingCompleted
   );
   const showSettings = isOnboardingCompleted;

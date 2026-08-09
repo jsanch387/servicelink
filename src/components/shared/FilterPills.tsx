@@ -15,6 +15,8 @@ interface FilterPillsProps<T extends string = string> {
   ariaLabel?: string;
   className?: string;
   compactOnMobile?: boolean;
+  /** Smaller pills on all breakpoints (e.g. plan-ready preview). */
+  size?: 'md' | 'sm';
   /** Keep a single scrollable row (no wrap) when many options. */
   horizontalScroll?: boolean;
 }
@@ -26,8 +28,16 @@ export function FilterPills<T extends string = string>({
   ariaLabel = 'Filters',
   className = '',
   compactOnMobile = false,
+  size = 'md',
   horizontalScroll = false,
 }: FilterPillsProps<T>) {
+  const pillSizeClass =
+    size === 'sm'
+      ? 'px-2.5 py-1 text-xs'
+      : compactOnMobile
+        ? 'px-2.5 py-1.5 text-xs sm:px-3.5 sm:py-2 sm:text-sm'
+        : 'px-3.5 py-2 text-sm';
+
   return (
     <div
       className={
@@ -47,11 +57,7 @@ export function FilterPills<T extends string = string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.id)}
-            className={`shrink-0 cursor-pointer touch-manipulation rounded-full font-medium transition-colors ${
-              compactOnMobile
-                ? 'px-2.5 py-1.5 text-xs sm:px-3.5 sm:py-2 sm:text-sm'
-                : 'px-3.5 py-2 text-sm'
-            } ${
+            className={`shrink-0 cursor-pointer touch-manipulation rounded-full font-medium transition-colors ${pillSizeClass} ${
               active
                 ? 'bg-white text-black'
                 : 'bg-white/[0.06] text-gray-400 hover:bg-white/[0.1] hover:text-white'

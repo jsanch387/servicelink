@@ -1,4 +1,5 @@
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
+import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptions/config/membershipsRolloutAllowlist';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { Metadata } from 'next';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -41,8 +42,15 @@ export default async function DashboardLayout({
         ?.onboarding_status === 'completed';
   }
 
+  const showMembershipsNav = isOwnerEmailAllowedForMembershipsRollout(
+    user?.email
+  );
+
   return (
-    <DashboardWrapper isOnboardingCompleted={isOnboardingCompleted}>
+    <DashboardWrapper
+      isOnboardingCompleted={isOnboardingCompleted}
+      showMembershipsNav={showMembershipsNav}
+    >
       {children}
     </DashboardWrapper>
   );

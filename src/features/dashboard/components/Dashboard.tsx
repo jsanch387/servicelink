@@ -12,6 +12,7 @@ import { DashboardSidebar } from './DashboardSidebar';
 export const Dashboard: React.FC<DashboardProps> = ({
   children,
   isOnboardingCompleted = false,
+  showMembershipsNav = false,
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -26,6 +27,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         open={sidebarOpen}
         setOpen={setSidebarOpen}
         isOnboardingCompleted={isOnboardingCompleted}
+        showMembershipsNav={showMembershipsNav}
       />
       <div className="dashboard-content flex-1 flex flex-col lg:ml-64 min-w-0">
         {/* Sticky Header */}

@@ -15,6 +15,10 @@ import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
+import {
+  PublicSubscriptionsSection,
+  type CustomerSubscriptionPlan,
+} from '@/features/subscriptions';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   ArrowRightIcon,
@@ -36,7 +40,7 @@ import { EditBusinessProfile } from './edit/EditBusinessProfile';
 import { ProfileWelcomeModal } from './ProfileWelcomeModal';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
-type TabType = 'services' | 'gallery' | 'bio' | 'reviews';
+type TabType = 'services' | 'subscriptions' | 'gallery' | 'bio' | 'reviews';
 
 interface SlugData {
   hasSlug: boolean;
@@ -86,6 +90,11 @@ interface BusinessProfileViewProps {
   publicProfileSlug?: string;
   /** Live sale to announce on the public booking link (Pro owners only). */
   publicActiveSale?: PublicActiveSale | null;
+  /**
+   * Customer subscription plans for the public booking link.
+   * Tab only renders when this list is non-empty.
+   */
+  publicSubscriptionPlans?: CustomerSubscriptionPlan[];
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -104,12 +113,14 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicReviewSummary = null,
   publicProfileSlug,
   publicActiveSale = null,
+  publicSubscriptionPlans = [],
 }) => {
   const showReviewsTab = Boolean(
     publicReviewSummary &&
       publicReviewSummary.reviewCount > 0 &&
       publicProfileSlug
   );
+  const showSubscriptionsTab = publicSubscriptionPlans.length > 0;
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
     useState<CompleteBusinessProfile>(initialBusinessProfile);
@@ -126,7 +137,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     if (activeTab === 'reviews' && !showReviewsTab) {
       setActiveTab('services');
     }
-  }, [activeTab, showReviewsTab]);
+    if (activeTab === 'subscriptions' && !showSubscriptionsTab) {
+      setActiveTab('services');
+    }
+  }, [activeTab, showReviewsTab, showSubscriptionsTab]);
 
   const completionChecks = [
     {
@@ -427,6 +441,21 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
                   </button>
+                  {showSubscriptionsTab ? (
+                    <button
+                      onClick={() => setActiveTab('subscriptions')}
+                      className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer whitespace-nowrap ${
+                        activeTab === 'subscriptions'
+                          ? 'text-white'
+                          : 'text-zinc-500 hover:text-zinc-400'
+                      }`}
+                    >
+                      {bookingUi.subscriptions.subscriptionsTab}
+                      {activeTab === 'subscriptions' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
+                      )}
+                    </button>
+                  ) : null}
                   <button
                     onClick={() => setActiveTab('gallery')}
                     className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
@@ -505,6 +534,11 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                     publicActiveSale={publicActiveSale}
                   />
                 </>
+              ) : activeTab === 'subscriptions' && showSubscriptionsTab ? (
+                <PublicSubscriptionsSection
+                  plans={publicSubscriptionPlans}
+                  bookingFlowLocale={bookingFlowLocale}
+                />
               ) : activeTab === 'gallery' ? (
                 <WorkShowcase
                   businessProfile={businessProfile}

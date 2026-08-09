@@ -649,6 +649,92 @@ export type Database = {
           updated_at?: string;
         };
       };
+      /** Customer memberships (booking-link plans) — not Pro SaaS on profiles. */
+      membership_plans: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          description: string;
+          benefits: string[];
+          is_published: boolean;
+          is_popular: boolean;
+          sort_order: number;
+          stripe_product_id: string | null;
+          deleted_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          name: string;
+          description?: string;
+          benefits?: string[];
+          is_published?: boolean;
+          is_popular?: boolean;
+          sort_order?: number;
+          stripe_product_id?: string | null;
+          deleted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          name?: string;
+          description?: string;
+          benefits?: string[];
+          is_published?: boolean;
+          is_popular?: boolean;
+          sort_order?: number;
+          stripe_product_id?: string | null;
+          deleted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      membership_plan_prices: {
+        Row: {
+          id: string;
+          plan_id: string;
+          business_id: string;
+          interval_unit: string;
+          interval_count: number;
+          price_cents: number;
+          currency: string;
+          is_default: boolean;
+          stripe_price_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          plan_id: string;
+          business_id: string;
+          interval_unit: string;
+          interval_count: number;
+          price_cents: number;
+          currency?: string;
+          is_default?: boolean;
+          stripe_price_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          plan_id?: string;
+          business_id?: string;
+          interval_unit?: string;
+          interval_count?: number;
+          price_cents?: number;
+          currency?: string;
+          is_default?: boolean;
+          stripe_price_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       notifications: {
         Row: {
           id: string;

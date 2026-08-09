@@ -63,7 +63,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           className={`
           w-full px-4 py-3.5 sm:px-5 sm:py-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-medium
           focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
-          transition-all duration-200 resize-none touch-manipulation
+          transition-all duration-200 resize-none touch-manipulation scrollbar-dark
           ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20 active:bg-white/8'}
           ${inputClassName}
@@ -71,10 +71,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
         />
         {showFooterRow && (
           <div
-            className={`mt-1.5 flex items-center ${
-              // Reserve tap-target height only when footer actions are present.
-              footerStart != null ? 'min-h-[2.25rem]' : ''
-            } ${
+            className={`mt-0.5 flex items-center ${
               footerStart != null && showCharCounter
                 ? 'justify-between gap-3'
                 : footerStart != null
@@ -83,12 +80,12 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
             }`}
           >
             {footerStart != null ? (
-              <div className="flex items-center min-w-0 -ml-1">
+              <div className="flex items-center min-w-0 -ml-1 -mt-0.5">
                 {footerStart}
               </div>
             ) : null}
             {showCharCounter ? (
-              <p className="text-xs text-gray-400 shrink-0 tabular-nums">
+              <p className="pt-0.5 text-xs text-gray-400 shrink-0 tabular-nums">
                 {value.length}/{maxLength}
               </p>
             ) : null}

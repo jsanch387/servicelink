@@ -29,6 +29,7 @@ import {
   maxPortfolioImagesForSubscription,
   type OwnerSubscriptionFieldsForPortfolio,
 } from '@/features/pricing/utils/maxPortfolioImagesForSubscription';
+import { loadPublicMembershipPlans } from '@/features/subscriptions/server/loadPublicMembershipPlans';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
   normalizePublicBookingOfferedLocales,
@@ -259,6 +260,12 @@ export default async function PublicProfilePage({
     { ownerHasPro: ownerTier === 'pro' }
   );
 
+  const publicSubscriptionPlans = await loadPublicMembershipPlans(
+    adminGate,
+    businessProfile.id,
+    { ownerHasPro: ownerTier === 'pro' }
+  );
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
@@ -279,6 +286,7 @@ export default async function PublicProfilePage({
         publicReviewSummary={publicReviewSummary}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
+        publicSubscriptionPlans={publicSubscriptionPlans}
       />
     </div>
   );

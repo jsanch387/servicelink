@@ -8,18 +8,27 @@
  * Mobile: JSON `{ "client": "mobile" }` and env return/refresh URLs (see Stripe README).
  */
 
+import { ROUTES } from '@/constants/routes';
 import { logConnect } from '@/features/payments/server/connectOnboardingLog';
 import { getHasProAccessForPayments } from '@/features/payments/server/getHasProAccessForPayments';
 import { paymentAccountsOf } from '@/features/payments/server/paymentAccountsQuery';
 import { startExpressConnectOnboarding } from '@/features/payments/stripe';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
+import { getAppBaseUrl } from '@/libs/stripe';
 import { validateConnectAccountLinkUrl } from '@/libs/stripe/validateConnectAccountLinkUrl';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
 type OnboardRequestBody = {
   client?: unknown;
+  /** Web-only: dashboard path for Connect return/refresh (allowlisted). */
+  returnPath?: unknown;
 };
+
+const WEB_CONNECT_RETURN_PATHS = new Set<string>([
+  ROUTES.DASHBOARD.PAYMENTS,
+  ROUTES.DASHBOARD.SUBSCRIPTIONS,
+]);
 
 const LOG = '[stripe:connect-onboard]';
 
@@ -137,6 +146,15 @@ export async function POST(request: NextRequest) {
       accountLinkUrls = {
         returnUrl: returnParsed.href,
         refreshUrl: refreshParsed.href,
+      };
+    } else if (
+      typeof body.returnPath === 'string' &&
+      WEB_CONNECT_RETURN_PATHS.has(body.returnPath)
+    ) {
+      const baseUrl = getAppBaseUrl(request);
+      accountLinkUrls = {
+        returnUrl: `${baseUrl}${body.returnPath}?connect=return`,
+        refreshUrl: `${baseUrl}${body.returnPath}?connect=refresh`,
       };
     }
 
