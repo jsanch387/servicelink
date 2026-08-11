@@ -74,7 +74,7 @@ export const OwnerSubscriptionsPlanList: React.FC<
               <OwnerSubscriptionPlanCard
                 key={plan.id}
                 plan={plan}
-                subscriberCount={0}
+                subscriberCount={plan.activeSubscriberCount}
               />
             ))}
           </div>

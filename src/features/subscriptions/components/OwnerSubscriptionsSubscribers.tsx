@@ -1,27 +1,300 @@
 'use client';
 
-import React from 'react';
-import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
+import { API_ROUTES, ROUTES } from '@/constants/routes';
+import { UsersIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useMemo, useState } from 'react';
+import type {
+  OwnerSubscriber,
+  OwnerSubscriptionPlan,
+} from '../types/ownerSubscriptionPlan';
+import { formatSubscriptionPriceCents } from '../utils/formatSubscriptionPrice';
+import {
+  formatSubscriberBillingDate,
+  getSubscriberStatusClassName,
+  getSubscriberStatusLabel,
+  isSubscriberCancelScheduled,
+} from '../utils/ownerSubscriberDisplay';
 
 interface OwnerSubscriptionsSubscribersProps {
-  plans: OwnerSubscriptionPlan[];
-  /** When set, only show subscribers for this plan. */
+  plans?: OwnerSubscriptionPlan[];
   planIdFilter?: string;
+  variant?: 'page' | 'embedded';
+  hidePlanName?: boolean;
+  onLoaded?: (subscribers: OwnerSubscriber[]) => void;
+}
+
+function StatusPill({ subscriber }: { subscriber: OwnerSubscriber }) {
+  const cancelScheduled = isSubscriberCancelScheduled(
+    subscriber.status,
+    subscriber.cancelAtPeriodEnd
+  );
+  const label = getSubscriberStatusLabel(
+    subscriber.status,
+    subscriber.cancelAtPeriodEnd
+  );
+  const className = getSubscriberStatusClassName(
+    subscriber.status,
+    subscriber.cancelAtPeriodEnd
+  );
+
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${className}`}
+      title={
+        cancelScheduled && subscriber.nextBillingAt
+          ? `Access until ${formatSubscriberBillingDate(subscriber.nextBillingAt)}`
+          : undefined
+      }
+    >
+      {label}
+    </span>
+  );
 }
 
 /**
- * Subscribers list — empty until customer_memberships / Checkout is wired.
+ * Compact subscribers table — row click opens detail.
  */
 export const OwnerSubscriptionsSubscribers: React.FC<
   OwnerSubscriptionsSubscribersProps
-> = () => {
+> = ({ planIdFilter, variant = 'page', hidePlanName = false, onLoaded }) => {
+  const router = useRouter();
+  const [subscribers, setSubscribers] = useState<OwnerSubscriber[] | null>(
+    null
+  );
+  const [error, setError] = useState<string | null>(null);
+  const embedded = variant === 'embedded';
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setError(null);
+      try {
+        const url = new URL(
+          API_ROUTES.MEMBERSHIPS_SUBSCRIBERS,
+          window.location.origin
+        );
+        if (planIdFilter?.trim()) {
+          url.searchParams.set('planId', planIdFilter.trim());
+        }
+        const res = await fetch(url.pathname + url.search, {
+          credentials: 'same-origin',
+        });
+        const json = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          subscribers?: OwnerSubscriber[];
+          error?: string;
+        } | null;
+        if (cancelled) return;
+        if (!res.ok || !json?.success || !Array.isArray(json.subscribers)) {
+          setError(json?.error || 'Could not load subscribers.');
+          setSubscribers([]);
+          onLoaded?.([]);
+          return;
+        }
+        setSubscribers(json.subscribers);
+        onLoaded?.(json.subscribers);
+      } catch {
+        if (!cancelled) {
+          setError('Could not load subscribers.');
+          setSubscribers([]);
+          onLoaded?.([]);
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [planIdFilter, onLoaded]);
+
+  const rows = useMemo(() => subscribers ?? [], [subscribers]);
+
+  const openDetail = (id: string) => {
+    router.push(ROUTES.DASHBOARD.SUBSCRIPTIONS_SUBSCRIBER(id));
+  };
+
+  if (subscribers === null) {
+    return (
+      <div
+        className={
+          embedded
+            ? 'px-4 py-3 sm:px-5'
+            : 'overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]'
+        }
+      >
+        <div className="space-y-0 divide-y divide-white/5">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <div className="h-3.5 w-28 animate-pulse rounded bg-white/[0.06]" />
+              <div className="hidden h-3 w-24 animate-pulse rounded bg-white/[0.04] sm:block" />
+              <div className="ml-auto h-3 w-14 animate-pulse rounded bg-white/[0.04]" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className={
+          embedded
+            ? 'px-5 py-8 text-center sm:px-6'
+            : 'rounded-lg border border-red-400/20 bg-red-400/10 px-6 py-8 text-center'
+        }
+      >
+        <p className="text-sm text-red-200">{error}</p>
+      </div>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div
+        className={
+          embedded
+            ? 'flex flex-col items-center justify-center px-6 py-12 text-center'
+            : 'flex flex-col items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] px-6 py-14 text-center'
+        }
+      >
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900">
+          <UsersIcon className="h-6 w-6 text-zinc-600" aria-hidden />
+        </div>
+        <h3 className="text-base font-semibold text-white">
+          No subscribers yet
+        </h3>
+        <p className="mx-auto mt-1.5 max-w-sm text-sm text-zinc-500">
+          {embedded
+            ? 'People subscribed to this plan show up here.'
+            : 'When someone subscribes from your booking link, they show up here.'}
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-6 py-12 text-center">
-      <h3 className="text-lg font-semibold text-white">No subscribers yet</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-gray-400">
-        When customers subscribe from your booking link, they&apos;ll show up
-        here.
-      </p>
+    <div className={embedded ? '' : 'space-y-3'}>
+      {!embedded ? (
+        <p className="text-sm text-zinc-500">
+          {rows.length} subscriber{rows.length === 1 ? '' : 's'}
+        </p>
+      ) : null}
+
+      {/* Mobile: compact rows */}
+      <ul
+        className={`divide-y divide-white/5 md:hidden ${
+          embedded
+            ? ''
+            : 'overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]'
+        }`}
+      >
+        {rows.map(subscriber => (
+          <li key={subscriber.id}>
+            <button
+              type="button"
+              onClick={() => openDetail(subscriber.id)}
+              className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-white">
+                    {subscriber.customerName}
+                  </p>
+                  <StatusPill subscriber={subscriber} />
+                </div>
+                <p className="mt-0.5 truncate text-xs text-zinc-500">
+                  {hidePlanName
+                    ? subscriber.cadenceLabel
+                    : `${subscriber.planName} · ${subscriber.cadenceLabel}`}
+                  {' · '}
+                  {formatSubscriptionPriceCents(subscriber.amountCents)}
+                </p>
+              </div>
+              <p className="shrink-0 text-xs tabular-nums text-zinc-500">
+                {formatSubscriberBillingDate(subscriber.nextBillingAt)}
+              </p>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {/* Desktop: simple table */}
+      <div
+        className={`hidden overflow-x-auto md:block ${
+          embedded ? '' : 'rounded-lg border border-white/10 bg-white/[0.02]'
+        }`}
+      >
+        <table className="min-w-full">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400">
+                Customer
+              </th>
+              {!hidePlanName ? (
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400">
+                  Plan
+                </th>
+              ) : (
+                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400">
+                  Schedule
+                </th>
+              )}
+              <th className="px-4 py-2.5 text-right text-xs font-semibold text-gray-400">
+                Amount
+              </th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400">
+                Next bill
+              </th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-400">
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(subscriber => (
+              <tr
+                key={subscriber.id}
+                className="cursor-pointer border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.03]"
+                onClick={() => openDetail(subscriber.id)}
+              >
+                <td className="px-4 py-2.5 align-middle">
+                  <p className="text-sm font-semibold tracking-tight text-white">
+                    {subscriber.customerName}
+                  </p>
+                  {subscriber.email !== '—' ? (
+                    <p className="mt-0.5 truncate text-xs text-zinc-500">
+                      {subscriber.email}
+                    </p>
+                  ) : null}
+                </td>
+                <td className="px-4 py-2.5 align-middle text-sm text-zinc-300">
+                  {hidePlanName ? (
+                    subscriber.cadenceLabel
+                  ) : (
+                    <div>
+                      <p className="text-zinc-200">{subscriber.planName}</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        {subscriber.cadenceLabel}
+                      </p>
+                    </div>
+                  )}
+                </td>
+                <td className="px-4 py-2.5 text-right align-middle text-sm font-medium tabular-nums text-white">
+                  {formatSubscriptionPriceCents(subscriber.amountCents)}
+                </td>
+                <td className="px-4 py-2.5 align-middle text-sm whitespace-nowrap text-zinc-300">
+                  {formatSubscriberBillingDate(subscriber.nextBillingAt)}
+                </td>
+                <td className="px-4 py-2.5 align-middle">
+                  <StatusPill subscriber={subscriber} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

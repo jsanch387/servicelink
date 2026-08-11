@@ -21,6 +21,10 @@ function normalizePlan(plan: OwnerSubscriptionPlan): OwnerSubscriptionPlan {
     ...plan,
     benefits: Array.isArray(plan.benefits) ? plan.benefits : [],
     isPublished: plan.isPublished !== false,
+    activeSubscriberCount:
+      typeof plan.activeSubscriberCount === 'number'
+        ? plan.activeSubscriberCount
+        : 0,
   };
 }
 

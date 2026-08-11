@@ -3,7 +3,6 @@
 import { Button, IconButton, Modal, toast } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import { CheckIcon } from '@heroicons/react/20/solid';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import type {
@@ -15,6 +14,7 @@ import {
   formatCadencePriceSuffix,
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
+import { joinDescriptionAndBenefits } from '../utils/planDescription';
 
 interface SubscribePlanDetailsModalProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ interface SubscribePlanDetailsModalProps {
   cadenceOption: SubscriptionCadenceOption | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
   onClose: () => void;
-  /** Wire to Stripe Checkout later. */
+  /** Starts Stripe Checkout for the selected cadence. */
   onContinueToCheckout?: (
     planId: string,
     cadenceOptionId: string
@@ -62,6 +62,10 @@ export const SubscribePlanDetailsModal: React.FC<
 
   if (!plan || !cadenceOption) return null;
 
+  const description = joinDescriptionAndBenefits(
+    plan.description,
+    plan.benefits
+  ).trim();
   const price = formatSubscriptionPriceCents(
     cadenceOption.priceCents,
     bookingFlowLocale
@@ -143,20 +147,10 @@ export const SubscribePlanDetailsModal: React.FC<
             </div>
           </div>
 
-          {plan.benefits.length > 0 ? (
-            <ul className="mt-4 space-y-2 border-t border-white/[0.06] pt-4">
-              {plan.benefits.slice(0, 4).map(benefit => (
-                <li
-                  key={benefit}
-                  className="flex items-start gap-2.5 text-sm leading-snug text-zinc-300"
-                >
-                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/[0.08]">
-                    <CheckIcon className="h-2.5 w-2.5 text-white" aria-hidden />
-                  </span>
-                  <span>{benefit}</span>
-                </li>
-              ))}
-            </ul>
+          {description ? (
+            <p className="mt-4 whitespace-pre-wrap border-t border-white/[0.06] pt-4 text-sm leading-relaxed text-zinc-400">
+              {description}
+            </p>
           ) : null}
         </div>
 

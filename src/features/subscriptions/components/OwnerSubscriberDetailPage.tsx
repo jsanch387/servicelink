@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, Modal } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { Button, Modal, toast } from '@/components/shared';
+import { API_ROUTES, ROUTES } from '@/constants/routes';
 import {
   ArrowPathIcon,
   BanknotesIcon,
@@ -18,29 +18,33 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type { OwnerSubscriber } from '../types/ownerSubscriptionPlan';
 import { formatSubscriptionPriceCents } from '../utils/formatSubscriptionPrice';
 import {
-  findBoundSubscriber,
   formatSubscriberBillingDate,
+  getSubscriberStatusClassName,
+  getSubscriberStatusLabel,
+  isSubscriberCancelScheduled,
   OWNER_SUBSCRIBER_STATUS_STYLES,
 } from '../utils/ownerSubscriberDisplay';
-import {
-  applySubscriberOverrides,
-  cancelSubscriberAtPeriodEndUiMock,
-  cancelSubscriberImmediatelyUiMock,
-} from '../utils/ownerSubscribersUiMockStore';
-import { readOwnerSubscriptionsUiMock } from '../utils/ownerSubscriptionsUiMockStore';
 
 interface OwnerSubscriberDetailPageProps {
   subscriberId: string;
 }
 
-function loadSubscriber(subscriberId: string): OwnerSubscriber | null {
-  const plans = readOwnerSubscriptionsUiMock().plans;
-  const found = findBoundSubscriber(subscriberId, plans);
-  return found ? applySubscriberOverrides([found])[0] : null;
+async function fetchSubscriber(
+  subscriberId: string
+): Promise<OwnerSubscriber | null> {
+  const res = await fetch(API_ROUTES.MEMBERSHIPS_SUBSCRIBER(subscriberId), {
+    credentials: 'same-origin',
+  });
+  const json = (await res.json().catch(() => null)) as {
+    success?: boolean;
+    subscriber?: OwnerSubscriber;
+  } | null;
+  if (!res.ok || !json?.success || !json.subscriber) return null;
+  return json.subscriber;
 }
 
 function DetailRow({
@@ -54,7 +58,6 @@ function DetailRow({
   label: string;
   value: React.ReactNode;
   href?: string;
-  /** Inset hairline under the row (stays inside card padding). */
   divided?: boolean;
 }) {
   return (
@@ -113,21 +116,88 @@ export const OwnerSubscriberDetailPage: React.FC<
   const [subscriber, setSubscriber] = useState<OwnerSubscriber | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [portalNotice, setPortalNotice] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
 
-  const reload = () => {
-    setSubscriber(loadSubscriber(subscriberId));
-  };
-
-  useEffect(() => {
-    setSubscriber(loadSubscriber(subscriberId));
-    setHydrated(true);
+  const reload = useCallback(async () => {
+    const next = await fetchSubscriber(subscriberId);
+    setSubscriber(next);
   }, [subscriberId]);
 
-  const statusStyle = useMemo(
-    () =>
-      subscriber ? OWNER_SUBSCRIBER_STATUS_STYLES[subscriber.status] : null,
-    [subscriber]
-  );
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const next = await fetchSubscriber(subscriberId);
+      if (!cancelled) {
+        setSubscriber(next);
+        setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [subscriberId]);
+
+  const runSubscriberAction = async (
+    action:
+      | 'cancel_at_period_end'
+      | 'cancel_now'
+      | 'portal_link'
+      | 'portal_session'
+  ) => {
+    setBusyAction(action);
+    setPortalNotice(null);
+    try {
+      const res = await fetch(API_ROUTES.MEMBERSHIPS_SUBSCRIBER(subscriberId), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+        subscriber?: OwnerSubscriber;
+        manageUrl?: string;
+        url?: string;
+      } | null;
+
+      if (!res.ok || !json?.success) {
+        toast.error(json?.error || 'Something went wrong.');
+        return;
+      }
+
+      if (action === 'portal_link' && json.manageUrl) {
+        try {
+          await navigator.clipboard.writeText(json.manageUrl);
+          setPortalNotice('Manage / cancel link copied. Share it with them.');
+          toast.success('Link copied');
+        } catch {
+          setPortalNotice(json.manageUrl);
+        }
+        return;
+      }
+
+      if (action === 'portal_session' && json.url) {
+        window.open(json.url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      if (json.subscriber) {
+        setSubscriber(json.subscriber);
+        toast.success(
+          action === 'cancel_now'
+            ? 'Subscription canceled'
+            : 'Cancels at period end'
+        );
+      } else {
+        await reload();
+      }
+    } catch {
+      toast.error('Something went wrong.');
+    } finally {
+      setBusyAction(null);
+    }
+  };
 
   const canCancel =
     subscriber != null &&
@@ -142,7 +212,7 @@ export const OwnerSubscriberDetailPage: React.FC<
     );
   }
 
-  if (!subscriber || !statusStyle) {
+  if (!subscriber || !OWNER_SUBSCRIBER_STATUS_STYLES[subscriber.status]) {
     return (
       <main className="min-h-screen w-full flex-1 bg-[var(--dashboard-bg)] px-4 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
@@ -160,10 +230,18 @@ export const OwnerSubscriberDetailPage: React.FC<
     );
   }
 
-  const statusLabel =
-    subscriber.cancelAtPeriodEnd && subscriber.status !== 'canceled'
-      ? 'Ending'
-      : statusStyle.label;
+  const cancelScheduled = isSubscriberCancelScheduled(
+    subscriber.status,
+    subscriber.cancelAtPeriodEnd
+  );
+  const statusLabel = getSubscriberStatusLabel(
+    subscriber.status,
+    subscriber.cancelAtPeriodEnd
+  );
+  const statusClassName = getSubscriberStatusClassName(
+    subscriber.status,
+    subscriber.cancelAtPeriodEnd
+  );
 
   return (
     <main className="min-h-screen w-full flex-1 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] px-4 pt-6 pb-28 sm:px-6 sm:pt-8 sm:pb-10 lg:px-8">
@@ -195,7 +273,7 @@ export const OwnerSubscriberDetailPage: React.FC<
                 {subscriber.customerName}
               </h1>
               <span
-                className={`rounded-md border px-2 py-0.5 text-xs font-medium ${statusStyle.className}`}
+                className={`rounded-md border px-2 py-0.5 text-xs font-medium ${statusClassName}`}
               >
                 {statusLabel}
               </span>
@@ -220,11 +298,8 @@ export const OwnerSubscriberDetailPage: React.FC<
               variant="secondary"
               size="sm"
               icon={<LinkIcon className="h-4 w-4" aria-hidden />}
-              onClick={() =>
-                setPortalNotice(
-                  'Billing portal link would be sent (Stripe Customer Portal).'
-                )
-              }
+              disabled={busyAction != null}
+              onClick={() => void runSubscriberAction('portal_link')}
             >
               Billing portal
             </Button>
@@ -233,6 +308,7 @@ export const OwnerSubscriberDetailPage: React.FC<
                 type="button"
                 variant="danger"
                 size="sm"
+                disabled={busyAction != null}
                 onClick={() => setCancelOpen(true)}
               >
                 Cancel
@@ -241,10 +317,11 @@ export const OwnerSubscriberDetailPage: React.FC<
           </div>
         </div>
 
-        {subscriber.cancelAtPeriodEnd && subscriber.status !== 'canceled' ? (
+        {cancelScheduled ? (
           <div className="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 text-sm text-amber-100/90">
-            Cancels on {formatSubscriberBillingDate(subscriber.nextBillingAt)}.
-            They keep access until then.
+            Canceled — access until{' '}
+            {formatSubscriberBillingDate(subscriber.nextBillingAt)}. They won’t
+            be billed again after that.
           </div>
         ) : null}
 
@@ -335,7 +412,7 @@ export const OwnerSubscriberDetailPage: React.FC<
                 label="Status"
                 value={
                   <span
-                    className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-medium ${statusStyle.className}`}
+                    className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-medium ${statusClassName}`}
                   >
                     {statusLabel}
                   </span>
@@ -424,10 +501,12 @@ export const OwnerSubscriberDetailPage: React.FC<
               type="button"
               variant="inverse"
               fullWidth
+              disabled={busyAction != null}
               onClick={() => {
-                cancelSubscriberAtPeriodEndUiMock(subscriber.id);
-                setCancelOpen(false);
-                reload();
+                void (async () => {
+                  await runSubscriberAction('cancel_at_period_end');
+                  setCancelOpen(false);
+                })();
               }}
             >
               Cancel at period end
@@ -436,10 +515,12 @@ export const OwnerSubscriberDetailPage: React.FC<
               type="button"
               variant="danger"
               fullWidth
+              disabled={busyAction != null}
               onClick={() => {
-                cancelSubscriberImmediatelyUiMock(subscriber.id);
-                setCancelOpen(false);
-                reload();
+                void (async () => {
+                  await runSubscriberAction('cancel_now');
+                  setCancelOpen(false);
+                })();
               }}
             >
               Cancel now
@@ -448,6 +529,7 @@ export const OwnerSubscriberDetailPage: React.FC<
               type="button"
               variant="ghost"
               fullWidth
+              disabled={busyAction != null}
               onClick={() => setCancelOpen(false)}
             >
               Keep subscription

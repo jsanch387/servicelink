@@ -34,6 +34,12 @@ export type {
 } from './quote-request-owner-notification/types';
 
 export { sendMaintenanceEnrollmentConfirmedEmail } from './maintenance-enrollment-confirmed/sendMaintenanceEnrollmentConfirmedEmail';
+export { sendMembershipManageLinkEmail } from './membership-manage-link/sendMembershipManageLinkEmail';
+export type {
+  MembershipManageLinkPayload,
+  SendMembershipManageLinkResult,
+} from './membership-manage-link/types';
+export { sendMembershipSubscribeConfirmedEmail } from './membership-subscribe-confirmed/sendMembershipSubscribeConfirmedEmail';
 export type {
   MaintenanceEnrollmentConfirmedPayload,
   SendMaintenanceEnrollmentConfirmedResult,

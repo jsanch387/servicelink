@@ -5,7 +5,6 @@ import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { useServiceDescriptionClamp } from '@/features/business-profile/hooks/useServiceDescriptionClamp';
 import { SERVICE_CARD_DESCRIPTION_CLAMP_CLASS } from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import { CheckIcon } from '@heroicons/react/20/solid';
 import React, { useMemo, useState } from 'react';
 import type { CustomerSubscriptionPlan } from '../types/customerSubscriptionPlan';
 import {
@@ -14,6 +13,7 @@ import {
   formatSubscriptionPriceCents,
   getDefaultCadenceOption,
 } from '../utils/formatSubscriptionPrice';
+import { joinDescriptionAndBenefits } from '../utils/planDescription';
 
 interface SubscriptionPlanCardProps {
   plan: CustomerSubscriptionPlan;
@@ -37,7 +37,10 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
   );
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const description = plan.description ?? '';
+  const description = joinDescriptionAndBenefits(
+    plan.description,
+    plan.benefits
+  );
   const { ref: descriptionClampRef, isTruncatable } =
     useServiceDescriptionClamp(description, isDescriptionExpanded);
   const showDescriptionToggle = isTruncatable || isDescriptionExpanded;
@@ -67,8 +70,6 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
     ? formatCadencePriceSuffix(selectedOption, bookingFlowLocale)
     : '';
 
-  const hasBenefits = plan.benefits.length > 0;
-
   return (
     <GlassCard
       blurColor="bg-zinc-500"
@@ -85,7 +86,7 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
           className={`flex items-start justify-between gap-3 ${
             showCadencePicker
               ? 'mb-1.5'
-              : description || plan.isPopular
+              : description.trim() || plan.isPopular
                 ? 'mb-4'
                 : preview
                   ? ''
@@ -115,7 +116,7 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
         </div>
 
         {showCadencePicker ? (
-          <div className={description || hasBenefits || !preview ? 'mb-4' : ''}>
+          <div className={description.trim() || !preview ? 'mb-4' : ''}>
             <p className="mb-2 text-xs font-medium text-zinc-500">
               {ui.subscriptions.cadencePickerLabel}
             </p>
@@ -131,7 +132,7 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
         ) : null}
 
         {description.trim() ? (
-          <div className={hasBenefits ? 'mb-4' : preview ? '' : 'mb-3'}>
+          <div className={preview ? '' : 'mb-3'}>
             <div
               ref={descriptionClampRef}
               className={`whitespace-pre-wrap text-sm leading-relaxed text-zinc-500 ${
@@ -155,22 +156,6 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
               </button>
             ) : null}
           </div>
-        ) : null}
-
-        {hasBenefits ? (
-          <ul className={`space-y-2.5 ${preview ? '' : 'mb-3'}`}>
-            {plan.benefits.map(benefit => (
-              <li
-                key={benefit}
-                className="flex items-start gap-2.5 text-sm leading-snug text-zinc-300"
-              >
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/[0.08]">
-                  <CheckIcon className="h-2.5 w-2.5 text-white" aria-hidden />
-                </span>
-                <span>{benefit}</span>
-              </li>
-            ))}
-          </ul>
         ) : null}
 
         {preview ? null : (

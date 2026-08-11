@@ -1,14 +1,14 @@
-import type { NextRequest } from 'next/server';
-
 /**
  * Public origin for Stripe redirect URLs (Checkout success/cancel, Connect return/refresh).
  * Prefer forwarded headers when behind a proxy; fall back to env / localhost.
  */
-export function getAppBaseUrl(request: NextRequest): string {
+export function getAppBaseUrl(request?: Request | null): string {
   const host =
-    request.headers.get('x-forwarded-host') || request.headers.get('host');
+    request?.headers.get('x-forwarded-host') ||
+    request?.headers.get('host') ||
+    null;
   const proto =
-    request.headers.get('x-forwarded-proto') ||
+    request?.headers.get('x-forwarded-proto') ||
     (process.env.NODE_ENV === 'development' ? 'http' : 'https');
   if (host) {
     return `${proto}://${host}`;

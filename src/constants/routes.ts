@@ -149,6 +149,15 @@ export const API_ROUTES = {
   /** Owner: update a membership plan. */
   MEMBERSHIPS_PLAN: (planId: string) =>
     `/api/memberships/plans/${encodeURIComponent(planId.trim())}`,
+  /** Owner: list customer memberships (subscribers). */
+  MEMBERSHIPS_SUBSCRIBERS: '/api/memberships/subscribers',
+  /** Owner: one subscriber — get, cancel, portal link. */
+  MEMBERSHIPS_SUBSCRIBER: (subscriberId: string) =>
+    `/api/memberships/subscribers/${encodeURIComponent(subscriberId.trim())}`,
+  /** Public: signed token → Stripe Connect Customer Portal (manage / cancel). */
+  PUBLIC_MEMBERSHIPS_PORTAL: '/api/public/memberships/portal',
+  /** Public: email a manage/cancel link for an existing membership. */
+  PUBLIC_MEMBERSHIPS_MANAGE_LINK: '/api/public/memberships/manage-link',
   /** Owner: toggle `accept_quote_req` on current business. */
   BUSINESS_PROFILE_ACCEPT_QUOTE_REQUESTS:
     '/api/business-profile/accept-quote-requests',
@@ -164,6 +173,8 @@ export const API_ROUTES = {
     `/api/quotes/${encodeURIComponent(quoteId.trim())}`,
   /** Public: start Stripe Checkout for a booking payment (deposit or full). */
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
+  /** Public: start Stripe Checkout (subscription) for a membership plan price. */
+  PUBLIC_MEMBERSHIPS_CHECKOUT: '/api/public/memberships/checkout',
   /** Public: fetch booking payment summary after successful checkout return. */
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
   /** Public: returning-customer saved vehicles/pets for the book flow. */

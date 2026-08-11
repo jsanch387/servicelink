@@ -5,23 +5,34 @@
 
 import { assertMembershipsReady } from '@/features/subscriptions/server/assertMembershipsReady';
 import { deleteMembershipPlanForBusiness } from '@/features/subscriptions/server/deleteMembershipPlan';
+import {
+  getMembershipsRequestId,
+  logMemberships,
+  membershipsJsonResponse,
+  shortIdForLog,
+} from '@/features/subscriptions/server/membershipsTransactionLog';
 import { parseMembershipPlanWriteBody } from '@/features/subscriptions/server/parseMembershipPlanWriteBody';
 import { updateMembershipPlanForBusiness } from '@/features/subscriptions/server/updateMembershipPlan';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
-import { NextResponse } from 'next/server';
 
 interface RouteContext {
   params: Promise<{ planId: string }>;
 }
 
-async function requireMembershipsOwner(context: RouteContext) {
+async function requireMembershipsOwner(
+  request: Request,
+  context: RouteContext
+) {
+  const requestId = getMembershipsRequestId(request);
   const { planId: rawPlanId } = await context.params;
   const planId = rawPlanId?.trim() ?? '';
   if (!planId) {
     return {
       ok: false as const,
-      response: NextResponse.json(
+      requestId,
+      response: membershipsJsonResponse(
+        requestId,
         { success: false, error: 'Plan id is required.' },
         { status: 400 }
       ),
@@ -37,7 +48,9 @@ async function requireMembershipsOwner(context: RouteContext) {
   if (authError || !user?.id) {
     return {
       ok: false as const,
-      response: NextResponse.json(
+      requestId,
+      response: membershipsJsonResponse(
+        requestId,
         { success: false, error: 'Authentication required' },
         { status: 401 }
       ),
@@ -48,7 +61,9 @@ async function requireMembershipsOwner(context: RouteContext) {
   if (!resolved.ok) {
     return {
       ok: false as const,
-      response: NextResponse.json(
+      requestId,
+      response: membershipsJsonResponse(
+        requestId,
         { success: false, error: resolved.error },
         { status: resolved.status }
       ),
@@ -62,9 +77,16 @@ async function requireMembershipsOwner(context: RouteContext) {
     user.email
   );
   if (!ready.ok) {
+    logMemberships(requestId, 'warn', 'write.gate_blocked', {
+      businessId: shortIdForLog(resolved.businessId),
+      planId: shortIdForLog(planId),
+      gate: ready.gate,
+    });
     return {
       ok: false as const,
-      response: NextResponse.json(
+      requestId,
+      response: membershipsJsonResponse(
+        requestId,
         { success: false, error: ready.error, gate: ready.gate },
         { status: ready.status }
       ),
@@ -73,6 +95,7 @@ async function requireMembershipsOwner(context: RouteContext) {
 
   return {
     ok: true as const,
+    requestId,
     supabase,
     businessId: resolved.businessId,
     planId,
@@ -80,14 +103,15 @@ async function requireMembershipsOwner(context: RouteContext) {
 }
 
 export async function PATCH(req: Request, context: RouteContext) {
+  const auth = await requireMembershipsOwner(req, context);
   try {
-    const auth = await requireMembershipsOwner(context);
     if (!auth.ok) return auth.response;
 
     const raw: unknown = await req.json().catch(() => null);
     const parsed = parseMembershipPlanWriteBody(raw);
     if (!parsed.ok) {
-      return NextResponse.json(
+      return membershipsJsonResponse(
+        auth.requestId,
         { success: false, error: parsed.error },
         { status: 400 }
       );
@@ -97,36 +121,49 @@ export async function PATCH(req: Request, context: RouteContext) {
       auth.supabase,
       auth.businessId,
       auth.planId,
-      parsed.value
+      parsed.value,
+      auth.requestId
     );
 
     if (!result.ok) {
       const status = result.error === 'Plan not found.' ? 404 : 400;
-      return NextResponse.json(
+      return membershipsJsonResponse(
+        auth.requestId,
         { success: false, error: result.error },
         { status }
       );
     }
 
-    return NextResponse.json({ success: true, plan: result.plan });
+    return membershipsJsonResponse(auth.requestId, {
+      success: true,
+      plan: result.plan,
+    });
   } catch (error) {
-    console.error('[memberships/plans PATCH]', error);
-    return NextResponse.json(
+    const requestId =
+      auth && 'requestId' in auth
+        ? auth.requestId
+        : getMembershipsRequestId(req);
+    logMemberships(requestId, 'error', 'update.unhandled', {
+      reason: error instanceof Error ? error.message.slice(0, 120) : 'unknown',
+    });
+    return membershipsJsonResponse(
+      requestId,
       { success: false, error: 'Failed to update plan' },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(_req: Request, context: RouteContext) {
+export async function DELETE(req: Request, context: RouteContext) {
+  const auth = await requireMembershipsOwner(req, context);
   try {
-    const auth = await requireMembershipsOwner(context);
     if (!auth.ok) return auth.response;
 
     const result = await deleteMembershipPlanForBusiness(
       auth.supabase,
       auth.businessId,
-      auth.planId
+      auth.planId,
+      auth.requestId
     );
 
     if (!result.ok) {
@@ -136,19 +173,27 @@ export async function DELETE(_req: Request, context: RouteContext) {
           : result.code === 'has_subscribers'
             ? 409
             : 400;
-      return NextResponse.json(
+      return membershipsJsonResponse(
+        auth.requestId,
         { success: false, error: result.error, code: result.code },
         { status }
       );
     }
 
-    return NextResponse.json({
+    return membershipsJsonResponse(auth.requestId, {
       success: true,
       activeSubscriberCount: result.activeSubscriberCount,
     });
   } catch (error) {
-    console.error('[memberships/plans DELETE]', error);
-    return NextResponse.json(
+    const requestId =
+      auth && 'requestId' in auth
+        ? auth.requestId
+        : getMembershipsRequestId(req);
+    logMemberships(requestId, 'error', 'delete.unhandled', {
+      reason: error instanceof Error ? error.message.slice(0, 120) : 'unknown',
+    });
+    return membershipsJsonResponse(
+      requestId,
       { success: false, error: 'Failed to delete plan' },
       { status: 500 }
     );

@@ -80,6 +80,7 @@ import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBo
 import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQuery';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
+import { assertPublicBookingsRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -145,6 +146,13 @@ export async function POST(request: NextRequest) {
         400
       );
     }
+
+    const rateLimited = await assertPublicBookingsRateLimits(
+      request,
+      body.businessSlug.trim()
+    );
+    if (rateLimited) return rateLimited;
+
     if (!parsedJobs) {
       if (!body.serviceName?.trim()) {
         return publicBookingJson(

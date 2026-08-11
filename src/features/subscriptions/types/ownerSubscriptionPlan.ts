@@ -17,11 +17,20 @@ export interface OwnerSubscriptionPlan {
    * no owner publish toggle in the product.
    */
   isPublished: boolean;
+  /** Active subscribers on this plan (live from customer_memberships). */
+  activeSubscriberCount: number;
 }
 
-export type OwnerSubscriberStatus = 'active' | 'past_due' | 'canceled';
+export type OwnerSubscriberStatus =
+  | 'active'
+  | 'trialing'
+  | 'past_due'
+  | 'unpaid'
+  | 'paused'
+  | 'canceled'
+  | 'incomplete';
 
-/** Mock customer subscriber row for owner UI. */
+/** Customer subscriber row for owner UI (from customer_memberships). */
 export interface OwnerSubscriber {
   id: string;
   customerName: string;

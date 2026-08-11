@@ -44,7 +44,8 @@ export {
 
 export function mapMembershipPlanToOwner(
   plan: PlanRow,
-  prices: PriceRow[]
+  prices: PriceRow[],
+  activeSubscriberCount = 0
 ): OwnerSubscriptionPlan {
   return {
     id: plan.id,
@@ -54,6 +55,7 @@ export function mapMembershipPlanToOwner(
     cadenceOptions: mapCadenceOptions(prices),
     createdAt: plan.created_at,
     isPublished: plan.is_published,
+    activeSubscriberCount,
   };
 }
 

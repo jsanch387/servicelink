@@ -24,12 +24,12 @@ export function sanitizeVehicleYearInput(value: string): string {
   return value.replace(/\D/g, '').slice(0, 4);
 }
 
-/** Vehicle make/model: letters and common punctuation only (no digits). */
+/** Vehicle make/model: length-capped only (digits allowed — Ram 2500, F-150, 911). */
 export function sanitizeVehicleTextInput(
   value: string,
   maxLen: number
 ): string {
-  return value.replace(/[0-9]/g, '').slice(0, maxLen);
+  return value.slice(0, maxLen);
 }
 
 export function isValidVehicleYearFourDigit(year: string): boolean {

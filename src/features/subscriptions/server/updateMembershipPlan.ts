@@ -1,11 +1,24 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
+import { formatCadenceOptionLabel } from '../utils/formatSubscriptionPrice';
 import type { CreateMembershipPlanInput } from './createMembershipPlan';
+import { countActivePriceSubscribers } from './countActivePlanSubscribers';
+import { getBusinessStripeConnectAccountId } from './getBusinessStripeConnectAccountId';
 import {
   mapMembershipPlanToOwner,
   splitDescriptionAndBenefits,
 } from './mapMembershipPlanRow';
+import {
+  logMemberships,
+  shortIdForLog,
+  shortStripeIdForLog,
+  supabaseErrorForLogs,
+} from './membershipsTransactionLog';
+import {
+  archiveRemovedMembershipStripePrices,
+  syncMembershipPlanStripeCatalog,
+} from './syncMembershipPlanStripeCatalog';
 
 type PlanRow = Database['public']['Tables']['membership_plans']['Row'];
 type PriceRow = Database['public']['Tables']['membership_plan_prices']['Row'];
@@ -23,7 +36,8 @@ export async function updateMembershipPlanForBusiness(
   supabase: SupabaseClient<Database>,
   businessId: string,
   planId: string,
-  input: CreateMembershipPlanInput
+  input: CreateMembershipPlanInput,
+  requestId?: string
 ): Promise<
   { ok: true; plan: OwnerSubscriptionPlan } | { ok: false; error: string }
 > {
@@ -33,6 +47,16 @@ export async function updateMembershipPlanForBusiness(
   }
   if (!input.cadenceOptions.length) {
     return { ok: false, error: 'Add at least one pricing option.' };
+  }
+
+  const connect = await getBusinessStripeConnectAccountId(supabase, businessId);
+  if (!connect.ok) {
+    logMemberships(requestId, 'warn', 'update.connect_missing', {
+      businessId: shortIdForLog(businessId),
+      planId: shortIdForLog(planId),
+      reason: connect.error.slice(0, 120),
+    });
+    return { ok: false, error: connect.error };
   }
 
   const { data: existingPlan, error: existingError } = await supabase
@@ -48,6 +72,61 @@ export async function updateMembershipPlanForBusiness(
   }
   if (!existingPlan) {
     return { ok: false, error: 'Plan not found.' };
+  }
+
+  const { data: priceData, error: pricesLoadError } = await supabase
+    .from('membership_plan_prices')
+    .select('*')
+    .eq('plan_id', planId)
+    .eq('business_id', businessId);
+
+  if (pricesLoadError) {
+    return { ok: false, error: pricesLoadError.message };
+  }
+
+  const existingPrices = (priceData ?? []) as PriceRow[];
+  const existingByKey = new Map(
+    existingPrices.map(price => [
+      cadenceKey(price.interval_unit, price.interval_count),
+      price,
+    ])
+  );
+  const nextKeys = new Set(
+    input.cadenceOptions.map(option =>
+      cadenceKey(option.intervalUnit, option.intervalCount)
+    )
+  );
+
+  const toDelete = existingPrices.filter(
+    price =>
+      !nextKeys.has(cadenceKey(price.interval_unit, price.interval_count))
+  );
+
+  // Block removing a cadence that still has active subscribers.
+  for (const price of toDelete) {
+    const activeOnPrice = await countActivePriceSubscribers(
+      supabase,
+      businessId,
+      price.id
+    );
+    if (activeOnPrice > 0) {
+      const label = formatCadenceOptionLabel({
+        intervalUnit: price.interval_unit as 'week' | 'month' | 'year',
+        intervalCount: price.interval_count,
+      });
+      const reason =
+        activeOnPrice === 1
+          ? `Can't remove ${label} — 1 customer is still subscribed to that option.`
+          : `Can't remove ${label} — ${activeOnPrice} customers are still subscribed to that option.`;
+      logMemberships(requestId, 'warn', 'update.cadence_remove_blocked', {
+        businessId: shortIdForLog(businessId),
+        planId: shortIdForLog(planId),
+        priceId: shortIdForLog(price.id),
+        activeOnPrice,
+        reason: reason.slice(0, 120),
+      });
+      return { ok: false, error: reason };
+    }
   }
 
   const { description, benefits } = splitDescriptionAndBenefits(
@@ -77,29 +156,6 @@ export async function updateMembershipPlanForBusiness(
       error: planError?.message ?? 'Could not update plan.',
     };
   }
-
-  const { data: priceData, error: pricesLoadError } = await supabase
-    .from('membership_plan_prices')
-    .select('*')
-    .eq('plan_id', planId)
-    .eq('business_id', businessId);
-
-  if (pricesLoadError) {
-    return { ok: false, error: pricesLoadError.message };
-  }
-
-  const existingPrices = (priceData ?? []) as PriceRow[];
-  const existingByKey = new Map(
-    existingPrices.map(price => [
-      cadenceKey(price.interval_unit, price.interval_count),
-      price,
-    ])
-  );
-  const nextKeys = new Set(
-    input.cadenceOptions.map(option =>
-      cadenceKey(option.intervalUnit, option.intervalCount)
-    )
-  );
 
   const updatedPrices: PriceRow[] = [];
 
@@ -159,12 +215,13 @@ export async function updateMembershipPlanForBusiness(
     }
   }
 
-  const toDelete = existingPrices.filter(
-    price =>
-      !nextKeys.has(cadenceKey(price.interval_unit, price.interval_count))
-  );
-
   if (toDelete.length > 0) {
+    await archiveRemovedMembershipStripePrices(
+      connect.stripeAccountId,
+      toDelete,
+      requestId
+    );
+
     const { error: deleteError } = await supabase
       .from('membership_plan_prices')
       .delete()
@@ -175,12 +232,36 @@ export async function updateMembershipPlanForBusiness(
       .eq('business_id', businessId);
 
     if (deleteError) {
+      logMemberships(requestId, 'error', 'update.cadence_delete_failed', {
+        businessId: shortIdForLog(businessId),
+        planId: shortIdForLog(planId),
+        removedCount: toDelete.length,
+        ...supabaseErrorForLogs(deleteError),
+      });
       return { ok: false, error: deleteError.message };
     }
   }
 
+  const sync = await syncMembershipPlanStripeCatalog(
+    supabase,
+    connect.stripeAccountId,
+    planRow,
+    updatedPrices,
+    requestId
+  );
+
+  if (!sync.ok) {
+    logMemberships(requestId, 'error', 'update.stripe_sync_failed', {
+      businessId: shortIdForLog(businessId),
+      planId: shortIdForLog(planId),
+      stripeAccountId: shortStripeIdForLog(connect.stripeAccountId),
+      reason: sync.error.slice(0, 120),
+    });
+    return { ok: false, error: sync.error };
+  }
+
   return {
     ok: true,
-    plan: mapMembershipPlanToOwner(planRow, updatedPrices),
+    plan: mapMembershipPlanToOwner(sync.plan, sync.prices),
   };
 }

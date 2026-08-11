@@ -50,19 +50,30 @@ Values are lightly **sanitized** for use as key material only. **Misconfigured r
 
 Defined in `publicApiRateLimit.ts` (tune there if product needs change).
 
-| Route                            | Check                        | Limit | Window     |
-| -------------------------------- | ---------------------------- | ----- | ---------- |
-| `POST /api/public/quote-request` | Per IP                       | 45    | 1 hour     |
-| `POST /api/public/quote-request` | Per IP + slug                | 10    | 1 hour     |
-| `POST /api/analytics/track-view` | Per IP                       | 400   | 1 hour     |
-| `POST /api/analytics/track-view` | Per IP + slug                | 120   | 15 minutes |
-| `GET /api/public/profile/[slug]` | Per IP                       | 360   | 1 hour     |
-| `GET /api/public/profile/[slug]` | Per IP + slug                | 150   | 15 minutes |
-| `GET /api/calendar/feed/[token]` | Per IP                       | 300   | 1 hour     |
-| `GET /api/calendar/feed/[token]` | Per IP + token (prefix)      | 120   | 15 minutes |
-| `GET /api/calendar/feed/link`    | Per IP (probe, all requests) | 180   | 1 hour     |
-| `GET /api/calendar/feed/link`    | Per user (after auth)        | 45    | 1 hour     |
-| `GET /api/calendar/feed/link`    | Per IP (after auth)          | 120   | 1 hour     |
+| Route                                      | Check                        | Limit | Window     |
+| ------------------------------------------ | ---------------------------- | ----- | ---------- |
+| `POST /api/public/quote-request`           | Per IP                       | 45    | 1 hour     |
+| `POST /api/public/quote-request`           | Per IP + slug                | 10    | 1 hour     |
+| `POST /api/analytics/track-view`           | Per IP                       | 400   | 1 hour     |
+| `POST /api/analytics/track-view`           | Per IP + slug                | 120   | 15 minutes |
+| `GET /api/public/profile/[slug]`           | Per IP                       | 360   | 1 hour     |
+| `GET /api/public/profile/[slug]`           | Per IP + slug                | 150   | 15 minutes |
+| `GET /api/calendar/feed/[token]`           | Per IP                       | 300   | 1 hour     |
+| `GET /api/calendar/feed/[token]`           | Per IP + token (prefix)      | 120   | 15 minutes |
+| `GET /api/calendar/feed/link`              | Per IP (probe, all requests) | 180   | 1 hour     |
+| `GET /api/calendar/feed/link`              | Per user (after auth)        | 45    | 1 hour     |
+| `GET /api/calendar/feed/link`              | Per IP (after auth)          | 120   | 1 hour     |
+| `GET /api/public/memberships/portal`       | Per IP                       | 30    | 1 hour     |
+| `GET /api/public/memberships/portal`       | Per IP + token prefix        | 12    | 1 hour     |
+| `POST /api/public/memberships/checkout`    | Per IP                       | 40    | 1 hour     |
+| `POST /api/public/memberships/checkout`    | Per IP + slug                | 12    | 1 hour     |
+| `POST /api/public/bookings`                | Per IP                       | 40    | 1 hour     |
+| `POST /api/public/bookings`                | Per IP + slug                | 15    | 1 hour     |
+| `POST /api/public/memberships/manage-link` | Per IP                       | 8     | 1 hour     |
+| `POST /api/public/memberships/manage-link` | Per email                    | 3     | 1 hour     |
+| `POST /api/public/memberships/manage-link` | Per IP + slug                | 6     | 1 hour     |
+
+Owner SMS sends (`assertOwnerSmsSendRateLimits`): **30/user/hour**, **60/IP/hour**.
 
 ### Additional hardening (quote POST)
 
@@ -101,20 +112,24 @@ Create a Redis database in the [Upstash console](https://console.upstash.com/), 
 
 ### Call sites
 
-| API route                                | What runs                                                                                                                  |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/public/quote-request/route.ts`  | Body size (if `Content-Length` present) → parse/validate → `assertPublicQuoteRequestRateLimits` → business rules → insert. |
-| `app/api/analytics/track-view/route.ts`  | Slug validation → `assertPublicTrackViewRateLimits` → DB update.                                                           |
-| `app/api/public/profile/[slug]/route.ts` | `assertPublicProfileGetRateLimits` → Supabase reads.                                                                       |
-| `app/api/calendar/feed/[token]/route.ts` | `assertCalendarFeedIcsRateLimits` → verify token → DB → ICS.                                                               |
-| `app/api/calendar/feed/link/route.ts`    | `assertCalendarFeedLinkProbeRateLimits` → Supabase auth → `assertCalendarFeedLinkRateLimits` → JSON.                       |
+| API route                                         | What runs                                                                                                                  |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/public/quote-request/route.ts`           | Body size (if `Content-Length` present) → parse/validate → `assertPublicQuoteRequestRateLimits` → business rules → insert. |
+| `app/api/analytics/track-view/route.ts`           | Slug validation → `assertPublicTrackViewRateLimits` → DB update.                                                           |
+| `app/api/public/profile/[slug]/route.ts`          | `assertPublicProfileGetRateLimits` → Supabase reads.                                                                       |
+| `app/api/calendar/feed/[token]/route.ts`          | `assertCalendarFeedIcsRateLimits` → verify token → DB → ICS.                                                               |
+| `app/api/calendar/feed/link/route.ts`             | `assertCalendarFeedLinkProbeRateLimits` → Supabase auth → `assertCalendarFeedLinkRateLimits` → JSON.                       |
+| `app/api/public/memberships/portal/route.ts`      | `assertPublicMembershipPortalRateLimits` → verify token → Stripe portal.                                                   |
+| `app/api/public/memberships/checkout/route.ts`    | `assertPublicMembershipCheckoutRateLimits` → Checkout session.                                                             |
+| `app/api/public/memberships/manage-link/route.ts` | `assertPublicMembershipManageLinkRateLimits` → optional Resend manage email.                                               |
+| `app/api/public/bookings/route.ts`                | `assertPublicBookingsRateLimits` → booking create (+ optional SMS/email).                                                  |
 
 ---
 
 ## What is not rate limited here
 
 - **SSR public profile page** (`app/[business-slug]/page.tsx`) — served as HTML; caching/CDN is the primary lever. Abuse of _writes_ and _analytics_ is what this stack targets.
-- **Other public POST routes** (e.g. `POST /api/public/bookings`) — not part of this module yet; add similar helpers if needed.
+- **Stripe webhooks** — authenticated by Stripe signatures; SMS/email there use dedupe / idempotency keys instead of IP rate limits.
 
 ---
 

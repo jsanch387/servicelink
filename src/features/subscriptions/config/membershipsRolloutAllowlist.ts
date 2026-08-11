@@ -7,9 +7,14 @@
  * - Empty list + OPEN_TO_ALL false: feature hidden for everyone.
  *
  * Add lowercase emails as you expand the beta.
+ * Keep this tight until live BA testing looks good.
  */
 export const MEMBERSHIPS_ROLLOUT_OWNER_EMAILS: readonly string[] = [
+  // Primary (prod soft-launch testing)
   'jesuss387@gmail.com',
+  // Existing test accounts
+  'ask.mento@gmail.com',
+  'urbanink.help@gmail.com',
 ];
 
 /** Set true to open memberships to all eligible owners (ignores the email list). */

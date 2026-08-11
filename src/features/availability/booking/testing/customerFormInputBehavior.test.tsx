@@ -129,7 +129,7 @@ describe('CustomerForm input constraints (public booking details)', () => {
     expect(yearInput.value).toHaveLength(4);
   });
 
-  it('vehicle make and model reject digits as the user types', async () => {
+  it('vehicle make and model keep digits as the user types', async () => {
     const user = userEvent.setup();
     render(
       <CustomerFormHarness
@@ -145,10 +145,10 @@ describe('CustomerForm input constraints (public booking details)', () => {
     );
     const makeInput = screen.getByPlaceholderText('Toyota') as HTMLInputElement;
     const modelInput = screen.getByPlaceholderText('Camry') as HTMLInputElement;
-    await user.type(makeInput, 'Toy0ta');
-    await user.type(modelInput, 'Camry123');
-    expect(makeInput.value).toBe('Toyta');
-    expect(modelInput.value).toBe('Camry');
+    await user.type(makeInput, 'Ram');
+    await user.type(modelInput, '2500');
+    expect(makeInput.value).toBe('Ram');
+    expect(modelInput.value).toBe('2500');
   });
 
   it('truncates street address to max length on input', () => {

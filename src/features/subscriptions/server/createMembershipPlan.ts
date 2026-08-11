@@ -2,10 +2,25 @@ import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SubscriptionCadenceOption } from '../types/customerSubscriptionPlan';
 import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
+import { getBusinessStripeConnectAccountId } from './getBusinessStripeConnectAccountId';
 import {
   mapMembershipPlanToOwner,
   splitDescriptionAndBenefits,
 } from './mapMembershipPlanRow';
+import {
+  logMemberships,
+  shortIdForLog,
+  shortStripeIdForLog,
+  supabaseErrorForLogs,
+} from './membershipsTransactionLog';
+import {
+  membershipPlanPricesOf,
+  membershipPlansOf,
+} from './membershipTablesQuery';
+import { syncMembershipPlanStripeCatalog } from './syncMembershipPlanStripeCatalog';
+
+type PlanRow = Database['public']['Tables']['membership_plans']['Row'];
+type PriceRow = Database['public']['Tables']['membership_plan_prices']['Row'];
 
 export type CreateMembershipPlanInput = {
   name: string;
@@ -22,7 +37,8 @@ export type CreateMembershipPlanInput = {
 export async function createMembershipPlanForBusiness(
   supabase: SupabaseClient<Database>,
   businessId: string,
-  input: CreateMembershipPlanInput
+  input: CreateMembershipPlanInput,
+  requestId?: string
 ): Promise<
   { ok: true; plan: OwnerSubscriptionPlan } | { ok: false; error: string }
 > {
@@ -34,12 +50,20 @@ export async function createMembershipPlanForBusiness(
     return { ok: false, error: 'Add at least one pricing option.' };
   }
 
+  const connect = await getBusinessStripeConnectAccountId(supabase, businessId);
+  if (!connect.ok) {
+    logMemberships(requestId, 'warn', 'create.connect_missing', {
+      businessId: shortIdForLog(businessId),
+      reason: connect.error.slice(0, 120),
+    });
+    return { ok: false, error: connect.error };
+  }
+
   const { description, benefits } = splitDescriptionAndBenefits(
     input.description
   );
 
-  const { data: planRow, error: planError } = await supabase
-    .from('membership_plans')
+  const { data: planData, error: planError } = await membershipPlansOf(supabase)
     .insert({
       business_id: businessId,
       name,
@@ -52,7 +76,12 @@ export async function createMembershipPlanForBusiness(
     .select('*')
     .single();
 
+  const planRow = planData as PlanRow | null;
   if (planError || !planRow) {
+    logMemberships(requestId, 'error', 'create.plan_insert_failed', {
+      businessId: shortIdForLog(businessId),
+      ...supabaseErrorForLogs(planError),
+    });
     return {
       ok: false,
       error: planError?.message ?? 'Could not create plan.',
@@ -69,18 +98,46 @@ export async function createMembershipPlanForBusiness(
     is_default: index === 0,
   }));
 
-  const { data: priceRows, error: priceError } = await supabase
-    .from('membership_plan_prices')
+  const { data: priceData, error: priceError } = await membershipPlanPricesOf(
+    supabase
+  )
     .insert(priceInserts)
     .select('*');
 
+  const priceRows = (priceData ?? []) as PriceRow[];
   if (priceError) {
-    await supabase.from('membership_plans').delete().eq('id', planRow.id);
+    await membershipPlansOf(supabase).delete().eq('id', planRow.id);
+    logMemberships(requestId, 'error', 'create.prices_insert_failed', {
+      businessId: shortIdForLog(businessId),
+      planId: shortIdForLog(planRow.id),
+      rolledBack: true,
+      ...supabaseErrorForLogs(priceError),
+    });
     return { ok: false, error: priceError.message };
+  }
+
+  const sync = await syncMembershipPlanStripeCatalog(
+    supabase,
+    connect.stripeAccountId,
+    planRow,
+    priceRows,
+    requestId
+  );
+
+  if (!sync.ok) {
+    await membershipPlansOf(supabase).delete().eq('id', planRow.id);
+    logMemberships(requestId, 'error', 'create.stripe_sync_failed', {
+      businessId: shortIdForLog(businessId),
+      planId: shortIdForLog(planRow.id),
+      stripeAccountId: shortStripeIdForLog(connect.stripeAccountId),
+      rolledBack: true,
+      reason: sync.error.slice(0, 120),
+    });
+    return { ok: false, error: sync.error };
   }
 
   return {
     ok: true,
-    plan: mapMembershipPlanToOwner(planRow, priceRows ?? []),
+    plan: mapMembershipPlanToOwner(sync.plan, sync.prices),
   };
 }

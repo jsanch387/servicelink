@@ -348,6 +348,29 @@ export const publicBookingUiEs: PublicBookingUi = {
     ],
     continueToCheckoutCta: 'Continuar',
     checkoutComingSoon: 'El pago estará disponible pronto.',
+    checkoutStartFailed: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
+    checkoutReturnSuccess: 'Pago recibido — gracias por suscribirte.',
+    checkoutReturnCancel:
+      'Pago cancelado. Puedes intentarlo de nuevo cuando quieras.',
+    successTitle: 'Ya estás suscrito',
+    successSubtitle:
+      'Todo listo. Enviaremos el recibo al correo que usaste al pagar.',
+    successSubtitleWithBusiness: businessName =>
+      `Todo listo con ${businessName}. Enviaremos el recibo al correo que usaste al pagar.`,
+    successDoneCta: 'Listo',
+    manageLinkCta: '¿Ya estás suscrito? Administra tu plan',
+    manageModalTitle: 'Administra tu plan',
+    manageModalDescription:
+      'Ingresa el correo que usaste al pagar. Si encontramos una suscripción, te enviaremos un enlace para administrarla o cancelarla.',
+    manageEmailLabel: 'Correo',
+    manageEmailPlaceholder: 'tu@email.com',
+    manageSendLinkCta: 'Envíame un enlace',
+    manageEmailRequired: 'Ingresa el correo que usaste al pagar.',
+    manageSendSuccess:
+      'Si encontramos una suscripción para ese correo, te enviaremos un enlace en breve.',
+    manageSendFailed: 'No se pudo enviar el enlace ahora. Inténtalo de nuevo.',
+    manageRateLimited:
+      'Demasiados intentos. Vuelve a intentarlo en unos minutos.',
     cadenceSuffix: {
       week: '/sem',
       weeks: count => `/${count}sem`,

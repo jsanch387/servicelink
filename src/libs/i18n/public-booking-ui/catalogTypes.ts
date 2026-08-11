@@ -318,6 +318,24 @@ export type PublicBookingUi = {
     howItWorksSteps: readonly [string, string, string];
     continueToCheckoutCta: string;
     checkoutComingSoon: string;
+    checkoutStartFailed: string;
+    checkoutReturnSuccess: string;
+    checkoutReturnCancel: string;
+    successTitle: string;
+    successSubtitle: string;
+    successSubtitleWithBusiness: (businessName: string) => string;
+    successDoneCta: string;
+    /** Footer link under plan cards — open manage flow. */
+    manageLinkCta: string;
+    manageModalTitle: string;
+    manageModalDescription: string;
+    manageEmailLabel: string;
+    manageEmailPlaceholder: string;
+    manageSendLinkCta: string;
+    manageEmailRequired: string;
+    manageSendSuccess: string;
+    manageSendFailed: string;
+    manageRateLimited: string;
     /** Short price suffix, e.g. "/mo". */
     cadenceSuffix: {
       week: string;
