@@ -23,7 +23,15 @@ import { usePathname } from 'next/navigation';
 import React from 'react';
 import type { DashboardSidebarProps } from '../types/dashboard';
 
-const allNavigationItems = [
+type DashboardNavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  requiresOnboarding: boolean;
+  activePathPrefix?: string;
+};
+
+const allNavigationItems: DashboardNavItem[] = [
   {
     name: 'Dashboard',
     href: ROUTES.DASHBOARD.MAIN,
@@ -102,7 +110,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 }) => {
   const pathname = usePathname();
 
-  const membershipsNavItem = {
+  const membershipsNavItem: DashboardNavItem = {
     name: 'Subscriptions',
     href: ROUTES.DASHBOARD.SUBSCRIPTIONS,
     icon: ArrowPathRoundedSquareIcon,
