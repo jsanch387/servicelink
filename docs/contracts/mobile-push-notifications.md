@@ -114,22 +114,23 @@ These are sent automatically when business events occur. `reference_id` is alway
 
 Used when ops sends a **feature announcement** via `POST /api/internal/push/broadcast`. There is **no entity UUID** — `reference_id` is a **screen slug** the app understands.
 
-| `reference_type` | `reference_id` (screen slug) | Navigate to                                |
-| ---------------- | ---------------------------- | ------------------------------------------ |
-| `screen`         | `home`                       | App home / dashboard tab                   |
-| `screen`         | `bookings`                   | Bookings list                              |
-| `screen`         | `quotes`                     | Quotes list                                |
-| `screen`         | `customers`                  | Customers list                             |
-| `screen`         | `reviews`                    | Reviews list                               |
-| `screen`         | `payments`                   | Payments / payouts settings                |
-| `screen`         | `payments_connect`           | Stripe Connect onboarding / connect status |
-| `screen`         | `maintenance`                | Maintenance enrollments                    |
-| `screen`         | `availability`               | Availability / calendar settings           |
-| `screen`         | `services`                   | Services management                        |
-| `screen`         | `profile`                    | Business profile edit                      |
-| `screen`         | `qr_code`                    | Business QR code (view / share)            |
-| `screen`         | `upgrade`                    | Pro / upgrade paywall                      |
-| `screen`         | `settings`                   | Account / settings                         |
+| `reference_type` | `reference_id` (screen slug) | Navigate to                                 |
+| ---------------- | ---------------------------- | ------------------------------------------- |
+| `screen`         | `home`                       | App home / dashboard tab                    |
+| `screen`         | `bookings`                   | Bookings list                               |
+| `screen`         | `quotes`                     | Quotes list                                 |
+| `screen`         | `customers`                  | Customers list                              |
+| `screen`         | `reviews`                    | Reviews list                                |
+| `screen`         | `payments`                   | Payments / payouts settings                 |
+| `screen`         | `payments_connect`           | Stripe Connect onboarding / connect status  |
+| `screen`         | `maintenance`                | Maintenance enrollments                     |
+| `screen`         | `availability`               | Availability / calendar settings            |
+| `screen`         | `services`                   | Services management                         |
+| `screen`         | `profile`                    | Business profile edit                       |
+| `screen`         | `qr_code`                    | Business QR code (view / share)             |
+| `screen`         | `notification_settings`      | Notification settings (push + customer SMS) |
+| `screen`         | `upgrade`                    | Pro / upgrade paywall                       |
+| `screen`         | `settings`                   | Account / settings                          |
 
 **Convention:** `reference_type: "screen"` + `reference_id: "<slug>"`.
 
@@ -162,18 +163,19 @@ Use the `_edit` suffix types when the announcement should land on an **edit** fl
 
 Keep push routing and universal linking in sync. Example mapping (mobile team adjusts to match actual navigator paths):
 
-| `reference_type` | `reference_id`     | Suggested deep link                        |
-| ---------------- | ------------------ | ------------------------------------------ |
-| `screen`         | `payments`         | `servicelinkmobile://payments`             |
-| `screen`         | `payments_connect` | `servicelinkmobile://payments/connect`     |
-| `screen`         | `bookings`         | `servicelinkmobile://bookings`             |
-| `booking`        | `{uuid}`           | `servicelinkmobile://bookings/{uuid}`      |
-| `booking_edit`   | `{uuid}`           | `servicelinkmobile://bookings/{uuid}/edit` |
-| `quote`          | `{uuid}`           | `servicelinkmobile://quotes/{uuid}`        |
-| `quote_edit`     | `{uuid}`           | `servicelinkmobile://quotes/{uuid}/edit`   |
-| `review`         | `{uuid}`           | `servicelinkmobile://reviews/{uuid}`       |
-| `customer`       | `{uuid}`           | `servicelinkmobile://customers/{uuid}`     |
-| `screen`         | `maintenance`      | `servicelinkmobile://maintenance`          |
+| `reference_type` | `reference_id`          | Suggested deep link                        |
+| ---------------- | ----------------------- | ------------------------------------------ |
+| `screen`         | `payments`              | `servicelinkmobile://payments`             |
+| `screen`         | `payments_connect`      | `servicelinkmobile://payments/connect`     |
+| `screen`         | `bookings`              | `servicelinkmobile://bookings`             |
+| `booking`        | `{uuid}`                | `servicelinkmobile://bookings/{uuid}`      |
+| `booking_edit`   | `{uuid}`                | `servicelinkmobile://bookings/{uuid}/edit` |
+| `quote`          | `{uuid}`                | `servicelinkmobile://quotes/{uuid}`        |
+| `quote_edit`     | `{uuid}`                | `servicelinkmobile://quotes/{uuid}/edit`   |
+| `review`         | `{uuid}`                | `servicelinkmobile://reviews/{uuid}`       |
+| `customer`       | `{uuid}`                | `servicelinkmobile://customers/{uuid}`     |
+| `screen`         | `maintenance`           | `servicelinkmobile://maintenance`          |
+| `screen`         | `notification_settings` | `servicelinkmobile://more/notifications`   |
 
 Implementation pattern:
 
@@ -296,6 +298,19 @@ Same `data` shape as broadcast, but requires `userId` instead of `testEmail`. Us
 }
 ```
 
+**Customer SMS live → notification settings:**
+
+```json
+{
+  "title": "SMS is live",
+  "body": "We text customers job updates for you — tap to open notification settings.",
+  "data": {
+    "reference_type": "screen",
+    "reference_id": "notification_settings"
+  }
+}
+```
+
 **Deep link to a specific booking edit:**
 
 ```json
@@ -412,5 +427,6 @@ If a new slug requires server validation (e.g. allowlist), extend `parseInternal
 
 | Date       | Change                                                                   |
 | ---------- | ------------------------------------------------------------------------ |
+| 2026-08-06 | Added `screen` → `notification_settings` slug + SMS launch example       |
 | 2026-07-22 | Added `screen` → `qr_code` slug + example broadcast payload              |
 | 2026-07-02 | Initial contract: push payload, routing tables, broadcast API, test mode |

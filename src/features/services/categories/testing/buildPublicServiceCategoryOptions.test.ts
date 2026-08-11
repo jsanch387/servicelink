@@ -17,6 +17,18 @@ describe('shouldShowPublicServiceCategoryFilters', () => {
     },
   ];
 
+  const twoCategories = [
+    ...oneCategory,
+    {
+      id: 'cat-b',
+      business_id: 'biz',
+      name: 'Boats',
+      sort_order: 10,
+      created_at: '2026-01-02T00:00:00.000Z',
+      updated_at: '2026-01-02T00:00:00.000Z',
+    },
+  ];
+
   it('is false when there are no categories', () => {
     expect(shouldShowPublicServiceCategoryFilters([], [])).toBe(false);
   });
@@ -39,23 +51,21 @@ describe('shouldShowPublicServiceCategoryFilters', () => {
     ).toBe(true);
   });
 
-  it('is true when at least two categories exist', () => {
+  it('is true when at least two non-empty categories exist', () => {
     expect(
-      shouldShowPublicServiceCategoryFilters(
-        [
-          ...oneCategory,
-          {
-            id: 'cat-b',
-            business_id: 'biz',
-            name: 'Boats',
-            sort_order: 10,
-            created_at: '2026-01-02T00:00:00.000Z',
-            updated_at: '2026-01-02T00:00:00.000Z',
-          },
-        ],
-        [{ category_id: 'cat-a' }]
-      )
+      shouldShowPublicServiceCategoryFilters(twoCategories, [
+        { category_id: 'cat-a' },
+        { category_id: 'cat-b' },
+      ])
     ).toBe(true);
+  });
+
+  it('ignores empty categories when deciding whether to show filters', () => {
+    expect(
+      shouldShowPublicServiceCategoryFilters(twoCategories, [
+        { category_id: 'cat-a' },
+      ])
+    ).toBe(false);
   });
 });
 
@@ -100,7 +110,7 @@ describe('buildPublicServiceCategoryOptions', () => {
     ).toEqual([]);
   });
 
-  it('returns sorted category names and an uncategorized tab when needed', () => {
+  it('omits empty categories and adds uncategorized when needed', () => {
     expect(
       buildPublicServiceCategoryOptions(
         categories,
@@ -109,13 +119,20 @@ describe('buildPublicServiceCategoryOptions', () => {
       )
     ).toEqual([
       { id: 'cat-a', label: 'Cars' },
-      { id: 'cat-b', label: 'Boats' },
       { id: SERVICE_CATEGORY_UNCATEGORIZED_FILTER_ID, label: 'Other services' },
     ]);
   });
 
   it('omits the uncategorized tab when every service is categorized', () => {
-    const categorizedOnly = [{ ...services[0] }] as never;
+    const categorizedOnly = [
+      { ...services[0] },
+      {
+        id: 's3',
+        business_id: 'biz',
+        name: 'Detail',
+        category_id: 'cat-b',
+      },
+    ] as never;
 
     expect(
       buildPublicServiceCategoryOptions(
@@ -127,5 +144,17 @@ describe('buildPublicServiceCategoryOptions', () => {
       { id: 'cat-a', label: 'Cars' },
       { id: 'cat-b', label: 'Boats' },
     ]);
+  });
+
+  it('returns empty when every category is empty', () => {
+    expect(
+      buildPublicServiceCategoryOptions(
+        categories,
+        [
+          { id: 's1', business_id: 'biz', name: 'X', category_id: null },
+        ] as never,
+        'Other'
+      )
+    ).toEqual([]);
   });
 });

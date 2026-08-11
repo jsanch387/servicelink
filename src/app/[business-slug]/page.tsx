@@ -29,6 +29,8 @@ import {
   maxPortfolioImagesForSubscription,
   type OwnerSubscriptionFieldsForPortfolio,
 } from '@/features/pricing/utils/maxPortfolioImagesForSubscription';
+import { PublicMembershipSubscribeSuccessReturn } from '@/features/subscriptions/components/PublicMembershipSubscribeSuccessReturn';
+import { loadPublicMembershipPlans } from '@/features/subscriptions/server/loadPublicMembershipPlans';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
   normalizePublicBookingOfferedLocales,
@@ -38,6 +40,14 @@ import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
+
+function firstSearchParam(
+  value: string | string[] | undefined
+): string | undefined {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value[0];
+  return undefined;
+}
 
 // Enable static generation with revalidation for better performance
 export const revalidate = 60; // Revalidate every 60 seconds
@@ -154,13 +164,13 @@ export default async function PublicProfilePage({
 }: PublicProfilePageProps) {
   const { 'business-slug': slug } = await params;
   const sp = (await searchParams) ?? {};
-  const langRaw = sp.lang;
-  const langParam =
-    typeof langRaw === 'string'
-      ? langRaw
-      : Array.isArray(langRaw)
-        ? langRaw[0]
-        : undefined;
+  const langParam = firstSearchParam(sp.lang);
+  const membershipCheckout = firstSearchParam(sp.membershipCheckout)?.trim();
+  const membershipPlanId = firstSearchParam(sp.planId)?.trim() || null;
+  const membershipPriceId = firstSearchParam(sp.priceId)?.trim() || null;
+  const initialTabParam = firstSearchParam(sp.tab)?.trim();
+  const initialTab =
+    initialTabParam === 'subscriptions' ? 'subscriptions' : undefined;
 
   const adminGate = createSupabaseAdminClient();
   if (!(await isPublicBusinessSlugVisible(adminGate, slug))) {
@@ -259,6 +269,37 @@ export default async function PublicProfilePage({
     { ownerHasPro: ownerTier === 'pro' }
   );
 
+  const publicSubscriptionPlans = await loadPublicMembershipPlans(
+    adminGate,
+    businessProfile.id,
+    { ownerHasPro: ownerTier === 'pro' }
+  );
+
+  // Post-Checkout success: render confirmation only (no profile flash).
+  if (membershipCheckout === 'success') {
+    const successPlan =
+      (membershipPlanId
+        ? publicSubscriptionPlans.find(p => p.id === membershipPlanId)
+        : null) ??
+      (publicSubscriptionPlans.length === 1
+        ? publicSubscriptionPlans[0]
+        : null) ??
+      null;
+
+    return (
+      <div className="min-h-screen bg-[#0f0f0f]">
+        <PublicMembershipSubscribeSuccessReturn
+          businessSlug={slug}
+          plan={successPlan}
+          priceId={membershipPriceId}
+          bookingFlowLocale={bookingFlowLocale}
+          businessName={displayProfile.business_name}
+          langParam={langParam}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-neutral-900">
       {/* View Tracking */}
@@ -279,6 +320,9 @@ export default async function PublicProfilePage({
         publicReviewSummary={publicReviewSummary}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
+        publicSubscriptionPlans={publicSubscriptionPlans}
+        initialTab={initialTab}
+        membershipCheckoutCanceled={membershipCheckout === 'cancel'}
       />
     </div>
   );

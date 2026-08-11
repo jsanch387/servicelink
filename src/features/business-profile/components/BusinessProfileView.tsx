@@ -6,6 +6,7 @@ import {
   Modal,
   RequiredLabel,
   WarningCallout,
+  toast,
 } from '@/components/shared';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
@@ -15,6 +16,10 @@ import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
+import {
+  PublicSubscriptionsSection,
+  type CustomerSubscriptionPlan,
+} from '@/features/subscriptions';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   ArrowRightIcon,
@@ -24,7 +29,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { LazyPublicReviewsSection } from '../reviews/components/LazyPublicReviewsSection';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
 import { ProfileCompletionTracker } from './ProfileCompletionTracker';
@@ -36,7 +41,7 @@ import { EditBusinessProfile } from './edit/EditBusinessProfile';
 import { ProfileWelcomeModal } from './ProfileWelcomeModal';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
-type TabType = 'services' | 'gallery' | 'bio' | 'reviews';
+type TabType = 'services' | 'subscriptions' | 'gallery' | 'bio' | 'reviews';
 
 interface SlugData {
   hasSlug: boolean;
@@ -86,6 +91,15 @@ interface BusinessProfileViewProps {
   publicProfileSlug?: string;
   /** Live sale to announce on the public booking link (Pro owners only). */
   publicActiveSale?: PublicActiveSale | null;
+  /**
+   * Customer subscription plans for the public booking link.
+   * Tab only renders when this list is non-empty.
+   */
+  publicSubscriptionPlans?: CustomerSubscriptionPlan[];
+  /** Open this tab on first paint (e.g. after membership Checkout Done). */
+  initialTab?: TabType;
+  /** Stripe membership Checkout returned with cancel — show toast once. */
+  membershipCheckoutCanceled?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -104,29 +118,81 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicReviewSummary = null,
   publicProfileSlug,
   publicActiveSale = null,
+  publicSubscriptionPlans = [],
+  initialTab,
+  membershipCheckoutCanceled = false,
 }) => {
   const showReviewsTab = Boolean(
     publicReviewSummary &&
       publicReviewSummary.reviewCount > 0 &&
       publicProfileSlug
   );
+  const showSubscriptionsTab = publicSubscriptionPlans.length > 0;
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
   const [businessProfile, setBusinessProfile] =
     useState<CompleteBusinessProfile>(initialBusinessProfile);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('services');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (initialTab === 'subscriptions' && publicSubscriptionPlans.length > 0) {
+      return 'subscriptions';
+    }
+    if (initialTab === 'reviews' && publicReviewSummary?.reviewCount) {
+      return 'reviews';
+    }
+    if (
+      initialTab === 'gallery' ||
+      initialTab === 'bio' ||
+      initialTab === 'services'
+    ) {
+      return initialTab;
+    }
+    return 'services';
+  });
   const [showOnboardingProModal, setShowOnboardingProModal] = useState(false);
   const [showProfileWelcomeModal, setShowProfileWelcomeModal] = useState(false);
   const [showProfileChecklistModal, setShowProfileChecklistModal] =
     useState(false);
+  const handledMembershipCheckoutCancel = useRef(false);
   const { city, state } = parseCityState(businessProfile.service_area);
   const bookingUi = publicBookingUi(bookingFlowLocale);
+
+  const clearMembershipCheckoutParams = () => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    params.delete('membershipCheckout');
+    params.delete('session_id');
+    params.delete('planId');
+    params.delete('priceId');
+    const next = params.toString();
+    const path = `${window.location.pathname}${next ? `?${next}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', path);
+  };
 
   useEffect(() => {
     if (activeTab === 'reviews' && !showReviewsTab) {
       setActiveTab('services');
     }
-  }, [activeTab, showReviewsTab]);
+    if (activeTab === 'subscriptions' && !showSubscriptionsTab) {
+      setActiveTab('services');
+    }
+  }, [activeTab, showReviewsTab, showSubscriptionsTab]);
+
+  useEffect(() => {
+    if (
+      !membershipCheckoutCanceled ||
+      handledMembershipCheckoutCancel.current
+    ) {
+      return;
+    }
+    handledMembershipCheckoutCancel.current = true;
+    if (showSubscriptionsTab) setActiveTab('subscriptions');
+    toast.warning(bookingUi.subscriptions.checkoutReturnCancel);
+    clearMembershipCheckoutParams();
+  }, [
+    membershipCheckoutCanceled,
+    bookingUi.subscriptions,
+    showSubscriptionsTab,
+  ]);
 
   const completionChecks = [
     {
@@ -427,6 +493,21 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                       <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
                     )}
                   </button>
+                  {showSubscriptionsTab ? (
+                    <button
+                      onClick={() => setActiveTab('subscriptions')}
+                      className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer whitespace-nowrap ${
+                        activeTab === 'subscriptions'
+                          ? 'text-white'
+                          : 'text-zinc-500 hover:text-zinc-400'
+                      }`}
+                    >
+                      {bookingUi.subscriptions.subscriptionsTab}
+                      {activeTab === 'subscriptions' && (
+                        <span className="absolute bottom-0 left-0 right-0 h-px bg-white/70" />
+                      )}
+                    </button>
+                  ) : null}
                   <button
                     onClick={() => setActiveTab('gallery')}
                     className={`pb-3 pt-0.5 text-sm font-medium transition-colors relative cursor-pointer ${
@@ -505,6 +586,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                     publicActiveSale={publicActiveSale}
                   />
                 </>
+              ) : activeTab === 'subscriptions' && showSubscriptionsTab ? (
+                <PublicSubscriptionsSection
+                  plans={publicSubscriptionPlans}
+                  bookingFlowLocale={bookingFlowLocale}
+                  businessSlug={publicProfileSlug}
+                />
               ) : activeTab === 'gallery' ? (
                 <WorkShowcase
                   businessProfile={businessProfile}

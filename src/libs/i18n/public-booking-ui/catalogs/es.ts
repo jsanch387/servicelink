@@ -331,6 +331,64 @@ export const publicBookingUiEs: PublicBookingUi = {
     seeLess: 'Ver menos',
     contactForQuote: 'Solicitar cotización',
   },
+  subscriptions: {
+    subscriptionsTab: 'Suscripciones',
+    subscribeCta: 'Suscribirse',
+    popularBadge: 'Popular',
+    contactForPrice: 'Consultar precio',
+    cadencePickerLabel: '¿Cada cuánto?',
+    cadencePickerAriaLabel: 'Elige la frecuencia',
+    detailsModalTitle: 'Tu plan',
+    closeDetailsAriaLabel: 'Cerrar',
+    howItWorksTitle: 'Cómo funciona',
+    howItWorksSteps: [
+      'Confirma tu plan y la frecuencia de cobro.',
+      'Paga de forma segura — se te cobrará con esta frecuencia.',
+      'Administra o cancela cuando quieras desde el correo del recibo.',
+    ],
+    continueToCheckoutCta: 'Continuar',
+    checkoutComingSoon: 'El pago estará disponible pronto.',
+    checkoutStartFailed: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
+    checkoutReturnSuccess: 'Pago recibido — gracias por suscribirte.',
+    checkoutReturnCancel:
+      'Pago cancelado. Puedes intentarlo de nuevo cuando quieras.',
+    successTitle: 'Ya estás suscrito',
+    successSubtitle:
+      'Todo listo. Enviaremos el recibo al correo que usaste al pagar.',
+    successSubtitleWithBusiness: businessName =>
+      `Todo listo con ${businessName}. Enviaremos el recibo al correo que usaste al pagar.`,
+    successDoneCta: 'Listo',
+    manageLinkCta: '¿Ya estás suscrito? Administra tu plan',
+    manageModalTitle: 'Administra tu plan',
+    manageModalDescription:
+      'Ingresa el correo que usaste al pagar. Si encontramos una suscripción, te enviaremos un enlace para administrarla o cancelarla.',
+    manageEmailLabel: 'Correo',
+    manageEmailPlaceholder: 'tu@email.com',
+    manageSendLinkCta: 'Envíame un enlace',
+    manageEmailRequired: 'Ingresa el correo que usaste al pagar.',
+    manageSendSuccess:
+      'Si encontramos una suscripción para ese correo, te enviaremos un enlace en breve.',
+    manageSendFailed: 'No se pudo enviar el enlace ahora. Inténtalo de nuevo.',
+    manageRateLimited:
+      'Demasiados intentos. Vuelve a intentarlo en unos minutos.',
+    cadenceSuffix: {
+      week: '/sem',
+      weeks: count => `/${count}sem`,
+      month: '/mes',
+      months: count => `/${count}mes`,
+      year: '/año',
+      years: count => `/${count}años`,
+    },
+    cadenceLabel: {
+      weekly: 'Semanal',
+      everyWeeks: count => `Cada ${count} semanas`,
+      monthly: 'Mensual',
+      everyMonths: count =>
+        count === 3 ? 'Cada 3 meses' : `Cada ${count} meses`,
+      yearly: 'Anual',
+      everyYears: count => `Cada ${count} años`,
+    },
+  },
   profile: {
     requestQuote: 'Solicitar cotización',
     contactPhoneCta: 'Llamar',

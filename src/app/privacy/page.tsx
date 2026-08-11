@@ -25,12 +25,7 @@ export default function PrivacyPage() {
 
         <div className="prose prose-invert max-w-none space-y-6 text-gray-400">
           <p className="text-sm text-gray-500 mb-8">
-            Last updated:{' '}
-            {new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+            Last updated: August 10, 2026
           </p>
 
           <section>
@@ -51,6 +46,13 @@ export default function PrivacyPage() {
                 number, address, appointment preferences, and service notes)
               </li>
               <li>
+                Membership / customer subscription data when a customer
+                subscribes to a plan offered by a business on ServiceLink (name,
+                email, phone when collected at checkout, plan and billing
+                schedule, membership status, and limited payment method details
+                such as card brand and last four digits)
+              </li>
+              <li>
                 Where you opt in on a booking flow, your mobile phone number for
                 transactional SMS about that appointment (for example,
                 confirmations or reminders), delivered through our messaging
@@ -61,8 +63,8 @@ export default function PrivacyPage() {
                 profile content)
               </li>
               <li>
-                Billing and subscription data related to plan purchases and
-                renewals
+                Billing and subscription data related to ServiceLink plan
+                purchases and renewals for business owners (for example, Pro)
               </li>
               <li>
                 Usage and device data (logs, browser information, and platform
@@ -83,7 +85,12 @@ export default function PrivacyPage() {
               <li>Create and manage business owner accounts and profiles</li>
               <li>Deliver booking requests and notifications</li>
               <li>
-                Process subscriptions, payments, and billing communications
+                Process ServiceLink subscriptions, customer membership
+                checkouts, payments, and related billing communications
+              </li>
+              <li>
+                Send transactional emails about memberships (for example,
+                confirmation and manage/cancel links)
               </li>
               <li>Provide customer support and service communications</li>
               <li>
@@ -129,14 +136,28 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              3. Booking Data and Business Owners
+              3. Customer Data Shared with Business Owners
             </h2>
             <p className="text-base leading-relaxed">
               When customers submit booking information, that information is
               shared with the selected business owner so they can communicate
-              with the customer and complete the requested service. Business
-              owners are responsible for their own use of customer data and must
-              comply with applicable privacy and consumer protection laws.
+              with the customer and complete the requested service.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              When customers subscribe to a membership or recurring plan offered
+              by a business on ServiceLink, we share related customer and
+              membership information with that business so they can manage the
+              relationship (for example, name, email, phone when available, plan
+              details, membership status, billing schedule, and limited payment
+              method details such as card brand and last four digits). We may
+              also email the customer transactional messages about that
+              membership, including a link to manage or cancel through Stripe.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              Business owners are responsible for their own use of customer data
+              and must comply with applicable privacy and consumer protection
+              laws. ServiceLink is not the seller of the business&apos;s
+              membership plan; the business is.
             </p>
             <p className="text-base leading-relaxed mt-4">
               If the customer opts in to SMS notifications at booking, phone
@@ -152,10 +173,19 @@ export default function PrivacyPage() {
               4. Payments and Stripe
             </h2>
             <p className="text-base leading-relaxed">
-              Subscription payments are processed by Stripe. We do not store
+              Payments on ServiceLink are processed by Stripe. We do not store
               full payment card numbers on our servers. Stripe processes
               payment-related information in accordance with its own terms and
               privacy policy.
+            </p>
+            <p className="text-base leading-relaxed mt-4">
+              This includes (a) ServiceLink subscription billing for business
+              owners (for example, Pro), and (b) customer membership or
+              recurring plan payments charged for a business through Stripe
+              Connect. For Connect memberships, funds are paid to the
+              business&apos;s connected Stripe account; ServiceLink may store
+              limited billing snapshots (such as status and card brand/last
+              four) to operate the product for the business and customer.
             </p>
             <p className="text-base leading-relaxed mt-4">
               If you delete your ServiceLink account, we remove your platform
@@ -185,8 +215,8 @@ export default function PrivacyPage() {
                 opted into at booking, as described in this policy
               </li>
               <li>
-                With business owners when customers submit booking requests to
-                them
+                With business owners when customers submit booking requests or
+                subscribe to that business&apos;s membership / recurring plans
               </li>
               <li>To comply with legal obligations or enforce our rights</li>
               <li>

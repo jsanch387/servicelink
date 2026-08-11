@@ -104,6 +104,34 @@ const contactFormEmailRl: { current: Ratelimit | null | undefined } = {
 const signupAttributionUserRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
+const membershipPortalIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const membershipPortalIpTokenRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const membershipCheckoutIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const membershipCheckoutIpSlugRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const publicBookingsIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const publicBookingsIpSlugRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const membershipManageLinkIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const membershipManageLinkEmailRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const membershipManageLinkIpSlugRl: { current: Ratelimit | null | undefined } =
+  {
+    current: undefined,
+  };
 
 async function flushPending(result: { pending?: Promise<unknown> }) {
   try {
@@ -378,6 +406,145 @@ export async function assertSignupAttributionRateLimits(
   );
   const r1 = await consume(userLimiter, `user:${uid}`, 20, MS_HOUR);
   if (!r1.ok) return tooManyRequests(r1.reset);
+
+  return null;
+}
+
+/**
+ * GET /api/public/memberships/portal — signed manage links open Stripe portal sessions.
+ * Cap brute-force / link spraying (per IP + per IP+token prefix).
+ */
+export async function assertPublicMembershipPortalRateLimits(
+  request: NextRequest,
+  token: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const t = safeFeedTokenSegment(token);
+
+  const ipLimiter = createLimiter(
+    membershipPortalIpRl,
+    'public_api:membership_portal:ip',
+    30,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 30, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const comboLimiter = createLimiter(
+    membershipPortalIpTokenRl,
+    'public_api:membership_portal:iptoken',
+    12,
+    '1 h'
+  );
+  const r2 = await consume(comboLimiter, `ip:${ip}:t:${t}`, 12, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+/**
+ * POST /api/public/memberships/checkout — creates Connect Checkout sessions.
+ * Strict per IP + per IP+slug (cost / abuse surface).
+ */
+export async function assertPublicMembershipCheckoutRateLimits(
+  request: NextRequest,
+  businessSlug: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const slug = safeSlugSegment(businessSlug);
+
+  const ipLimiter = createLimiter(
+    membershipCheckoutIpRl,
+    'public_api:membership_checkout:ip',
+    40,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 40, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const slugLimiter = createLimiter(
+    membershipCheckoutIpSlugRl,
+    'public_api:membership_checkout:ipslug',
+    12,
+    '1 h'
+  );
+  const r2 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 12, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+/**
+ * POST /api/public/memberships/manage-link — emails a manage/cancel link (cost).
+ * Strict per IP, per email, and per IP+slug.
+ */
+export async function assertPublicMembershipManageLinkRateLimits(
+  request: NextRequest,
+  businessSlug: string,
+  email: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const slug = safeSlugSegment(businessSlug);
+  const emailKey = safeEmailSegment(email);
+
+  const ipLimiter = createLimiter(
+    membershipManageLinkIpRl,
+    'public_api:membership_manage_link:ip',
+    8,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 8, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const emailLimiter = createLimiter(
+    membershipManageLinkEmailRl,
+    'public_api:membership_manage_link:email',
+    3,
+    '1 h'
+  );
+  const r2 = await consume(emailLimiter, `email:${emailKey}`, 3, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  const slugLimiter = createLimiter(
+    membershipManageLinkIpSlugRl,
+    'public_api:membership_manage_link:ipslug',
+    6,
+    '1 h'
+  );
+  const r3 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 6, MS_HOUR);
+  if (!r3.ok) return tooManyRequests(r3.reset);
+
+  return null;
+}
+
+/**
+ * POST /api/public/bookings — writes + may send SMS (cost).
+ * Bound volume per IP and per targeted business slug.
+ */
+export async function assertPublicBookingsRateLimits(
+  request: NextRequest,
+  businessSlug: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const slug = safeSlugSegment(businessSlug);
+
+  const ipLimiter = createLimiter(
+    publicBookingsIpRl,
+    'public_api:bookings:ip',
+    40,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 40, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const slugLimiter = createLimiter(
+    publicBookingsIpSlugRl,
+    'public_api:bookings:ipslug',
+    15,
+    '1 h'
+  );
+  const r2 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 15, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;
 }

@@ -44,24 +44,24 @@ Intended schema (create/migrate in Supabase SQL editor or migrations):
 
 **Single insert path for availability bookings:** **`createBooking`** in **`src/features/availability/services/bookingService.ts`**. Call sites:
 
-| Flow                          | How it reaches `createBooking`                                                                 |
-| ----------------------------- | ---------------------------------------------------------------------------------------------- |
-| **Public profile**            | Customer completes book flow → `POST /api/public/bookings`.                                    |
-| **Owner booking for someone** | Dashboard / mobile with `ownerManualBooking` → same `POST /api/public/bookings`.               |
-| **Paid public checkout**      | Stripe `checkout.session.completed` webhook → `createBooking` from stored checkout payload.    |
+| Flow                          | How it reaches `createBooking`                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Public profile**            | Customer completes book flow → `POST /api/public/bookings`.                                      |
+| **Owner booking for someone** | Dashboard / mobile with `ownerManualBooking` → same `POST /api/public/bookings`.                 |
+| **Paid public checkout**      | Stripe `checkout.session.completed` webhook → `createBooking` from stored checkout payload.      |
 | **Quote approve → booking**   | Quote approve helpers that create a V2 booking also go through `createBooking` where applicable. |
 
 If you add another API that inserts into **`bookings`**, route through **`createBooking`** (or call **`upsertCustomerForBooking`** + asset upsert the same way).
 
 ### Server helpers (this feature)
 
-| File                                     | Role                                                                                                                                                                                                                       |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`server/normalizeCustomerContact.ts`** | `normalizeEmailForLookup`, `normalizePhoneForLookup` (digits-only phone).                                                                                                                                                  |
-| **`server/upsertCustomerForBooking.ts`** | **`upsertCustomerForBooking(supabase, businessId, input)`** — find-or-create `customers` row. Uses a small internal cast for `.from('customers')` until the repo’s `Database` type matches Supabase client generics fully. |
-| **`utils/customerAssetTypes.ts`**        | Vehicle fingerprint / label / attribute helpers (shared; not server-only).                                                                                                                                                 |
-| **`server/upsertCustomerAssets.ts`**     | Deduped upsert into **`customer_assets`** after a booking is created.                                                                                                                                                      |
-| **`server/listCustomerAssetsByPhone.ts`** | Lookup assets by business + phone (for a future returning-customer UI).                                                                                                                                                   |
+| File                                      | Role                                                                                                                                                                                                                       |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`server/normalizeCustomerContact.ts`**  | `normalizeEmailForLookup`, `normalizePhoneForLookup` (digits-only phone).                                                                                                                                                  |
+| **`server/upsertCustomerForBooking.ts`**  | **`upsertCustomerForBooking(supabase, businessId, input)`** — find-or-create `customers` row. Uses a small internal cast for `.from('customers')` until the repo’s `Database` type matches Supabase client generics fully. |
+| **`utils/customerAssetTypes.ts`**         | Vehicle fingerprint / label / attribute helpers (shared; not server-only).                                                                                                                                                 |
+| **`server/upsertCustomerAssets.ts`**      | Deduped upsert into **`customer_assets`** after a booking is created.                                                                                                                                                      |
+| **`server/listCustomerAssetsByPhone.ts`** | Lookup assets by business + phone (for a future returning-customer UI).                                                                                                                                                    |
 
 ### Dedupe rules
 
@@ -185,14 +185,14 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 
 ### Feature layout (folders)
 
-| Area          | Role                                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `components/` | Page sections, table, cards, drawer, modal body, skeletons, empty states                                           |
-| `hooks/`      | `useCustomerManagement`                                                                                            |
-| `api/`        | Client fetch, response typing, DB row type, `mapCustomerRowToRecord`                                               |
+| Area          | Role                                                                                                                                                                    |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/` | Page sections, table, cards, drawer, modal body, skeletons, empty states                                                                                                |
+| `hooks/`      | `useCustomerManagement`                                                                                                                                                 |
+| `api/`        | Client fetch, response typing, DB row type, `mapCustomerRowToRecord`                                                                                                    |
 | `server/`     | `resolveCurrentBusinessId`, `normalizeCustomerContact`, `upsertCustomerForBooking`, `upsertCustomerAssets`, `listCustomerAssetsByPhone`, `aggregateBookingsPerCustomer` |
-| `constants/`  | `CUSTOMER_STATUS_FILTERS`                                                                                          |
-| `utils/`      | Formatting, search match, date helpers, `customerAssetTypes`                                                       |
+| `constants/`  | `CUSTOMER_STATUS_FILTERS`                                                                                                                                               |
+| `utils/`      | Formatting, search match, date helpers, `customerAssetTypes`                                                                                                            |
 
 **Public exports:** `src/features/customer-management/index.ts` (page, hook, types).
 

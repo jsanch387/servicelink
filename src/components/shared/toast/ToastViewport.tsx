@@ -6,6 +6,7 @@ import {
   XCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 import { useToastStore, type ToastItem, type ToastType } from './toastStore';
 
@@ -62,13 +63,18 @@ function ToastCard({ toast }: { toast: ToastItem }) {
 
 /**
  * Renders active toasts. Mount once near the app root.
+ * Dashboard offsets for the sidebar; public pages stay viewport-centered.
  */
 export function ToastViewport(): React.ReactElement {
   const toasts = useToastStore(s => s.toasts);
+  const pathname = usePathname();
+  const inDashboard = Boolean(pathname?.startsWith('/dashboard'));
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-20 z-[100] flex flex-col items-center gap-2 px-4 sm:top-24 sm:px-6 lg:left-64"
+      className={`pointer-events-none fixed inset-x-0 top-20 z-[100] flex flex-col items-center gap-2 px-4 sm:top-24 sm:px-6 ${
+        inDashboard ? 'lg:left-64' : ''
+      }`}
       aria-label="Notifications"
     >
       {toasts.map(item => (

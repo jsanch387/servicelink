@@ -71,6 +71,9 @@ import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stri
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/applyPlatformProCheckoutSessionCompleted';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
+import { applyMembershipCheckoutSessionCompleted } from '@/features/subscriptions/server/applyMembershipCheckoutSessionCompleted';
+import { applyMembershipInvoiceEvent } from '@/features/subscriptions/server/applyMembershipInvoiceEvent';
+import { applyMembershipSubscriptionLifecycle } from '@/features/subscriptions/server/applyMembershipSubscriptionLifecycle';
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
@@ -1062,6 +1065,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
+    if (session.metadata?.kind === 'membership_checkout') {
+      await applyMembershipCheckoutSessionCompleted(supabase, {
+        event,
+        session,
+      });
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
     const userId = session.metadata?.userId as string | undefined;
     if (!userId?.trim()) {
       console.error(
@@ -1151,6 +1162,18 @@ export async function POST(request: NextRequest) {
         '[Stripe webhook] customer.subscription.updated missing subscription id',
         { eventId: event.id }
       );
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    const membershipUpdated = await applyMembershipSubscriptionLifecycle(
+      supabase,
+      {
+        event,
+        subscription,
+        kind: 'updated',
+      }
+    );
+    if (membershipUpdated.handled) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
@@ -1247,6 +1270,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
+    const membershipDeleted = await applyMembershipSubscriptionLifecycle(
+      supabase,
+      {
+        event,
+        subscription,
+        kind: 'deleted',
+      }
+    );
+    if (membershipDeleted.handled) {
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
     const result = await downgradeProfileFromSubscriptionEnd(
       supabase,
       subscriptionId
@@ -1261,6 +1296,35 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+  }
+
+  // Membership invoice paid (Connect). Platform Pro does not need this path today.
+  if (event.type === 'invoice.paid') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+    const invoice = event.data.object as Stripe.Invoice;
+    await applyMembershipInvoiceEvent(supabase, {
+      event,
+      invoice,
+      kind: 'paid',
+    });
+    return NextResponse.json({ received: true }, { status: 200 });
   }
 
   // Recurring payment failed — sync profile only (no ServiceLink email; use in-app Settings banner + Stripe optional emails).
@@ -1284,6 +1348,19 @@ export async function POST(request: NextRequest) {
       );
     }
     const invoice = event.data.object as Stripe.Invoice;
+
+    const membershipInvoiceFailed = await applyMembershipInvoiceEvent(
+      supabase,
+      {
+        event,
+        invoice,
+        kind: 'payment_failed',
+      }
+    );
+    if (membershipInvoiceFailed.handled) {
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
     const subscriptionRef = (
       invoice as Stripe.Invoice & {
         subscription?: string | Stripe.Subscription | null;

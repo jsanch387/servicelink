@@ -24,6 +24,16 @@ export type ProPaymentsSetupExperienceProps = {
   resumeConnect?: boolean;
   /** Stripe account restricted (e.g. outstanding requirements). */
   stripeRestricted?: boolean;
+  /**
+   * Dashboard path Stripe should return to after Connect (web).
+   * Default: Payments. Subscriptions passes its own path.
+   */
+  webReturnPath?: string;
+  /**
+   * When false, only the Connect setup card is shown (no locked
+   * “how customers pay” preview). Used on Subscriptions; Payments keeps default.
+   */
+  showLockedPreview?: boolean;
 };
 
 /**
@@ -31,7 +41,12 @@ export type ProPaymentsSetupExperienceProps = {
  */
 export const ProPaymentsSetupExperience: React.FC<
   ProPaymentsSetupExperienceProps
-> = ({ resumeConnect = false, stripeRestricted = false }) => {
+> = ({
+  resumeConnect = false,
+  stripeRestricted = false,
+  webReturnPath,
+  showLockedPreview = true,
+}) => {
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
 
@@ -54,8 +69,14 @@ export const ProPaymentsSetupExperience: React.FC<
     setConnectError(null);
     setConnectLoading(true);
     try {
+      const body =
+        webReturnPath && webReturnPath.startsWith('/dashboard/')
+          ? { returnPath: webReturnPath }
+          : {};
       const res = await fetch(API_ROUTES.STRIPE_CONNECT_ONBOARD, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const data = (await res.json().catch(() => ({}))) as {
         success?: boolean;
@@ -87,7 +108,7 @@ export const ProPaymentsSetupExperience: React.FC<
     } finally {
       setConnectLoading(false);
     }
-  }, []);
+  }, [webReturnPath]);
 
   return (
     <div className="mt-6 flex flex-col items-start sm:mt-8">
@@ -142,11 +163,14 @@ export const ProPaymentsSetupExperience: React.FC<
         </ul>
       </GlassCard>
 
-      <p className="mt-8 max-w-md text-left text-sm text-gray-500">
-        {teaseOverline}
-      </p>
-
-      <FreePaymentPreviewLockedDashboard className="mt-8 w-full sm:mt-10" />
+      {showLockedPreview ? (
+        <>
+          <p className="mt-8 max-w-md text-left text-sm text-gray-500">
+            {teaseOverline}
+          </p>
+          <FreePaymentPreviewLockedDashboard className="mt-8 w-full sm:mt-10" />
+        </>
+      ) : null}
     </div>
   );
 };

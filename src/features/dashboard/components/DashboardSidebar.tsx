@@ -4,6 +4,7 @@ import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
 import {
+  ArrowPathRoundedSquareIcon,
   BanknotesIcon,
   CalendarIcon,
   ClipboardDocumentListIcon,
@@ -22,7 +23,15 @@ import { usePathname } from 'next/navigation';
 import React from 'react';
 import type { DashboardSidebarProps } from '../types/dashboard';
 
-const allNavigationItems = [
+type DashboardNavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  requiresOnboarding: boolean;
+  activePathPrefix?: string;
+};
+
+const allNavigationItems: DashboardNavItem[] = [
   {
     name: 'Dashboard',
     href: ROUTES.DASHBOARD.MAIN,
@@ -97,10 +106,27 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   open,
   setOpen,
   isOnboardingCompleted = false,
+  showMembershipsNav = false,
 }) => {
   const pathname = usePathname();
 
-  const navigation = allNavigationItems.filter(
+  const membershipsNavItem: DashboardNavItem = {
+    name: 'Subscriptions',
+    href: ROUTES.DASHBOARD.SUBSCRIPTIONS,
+    icon: ArrowPathRoundedSquareIcon,
+    requiresOnboarding: true,
+    activePathPrefix: '/dashboard/subscriptions',
+  };
+
+  const navigationItems = showMembershipsNav
+    ? allNavigationItems.flatMap(item =>
+        item.href === ROUTES.DASHBOARD.SERVICES
+          ? [item, membershipsNavItem]
+          : [item]
+      )
+    : allNavigationItems;
+
+  const navigation = navigationItems.filter(
     item => !item.requiresOnboarding || isOnboardingCompleted
   );
   const showSettings = isOnboardingCompleted;

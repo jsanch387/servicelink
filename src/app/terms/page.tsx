@@ -26,12 +26,7 @@ export default function TermsPage() {
 
         <div className="prose prose-invert max-w-none space-y-6 text-gray-400">
           <p className="text-sm text-gray-500 mb-8">
-            Last updated:{' '}
-            {new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+            Last updated: August 10, 2026
           </p>
 
           <section>
@@ -51,18 +46,22 @@ export default function TermsPage() {
             </h2>
             <p className="text-base leading-relaxed mb-4">
               ServiceLink helps business owners create a public booking page,
-              list services, accept booking requests, and receive customer
-              details needed to complete jobs.
+              list services, accept booking requests, offer optional membership
+              or recurring plans, and receive customer details needed to
+              complete jobs and manage those relationships.
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>
-                Business owners create and manage service profiles, pricing, and
-                availability.
+                Business owners create and manage service profiles, pricing,
+                availability, and (where enabled) membership plans.
               </li>
-              <li>Customers can submit booking forms and request services.</li>
               <li>
-                ServiceLink may send booking-related and account-related email
-                notifications.
+                Customers can submit booking forms, request quotes, and
+                subscribe to membership plans offered by a business.
+              </li>
+              <li>
+                ServiceLink may send booking-related, membership-related, and
+                account-related email notifications.
               </li>
               <li>
                 Where a customer clearly consents in the booking flow, we may
@@ -106,23 +105,25 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              4. Customer Booking Data
+              4. Customer Data (Bookings and Memberships)
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              Customers may provide personal information in booking forms,
-              including name, email, phone number, address, and service details.
+              Customers may provide personal information in booking forms and
+              during membership checkout, including name, email, phone number,
+              address, service details, and payment information processed by
+              Stripe.
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>
                 Business owners are responsible for how they use customer data
-                received through bookings.
+                received through bookings and memberships.
               </li>
               <li>
                 Business owners must comply with applicable privacy and consumer
                 protection laws.
               </li>
               <li>
-                You may not misuse booking data, including spam or unauthorized
+                You may not misuse customer data, including spam or unauthorized
                 marketing.
               </li>
               <li>
@@ -145,7 +146,44 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              5. Content and Business Information
+              5. Customer Memberships Offered by Businesses
+            </h2>
+            <p className="text-base leading-relaxed mb-4">
+              Where enabled, business owners may offer membership or recurring
+              subscription plans to customers on their public booking page.
+              Those plans are sold by the business, not by ServiceLink. Payments
+              are processed by Stripe on the business&apos;s connected Stripe
+              account (Stripe Connect).
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>
+                The business sets plan terms, pricing, and what is included.
+                ServiceLink provides software tools to create plans, collect
+                payment, and manage membership status.
+              </li>
+              <li>
+                Customers authorize recurring charges for the selected plan
+                through Stripe Checkout. Cancelation and payment-method updates
+                may be available through Stripe Customer Portal links we or the
+                business provide.
+              </li>
+              <li>
+                Business owners are responsible for fulfilling membership
+                benefits, handling customer disputes about the service, and
+                complying with applicable consumer, advertising, and refund
+                laws.
+              </li>
+              <li>
+                ServiceLink is not a party to the membership agreement between
+                the customer and the business, except as needed to operate the
+                platform and payment tooling.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+              6. Content and Business Information
             </h2>
             <p className="text-base leading-relaxed">
               You are responsible for all content you upload or publish,
@@ -157,16 +195,18 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              6. Paid Plans, Billing, and Stripe
+              7. ServiceLink Paid Plans, Billing, and Stripe
             </h2>
             <p className="text-base leading-relaxed mb-4">
-              ServiceLink offers paid subscriptions, including a Pro plan.
-              Subscription charges are processed securely by Stripe.
+              ServiceLink offers paid subscriptions for business owners,
+              including a Pro plan. Those platform subscription charges are
+              processed securely by Stripe and are separate from customer
+              memberships sold by businesses (described above).
             </p>
             <ul className="list-disc list-inside space-y-2 ml-4">
               <li>
-                By subscribing, you authorize recurring charges at the rate
-                shown during checkout.
+                By subscribing to a ServiceLink plan, you authorize recurring
+                charges at the rate shown during checkout.
               </li>
               <li>
                 You are responsible for maintaining a valid payment method.
@@ -176,11 +216,11 @@ export default function TermsPage() {
                 through Stripe-powered checkout and billing tools.
               </li>
               <li>
-                If you delete your account, active subscriptions are ended in
-                line with how billing is processed through Stripe (for example,
-                cancellation of the subscription tied to your account). Some
-                billing or transaction records may remain with Stripe or other
-                processors for legal, tax, or fraud-prevention purposes as
+                If you delete your account, active ServiceLink subscriptions are
+                ended in line with how billing is processed through Stripe (for
+                example, cancellation of the subscription tied to your account).
+                Some billing or transaction records may remain with Stripe or
+                other processors for legal, tax, or fraud-prevention purposes as
                 described in our Privacy Policy.
               </li>
               <li>
@@ -192,7 +232,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              7. Prohibited Uses
+              8. Prohibited Uses
             </h2>
             <p className="text-base leading-relaxed mb-4">
               You may not use ServiceLink to:
@@ -207,7 +247,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              8. Termination
+              9. Termination
             </h2>
             <p className="text-base leading-relaxed">
               We may suspend or terminate accounts for violations of these
@@ -224,7 +264,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              9. Disclaimers and Limitation of Liability
+              10. Disclaimers and Limitation of Liability
             </h2>
             <p className="text-base leading-relaxed">
               ServiceLink is provided on an &quot;as is&quot; and &quot;as
@@ -237,7 +277,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              10. Changes to These Terms
+              11. Changes to These Terms
             </h2>
             <p className="text-base leading-relaxed">
               We may update these Terms from time to time. Updated versions will
@@ -249,7 +289,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-              11. Contact Us
+              12. Contact Us
             </h2>
             <p className="text-base leading-relaxed">
               If you have any questions about these Terms of Service, please

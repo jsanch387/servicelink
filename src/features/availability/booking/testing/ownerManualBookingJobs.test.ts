@@ -68,6 +68,24 @@ describe('parseOwnerManualBookingJobs', () => {
     ]);
     expect(result.ok).toBe(false);
   });
+
+  it('keeps digits in vehicle model (e.g. Ram 2500)', () => {
+    const result = parseOwnerManualBookingJobs([
+      {
+        serviceName: 'Wash',
+        servicePriceCents: 5000,
+        durationMinutes: 60,
+        vehicle: { year: '2015', make: 'Ram', model: '2500' },
+      },
+    ]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.jobs[0].vehicle).toEqual({
+      year: '2015',
+      make: 'Ram',
+      model: '2500',
+    });
+  });
 });
 
 describe('appointment schedule helpers', () => {

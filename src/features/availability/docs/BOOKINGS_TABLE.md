@@ -160,12 +160,12 @@ All customer fields except name/email can be nullable if we later make address o
 
 ### APIs and who writes/reads
 
-| Action                                          | API / layer                               | Who                                                                                                                             |
-| ----------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| List blocked slots (public calendar)            | GET `/api/public/bookings/blocked/[slug]` | Public; admin client.                                                                                                           |
+| Action                                          | API / layer                               | Who                                                                                                                                                                                                                                     |
+| ----------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| List blocked slots (public calendar)            | GET `/api/public/bookings/blocked/[slug]` | Public; admin client.                                                                                                                                                                                                                   |
 | Create booking (customer or owner `?for=owner`) | POST `/api/public/bookings`               | Public; resolves business by slug, then `createBooking` (admin), which **upserts `customers`**, sets `bookings.customer_id`, and upserts **`customer_assets`** for complete vehicles. Paid path: Stripe webhook → same `createBooking`. |
-| List bookings (dashboard)                       | GET `/api/availability/bookings`          | Authenticated owner; RLS.                                                                                                       |
-| Update status (complete/cancel)                 | PATCH `/api/availability/bookings/[id]`   | Authenticated owner; RLS.                                                                                                       |
+| List bookings (dashboard)                       | GET `/api/availability/bookings`          | Authenticated owner; RLS.                                                                                                                                                                                                               |
+| Update status (complete/cancel)                 | PATCH `/api/availability/bookings/[id]`   | Authenticated owner; RLS.                                                                                                                                                                                                               |
 
 Insert into `bookings` happens only via the public POST API (no direct anon insert). Select/update/delete are restricted by RLS to the business owner.
 
