@@ -502,9 +502,18 @@ export async function POST(request: NextRequest) {
     const clientPaymentMethod =
       rawClientPm === 'pay_in_person' ||
       rawClientPm === 'pay_now' ||
-      rawClientPm === 'none'
+      rawClientPm === 'none' ||
+      rawClientPm === 'membership'
         ? rawClientPm
         : null;
+    const membershipIdForPayment =
+      ownerManualBooking && typeof body.membershipId === 'string'
+        ? body.membershipId.trim()
+        : '';
+    const paymentMethodForInsert =
+      membershipIdForPayment || clientPaymentMethod === 'membership'
+        ? ('membership' as const)
+        : clientPaymentMethod;
 
     const persistedServiceLocationType =
       resolvePersistedBookingServiceLocationType({
@@ -669,7 +678,7 @@ export async function POST(request: NextRequest) {
           currency: paySettings?.currency?.trim() || 'usd',
           paymentsEnabled: paySettings?.payments_enabled === true,
           checkoutMode: paySettings?.checkout_mode ?? null,
-          clientPaymentMethod,
+          clientPaymentMethod: paymentMethodForInsert,
         });
       } catch (payErr) {
         logBookingTransaction(requestId, 'error', 'payments_failed', {
@@ -931,7 +940,7 @@ export async function POST(request: NextRequest) {
         currency: paySettings?.currency?.trim() || 'usd',
         paymentsEnabled: paySettings?.payments_enabled === true,
         checkoutMode: paySettings?.checkout_mode ?? null,
-        clientPaymentMethod,
+        clientPaymentMethod: paymentMethodForInsert,
       });
     } catch (payErr) {
       logBookingTransaction(requestId, 'error', 'payments_failed', {

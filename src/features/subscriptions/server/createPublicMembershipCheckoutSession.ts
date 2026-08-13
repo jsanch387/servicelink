@@ -52,6 +52,15 @@ export type CreatePublicMembershipCheckoutInput = {
   priceId: string;
   firstVisitDate: string;
   firstVisitTime: string;
+  /** Optional service details collected (or CRM-prefilled) before Checkout. */
+  street?: string;
+  unit?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  vehicleYear?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
 };
 
 export type CreatePublicMembershipCheckoutResult =
@@ -303,7 +312,11 @@ export async function createPublicMembershipCheckoutSession(
   const cancelUrl = `${baseUrl}/${slugPath}?membershipCheckout=cancel`;
 
   const stripe = getStripePlatform();
-  const meta = {
+  const trimMeta = (v: string | undefined, max: number) => {
+    const t = (v ?? '').trim();
+    return t ? t.slice(0, max) : undefined;
+  };
+  const meta: Record<string, string> = {
     kind: 'membership_checkout',
     businessId,
     businessSlug,
@@ -313,6 +326,22 @@ export async function createPublicMembershipCheckoutSession(
     firstVisitTime,
     visitDurationMinutes: String(visitDurationMinutes),
   };
+  const street = trimMeta(input.street, 200);
+  const unit = trimMeta(input.unit, 40);
+  const city = trimMeta(input.city, 80);
+  const state = trimMeta(input.state, 2);
+  const zip = trimMeta(input.zip, 10);
+  const vehicleYear = trimMeta(input.vehicleYear, 4);
+  const vehicleMake = trimMeta(input.vehicleMake, 40);
+  const vehicleModel = trimMeta(input.vehicleModel, 40);
+  if (street) meta.street = street;
+  if (unit) meta.unit = unit;
+  if (city) meta.city = city;
+  if (state) meta.state = state;
+  if (zip) meta.zip = zip;
+  if (vehicleYear) meta.vehicleYear = vehicleYear;
+  if (vehicleMake) meta.vehicleMake = vehicleMake;
+  if (vehicleModel) meta.vehicleModel = vehicleModel;
 
   try {
     const session = await stripe.checkout.sessions.create(

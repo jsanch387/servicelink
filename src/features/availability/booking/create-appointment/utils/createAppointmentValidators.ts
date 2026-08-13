@@ -124,10 +124,16 @@ export function isCustomJobPricingComplete(p: {
   serviceName?: string;
   customPriceLabel?: string;
   durationMinutes?: number;
+  /** Membership Book visit: price is Included ($0) — skip digit parse. */
+  membershipPriceIncluded?: boolean;
 }): boolean {
   const nameOk = Boolean(p.serviceName?.trim());
-  const priceOk = parseRequiredCustomJobPriceCents(p.customPriceLabel) != null;
+  const priceOk = p.membershipPriceIncluded
+    ? true
+    : parseRequiredCustomJobPriceCents(p.customPriceLabel) != null;
   const durationOk =
-    typeof p.durationMinutes === 'number' && p.durationMinutes > 0;
+    typeof p.durationMinutes === 'number' &&
+    Number.isFinite(p.durationMinutes) &&
+    p.durationMinutes > 0;
   return nameOk && priceOk && durationOk;
 }

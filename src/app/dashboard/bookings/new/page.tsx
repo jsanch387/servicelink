@@ -2,20 +2,21 @@ import { ROUTES } from '@/constants/routes';
 import { CreateAppointmentWizard } from '@/features/availability/booking/create-appointment';
 import type { MembershipVisitPrefill } from '@/features/availability/booking/create-appointment/types/membershipVisitPrefill';
 import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
-import { listCustomerAssetsByPhone } from '@/features/customer-management/server/listCustomerAssetsByPhone';
-import {
-  CUSTOMER_ASSET_TYPE_VEHICLE,
-  parseVehicleAssetAttributes,
-} from '@/features/customer-management/utils/customerAssetTypes';
 import { loadOwnerBookingSale } from '@/features/marketing/server/loadOwnerBookingSale';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { loadQuoteServiceCatalog } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import { getServiceCategories } from '@/features/services/categories/api/getServiceCategories';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '@/features/subscriptions/constants/membershipVisitDuration';
+import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
 import {
   customerMembershipsOf,
   membershipPlansOf,
 } from '@/features/subscriptions/server/membershipTablesQuery';
+import {
+  isUsableMembershipAddress,
+  isUsableMembershipVehicle,
+  resolveMembershipCustomerServiceSnapshot,
+} from '@/features/subscriptions/server/resolveMembershipCustomerServiceSnapshot';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -97,39 +98,20 @@ async function loadMembershipVisitPrefill(
     emailFromQuery ||
     (membership.customer_email as string | null)?.trim() ||
     '';
-  const phone =
+  const phoneRaw =
     phoneFromQuery ||
     (membership.customer_phone as string | null)?.trim() ||
     '';
+  const phone = phoneRaw ? normalizeUsPhoneDigits(phoneRaw) : '';
   const notes =
     notesFromQuery || (membership.notes as string | null)?.trim() || '';
 
-  let vehicle: MembershipVisitPrefill['vehicle'];
-  const customerId = (membership.customer_id as string | null)?.trim();
-  if (customerId) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: assets } = await (supabase as any)
-      .from('customer_assets')
-      .select('attributes')
-      .eq('business_id', businessId)
-      .eq('customer_id', customerId)
-      .eq('asset_type', CUSTOMER_ASSET_TYPE_VEHICLE)
-      .order('updated_at', { ascending: false })
-      .limit(1);
-    const attrs = parseVehicleAssetAttributes(
-      (assets as Array<{ attributes?: unknown }> | null)?.[0]?.attributes
-    );
-    if (attrs) vehicle = attrs;
-  }
-  if (!vehicle && phone) {
-    const assets = await listCustomerAssetsByPhone(supabase, {
-      businessId,
-      phone,
-      assetType: CUSTOMER_ASSET_TYPE_VEHICLE,
-    });
-    const attrs = parseVehicleAssetAttributes(assets[0]?.attributes);
-    if (attrs) vehicle = attrs;
-  }
+  const snapshot = await resolveMembershipCustomerServiceSnapshot(supabase, {
+    businessId,
+    phone,
+    email,
+    customerId: (membership.customer_id as string | null)?.trim() || null,
+  });
 
   return {
     membershipId,
@@ -139,7 +121,12 @@ async function loadMembershipVisitPrefill(
     email,
     phone,
     notes: notes || undefined,
-    vehicle,
+    address: isUsableMembershipAddress(snapshot.address)
+      ? snapshot.address
+      : undefined,
+    vehicle: isUsableMembershipVehicle(snapshot.vehicle)
+      ? snapshot.vehicle
+      : undefined,
   };
 }
 

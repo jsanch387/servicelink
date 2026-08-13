@@ -1,3 +1,5 @@
+import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
+
 export const ROUTES = {
   // Public routes (smooth scroll sections)
   HOME: '#home',
@@ -175,6 +177,9 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Public: start Stripe Checkout (subscription) for a membership plan price. */
   PUBLIC_MEMBERSHIPS_CHECKOUT: '/api/public/memberships/checkout',
+  /** Public: CRM address/vehicle lookup for membership subscribe / visit. */
+  PUBLIC_MEMBERSHIPS_CUSTOMER_SNAPSHOT:
+    '/api/public/memberships/customer-snapshot',
   /** Public: member books next period visit with signed token. */
   PUBLIC_MEMBERSHIPS_VISIT: '/api/public/memberships/visit',
   /** Public: fetch booking payment summary after successful checkout return. */
@@ -650,7 +655,10 @@ export function getOwnerCreateAppointmentPath(args: {
   const email = args.email?.trim();
   if (email && email !== '—') q.set('email', email);
   const phone = args.phone?.trim();
-  if (phone) q.set('phone', phone);
+  if (phone) {
+    const normalized = normalizeUsPhoneDigits(phone);
+    if (normalized) q.set('phone', normalized);
+  }
   const notes = args.notes?.trim();
   if (notes) q.set('notes', notes);
   q.set('planName', args.planName.trim());

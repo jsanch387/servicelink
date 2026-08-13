@@ -1,10 +1,12 @@
 'use client';
 
 import { Button, Modal } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import type { QuoteCatalogService } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 import {
   CREATE_APPOINTMENT_MAX_JOBS,
@@ -53,6 +55,7 @@ export function CreateAppointmentWizard({
   activeSale = null,
   membershipVisit = null,
 }: CreateAppointmentWizardProps) {
+  const router = useRouter();
   const ctrl = useCreateAppointmentController({
     businessId,
     businessSlug: businessSlug?.trim() || '',
@@ -114,6 +117,15 @@ export function CreateAppointmentWizard({
         : undefined
       : 'Back';
 
+  const handleSecondary = () => {
+    // Membership Book visit starts on custom job — Back returns to subscriber.
+    if (membershipId && step === CREATE_APPOINTMENT_STEP.PRICING) {
+      router.push(ROUTES.DASHBOARD.SUBSCRIPTIONS_SUBSCRIBER(membershipId));
+      return;
+    }
+    goBack();
+  };
+
   const showSummary =
     Boolean(draft.serviceName.trim()) &&
     step > CREATE_APPOINTMENT_STEP.PRICING &&
@@ -123,11 +135,23 @@ export function CreateAppointmentWizard({
     committedCount: committedJobs.length,
     draft,
   });
+  // Membership Book visit = one covered job; multi-job is for normal appointments.
+  const allowAddAnotherJob = !membershipId;
   const showAddAnotherJob =
+    allowAddAnotherJob &&
     step === CREATE_APPOINTMENT_STEP.VEHICLE &&
     committedJobs.length + 1 < CREATE_APPOINTMENT_MAX_JOBS;
   const showAddAnotherOnReview =
-    isReview && committedJobs.length + 1 < CREATE_APPOINTMENT_MAX_JOBS;
+    allowAddAnotherJob &&
+    isReview &&
+    committedJobs.length + 1 < CREATE_APPOINTMENT_MAX_JOBS;
+
+  const membershipBackHref = membershipId
+    ? ROUTES.DASHBOARD.SUBSCRIPTIONS_SUBSCRIBER(membershipId)
+    : undefined;
+  const headerBackProps = membershipBackHref
+    ? { backHref: membershipBackHref, backLabel: 'Subscriber' }
+    : {};
 
   if (isSubmitting) {
     return (
@@ -143,7 +167,7 @@ export function CreateAppointmentWizard({
   if (appointmentConfirmed) {
     return (
       <div className="min-h-screen py-8 sm:py-10">
-        <CreateAppointmentHeader compact />
+        <CreateAppointmentHeader compact {...headerBackProps} />
         <div className="mx-auto w-full max-w-xl px-4">
           <CreateAppointmentSuccessState membershipId={membershipId} />
         </div>
@@ -154,7 +178,7 @@ export function CreateAppointmentWizard({
   if (submitError) {
     return (
       <div className="min-h-screen py-8 sm:py-10">
-        <CreateAppointmentHeader compact />
+        <CreateAppointmentHeader compact {...headerBackProps} />
         <div className="mx-auto w-full max-w-xl px-4">
           <CreateAppointmentErrorState
             message={submitError}
@@ -181,7 +205,11 @@ export function CreateAppointmentWizard({
       );
   } else if (step === CREATE_APPOINTMENT_STEP.PRICING) {
     body = draft.isCustomJob ? (
-      <CustomJobStep draft={draft} onChange={patchDraft} />
+      <CustomJobStep
+        draft={draft}
+        onChange={patchDraft}
+        priceIncludedWithMembership={Boolean(membershipId)}
+      />
     ) : selectedService ? (
       <CatalogPricingStep
         service={selectedService}
@@ -250,6 +278,7 @@ export function CreateAppointmentWizard({
         canAddAnotherJob={showAddAnotherOnReview}
         onAddAnotherJob={addAnotherJob}
         addAnotherDisabled={!addJobGate.ok || isSubmitting}
+        membershipCovered={Boolean(membershipId)}
       />
     );
   }
@@ -260,6 +289,7 @@ export function CreateAppointmentWizard({
         title={headerTitle}
         subtitle={headerSubtitle}
         compact={isReview}
+        {...headerBackProps}
       />
 
       <div className="mx-auto w-full max-w-xl px-4">
@@ -288,7 +318,10 @@ export function CreateAppointmentWizard({
 
         {showSummary ? (
           <div className="mt-6">
-            <SelectionSummaryCard draft={draft} />
+            <SelectionSummaryCard
+              draft={draft}
+              membershipCovered={Boolean(membershipId)}
+            />
           </div>
         ) : null}
 
@@ -297,7 +330,7 @@ export function CreateAppointmentWizard({
           onPrimary={goContinue}
           primaryDisabled={!canContinue || isSubmitting}
           secondaryLabel={secondaryLabel}
-          onSecondary={secondaryLabel ? goBack : undefined}
+          onSecondary={secondaryLabel ? handleSecondary : undefined}
           secondaryDisabled={isSubmitting}
         />
       </div>

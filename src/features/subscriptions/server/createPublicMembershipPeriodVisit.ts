@@ -34,6 +34,12 @@ import {
   parseMembershipFirstVisitDate,
   parseMembershipFirstVisitTime,
 } from './parseMembershipFirstVisit';
+import {
+  mergeMembershipServiceSnapshots,
+  resolveMembershipCustomerServiceSnapshot,
+  type MembershipServiceAddress,
+  type MembershipServiceVehicle,
+} from './resolveMembershipCustomerServiceSnapshot';
 
 export type CreatePublicMembershipPeriodVisitResult =
   | {
@@ -62,19 +68,27 @@ function emptyCustomerForm(snapshot: {
   email?: string | null;
   phone?: string | null;
   notes?: string | null;
+  street?: string | null;
+  unit?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  vehicleYear?: string | null;
+  vehicleMake?: string | null;
+  vehicleModel?: string | null;
 }) {
   return {
     fullName: (snapshot.name ?? '').trim() || 'Member',
     email: (snapshot.email ?? '').trim(),
     phone: (snapshot.phone ?? '').trim(),
-    streetAddress: '',
-    unitApt: '',
-    city: '',
-    state: '',
-    zip: '',
-    vehicleYear: '',
-    vehicleMake: '',
-    vehicleModel: '',
+    streetAddress: (snapshot.street ?? '').trim(),
+    unitApt: (snapshot.unit ?? '').trim(),
+    city: (snapshot.city ?? '').trim(),
+    state: (snapshot.state ?? '').trim(),
+    zip: (snapshot.zip ?? '').trim(),
+    vehicleYear: (snapshot.vehicleYear ?? '').trim(),
+    vehicleMake: (snapshot.vehicleMake ?? '').trim(),
+    vehicleModel: (snapshot.vehicleModel ?? '').trim(),
     notes: (snapshot.notes ?? '').trim() || 'Membership visit.',
   };
 }
@@ -86,6 +100,8 @@ export async function createPublicMembershipPeriodVisit(
     businessSlug: string;
     visitDate: string;
     visitTime: string;
+    address?: Partial<MembershipServiceAddress> | null;
+    vehicle?: Partial<MembershipServiceVehicle> | null;
     requestId?: string;
   }
 ): Promise<CreatePublicMembershipPeriodVisitResult> {
@@ -254,11 +270,33 @@ export async function createPublicMembershipPeriodVisit(
 
   const businessSlug = (biz.business_slug ?? '').trim() || slug;
   const businessDisplayName = (biz.business_name ?? '').trim() || businessSlug;
+  const phone = (row.customer_phone as string | null)?.trim() || '';
+  const email = (row.customer_email as string | null)?.trim() || '';
+
+  const crmSnapshot = await resolveMembershipCustomerServiceSnapshot(supabase, {
+    businessId: biz.id,
+    phone,
+    email,
+    customerId: (row.customer_id as string | null) ?? null,
+  });
+  const serviceSnapshot = mergeMembershipServiceSnapshots(crmSnapshot, {
+    address: args.address,
+    vehicle: args.vehicle,
+  });
+
   const customer = emptyCustomerForm({
     name: row.customer_name as string | null,
-    email: row.customer_email as string | null,
-    phone: row.customer_phone as string | null,
+    email,
+    phone,
     notes: row.notes as string | null,
+    street: serviceSnapshot.address.street,
+    unit: serviceSnapshot.address.unit,
+    city: serviceSnapshot.address.city,
+    state: serviceSnapshot.address.state,
+    zip: serviceSnapshot.address.zip,
+    vehicleYear: serviceSnapshot.vehicle.year,
+    vehicleMake: serviceSnapshot.vehicle.make,
+    vehicleModel: serviceSnapshot.vehicle.model,
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -299,7 +337,7 @@ export async function createPublicMembershipPeriodVisit(
       business_id: biz.id,
       provider: 'none',
       payment_status: 'not_required',
-      payment_method_selected: 'none',
+      payment_method_selected: 'membership',
       currency: 'usd',
       total_amount_cents: 0,
       required_online_amount_cents: 0,

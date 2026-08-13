@@ -359,7 +359,20 @@ export const publicBookingUiEs: PublicBookingUi = {
         body: 'Tu proveedor viene, lo deja listo, y hasta la próxima. Así de simple.',
       },
     ],
-    howItWorksContinueCta: 'Elegir mi primera visita',
+    howItWorksContinueCta: 'Continuar',
+    contactTitle: 'Tus datos de contacto',
+    contactHint:
+      'Los usaremos para encontrar tu dirección y vehículo guardados si ya has reservado aquí.',
+    contactContinueCta: 'Continuar',
+    contactIncomplete:
+      'Ingresa tu nombre, un correo válido y un teléfono de 10 dígitos.',
+    serviceDetailsTitle: 'Detalles del servicio',
+    serviceDetailsHint: 'Confirma tu dirección y vehículo para esta visita.',
+    serviceDetailsContinueCta: 'Continuar',
+    serviceDetailsIncomplete:
+      'Completa los campos obligatorios de dirección y vehículo.',
+    usingSavedDetails:
+      'Lo llenamos con tu última visita — cambia lo que no esté bien.',
     firstVisitTitle: 'Elige tu primera visita',
     firstVisitHint: '',
     firstVisitRequired: 'Elige una fecha para tu primera visita.',

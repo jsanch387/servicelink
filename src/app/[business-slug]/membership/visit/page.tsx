@@ -96,6 +96,11 @@ export default async function PublicMembershipVisitRoute({
       minimumNotice={minimumNotice}
       schedulingReady={schedulingReady}
       visitDurationMinutes={ctx.visitDurationMinutes}
+      needsAddress={ctx.needsAddress}
+      needsVehicle={ctx.needsVehicle}
+      serviceDetailsComplete={ctx.serviceDetailsComplete}
+      initialAddress={ctx.address}
+      initialVehicle={ctx.vehicle}
     />
   );
 }

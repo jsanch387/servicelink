@@ -12,8 +12,10 @@ export {
 } from './publicFlowBackNav';
 export {
   PhoneInput,
+  US_PHONE_COUNTRY_CODE,
   US_PHONE_DIGIT_COUNT,
   formatUsPhoneDigits,
+  normalizeUsPhoneDigits,
 } from './PhoneInput';
 export { PriceInput } from './PriceInput';
 export { PublicFooter } from './PublicFooter';

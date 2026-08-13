@@ -322,6 +322,15 @@ export type PublicBookingUi = {
       { title: string; body: string },
     ];
     howItWorksContinueCta: string;
+    contactTitle: string;
+    contactHint: string;
+    contactContinueCta: string;
+    contactIncomplete: string;
+    serviceDetailsTitle: string;
+    serviceDetailsHint: string;
+    serviceDetailsContinueCta: string;
+    serviceDetailsIncomplete: string;
+    usingSavedDetails: string;
     firstVisitTitle: string;
     firstVisitHint: string;
     firstVisitRequired: string;

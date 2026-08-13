@@ -17,6 +17,7 @@ import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlo
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
 import type { TimeOffInterval } from '@/features/availability/booking/types';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
+import type { ServiceLocationMode } from '@/features/business-profile/utils/location';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import {
   ArrowPathIcon,
@@ -25,7 +26,7 @@ import {
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type {
   CustomerSubscriptionPlan,
@@ -35,6 +36,15 @@ import {
   formatCadencePriceSuffix,
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
+import {
+  isMembershipContactComplete,
+  isMembershipServiceDetailsComplete,
+} from '../utils/membershipServiceDetailsComplete';
+import {
+  EMPTY_MEMBERSHIP_SERVICE_DETAILS,
+  MembershipServiceDetailsFields,
+  type MembershipServiceDetailsValue,
+} from './MembershipServiceDetailsFields';
 
 interface PublicMembershipSubscribePageProps {
   businessSlug: string;
@@ -44,12 +54,12 @@ interface PublicMembershipSubscribePageProps {
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
   minimumNotice: string;
-  /** When false, calendar still works but slots may be empty. */
   schedulingReady: boolean;
   visitDurationMinutes?: number;
+  serviceLocationMode?: ServiceLocationMode;
 }
 
-type SubscribeStep = 'howItWorks' | 'firstVisit';
+type SubscribeStep = 'howItWorks' | 'contact' | 'serviceDetails' | 'firstVisit';
 
 const HOW_IT_WORKS_ICONS = [
   CheckBadgeIcon,
@@ -58,7 +68,6 @@ const HOW_IT_WORKS_ICONS = [
   WrenchScrewdriverIcon,
 ] as const;
 
-/** Browser / larger viewports — slightly roomier calendar + slots. */
 function useIsLargeScreen() {
   const [isLarge, setIsLarge] = useState(false);
 
@@ -74,7 +83,8 @@ function useIsLargeScreen() {
 }
 
 /**
- * Public subscribe: how it works → date + time → Checkout.
+ * Public subscribe: how it works → contact → (details if needed) → date → Checkout.
+ * Existing CRM customers get address/vehicle silently when complete.
  */
 export const PublicMembershipSubscribePage: React.FC<
   PublicMembershipSubscribePageProps
@@ -88,11 +98,19 @@ export const PublicMembershipSubscribePage: React.FC<
   minimumNotice,
   schedulingReady,
   visitDurationMinutes = MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT,
+  serviceLocationMode = 'mobile_only',
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const isLargeScreen = useIsLargeScreen();
+  const needsAddress = serviceLocationMode !== 'shop_only';
+  const needsVehicle = true;
+
   const [step, setStep] = useState<SubscribeStep>('howItWorks');
   const [isContinuing, setIsContinuing] = useState(false);
+  const [details, setDetails] = useState<MembershipServiceDetailsValue>(
+    EMPTY_MEMBERSHIP_SERVICE_DETAILS
+  );
+  const [usedSavedDetails, setUsedSavedDetails] = useState(false);
   const [firstVisitDate, setFirstVisitDate] = useState<Date | null>(null);
   const [firstVisitTime, setFirstVisitTime] = useState<string | null>(null);
 
@@ -121,6 +139,82 @@ export const PublicMembershipSubscribePage: React.FC<
     return `${base}${join}tab=subscriptions`;
   })();
 
+  const stepIndex = useMemo(() => {
+    const order: SubscribeStep[] = [
+      'howItWorks',
+      'contact',
+      'serviceDetails',
+      'firstVisit',
+    ];
+    return order.indexOf(step);
+  }, [step]);
+
+  const lookupAndAdvanceFromContact = async () => {
+    if (!isMembershipContactComplete(details)) {
+      toast.warning(ui.subscriptions.contactIncomplete);
+      return;
+    }
+    setIsContinuing(true);
+    try {
+      const res = await fetch(API_ROUTES.PUBLIC_MEMBERSHIPS_CUSTOMER_SNAPSHOT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessSlug,
+          phone: details.phone,
+          email: details.email,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        matched?: boolean;
+        hasUsableAddress?: boolean;
+        hasVehicle?: boolean;
+        address?: {
+          street?: string;
+          unit?: string;
+          city?: string;
+          state?: string;
+          zip?: string;
+        } | null;
+        vehicle?: { year?: string; make?: string; model?: string } | null;
+      } | null;
+
+      let next = { ...details };
+      let saved = false;
+      if (json?.success && json.matched) {
+        if (json.address) {
+          next = {
+            ...next,
+            street: json.address.street?.trim() || next.street,
+            unit: json.address.unit?.trim() || next.unit,
+            city: json.address.city?.trim() || next.city,
+            state: json.address.state?.trim() || next.state,
+            zip: json.address.zip?.trim() || next.zip,
+          };
+        }
+        if (json.vehicle) {
+          next = {
+            ...next,
+            vehicleYear: json.vehicle.year?.trim() || next.vehicleYear,
+            vehicleMake: json.vehicle.make?.trim() || next.vehicleMake,
+            vehicleModel: json.vehicle.model?.trim() || next.vehicleModel,
+          };
+        }
+        saved = Boolean(json.hasUsableAddress || json.hasVehicle);
+      }
+      setDetails(next);
+      setUsedSavedDetails(saved);
+      // Always show prefilled details so the customer can confirm or edit.
+      setStep(needsAddress || needsVehicle ? 'serviceDetails' : 'firstVisit');
+    } catch {
+      setUsedSavedDetails(false);
+      setStep(needsAddress || needsVehicle ? 'serviceDetails' : 'firstVisit');
+    } finally {
+      setIsContinuing(false);
+    }
+  };
+
   const handleCheckout = async () => {
     if (!firstVisitDate) {
       toast.warning(ui.subscriptions.firstVisitRequired);
@@ -128,6 +222,17 @@ export const PublicMembershipSubscribePage: React.FC<
     }
     if (!firstVisitTime?.trim()) {
       toast.warning(ui.subscriptions.firstVisitTimeRequired);
+      return;
+    }
+    if (
+      !isMembershipServiceDetailsComplete({
+        value: details,
+        needsAddress,
+        needsVehicle,
+      })
+    ) {
+      toast.warning(ui.subscriptions.serviceDetailsIncomplete);
+      setStep('serviceDetails');
       return;
     }
 
@@ -149,6 +254,14 @@ export const PublicMembershipSubscribePage: React.FC<
           firstVisitDate: firstVisitYmd,
           firstVisitTime: firstVisitTime.trim().slice(0, 5),
           visitDurationMinutes,
+          street: needsAddress ? details.street.trim() : '',
+          unit: needsAddress ? details.unit.trim() : '',
+          city: needsAddress ? details.city.trim() : '',
+          state: needsAddress ? details.state.trim() : '',
+          zip: needsAddress ? details.zip.trim() : '',
+          vehicleYear: details.vehicleYear.trim(),
+          vehicleMake: details.vehicleMake.trim(),
+          vehicleModel: details.vehicleModel.trim(),
         }),
       });
       const json = (await res.json().catch(() => null)) as {
@@ -170,12 +283,27 @@ export const PublicMembershipSubscribePage: React.FC<
     }
   };
 
+  const goBack = () => {
+    if (step === 'firstVisit') {
+      setStep(needsAddress || needsVehicle ? 'serviceDetails' : 'contact');
+      return;
+    }
+    if (step === 'serviceDetails') {
+      setStep('contact');
+      return;
+    }
+    if (step === 'contact') {
+      setStep('howItWorks');
+      return;
+    }
+  };
+
   const canPay = Boolean(firstVisitDate && firstVisitTime);
 
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)]">
       <div className={publicFlowStickyBackHeaderClassName}>
-        <div className="mx-auto flex min-h-[52px] w-full max-w-md items-center px-4 sm:max-w-lg sm:px-6 lg:max-w-xl">
+        <div className="mx-auto flex min-h-[52px] w-full max-w-2xl items-center px-4 sm:px-6">
           {step === 'howItWorks' ? (
             <Link
               href={profileSubscriptionsHref}
@@ -188,7 +316,7 @@ export const PublicMembershipSubscribePage: React.FC<
             <button
               type="button"
               className={publicFlowBackNavClassName}
-              onClick={() => setStep('howItWorks')}
+              onClick={goBack}
             >
               <PublicFlowBackChevron />
               <span>{ui.subscriptions.subscribeStepBackLabel}</span>
@@ -197,21 +325,19 @@ export const PublicMembershipSubscribePage: React.FC<
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-md px-4 pb-32 pt-6 sm:max-w-lg sm:px-6 sm:pt-8 lg:max-w-xl">
+      <main className="mx-auto w-full max-w-2xl px-4 pb-32 pt-6 sm:px-6 sm:pt-8">
         <div
           className="mb-6 flex items-center gap-2"
-          aria-label={`${step === 'howItWorks' ? '1' : '2'} of 2`}
+          aria-label={`${stepIndex + 1} of 4`}
         >
-          <span
-            className={`h-1.5 flex-1 rounded-full transition-colors ${
-              step === 'howItWorks' ? 'bg-white' : 'bg-white/25'
-            }`}
-          />
-          <span
-            className={`h-1.5 flex-1 rounded-full transition-colors ${
-              step === 'firstVisit' ? 'bg-white' : 'bg-white/25'
-            }`}
-          />
+          {[0, 1, 2, 3].map(i => (
+            <span
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                i <= stepIndex ? 'bg-white' : 'bg-white/25'
+              }`}
+            />
+          ))}
         </div>
 
         {step === 'howItWorks' ? (
@@ -224,7 +350,6 @@ export const PublicMembershipSubscribePage: React.FC<
             </h1>
 
             <ol className="relative mt-8">
-              {/* Timeline rail — centered on the icon column */}
               <div
                 aria-hidden
                 className="absolute top-5 bottom-5 left-5 w-px -translate-x-1/2 bg-gradient-to-b from-white/25 via-white/12 to-white/5"
@@ -254,7 +379,60 @@ export const PublicMembershipSubscribePage: React.FC<
               })}
             </ol>
           </section>
-        ) : (
+        ) : null}
+
+        {step === 'contact' ? (
+          <section aria-labelledby="subscribe-contact-heading">
+            <h1
+              id="subscribe-contact-heading"
+              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
+            >
+              {ui.subscriptions.contactTitle}
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+              {ui.subscriptions.contactHint}
+            </p>
+            <div className="mt-5">
+              <MembershipServiceDetailsFields
+                value={details}
+                onChange={setDetails}
+                showContact
+                showAddress={false}
+                showVehicle={false}
+                bookingFlowLocale={bookingFlowLocale}
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {step === 'serviceDetails' ? (
+          <section aria-labelledby="subscribe-details-heading">
+            <h1
+              id="subscribe-details-heading"
+              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
+            >
+              {ui.subscriptions.serviceDetailsTitle}
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+              {ui.subscriptions.serviceDetailsHint}
+            </p>
+            <div className="mt-6">
+              <MembershipServiceDetailsFields
+                value={details}
+                onChange={setDetails}
+                showContact={false}
+                showAddress={needsAddress}
+                showVehicle={needsVehicle}
+                savedBanner={
+                  usedSavedDetails ? ui.subscriptions.usingSavedDetails : null
+                }
+                bookingFlowLocale={bookingFlowLocale}
+              />
+            </div>
+          </section>
+        ) : null}
+
+        {step === 'firstVisit' ? (
           <section aria-labelledby="subscribe-visit-heading">
             <h1
               id="subscribe-visit-heading"
@@ -301,22 +479,62 @@ export const PublicMembershipSubscribePage: React.FC<
               />
             </div>
           </section>
-        )}
+        ) : null}
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 px-4 py-3 backdrop-blur-sm sm:px-6 lg:py-4">
-        <div className="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-xl">
+        <div className="mx-auto w-full max-w-2xl">
           {step === 'howItWorks' ? (
             <Button
               type="button"
               variant="inverse"
               fullWidth
               size={isLargeScreen ? 'lg' : 'sm'}
-              onClick={() => setStep('firstVisit')}
+              onClick={() => setStep('contact')}
             >
               {ui.subscriptions.howItWorksContinueCta}
             </Button>
-          ) : (
+          ) : null}
+
+          {step === 'contact' ? (
+            <Button
+              type="button"
+              variant="inverse"
+              fullWidth
+              size={isLargeScreen ? 'lg' : 'sm'}
+              loading={isContinuing}
+              disabled={isContinuing}
+              onClick={() => void lookupAndAdvanceFromContact()}
+            >
+              {ui.subscriptions.contactContinueCta}
+            </Button>
+          ) : null}
+
+          {step === 'serviceDetails' ? (
+            <Button
+              type="button"
+              variant="inverse"
+              fullWidth
+              size={isLargeScreen ? 'lg' : 'sm'}
+              onClick={() => {
+                if (
+                  !isMembershipServiceDetailsComplete({
+                    value: details,
+                    needsAddress,
+                    needsVehicle,
+                  })
+                ) {
+                  toast.warning(ui.subscriptions.serviceDetailsIncomplete);
+                  return;
+                }
+                setStep('firstVisit');
+              }}
+            >
+              {ui.subscriptions.serviceDetailsContinueCta}
+            </Button>
+          ) : null}
+
+          {step === 'firstVisit' ? (
             <>
               <p className="mb-2 text-center text-xs tabular-nums text-zinc-500 lg:mb-2.5 lg:text-sm">
                 <span className="text-zinc-400">{plan.name}</span>
@@ -340,7 +558,7 @@ export const PublicMembershipSubscribePage: React.FC<
                 {ui.subscriptions.continueToCheckoutCta}
               </Button>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

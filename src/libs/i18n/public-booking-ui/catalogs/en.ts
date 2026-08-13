@@ -353,7 +353,19 @@ export const publicBookingUiEn: PublicBookingUi = {
         body: 'Your provider comes, gets it done, and you’re set until next time. Simple.',
       },
     ],
-    howItWorksContinueCta: 'Choose my first visit',
+    howItWorksContinueCta: 'Continue',
+    contactTitle: 'Your contact info',
+    contactHint:
+      'We’ll use this to find your saved address and vehicle if you’ve booked here before.',
+    contactContinueCta: 'Continue',
+    contactIncomplete: 'Enter your name, a valid email, and a 10-digit phone.',
+    serviceDetailsTitle: 'Service details',
+    serviceDetailsHint: 'Confirm your address and vehicle for this visit.',
+    serviceDetailsContinueCta: 'Continue',
+    serviceDetailsIncomplete:
+      'Fill in the required address and vehicle fields.',
+    usingSavedDetails:
+      'We filled this from your last visit — change anything that looks off.',
     firstVisitTitle: 'Choose your first visit',
     firstVisitHint: '',
     firstVisitRequired: 'Choose a date for your first visit.',

@@ -48,6 +48,11 @@ interface DateSelectorProps {
    * Default true keeps public booking behavior (closed / fully booked days off).
    */
   requireAvailableSlots?: boolean;
+  /**
+   * Must match TimeSlotGrid for the same flow, or auto-select / disabled days
+   * disagree with the times list.
+   */
+  requireDurationWithinHours?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -66,6 +71,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   calendarTitle,
   calendarSubtitle,
   requireAvailableSlots = true,
+  requireDurationWithinHours = true,
   bookingFlowLocale = 'en',
 }) => {
   const isDateDisabled = useCallback(
@@ -82,12 +88,14 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         existingBookings,
         30,
         timeOffBlocks,
-        minimumNotice
+        minimumNotice,
+        { requireDurationWithinHours }
       );
       return slots.length === 0;
     },
     [
       requireAvailableSlots,
+      requireDurationWithinHours,
       weeklySchedule,
       serviceDurationMinutes,
       existingBookings,

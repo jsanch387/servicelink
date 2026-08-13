@@ -2,6 +2,7 @@
  * Resolve a signed membership visit token for the public schedule page.
  */
 
+import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
@@ -13,6 +14,11 @@ import {
   customerMembershipsOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
+import {
+  resolveMembershipCustomerServiceSnapshot,
+  type MembershipServiceAddress,
+  type MembershipServiceVehicle,
+} from './resolveMembershipCustomerServiceSnapshot';
 
 export type PublicMembershipVisitContext =
   | {
@@ -27,6 +33,13 @@ export type PublicMembershipVisitContext =
       visitStatus: OwnerSubscriberVisitStatus;
       periodVisitDate: string | null;
       periodVisitTime: string | null;
+      needsAddress: boolean;
+      needsVehicle: boolean;
+      serviceDetailsComplete: boolean;
+      /** Prefill when CRM has data; may be incomplete. */
+      address: MembershipServiceAddress | null;
+      vehicle: MembershipServiceVehicle | null;
+      usingSavedDetails: boolean;
     }
   | { ok: false; error: 'invalid_token' | 'not_found' | 'wrong_business' };
 
@@ -44,7 +57,9 @@ export async function loadPublicMembershipVisitContext(
 
   const { data: business } = await supabase
     .from('business_profiles')
-    .select('id, business_slug, business_name')
+    .select(
+      'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+    )
     .eq('business_slug', slug)
     .maybeSingle();
 
@@ -52,12 +67,21 @@ export async function loadPublicMembershipVisitContext(
     id?: string;
     business_slug?: string | null;
     business_name?: string | null;
+    service_location_mode?: string | null;
+    service_area?: string | null;
+    business_zip?: string | null;
+    shop_street_address?: string | null;
+    shop_unit?: string | null;
   } | null;
   if (!biz?.id) return { ok: false, error: 'not_found' };
 
+  const serviceLocation = buildPublicBookingServiceLocation(biz);
+  const needsAddress = serviceLocation.mode !== 'shop_only';
+  const needsVehicle = true;
+
   const { data: row } = await customerMembershipsOf(supabase)
     .select(
-      'id, business_id, plan_id, customer_name, status, current_period_start, period_visit_booking_id, period_visit_period_start'
+      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, status, current_period_start, period_visit_booking_id, period_visit_period_start'
     )
     .eq('id', membershipId)
     .maybeSingle();
@@ -119,6 +143,19 @@ export async function loadPublicMembershipVisitContext(
     periodVisitTime = rawTime ? rawTime.slice(0, 5) : null;
   }
 
+  const snapshot = await resolveMembershipCustomerServiceSnapshot(supabase, {
+    businessId: biz.id,
+    phone: (row.customer_phone as string | null) ?? null,
+    email: (row.customer_email as string | null) ?? null,
+    customerId: (row.customer_id as string | null) ?? null,
+  });
+
+  const serviceDetailsComplete =
+    (!needsAddress || snapshot.hasUsableAddress) &&
+    (!needsVehicle || snapshot.hasVehicle);
+  const usingSavedDetails =
+    Boolean(snapshot.customerId) && serviceDetailsComplete;
+
   return {
     ok: true,
     membershipId,
@@ -131,5 +168,11 @@ export async function loadPublicMembershipVisitContext(
     visitStatus,
     periodVisitDate,
     periodVisitTime,
+    needsAddress,
+    needsVehicle,
+    serviceDetailsComplete,
+    address: snapshot.address,
+    vehicle: snapshot.vehicle,
+    usingSavedDetails,
   };
 }

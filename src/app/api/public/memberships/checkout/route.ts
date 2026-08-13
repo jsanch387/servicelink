@@ -28,17 +28,23 @@ export async function POST(req: NextRequest) {
             priceId?: unknown;
             firstVisitDate?: unknown;
             firstVisitTime?: unknown;
+            street?: unknown;
+            unit?: unknown;
+            city?: unknown;
+            state?: unknown;
+            zip?: unknown;
+            vehicleYear?: unknown;
+            vehicleMake?: unknown;
+            vehicleModel?: unknown;
           })
         : null;
 
-    const businessSlug =
-      typeof body?.businessSlug === 'string' ? body.businessSlug : '';
-    const planId = typeof body?.planId === 'string' ? body.planId : '';
-    const priceId = typeof body?.priceId === 'string' ? body.priceId : '';
-    const firstVisitDate =
-      typeof body?.firstVisitDate === 'string' ? body.firstVisitDate : '';
-    const firstVisitTime =
-      typeof body?.firstVisitTime === 'string' ? body.firstVisitTime : '';
+    const str = (v: unknown) => (typeof v === 'string' ? v : '');
+    const businessSlug = str(body?.businessSlug);
+    const planId = str(body?.planId);
+    const priceId = str(body?.priceId);
+    const firstVisitDate = str(body?.firstVisitDate);
+    const firstVisitTime = str(body?.firstVisitTime);
 
     const rateLimited = await assertPublicMembershipCheckoutRateLimits(
       req,
@@ -54,6 +60,14 @@ export async function POST(req: NextRequest) {
         priceId,
         firstVisitDate,
         firstVisitTime,
+        street: str(body?.street),
+        unit: str(body?.unit),
+        city: str(body?.city),
+        state: str(body?.state),
+        zip: str(body?.zip),
+        vehicleYear: str(body?.vehicleYear),
+        vehicleMake: str(body?.vehicleMake),
+        vehicleModel: str(body?.vehicleModel),
       },
       requestId
     );

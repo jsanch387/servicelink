@@ -76,11 +76,11 @@ export function buildOwnerCreateAppointmentBody(
     businessSlug,
     scheduledDate: visit.scheduledDate!.trim(),
     startTime: visit.startTime!.trim(),
-    paymentMethodSelected: 'none',
+    paymentMethodSelected: membershipId ? 'membership' : 'none',
     ownerManualBooking: true,
     serviceLocationType: locationType,
     customerServiceLocation: locationType,
-    applySale: visit.applySale,
+    applySale: membershipId ? false : visit.applySale,
     ...(membershipId ? { membershipId } : {}),
     customer: {
       fullName: visit.customer.fullName.trim(),

@@ -32,7 +32,7 @@ export interface AvailabilityBookingJobDisplay {
 
 export interface BookingPaymentSummaryDisplay {
   paymentStatus: string;
-  /** `pay_now` (card), `pay_in_person`, or `none` (no in-app card charge). */
+  /** `pay_now` | `pay_in_person` | `none` | `membership` (plan-covered visit). */
   paymentMethodSelected: string;
   currency: string;
   totalAmountCents: number;

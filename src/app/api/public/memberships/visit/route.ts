@@ -26,14 +26,22 @@ export async function POST(req: NextRequest) {
             businessSlug?: unknown;
             visitDate?: unknown;
             visitTime?: unknown;
+            street?: unknown;
+            unit?: unknown;
+            city?: unknown;
+            state?: unknown;
+            zip?: unknown;
+            vehicleYear?: unknown;
+            vehicleMake?: unknown;
+            vehicleModel?: unknown;
           })
         : null;
 
-    const token = typeof body?.token === 'string' ? body.token : '';
-    const businessSlug =
-      typeof body?.businessSlug === 'string' ? body.businessSlug : '';
-    const visitDate = typeof body?.visitDate === 'string' ? body.visitDate : '';
-    const visitTime = typeof body?.visitTime === 'string' ? body.visitTime : '';
+    const str = (v: unknown) => (typeof v === 'string' ? v : '');
+    const token = str(body?.token);
+    const businessSlug = str(body?.businessSlug);
+    const visitDate = str(body?.visitDate);
+    const visitTime = str(body?.visitTime);
 
     const rateLimited = await assertPublicMembershipVisitRateLimits(
       req,
@@ -47,6 +55,18 @@ export async function POST(req: NextRequest) {
       businessSlug,
       visitDate,
       visitTime,
+      address: {
+        street: str(body?.street),
+        unit: str(body?.unit),
+        city: str(body?.city),
+        state: str(body?.state),
+        zip: str(body?.zip),
+      },
+      vehicle: {
+        year: str(body?.vehicleYear),
+        make: str(body?.vehicleMake),
+        model: str(body?.vehicleModel),
+      },
       requestId,
     });
 

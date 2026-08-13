@@ -30,6 +30,7 @@ import {
 import {
   formatSubscriberBillingDate,
   formatSubscriberBillingDateValue,
+  formatSubscriberVisitTime,
   getSubscriberBillingDateLabel,
   getSubscriberStatusClassName,
   getSubscriberStatusLabel,
@@ -370,7 +371,9 @@ export const OwnerSubscriberDetailPage: React.FC<
 
         {subscriber.visitStatus !== 'none' ? (
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-medium text-zinc-400">Visit</h2>
+            <h2 className="mb-2 text-sm font-medium text-zinc-400">
+              Next visit
+            </h2>
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-5">
               {subscriber.visitStatus === 'needs_visit' ? (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -415,29 +418,31 @@ export const OwnerSubscriberDetailPage: React.FC<
                   </div>
                 </div>
               ) : (
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    Visit scheduled
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-400">
-                    {subscriber.periodVisitDate
-                      ? formatSubscriberBillingDate(subscriber.periodVisitDate)
-                      : 'Date on file'}
-                    {subscriber.periodVisitTime
-                      ? ` · ${subscriber.periodVisitTime}`
-                      : ''}
-                  </p>
-                  <p className="mt-2 text-xs text-zinc-600">
-                    If the visit didn’t happen, cancel that booking — this flips
-                    back to Needs visit so you can rebook or send a schedule
-                    link.
-                  </p>
-                  <Link
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">
+                      {subscriber.periodVisitDate
+                        ? formatSubscriberBillingDate(
+                            subscriber.periodVisitDate
+                          )
+                        : 'Date on file'}
+                      {subscriber.periodVisitTime
+                        ? ` · ${formatSubscriberVisitTime(subscriber.periodVisitTime)}`
+                        : ''}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Need to rebook? Cancel it in Bookings first.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
                     href={ROUTES.DASHBOARD.BOOKINGS}
-                    className="mt-3 inline-flex cursor-pointer text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                    className="shrink-0"
                   >
-                    Open bookings
-                  </Link>
+                    View in Bookings
+                  </Button>
                 </div>
               )}
             </div>
@@ -598,13 +603,13 @@ export const OwnerSubscriberDetailPage: React.FC<
                 type="button"
                 variant="secondary"
                 size="sm"
+                loading={notesSaving}
                 disabled={
-                  notesSaving ||
                   notesDraft.trim() === (subscriber.notes?.trim() || '')
                 }
                 onClick={() => void handleSaveNotes()}
               >
-                {notesSaving ? 'Saving…' : 'Save notes'}
+                {notesSaving ? 'Saving' : 'Save notes'}
               </Button>
             </div>
           </div>

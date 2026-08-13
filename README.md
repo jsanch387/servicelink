@@ -2,6 +2,10 @@
 
 A modern business landing page built with Next.js, React, and Tailwind CSS.
 
+## Architecture
+
+How web, mobile, the API, and vendors connect: **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)**. Feature docs live next to each feature under `src/features/*/docs`. Mobile API contracts: [`docs/contracts/`](docs/contracts/).
+
 ## 🚀 Features
 
 - **Next.js 15** - Latest version with App Router

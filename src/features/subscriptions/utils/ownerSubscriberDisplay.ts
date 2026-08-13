@@ -120,6 +120,24 @@ export function formatSubscriberBillingDate(date: string | null): string {
   }
 }
 
+/** `HH:mm` / `HH:mm:ss` → `9 AM` or `9:30 AM`. */
+export function formatSubscriberVisitTime(
+  time: string | null | undefined
+): string {
+  const raw = time?.trim() ?? '';
+  if (!raw) return '';
+  const [hStr, mStr] = raw.split(':');
+  const h = Number.parseInt(hStr ?? '', 10);
+  const m = Number.parseInt(mStr ?? '0', 10);
+  if (!Number.isFinite(h) || h < 0 || h > 23) return raw.slice(0, 5);
+  const minute = Number.isFinite(m) ? m : 0;
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const ampm = h < 12 ? 'AM' : 'PM';
+  return minute === 0
+    ? `${h12} ${ampm}`
+    : `${h12}:${String(minute).padStart(2, '0')} ${ampm}`;
+}
+
 /** Summary / table label for the billing date column. */
 export function getSubscriberBillingDateLabel(
   status: OwnerSubscriberStatus,

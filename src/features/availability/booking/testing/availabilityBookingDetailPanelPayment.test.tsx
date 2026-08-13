@@ -80,7 +80,7 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     expect(within(card).getByText('$150.00')).toBeTruthy();
   });
 
-  it('shows no-amount note for collect in person when total is zero', () => {
+  it('shows No charge when total is zero (not Collect in person)', () => {
     const payment: BookingPaymentSummaryDisplay = {
       paymentStatus: 'not_required',
       paymentMethodSelected: 'pay_in_person',
@@ -92,10 +92,28 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     renderPanel(baseBooking(payment));
 
     const card = getPaymentCard();
-    expect(within(card).getByText('Collect in person')).toBeTruthy();
+    expect(within(card).getByText('No charge')).toBeTruthy();
     expect(
-      within(card).getByText(/no amount due for this appointment/i)
+      within(card).getByText(/nothing to collect for this appointment/i)
     ).toBeTruthy();
+    expect(within(card).queryByText('Collect in person')).toBeNull();
+  });
+
+  it('shows Membership for plan-covered visits', () => {
+    const payment: BookingPaymentSummaryDisplay = {
+      paymentStatus: 'not_required',
+      paymentMethodSelected: 'membership',
+      currency: 'usd',
+      totalAmountCents: 0,
+      paidOnlineAmountCents: 0,
+      remainingAmountCents: 0,
+    };
+    renderPanel(baseBooking(payment));
+
+    const card = getPaymentCard();
+    expect(within(card).getByText('Membership')).toBeTruthy();
+    expect(within(card).getByText(/covered by their plan/i)).toBeTruthy();
+    expect(within(card).queryByText('Collect in person')).toBeNull();
   });
 
   it('shows Deposit paid heading plus Amount paid and Amount due rows', () => {

@@ -82,9 +82,8 @@ export async function cancelOwnerCustomerMembership(
   if (row.status === 'canceled') {
     try {
       const stripe = getStripeConnectClient(stripeAccountId);
-      const subscription = await stripe.subscriptions.retrieve(
-        stripeSubscriptionId
-      );
+      const subscription =
+        await stripe.subscriptions.retrieve(stripeSubscriptionId);
       await upsertCustomerMembershipFromSubscription(admin, {
         stripeAccountId,
         subscription,
@@ -98,15 +97,11 @@ export async function cancelOwnerCustomerMembership(
     return returnFresh(true);
   }
 
-  if (
-    args.mode === 'at_period_end' &&
-    isMembershipCancelScheduled(row)
-  ) {
+  if (args.mode === 'at_period_end' && isMembershipCancelScheduled(row)) {
     try {
       const stripe = getStripeConnectClient(stripeAccountId);
-      const subscription = await stripe.subscriptions.retrieve(
-        stripeSubscriptionId
-      );
+      const subscription =
+        await stripe.subscriptions.retrieve(stripeSubscriptionId);
       await upsertCustomerMembershipFromSubscription(admin, {
         stripeAccountId,
         subscription,

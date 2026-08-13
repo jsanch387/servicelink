@@ -6,6 +6,7 @@ import {
 } from '@/features/availability/types/blockTime';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import { isProAccess } from '@/features/pricing';
 import { PublicMembershipSubscribePage } from '@/features/subscriptions/components/PublicMembershipSubscribePage';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '@/features/subscriptions/constants/membershipVisitDuration';
@@ -53,7 +54,7 @@ export default async function PublicMembershipSubscribeRoute({
   const { data: profile } = await supabase
     .from('business_profiles')
     .select(
-      'id, profile_id, public_booking_locales, public_booking_default_locale'
+      'id, profile_id, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
     )
     .eq('business_slug', slug)
     .maybeSingle();
@@ -116,6 +117,16 @@ export default async function PublicMembershipSubscribeRoute({
     cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
   });
 
+  const serviceLocation = buildPublicBookingServiceLocation(
+    profile as {
+      service_location_mode?: string | null;
+      service_area?: string | null;
+      business_zip?: string | null;
+      shop_street_address?: string | null;
+      shop_unit?: string | null;
+    }
+  );
+
   return (
     <PublicMembershipSubscribePage
       businessSlug={slug}
@@ -129,6 +140,7 @@ export default async function PublicMembershipSubscribeRoute({
       visitDurationMinutes={
         plan.visitDurationMinutes ?? MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT
       }
+      serviceLocationMode={serviceLocation.mode}
     />
   );
 }

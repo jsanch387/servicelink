@@ -29,6 +29,10 @@ describe('toE164', () => {
     expect(toE164('+447911123456')).toBe('+447911123456');
   });
 
+  it('treats + followed by 10 digits as US (missing country code)', () => {
+    expect(toE164('+5807545207')).toBe('+15807545207');
+  });
+
   it('rejects ambiguous / invalid lengths (no silent bad sends)', () => {
     expect(toE164('12345')).toBeNull(); // too short
     expect(toE164('555123')).toBeNull();

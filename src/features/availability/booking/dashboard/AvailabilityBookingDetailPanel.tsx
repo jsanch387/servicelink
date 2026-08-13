@@ -134,7 +134,20 @@ export function AvailabilityBookingDetailPanel({
         const paid = payment.paidOnlineAmountCents;
         const rem = payment.remainingAmountCents;
         const method = payment.paymentMethodSelected?.trim().toLowerCase();
+        // Membership / subscription visit — covered by plan.
+        if (method === 'membership') {
+          return 'membership' as const;
+        }
         // Owner-created (`none`) and customer pay-in-person: collect offline.
+        // $0 with none/pay_in_person is usually a free or legacy membership row.
+        if (
+          (method === 'pay_in_person' || method === 'none') &&
+          paid <= 0 &&
+          payment.totalAmountCents <= 0 &&
+          rem <= 0
+        ) {
+          return 'no_charge' as const;
+        }
         if ((method === 'pay_in_person' || method === 'none') && paid <= 0) {
           return 'collect_offline' as const;
         }
@@ -308,27 +321,42 @@ export function AvailabilityBookingDetailPanel({
                 Payment
               </h3>
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
+                {paymentDetailVariant === 'membership' && (
+                  <>
+                    <p className="text-sm font-semibold text-white">
+                      Membership
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Covered by their plan — nothing to collect.
+                    </p>
+                  </>
+                )}
+
+                {paymentDetailVariant === 'no_charge' && (
+                  <>
+                    <p className="text-sm font-semibold text-white">
+                      No charge
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Nothing to collect for this appointment.
+                    </p>
+                  </>
+                )}
+
                 {paymentDetailVariant === 'collect_offline' && (
                   <>
                     <p className="text-sm font-semibold text-white">
                       Collect in person
                     </p>
-                    {payment.totalAmountCents > 0 ||
-                    payment.remainingAmountCents > 0 ? (
-                      <div className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-gray-300">Amount due</span>
-                        <span className="font-semibold text-white tabular-nums">
-                          {formatCurrencyAmount(
-                            payment.remainingAmountCents,
-                            payment.currency
-                          )}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400">
-                        No amount due for this appointment.
-                      </p>
-                    )}
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-gray-300">Amount due</span>
+                      <span className="font-semibold text-white tabular-nums">
+                        {formatCurrencyAmount(
+                          payment.remainingAmountCents,
+                          payment.currency
+                        )}
+                      </span>
+                    </div>
                   </>
                 )}
 

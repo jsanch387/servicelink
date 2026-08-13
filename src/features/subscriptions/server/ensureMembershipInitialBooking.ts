@@ -30,6 +30,10 @@ import {
   customerMembershipsOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
+import {
+  mergeMembershipServiceSnapshots,
+  resolveMembershipCustomerServiceSnapshot,
+} from './resolveMembershipCustomerServiceSnapshot';
 
 export type EnsureMembershipBookingResult = {
   bookingId: string | null;
@@ -54,20 +58,28 @@ function emptyCustomerForm(snapshot: {
   name?: string | null;
   email?: string | null;
   phone?: string | null;
+  street?: string | null;
+  unit?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  vehicleYear?: string | null;
+  vehicleMake?: string | null;
+  vehicleModel?: string | null;
 }) {
   return {
     fullName: (snapshot.name ?? '').trim() || 'Member',
     email: (snapshot.email ?? '').trim(),
     phone: (snapshot.phone ?? '').trim(),
-    streetAddress: '',
-    unitApt: '',
-    city: '',
-    state: '',
-    zip: '',
-    vehicleYear: '',
-    vehicleMake: '',
-    vehicleModel: '',
-    notes: 'Membership first visit.',
+    streetAddress: (snapshot.street ?? '').trim(),
+    unitApt: (snapshot.unit ?? '').trim(),
+    city: (snapshot.city ?? '').trim(),
+    state: (snapshot.state ?? '').trim(),
+    zip: (snapshot.zip ?? '').trim(),
+    vehicleYear: (snapshot.vehicleYear ?? '').trim(),
+    vehicleMake: (snapshot.vehicleMake ?? '').trim(),
+    vehicleModel: (snapshot.vehicleModel ?? '').trim(),
+    notes: 'Membership visit.',
   };
 }
 
@@ -87,6 +99,14 @@ export async function ensureMembershipInitialBooking(
       name?: string | null;
       email?: string | null;
       phone?: string | null;
+      street?: string | null;
+      unit?: string | null;
+      city?: string | null;
+      state?: string | null;
+      zip?: string | null;
+      vehicleYear?: string | null;
+      vehicleMake?: string | null;
+      vehicleModel?: string | null;
     } | null;
     stripeCheckoutSessionId?: string | null;
     requestId?: string;
@@ -257,10 +277,48 @@ export async function ensureMembershipInitialBooking(
   const businessSlug = (biz.business_slug ?? '').trim() || 'business';
   const businessDisplayName = (biz.business_name ?? '').trim() || businessSlug;
 
+  const phone =
+    args.customerSnapshot?.phone?.trim() ||
+    membership.customer_phone?.trim() ||
+    '';
+  const email =
+    args.customerSnapshot?.email?.trim() ||
+    membership.customer_email?.trim() ||
+    '';
+
+  const crmSnapshot = await resolveMembershipCustomerServiceSnapshot(supabase, {
+    businessId: membership.business_id,
+    phone,
+    email,
+    customerId: membership.customer_id,
+  });
+  const serviceSnapshot = mergeMembershipServiceSnapshots(crmSnapshot, {
+    address: {
+      street: args.customerSnapshot?.street ?? undefined,
+      unit: args.customerSnapshot?.unit ?? undefined,
+      city: args.customerSnapshot?.city ?? undefined,
+      state: args.customerSnapshot?.state ?? undefined,
+      zip: args.customerSnapshot?.zip ?? undefined,
+    },
+    vehicle: {
+      year: args.customerSnapshot?.vehicleYear ?? undefined,
+      make: args.customerSnapshot?.vehicleMake ?? undefined,
+      model: args.customerSnapshot?.vehicleModel ?? undefined,
+    },
+  });
+
   const customer = emptyCustomerForm({
     name: args.customerSnapshot?.name ?? membership.customer_name,
-    email: args.customerSnapshot?.email ?? membership.customer_email,
-    phone: args.customerSnapshot?.phone ?? membership.customer_phone,
+    email,
+    phone,
+    street: serviceSnapshot.address.street,
+    unit: serviceSnapshot.address.unit,
+    city: serviceSnapshot.address.city,
+    state: serviceSnapshot.address.state,
+    zip: serviceSnapshot.address.zip,
+    vehicleYear: serviceSnapshot.vehicle.year,
+    vehicleMake: serviceSnapshot.vehicle.make,
+    vehicleModel: serviceSnapshot.vehicle.model,
   });
 
   let bookingId: string;
@@ -297,7 +355,7 @@ export async function ensureMembershipInitialBooking(
       business_id: membership.business_id,
       provider: 'none',
       payment_status: 'not_required',
-      payment_method_selected: 'none',
+      payment_method_selected: 'membership',
       currency: 'usd',
       total_amount_cents: 0,
       required_online_amount_cents: 0,
