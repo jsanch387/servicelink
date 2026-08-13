@@ -41,6 +41,7 @@ import {
 } from '../utils/createFlowNavigation';
 import { buildOwnerFlexibleWeeklySchedule } from '../utils/ownerFlexibleSchedule';
 import { CREATE_APPOINTMENT_SUBMIT_MIN_MS } from '../constants/submitStatus';
+import type { MembershipVisitPrefill } from '../types/membershipVisitPrefill';
 
 export type ServiceStepPhase = 'path' | 'list';
 
@@ -107,6 +108,8 @@ export interface UseCreateAppointmentControllerOptions {
   serviceLocation: PublicBookingServiceLocation;
   /** When true, schedule/review continue gates are bypassed (tests / stubs). */
   stubAfterVehicle?: boolean;
+  /** Prefill from membership Book visit. */
+  membershipVisit?: MembershipVisitPrefill | null;
 }
 
 export function useCreateAppointmentController(
@@ -118,25 +121,87 @@ export function useCreateAppointmentController(
     catalog,
     serviceLocation,
     stubAfterVehicle = false,
+    membershipVisit = null,
   } = options;
 
   const reactId = useId();
-  const [step, setStep] = useState<number>(CREATE_APPOINTMENT_STEP.SERVICE);
+  const membershipId = membershipVisit?.membershipId?.trim() || null;
+  const [step, setStep] = useState<number>(() => {
+    if (!membershipVisit) return CREATE_APPOINTMENT_STEP.SERVICE;
+    if (serviceLocation.mode === 'both') {
+      return CREATE_APPOINTMENT_STEP.LOCATION;
+    }
+    if (serviceLocation.mode === 'mobile_only') {
+      return CREATE_APPOINTMENT_STEP.ADDRESS;
+    }
+    // shop_only — address comes from business profile
+    return CREATE_APPOINTMENT_STEP.SCHEDULE;
+  });
   const [servicePhase, setServicePhase] = useState<ServiceStepPhase>('path');
   const [servicePath, setServicePath] = useState<ServicePathChoice | null>(
-    null
+    () => (membershipVisit ? 'custom' : null)
   );
   const [committedJobs, setCommittedJobs] = useState<
     CreateAppointmentJobSnapshot[]
   >([]);
-  const [draft, setDraft] = useState<CreateAppointmentJobDraft>(() =>
-    createEmptyJobDraft(`job_${reactId}_0`)
-  );
-  const [visit, setVisit] =
-    useState<CreateAppointmentVisitState>(createEmptyVisit);
+  const [draft, setDraft] = useState<CreateAppointmentJobDraft>(() => {
+    const base = createEmptyJobDraft(`job_${reactId}_0`);
+    if (!membershipVisit) return base;
+    const vehicle = membershipVisit.vehicle;
+    return {
+      ...base,
+      isCustomJob: true,
+      serviceName: membershipVisit.planName.trim() || 'Membership visit',
+      durationMinutes: Math.max(
+        30,
+        Math.round(membershipVisit.visitDurationMinutes)
+      ),
+      servicePriceCents: 0,
+      customPriceLabel: 'Covered by membership',
+      vehicle: vehicle
+        ? {
+            year: vehicle.year.trim(),
+            make: vehicle.make.trim(),
+            model: vehicle.model.trim(),
+          }
+        : base.vehicle,
+    };
+  });
+  const [visit, setVisit] = useState<CreateAppointmentVisitState>(() => {
+    const base = createEmptyVisit();
+    if (!membershipVisit) return base;
+    let locationType = base.locationType;
+    let address = base.address;
+    if (serviceLocation.mode === 'mobile_only') {
+      locationType = 'mobile';
+    } else if (serviceLocation.mode === 'shop_only') {
+      locationType = 'shop';
+      address = shopAddressFromLocation(serviceLocation);
+    }
+    return {
+      ...base,
+      customer: {
+        fullName: membershipVisit.customerName.trim(),
+        email:
+          membershipVisit.email.trim() === '—'
+            ? ''
+            : membershipVisit.email.trim(),
+        phone: membershipVisit.phone.trim(),
+      },
+      notes: membershipVisit.notes?.trim() || '',
+      locationType,
+      address,
+    };
+  });
   const [appointmentConfirmed, setAppointmentConfirmed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [locationSeeded, setLocationSeeded] = useState(false);
+  const [locationSeeded, setLocationSeeded] = useState(() =>
+    Boolean(
+      membershipVisit &&
+        (serviceLocation.mode === 'mobile_only' ||
+          serviceLocation.mode === 'shop_only')
+    )
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(
     null
@@ -431,6 +496,7 @@ export function useCreateAppointmentController(
         businessSlug,
         visit,
         jobs,
+        membershipId,
       });
       const res = await fetch('/api/public/bookings', {
         method: 'POST',
@@ -464,7 +530,15 @@ export function useCreateAppointmentController(
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, committedJobs, draft, visit, businessId, businessSlug]);
+  }, [
+    isSubmitting,
+    committedJobs,
+    draft,
+    visit,
+    businessId,
+    businessSlug,
+    membershipId,
+  ]);
 
   const goContinue = useCallback(() => {
     if (!canContinue || isSubmitting) return;
@@ -698,6 +772,7 @@ export function useCreateAppointmentController(
     canContinue,
     appointmentConfirmed,
     confirmedBookingId,
+    membershipId,
     isSubmitting,
     submitError,
     clearSubmitError,

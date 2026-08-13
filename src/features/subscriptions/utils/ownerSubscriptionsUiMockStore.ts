@@ -21,6 +21,11 @@ function normalizePlan(plan: OwnerSubscriptionPlan): OwnerSubscriptionPlan {
     ...plan,
     benefits: Array.isArray(plan.benefits) ? plan.benefits : [],
     isPublished: plan.isPublished !== false,
+    visitDurationMinutes:
+      typeof plan.visitDurationMinutes === 'number' &&
+      plan.visitDurationMinutes > 0
+        ? plan.visitDurationMinutes
+        : 60,
     activeSubscriberCount:
       typeof plan.activeSubscriberCount === 'number'
         ? plan.activeSubscriberCount

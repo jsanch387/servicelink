@@ -17,16 +17,19 @@
 
 Run **one file at a time**. Confirm success before the next.
 
-| Order | File                                | What it does                                             |
-| ----- | ----------------------------------- | -------------------------------------------------------- |
-| 1     | `001_membership_plans.sql`          | Plan catalog + RLS _(phase 1 — already applied in prod)_ |
-| 2     | `002_membership_plan_prices.sql`    | Cadence prices + RLS _(phase 1)_                         |
-| 3     | `003_membership_settings.sql`       | _(obsolete)_ skip if not applied; drop via `004`         |
-| 4     | `004_drop_membership_settings.sql`  | Remove settings table if you ran `003`                   |
-| 5     | `005_customer_memberships.sql`      | Live subscribers (Stripe Subscription state)             |
-| 6     | `006_membership_events.sql`         | Append-only lifecycle timeline                           |
-| 7     | `007_membership_invoices.sql`       | Invoice / payment ledger                                 |
-| 8     | `008_membership_payment_method.sql` | Card brand / last4 on `customer_memberships` _(applied)_ |
+| Order | File                                     | What it does                                               |
+| ----- | ---------------------------------------- | ---------------------------------------------------------- |
+| 1     | `001_membership_plans.sql`               | Plan catalog + RLS _(phase 1 — already applied in prod)_   |
+| 2     | `002_membership_plan_prices.sql`         | Cadence prices + RLS _(phase 1)_                           |
+| 3     | `003_membership_settings.sql`            | _(obsolete)_ skip if not applied; drop via `004`           |
+| 4     | `004_drop_membership_settings.sql`       | Remove settings table if you ran `003`                     |
+| 5     | `005_customer_memberships.sql`           | Live subscribers (Stripe Subscription state)               |
+| 6     | `006_membership_events.sql`              | Append-only lifecycle timeline                             |
+| 7     | `007_membership_invoices.sql`            | Invoice / payment ledger                                   |
+| 8     | `008_membership_payment_method.sql`      | Card brand / last4 on `customer_memberships` _(applied)_   |
+| 9     | `009_membership_plan_visit_duration.sql` | `visit_duration_minutes` on `membership_plans` _(applied)_ |
+| 10    | `010_membership_initial_booking.sql`     | `initial_booking_id` on `customer_memberships` _(applied)_ |
+| 11    | `011_membership_period_visit.sql`        | Period visit booking + period start _(applied)_            |
 
 ## Phase 2 RLS model
 

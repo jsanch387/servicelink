@@ -15,6 +15,20 @@ export function formatSubscriptionPriceCents(
   return `$${(priceCents / 100).toFixed(0)}`;
 }
 
+/** Plain period for owner price display, e.g. "month", "2 weeks". */
+export function formatCadencePricePeriod(
+  option: Pick<SubscriptionCadenceOption, 'intervalUnit' | 'intervalCount'>
+): string {
+  const count = Math.max(1, option.intervalCount);
+  if (option.intervalUnit === 'week') {
+    return count === 1 ? 'week' : `${count} weeks`;
+  }
+  if (option.intervalUnit === 'month') {
+    return count === 1 ? 'month' : `${count} months`;
+  }
+  return count === 1 ? 'year' : `${count} years`;
+}
+
 /** Short suffix next to the price, e.g. "/mo", "/2wk". */
 export function formatCadencePriceSuffix(
   option: Pick<SubscriptionCadenceOption, 'intervalUnit' | 'intervalCount'>,

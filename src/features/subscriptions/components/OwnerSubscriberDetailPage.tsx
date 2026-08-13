@@ -1,33 +1,42 @@
 'use client';
 
 import { Button, Modal, toast } from '@/components/shared';
-import { API_ROUTES, ROUTES } from '@/constants/routes';
 import {
-  ArrowPathIcon,
-  BanknotesIcon,
-  CalendarDaysIcon,
-  CheckBadgeIcon,
+  API_ROUTES,
+  getOwnerCreateAppointmentPath,
+  ROUTES,
+} from '@/constants/routes';
+import {
+  customerPhoneHref,
+  formatCustomerPhone,
+} from '@/features/customer-management/utils/customerFormatting';
+import {
+  CheckIcon,
   ChevronLeftIcon,
-  ClockIcon,
-  CreditCardIcon,
+  ClipboardDocumentIcon,
+  EllipsisVerticalIcon,
   EnvelopeIcon,
-  LinkIcon,
   PhoneIcon,
-  RectangleStackIcon,
-  UserIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { OwnerSubscriber } from '../types/ownerSubscriptionPlan';
-import { formatSubscriptionPriceCents } from '../utils/formatSubscriptionPrice';
+import {
+  formatCadencePricePeriod,
+  formatSubscriptionPriceCents,
+} from '../utils/formatSubscriptionPrice';
 import {
   formatSubscriberBillingDate,
+  formatSubscriberBillingDateValue,
+  getSubscriberBillingDateLabel,
   getSubscriberStatusClassName,
   getSubscriberStatusLabel,
   isSubscriberCancelScheduled,
   OWNER_SUBSCRIBER_STATUS_STYLES,
 } from '../utils/ownerSubscriberDisplay';
+import { OwnerSubscriberDetailSkeleton } from './OwnerSubscriberDetailSkeleton';
 
 interface OwnerSubscriberDetailPageProps {
   subscriberId: string;
@@ -47,64 +56,12 @@ async function fetchSubscriber(
   return json.subscriber;
 }
 
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
-  href,
-  divided = false,
-}: {
-  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  label: string;
-  value: React.ReactNode;
-  href?: string;
-  divided?: boolean;
-}) {
+function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div
-      className={`flex gap-3 sm:gap-4 ${
-        divided ? 'border-b border-white/[0.08] pb-3.5' : ''
-      }`}
-    >
-      {Icon ? (
-        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" aria-hidden />
-      ) : null}
-      <div className="grid min-w-0 flex-1 grid-cols-1 gap-0.5 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4">
-        <dt className="text-sm text-zinc-500">{label}</dt>
-        <dd className="min-w-0 break-words text-sm text-zinc-100">
-          {href ? (
-            <a
-              href={href}
-              className="cursor-pointer break-words text-white underline-offset-2 hover:underline"
-            >
-              {value}
-            </a>
-          ) : (
-            value
-          )}
-        </dd>
-      </div>
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <dt className="shrink-0 text-sm text-zinc-500">{label}</dt>
+      <dd className="min-w-0 text-right text-sm text-zinc-100">{value}</dd>
     </div>
-  );
-}
-
-function SectionCard({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 sm:px-5 sm:py-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
-        {action}
-      </div>
-      <dl className="space-y-3.5">{children}</dl>
-    </section>
   );
 }
 
@@ -112,11 +69,15 @@ export const OwnerSubscriberDetailPage: React.FC<
   OwnerSubscriberDetailPageProps
 > = ({ subscriberId }) => {
   const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
   const [hydrated, setHydrated] = useState(false);
   const [subscriber, setSubscriber] = useState<OwnerSubscriber | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [portalNotice, setPortalNotice] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [emailCopied, setEmailCopied] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
 
   const reload = useCallback(async () => {
     const next = await fetchSubscriber(subscriberId);
@@ -129,6 +90,7 @@ export const OwnerSubscriberDetailPage: React.FC<
       const next = await fetchSubscriber(subscriberId);
       if (!cancelled) {
         setSubscriber(next);
+        setNotesDraft(next?.notes?.trim() || '');
         setHydrated(true);
       }
     })();
@@ -137,15 +99,56 @@ export const OwnerSubscriberDetailPage: React.FC<
     };
   }, [subscriberId]);
 
-  const runSubscriberAction = async (
-    action:
-      | 'cancel_at_period_end'
-      | 'cancel_now'
-      | 'portal_link'
-      | 'portal_session'
+  const handleSaveNotes = async () => {
+    setNotesSaving(true);
+    try {
+      const res = await fetch(API_ROUTES.MEMBERSHIPS_SUBSCRIBER(subscriberId), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'save_notes', notes: notesDraft }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+        subscriber?: OwnerSubscriber;
+      } | null;
+      if (!res.ok || !json?.success || !json.subscriber) {
+        toast.error(json?.error || 'Could not save notes.');
+        return;
+      }
+      setSubscriber(json.subscriber);
+      setNotesDraft(json.subscriber.notes?.trim() || '');
+      toast.success('Notes saved');
+    } catch {
+      toast.error('Could not save notes.');
+    } finally {
+      setNotesSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const runCancelAction = async (
+    action: 'cancel_at_period_end' | 'cancel_now'
   ) => {
     setBusyAction(action);
-    setPortalNotice(null);
     try {
       const res = await fetch(API_ROUTES.MEMBERSHIPS_SUBSCRIBER(subscriberId), {
         method: 'POST',
@@ -157,43 +160,81 @@ export const OwnerSubscriberDetailPage: React.FC<
         success?: boolean;
         error?: string;
         subscriber?: OwnerSubscriber;
-        manageUrl?: string;
-        url?: string;
+        alreadyCanceled?: boolean;
       } | null;
 
       if (!res.ok || !json?.success) {
+        // Stale UI after a prior Stripe cancel — refresh so the page matches.
+        await reload();
         toast.error(json?.error || 'Something went wrong.');
         return;
       }
 
-      if (action === 'portal_link' && json.manageUrl) {
-        try {
-          await navigator.clipboard.writeText(json.manageUrl);
-          setPortalNotice('Manage / cancel link copied. Share it with them.');
-          toast.success('Link copied');
-        } catch {
-          setPortalNotice(json.manageUrl);
-        }
-        return;
-      }
-
-      if (action === 'portal_session' && json.url) {
-        window.open(json.url, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
+      setCancelOpen(false);
       if (json.subscriber) {
         setSubscriber(json.subscriber);
+        setNotesDraft(json.subscriber.notes?.trim() || '');
+      } else {
+        await reload();
+      }
+
+      if (json.alreadyCanceled) {
+        toast.success('Subscription already canceled — status updated');
+      } else {
         toast.success(
           action === 'cancel_now'
             ? 'Subscription canceled'
             : 'Cancels at period end'
         );
-      } else {
-        await reload();
       }
     } catch {
       toast.error('Something went wrong.');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleCopyEmail = async (email: string) => {
+    try {
+      await navigator.clipboard.writeText(email);
+      setEmailCopied(true);
+      toast.success('Email copied');
+      window.setTimeout(() => setEmailCopied(false), 1500);
+    } catch {
+      toast.error('Could not copy email.');
+    }
+  };
+
+  const handleSendScheduleLink = async () => {
+    setBusyAction('send_schedule_link');
+    try {
+      const res = await fetch(API_ROUTES.MEMBERSHIPS_SUBSCRIBER(subscriberId), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send_schedule_link' }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+        emailed?: boolean;
+        smsed?: boolean;
+        scheduleUrl?: string;
+      } | null;
+      if (!res.ok || !json?.success) {
+        toast.error(json?.error || 'Could not send schedule link.');
+        return;
+      }
+      const parts: string[] = [];
+      if (json.emailed) parts.push('email');
+      if (json.smsed) parts.push('text');
+      toast.success(
+        parts.length
+          ? `Schedule link sent via ${parts.join(' + ')}`
+          : 'Schedule link sent'
+      );
+    } catch {
+      toast.error('Could not send schedule link.');
     } finally {
       setBusyAction(null);
     }
@@ -205,17 +246,13 @@ export const OwnerSubscriberDetailPage: React.FC<
     !subscriber.cancelAtPeriodEnd;
 
   if (!hydrated) {
-    return (
-      <main className="min-h-screen w-full flex-1 bg-[var(--dashboard-bg)] px-4 pt-8 sm:px-6 lg:px-8">
-        <div className="mx-auto h-64 max-w-6xl animate-pulse rounded-2xl bg-white/[0.03]" />
-      </main>
-    );
+    return <OwnerSubscriberDetailSkeleton />;
   }
 
   if (!subscriber || !OWNER_SUBSCRIBER_STATUS_STYLES[subscriber.status]) {
     return (
       <main className="min-h-screen w-full flex-1 bg-[var(--dashboard-bg)] px-4 pt-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-2xl">
           <p className="text-sm text-zinc-400">Subscriber not found.</p>
           <Button
             type="button"
@@ -243,79 +280,78 @@ export const OwnerSubscriberDetailPage: React.FC<
     subscriber.cancelAtPeriodEnd
   );
 
+  const lastPayment =
+    subscriber.lastPaymentLabel?.trim() &&
+    subscriber.lastPaymentLabel.trim() !== 'Paid'
+      ? subscriber.lastPaymentLabel.trim()
+      : null;
+  const phoneRaw = subscriber.phone?.trim() || '';
+  const phoneDisplay = phoneRaw ? formatCustomerPhone(phoneRaw) : '';
+  const phoneHref = phoneRaw ? customerPhoneHref(phoneRaw) : null;
+  const hasEmail =
+    Boolean(subscriber.email?.trim()) && subscriber.email.trim() !== '—';
+  const email = hasEmail ? subscriber.email.trim() : '';
+
   return (
     <main className="min-h-screen w-full flex-1 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] px-4 pt-6 pb-28 sm:px-6 sm:pt-8 sm:pb-10 lg:px-8">
-      <div className="mx-auto w-full max-w-6xl">
-        <nav className="mb-5 flex flex-wrap items-center gap-1.5 text-sm text-zinc-500">
-          <Link
-            href={ROUTES.DASHBOARD.SUBSCRIPTIONS}
-            className="cursor-pointer transition-colors hover:text-white"
-          >
-            Subscriptions
-          </Link>
-          <span aria-hidden>/</span>
-          <Link
-            href={ROUTES.DASHBOARD.SUBSCRIPTIONS}
-            className="cursor-pointer transition-colors hover:text-white"
-          >
-            Subscribers
-          </Link>
-          <span aria-hidden>/</span>
-          <span className="truncate text-zinc-300">
-            {subscriber.customerName}
-          </span>
-        </nav>
+      <div className="mx-auto w-full max-w-2xl">
+        <Link
+          href={ROUTES.DASHBOARD.SUBSCRIPTIONS}
+          className="mb-5 inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+        >
+          <ChevronLeftIcon className="h-4 w-4" aria-hidden />
+          Subscriptions
+        </Link>
 
-        <div className="flex flex-col gap-4 border-b border-white/[0.08] pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <header className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-5">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                {subscriber.customerName}
-              </h1>
-              <span
-                className={`rounded-md border px-2 py-0.5 text-xs font-medium ${statusClassName}`}
-              >
-                {statusLabel}
-              </span>
-            </div>
+            <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+              {subscriber.customerName}
+            </h1>
             <p className="mt-1.5 text-sm text-zinc-500">
-              {subscriber.planName} · {subscriber.cadenceLabel}
+              <Link
+                href={ROUTES.DASHBOARD.SUBSCRIPTIONS_DETAIL(subscriber.planId)}
+                className="cursor-pointer text-zinc-400 transition-colors hover:text-white"
+              >
+                {subscriber.planName}
+              </Link>
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              icon={<EnvelopeIcon className="h-4 w-4" aria-hidden />}
-              href={`mailto:${subscriber.email}`}
-            >
-              Email
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              icon={<LinkIcon className="h-4 w-4" aria-hidden />}
-              disabled={busyAction != null}
-              onClick={() => void runSubscriberAction('portal_link')}
-            >
-              Billing portal
-            </Button>
-            {canCancel ? (
-              <Button
+          {canCancel ? (
+            <div className="relative shrink-0" ref={menuRef}>
+              <button
                 type="button"
-                variant="danger"
-                size="sm"
-                disabled={busyAction != null}
-                onClick={() => setCancelOpen(true)}
+                onClick={() => setMenuOpen(open => !open)}
+                className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+                aria-label="Subscriber actions"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
               >
-                Cancel
-              </Button>
-            ) : null}
-          </div>
-        </div>
+                <EllipsisVerticalIcon className="h-5 w-5" aria-hidden />
+              </button>
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 z-20 mt-1.5 w-52 overflow-hidden rounded-xl border border-white/10 bg-[var(--dashboard-bg)] py-1 shadow-xl shadow-black/40"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={busyAction != null}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setCancelOpen(true);
+                    }}
+                    className="flex w-full cursor-pointer px-3.5 py-2.5 text-left text-sm text-red-300 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel subscription
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </header>
 
         {cancelScheduled ? (
           <div className="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 text-sm text-amber-100/90">
@@ -327,160 +363,252 @@ export const OwnerSubscriberDetailPage: React.FC<
 
         {subscriber.status === 'past_due' ? (
           <div className="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 text-sm text-amber-100/90">
-            Latest payment failed. Send a billing portal link so they can update
-            their card.
+            Latest payment failed. Ask them to update their card from the manage
+            link in their subscription email.
           </div>
         ) : null}
 
-        {portalNotice ? (
-          <p className="mt-4 text-sm text-zinc-400" role="status">
-            {portalNotice}
-          </p>
+        {subscriber.visitStatus !== 'none' ? (
+          <section className="mt-6">
+            <h2 className="mb-2 text-sm font-medium text-zinc-400">Visit</h2>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-5">
+              {subscriber.visitStatus === 'needs_visit' ? (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-amber-100">
+                      Needs a visit this period
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Book it yourself, or send them a link to pick a date.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col gap-2 sm:items-stretch">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      href={getOwnerCreateAppointmentPath({
+                        membershipId: subscriber.id,
+                        name: subscriber.customerName,
+                        email: subscriber.email,
+                        phone: subscriber.phone,
+                        notes: subscriber.notes,
+                        planName: subscriber.planName,
+                        visitDurationMinutes:
+                          subscriber.visitDurationMinutes ??
+                          MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT,
+                      })}
+                    >
+                      Book visit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={busyAction != null}
+                      onClick={() => void handleSendScheduleLink()}
+                    >
+                      {busyAction === 'send_schedule_link'
+                        ? 'Sending…'
+                        : 'Send schedule link'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    Visit scheduled
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    {subscriber.periodVisitDate
+                      ? formatSubscriberBillingDate(subscriber.periodVisitDate)
+                      : 'Date on file'}
+                    {subscriber.periodVisitTime
+                      ? ` · ${subscriber.periodVisitTime}`
+                      : ''}
+                  </p>
+                  <p className="mt-2 text-xs text-zinc-600">
+                    If the visit didn’t happen, cancel that booking — this flips
+                    back to Needs visit so you can rebook or send a schedule
+                    link.
+                  </p>
+                  <Link
+                    href={ROUTES.DASHBOARD.BOOKINGS}
+                    className="mt-3 inline-flex cursor-pointer text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+                  >
+                    Open bookings
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
         ) : null}
 
-        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            {
-              label: 'Amount',
-              value: formatSubscriptionPriceCents(subscriber.amountCents),
-            },
-            {
-              label: 'Next bill',
-              value: formatSubscriberBillingDate(subscriber.nextBillingAt),
-            },
-            {
-              label: 'Started',
-              value: formatSubscriberBillingDate(subscriber.startedAt),
-            },
-            {
-              label: 'Last payment',
-              value: subscriber.lastPaymentLabel ?? '—',
-            },
-          ].map(stat => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5"
-            >
-              <p className="text-xs text-zinc-500">{stat.label}</p>
-              <p className="mt-1 text-base font-semibold tracking-tight text-white tabular-nums sm:text-lg">
-                {stat.value}
-              </p>
-            </div>
-          ))}
-        </div>
+        <section className="mt-6">
+          <h2 className="mb-2 text-sm font-medium text-zinc-400">Summary</h2>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-5">
+            <p className="text-3xl font-semibold tracking-tight text-white tabular-nums">
+              {formatSubscriptionPriceCents(subscriber.amountCents)}
+              <span className="ml-1.5 text-base font-normal text-zinc-500">
+                /{' '}
+                {formatCadencePricePeriod({
+                  intervalUnit: subscriber.intervalUnit,
+                  intervalCount: subscriber.intervalCount,
+                })}
+              </span>
+            </p>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start lg:gap-6">
-          <div className="min-w-0 space-y-4">
-            <SectionCard
-              title="Subscription details"
-              action={
-                <Link
-                  href={ROUTES.DASHBOARD.SUBSCRIPTIONS_DETAIL(
-                    subscriber.planId
-                  )}
-                  className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-zinc-400 transition-colors hover:text-white"
-                >
-                  View plan
-                  <ChevronLeftIcon
-                    className="h-3.5 w-3.5 rotate-180"
-                    aria-hidden
-                  />
-                </Link>
-              }
-            >
-              <DetailRow
-                divided
-                icon={RectangleStackIcon}
-                label="Plan"
-                value={subscriber.planName}
-              />
-              <DetailRow
-                divided
-                icon={ArrowPathIcon}
-                label="Schedule"
-                value={subscriber.cadenceLabel}
-              />
-              <DetailRow
-                divided
-                icon={BanknotesIcon}
-                label="Amount"
-                value={formatSubscriptionPriceCents(subscriber.amountCents)}
-              />
-              <DetailRow
-                divided
-                icon={CheckBadgeIcon}
+            <dl className="mt-5 divide-y divide-white/[0.08] border-t border-white/[0.08]">
+              <MetaRow
                 label="Status"
                 value={
                   <span
-                    className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-medium ${statusClassName}`}
+                    className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-medium ${statusClassName}`}
                   >
                     {statusLabel}
                   </span>
                 }
               />
-              <DetailRow
-                divided
-                icon={CalendarDaysIcon}
+              <MetaRow label="Schedule" value={subscriber.cadenceLabel} />
+              <MetaRow
+                label={getSubscriberBillingDateLabel(
+                  subscriber.status,
+                  subscriber.cancelAtPeriodEnd
+                )}
+                value={formatSubscriberBillingDateValue({
+                  status: subscriber.status,
+                  cancelAtPeriodEnd: subscriber.cancelAtPeriodEnd,
+                  nextBillingAt: subscriber.nextBillingAt,
+                })}
+              />
+              <MetaRow
                 label="Started"
                 value={formatSubscriberBillingDate(subscriber.startedAt)}
               />
-              <DetailRow
-                icon={ClockIcon}
-                label="Next bill"
-                value={formatSubscriberBillingDate(subscriber.nextBillingAt)}
-              />
-            </SectionCard>
-
-            <SectionCard title="Payment">
-              <DetailRow
-                icon={CreditCardIcon}
-                label="Method"
-                value={subscriber.paymentMethodLabel ?? '—'}
-              />
-              <DetailRow
-                icon={CalendarDaysIcon}
-                label="Last payment"
-                value={subscriber.lastPaymentLabel ?? '—'}
-              />
-            </SectionCard>
+              {lastPayment ? (
+                <MetaRow label="Last payment" value={lastPayment} />
+              ) : null}
+            </dl>
           </div>
+        </section>
 
-          <aside className="lg:sticky lg:top-24">
-            <SectionCard title="Customer">
-              <DetailRow
-                icon={UserIcon}
-                label="Name"
-                value={subscriber.customerName}
-              />
-              <DetailRow
-                icon={EnvelopeIcon}
-                label="Email"
-                value={subscriber.email}
-                href={`mailto:${subscriber.email}`}
-              />
-              <DetailRow
-                icon={PhoneIcon}
-                label="Phone"
-                value={subscriber.phone ?? '—'}
-                href={
-                  subscriber.phone
-                    ? `tel:${subscriber.phone.replace(/\D/g, '')}`
-                    : undefined
+        <section className="mt-5">
+          <h2 className="mb-2 text-sm font-medium text-zinc-400">Contact</h2>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-2">
+            <ul className="divide-y divide-white/[0.08]">
+              <li>
+                {hasEmail ? (
+                  <div className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-zinc-300">
+                      <EnvelopeIcon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-zinc-500">Email</p>
+                      <a
+                        href={`mailto:${email}`}
+                        className="block cursor-pointer truncate text-sm text-white transition-colors hover:text-zinc-200"
+                      >
+                        {email}
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyEmail(email)}
+                      className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+                      aria-label="Copy email"
+                      title="Copy email"
+                    >
+                      {emailCopied ? (
+                        <CheckIcon
+                          className="h-4 w-4 text-emerald-400"
+                          aria-hidden
+                        />
+                      ) : (
+                        <ClipboardDocumentIcon
+                          className="h-4 w-4"
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="-mx-2 flex items-center gap-3 px-2 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-zinc-500">
+                      <EnvelopeIcon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs text-zinc-500">Email</span>
+                      <span className="block text-sm text-zinc-500">—</span>
+                    </span>
+                  </div>
+                )}
+              </li>
+              <li>
+                {phoneDisplay && phoneHref ? (
+                  <a
+                    href={phoneHref}
+                    className="-mx-2 flex cursor-pointer items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-white/[0.04]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-zinc-300">
+                      <PhoneIcon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs text-zinc-500">Phone</span>
+                      <span className="block truncate text-sm text-white tabular-nums">
+                        {phoneDisplay}
+                      </span>
+                    </span>
+                  </a>
+                ) : (
+                  <div className="-mx-2 flex items-center gap-3 px-2 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-zinc-500">
+                      <PhoneIcon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs text-zinc-500">Phone</span>
+                      <span className="block text-sm text-zinc-500">—</span>
+                    </span>
+                  </div>
+                )}
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section className="mt-5">
+          <h2 className="mb-2 text-sm font-medium text-zinc-400">Notes</h2>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4">
+            <label htmlFor="subscriber-notes" className="sr-only">
+              Owner notes
+            </label>
+            <textarea
+              id="subscriber-notes"
+              value={notesDraft}
+              onChange={e => setNotesDraft(e.target.value)}
+              rows={4}
+              maxLength={2000}
+              placeholder="Preferences, gate codes, best times…"
+              className="w-full resize-y rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-white/20 focus:outline-none"
+            />
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-zinc-600">
+                Used when you book their membership visit.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={
+                  notesSaving ||
+                  notesDraft.trim() === (subscriber.notes?.trim() || '')
                 }
-              />
-            </SectionCard>
-          </aside>
-        </div>
-
-        <div className="mt-8 lg:hidden">
-          <Link
-            href={ROUTES.DASHBOARD.SUBSCRIPTIONS}
-            className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-          >
-            <ChevronLeftIcon className="h-4 w-4" aria-hidden />
-            Back to subscribers
-          </Link>
-        </div>
+                onClick={() => void handleSaveNotes()}
+              >
+                {notesSaving ? 'Saving…' : 'Save notes'}
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
 
       <Modal
@@ -504,7 +632,7 @@ export const OwnerSubscriberDetailPage: React.FC<
               disabled={busyAction != null}
               onClick={() => {
                 void (async () => {
-                  await runSubscriberAction('cancel_at_period_end');
+                  await runCancelAction('cancel_at_period_end');
                   setCancelOpen(false);
                 })();
               }}
@@ -518,7 +646,7 @@ export const OwnerSubscriberDetailPage: React.FC<
               disabled={busyAction != null}
               onClick={() => {
                 void (async () => {
-                  await runSubscriberAction('cancel_now');
+                  await runCancelAction('cancel_now');
                   setCancelOpen(false);
                 })();
               }}

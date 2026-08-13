@@ -46,6 +46,11 @@ export type Database = {
           subscription_current_period_end: string | null;
           subscription_cancel_at_period_end: boolean;
           subscription_billing_interval: string | null;
+          subscription_canceled_at: string | null;
+          subscription_ended_at: string | null;
+          last_payment_failed_at: string | null;
+          payment_failed_email_sent_at: string | null;
+          pro_welcome_email_sent_at: string | null;
           profile_welcome_modal_seen: boolean;
         };
         Insert: {
@@ -62,6 +67,11 @@ export type Database = {
           subscription_current_period_end?: string | null;
           subscription_cancel_at_period_end?: boolean;
           subscription_billing_interval?: string | null;
+          subscription_canceled_at?: string | null;
+          subscription_ended_at?: string | null;
+          last_payment_failed_at?: string | null;
+          payment_failed_email_sent_at?: string | null;
+          pro_welcome_email_sent_at?: string | null;
           profile_welcome_modal_seen?: boolean;
         };
         Update: {
@@ -78,6 +88,11 @@ export type Database = {
           subscription_current_period_end?: string | null;
           subscription_cancel_at_period_end?: boolean;
           subscription_billing_interval?: string | null;
+          subscription_canceled_at?: string | null;
+          subscription_ended_at?: string | null;
+          last_payment_failed_at?: string | null;
+          payment_failed_email_sent_at?: string | null;
+          pro_welcome_email_sent_at?: string | null;
           profile_welcome_modal_seen?: boolean;
         };
       };
@@ -660,6 +675,7 @@ export type Database = {
           is_published: boolean;
           is_popular: boolean;
           sort_order: number;
+          visit_duration_minutes: number;
           stripe_product_id: string | null;
           deleted_at: string | null;
           created_at: string;
@@ -674,6 +690,7 @@ export type Database = {
           is_published?: boolean;
           is_popular?: boolean;
           sort_order?: number;
+          visit_duration_minutes?: number;
           stripe_product_id?: string | null;
           deleted_at?: string | null;
           created_at?: string;
@@ -688,6 +705,7 @@ export type Database = {
           is_published?: boolean;
           is_popular?: boolean;
           sort_order?: number;
+          visit_duration_minutes?: number;
           stripe_product_id?: string | null;
           deleted_at?: string | null;
           created_at?: string;
@@ -771,6 +789,9 @@ export type Database = {
           cancel_reason: string | null;
           notes: string | null;
           metadata: Json;
+          initial_booking_id: string | null;
+          period_visit_booking_id: string | null;
+          period_visit_period_start: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -809,6 +830,9 @@ export type Database = {
           cancel_reason?: string | null;
           notes?: string | null;
           metadata?: Json;
+          initial_booking_id?: string | null;
+          period_visit_booking_id?: string | null;
+          period_visit_period_start?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -847,6 +871,9 @@ export type Database = {
           cancel_reason?: string | null;
           notes?: string | null;
           metadata?: Json;
+          initial_booking_id?: string | null;
+          period_visit_booking_id?: string | null;
+          period_visit_period_start?: string | null;
           created_at?: string;
           updated_at?: string;
         };

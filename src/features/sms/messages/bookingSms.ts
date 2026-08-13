@@ -57,6 +57,18 @@ export function buildBookingReminderSms(ctx: BookingSmsContext): string {
   );
 }
 
+/** Next membership period — customer should pick a visit via scheduleUrl. */
+export function buildMembershipVisitReminderSms(ctx: {
+  scheduleUrl: string;
+}): string {
+  const url = ctx.scheduleUrl.trim();
+  return withOptOut(
+    url
+      ? `Your membership period started. Book your next visit: ${url}`
+      : `Your membership period started. Book your next visit with your provider.`
+  );
+}
+
 /** Sent when the business marks themselves en route. */
 export function buildOnMyWaySms(ctx: { businessName: string }): string {
   const name = ctx.businessName.trim() || 'Your service provider';

@@ -10,6 +10,8 @@ export interface OwnerSubscriptionPlan {
   description: string;
   /** Bullet lines extracted from the description (public card). */
   benefits: string[];
+  /** How long each membership visit lasts (minutes). */
+  visitDurationMinutes: number;
   cadenceOptions: SubscriptionCadenceOption[];
   createdAt: string;
   /**
@@ -30,15 +32,25 @@ export type OwnerSubscriberStatus =
   | 'canceled'
   | 'incomplete';
 
+/** Whether this billing period still needs a calendar visit. */
+export type OwnerSubscriberVisitStatus = 'needs_visit' | 'scheduled' | 'none';
+
 /** Customer subscriber row for owner UI (from customer_memberships). */
 export interface OwnerSubscriber {
   id: string;
   customerName: string;
   email: string;
   phone?: string;
+  /** Linked CRM customer when known. */
+  customerId?: string | null;
   planId: string;
   planName: string;
+  /** Plan visit length for Book visit prefill. */
+  visitDurationMinutes?: number;
   cadenceLabel: string;
+  /** Billing interval from Stripe / membership row (for price suffix). */
+  intervalUnit: SubscriptionCadenceUnit;
+  intervalCount: number;
   amountCents: number;
   status: OwnerSubscriberStatus;
   /** ISO date (YYYY-MM-DD) when the subscription started. */
@@ -50,6 +62,14 @@ export interface OwnerSubscriber {
   lastPaymentLabel?: string;
   /** Card on file, e.g. "Visa ••4242". */
   paymentMethodLabel?: string;
+  /** Owner-only preferences (e.g. Saturdays ~8am). */
+  notes?: string | null;
+  visitStatus: OwnerSubscriberVisitStatus;
+  periodVisitBookingId?: string | null;
+  /** YYYY-MM-DD when a period visit is scheduled. */
+  periodVisitDate?: string | null;
+  /** HH:mm when a period visit is scheduled. */
+  periodVisitTime?: string | null;
 }
 
 export type OwnerCadencePresetId = 'weekly' | 'biweekly' | 'monthly';

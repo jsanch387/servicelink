@@ -19,6 +19,7 @@ export {
   buildJobCompletedSms,
   buildJobCompletedInvoiceSms,
   buildJobStartedSms,
+  buildMembershipVisitReminderSms,
   buildOnMyWaySms,
   buildReviewRequestSms,
   buildWorkFinishedSms,

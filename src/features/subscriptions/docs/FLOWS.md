@@ -70,6 +70,7 @@ Constants: `API_ROUTES.MEMBERSHIPS`, `MEMBERSHIPS_PLANS`, `MEMBERSHIPS_PLAN(id)`
 {
   "name": "Monthly Detail Club",
   "description": "Keep the car looking fresh.\n• Interior wipe-down\n• Exterior wash",
+  "visitDurationMinutes": 60,
   "cadenceOptions": [
     { "intervalUnit": "week", "intervalCount": 1, "priceCents": 4900 },
     { "intervalUnit": "month", "intervalCount": 1, "priceCents": 15900 }
@@ -80,6 +81,7 @@ Constants: `API_ROUTES.MEMBERSHIPS`, `MEMBERSHIPS_PLANS`, `MEMBERSHIPS_PLAN(id)`
 Validated by `parseMembershipPlanWriteBody`:
 
 - `name` required
+- `visitDurationMinutes` required: 30–630, multiples of 30 (defaults to 60 if omitted)
 - ≥1 cadence; `intervalUnit` ∈ week|month|year; `intervalCount` ≥ 1; `priceCents` > 0
 - No duplicate `(intervalUnit, intervalCount)` pairs
 
@@ -89,11 +91,11 @@ Validated by `parseMembershipPlanWriteBody`:
 
 ### Create — `createMembershipPlanForBusiness`
 
-| Destination              | Fields written                                                                                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `membership_plans`       | `business_id`, `name`, `description`, `benefits` (from split), `is_published: true`, `is_popular: false`, `sort_order: 0`, then `stripe_product_id` |
-| `membership_plan_prices` | one row per cadence: `interval_*`, `price_cents`, `currency: 'usd'`, `is_default` (first = true), then `stripe_price_id`                            |
-| Stripe Connect           | Product + Price(s) via `syncMembershipPlanStripeCatalog`                                                                                            |
+| Destination              | Fields written                                                                                                                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `membership_plans`       | `business_id`, `name`, `description`, `visit_duration_minutes`, `benefits` (from split), `is_published: true`, `is_popular: false`, `sort_order: 0`, then `stripe_product_id` |
+| `membership_plan_prices` | one row per cadence: `interval_*`, `price_cents`, `currency: 'usd'`, `is_default` (first = true), then `stripe_price_id`                                                      |
+| Stripe Connect           | Product + Price(s) via `syncMembershipPlanStripeCatalog`                                                                                                                      |
 
 Order: resolve Connect account → insert DB → Stripe sync → store IDs.  
 If price insert **or** Stripe sync fails → plan row **hard-deleted** (cascade prices).
@@ -102,7 +104,7 @@ If price insert **or** Stripe sync fails → plan row **hard-deleted** (cascade 
 
 | Destination | Behavior                                                                                                                   |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Plan row    | Update name / description / benefits (always allowed)                                                                      |
+| Plan row    | Update name / description / benefits / `visit_duration_minutes` (always allowed)                                           |
 | Prices      | Match by `interval_unit:interval_count`; update cents + default; **insert** new cadences; **hard-delete** removed cadences |
 | Stripe      | Re-sync Product; new Price when amount/interval no longer matches; archive removed cadence Prices (best-effort)            |
 
@@ -195,7 +197,7 @@ Errors (e.g. future “has subscribers”) show inside the modal.
 ```
 Booking link → Subscriptions tab
   → SubscriptionPlanCard (price, cadences, description)
-  → Subscribe → SubscribePlanDetailsModal
+  → Subscribe → `/{slug}/subscribe` (explainer + first visit date)
   → Continue
        → POST /api/public/memberships/checkout
        → Stripe Checkout (mode: subscription) on Connect account
@@ -205,14 +207,33 @@ Booking link → Subscriptions tab
        → cancel → profile + toast warning
 ```
 
-Body: `{ businessSlug, planId, priceId }` (`priceId` = `membership_plan_prices.id`).  
-Requires published plan, `stripe_price_id`, Pro + rollout + payments enabled + Connect ready.
+Body: `{ businessSlug, planId, priceId, firstVisitDate, firstVisitTime }`  
+(`priceId` = `membership_plan_prices.id`; date `YYYY-MM-DD`; time `HH:mm`).  
+Requires published plan, `stripe_price_id`, Pro + rollout + payments enabled + Connect ready.  
+Server loads `visit_duration_minutes` from the plan, re-checks the calendar slot, and stores visit fields on Checkout session metadata.
 
-**Webhook (live):** Connect `/api/stripe/webhook-connect` → `customer_memberships` + `membership_events` (+ invoices on `invoice.paid` / `invoice.payment_failed`).
+**Webhook (live):** Connect `/api/stripe/webhook-connect` → `customer_memberships` + first-visit `bookings` row (`ensureMembershipInitialBooking`) + `membership_events` (+ invoices on `invoice.paid` / `invoice.payment_failed`).
 
-**Live:** owner Subscribers list/detail from `customer_memberships`; confirmation email with signed **Manage or cancel** → Connect Customer Portal.
+**Emails after pay:**
 
-**Still TODO:** richer receipt / invoice emails; owner “resend manage link” polish if needed.
+1. Membership confirmation (manage/cancel portal link)
+2. Appointment confirmation (same V2 booking email as public bookings)
+
+**Live:** owner Subscribers list/detail from `customer_memberships`; calendar shows the first visit; owner gets the usual new-appointment notify.
+
+**Period visits (owner):** Detail shows **Needs visit** when no booking is linked for `current_period_start`. **Book visit** opens New appointment prefilled (plan name, duration, customer, notes, vehicle) with `membershipId`; on create, `linkMembershipPeriodVisit` sets `period_visit_*`. List rows show a Needs visit badge. Owner notes save via `POST …/subscribers/:id` `{ action: 'save_notes' }`.
+
+**Period visits (customer self-serve):**
+
+- URL: `/{slug}/membership/visit?token={membershipId}.{sig}` (`getPublicMembershipVisitPath`; same HMAC token as manage links).
+- UI: date + time picker → `POST /api/public/memberships/visit` → create $0 booking + `linkMembershipPeriodVisit`.
+- **Reminders:** on Connect `customer.subscription.updated`, after upsert, if `needs_visit` and `initial_booking_id` is set and we have not already reminded for this `current_period_start` (`metadata.visit_reminder_sent_for_period_start`), send customer email + SMS with the schedule link and nudge the owner (in-app notification + push).
+- **Owner Send schedule link:** `POST …/subscribers/:id` `{ action: 'send_schedule_link' }` emails/texts the same URL (when status is Needs visit).
+- **Cancel / delete booking:** if that booking is `period_visit_booking_id`, clear `period_visit_*` → Needs visit again (owner can Book visit or Send schedule link).
+
+**Invoice emails (customer):** on Connect `invoice.paid` / `invoice.payment_failed`, after ledger upsert, send branded receipt or payment-failed email (manage/update-card portal link). Idempotent via `membership_invoices.metadata.customer_email_sent_at`. Footer: “Sent for {business} via ServiceLink”.
+
+**Still TODO:** stronger owner past-due nudges (in-app already shows status).
 
 ---
 
@@ -280,7 +301,8 @@ Each failure includes a short `reason` plus safe ids (`businessId`/`planId` trun
 | `updateMembershipPlan.ts`                    | Patch + DB prices + Stripe sync                        |
 | `deleteMembershipPlan.ts`                    | Soft-delete + subscriber check                         |
 | `countActivePlanSubscribers.ts`              | Plan + price active counts from `customer_memberships` |
-| `applyMembershipCheckoutSessionCompleted.ts` | Connect checkout → member row                          |
+| `applyMembershipCheckoutSessionCompleted.ts` | Connect checkout → member row + first booking          |
+| `ensureMembershipInitialBooking.ts`          | Create calendar booking from Checkout visit metadata   |
 | `applyMembershipSubscriptionLifecycle.ts`    | subscription.updated / deleted                         |
 | `applyMembershipInvoiceEvent.ts`             | invoice.paid / payment_failed                          |
 | `parseMembershipPlanWriteBody.ts`            | Shared create/update validation                        |
@@ -300,10 +322,9 @@ On create/edit (`syncMembershipPlanStripeCatalog` via `getStripeConnectClient`):
 
 ## Checkout + Connect webhook (live)
 
-1. Public Continue → `createPublicMembershipCheckoutSession`
+1. Public Continue → `createPublicMembershipCheckoutSession` (validates first-visit slot)
 2. Checkout Session `mode: 'subscription'`, stored `stripe_price_id`, `{ stripeAccount }`
-3. Metadata `kind: membership_checkout` (+ plan/price/business ids) on session + subscription
-4. Connect webhook (`checkout.session.completed`) → upsert `customer_memberships` + `checkout_completed` event
+3. Metadata `kind: membership_checkout` (+ plan/price/business ids + `firstVisitDate` / `firstVisitTime` / `visitDurationMinutes`) on session + subscription
+4. Connect webhook (`checkout.session.completed`) → upsert `customer_memberships` + `checkout_completed` event → `ensureMembershipInitialBooking` → membership confirm email + appointment confirm email
 5. `customer.subscription.updated` / `deleted` → sync status / cancel fields
 6. `invoice.paid` / `invoice.payment_failed` → `membership_invoices` + member payment health
-7. **Still TODO:** receipt emails, Customer Portal, owner Subscribers UI from live data

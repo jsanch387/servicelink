@@ -1,4 +1,5 @@
 import type { Database } from '@/libs/supabase/client';
+import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type {
   CustomerSubscriptionPlan,
   SubscriptionCadenceOption,
@@ -8,6 +9,18 @@ import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
 
 type PlanRow = Database['public']['Tables']['membership_plans']['Row'];
 type PriceRow = Database['public']['Tables']['membership_plan_prices']['Row'];
+
+function planVisitDurationMinutes(plan: PlanRow): number {
+  const minutes = plan.visit_duration_minutes;
+  if (
+    typeof minutes === 'number' &&
+    Number.isInteger(minutes) &&
+    minutes >= 30
+  ) {
+    return minutes;
+  }
+  return MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT;
+}
 
 const CADENCE_UNITS = new Set<SubscriptionCadenceUnit>([
   'week',
@@ -52,6 +65,7 @@ export function mapMembershipPlanToOwner(
     name: plan.name,
     description: plan.description,
     benefits: Array.isArray(plan.benefits) ? plan.benefits : [],
+    visitDurationMinutes: planVisitDurationMinutes(plan),
     cadenceOptions: mapCadenceOptions(prices),
     createdAt: plan.created_at,
     isPublished: plan.is_published,
@@ -68,6 +82,7 @@ export function mapMembershipPlanToCustomer(
     name: plan.name,
     description: plan.description,
     benefits: Array.isArray(plan.benefits) ? plan.benefits : [],
+    visitDurationMinutes: planVisitDurationMinutes(plan),
     cadenceOptions: mapCadenceOptions(prices),
     isPopular: plan.is_popular,
   };

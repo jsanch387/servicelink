@@ -65,7 +65,7 @@ export async function upsertCustomerMembershipFromSubscription(
 
   const { data: existing } = await customerMembershipsOf(supabase)
     .select(
-      'id, plan_id, plan_price_id, customer_name, customer_email, customer_phone, customer_email_normalized, customer_phone_normalized, stripe_checkout_session_id, payment_method_brand, payment_method_last4, last_invoice_status, latest_invoice_id'
+      'id, plan_id, plan_price_id, customer_name, customer_email, customer_phone, customer_email_normalized, customer_phone_normalized, stripe_checkout_session_id, payment_method_brand, payment_method_last4, last_invoice_status, latest_invoice_id, metadata'
     )
     .eq('stripe_account_id', stripeAccountId)
     .eq('stripe_subscription_id', subscriptionId)
@@ -88,10 +88,26 @@ export async function upsertCustomerMembershipFromSubscription(
   );
 
   const metaFromSub = args.subscription.metadata ?? {};
+  const existingMeta =
+    existing?.metadata &&
+    typeof existing.metadata === 'object' &&
+    !Array.isArray(existing.metadata)
+      ? (existing.metadata as Record<string, unknown>)
+      : {};
   const metadata: Json = {
+    ...existingMeta,
     kind: 'membership_checkout',
     ...(typeof metaFromSub.businessSlug === 'string'
       ? { businessSlug: metaFromSub.businessSlug }
+      : {}),
+    ...(typeof metaFromSub.firstVisitDate === 'string'
+      ? { firstVisitDate: metaFromSub.firstVisitDate }
+      : {}),
+    ...(typeof metaFromSub.firstVisitTime === 'string'
+      ? { firstVisitTime: metaFromSub.firstVisitTime }
+      : {}),
+    ...(typeof metaFromSub.visitDurationMinutes === 'string'
+      ? { visitDurationMinutes: metaFromSub.visitDurationMinutes }
       : {}),
     ...(args.extraMetadata ?? {}),
   };

@@ -4,10 +4,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import {
   logMemberships,
+  shortIdForLog,
   shortStripeIdForLog,
 } from './membershipsTransactionLog';
 import { isMembershipCheckoutKind } from './membershipStripeHelpers';
 import { recordMembershipEvent } from './recordMembershipEvent';
+import { sendMembershipPeriodVisitRemindersIfApplicable } from './sendMembershipPeriodVisitRemindersIfApplicable';
 import {
   findMembershipByStripeSubscription,
   upsertCustomerMembershipFromSubscription,
@@ -136,6 +138,20 @@ export async function applyMembershipSubscriptionLifecycle(
       cancelAtPeriodEnd: Boolean(fresh.cancel_at_period_end),
     },
   });
+
+  if (args.kind === 'updated') {
+    try {
+      await sendMembershipPeriodVisitRemindersIfApplicable(supabase, {
+        membershipId: upsert.membershipId,
+        stripeEventId: event.id,
+      });
+    } catch (err) {
+      logMemberships(event.id, 'warn', 'visit_reminder.unexpected', {
+        membershipId: shortIdForLog(upsert.membershipId),
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+  }
 
   return { handled: true };
 }

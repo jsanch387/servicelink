@@ -28,6 +28,8 @@ export interface CustomerSubscriptionPlan {
   id: string;
   name: string;
   description: string;
+  /** How long each visit lasts (minutes) — used for public slotting. */
+  visitDurationMinutes?: number;
   /** Cadences the customer can choose from (at least one). */
   cadenceOptions: SubscriptionCadenceOption[];
   /** Short benefit bullets — keep to 3–4 for easy scanning. */

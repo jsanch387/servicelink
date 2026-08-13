@@ -132,6 +132,12 @@ const membershipManageLinkIpSlugRl: { current: Ratelimit | null | undefined } =
   {
     current: undefined,
   };
+const membershipVisitIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const membershipVisitIpSlugRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
 
 async function flushPending(result: { pending?: Promise<unknown> }) {
   try {
@@ -513,6 +519,38 @@ export async function assertPublicMembershipManageLinkRateLimits(
   );
   const r3 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 6, MS_HOUR);
   if (!r3.ok) return tooManyRequests(r3.reset);
+
+  return null;
+}
+
+/**
+ * POST /api/public/memberships/visit — creates a period visit booking.
+ * Bound volume per IP and per IP+slug.
+ */
+export async function assertPublicMembershipVisitRateLimits(
+  request: NextRequest,
+  businessSlug: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const slug = safeSlugSegment(businessSlug);
+
+  const ipLimiter = createLimiter(
+    membershipVisitIpRl,
+    'public_api:membership_visit:ip',
+    30,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 30, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const slugLimiter = createLimiter(
+    membershipVisitIpSlugRl,
+    'public_api:membership_visit:ipslug',
+    12,
+    '1 h'
+  );
+  const r2 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 12, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;
 }

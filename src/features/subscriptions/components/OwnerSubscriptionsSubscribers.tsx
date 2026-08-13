@@ -11,6 +11,7 @@ import type {
 import { formatSubscriptionPriceCents } from '../utils/formatSubscriptionPrice';
 import {
   formatSubscriberBillingDate,
+  formatSubscriberBillingDateValue,
   getSubscriberStatusClassName,
   getSubscriberStatusLabel,
   isSubscriberCancelScheduled,
@@ -198,11 +199,16 @@ export const OwnerSubscriptionsSubscribers: React.FC<
               className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
             >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate text-sm font-semibold text-white">
                     {subscriber.customerName}
                   </p>
                   <StatusPill subscriber={subscriber} />
+                  {subscriber.visitStatus === 'needs_visit' ? (
+                    <span className="inline-flex rounded-full border border-amber-400/25 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                      Needs visit
+                    </span>
+                  ) : null}
                 </div>
                 <p className="mt-0.5 truncate text-xs text-zinc-500">
                   {hidePlanName
@@ -213,7 +219,11 @@ export const OwnerSubscriptionsSubscribers: React.FC<
                 </p>
               </div>
               <p className="shrink-0 text-xs tabular-nums text-zinc-500">
-                {formatSubscriberBillingDate(subscriber.nextBillingAt)}
+                {formatSubscriberBillingDateValue({
+                  status: subscriber.status,
+                  cancelAtPeriodEnd: subscriber.cancelAtPeriodEnd,
+                  nextBillingAt: subscriber.nextBillingAt,
+                })}
               </p>
             </button>
           </li>
@@ -285,10 +295,21 @@ export const OwnerSubscriptionsSubscribers: React.FC<
                   {formatSubscriptionPriceCents(subscriber.amountCents)}
                 </td>
                 <td className="px-4 py-2.5 align-middle text-sm whitespace-nowrap text-zinc-300">
-                  {formatSubscriberBillingDate(subscriber.nextBillingAt)}
+                  {formatSubscriberBillingDateValue({
+                    status: subscriber.status,
+                    cancelAtPeriodEnd: subscriber.cancelAtPeriodEnd,
+                    nextBillingAt: subscriber.nextBillingAt,
+                  })}
                 </td>
                 <td className="px-4 py-2.5 align-middle">
-                  <StatusPill subscriber={subscriber} />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusPill subscriber={subscriber} />
+                    {subscriber.visitStatus === 'needs_visit' ? (
+                      <span className="inline-flex rounded-full border border-amber-400/25 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                        Needs visit
+                      </span>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ))}

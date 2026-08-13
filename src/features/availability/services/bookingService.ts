@@ -621,7 +621,22 @@ export async function updateBookingStatus(
     throw error;
   }
 
-  return data as BookingRow | null;
+  const row = data as BookingRow | null;
+  if (row && status === 'cancelled') {
+    try {
+      const { clearMembershipPeriodVisitForBooking } = await import(
+        '@/features/subscriptions/server/clearMembershipPeriodVisitForBooking'
+      );
+      await clearMembershipPeriodVisitForBooking({
+        businessId: String(row.business_id ?? ''),
+        bookingId: String(row.id ?? bookingId),
+      });
+    } catch {
+      // Membership unlink is best-effort; cancel already succeeded.
+    }
+  }
+
+  return row;
 }
 
 export type RescheduleBookingForOwnerResult =
@@ -775,6 +790,18 @@ export async function deleteBookingForOwner(
 
   if (!existing) {
     return { ok: false, error: 'Booking not found.', httpStatus: 404 };
+  }
+
+  try {
+    const { clearMembershipPeriodVisitForBooking } = await import(
+      '@/features/subscriptions/server/clearMembershipPeriodVisitForBooking'
+    );
+    await clearMembershipPeriodVisitForBooking({
+      businessId,
+      bookingId,
+    });
+  } catch {
+    // Best-effort; delete may still proceed.
   }
 
   const { error: deleteErr } = await db

@@ -311,11 +311,26 @@ export type PublicBookingUi = {
     contactForPrice: string;
     cadencePickerLabel: string;
     cadencePickerAriaLabel: string;
-    /** Modal after Subscribe — plan summary + how it works. */
+    /** Modal after Subscribe — plan summary + how it works + first visit. */
     detailsModalTitle: string;
     closeDetailsAriaLabel: string;
     howItWorksTitle: string;
-    howItWorksSteps: readonly [string, string, string];
+    howItWorksSteps: readonly [
+      { title: string; body: string },
+      { title: string; body: string },
+      { title: string; body: string },
+      { title: string; body: string },
+    ];
+    howItWorksContinueCta: string;
+    firstVisitTitle: string;
+    firstVisitHint: string;
+    firstVisitRequired: string;
+    firstVisitTimeTitle: string;
+    firstVisitTimeRequired: string;
+    firstVisitNoSlots: string;
+    /** Back link on `/{slug}/subscribe`. */
+    subscribePageBackLabel: string;
+    subscribeStepBackLabel: string;
     continueToCheckoutCta: string;
     checkoutComingSoon: string;
     checkoutStartFailed: string;
@@ -336,6 +351,24 @@ export type PublicBookingUi = {
     manageSendSuccess: string;
     manageSendFailed: string;
     manageRateLimited: string;
+    /** Public `/{slug}/membership/visit` — next period self-serve booking. */
+    periodVisitTitle: string;
+    periodVisitHint: (planName: string) => string;
+    periodVisitTimeTitle: string;
+    periodVisitDateRequired: string;
+    periodVisitTimeRequired: string;
+    periodVisitNoSlots: string;
+    periodVisitConfirmCta: string;
+    periodVisitBookFailed: string;
+    periodVisitBookSuccess: string;
+    periodVisitScheduledTitle: string;
+    periodVisitScheduledBody: (
+      planName: string,
+      date: string,
+      time: string
+    ) => string;
+    periodVisitInactiveTitle: string;
+    periodVisitInactiveBody: string;
     /** Short price suffix, e.g. "/mo". */
     cadenceSuffix: {
       week: string;

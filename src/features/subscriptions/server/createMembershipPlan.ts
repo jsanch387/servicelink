@@ -1,5 +1,6 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { SubscriptionCadenceOption } from '../types/customerSubscriptionPlan';
 import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
 import { getBusinessStripeConnectAccountId } from './getBusinessStripeConnectAccountId';
@@ -25,6 +26,7 @@ type PriceRow = Database['public']['Tables']['membership_plan_prices']['Row'];
 export type CreateMembershipPlanInput = {
   name: string;
   description: string;
+  visitDurationMinutes?: number;
   cadenceOptions: Array<
     Pick<
       SubscriptionCadenceOption,
@@ -63,12 +65,16 @@ export async function createMembershipPlanForBusiness(
     input.description
   );
 
+  const visitDurationMinutes =
+    input.visitDurationMinutes ?? MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT;
+
   const { data: planData, error: planError } = await membershipPlansOf(supabase)
     .insert({
       business_id: businessId,
       name,
       description,
       benefits,
+      visit_duration_minutes: visitDurationMinutes,
       is_published: input.isPublished !== false,
       is_popular: false,
       sort_order: 0,

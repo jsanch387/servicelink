@@ -272,4 +272,9 @@ export interface CreateBookingRequest {
    * Omitted / `true` keeps current behavior (apply if the date qualifies).
    */
   applySale?: boolean;
+  /**
+   * Owner create from a membership subscriber: after booking succeeds, link
+   * this appointment as the current billing-period visit.
+   */
+  membershipId?: string;
 }

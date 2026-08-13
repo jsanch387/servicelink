@@ -107,11 +107,29 @@ export function stripeIdFromExpandable(
   return null;
 }
 
+/**
+ * Subscription id on an Invoice.
+ * Stripe API 2025+ / SDK v20 often puts it on `parent.subscription_details`
+ * instead of the legacy top-level `subscription`.
+ */
 export function stripeSubscriptionIdFromInvoice(
   invoice: Stripe.Invoice
 ): string | null {
   const withSub = invoice as Stripe.Invoice & {
     subscription?: string | Stripe.Subscription | null;
   };
-  return stripeIdFromExpandable(withSub.subscription);
+  const legacy = stripeIdFromExpandable(withSub.subscription);
+  if (legacy) return legacy;
+
+  const parent = invoice.parent;
+  if (parent?.type === 'subscription_details') {
+    return stripeIdFromExpandable(
+      parent.subscription_details?.subscription as
+        | string
+        | { id?: string }
+        | null
+        | undefined
+    );
+  }
+  return null;
 }

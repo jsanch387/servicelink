@@ -1,20 +1,25 @@
 import { getStripeConnectClient } from '@/libs/stripe';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OwnerSubscriber } from '../types/ownerSubscriptionPlan';
+import { getOwnerCustomerMembership } from './listOwnerCustomerMemberships';
 import {
   logMemberships,
   shortIdForLog,
   shortStripeIdForLog,
   stripeErrorForLogs,
 } from './membershipsTransactionLog';
-import { mapCustomerMembershipToOwnerSubscriber } from './mapCustomerMembershipToOwnerSubscriber';
-import {
-  customerMembershipsOf,
-  membershipPlansOf,
-} from './membershipTablesQuery';
+import { customerMembershipsOf } from './membershipTablesQuery';
 import { recordMembershipEvent } from './recordMembershipEvent';
 import { upsertCustomerMembershipFromSubscription } from './upsertCustomerMembershipFromSubscription';
+import { isMembershipCancelScheduled } from './mapCustomerMembershipToOwnerSubscriber';
+
+function stripeErrorCode(err: unknown): string | null {
+  if (!err || typeof err !== 'object') return null;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === 'string' ? code : null;
+}
 
 export async function cancelOwnerCustomerMembership(
   supabase: SupabaseClient<Database>,
@@ -24,7 +29,7 @@ export async function cancelOwnerCustomerMembership(
     mode: 'at_period_end' | 'immediate';
   }
 ): Promise<
-  | { ok: true; subscriber: OwnerSubscriber }
+  | { ok: true; subscriber: OwnerSubscriber; alreadyCanceled?: boolean }
   | { ok: false; error: string; status: number }
 > {
   const businessId = args.businessId.trim();
@@ -33,6 +38,7 @@ export async function cancelOwnerCustomerMembership(
     return { ok: false, error: 'Missing id.', status: 400 };
   }
 
+  // Owner session can SELECT only; verify ownership then write via service role.
   const { data: row, error } = await customerMembershipsOf(supabase)
     .select('*')
     .eq('business_id', businessId)
@@ -53,8 +59,65 @@ export async function cancelOwnerCustomerMembership(
     };
   }
 
+  const admin = createSupabaseAdminClient();
+
+  const returnFresh = async (alreadyCanceled?: boolean) => {
+    const fresh = await getOwnerCustomerMembership(
+      supabase,
+      businessId,
+      membershipId
+    );
+    if (!fresh.ok) {
+      return { ok: false as const, error: fresh.error, status: fresh.status };
+    }
+    return {
+      ok: true as const,
+      subscriber: fresh.subscriber,
+      alreadyCanceled,
+    };
+  };
+
+  // Idempotent: DB already canceled / cancel scheduled — sync from Stripe and
+  // return fresh subscriber so the UI updates without an error toast.
   if (row.status === 'canceled') {
-    return { ok: false, error: 'Already canceled.', status: 409 };
+    try {
+      const stripe = getStripeConnectClient(stripeAccountId);
+      const subscription = await stripe.subscriptions.retrieve(
+        stripeSubscriptionId
+      );
+      await upsertCustomerMembershipFromSubscription(admin, {
+        stripeAccountId,
+        subscription,
+        businessId,
+        planId: row.plan_id,
+        planPriceId: row.plan_price_id,
+      });
+    } catch {
+      // Best-effort sync; still return current DB state.
+    }
+    return returnFresh(true);
+  }
+
+  if (
+    args.mode === 'at_period_end' &&
+    isMembershipCancelScheduled(row)
+  ) {
+    try {
+      const stripe = getStripeConnectClient(stripeAccountId);
+      const subscription = await stripe.subscriptions.retrieve(
+        stripeSubscriptionId
+      );
+      await upsertCustomerMembershipFromSubscription(admin, {
+        stripeAccountId,
+        subscription,
+        businessId,
+        planId: row.plan_id,
+        planPriceId: row.plan_price_id,
+      });
+    } catch {
+      // Best-effort
+    }
+    return returnFresh(true);
   }
 
   try {
@@ -68,7 +131,7 @@ export async function cancelOwnerCustomerMembership(
       });
     }
 
-    const upsert = await upsertCustomerMembershipFromSubscription(supabase, {
+    const upsert = await upsertCustomerMembershipFromSubscription(admin, {
       stripeAccountId,
       subscription,
       businessId,
@@ -80,7 +143,7 @@ export async function cancelOwnerCustomerMembership(
       return { ok: false, error: upsert.error, status: 500 };
     }
 
-    await recordMembershipEvent(supabase, {
+    await recordMembershipEvent(admin, {
       businessId,
       membershipId,
       eventType: args.mode === 'immediate' ? 'canceled' : 'cancel_requested',
@@ -92,28 +155,38 @@ export async function cancelOwnerCustomerMembership(
       payload: { mode: args.mode, subscriptionId: stripeSubscriptionId },
     });
 
-    let planName = 'Plan';
-    if (row.plan_id) {
-      const { data: plan } = await membershipPlansOf(supabase)
-        .select('name')
-        .eq('id', row.plan_id)
-        .maybeSingle();
-      if (plan?.name) planName = String(plan.name);
+    return returnFresh(false);
+  } catch (err) {
+    // Stripe may already be canceled from a prior attempt (e.g. upsert failed
+    // after Stripe succeeded). Sync and treat as success.
+    const code = stripeErrorCode(err);
+    const message =
+      err && typeof err === 'object' && 'message' in err
+        ? String((err as { message?: unknown }).message ?? '')
+        : '';
+    const alreadyGone =
+      code === 'resource_missing' ||
+      /already\s+(been\s+)?cancel/i.test(message) ||
+      /subscription.*cancel/i.test(message);
+
+    if (alreadyGone) {
+      try {
+        const stripe = getStripeConnectClient(stripeAccountId);
+        const subscription =
+          await stripe.subscriptions.retrieve(stripeSubscriptionId);
+        await upsertCustomerMembershipFromSubscription(admin, {
+          stripeAccountId,
+          subscription,
+          businessId,
+          planId: row.plan_id,
+          planPriceId: row.plan_price_id,
+        });
+      } catch {
+        // ignore
+      }
+      return returnFresh(true);
     }
 
-    const { data: fresh } = await customerMembershipsOf(supabase)
-      .select('*')
-      .eq('id', membershipId)
-      .maybeSingle();
-
-    return {
-      ok: true,
-      subscriber: mapCustomerMembershipToOwnerSubscriber(
-        fresh ?? row,
-        planName
-      ),
-    };
-  } catch (err) {
     logMemberships(undefined, 'error', 'cancel.stripe_failed', {
       businessId: shortIdForLog(businessId),
       membershipId: shortIdForLog(membershipId),

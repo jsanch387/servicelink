@@ -46,19 +46,30 @@ export async function listOwnerCustomerMemberships(
   ];
 
   const planNameById = new Map<string, string>();
+  const planDurationById = new Map<string, number>();
   if (planIds.length > 0) {
     const { data: plans } = await membershipPlansOf(supabase)
-      .select('id, name')
+      .select('id, name, visit_duration_minutes')
       .in('id', planIds);
     for (const plan of plans ?? []) {
       planNameById.set(String(plan.id), String(plan.name ?? 'Plan'));
+      const minutes = Number(
+        (plan as { visit_duration_minutes?: number | null })
+          .visit_duration_minutes
+      );
+      if (Number.isInteger(minutes) && minutes >= 30) {
+        planDurationById.set(String(plan.id), minutes);
+      }
     }
   }
 
   const subscribers = (rows ?? []).map(row =>
     mapCustomerMembershipToOwnerSubscriber(
       row,
-      planNameById.get(String(row.plan_id ?? '')) ?? 'Plan'
+      planNameById.get(String(row.plan_id ?? '')) ?? 'Plan',
+      {
+        visitDurationMinutes: planDurationById.get(String(row.plan_id ?? '')),
+      }
     )
   );
 
@@ -118,13 +129,21 @@ export async function getOwnerCustomerMembership(
   const enriched = await enrichOwnerMembershipFromStripe(supabase, row);
 
   let planName = 'Plan';
+  let visitDurationMinutes: number | undefined;
   const planId = (enriched.plan_id as string | null)?.trim();
   if (planId) {
     const { data: plan } = await membershipPlansOf(supabase)
-      .select('name')
+      .select('name, visit_duration_minutes')
       .eq('id', planId)
       .maybeSingle();
     if (plan?.name) planName = String(plan.name);
+    const minutes = Number(
+      (plan as { visit_duration_minutes?: number | null } | null)
+        ?.visit_duration_minutes
+    );
+    if (Number.isInteger(minutes) && minutes >= 30) {
+      visitDurationMinutes = minutes;
+    }
   }
 
   const lastPaymentLabel = await latestInvoicePaymentLabel(
@@ -133,10 +152,35 @@ export async function getOwnerCustomerMembership(
     enriched.last_invoice_status
   );
 
+  let periodVisitDate: string | null = null;
+  let periodVisitTime: string | null = null;
+  const periodBookingId = (
+    enriched.period_visit_booking_id as string | null
+  )?.trim();
+  if (periodBookingId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: booking } = await (supabase as any)
+      .from('bookings')
+      .select('scheduled_date, start_time')
+      .eq('id', periodBookingId)
+      .eq('business_id', bid)
+      .maybeSingle();
+    const br = booking as {
+      scheduled_date?: string | null;
+      start_time?: string | null;
+    } | null;
+    periodVisitDate = br?.scheduled_date?.trim() || null;
+    const rawTime = br?.start_time?.trim() || '';
+    periodVisitTime = rawTime ? rawTime.slice(0, 5) : null;
+  }
+
   return {
     ok: true,
     subscriber: mapCustomerMembershipToOwnerSubscriber(enriched, planName, {
       lastPaymentLabel,
+      visitDurationMinutes,
+      periodVisitDate,
+      periodVisitTime,
     }),
   };
 }

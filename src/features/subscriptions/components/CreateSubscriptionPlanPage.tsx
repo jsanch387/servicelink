@@ -7,6 +7,7 @@ import {
   Input,
   PriceInput,
   TextArea,
+  TimeSelect,
   toast,
 } from '@/components/shared';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
@@ -14,6 +15,11 @@ import {
   insertServiceDescriptionBullet,
   SERVICE_DESCRIPTION_MAX_LENGTH,
 } from '@/features/business-profile/utils/serviceDescriptionDisplay';
+import {
+  isValidServiceDurationHHmm,
+  minutesToServiceDurationHHmm,
+  serviceDurationHHmmToMinutes,
+} from '@/features/availability/utils/timeOptions';
 import {
   ChevronLeftIcon,
   ListBulletIcon,
@@ -23,6 +29,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { SubscriptionCadenceOption } from '../types/customerSubscriptionPlan';
 import {
   OWNER_CADENCE_PRESETS,
@@ -44,7 +51,7 @@ const CREATE_STEP_META: Record<
 > = {
   name: {
     title: 'Name your plan',
-    lead: 'Give your plan a clear name customers will recognize.',
+    lead: 'Name it, then set how long each visit usually takes.',
   },
   cadence: {
     title: 'How often',
@@ -62,7 +69,7 @@ const EDIT_STEP_META: Record<
 > = {
   name: {
     title: 'Edit plan name',
-    lead: 'Update the name customers see on your booking link.',
+    lead: 'Update the name and how long each visit takes.',
   },
   cadence: {
     title: 'Edit pricing',
@@ -104,6 +111,12 @@ export const CreateSubscriptionPlanPage: React.FC<
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [step, setStep] = useState<CreatePlanWizardStep>('name');
   const [name, setName] = useState(initialPlan?.name ?? '');
+  const [visitDurationHHmm, setVisitDurationHHmm] = useState(() =>
+    minutesToServiceDurationHHmm(
+      initialPlan?.visitDurationMinutes ??
+        MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT
+    )
+  );
   const [description, setDescription] = useState(
     initialPlan
       ? joinDescriptionAndBenefits(
@@ -142,7 +155,8 @@ export const CreateSubscriptionPlanPage: React.FC<
     }, 0);
   }, [description]);
 
-  const canContinueName = name.trim().length > 0;
+  const canContinueName =
+    name.trim().length > 0 && isValidServiceDurationHHmm(visitDurationHHmm);
   const canContinueCadence = options.length > 0;
   const stepIndex = step === 'name' ? 0 : step === 'cadence' ? 1 : 2;
 
@@ -199,9 +213,13 @@ export const CreateSubscriptionPlanPage: React.FC<
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const visitDurationMinutes =
+        serviceDurationHHmmToMinutes(visitDurationHHmm);
+
       const payload = {
         name: name.trim(),
         description: description.trim(),
+        visitDurationMinutes,
         cadenceOptions: options.map(option => ({
           intervalUnit: option.intervalUnit,
           intervalCount: option.intervalCount,
@@ -313,6 +331,18 @@ export const CreateSubscriptionPlanPage: React.FC<
                     onChange={setName}
                     required
                   />
+                  <div>
+                    <p className="mb-2 text-sm font-medium text-gray-200">
+                      Duration
+                    </p>
+                    <TimeSelect
+                      variant="duration"
+                      value={visitDurationHHmm}
+                      onChange={setVisitDurationHHmm}
+                      durationPlaceholder="Select duration"
+                      aria-label="Duration"
+                    />
+                  </div>
                   <Button
                     type="button"
                     variant="inverse"

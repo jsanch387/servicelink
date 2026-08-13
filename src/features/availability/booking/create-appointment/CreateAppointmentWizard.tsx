@@ -30,6 +30,7 @@ import { ServiceCatalogListStep } from './steps/ServiceCatalogListStep';
 import { ServicePathChooser } from './steps/ServicePathChooser';
 import { VehicleStep } from './steps/VehicleStep';
 import { canAddAnotherJob } from './utils/createAppointmentJobs';
+import type { MembershipVisitPrefill } from './types/membershipVisitPrefill';
 
 export interface CreateAppointmentWizardProps {
   businessId: string;
@@ -39,6 +40,7 @@ export interface CreateAppointmentWizardProps {
   serviceCategories: ServiceCategoryRow[];
   serviceLocation: PublicBookingServiceLocation;
   activeSale?: PublicActiveSale | null;
+  membershipVisit?: MembershipVisitPrefill | null;
 }
 
 export function CreateAppointmentWizard({
@@ -49,12 +51,14 @@ export function CreateAppointmentWizard({
   serviceCategories,
   serviceLocation,
   activeSale = null,
+  membershipVisit = null,
 }: CreateAppointmentWizardProps) {
   const ctrl = useCreateAppointmentController({
     businessId,
     businessSlug: businessSlug?.trim() || '',
     catalog: serviceCatalog,
     serviceLocation,
+    membershipVisit,
   });
   const {
     step,
@@ -63,6 +67,7 @@ export function CreateAppointmentWizard({
     progress,
     canContinue,
     appointmentConfirmed,
+    membershipId,
     isSubmitting,
     submitError,
     clearSubmitError,
@@ -140,7 +145,7 @@ export function CreateAppointmentWizard({
       <div className="min-h-screen py-8 sm:py-10">
         <CreateAppointmentHeader compact />
         <div className="mx-auto w-full max-w-xl px-4">
-          <CreateAppointmentSuccessState />
+          <CreateAppointmentSuccessState membershipId={membershipId} />
         </div>
       </div>
     );

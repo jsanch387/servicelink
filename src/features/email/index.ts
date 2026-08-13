@@ -40,6 +40,17 @@ export type {
   SendMembershipManageLinkResult,
 } from './membership-manage-link/types';
 export { sendMembershipSubscribeConfirmedEmail } from './membership-subscribe-confirmed/sendMembershipSubscribeConfirmedEmail';
+export { sendMembershipVisitReminderEmail } from './membership-visit-reminder/sendMembershipVisitReminderEmail';
+export type {
+  MembershipVisitReminderPayload,
+  SendMembershipVisitReminderResult,
+} from './membership-visit-reminder/types';
+export { sendMembershipInvoicePaidEmail } from './membership-invoice/sendMembershipInvoicePaidEmail';
+export { sendMembershipInvoicePaymentFailedEmail } from './membership-invoice/sendMembershipInvoicePaymentFailedEmail';
+export type {
+  MembershipInvoiceEmailPayload,
+  SendMembershipInvoiceEmailResult,
+} from './membership-invoice/types';
 export type {
   MaintenanceEnrollmentConfirmedPayload,
   SendMaintenanceEnrollmentConfirmedResult,

@@ -1,3 +1,8 @@
+import {
+  SERVICE_DURATION_MAX_MINUTES,
+  SERVICE_DURATION_MIN_MINUTES,
+} from '@/features/availability/utils/timeOptions';
+import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { SubscriptionCadenceUnit } from '../types/customerSubscriptionPlan';
 
 const CADENCE_UNITS = new Set<SubscriptionCadenceUnit>([
@@ -15,12 +20,28 @@ type BodyCadence = {
 export type MembershipPlanWriteBody = {
   name: string;
   description: string;
+  visitDurationMinutes: number;
   cadenceOptions: Array<{
     intervalUnit: SubscriptionCadenceUnit;
     intervalCount: number;
     priceCents: number;
   }>;
 };
+
+function parseVisitDurationMinutes(raw: unknown): number | null {
+  if (raw === undefined || raw === null) {
+    return MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT;
+  }
+  if (typeof raw !== 'number' || !Number.isInteger(raw)) return null;
+  if (
+    raw < SERVICE_DURATION_MIN_MINUTES ||
+    raw > SERVICE_DURATION_MAX_MINUTES ||
+    raw % 30 !== 0
+  ) {
+    return null;
+  }
+  return raw;
+}
 
 export function parseMembershipPlanWriteBody(
   raw: unknown
@@ -32,6 +53,7 @@ export function parseMembershipPlanWriteBody(
   const body = raw as {
     name?: unknown;
     description?: unknown;
+    visitDurationMinutes?: unknown;
     cadenceOptions?: unknown;
   };
 
@@ -42,6 +64,13 @@ export function parseMembershipPlanWriteBody(
 
   const description =
     typeof body.description === 'string' ? body.description : '';
+
+  const visitDurationMinutes = parseVisitDurationMinutes(
+    body.visitDurationMinutes
+  );
+  if (visitDurationMinutes == null) {
+    return { ok: false, error: 'Enter a valid visit duration.' };
+  }
 
   if (!Array.isArray(body.cadenceOptions) || body.cadenceOptions.length === 0) {
     return { ok: false, error: 'Add at least one pricing option.' };
@@ -84,5 +113,8 @@ export function parseMembershipPlanWriteBody(
     });
   }
 
-  return { ok: true, value: { name, description, cadenceOptions } };
+  return {
+    ok: true,
+    value: { name, description, visitDurationMinutes, cadenceOptions },
+  };
 }

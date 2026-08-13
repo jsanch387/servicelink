@@ -10,6 +10,7 @@ import { membershipEventsOf } from './membershipTablesQuery';
 
 export type MembershipEventType =
   | 'checkout_completed'
+  | 'initial_booking_created'
   | 'subscription_created'
   | 'subscription_updated'
   | 'invoice_paid'

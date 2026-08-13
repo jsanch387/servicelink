@@ -52,6 +52,7 @@ import {
   parseStoredTimeOffBlocks,
   toTimeOffIntervalFields,
 } from '@/features/availability/types/blockTime';
+import { linkMembershipPeriodVisit } from '@/features/subscriptions/server/linkMembershipPeriodVisit';
 import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
@@ -800,6 +801,26 @@ export async function POST(request: NextRequest) {
         customerSmsOutcome = 'no_phone';
       }
 
+      const membershipId =
+        ownerManualBooking && typeof body.membershipId === 'string'
+          ? body.membershipId.trim()
+          : '';
+      if (membershipId) {
+        const linked = await linkMembershipPeriodVisit(supabase, {
+          businessId,
+          membershipId,
+          bookingId: result.id,
+          customerId: result.customerId,
+          requestId,
+        });
+        if (!linked.ok) {
+          logBookingTransaction(requestId, 'warn', 'membership_visit_link', {
+            bookingId: result.id,
+            err: linked.error.slice(0, 80),
+          });
+        }
+      }
+
       logBookingTransaction(requestId, 'info', 'created', {
         bookingId: result.id,
         visitId: result.visitId,
@@ -808,6 +829,7 @@ export async function POST(request: NextRequest) {
         auth: ownerAuthMethod,
         email: customerConfirmationOutcome,
         sms: customerSmsOutcome,
+        membership: membershipId ? 1 : 0,
       });
       return publicBookingJson(
         requestId,

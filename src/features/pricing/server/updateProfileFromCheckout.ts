@@ -49,6 +49,10 @@ export async function updateProfileFromCheckout(
     subscription_cancel_at_period_end: false,
     // Fresh paid/active subscription — reset any prior payment-failed notification.
     payment_failed_email_sent_at: null,
+    // New live sub — clear cancel/ended stamps for the new episode.
+    // Keep last_payment_failed_at for historical "ever failed" analytics.
+    subscription_canceled_at: null,
+    subscription_ended_at: null,
     updated_at: new Date().toISOString(),
   };
 

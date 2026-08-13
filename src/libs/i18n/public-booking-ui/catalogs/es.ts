@@ -342,11 +342,33 @@ export const publicBookingUiEs: PublicBookingUi = {
     closeDetailsAriaLabel: 'Cerrar',
     howItWorksTitle: 'Cómo funciona',
     howItWorksSteps: [
-      'Confirma tu plan y la frecuencia de cobro.',
-      'Paga de forma segura — se te cobrará con esta frecuencia.',
-      'Administra o cancela cuando quieras desde el correo del recibo.',
+      {
+        title: 'Te suscribes',
+        body: 'Entras al plan con la frecuencia que elegiste.',
+      },
+      {
+        title: 'Se cobra automáticamente',
+        body: 'Te cobramos en esa frecuencia. Tu proveedor recibe el pago — sin facturas raras.',
+      },
+      {
+        title: 'Tú eliges cada visita',
+        body: 'En cada período eliges día y hora. Sin visitas sorpresa.',
+      },
+      {
+        title: 'Ellos llegan y hacen el trabajo',
+        body: 'Tu proveedor viene, lo deja listo, y hasta la próxima. Así de simple.',
+      },
     ],
-    continueToCheckoutCta: 'Continuar',
+    howItWorksContinueCta: 'Elegir mi primera visita',
+    firstVisitTitle: 'Elige tu primera visita',
+    firstVisitHint: '',
+    firstVisitRequired: 'Elige una fecha para tu primera visita.',
+    firstVisitTimeTitle: 'Elige una hora',
+    firstVisitTimeRequired: 'Elige una hora para tu visita.',
+    firstVisitNoSlots: 'No hay horarios este día. Prueba otra fecha.',
+    subscribePageBackLabel: 'Suscripciones',
+    subscribeStepBackLabel: 'Atrás',
+    continueToCheckoutCta: 'Continuar al pago',
     checkoutComingSoon: 'El pago estará disponible pronto.',
     checkoutStartFailed: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
     checkoutReturnSuccess: 'Pago recibido — gracias por suscribirte.',
@@ -371,6 +393,25 @@ export const publicBookingUiEs: PublicBookingUi = {
     manageSendFailed: 'No se pudo enviar el enlace ahora. Inténtalo de nuevo.',
     manageRateLimited:
       'Demasiados intentos. Vuelve a intentarlo en unos minutos.',
+    periodVisitTitle: 'Elige tu próxima visita',
+    periodVisitHint: planName =>
+      `Elige fecha y hora para ${planName}. Esta visita está incluida en tu membresía.`,
+    periodVisitTimeTitle: 'Elige una hora',
+    periodVisitDateRequired: 'Elige una fecha para tu visita.',
+    periodVisitTimeRequired: 'Elige una hora para tu visita.',
+    periodVisitNoSlots: 'No hay horarios este día. Prueba otra fecha.',
+    periodVisitConfirmCta: 'Reservar visita',
+    periodVisitBookFailed:
+      'No se pudo reservar esa visita. Inténtalo de nuevo.',
+    periodVisitBookSuccess: 'Tu visita está reservada.',
+    periodVisitScheduledTitle: 'Visita programada',
+    periodVisitScheduledBody: (planName, date, time) => {
+      const when = time ? `${date} · ${time}` : date;
+      return `${planName} quedó para ${when}. Te enviaremos confirmación por correo o SMS cuando esté disponible.`;
+    },
+    periodVisitInactiveTitle: 'Membresía no activa',
+    periodVisitInactiveBody:
+      'Esta membresía no puede reservar una visita ahora. Contacta al negocio si necesitas ayuda.',
     cadenceSuffix: {
       week: '/sem',
       weeks: count => `/${count}sem`,

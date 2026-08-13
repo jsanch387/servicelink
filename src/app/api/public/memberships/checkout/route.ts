@@ -3,8 +3,8 @@
  *
  * Creates a Stripe Checkout Session (`mode: 'subscription'`) on the business’s
  * connected Express account for a published membership plan price.
- *
- * Webhooks / member rows / emails: not handled here yet.
+ * Requires a first-visit date/time (validated against the calendar).
+ * Connect webhook upserts the member and creates the calendar booking.
  */
 
 import { createPublicMembershipCheckoutSession } from '@/features/subscriptions/server/createPublicMembershipCheckoutSession';
@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
             businessSlug?: unknown;
             planId?: unknown;
             priceId?: unknown;
+            firstVisitDate?: unknown;
+            firstVisitTime?: unknown;
           })
         : null;
 
@@ -33,6 +35,10 @@ export async function POST(req: NextRequest) {
       typeof body?.businessSlug === 'string' ? body.businessSlug : '';
     const planId = typeof body?.planId === 'string' ? body.planId : '';
     const priceId = typeof body?.priceId === 'string' ? body.priceId : '';
+    const firstVisitDate =
+      typeof body?.firstVisitDate === 'string' ? body.firstVisitDate : '';
+    const firstVisitTime =
+      typeof body?.firstVisitTime === 'string' ? body.firstVisitTime : '';
 
     const rateLimited = await assertPublicMembershipCheckoutRateLimits(
       req,
@@ -42,7 +48,13 @@ export async function POST(req: NextRequest) {
 
     const result = await createPublicMembershipCheckoutSession(
       req,
-      { businessSlug, planId, priceId },
+      {
+        businessSlug,
+        planId,
+        priceId,
+        firstVisitDate,
+        firstVisitTime,
+      },
       requestId
     );
 

@@ -41,7 +41,15 @@ function SuccessCheckmark() {
   );
 }
 
-export function CreateAppointmentSuccessState() {
+export function CreateAppointmentSuccessState({
+  membershipId,
+}: {
+  membershipId?: string | null;
+} = {}) {
+  const doneHref = membershipId?.trim()
+    ? ROUTES.DASHBOARD.SUBSCRIPTIONS_SUBSCRIBER(membershipId.trim())
+    : ROUTES.DASHBOARD.BOOKINGS;
+
   return (
     <div className="flex min-h-[55vh] flex-col items-center justify-center px-4 text-center animate-in fade-in duration-500">
       <div className="mb-7">
@@ -52,13 +60,15 @@ export function CreateAppointmentSuccessState() {
         Appointment confirmed
       </h1>
       <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-400">
-        You’re all set — it’s on your calendar. Check Bookings for details.
+        {membershipId?.trim()
+          ? 'You’re all set — this membership visit is on your calendar.'
+          : 'You’re all set — it’s on your calendar. Check Bookings for details.'}
       </p>
 
       <Button
         type="button"
         variant="primary"
-        href={ROUTES.DASHBOARD.BOOKINGS}
+        href={doneHref}
         className="mt-8 min-w-[160px] cursor-pointer"
       >
         Done

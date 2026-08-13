@@ -1,5 +1,6 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
 import { formatCadenceOptionLabel } from '../utils/formatSubscriptionPrice';
 import type { CreateMembershipPlanInput } from './createMembershipPlan';
@@ -137,6 +138,8 @@ export async function updateMembershipPlanForBusiness(
     name,
     description,
     benefits,
+    visit_duration_minutes:
+      input.visitDurationMinutes ?? MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT,
   } satisfies PlanUpdate;
 
   const { data: planData, error: planError } = await supabase

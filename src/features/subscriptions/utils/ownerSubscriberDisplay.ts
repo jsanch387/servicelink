@@ -119,3 +119,25 @@ export function formatSubscriberBillingDate(date: string | null): string {
     return date;
   }
 }
+
+/** Summary / table label for the billing date column. */
+export function getSubscriberBillingDateLabel(
+  status: OwnerSubscriberStatus,
+  cancelAtPeriodEnd?: boolean
+): string {
+  if (status === 'canceled') return 'Next bill';
+  if (isSubscriberCancelScheduled(status, cancelAtPeriodEnd)) {
+    return 'Access until';
+  }
+  return 'Next bill';
+}
+
+/** Value for next-bill / access-until column (— when fully canceled). */
+export function formatSubscriberBillingDateValue(args: {
+  status: OwnerSubscriberStatus;
+  cancelAtPeriodEnd?: boolean;
+  nextBillingAt: string | null;
+}): string {
+  if (args.status === 'canceled') return '—';
+  return formatSubscriberBillingDate(args.nextBillingAt);
+}
