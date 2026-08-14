@@ -331,6 +331,9 @@ export type PublicBookingUi = {
     serviceDetailsContinueCta: string;
     serviceDetailsIncomplete: string;
     usingSavedDetails: string;
+    /** Period rebook: vehicle is on the membership and cannot be edited. */
+    vehicleLockedNote: string;
+    vehicleLockedEmpty: string;
     firstVisitTitle: string;
     firstVisitHint: string;
     firstVisitRequired: string;
@@ -363,19 +366,23 @@ export type PublicBookingUi = {
     /** Public `/{slug}/membership/visit` — next period self-serve booking. */
     periodVisitTitle: string;
     periodVisitHint: (planName: string) => string;
+    periodVisitDetailsHint: string;
+    periodVisitDetailsHintShop: string;
+    periodVisitUsingSavedDetails: string;
+    periodVisitAddressIncomplete: string;
     periodVisitTimeTitle: string;
     periodVisitDateRequired: string;
+    periodVisitDateOutOfPeriod: string;
+    periodVisitCalendarSubtitle: string;
     periodVisitTimeRequired: string;
     periodVisitNoSlots: string;
     periodVisitConfirmCta: string;
     periodVisitBookFailed: string;
     periodVisitBookSuccess: string;
     periodVisitScheduledTitle: string;
-    periodVisitScheduledBody: (
-      planName: string,
-      date: string,
-      time: string
-    ) => string;
+    periodVisitScheduledBody: (planName: string, when: string) => string;
+    periodVisitCompletedTitle: string;
+    periodVisitCompletedBody: (planName: string, when: string) => string;
     periodVisitInactiveTitle: string;
     periodVisitInactiveBody: string;
     /** Short price suffix, e.g. "/mo". */

@@ -34,11 +34,17 @@ export function isMembershipServiceDetailsComplete(args: {
   value: MembershipServiceDetailsValue;
   needsAddress: boolean;
   needsVehicle: boolean;
+  /** Period rebook: vehicle is on the plan and cannot be edited. */
+  vehicleLocked?: boolean;
 }): boolean {
   if (args.needsAddress && !isMembershipAddressComplete(args.value)) {
     return false;
   }
-  if (args.needsVehicle && !isMembershipVehicleComplete(args.value)) {
+  if (
+    args.needsVehicle &&
+    !args.vehicleLocked &&
+    !isMembershipVehicleComplete(args.value)
+  ) {
     return false;
   }
   return true;

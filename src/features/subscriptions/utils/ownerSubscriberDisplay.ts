@@ -1,5 +1,53 @@
 import type { OwnerSubscriberStatus } from '../types/ownerSubscriptionPlan';
 
+/** Same statuses as plan-card / delete-block active counts. */
+const ACTIVE_OWNER_SUBSCRIBER_STATUSES = new Set<OwnerSubscriberStatus>([
+  'active',
+  'trialing',
+  'past_due',
+  'unpaid',
+  'paused',
+]);
+
+export function isOwnerSubscriberCountedAsActive(
+  status: OwnerSubscriberStatus
+): boolean {
+  return ACTIVE_OWNER_SUBSCRIBER_STATUSES.has(status);
+}
+
+/** Live members on a current plan — not canceled history or a removed plan. */
+export function isCurrentOwnerSubscriber(subscriber: {
+  status: OwnerSubscriberStatus;
+  planRemoved?: boolean;
+}): boolean {
+  return (
+    isOwnerSubscriberCountedAsActive(subscriber.status) &&
+    !subscriber.planRemoved
+  );
+}
+
+export function formatSubscriberPlanLabel(
+  planName: string,
+  planRemoved?: boolean
+): string {
+  const name = planName.trim();
+  if (planRemoved) {
+    if (!name || name === 'Plan') return 'Removed plan';
+    return `${name} (removed)`;
+  }
+  return name || 'Plan';
+}
+
+export function formatEndedSubscribersToggleLabel(args: {
+  endedCount: number;
+  showingEnded: boolean;
+  allCanceled: boolean;
+}): string {
+  const noun = args.allCanceled ? 'canceled' : 'ended';
+  if (args.showingEnded) return `Hide ${noun}`;
+  return `Show ${noun} (${args.endedCount})`;
+}
+
 export const OWNER_SUBSCRIBER_STATUS_STYLES: Record<
   OwnerSubscriberStatus,
   { label: string; className: string }
@@ -141,9 +189,10 @@ export function formatSubscriberVisitTime(
 /** Summary / table label for the billing date column. */
 export function getSubscriberBillingDateLabel(
   status: OwnerSubscriberStatus,
-  cancelAtPeriodEnd?: boolean
+  cancelAtPeriodEnd?: boolean,
+  planRemoved?: boolean
 ): string {
-  if (status === 'canceled') return 'Next bill';
+  if (planRemoved || status === 'canceled') return 'Next bill';
   if (isSubscriberCancelScheduled(status, cancelAtPeriodEnd)) {
     return 'Access until';
   }
@@ -155,7 +204,8 @@ export function formatSubscriberBillingDateValue(args: {
   status: OwnerSubscriberStatus;
   cancelAtPeriodEnd?: boolean;
   nextBillingAt: string | null;
+  planRemoved?: boolean;
 }): string {
-  if (args.status === 'canceled') return '—';
+  if (args.planRemoved || args.status === 'canceled') return '—';
   return formatSubscriberBillingDate(args.nextBillingAt);
 }

@@ -11,6 +11,7 @@ import {
   serviceLinkEmailPriceLineRow,
   serviceLinkEmailPriceTotalRow,
   serviceLinkEmailSection,
+  serviceLinkEmailStatementBlock,
   wrapServiceLinkEmail,
 } from '../utils/serviceLinkEmailLayout';
 
@@ -45,6 +46,7 @@ export interface JobCompletedInvoiceEmailPayload {
   reviewUrl?: string | null;
   /** Multi-job appointment line items from `job_details`. */
   jobs?: JobCompletedInvoiceEmailJob[];
+  coveredByMembership?: boolean;
 }
 
 function formatDateLong(dateStr: string): string {
@@ -146,6 +148,26 @@ function resolvePricing(payload: JobCompletedInvoiceEmailPayload): {
 function buildPricingRowsHtml(
   payload: JobCompletedInvoiceEmailPayload
 ): string {
+  if (payload.coveredByMembership === true) {
+    const extras =
+      typeof payload.totalCents === 'number' && payload.totalCents > 0
+        ? payload.totalCents
+        : 0;
+    if (extras > 0) {
+      return [
+        serviceLinkEmailStatementBlock(
+          'Covered by membership',
+          'Membership visit plus extras collected at the appointment.'
+        ),
+        serviceLinkEmailPriceTotalRow('Total', formatPriceCents(extras)),
+      ].join('');
+    }
+    return serviceLinkEmailStatementBlock(
+      'Covered by membership',
+      'No extra charge for this visit.'
+    );
+  }
+
   const { subtotalCents, discount, totalCents } = resolvePricing(payload);
   if (totalCents == null && subtotalCents == null) return '';
 
@@ -198,6 +220,10 @@ export function buildJobCompletedInvoiceEmailPlainText(
     '',
   ];
 
+  if (payload.coveredByMembership === true && (payload.totalCents ?? 0) === 0) {
+    lines.push('Covered by membership', 'No extra charge for this visit.', '');
+  }
+
   if (hasJobs(payload)) {
     lines.push('Jobs');
     for (const job of payload.jobs) {
@@ -207,15 +233,25 @@ export function buildJobCompletedInvoiceEmailPlainText(
         : job.serviceName.trim();
       const serviceCents =
         job.servicePriceCents != null && Number.isFinite(job.servicePriceCents)
-          ? formatPriceCents(job.servicePriceCents)
+          ? job.servicePriceCents
           : null;
+      const serviceAmount =
+        payload.coveredByMembership === true && (serviceCents ?? 0) === 0
+          ? 'Included'
+          : serviceCents != null
+            ? formatPriceCents(serviceCents)
+            : null;
       lines.push(
-        serviceCents
-          ? `— ${serviceLabel}: ${serviceCents}`
+        serviceAmount
+          ? `— ${serviceLabel}: ${serviceAmount}`
           : `— ${serviceLabel}`
       );
       for (const addOn of job.selectedAddOns ?? []) {
-        lines.push(`  · ${addOn.name}: ${formatPriceCents(addOn.priceCents)}`);
+        const addOnAmount =
+          payload.coveredByMembership === true && addOn.priceCents === 0
+            ? 'Included'
+            : formatPriceCents(addOn.priceCents);
+        lines.push(`  · ${addOn.name}: ${addOnAmount}`);
       }
     }
     lines.push('');
@@ -228,16 +264,20 @@ export function buildJobCompletedInvoiceEmailPlainText(
     lines.push(`When: ${when}`, '');
   }
 
-  if (pricing.subtotalCents != null && pricing.discount) {
-    lines.push(`Subtotal: ${formatPriceCents(pricing.subtotalCents)}`);
-    lines.push(
-      `${pricing.discount.label}: -${formatPriceCents(pricing.discount.discountCents)}`
-    );
-  }
-  if (pricing.totalCents != null) {
-    lines.push(`Total: ${formatPriceCents(pricing.totalCents)}`, '');
-  } else if (pricing.subtotalCents != null && !pricing.discount) {
-    lines.push(`Total: ${formatPriceCents(pricing.subtotalCents)}`, '');
+  if (payload.coveredByMembership !== true) {
+    if (pricing.subtotalCents != null && pricing.discount) {
+      lines.push(`Subtotal: ${formatPriceCents(pricing.subtotalCents)}`);
+      lines.push(
+        `${pricing.discount.label}: -${formatPriceCents(pricing.discount.discountCents)}`
+      );
+    }
+    if (pricing.totalCents != null) {
+      lines.push(`Total: ${formatPriceCents(pricing.totalCents)}`, '');
+    } else if (pricing.subtotalCents != null && !pricing.discount) {
+      lines.push(`Total: ${formatPriceCents(pricing.subtotalCents)}`, '');
+    }
+  } else if ((payload.totalCents ?? 0) > 0) {
+    lines.push(`Total: ${formatPriceCents(payload.totalCents ?? 0)}`, '');
   }
 
   lines.push('View receipt:', payload.invoiceUrl);
@@ -328,10 +368,16 @@ export function buildJobCompletedInvoiceEmailHtml(
     }
     addSection(
       'Jobs',
-      buildEmailJobsReceiptCardHtml(toEmailJobs(payload.jobs))
+      buildEmailJobsReceiptCardHtml(toEmailJobs(payload.jobs), {
+        zeroPriceLabel:
+          payload.coveredByMembership === true ? 'Included' : undefined,
+      })
     );
     if (hasPricingSection) {
-      addSection('Pricing', pricingHtml);
+      addSection(
+        payload.coveredByMembership === true ? 'Payment' : 'Pricing',
+        pricingHtml
+      );
     }
   } else {
     const summaryRows: string[] = [];
@@ -353,7 +399,10 @@ export function buildJobCompletedInvoiceEmailHtml(
       addSection('Visit summary', summaryRows.join(''));
     }
     if (hasPricingSection) {
-      addSection('Pricing', pricingHtml);
+      addSection(
+        payload.coveredByMembership === true ? 'Payment' : 'Pricing',
+        pricingHtml
+      );
     }
   }
 

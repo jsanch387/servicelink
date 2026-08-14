@@ -11,6 +11,10 @@ import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import {
+  buildMembershipVisitPaymentSummary,
+  membershipVisitNotesForEmail,
+} from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
 import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
 import { checkMaintenanceAnchorAgainstCalendar } from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
 import { quoteStartTimeToHHmm } from '@/features/quotes/server/createBookingFromApprovedQuote';
@@ -439,11 +443,7 @@ export async function ensureMembershipInitialBooking(
     durationMinutes,
     servicePriceCents: 0,
     totalPriceCents: 0,
-    paymentSummary: {
-      title: 'Payment',
-      rows: [{ label: 'Covered by membership', value: '—' }],
-      note: 'This visit is included with your subscription. No separate charge for the appointment.',
-    },
+    paymentSummary: buildMembershipVisitPaymentSummary(),
     serviceLocation: buildAvailabilityBookingEmailServiceLocation({
       effectiveType,
       shopAddressLabel: shopLabel || null,
@@ -453,7 +453,7 @@ export async function ensureMembershipInitialBooking(
       customerState: undefined,
       customerZip: undefined,
     }),
-    customerNotes: customer.notes,
+    customerNotes: membershipVisitNotesForEmail(customer.notes),
   };
 
   try {

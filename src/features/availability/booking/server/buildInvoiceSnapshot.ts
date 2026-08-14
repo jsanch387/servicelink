@@ -26,7 +26,7 @@ export interface InvoiceSnapshotLine {
 }
 
 export interface InvoiceSnapshotPayment {
-  kind: 'online' | 'session';
+  kind: 'online' | 'session' | 'membership';
   label: string;
   method?: string;
   amountCents: number;
@@ -75,6 +75,8 @@ export interface BookingInvoiceSnapshot {
   jobs?: InvoiceSnapshotJob[];
   lines: InvoiceSnapshotLine[];
   payments: InvoiceSnapshotPayment[];
+  /** True when this visit was covered by a customer membership. */
+  coveredByMembership?: boolean;
   totals: {
     /** Service + add-ons + session fees (pre-discount). */
     subtotalCents: number;
@@ -115,6 +117,7 @@ interface BuildInvoiceSnapshotInput {
   amountDue: BookingAmountDueResult;
   sessionPaymentMethod?: string;
   reviewRawToken?: string | null;
+  coveredByMembership?: boolean;
 }
 
 function addonLines(addonDetails: unknown): InvoiceSnapshotLine[] {
@@ -258,6 +261,13 @@ export function buildInvoiceSnapshot(
       amountCents: input.amountDue.sessionPayCents,
     });
   }
+  if (input.coveredByMembership) {
+    payments.push({
+      kind: 'membership',
+      label: 'Covered by membership',
+      amountCents: 0,
+    });
+  }
 
   const paidCents =
     input.amountDue.paidOnlineCents + input.amountDue.sessionPayCents;
@@ -298,6 +308,7 @@ export function buildInvoiceSnapshot(
     },
     lines,
     payments,
+    coveredByMembership: input.coveredByMembership === true,
     totals: {
       subtotalCents: input.amountDue.subtotalCents,
       discountCents,

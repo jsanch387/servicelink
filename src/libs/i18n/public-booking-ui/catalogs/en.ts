@@ -366,6 +366,10 @@ export const publicBookingUiEn: PublicBookingUi = {
       'Fill in the required address and vehicle fields.',
     usingSavedDetails:
       'We filled this from your last visit — change anything that looks off.',
+    vehicleLockedNote:
+      'This membership is for this vehicle. Contact the business if you need to change it.',
+    vehicleLockedEmpty:
+      'No vehicle on file. Contact the business if this looks wrong.',
     firstVisitTitle: 'Choose your first visit',
     firstVisitHint: '',
     firstVisitRequired: 'Choose a date for your first visit.',
@@ -400,18 +404,34 @@ export const publicBookingUiEn: PublicBookingUi = {
     periodVisitTitle: 'Choose your next visit',
     periodVisitHint: planName =>
       `Pick a date and time for ${planName}. This visit is included with your membership.`,
+    periodVisitDetailsHint:
+      'Confirm where we should come. You can update the address. This visit is for the vehicle on your plan.',
+    periodVisitDetailsHintShop:
+      'This visit is for the vehicle on your plan. Next, pick a date and time.',
+    periodVisitUsingSavedDetails:
+      'We filled this from your last visit — you can update the address.',
+    periodVisitAddressIncomplete: 'Fill in the required address fields.',
     periodVisitTimeTitle: 'Choose a time',
     periodVisitDateRequired: 'Choose a date for your visit.',
+    periodVisitDateOutOfPeriod:
+      'That date is in a period you already used. Pick a later date.',
+    periodVisitCalendarSubtitle:
+      'This visit is for your next period — earlier dates aren’t available.',
     periodVisitTimeRequired: 'Choose a time for your visit.',
     periodVisitNoSlots: 'No open times on this day. Try another date.',
     periodVisitConfirmCta: 'Book visit',
     periodVisitBookFailed: 'Could not book that visit. Try again.',
     periodVisitBookSuccess: 'Your visit is booked.',
     periodVisitScheduledTitle: 'Visit scheduled',
-    periodVisitScheduledBody: (planName, date, time) => {
-      const when = time ? `${date} · ${time}` : date;
-      return `${planName} is set for ${when}. You’ll get a confirmation by email or text when available.`;
-    },
+    periodVisitScheduledBody: (planName, when) =>
+      when
+        ? `${planName} is set for ${when}. You’ll get a confirmation by email or text when available.`
+        : `${planName} is set. You’ll get a confirmation by email or text when available.`,
+    periodVisitCompletedTitle: 'Visit completed',
+    periodVisitCompletedBody: (planName, when) =>
+      when
+        ? `${planName} for this period is done (${when}). Your next visit opens when the next billing period starts.`
+        : `${planName} for this period is done. Your next visit opens when the next billing period starts.`,
     periodVisitInactiveTitle: 'Membership not active',
     periodVisitInactiveBody:
       'This membership can’t book a visit right now. Contact the business if you need help.',

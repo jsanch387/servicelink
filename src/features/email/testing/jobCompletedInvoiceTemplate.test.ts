@@ -148,6 +148,20 @@ describe('buildJobCompletedInvoiceEmailHtml', () => {
     expect(html).not.toContain('Vehicle');
     expect(html).not.toContain('SUV');
   });
+
+  it('uses membership copy instead of a $0.00 total', () => {
+    const html = buildJobCompletedInvoiceEmailHtml({
+      ...basePayload,
+      serviceName: 'Super Maintenance',
+      totalCents: 0,
+      subtotalCents: 0,
+      coveredByMembership: true,
+    });
+    expect(html).toContain('Covered by membership');
+    expect(html).toContain('No extra charge for this visit.');
+    expect(html).toContain('Payment');
+    expect(html).not.toContain('$0.00');
+  });
 });
 
 describe('buildJobCompletedInvoiceEmailPlainText', () => {

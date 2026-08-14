@@ -194,4 +194,33 @@ describe('AvailabilityBookingDetailPanel customer section', () => {
     expect(screen.getByText('Jane Customer')).toBeTruthy();
     expect(screen.queryByRole('link', { name: /email customer/i })).toBeNull();
   });
+
+  it('formats US phones with +1 and does not treat country code as area code', () => {
+    const booking = baseBooking(undefined);
+    booking.customerPhone = '15807545207';
+    renderPanel(booking);
+
+    expect(screen.getByText('+1 (580) 754-5207')).toBeTruthy();
+    expect(screen.queryByText(/\(158\)/)).toBeNull();
+    const callLink = screen.getByRole('link', { name: /call customer/i });
+    expect(callLink.getAttribute('href')).toBe('tel:+15807545207');
+    expect(
+      screen.getByRole('button', { name: /copy phone number/i })
+    ).toBeTruthy();
+  });
+
+  it('marks membership visits on the customer card', () => {
+    renderPanel(
+      baseBooking({
+        paymentStatus: 'not_required',
+        paymentMethodSelected: 'membership',
+        currency: 'usd',
+        totalAmountCents: 0,
+        paidOnlineAmountCents: 0,
+        remainingAmountCents: 0,
+      })
+    );
+
+    expect(screen.getAllByText('Membership').length).toBeGreaterThanOrEqual(1);
+  });
 });

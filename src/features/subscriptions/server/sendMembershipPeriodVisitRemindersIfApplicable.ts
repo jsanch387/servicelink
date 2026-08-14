@@ -19,7 +19,10 @@ import { getAppBaseUrl } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database, Json } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { mapMembershipStatusToOwner } from './mapCustomerMembershipToOwnerSubscriber';
+import {
+  isMembershipCancelScheduled,
+  mapMembershipStatusToOwner,
+} from './mapCustomerMembershipToOwnerSubscriber';
 import { signMembershipManageToken } from './membershipManageToken';
 import {
   logMemberships,
@@ -29,6 +32,7 @@ import {
 import {
   periodStartsMatch,
   resolveMembershipVisitStatus,
+  shouldSendMembershipPeriodVisitReminder,
 } from './membershipVisitStatus';
 import {
   customerMembershipsOf,
@@ -70,23 +74,29 @@ export async function sendMembershipPeriodVisitRemindersIfApplicable(
   const status = mapMembershipStatusToOwner(String(row.status ?? ''));
   const visitStatus = resolveMembershipVisitStatus({
     status,
+    cancelScheduled: isMembershipCancelScheduled(row),
     currentPeriodStart: row.current_period_start as string | null,
     periodVisitBookingId: row.period_visit_booking_id as string | null,
     periodVisitPeriodStart: row.period_visit_period_start as string | null,
   });
-  if (visitStatus !== 'needs_visit') return;
-
   const periodStart = (row.current_period_start as string | null)?.trim();
-  if (!periodStart) return;
-
   const meta = (row.metadata ?? {}) as Record<string, unknown>;
   const alreadyFor =
     typeof meta.visit_reminder_sent_for_period_start === 'string'
       ? meta.visit_reminder_sent_for_period_start
       : null;
-  if (periodStartsMatch(alreadyFor, periodStart)) {
+  if (
+    !shouldSendMembershipPeriodVisitReminder({
+      visitStatus,
+      status,
+      cancelScheduled: isMembershipCancelScheduled(row),
+      periodStart,
+      alreadyRemindedForPeriod: periodStartsMatch(alreadyFor, periodStart),
+    })
+  ) {
     return;
   }
+  if (!periodStart) return;
 
   let planName = 'Your plan';
   if (row.plan_id) {

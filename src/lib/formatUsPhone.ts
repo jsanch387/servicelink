@@ -26,9 +26,22 @@ export function formatUsPhoneDigits(digits: string): string {
 }
 
 /**
- * US E.164 for SMS / Telnyx (`+1XXXXXXXXXX`).
- * Accepts 10-digit national or 11-digit with leading 1.
+ * Read-only US display with country code: `+1 (XXX) XXX-XXXX`.
+ * Strips a leading `1` so stored `15807545207` does not become `(158) 075-4520`.
+ * Input fields should keep using `formatUsPhoneDigits` (the +1 prefix is separate).
  */
+export function formatUsPhoneWithCountry(raw: string): string {
+  const cleaned = normalizeUsPhoneDigits(raw);
+  if (!cleaned) return raw.trim();
+  return `+${US_PHONE_COUNTRY_CODE} ${formatUsPhoneDigits(cleaned)}`;
+}
+
+/** `tel:+1XXXXXXXXXX` for complete US numbers; otherwise null. */
+export function usPhoneTelHref(raw: string | null | undefined): string | null {
+  const e164 = toUsE164(raw);
+  return e164 ? `tel:${e164}` : null;
+}
+
 export function toUsE164(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/\D/g, '');

@@ -20,20 +20,13 @@ import {
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
 import { joinDescriptionAndBenefits } from '../utils/planDescription';
+import { isOwnerSubscriberCountedAsActive } from '../utils/ownerSubscriberDisplay';
 import { DeleteMembershipPlanModal } from './DeleteMembershipPlanModal';
 import { OwnerSubscriptionsSubscribers } from './OwnerSubscriptionsSubscribers';
 
 interface OwnerSubscriptionPlanDetailPageProps {
   plan: OwnerSubscriptionPlan;
 }
-
-const ACTIVE_UI_STATUSES = new Set([
-  'active',
-  'trialing',
-  'past_due',
-  'unpaid',
-  'paused',
-]);
 
 /** Collapse long plan copy; expand to read the rest. */
 const PLAN_DESCRIPTION_COLLAPSED_MAX_CHARS = 220;
@@ -77,7 +70,7 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
 
   const handleSubscribersLoaded = useCallback((rows: OwnerSubscriber[]) => {
     setLiveActiveCount(
-      rows.filter(row => ACTIVE_UI_STATUSES.has(row.status)).length
+      rows.filter(row => isOwnerSubscriberCountedAsActive(row.status)).length
     );
   }, []);
 

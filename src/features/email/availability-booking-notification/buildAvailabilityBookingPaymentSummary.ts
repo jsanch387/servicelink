@@ -87,3 +87,25 @@ export function buildStripeCheckoutPaymentSummary(params: {
     stripeCardPayment: true,
   };
 }
+
+/** $0 membership visit — full-width copy so phones don’t wrap a dummy em dash. */
+export function buildMembershipVisitPaymentSummary(): AvailabilityBookingPaymentSummary {
+  return {
+    title: 'Payment',
+    rows: [],
+    statement: {
+      heading: 'Covered by membership',
+      detail: 'No extra charge for this visit.',
+    },
+  };
+}
+
+/** Hide generic membership placeholders; keep real customer/owner notes. */
+export function membershipVisitNotesForEmail(
+  notes: string | null | undefined
+): string | undefined {
+  const trimmed = (notes ?? '').trim();
+  if (!trimmed) return undefined;
+  if (/^memberships?\s+(first\s+)?visit\.?$/i.test(trimmed)) return undefined;
+  return trimmed;
+}

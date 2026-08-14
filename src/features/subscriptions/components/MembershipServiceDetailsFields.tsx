@@ -49,6 +49,8 @@ type Props = {
   showAddress?: boolean;
   /** Show vehicle fields. */
   showVehicle?: boolean;
+  /** Period rebook: show the membership vehicle, no editing. */
+  vehicleReadOnly?: boolean;
   savedBanner?: string | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
 };
@@ -63,12 +65,18 @@ export function MembershipServiceDetailsFields({
   showContact = false,
   showAddress = true,
   showVehicle = true,
+  vehicleReadOnly = false,
   savedBanner = null,
   bookingFlowLocale = 'en',
 }: Props) {
-  const cf = publicBookingUi(bookingFlowLocale).customerForm;
+  const ui = publicBookingUi(bookingFlowLocale);
+  const cf = ui.customerForm;
   const patch = (partial: Partial<MembershipServiceDetailsValue>) =>
     onChange({ ...value, ...partial });
+  const vehicleLine = [value.vehicleYear, value.vehicleMake, value.vehicleModel]
+    .map(part => part.trim())
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className="space-y-6">
@@ -174,16 +182,31 @@ export function MembershipServiceDetailsFields({
 
       {showVehicle ? (
         <FormStepSection title={cf.vehicle}>
-          <BookingVehicleFields
-            value={{
-              vehicleYear: value.vehicleYear,
-              vehicleMake: value.vehicleMake,
-              vehicleModel: value.vehicleModel,
-            }}
-            onChange={updates => patch(updates)}
-            bookingFlowLocale={bookingFlowLocale}
-            required
-          />
+          {vehicleReadOnly ? (
+            <div>
+              {vehicleLine ? (
+                <p className="text-base font-medium text-white">{vehicleLine}</p>
+              ) : (
+                <p className="text-sm text-zinc-400">
+                  {ui.subscriptions.vehicleLockedEmpty}
+                </p>
+              )}
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
+                {ui.subscriptions.vehicleLockedNote}
+              </p>
+            </div>
+          ) : (
+            <BookingVehicleFields
+              value={{
+                vehicleYear: value.vehicleYear,
+                vehicleMake: value.vehicleMake,
+                vehicleModel: value.vehicleModel,
+              }}
+              onChange={updates => patch(updates)}
+              bookingFlowLocale={bookingFlowLocale}
+              required
+            />
+          )}
         </FormStepSection>
       ) : null}
     </div>

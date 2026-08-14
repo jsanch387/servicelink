@@ -65,7 +65,7 @@ export async function upsertCustomerMembershipFromSubscription(
 
   const { data: existing } = await customerMembershipsOf(supabase)
     .select(
-      'id, plan_id, plan_price_id, customer_name, customer_email, customer_phone, customer_email_normalized, customer_phone_normalized, stripe_checkout_session_id, payment_method_brand, payment_method_last4, last_invoice_status, latest_invoice_id, metadata'
+      'id, plan_id, plan_price_id, customer_name, customer_email, customer_phone, customer_email_normalized, customer_phone_normalized, stripe_checkout_session_id, payment_method_brand, payment_method_last4, last_invoice_status, latest_invoice_id, current_period_start, current_period_end, metadata'
     )
     .eq('stripe_account_id', stripeAccountId)
     .eq('stripe_subscription_id', subscriptionId)
@@ -137,8 +137,14 @@ export async function upsertCustomerMembershipFromSubscription(
     amount_cents: billing.amountCents,
     interval_unit: billing.intervalUnit,
     interval_count: billing.intervalCount,
-    current_period_start: unixSecondsToIso(periods.startUnix),
-    current_period_end: unixSecondsToIso(periods.endUnix),
+    current_period_start:
+      unixSecondsToIso(periods.startUnix) ||
+      existing?.current_period_start ||
+      null,
+    current_period_end:
+      unixSecondsToIso(periods.endUnix) ||
+      existing?.current_period_end ||
+      null,
     cancel_at_period_end: Boolean(args.subscription.cancel_at_period_end),
     cancel_at: unixSecondsToIso(args.subscription.cancel_at),
     canceled_at: unixSecondsToIso(args.subscription.canceled_at),

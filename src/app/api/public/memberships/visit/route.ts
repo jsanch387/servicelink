@@ -31,9 +31,6 @@ export async function POST(req: NextRequest) {
             city?: unknown;
             state?: unknown;
             zip?: unknown;
-            vehicleYear?: unknown;
-            vehicleMake?: unknown;
-            vehicleModel?: unknown;
           })
         : null;
 
@@ -61,11 +58,6 @@ export async function POST(req: NextRequest) {
         city: str(body?.city),
         state: str(body?.state),
         zip: str(body?.zip),
-      },
-      vehicle: {
-        year: str(body?.vehicleYear),
-        make: str(body?.vehicleMake),
-        model: str(body?.vehicleModel),
       },
       requestId,
     });

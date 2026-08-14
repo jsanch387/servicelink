@@ -1,3 +1,9 @@
+import {
+  formatUsPhoneWithCountry,
+  normalizeUsPhoneDigits,
+  toUsE164,
+} from '@/lib/formatUsPhone';
+
 export function formatCustomerCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -59,12 +65,13 @@ function groupDigitsLoose(digits: string): string {
 
 function formatMainNumber(body: string, digits: string): string {
   const leadingPlus = /^\s*\+/.test(body);
+  const isUsNational =
+    digits.length === 10 ||
+    (digits.length === 11 && digits.startsWith('1'));
+  const national = normalizeUsPhoneDigits(body);
 
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-  if (digits.length === 11 && digits.startsWith('1')) {
-    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  if (isUsNational && national.length === 10) {
+    return formatUsPhoneWithCountry(national);
   }
   if (digits.length === 7) {
     return `${digits.slice(0, 3)}-${digits.slice(3)}`;
@@ -99,5 +106,7 @@ export function customerPhoneHref(phone: string): string | null {
   if (!digits) {
     return null;
   }
+  const e164 = toUsE164(body);
+  if (e164) return `tel:${e164}`;
   return `tel:${digits}`;
 }

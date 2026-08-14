@@ -19,6 +19,8 @@ import {
 import { getAppBaseUrl } from '@/libs/stripe';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { assertOwnerMembershipScheduleLinkRateLimits } from '@/server/rateLimit/ownerMembershipScheduleLinkRateLimit';
+import type { NextRequest } from 'next/server';
 
 type RouteContext = { params: Promise<{ subscriberId: string }> };
 
@@ -78,6 +80,7 @@ async function requireOwnerMembershipsContext(req: Request) {
     requestId,
     supabase,
     businessId: resolved.businessId,
+    userId: user.id,
   };
 }
 
@@ -147,6 +150,24 @@ export async function POST(req: Request, context: RouteContext) {
     }
 
     if (action === 'send_schedule_link') {
+      const rateLimit = await assertOwnerMembershipScheduleLinkRateLimits(
+        req as NextRequest,
+        ctx.userId
+      );
+      if (!rateLimit.ok) {
+        return membershipsJsonResponse(
+          ctx.requestId,
+          {
+            success: false,
+            error: 'Too many schedule links sent. Try again later.',
+          },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(rateLimit.retryAfterSec) },
+          }
+        );
+      }
+
       const result = await sendOwnerMembershipScheduleLink(ctx.supabase, {
         businessId: ctx.businessId,
         membershipId: subscriberId,
@@ -156,7 +177,13 @@ export async function POST(req: Request, context: RouteContext) {
         return membershipsJsonResponse(
           ctx.requestId,
           { success: false, error: result.error },
-          { status: result.status }
+          {
+            status: result.status,
+            headers:
+              result.retryAfterSec != null
+                ? { 'Retry-After': String(result.retryAfterSec) }
+                : undefined,
+          }
         );
       }
       return membershipsJsonResponse(ctx.requestId, {

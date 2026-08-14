@@ -11,6 +11,7 @@ import {
   formatCustomerPhone,
 } from '@/features/customer-management/utils/customerFormatting';
 import {
+  CheckCircleIcon,
   CheckIcon,
   ChevronLeftIcon,
   ClipboardDocumentIcon,
@@ -30,6 +31,7 @@ import {
 import {
   formatSubscriberBillingDate,
   formatSubscriberBillingDateValue,
+  formatSubscriberPlanLabel,
   formatSubscriberVisitTime,
   getSubscriberBillingDateLabel,
   getSubscriberStatusClassName,
@@ -244,7 +246,8 @@ export const OwnerSubscriberDetailPage: React.FC<
   const canCancel =
     subscriber != null &&
     subscriber.status !== 'canceled' &&
-    !subscriber.cancelAtPeriodEnd;
+    !subscriber.cancelAtPeriodEnd &&
+    !subscriber.planRemoved;
 
   if (!hydrated) {
     return <OwnerSubscriberDetailSkeleton />;
@@ -310,12 +313,19 @@ export const OwnerSubscriberDetailPage: React.FC<
               {subscriber.customerName}
             </h1>
             <p className="mt-1.5 text-sm text-zinc-500">
-              <Link
-                href={ROUTES.DASHBOARD.SUBSCRIPTIONS_DETAIL(subscriber.planId)}
-                className="cursor-pointer text-zinc-400 transition-colors hover:text-white"
-              >
-                {subscriber.planName}
-              </Link>
+              {subscriber.planRemoved || !subscriber.planId ? (
+                formatSubscriberPlanLabel(
+                  subscriber.planName,
+                  subscriber.planRemoved
+                )
+              ) : (
+                <Link
+                  href={ROUTES.DASHBOARD.SUBSCRIPTIONS_DETAIL(subscriber.planId)}
+                  className="cursor-pointer text-zinc-400 transition-colors hover:text-white"
+                >
+                  {subscriber.planName}
+                </Link>
+              )}
             </p>
           </div>
 
@@ -354,7 +364,12 @@ export const OwnerSubscriberDetailPage: React.FC<
           ) : null}
         </header>
 
-        {cancelScheduled ? (
+        {subscriber.planRemoved ? (
+          <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300">
+            This plan was removed. The subscriber is kept for history — they
+            are not on a live plan.
+          </div>
+        ) : cancelScheduled ? (
           <div className="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 text-sm text-amber-100/90">
             Canceled — access until{' '}
             {formatSubscriberBillingDate(subscriber.nextBillingAt)}. They won’t
@@ -372,7 +387,9 @@ export const OwnerSubscriberDetailPage: React.FC<
         {subscriber.visitStatus !== 'none' ? (
           <section className="mt-6">
             <h2 className="mb-2 text-sm font-medium text-zinc-400">
-              Next visit
+              {subscriber.visitStatus === 'completed'
+                ? 'This period'
+                : 'Next visit'}
             </h2>
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-5">
               {subscriber.visitStatus === 'needs_visit' ? (
@@ -409,13 +426,49 @@ export const OwnerSubscriberDetailPage: React.FC<
                       variant="secondary"
                       size="sm"
                       disabled={busyAction != null}
+                      loading={busyAction === 'send_schedule_link'}
                       onClick={() => void handleSendScheduleLink()}
                     >
                       {busyAction === 'send_schedule_link'
-                        ? 'Sending…'
+                        ? 'Sending'
                         : 'Send schedule link'}
                     </Button>
                   </div>
+                </div>
+              ) : subscriber.visitStatus === 'completed' ? (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span
+                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300"
+                      aria-hidden
+                    >
+                      <CheckCircleIcon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold leading-snug text-emerald-100">
+                        Visit complete
+                      </p>
+                      <p className="mt-0.5 text-sm leading-snug text-zinc-500">
+                        {subscriber.periodVisitDate
+                          ? formatSubscriberBillingDate(
+                              subscriber.periodVisitDate
+                            )
+                          : 'Done this period'}
+                        {subscriber.periodVisitTime
+                          ? ` · ${formatSubscriberVisitTime(subscriber.periodVisitTime)}`
+                          : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    href={ROUTES.DASHBOARD.BOOKINGS}
+                    className="shrink-0"
+                  >
+                    View in Bookings
+                  </Button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -478,12 +531,14 @@ export const OwnerSubscriberDetailPage: React.FC<
               <MetaRow
                 label={getSubscriberBillingDateLabel(
                   subscriber.status,
-                  subscriber.cancelAtPeriodEnd
+                  subscriber.cancelAtPeriodEnd,
+                  subscriber.planRemoved
                 )}
                 value={formatSubscriberBillingDateValue({
                   status: subscriber.status,
                   cancelAtPeriodEnd: subscriber.cancelAtPeriodEnd,
                   nextBillingAt: subscriber.nextBillingAt,
+                  planRemoved: subscriber.planRemoved,
                 })}
               />
               <MetaRow

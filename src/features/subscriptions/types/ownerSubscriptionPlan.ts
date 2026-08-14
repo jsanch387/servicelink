@@ -33,7 +33,11 @@ export type OwnerSubscriberStatus =
   | 'incomplete';
 
 /** Whether this billing period still needs a calendar visit. */
-export type OwnerSubscriberVisitStatus = 'needs_visit' | 'scheduled' | 'none';
+export type OwnerSubscriberVisitStatus =
+  | 'needs_visit'
+  | 'scheduled'
+  | 'completed'
+  | 'none';
 
 /** Customer subscriber row for owner UI (from customer_memberships). */
 export interface OwnerSubscriber {
@@ -45,6 +49,8 @@ export interface OwnerSubscriber {
   customerId?: string | null;
   planId: string;
   planName: string;
+  /** Plan was soft-deleted after this membership ended. */
+  planRemoved?: boolean;
   /** Plan visit length for Book visit prefill. */
   visitDurationMinutes?: number;
   cadenceLabel: string;

@@ -99,8 +99,11 @@ export default async function PublicMembershipVisitRoute({
       needsAddress={ctx.needsAddress}
       needsVehicle={ctx.needsVehicle}
       serviceDetailsComplete={ctx.serviceDetailsComplete}
+      usingSavedDetails={ctx.usingSavedDetails}
       initialAddress={ctx.address}
       initialVehicle={ctx.vehicle}
+      visitMinDate={ctx.visitMinDate}
+      visitMaxDate={ctx.visitMaxDate}
     />
   );
 }

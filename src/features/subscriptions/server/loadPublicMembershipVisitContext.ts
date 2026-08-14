@@ -7,9 +7,20 @@ import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import type { OwnerSubscriberVisitStatus } from '../types/ownerSubscriptionPlan';
-import { mapMembershipStatusToOwner } from './mapCustomerMembershipToOwnerSubscriber';
+import {
+  localTodayYmd,
+  resolveMembershipPeriodVisitDateBounds,
+} from '../utils/membershipPeriodVisitDateBounds';
+import { loadLatestMembershipVisitYmd } from './loadLatestMembershipVisitYmd';
+import {
+  isMembershipCancelScheduled,
+  mapMembershipStatusToOwner,
+} from './mapCustomerMembershipToOwnerSubscriber';
 import { verifyMembershipManageToken } from './membershipManageToken';
-import { resolveMembershipVisitStatus } from './membershipVisitStatus';
+import {
+  periodVisitIsOnFile,
+  resolveMembershipVisitStatus,
+} from './membershipVisitStatus';
 import {
   customerMembershipsOf,
   membershipPlansOf,
@@ -40,6 +51,8 @@ export type PublicMembershipVisitContext =
       address: MembershipServiceAddress | null;
       vehicle: MembershipServiceVehicle | null;
       usingSavedDetails: boolean;
+      visitMinDate: string | null;
+      visitMaxDate: string | null;
     }
   | { ok: false; error: 'invalid_token' | 'not_found' | 'wrong_business' };
 
@@ -81,7 +94,7 @@ export async function loadPublicMembershipVisitContext(
 
   const { data: row } = await customerMembershipsOf(supabase)
     .select(
-      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, status, current_period_start, period_visit_booking_id, period_visit_period_start'
+      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, status, cancel_at_period_end, cancel_at, current_period_start, current_period_end, interval_unit, interval_count, period_visit_booking_id, period_visit_period_start, initial_booking_id'
     )
     .eq('id', membershipId)
     .maybeSingle();
@@ -113,34 +126,44 @@ export async function loadPublicMembershipVisitContext(
     }
   }
 
-  const status = mapMembershipStatusToOwner(String(row.status ?? ''));
-  const visitStatus = resolveMembershipVisitStatus({
-    status,
-    currentPeriodStart: row.current_period_start as string | null,
-    periodVisitBookingId: row.period_visit_booking_id as string | null,
-    periodVisitPeriodStart: row.period_visit_period_start as string | null,
-  });
-
   let periodVisitDate: string | null = null;
   let periodVisitTime: string | null = null;
+  let periodVisitBookingStatus: string | null = null;
   const periodBookingId = (
     row.period_visit_booking_id as string | null
   )?.trim();
-  if (visitStatus === 'scheduled' && periodBookingId) {
+  if (periodBookingId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: booking } = await (supabase as any)
       .from('bookings')
-      .select('scheduled_date, start_time')
+      .select('scheduled_date, start_time, status')
       .eq('id', periodBookingId)
       .eq('business_id', biz.id)
       .maybeSingle();
     const br = booking as {
       scheduled_date?: string | null;
       start_time?: string | null;
+      status?: string | null;
     } | null;
     periodVisitDate = br?.scheduled_date?.trim() || null;
     const rawTime = br?.start_time?.trim() || '';
     periodVisitTime = rawTime ? rawTime.slice(0, 5) : null;
+    periodVisitBookingStatus = br?.status?.trim() || null;
+  }
+
+  const status = mapMembershipStatusToOwner(String(row.status ?? ''));
+  const visitStatus = resolveMembershipVisitStatus({
+    status,
+    cancelScheduled: isMembershipCancelScheduled(row),
+    currentPeriodStart: row.current_period_start as string | null,
+    periodVisitBookingId: row.period_visit_booking_id as string | null,
+    periodVisitPeriodStart: row.period_visit_period_start as string | null,
+    periodVisitBookingStatus,
+  });
+
+  if (!periodVisitIsOnFile(visitStatus)) {
+    periodVisitDate = null;
+    periodVisitTime = null;
   }
 
   const snapshot = await resolveMembershipCustomerServiceSnapshot(supabase, {
@@ -155,6 +178,23 @@ export async function loadPublicMembershipVisitContext(
     (!needsVehicle || snapshot.hasVehicle);
   const usingSavedDetails =
     Boolean(snapshot.customerId) && serviceDetailsComplete;
+
+  const lastVisitYmd = await loadLatestMembershipVisitYmd(supabase, {
+    businessId: biz.id,
+    bookingIds: [
+      row.initial_booking_id as string | null,
+      row.period_visit_booking_id as string | null,
+    ],
+  });
+  const dateBounds = resolveMembershipPeriodVisitDateBounds({
+    todayYmd: localTodayYmd(),
+    periodStartIso: row.current_period_start as string | null,
+    periodEndIso: row.current_period_end as string | null,
+    lastVisitYmd,
+    intervalUnit: row.interval_unit as string | null,
+    intervalCount:
+      typeof row.interval_count === 'number' ? row.interval_count : null,
+  });
 
   return {
     ok: true,
@@ -174,5 +214,7 @@ export async function loadPublicMembershipVisitContext(
     address: snapshot.address,
     vehicle: snapshot.vehicle,
     usingSavedDetails,
+    visitMinDate: dateBounds?.minYmd ?? null,
+    visitMaxDate: dateBounds?.maxYmd ?? null,
   };
 }

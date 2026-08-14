@@ -139,7 +139,14 @@ export async function applyMembershipSubscriptionLifecycle(
     },
   });
 
-  if (args.kind === 'updated') {
+  const canceling =
+    args.kind === 'deleted' ||
+    fresh.status === 'canceled' ||
+    Boolean(fresh.cancel_at_period_end) ||
+    (typeof fresh.cancel_at === 'number' &&
+      fresh.cancel_at * 1000 > Date.now());
+
+  if (args.kind === 'updated' && !canceling) {
     try {
       await sendMembershipPeriodVisitRemindersIfApplicable(supabase, {
         membershipId: upsert.membershipId,

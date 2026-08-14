@@ -14,6 +14,7 @@ export default defineConfig({
       'src/features/**/testing/**/*.test.ts',
       'src/features/**/testing/**/*.test.tsx',
       'src/server/**/testing/**/*.test.ts',
+      'src/lib/**/*.test.ts',
     ],
     /** Next requires string PostCSS plugins; Vitest doesn't need real CSS transforms. */
     css: false,

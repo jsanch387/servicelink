@@ -10,6 +10,10 @@ import {
   sendAvailabilityBookingCustomerConfirmationEmail,
   type AvailabilityBookingNotificationPayload,
 } from '@/features/email';
+import {
+  buildMembershipVisitPaymentSummary,
+  membershipVisitNotesForEmail,
+} from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
 import { buildAvailabilityBookingEmailServiceLocation } from '@/features/email/availability-booking-notification/buildAvailabilityBookingEmailServiceLocation';
 import { checkMaintenanceAnchorAgainstCalendar } from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
 import { quoteStartTimeToHHmm } from '@/features/quotes/server/createBookingFromApprovedQuote';
@@ -17,8 +21,17 @@ import { buildBookingConfirmedSms, sendAndRecordSms } from '@/features/sms';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
+import {
+  isYmdInInclusiveRange,
+  localTodayYmd,
+  resolveMembershipPeriodVisitDateBounds,
+} from '../utils/membershipPeriodVisitDateBounds';
 import { linkMembershipPeriodVisit } from './linkMembershipPeriodVisit';
-import { mapMembershipStatusToOwner } from './mapCustomerMembershipToOwnerSubscriber';
+import { loadLatestMembershipVisitYmd } from './loadLatestMembershipVisitYmd';
+import {
+  isMembershipCancelScheduled,
+  mapMembershipStatusToOwner,
+} from './mapCustomerMembershipToOwnerSubscriber';
 import { verifyMembershipManageToken } from './membershipManageToken';
 import {
   logMemberships,
@@ -38,7 +51,6 @@ import {
   mergeMembershipServiceSnapshots,
   resolveMembershipCustomerServiceSnapshot,
   type MembershipServiceAddress,
-  type MembershipServiceVehicle,
 } from './resolveMembershipCustomerServiceSnapshot';
 
 export type CreatePublicMembershipPeriodVisitResult =
@@ -101,7 +113,6 @@ export async function createPublicMembershipPeriodVisit(
     visitDate: string;
     visitTime: string;
     address?: Partial<MembershipServiceAddress> | null;
-    vehicle?: Partial<MembershipServiceVehicle> | null;
     requestId?: string;
   }
 ): Promise<CreatePublicMembershipPeriodVisitResult> {
@@ -159,7 +170,7 @@ export async function createPublicMembershipPeriodVisit(
 
   const { data: row, error: loadErr } = await customerMembershipsOf(supabase)
     .select(
-      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, notes, status, current_period_start, period_visit_booking_id, period_visit_period_start, initial_booking_id'
+      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, notes, status, cancel_at_period_end, cancel_at, current_period_start, current_period_end, interval_unit, interval_count, period_visit_booking_id, period_visit_period_start, initial_booking_id'
     )
     .eq('id', membershipId)
     .maybeSingle();
@@ -196,6 +207,7 @@ export async function createPublicMembershipPeriodVisit(
   const status = mapMembershipStatusToOwner(String(row.status ?? ''));
   const visitStatus = resolveMembershipVisitStatus({
     status,
+    cancelScheduled: isMembershipCancelScheduled(row),
     currentPeriodStart: row.current_period_start as string | null,
     periodVisitBookingId: row.period_visit_booking_id as string | null,
     periodVisitPeriodStart: row.period_visit_period_start as string | null,
@@ -209,12 +221,41 @@ export async function createPublicMembershipPeriodVisit(
       code: 'not_eligible',
     };
   }
-  if (visitStatus === 'scheduled') {
+  if (visitStatus === 'scheduled' || visitStatus === 'completed') {
     return {
       ok: false,
-      error: 'A visit is already scheduled for this period.',
+      error:
+        visitStatus === 'completed'
+          ? 'This period\'s visit is already complete.'
+          : 'A visit is already scheduled for this period.',
       status: 409,
       code: 'already_scheduled',
+    };
+  }
+
+  const lastVisitYmd = await loadLatestMembershipVisitYmd(supabase, {
+    businessId: biz.id,
+    bookingIds: [
+      row.initial_booking_id as string | null,
+      row.period_visit_booking_id as string | null,
+    ],
+  });
+  const dateBounds = resolveMembershipPeriodVisitDateBounds({
+    todayYmd: localTodayYmd(),
+    periodStartIso: row.current_period_start as string | null,
+    periodEndIso: row.current_period_end as string | null,
+    lastVisitYmd,
+    intervalUnit: row.interval_unit as string | null,
+    intervalCount:
+      typeof row.interval_count === 'number' ? row.interval_count : null,
+  });
+  if (dateBounds && !isYmdInInclusiveRange(scheduledDate, dateBounds)) {
+    return {
+      ok: false,
+      error:
+        'Pick a date in this billing period. Your last visit already used the previous one.',
+      status: 400,
+      code: 'date_out_of_period',
     };
   }
 
@@ -279,9 +320,9 @@ export async function createPublicMembershipPeriodVisit(
     email,
     customerId: (row.customer_id as string | null) ?? null,
   });
+  // Address may change (moved). Vehicle stays the membership car on file.
   const serviceSnapshot = mergeMembershipServiceSnapshots(crmSnapshot, {
     address: args.address,
-    vehicle: args.vehicle,
   });
 
   const customer = emptyCustomerForm({
@@ -396,11 +437,7 @@ export async function createPublicMembershipPeriodVisit(
     durationMinutes,
     servicePriceCents: 0,
     totalPriceCents: 0,
-    paymentSummary: {
-      title: 'Payment',
-      rows: [{ label: 'Covered by membership', value: '—' }],
-      note: 'This visit is included with your subscription. No separate charge for the appointment.',
-    },
+    paymentSummary: buildMembershipVisitPaymentSummary(),
     serviceLocation: buildAvailabilityBookingEmailServiceLocation({
       effectiveType,
       shopAddressLabel: shopLabel || null,
@@ -410,7 +447,7 @@ export async function createPublicMembershipPeriodVisit(
       customerState: undefined,
       customerZip: undefined,
     }),
-    customerNotes: customer.notes,
+    customerNotes: membershipVisitNotesForEmail(customer.notes),
   };
 
   try {

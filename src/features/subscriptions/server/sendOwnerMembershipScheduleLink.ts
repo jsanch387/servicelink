@@ -10,11 +10,19 @@ import {
 } from '@/features/sms';
 import { getAppBaseUrl } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import type { Database } from '@/libs/supabase/client';
+import type { Database, Json } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { mapMembershipStatusToOwner } from './mapCustomerMembershipToOwnerSubscriber';
+import {
+  isMembershipCancelScheduled,
+  mapMembershipStatusToOwner,
+} from './mapCustomerMembershipToOwnerSubscriber';
 import { signMembershipManageToken } from './membershipManageToken';
 import { logMemberships, shortIdForLog } from './membershipsTransactionLog';
+import {
+  evaluateMembershipScheduleLinkThrottle,
+  membershipScheduleLinkThrottleMessage,
+  stampMembershipScheduleLinkMetadata,
+} from './membershipScheduleLinkThrottle';
 import { resolveMembershipVisitStatus } from './membershipVisitStatus';
 import {
   customerMembershipsOf,
@@ -30,7 +38,7 @@ export async function sendOwnerMembershipScheduleLink(
   }
 ): Promise<
   | { ok: true; emailed: boolean; smsed: boolean; scheduleUrl: string }
-  | { ok: false; error: string; status: number }
+  | { ok: false; error: string; status: number; retryAfterSec?: number }
 > {
   const businessId = args.businessId.trim();
   const membershipId = args.membershipId.trim();
@@ -40,7 +48,7 @@ export async function sendOwnerMembershipScheduleLink(
 
   const { data: row, error } = await customerMembershipsOf(supabase)
     .select(
-      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, status, current_period_start, period_visit_booking_id, period_visit_period_start, initial_booking_id'
+      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, status, cancel_at_period_end, cancel_at, current_period_start, period_visit_booking_id, period_visit_period_start, initial_booking_id, metadata'
     )
     .eq('id', membershipId)
     .eq('business_id', businessId)
@@ -56,6 +64,7 @@ export async function sendOwnerMembershipScheduleLink(
   const status = mapMembershipStatusToOwner(String(row.status ?? ''));
   const visitStatus = resolveMembershipVisitStatus({
     status,
+    cancelScheduled: isMembershipCancelScheduled(row),
     currentPeriodStart: row.current_period_start as string | null,
     periodVisitBookingId: row.period_visit_booking_id as string | null,
     periodVisitPeriodStart: row.period_visit_period_start as string | null,
@@ -68,11 +77,27 @@ export async function sendOwnerMembershipScheduleLink(
       status: 409,
     };
   }
-  if (visitStatus === 'scheduled') {
+  if (visitStatus === 'scheduled' || visitStatus === 'completed') {
     return {
       ok: false,
-      error: 'A visit is already scheduled for this period.',
+      error:
+        visitStatus === 'completed'
+          ? 'This period\'s visit is already complete.'
+          : 'A visit is already scheduled for this period.',
       status: 409,
+    };
+  }
+
+  const throttle = evaluateMembershipScheduleLinkThrottle({
+    currentPeriodStart: row.current_period_start as string | null,
+    metadata: row.metadata,
+  });
+  if (!throttle.ok) {
+    return {
+      ok: false,
+      error: membershipScheduleLinkThrottleMessage(throttle.reason),
+      status: 429,
+      retryAfterSec: throttle.retryAfterSec,
     };
   }
 
@@ -114,6 +139,19 @@ export async function sendOwnerMembershipScheduleLink(
   const token = signMembershipManageToken(membershipId);
   const schedulePath = getPublicMembershipVisitPath(slug, token);
   const scheduleUrl = `${getAppBaseUrl(args.request)}${schedulePath}`;
+  const periodStart =
+    (row.current_period_start as string | null)?.trim() ||
+    new Date().toISOString();
+  const nextMeta = stampMembershipScheduleLinkMetadata(
+    row.metadata,
+    periodStart,
+    new Date().toISOString()
+  );
+  const sendCount =
+    typeof nextMeta.schedule_link_send_count === 'number'
+      ? nextMeta.schedule_link_send_count
+      : 1;
+  const admin = createSupabaseAdminClient();
 
   let emailed = false;
   if (email) {
@@ -134,7 +172,6 @@ export async function sendOwnerMembershipScheduleLink(
 
   let smsed = false;
   if (phone) {
-    const admin = createSupabaseAdminClient();
     const sms = await sendAndRecordSms({
       admin,
       businessId,
@@ -142,7 +179,7 @@ export async function sendOwnerMembershipScheduleLink(
       type: 'membership_visit_reminder',
       to: phone,
       message: buildMembershipVisitReminderSms({ scheduleUrl }),
-      dedupeKey: `${membershipId}:schedule_link:${Date.now()}`,
+      dedupeKey: `${membershipId}:schedule_link:${periodStart}:${sendCount}`,
     });
     smsed = sms.sent;
   }
@@ -153,6 +190,15 @@ export async function sendOwnerMembershipScheduleLink(
       error: 'Could not send the schedule link. Try again.',
       status: 500,
     };
+  }
+
+  const { error: metaError } = await customerMembershipsOf(admin)
+    .update({ metadata: nextMeta as Json })
+    .eq('id', membershipId);
+  if (metaError) {
+    logMemberships(undefined, 'warn', 'schedule_link.meta_failed', {
+      membershipId: shortIdForLog(membershipId),
+    });
   }
 
   return { ok: true, emailed, smsed, scheduleUrl };

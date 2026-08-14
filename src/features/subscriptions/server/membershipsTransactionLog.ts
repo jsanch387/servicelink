@@ -93,11 +93,16 @@ export function logMemberships(
 export function membershipsJsonResponse(
   requestId: string,
   body: unknown,
-  init?: { status?: number }
+  init?: { status?: number; headers?: Record<string, string> }
 ): NextResponse {
   const res = NextResponse.json(body, { status: init?.status ?? 200 });
   res.headers.set('X-Request-ID', requestId);
   res.headers.set('Cache-Control', 'no-store');
+  if (init?.headers) {
+    for (const [key, value] of Object.entries(init.headers)) {
+      res.headers.set(key, value);
+    }
+  }
   return res;
 }
 

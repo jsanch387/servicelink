@@ -5,20 +5,19 @@ import type { WeeklySchedule } from '@/features/availability/types/availability'
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
+  ArrowPathRoundedSquareIcon,
   ArrowTopRightOnSquareIcon,
   CalendarIcon,
   CheckCircleIcon,
-  EnvelopeIcon,
   MapPinIcon,
-  PhoneIcon,
   TrashIcon,
-  UserCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
 import type { ExistingBooking, TimeOffInterval } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
+import { BookingDetailCustomerSection } from './BookingDetailCustomerSection';
 import { BookingDetailServiceSection } from './BookingDetailServiceSection';
 import {
   CompleteAppointmentModal,
@@ -63,12 +62,6 @@ function formatFullAddress(
   return parts.join(', ');
 }
 
-function formatPhoneDisplay(phone: string): string {
-  const digits = phone.replace(/\D/g, '').slice(0, 10);
-  if (digits.length < 10) return phone;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
 function formatVehicle(booking: AvailabilityBookingDisplay): string | null {
   const parts = [
     booking.customerVehicleYear?.trim(),
@@ -111,14 +104,6 @@ export function AvailabilityBookingDetailPanel({
   };
 
   const fullAddress = formatFullAddress(booking.address);
-  const customerPhone = booking.customerPhone ?? '';
-  const phoneDigits = customerPhone.replace(/\D/g, '');
-  const hasPhone = phoneDigits.length > 0;
-  const phoneFormatted = formatPhoneDisplay(customerPhone);
-  const telHref = hasPhone ? `tel:${phoneDigits}` : '';
-
-  const customerEmailTrimmed = (booking.customerEmail ?? '').trim();
-  const hasEmail = customerEmailTrimmed.length > 0;
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
@@ -323,9 +308,15 @@ export function AvailabilityBookingDetailPanel({
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
                 {paymentDetailVariant === 'membership' && (
                   <>
-                    <p className="text-sm font-semibold text-white">
-                      Membership
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <ArrowPathRoundedSquareIcon
+                        className="h-5 w-5 shrink-0 text-gray-400"
+                        aria-hidden
+                      />
+                      <p className="text-sm font-semibold text-white">
+                        Membership
+                      </p>
+                    </div>
                     <p className="text-xs text-gray-400">
                       Covered by their plan — nothing to collect.
                     </p>
@@ -415,43 +406,12 @@ export function AvailabilityBookingDetailPanel({
             </section>
           )}
 
-          {/* Customer */}
-          <section>
-            <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-500">
-              Customer
-            </h3>
-            <div className="space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
-              <div className="flex items-center gap-2">
-                <UserCircleIcon
-                  className="h-5 w-5 shrink-0 text-gray-400"
-                  aria-hidden
-                />
-                <p className="min-w-0 font-semibold text-white [overflow-wrap:anywhere]">
-                  {booking.customerName}
-                </p>
-              </div>
-              {hasPhone ? (
-                <a
-                  href={telHref}
-                  aria-label="Call customer"
-                  className="flex items-center gap-2 text-blue-300 transition-colors hover:bg-blue-500/10 hover:text-blue-100"
-                >
-                  <PhoneIcon className="h-4 w-4" />
-                  {phoneFormatted}
-                </a>
-              ) : null}
-              {hasEmail ? (
-                <a
-                  href={`mailto:${customerEmailTrimmed}`}
-                  aria-label="Email customer"
-                  className="flex items-center gap-2 text-gray-300 transition-colors hover:bg-white/[0.06] hover:text-white"
-                >
-                  <EnvelopeIcon className="h-4 w-4" />
-                  {customerEmailTrimmed}
-                </a>
-              ) : null}
-            </div>
-          </section>
+          <BookingDetailCustomerSection
+            customerName={booking.customerName}
+            customerPhone={booking.customerPhone ?? ''}
+            customerEmail={booking.customerEmail ?? ''}
+            isMembershipVisit={paymentDetailVariant === 'membership'}
+          />
 
           {/* Location */}
           <section>

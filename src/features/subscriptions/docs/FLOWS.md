@@ -45,8 +45,8 @@ Central definitions: `src/constants/routes.ts`.
 
 1. **0 plans** → create-first empty state → `/new`
 2. **≥1 plan** → Plans | Subscribers tabs
-   - Plans: cards → detail
-   - Subscribers: empty until memberships table exists
+   - Plans: cards → detail. Card count is **active** members only (`active` / `trialing` / `past_due` / `unpaid` / `paused`).
+   - Subscribers: **current** members by default (same statuses as the plan count, and still on a live plan). Canceled / incomplete / removed-plan rows stay behind **Show canceled (N)** or **Show ended (N)**. Removed plans keep their name with `(removed)` (or **Removed plan** if the name is gone) and do not link to plan detail.
 
 ---
 
@@ -221,14 +221,14 @@ Server loads `visit_duration_minutes` from the plan, re-checks the calendar slot
 
 **Live:** owner Subscribers list/detail from `customer_memberships`; calendar shows the first visit; owner gets the usual new-appointment notify.
 
-**Period visits (owner):** Detail shows **Needs visit** when no booking is linked for `current_period_start`. **Book visit** opens New appointment prefilled (plan name, duration, customer, notes, vehicle) with `membershipId`; on create, `linkMembershipPeriodVisit` sets `period_visit_*`. List rows show a Needs visit badge. Owner notes save via `POST …/subscribers/:id` `{ action: 'save_notes' }`.
+**Period visits (owner):** Detail shows **Needs visit** when no booking is linked for `current_period_start`. Canceled and cancel-at-period-end do **not** show Needs visit (list pill stays **Canceled**); a leftover scheduled/completed visit for this period still shows. **Book visit** opens New appointment prefilled (plan name, duration, customer, notes, vehicle) with `membershipId`; on create, `linkMembershipPeriodVisit` sets `period_visit_*`. Completing that booking keeps the link (so they cannot book another visit this period) and detail shows **Visit completed** instead of **Next visit**. Cancel / delete still clears `period_visit_*` → Needs visit again. List rows show a Needs visit badge. Owner notes save via `POST …/subscribers/:id` `{ action: 'save_notes' }`.
 
 **Period visits (customer self-serve):**
 
 - URL: `/{slug}/membership/visit?token={membershipId}.{sig}` (`getPublicMembershipVisitPath`; same HMAC token as manage links).
-- UI: date + time picker → `POST /api/public/memberships/visit` → create $0 booking + `linkMembershipPeriodVisit`.
-- **Reminders:** on Connect `customer.subscription.updated`, after upsert, if `needs_visit` and `initial_booking_id` is set and we have not already reminded for this `current_period_start` (`metadata.visit_reminder_sent_for_period_start`), send customer email + SMS with the schedule link and nudge the owner (in-app notification + push).
-- **Owner Send schedule link:** `POST …/subscribers/:id` `{ action: 'send_schedule_link' }` emails/texts the same URL (when status is Needs visit).
+- UI: subscribe-style stepper (service details → date/time) → `POST /api/public/memberships/visit` → create $0 booking + `linkMembershipPeriodVisit`. Address is prefilled and editable; vehicle is shown but locked to the membership car (server ignores a posted vehicle). Calendar opens at the next Stripe bill date (not last-visit + cadence).
+- **Reminders:** on Connect `customer.subscription.updated` **when the period actually needs a visit** (not cancel / cancel-at-period-end). After upsert, if `needs_visit` and `initial_booking_id` is set and we have not already reminded for this `current_period_start` (`metadata.visit_reminder_sent_for_period_start`), send customer email + SMS with the schedule link and nudge the owner (in-app notification + push).
+- **Owner Send schedule link:** `POST …/subscribers/:id` `{ action: 'send_schedule_link' }` emails/texts the same URL (when status is Needs visit). Capped at 1 send / 10 minutes per subscriber and 3 per billing period (plus an owner hourly cap).
 - **Cancel / delete booking:** if that booking is `period_visit_booking_id`, clear `period_visit_*` → Needs visit again (owner can Book visit or Send schedule link).
 
 **Invoice emails (customer):** on Connect `invoice.paid` / `invoice.payment_failed`, after ledger upsert, send branded receipt or payment-failed email (manage/update-card portal link). Idempotent via `membership_invoices.metadata.customer_email_sent_at`. Footer: “Sent for {business} via ServiceLink”.

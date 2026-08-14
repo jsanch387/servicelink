@@ -40,7 +40,8 @@ function vehicleLine(job: EmailJobsReceiptJob): string | null {
  * HTML rows for a Jobs section card. Empty string when no jobs.
  */
 export function buildEmailJobsReceiptCardHtml(
-  jobs: EmailJobsReceiptJob[] | null | undefined
+  jobs: EmailJobsReceiptJob[] | null | undefined,
+  options?: { zeroPriceLabel?: string }
 ): string {
   if (!jobs?.length) return '';
 
@@ -79,7 +80,11 @@ export function buildEmailJobsReceiptCardHtml(
             ${serviceNameHtml}
           </td>
           <td style="padding:0 0 2px 0;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:14px;line-height:20px;font-weight:400;color:#fafafa;text-align:right;white-space:nowrap;vertical-align:top;">
-            ${escapeHtml(formatPriceCents(serviceCents))}
+            ${escapeHtml(
+              options?.zeroPriceLabel && serviceCents === 0
+                ? options.zeroPriceLabel
+                : formatPriceCents(serviceCents)
+            )}
           </td>
         </tr>
     `;
@@ -111,7 +116,11 @@ export function buildEmailJobsReceiptCardHtml(
             ${escapeHtml(addOn.name)}
           </td>
           <td style="padding:0 0 ${addOnPad} 0;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:13px;line-height:20px;font-weight:400;color:#a3a3a3;text-align:right;white-space:nowrap;">
-            ${escapeHtml(formatPriceCents(addOn.priceCents))}
+            ${escapeHtml(
+              options?.zeroPriceLabel && addOn.priceCents === 0
+                ? options.zeroPriceLabel
+                : formatPriceCents(addOn.priceCents)
+            )}
           </td>
         </tr>
       `;

@@ -153,7 +153,7 @@ No anon/public policies. Public booking-link reads use the **admin / service-rol
 
 `customer_memberships.initial_booking_id` → first-visit `bookings.id` (set by webhook after Checkout; idempotency).
 
-`customer_memberships.period_visit_booking_id` / `period_visit_period_start` → visit for the current Stripe period. When `current_period_start` advances past `period_visit_period_start` (or no booking), owner UI shows **Needs visit**. Owner Book visit, public `/{slug}/membership/visit`, and webhook first visit set these columns. `notes` is owner-only text (saved via API with service role after ownership check).
+`customer_memberships.period_visit_booking_id` / `period_visit_period_start` → visit for the current Stripe period. When `current_period_start` advances past `period_visit_period_start` (or no booking), owner UI shows **Needs visit**. Completing the linked booking shows **Visit completed** until the next Stripe period. Owner Book visit, public `/{slug}/membership/visit`, and webhook first visit set these columns. `notes` is owner-only text (saved via API with service role after ownership check).
 
 `customer_memberships.metadata.visit_reminder_sent_for_period_start` → idempotency for next-period reminder email/SMS (ISO timestamp matching `current_period_start`).
 

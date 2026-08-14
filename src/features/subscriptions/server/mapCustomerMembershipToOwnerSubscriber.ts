@@ -6,7 +6,10 @@ import type {
 } from '../types/ownerSubscriptionPlan';
 import { formatCadenceOptionLabel } from '../utils/formatSubscriptionPrice';
 import { formatMembershipPaymentMethodLabel } from './membershipPaymentMethodSnapshot';
-import { resolveMembershipVisitStatus } from './membershipVisitStatus';
+import {
+  periodVisitIsOnFile,
+  resolveMembershipVisitStatus,
+} from './membershipVisitStatus';
 
 type MembershipRow =
   Database['public']['Tables']['customer_memberships']['Row'];
@@ -42,6 +45,7 @@ export function mapMembershipStatusToOwner(
     case 'paused':
       return 'paused';
     case 'canceled':
+    case 'cancelled':
     case 'incomplete_expired':
       return 'canceled';
     case 'incomplete':
@@ -107,7 +111,13 @@ export function isMembershipCancelScheduled(row: {
   status?: string | null;
 }): boolean {
   const status = (row.status ?? '').trim();
-  if (status === 'canceled' || status === 'incomplete_expired') return false;
+  if (
+    status === 'canceled' ||
+    status === 'cancelled' ||
+    status === 'incomplete_expired'
+  ) {
+    return false;
+  }
   if (row.cancel_at_period_end) return true;
   const cancelAt = row.cancel_at?.trim();
   if (!cancelAt) return false;
@@ -123,6 +133,8 @@ export function mapCustomerMembershipToOwnerSubscriber(
     visitDurationMinutes?: number | null;
     periodVisitDate?: string | null;
     periodVisitTime?: string | null;
+    periodVisitBookingStatus?: string | null;
+    planRemoved?: boolean;
   }
 ): OwnerSubscriber {
   const intervalUnit = asCadenceUnit(row.interval_unit);
@@ -140,15 +152,18 @@ export function mapCustomerMembershipToOwnerSubscriber(
   const cancelScheduled = isMembershipCancelScheduled(row);
   const visitStatus = resolveMembershipVisitStatus({
     status,
+    cancelScheduled,
+    planRemoved: Boolean(extras?.planRemoved),
     currentPeriodStart: row.current_period_start,
     periodVisitBookingId: row.period_visit_booking_id,
     periodVisitPeriodStart: row.period_visit_period_start,
+    periodVisitBookingStatus: extras?.periodVisitBookingStatus,
   });
 
-  const periodVisitBookingId =
-    visitStatus === 'scheduled'
-      ? row.period_visit_booking_id?.trim() || null
-      : null;
+  const visitOnFile = periodVisitIsOnFile(visitStatus);
+  const periodVisitBookingId = visitOnFile
+    ? row.period_visit_booking_id?.trim() || null
+    : null;
 
   return {
     id: row.id,
@@ -158,6 +173,7 @@ export function mapCustomerMembershipToOwnerSubscriber(
     customerId: row.customer_id?.trim() || null,
     planId: row.plan_id?.trim() || '',
     planName: planName.trim() || 'Plan',
+    planRemoved: Boolean(extras?.planRemoved),
     visitDurationMinutes:
       typeof extras?.visitDurationMinutes === 'number' &&
       extras.visitDurationMinutes >= 30
@@ -185,13 +201,11 @@ export function mapCustomerMembershipToOwnerSubscriber(
     notes: row.notes?.trim() || null,
     visitStatus,
     periodVisitBookingId,
-    periodVisitDate:
-      visitStatus === 'scheduled'
-        ? extras?.periodVisitDate?.trim() || null
-        : null,
-    periodVisitTime:
-      visitStatus === 'scheduled'
-        ? extras?.periodVisitTime?.trim() || null
-        : null,
+    periodVisitDate: visitOnFile
+      ? extras?.periodVisitDate?.trim() || null
+      : null,
+    periodVisitTime: visitOnFile
+      ? extras?.periodVisitTime?.trim() || null
+      : null,
   };
 }
