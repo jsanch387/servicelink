@@ -37,7 +37,9 @@ export type BookingSource = 'public' | 'owner';
 export type PublicBookingNoCheckoutPaymentMethod =
   | 'pay_now'
   | 'pay_in_person'
-  | 'none';
+  | 'none'
+  /** Membership / subscription visit — covered by plan, not collect-in-person. */
+  | 'membership';
 
 export interface CreateBookingPayload {
   business_id: string;
@@ -473,16 +475,20 @@ export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
     : 'usd';
 
   let paymentMethodSelected: PublicBookingNoCheckoutPaymentMethod = 'none';
-  const mode = String(args.checkoutMode ?? '').trim();
-  if (!args.paymentsEnabled || !mode) {
-    paymentMethodSelected = 'none';
-  } else if (mode === 'in_person') {
-    paymentMethodSelected = 'pay_in_person';
-  } else if (mode === 'customer_choice') {
-    paymentMethodSelected =
-      args.clientPaymentMethod === 'pay_in_person' ? 'pay_in_person' : 'none';
+  if (args.clientPaymentMethod === 'membership') {
+    paymentMethodSelected = 'membership';
   } else {
-    paymentMethodSelected = 'none';
+    const mode = String(args.checkoutMode ?? '').trim();
+    if (!args.paymentsEnabled || !mode) {
+      paymentMethodSelected = 'none';
+    } else if (mode === 'in_person') {
+      paymentMethodSelected = 'pay_in_person';
+    } else if (mode === 'customer_choice') {
+      paymentMethodSelected =
+        args.clientPaymentMethod === 'pay_in_person' ? 'pay_in_person' : 'none';
+    } else {
+      paymentMethodSelected = 'none';
+    }
   }
 
   const paymentStatus =
@@ -621,7 +627,22 @@ export async function updateBookingStatus(
     throw error;
   }
 
-  return data as BookingRow | null;
+  const row = data as BookingRow | null;
+  if (row && status === 'cancelled') {
+    try {
+      const { clearMembershipPeriodVisitForBooking } = await import(
+        '@/features/subscriptions/server/clearMembershipPeriodVisitForBooking'
+      );
+      await clearMembershipPeriodVisitForBooking({
+        businessId: String(row.business_id ?? ''),
+        bookingId: String(row.id ?? bookingId),
+      });
+    } catch {
+      // Membership unlink is best-effort; cancel already succeeded.
+    }
+  }
+
+  return row;
 }
 
 export type RescheduleBookingForOwnerResult =
@@ -775,6 +796,18 @@ export async function deleteBookingForOwner(
 
   if (!existing) {
     return { ok: false, error: 'Booking not found.', httpStatus: 404 };
+  }
+
+  try {
+    const { clearMembershipPeriodVisitForBooking } = await import(
+      '@/features/subscriptions/server/clearMembershipPeriodVisitForBooking'
+    );
+    await clearMembershipPeriodVisitForBooking({
+      businessId,
+      bookingId,
+    });
+  } catch {
+    // Best-effort; delete may still proceed.
   }
 
   const { error: deleteErr } = await db

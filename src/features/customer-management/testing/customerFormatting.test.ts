@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 
 describe('formatCustomerPhone', () => {
   it('formats 10-digit US numbers', () => {
-    expect(formatCustomerPhone('5551234567')).toBe('(555) 123-4567');
-    expect(formatCustomerPhone('555-123-4567')).toBe('(555) 123-4567');
-    expect(formatCustomerPhone('(555) 123-4567')).toBe('(555) 123-4567');
+    expect(formatCustomerPhone('5551234567')).toBe('+1 (555) 123-4567');
+    expect(formatCustomerPhone('555-123-4567')).toBe('+1 (555) 123-4567');
+    expect(formatCustomerPhone('(555) 123-4567')).toBe('+1 (555) 123-4567');
   });
 
   it('formats 11-digit US numbers with country code 1', () => {
@@ -28,12 +28,14 @@ describe('formatCustomerPhone', () => {
 
   it('shows extension after a middle dot', () => {
     expect(formatCustomerPhone('5551234567 ext 104')).toBe(
-      '(555) 123-4567 · ext. 104'
+      '+1 (555) 123-4567 · ext. 104'
     );
     expect(formatCustomerPhone('5551234567 x9')).toBe(
-      '(555) 123-4567 · ext. 9'
+      '+1 (555) 123-4567 · ext. 9'
     );
-    expect(formatCustomerPhone('5551234567x9')).toBe('(555) 123-4567 · ext. 9');
+    expect(formatCustomerPhone('5551234567x9')).toBe(
+      '+1 (555) 123-4567 · ext. 9'
+    );
     expect(formatCustomerPhone('+15551234567 EXT. 22')).toBe(
       '+1 (555) 123-4567 · ext. 22'
     );
@@ -47,7 +49,7 @@ describe('formatCustomerPhone', () => {
 
 describe('customerPhoneHref', () => {
   it('uses main number digits only (no extension in tel:)', () => {
-    expect(customerPhoneHref('5551234567 ext 9')).toBe('tel:5551234567');
+    expect(customerPhoneHref('5551234567 ext 9')).toBe('tel:+15551234567');
   });
 
   it('returns null when there is no dialable number', () => {

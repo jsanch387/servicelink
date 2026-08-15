@@ -44,6 +44,7 @@ export interface CanContinueCreateAppointmentArgs {
   customPriceLabel?: string;
   serviceName?: string;
   durationMinutes?: number;
+  membershipPriceIncluded?: boolean;
 }
 
 /**
@@ -72,6 +73,7 @@ export function canContinueCreateAppointmentStep(
         serviceName: p.serviceName,
         customPriceLabel: p.customPriceLabel,
         durationMinutes: p.durationMinutes,
+        membershipPriceIncluded: p.membershipPriceIncluded,
       });
     }
     if (p.pricingSkipped) return true;
@@ -130,6 +132,7 @@ export function canContinueCreateAppointmentStep(
           serviceName: p.serviceName,
           customPriceLabel: p.customPriceLabel,
           durationMinutes: p.durationMinutes,
+          membershipPriceIncluded: p.membershipPriceIncluded,
         }) && isVehicleStepComplete(p.vehicle)
       );
     }

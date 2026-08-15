@@ -1,7 +1,7 @@
 /**
  * GET  /api/memberships/subscribers/:id
  * POST /api/memberships/subscribers/:id
- *   { action: 'cancel_at_period_end' | 'cancel_now' | 'portal_link' | 'portal_session' }
+ *   { action: 'cancel_at_period_end' | 'cancel_now' | 'portal_link' | 'portal_session' | 'save_notes' | 'send_schedule_link' }
  */
 
 import { API_ROUTES } from '@/constants/routes';
@@ -10,6 +10,8 @@ import { cancelOwnerCustomerMembership } from '@/features/subscriptions/server/c
 import { createMembershipBillingPortalSession } from '@/features/subscriptions/server/createMembershipBillingPortalSession';
 import { getOwnerCustomerMembership } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
 import { signMembershipManageToken } from '@/features/subscriptions/server/membershipManageToken';
+import { sendOwnerMembershipScheduleLink } from '@/features/subscriptions/server/sendOwnerMembershipScheduleLink';
+import { updateOwnerMembershipNotes } from '@/features/subscriptions/server/updateOwnerMembershipNotes';
 import {
   getMembershipsRequestId,
   membershipsJsonResponse,
@@ -17,6 +19,8 @@ import {
 import { getAppBaseUrl } from '@/libs/stripe';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { assertOwnerMembershipScheduleLinkRateLimits } from '@/server/rateLimit/ownerMembershipScheduleLinkRateLimit';
+import type { NextRequest } from 'next/server';
 
 type RouteContext = { params: Promise<{ subscriberId: string }> };
 
@@ -76,6 +80,7 @@ async function requireOwnerMembershipsContext(req: Request) {
     requestId,
     supabase,
     businessId: resolved.businessId,
+    userId: user.id,
   };
 }
 
@@ -120,8 +125,74 @@ export async function POST(req: Request, context: RouteContext) {
 
     const body = (await req.json().catch(() => ({}))) as {
       action?: unknown;
+      notes?: unknown;
     };
     const action = typeof body.action === 'string' ? body.action.trim() : '';
+
+    if (action === 'save_notes') {
+      const notes = typeof body.notes === 'string' ? body.notes : '';
+      const result = await updateOwnerMembershipNotes(ctx.supabase, {
+        businessId: ctx.businessId,
+        membershipId: subscriberId,
+        notes,
+      });
+      if (!result.ok) {
+        return membershipsJsonResponse(
+          ctx.requestId,
+          { success: false, error: result.error },
+          { status: result.status }
+        );
+      }
+      return membershipsJsonResponse(ctx.requestId, {
+        success: true,
+        subscriber: result.subscriber,
+      });
+    }
+
+    if (action === 'send_schedule_link') {
+      const rateLimit = await assertOwnerMembershipScheduleLinkRateLimits(
+        req as NextRequest,
+        ctx.userId
+      );
+      if (!rateLimit.ok) {
+        return membershipsJsonResponse(
+          ctx.requestId,
+          {
+            success: false,
+            error: 'Too many schedule links sent. Try again later.',
+          },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(rateLimit.retryAfterSec) },
+          }
+        );
+      }
+
+      const result = await sendOwnerMembershipScheduleLink(ctx.supabase, {
+        businessId: ctx.businessId,
+        membershipId: subscriberId,
+        request: req,
+      });
+      if (!result.ok) {
+        return membershipsJsonResponse(
+          ctx.requestId,
+          { success: false, error: result.error },
+          {
+            status: result.status,
+            headers:
+              result.retryAfterSec != null
+                ? { 'Retry-After': String(result.retryAfterSec) }
+                : undefined,
+          }
+        );
+      }
+      return membershipsJsonResponse(ctx.requestId, {
+        success: true,
+        emailed: result.emailed,
+        smsed: result.smsed,
+        scheduleUrl: result.scheduleUrl,
+      });
+    }
 
     if (action === 'portal_link') {
       const token = signMembershipManageToken(subscriberId);
@@ -167,6 +238,7 @@ export async function POST(req: Request, context: RouteContext) {
       return membershipsJsonResponse(ctx.requestId, {
         success: true,
         subscriber: result.subscriber,
+        alreadyCanceled: result.alreadyCanceled === true,
       });
     }
 

@@ -40,20 +40,21 @@ business_profiles
 
 ### Columns
 
-| Column              | Type          | Nullable | Default             | Description                                                                 |
-| ------------------- | ------------- | -------- | ------------------- | --------------------------------------------------------------------------- |
-| `id`                | `uuid`        | no       | `gen_random_uuid()` | Primary key                                                                 |
-| `business_id`       | `uuid`        | no       | —                   | FK → `business_profiles(id)` ON DELETE CASCADE                              |
-| `name`              | `text`        | no       | —                   | Plan title; CHECK non-empty trim                                            |
-| `description`       | `text`        | no       | `''`                | Prose only (bullets stripped into `benefits`)                               |
-| `benefits`          | `text[]`      | no       | `'{}'`              | Bullet lines for public card / modal                                        |
-| `is_published`      | `boolean`     | no       | `true`              | Public loader requires `true`. Create always publishes; no owner toggle yet |
-| `is_popular`        | `boolean`     | no       | `false`             | Optional highlight; create hardcodes `false`                                |
-| `sort_order`        | `integer`     | no       | `0`                 | Owner list / public order                                                   |
-| `stripe_product_id` | `text`        | yes      | null                | Stripe Product on Connect (`prod_…`). Set on create/edit sync               |
-| `deleted_at`        | `timestamptz` | yes      | null                | Soft-delete timestamp; null = active                                        |
-| `created_at`        | `timestamptz` | no       | `now()`             | Created                                                                     |
-| `updated_at`        | `timestamptz` | no       | `now()`             | Updated via `set_updated_at()` trigger                                      |
+| Column                   | Type          | Nullable | Default             | Description                                                                 |
+| ------------------------ | ------------- | -------- | ------------------- | --------------------------------------------------------------------------- |
+| `id`                     | `uuid`        | no       | `gen_random_uuid()` | Primary key                                                                 |
+| `business_id`            | `uuid`        | no       | —                   | FK → `business_profiles(id)` ON DELETE CASCADE                              |
+| `name`                   | `text`        | no       | —                   | Plan title; CHECK non-empty trim                                            |
+| `description`            | `text`        | no       | `''`                | Prose only (bullets stripped into `benefits`)                               |
+| `benefits`               | `text[]`      | no       | `'{}'`              | Bullet lines for public card / modal                                        |
+| `is_published`           | `boolean`     | no       | `true`              | Public loader requires `true`. Create always publishes; no owner toggle yet |
+| `is_popular`             | `boolean`     | no       | `false`             | Optional highlight; create hardcodes `false`                                |
+| `sort_order`             | `integer`     | no       | `0`                 | Owner list / public order                                                   |
+| `visit_duration_minutes` | `integer`     | no       | `60`                | Visit length for slotting/bookings; CHECK 30–630, multiples of 30           |
+| `stripe_product_id`      | `text`        | yes      | null                | Stripe Product on Connect (`prod_…`). Set on create/edit sync               |
+| `deleted_at`             | `timestamptz` | yes      | null                | Soft-delete timestamp; null = active                                        |
+| `created_at`             | `timestamptz` | no       | `now()`             | Created                                                                     |
+| `updated_at`             | `timestamptz` | no       | `now()`             | Updated via `set_updated_at()` trigger                                      |
 
 ### Indexes (intent)
 
@@ -150,7 +151,13 @@ No anon/public policies. Public booking-link reads use the **admin / service-rol
 | `membership_events`    | Append-only lifecycle timeline (`stripe_event_id` unique) |
 | `membership_invoices`  | Invoice / payment ledger                                  |
 
-**RLS:** owners **SELECT** only; writes via `service_role` (webhooks). See [migrations/005–007](./migrations/).
+`customer_memberships.initial_booking_id` → first-visit `bookings.id` (set by webhook after Checkout; idempotency).
+
+`customer_memberships.period_visit_booking_id` / `period_visit_period_start` → visit for the current Stripe period. When `current_period_start` advances past `period_visit_period_start` (or no booking), owner UI shows **Needs visit**. Completing the linked booking shows **Visit completed** until the next Stripe period. Owner Book visit, public `/{slug}/membership/visit`, and webhook first visit set these columns. `notes` is owner-only text (saved via API with service role after ownership check).
+
+`customer_memberships.metadata.visit_reminder_sent_for_period_start` → idempotency for next-period reminder email/SMS (ISO timestamp matching `current_period_start`).
+
+**RLS:** owners **SELECT** only; writes via `service_role` (webhooks / trusted owner APIs). See [migrations/005–007](./migrations/).
 
 `countActivePlanSubscribers` counts `status in ('active','trialing','past_due','unpaid','paused')`.
 

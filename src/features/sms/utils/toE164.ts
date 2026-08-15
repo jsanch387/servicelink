@@ -1,14 +1,14 @@
+import { toUsE164 } from '@/lib/formatUsPhone';
+
 /**
  * Normalize a free-form stored phone number to E.164 (e.g. +15551234567).
  * SMS providers require E.164. Returns null when the input cannot be
  * confidently normalized so callers skip the SMS rather than send to a bad
  * number.
  *
- * Assumes US/CA (+1) for 10-digit numbers, matching the app's current
- * single-locale phone collection. Numbers already prefixed with `+` are kept.
+ * App is US-only today: national numbers always get hardcoded +1.
+ * Numbers already in +E.164 are kept (other countries reserved for later).
  */
-
-const DEFAULT_COUNTRY_CODE = '1';
 
 export function toE164(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -18,20 +18,12 @@ export function toE164(raw: string | null | undefined): string | null {
   // Already E.164-ish: starts with + and has 8-15 digits.
   if (trimmed.startsWith('+')) {
     const digits = trimmed.slice(1).replace(/\D/g, '');
-    if (digits.length >= 8 && digits.length <= 15) return `+${digits}`;
-    return null;
-  }
-
-  const digits = trimmed.replace(/\D/g, '');
-
-  // 10-digit national number → assume default country code.
-  if (digits.length === 10) return `+${DEFAULT_COUNTRY_CODE}${digits}`;
-
-  // 11-digit starting with the default country code (e.g. 1XXXXXXXXXX).
-  if (digits.length === 11 && digits.startsWith(DEFAULT_COUNTRY_CODE)) {
+    if (digits.length < 8 || digits.length > 15) return null;
+    // Bare +XXXXXXXXXX (10 digits, no country) → treat as US.
+    if (digits.length === 10) return `+1${digits}`;
     return `+${digits}`;
   }
 
-  // Other lengths are ambiguous without a country context; skip.
-  return null;
+  // National / formatted US → always +1…
+  return toUsE164(trimmed);
 }

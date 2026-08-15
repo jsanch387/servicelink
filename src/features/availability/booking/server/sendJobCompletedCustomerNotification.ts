@@ -43,6 +43,7 @@ export interface JobCompletedNotificationInput {
     discountCents: number;
   } | null;
   reviewUrl?: string | null;
+  coveredByMembership?: boolean;
   jobs?: JobCompletedInvoiceEmailJob[];
   requestId?: string;
 }
@@ -149,6 +150,7 @@ export async function sendJobCompletedCustomerNotification(
       subtotalCents: input.subtotalCents,
       discount: input.discount,
       reviewUrl: input.reviewUrl,
+      coveredByMembership: input.coveredByMembership === true,
       jobs: input.jobs,
     });
 

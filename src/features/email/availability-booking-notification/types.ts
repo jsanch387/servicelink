@@ -14,6 +14,12 @@ export interface AvailabilityBookingPaymentSummary {
   title?: string;
   /** Label/value rows shown in the payment card. */
   rows: Array<{ label: string; value: string }>;
+  /**
+   * Full-width heading + optional detail (membership visits). When set, the
+   * template uses this instead of two-column rows so copy isn’t squeezed on
+   * phones.
+   */
+  statement?: { heading: string; detail?: string };
   /** Small note under the table (non–card flows, or extra copy). */
   note?: string;
   /**

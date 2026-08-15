@@ -19,6 +19,7 @@ export async function downgradeProfileFromSubscriptionEnd(
     return { success: false, error: 'stripeSubscriptionId is required' };
   }
 
+  const nowIso = new Date().toISOString();
   const updates: Record<string, unknown> = {
     subscription_tier: 'free',
     subscription_status: null,
@@ -26,7 +27,10 @@ export async function downgradeProfileFromSubscriptionEnd(
     subscription_current_period_end: null,
     subscription_billing_interval: null,
     subscription_cancel_at_period_end: false,
-    updated_at: new Date().toISOString(),
+    // Full end of the Stripe subscription (keeps subscription_canceled_at /
+    // last_payment_failed_at for analytics).
+    subscription_ended_at: nowIso,
+    updated_at: nowIso,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

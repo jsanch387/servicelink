@@ -7,14 +7,27 @@ import { formatCatalogPriceCents } from '../utils/catalogServiceHelpers';
 
 export interface SelectionSummaryCardProps {
   draft: CreateAppointmentJobDraft;
+  /** Membership Book visit: show Membership instead of $0. */
+  membershipCovered?: boolean;
 }
 
-export function SelectionSummaryCard({ draft }: SelectionSummaryCardProps) {
+export function SelectionSummaryCard({
+  draft,
+  membershipCovered = false,
+}: SelectionSummaryCardProps) {
   const addOnTotal = useMemo(
     () => draft.selectedAddOns.reduce((s, a) => s + a.priceCents, 0),
     [draft.selectedAddOns]
   );
   const totalCents = draft.servicePriceCents + addOnTotal;
+  const servicePriceLabel =
+    membershipCovered && draft.servicePriceCents === 0
+      ? 'Membership'
+      : formatCatalogPriceCents(draft.servicePriceCents);
+  const totalLabel =
+    membershipCovered && totalCents === 0
+      ? 'Membership'
+      : formatCatalogPriceCents(totalCents);
 
   const hasJob = Boolean(draft.serviceName.trim()) || draft.isCustomJob;
   if (!hasJob) return null;
@@ -42,7 +55,7 @@ export function SelectionSummaryCard({ draft }: SelectionSummaryCardProps) {
               ) : null}
             </div>
             <p className="shrink-0 tabular-nums text-zinc-300">
-              {formatCatalogPriceCents(draft.servicePriceCents)}
+              {servicePriceLabel}
             </p>
           </div>
 
@@ -69,7 +82,7 @@ export function SelectionSummaryCard({ draft }: SelectionSummaryCardProps) {
           <div className="flex items-center justify-between gap-3">
             <span className="font-medium text-white">Total</span>
             <span className="tabular-nums font-semibold text-white">
-              {formatCatalogPriceCents(totalCents)}
+              {totalLabel}
             </span>
           </div>
         </div>

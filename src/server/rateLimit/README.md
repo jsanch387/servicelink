@@ -72,6 +72,8 @@ Defined in `publicApiRateLimit.ts` (tune there if product needs change).
 | `POST /api/public/memberships/manage-link` | Per IP                       | 8     | 1 hour     |
 | `POST /api/public/memberships/manage-link` | Per email                    | 3     | 1 hour     |
 | `POST /api/public/memberships/manage-link` | Per IP + slug                | 6     | 1 hour     |
+| `POST /api/public/memberships/visit`       | Per IP                       | 30    | 1 hour     |
+| `POST /api/public/memberships/visit`       | Per IP + slug                | 12    | 1 hour     |
 
 Owner SMS sends (`assertOwnerSmsSendRateLimits`): **30/user/hour**, **60/IP/hour**.
 

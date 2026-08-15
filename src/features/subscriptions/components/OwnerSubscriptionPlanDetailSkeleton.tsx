@@ -11,7 +11,7 @@ export const OwnerSubscriptionPlanDetailSkeleton: React.FC = () => {
   return (
     <main className="min-h-screen w-full flex-1 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] px-4 pt-6 pb-28 sm:px-6 sm:pt-8 sm:pb-10 lg:px-8">
       <div
-        className="mx-auto w-full max-w-6xl animate-pulse"
+        className="mx-auto w-full max-w-5xl animate-pulse"
         aria-busy="true"
         aria-label="Loading plan"
       >
@@ -28,51 +28,48 @@ export const OwnerSubscriptionPlanDetailSkeleton: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] lg:gap-8">
-          <aside className="space-y-5">
-            <section>
-              <Pulse className="mb-3 h-4 w-16 rounded" />
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-                <div className="divide-y divide-white/[0.06]">
-                  {[1, 2].map(i => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5"
-                    >
-                      <Pulse className="h-3.5 w-24 rounded" />
-                      <Pulse className="h-3.5 w-16 rounded" />
-                    </div>
-                  ))}
+        <div className="mt-6">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <Pulse className="h-4 w-16 rounded" />
+            <Pulse className="h-3 w-14 rounded" />
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+            <div className="divide-y divide-white/[0.06]">
+              {[1, 2, 3].map(i => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5"
+                >
+                  <Pulse className="h-3.5 w-28 rounded" />
+                  <Pulse className="h-4 w-16 rounded" />
                 </div>
-              </div>
-            </section>
-
-            <section>
-              <Pulse className="mb-3 h-4 w-24 rounded" />
-              <div className="space-y-2.5 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 sm:px-5">
-                <Pulse className="h-3.5 w-full rounded" />
-                <Pulse className="h-3.5 w-[92%] rounded" />
-                <Pulse className="h-3.5 w-[70%] rounded" />
-                <Pulse className="mt-1 h-3.5 w-40 rounded" />
-                <Pulse className="h-3.5 w-44 rounded" />
-              </div>
-            </section>
-          </aside>
-
-          <section>
-            <Pulse className="mb-3 h-4 w-24 rounded" />
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
-              <div className="space-y-0 divide-y divide-white/5">
-                {[0, 1, 2, 3].map(i => (
-                  <div key={i} className="flex items-center gap-4 py-3">
-                    <Pulse className="h-3.5 w-28 rounded" />
-                    <Pulse className="hidden h-3 w-24 rounded sm:block" />
-                    <Pulse className="ml-auto h-3 w-14 rounded" />
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
-          </section>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Pulse className="mb-3 h-4 w-24 rounded" />
+          <div className="space-y-2.5 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 sm:px-5">
+            <Pulse className="h-3.5 w-full rounded" />
+            <Pulse className="h-3.5 w-[92%] rounded" />
+            <Pulse className="h-3.5 w-[70%] rounded" />
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <Pulse className="mb-3 h-4 w-24 rounded" />
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
+            <div className="space-y-0 divide-y divide-white/5">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-4 py-3">
+                  <Pulse className="h-3.5 w-28 rounded" />
+                  <Pulse className="hidden h-3 w-24 rounded sm:block" />
+                  <Pulse className="ml-auto h-3 w-14 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </main>

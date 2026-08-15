@@ -89,6 +89,7 @@ describe('buildInvoiceSnapshot', () => {
       amountCents: 12000,
     });
     expect(snapshot.payments).toHaveLength(2);
+    expect(snapshot.coveredByMembership).toBe(false);
     expect(snapshot.totals.totalCents).toBe(17000);
     expect(snapshot.totals.discountCents).toBe(0);
     expect(snapshot.reviewUrl).toContain('/review/review-token-abc');
@@ -255,5 +256,45 @@ describe('buildInvoiceSnapshot', () => {
     });
     expect(snapshot.lines.filter(l => l.kind === 'service')).toHaveLength(2);
     expect(snapshot.lines.filter(l => l.kind === 'addon')).toHaveLength(1);
+  });
+
+  it('marks a membership visit as covered with no $0 payment row amount', () => {
+    const snapshot = buildInvoiceSnapshot({
+      business: { id: 'biz-1', name: 'Test Sub', businessSlug: 'test-sub' },
+      booking: {
+        id: 'booking-mem',
+        service_name: 'Super Maintenance',
+        scheduled_date: '2026-08-24',
+        start_time: '09:00:00',
+        customer_name: 'Mountain Dew',
+        customer_email: 'dew@example.com',
+        customer_phone: '+15551234567',
+        service_price_cents: 0,
+        addon_details: [],
+      },
+      sessionFees: [],
+      amountDue: {
+        serviceCents: 0,
+        addonCents: 0,
+        sessionFeeCents: 0,
+        subtotalCents: 0,
+        discountCents: 0,
+        adjustedTotalCents: 0,
+        paidOnlineCents: 0,
+        sessionPayCents: 0,
+        amountDueCents: 0,
+      },
+      coveredByMembership: true,
+    });
+
+    expect(snapshot.coveredByMembership).toBe(true);
+    expect(snapshot.payments).toEqual([
+      {
+        kind: 'membership',
+        label: 'Covered by membership',
+        amountCents: 0,
+      },
+    ]);
+    expect(snapshot.totals.totalCents).toBe(0);
   });
 });

@@ -29,6 +29,11 @@ interface BookingVehicleFieldsProps {
   errors?: BookingVehicleFieldErrors;
   bookingFlowLocale?: PublicBookingFlowLocale;
   required?: boolean;
+  /**
+   * `row` — 3 columns from `sm` up (owner / wider forms).
+   * `stack` — full-width stacked fields (narrow public membership flows).
+   */
+  layout?: 'row' | 'stack';
   /** Inline (onBlur) validation hook — called with the field that lost focus. */
   onBlurField?: (field: keyof BookingVehicleFieldValues) => void;
 }
@@ -39,12 +44,19 @@ export function BookingVehicleFields({
   errors = {},
   bookingFlowLocale = 'en',
   required = true,
+  layout = 'row',
   onBlurField,
 }: BookingVehicleFieldsProps) {
   const cf = publicBookingUi(bookingFlowLocale).customerForm;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div
+      className={
+        layout === 'stack'
+          ? 'space-y-4'
+          : 'grid grid-cols-1 gap-4 sm:grid-cols-3'
+      }
+    >
       <Input
         label={cf.year}
         value={value.vehicleYear}

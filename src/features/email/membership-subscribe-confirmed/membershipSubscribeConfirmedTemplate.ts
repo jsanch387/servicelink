@@ -34,12 +34,10 @@ export function buildMembershipSubscribeConfirmedPlainText(
     `You're subscribed to ${plan} with ${business}.`,
     `${money} · ${cadence}`,
     '',
-    'A receipt from Stripe is also sent to this email when available.',
-    '',
     'Manage or cancel anytime:',
     payload.manageUrl.trim(),
     '',
-    '— ServiceLink',
+    `Sent for ${business} via ServiceLink`,
   ].join('\n');
 }
 
@@ -72,16 +70,13 @@ export function buildMembershipSubscribeConfirmedHtml(
       <td align="center">
         <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;">
           <tr>
-            <td style="background-color:#0a0a0a;border-radius:16px 16px 0 0;padding:28px 28px 22px;">
-              <p style="margin:0 0 10px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#a1a1aa;font-weight:700;">ServiceLink</p>
-              <h1 style="margin:0;font-size:26px;line-height:1.25;color:#ffffff;font-weight:800;">You're subscribed</h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color:#ffffff;border-radius:0 0 16px 16px;border:1px solid #e4e4e7;border-top:0;padding:28px;">
+            <td style="background-color:#ffffff;border-radius:16px;border:1px solid #e4e4e7;padding:28px;">
+              <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#71717a;">${business}</p>
+              <h1 style="margin:0 0 18px;font-size:24px;line-height:1.25;color:#18181b;font-weight:800;letter-spacing:-0.02em;">You're subscribed</h1>
+
               <p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#18181b;">${hello}</p>
               <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#3f3f46;">
-                You're all set with <strong style="color:#18181b;">${business}</strong>.
+                You're all set. Thanks for subscribing.
               </p>
 
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 22px;background-color:#fafafa;border:1px solid #e4e4e7;border-radius:12px;">
@@ -94,11 +89,7 @@ export function buildMembershipSubscribeConfirmedHtml(
                 </tr>
               </table>
 
-              <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#71717a;">
-                Stripe will also email a receipt to this address when available.
-              </p>
-
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 18px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
                 <tr>
                   <td style="border-radius:10px;background-color:#0a0a0a;">
                     <a href="${manageUrl}" style="display:inline-block;padding:13px 22px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">
@@ -108,9 +99,8 @@ export function buildMembershipSubscribeConfirmedHtml(
                 </tr>
               </table>
 
-              <p style="margin:0;font-size:12px;line-height:1.55;color:#a1a1aa;word-break:break-word;">
-                Or open this link:<br>
-                <a href="${manageUrl}" style="color:#52525b;text-decoration:underline;">${manageUrl}</a>
+              <p style="margin:0;padding-top:18px;border-top:1px solid #f4f4f5;font-size:11px;line-height:1.5;color:#a1a1aa;">
+                Sent for ${business} via ServiceLink
               </p>
             </td>
           </tr>

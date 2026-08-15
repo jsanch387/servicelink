@@ -239,6 +239,25 @@ export function serviceLinkEmailParagraph(text: string): string {
   return `<p style="margin:0;font-family:${SERVICE_LINK_EMAIL_FONT};font-size:15px;line-height:24px;color:${TEXT_SECONDARY};">${escapeHtml(text)}</p>`;
 }
 
+/** Full-width heading + optional detail — used when a label/value split would wrap badly on phones. */
+export function serviceLinkEmailStatementBlock(
+  heading: string,
+  detail?: string
+): string {
+  const trimmedDetail = detail?.trim() ?? '';
+  const detailHtml = trimmedDetail
+    ? `<div style="margin-top:6px;${FONT_BODY_SECONDARY}${WORD_WRAP}">${escapeHtml(trimmedDetail)}</div>`
+    : '';
+  return `
+    <tr class="email-payment-statement">
+      <td colspan="2" style="padding:0;font-family:${SERVICE_LINK_EMAIL_FONT};width:100%;">
+        <div style="${FONT_BODY}${WORD_WRAP}">${escapeHtml(heading)}</div>
+        ${detailHtml}
+      </td>
+    </tr>
+  `.trim();
+}
+
 export function serviceLinkEmailFootnote(text: string): string {
   return `<p style="margin:14px 0 0 0;${FONT_BODY_MUTED}">${escapeHtml(text)}</p>`;
 }

@@ -1,5 +1,6 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { OwnerSubscriber } from '../types/ownerSubscriptionPlan';
 import { enrichOwnerMembershipFromStripe } from './enrichOwnerMembershipFromStripe';
 import {
@@ -11,6 +12,44 @@ import {
   membershipInvoicesOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
+
+type PlanSnapshot = {
+  name: string;
+  visitDurationMinutes?: number;
+  removed: boolean;
+};
+
+/** Includes soft-deleted plans so history rows keep the real name. */
+async function loadPlanSnapshotsForBusiness(
+  businessId: string,
+  planIds: string[]
+): Promise<Map<string, PlanSnapshot>> {
+  const snapshots = new Map<string, PlanSnapshot>();
+  const ids = [...new Set(planIds.map(id => id.trim()).filter(Boolean))];
+  if (ids.length === 0) return snapshots;
+
+  const admin = createSupabaseAdminClient();
+  const { data: plans } = await membershipPlansOf(admin)
+    .select('id, name, visit_duration_minutes, deleted_at')
+    .eq('business_id', businessId)
+    .in('id', ids);
+
+  for (const plan of plans ?? []) {
+    const minutes = Number(
+      (plan as { visit_duration_minutes?: number | null })
+        .visit_duration_minutes
+    );
+    snapshots.set(String(plan.id), {
+      name: String(plan.name ?? '').trim() || 'Plan',
+      visitDurationMinutes:
+        Number.isInteger(minutes) && minutes >= 30 ? minutes : undefined,
+      removed: Boolean(
+        (plan as { deleted_at?: string | null }).deleted_at
+      ),
+    });
+  }
+  return snapshots;
+}
 
 export type ListOwnerCustomerMembershipsResult =
   | { ok: true; subscribers: OwnerSubscriber[] }
@@ -45,22 +84,16 @@ export async function listOwnerCustomerMemberships(
     ),
   ];
 
-  const planNameById = new Map<string, string>();
-  if (planIds.length > 0) {
-    const { data: plans } = await membershipPlansOf(supabase)
-      .select('id, name')
-      .in('id', planIds);
-    for (const plan of plans ?? []) {
-      planNameById.set(String(plan.id), String(plan.name ?? 'Plan'));
-    }
-  }
+  const snapshots = await loadPlanSnapshotsForBusiness(bid, planIds);
 
-  const subscribers = (rows ?? []).map(row =>
-    mapCustomerMembershipToOwnerSubscriber(
-      row,
-      planNameById.get(String(row.plan_id ?? '')) ?? 'Plan'
-    )
-  );
+  const subscribers = (rows ?? []).map(row => {
+    const planId = String(row.plan_id ?? '').trim();
+    const snapshot = planId ? snapshots.get(planId) : undefined;
+    return mapCustomerMembershipToOwnerSubscriber(row, snapshot?.name ?? 'Plan', {
+      visitDurationMinutes: snapshot?.visitDurationMinutes,
+      planRemoved: !snapshot || snapshot.removed,
+    });
+  });
 
   return { ok: true, subscribers };
 }
@@ -117,15 +150,15 @@ export async function getOwnerCustomerMembership(
 
   const enriched = await enrichOwnerMembershipFromStripe(supabase, row);
 
-  let planName = 'Plan';
   const planId = (enriched.plan_id as string | null)?.trim();
-  if (planId) {
-    const { data: plan } = await membershipPlansOf(supabase)
-      .select('name')
-      .eq('id', planId)
-      .maybeSingle();
-    if (plan?.name) planName = String(plan.name);
-  }
+  const snapshots = await loadPlanSnapshotsForBusiness(
+    bid,
+    planId ? [planId] : []
+  );
+  const snapshot = planId ? snapshots.get(planId) : undefined;
+  const planName = snapshot?.name ?? 'Plan';
+  const visitDurationMinutes = snapshot?.visitDurationMinutes;
+  const planRemoved = !snapshot || snapshot.removed;
 
   const lastPaymentLabel = await latestInvoicePaymentLabel(
     supabase,
@@ -133,10 +166,40 @@ export async function getOwnerCustomerMembership(
     enriched.last_invoice_status
   );
 
+  let periodVisitDate: string | null = null;
+  let periodVisitTime: string | null = null;
+  let periodVisitBookingStatus: string | null = null;
+  const periodBookingId = (
+    enriched.period_visit_booking_id as string | null
+  )?.trim();
+  if (periodBookingId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: booking } = await (supabase as any)
+      .from('bookings')
+      .select('scheduled_date, start_time, status')
+      .eq('id', periodBookingId)
+      .eq('business_id', bid)
+      .maybeSingle();
+    const br = booking as {
+      scheduled_date?: string | null;
+      start_time?: string | null;
+      status?: string | null;
+    } | null;
+    periodVisitDate = br?.scheduled_date?.trim() || null;
+    const rawTime = br?.start_time?.trim() || '';
+    periodVisitTime = rawTime ? rawTime.slice(0, 5) : null;
+    periodVisitBookingStatus = br?.status?.trim() || null;
+  }
+
   return {
     ok: true,
     subscriber: mapCustomerMembershipToOwnerSubscriber(enriched, planName, {
       lastPaymentLabel,
+      visitDurationMinutes,
+      periodVisitDate,
+      periodVisitTime,
+      periodVisitBookingStatus,
+      planRemoved,
     }),
   };
 }

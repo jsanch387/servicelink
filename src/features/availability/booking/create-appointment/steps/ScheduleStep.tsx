@@ -111,7 +111,8 @@ export function ScheduleStep({
           existingBookings={existingBookings}
           timeOffBlocks={[]}
           minimumNotice="none"
-          requireAvailableSlots={false}
+          requireAvailableSlots
+          requireDurationWithinHours={false}
           selectedDate={selectedDate}
           minDate={minDate}
           onSelectDate={handleSelectDate}

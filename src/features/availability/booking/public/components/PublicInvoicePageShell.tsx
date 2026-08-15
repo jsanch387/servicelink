@@ -8,6 +8,7 @@ import {
   type InvoiceSnapshotJob,
   type InvoiceSnapshotLine,
 } from '@/features/availability/booking/server/buildInvoiceSnapshot';
+import { invoiceCoveredByMembership } from '@/features/availability/booking/utils/invoiceCoveredByMembership';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   groupInvoiceSnapshotLines,
@@ -75,12 +76,25 @@ function ChargeAmount({
   amountCents,
   size = 'md',
   tone = 'default',
+  includedWhenZero = false,
 }: {
   amountCents: number;
   size?: 'md' | 'sm';
   tone?: 'default' | 'discount';
+  includedWhenZero?: boolean;
 }) {
   const isDiscount = tone === 'discount';
+  if (includedWhenZero && !isDiscount && amountCents === 0) {
+    return (
+      <p
+        className={`${PUBLIC_INVOICE_AMOUNT_COLUMN_CLASS} font-medium text-[#888480] dark:text-[#aaa] ${
+          size === 'sm' ? 'text-[13px]' : 'text-[14px]'
+        }`}
+      >
+        Included
+      </p>
+    );
+  }
   return (
     <p
       className={`${PUBLIC_INVOICE_AMOUNT_COLUMN_CLASS} tabular-nums font-medium ${
@@ -99,6 +113,7 @@ function InvoiceLineRow({
   secondary,
   amountCents,
   amountSize = 'md',
+  includedWhenZero = false,
   primaryClassName = 'text-[15px] font-medium text-[#1a1a1a] dark:text-[#f0f0f0]',
   secondaryClassName = 'mt-0.5 text-[13px] font-normal text-[#888480] dark:text-[#aaa]',
 }: {
@@ -106,6 +121,7 @@ function InvoiceLineRow({
   secondary?: string | null;
   amountCents: number;
   amountSize?: 'md' | 'sm';
+  includedWhenZero?: boolean;
   primaryClassName?: string;
   secondaryClassName?: string;
 }) {
@@ -117,7 +133,11 @@ function InvoiceLineRow({
           <p className={`leading-snug ${secondaryClassName}`}>{secondary}</p>
         ) : null}
       </div>
-      <ChargeAmount amountCents={amountCents} size={amountSize} />
+      <ChargeAmount
+        amountCents={amountCents}
+        size={amountSize}
+        includedWhenZero={includedWhenZero}
+      />
     </div>
   );
 }
@@ -169,9 +189,11 @@ function VisitSummary({
 function JobReceiptBlock({
   job,
   isLast,
+  includedWhenZero = false,
 }: {
   job: InvoiceSnapshotJob;
   isLast: boolean;
+  includedWhenZero?: boolean;
 }) {
   const option = job.servicePriceOptionLabel?.trim() || null;
   const vehicle = job.vehicleLabel?.trim() || null;
@@ -198,7 +220,10 @@ function JobReceiptBlock({
             </p>
           ) : null}
         </div>
-        <ChargeAmount amountCents={job.servicePriceCents} />
+        <ChargeAmount
+          amountCents={job.servicePriceCents}
+          includedWhenZero={includedWhenZero}
+        />
       </div>
       {meta ? (
         <p
@@ -217,14 +242,24 @@ function JobReceiptBlock({
           >
             {addOn.name}
           </p>
-          <ChargeAmount amountCents={addOn.priceCents} size="sm" />
+          <ChargeAmount
+            amountCents={addOn.priceCents}
+            size="sm"
+            includedWhenZero={includedWhenZero}
+          />
         </div>
       ))}
     </div>
   );
 }
 
-function JobsChargesSection({ jobs }: { jobs: InvoiceSnapshotJob[] }) {
+function JobsChargesSection({
+  jobs,
+  includedWhenZero = false,
+}: {
+  jobs: InvoiceSnapshotJob[];
+  includedWhenZero?: boolean;
+}) {
   return (
     <div className="space-y-4">
       {jobs.map((job, index) => (
@@ -232,13 +267,20 @@ function JobsChargesSection({ jobs }: { jobs: InvoiceSnapshotJob[] }) {
           key={`${job.serviceName}-${index}`}
           job={job}
           isLast={index === jobs.length - 1}
+          includedWhenZero={includedWhenZero}
         />
       ))}
     </div>
   );
 }
 
-function GroupedChargeRow({ line }: { line: InvoiceSnapshotLine }) {
+function GroupedChargeRow({
+  line,
+  includedWhenZero = false,
+}: {
+  line: InvoiceSnapshotLine;
+  includedWhenZero?: boolean;
+}) {
   return (
     <div
       className={`${PUBLIC_INVOICE_LINE_ROW_CLASS} py-2.5 first:pt-3 last:pb-3`}
@@ -248,17 +290,28 @@ function GroupedChargeRow({ line }: { line: InvoiceSnapshotLine }) {
       >
         {line.label}
       </p>
-      <ChargeAmount amountCents={line.amountCents} size="sm" />
+      <ChargeAmount
+        amountCents={line.amountCents}
+        size="sm"
+        includedWhenZero={includedWhenZero}
+      />
     </div>
   );
 }
 
-function ServiceChargeRow({ line }: { line: InvoiceSnapshotLine }) {
+function ServiceChargeRow({
+  line,
+  includedWhenZero = false,
+}: {
+  line: InvoiceSnapshotLine;
+  includedWhenZero?: boolean;
+}) {
   return (
     <InvoiceLineRow
       primary={line.label}
       secondary={line.detailLabel?.trim() || null}
       amountCents={line.amountCents}
+      includedWhenZero={includedWhenZero}
     />
   );
 }
@@ -276,7 +329,13 @@ function DiscountChargeRow({ line }: { line: InvoiceSnapshotLine }) {
   );
 }
 
-function ChargeGroupSection({ group }: { group: InvoiceLineGroup }) {
+function ChargeGroupSection({
+  group,
+  includedWhenZero = false,
+}: {
+  group: InvoiceLineGroup;
+  includedWhenZero?: boolean;
+}) {
   const isService = group.id === 'service';
   const isDiscount = group.id === 'discount';
   const isMulti = group.lines.length > 1;
@@ -288,6 +347,7 @@ function ChargeGroupSection({ group }: { group: InvoiceLineGroup }) {
           <ServiceChargeRow
             key={`service-${line.label}-${line.detailLabel ?? ''}-${index}`}
             line={line}
+            includedWhenZero={includedWhenZero}
           />
         ))}
       </div>
@@ -323,7 +383,9 @@ function ChargeGroupSection({ group }: { group: InvoiceLineGroup }) {
           <p
             className={`${PUBLIC_INVOICE_AMOUNT_COLUMN_CLASS} text-[13px] tabular-nums font-medium text-[#888480]`}
           >
-            {formatCents(group.subtotalCents)}
+            {includedWhenZero && group.subtotalCents === 0
+              ? 'Included'
+              : formatCents(group.subtotalCents)}
           </p>
         </div>
         <div className="rounded-xl border border-[#ebe8e1] bg-[#faf9f7] px-3.5 dark:border-[#2a2a2a] dark:bg-[#222]">
@@ -332,6 +394,7 @@ function ChargeGroupSection({ group }: { group: InvoiceLineGroup }) {
               <GroupedChargeRow
                 key={`${group.id}-${line.label}-${index}`}
                 line={line}
+                includedWhenZero={includedWhenZero}
               />
             ))}
           </div>
@@ -354,6 +417,7 @@ function ChargeGroupSection({ group }: { group: InvoiceLineGroup }) {
         primary={line.label}
         amountCents={line.amountCents}
         amountSize="sm"
+        includedWhenZero={includedWhenZero}
         primaryClassName="text-[14px] font-normal text-[#555250] dark:text-[#bbb]"
       />
     </div>
@@ -364,10 +428,12 @@ function PaymentRow({
   label,
   method,
   amountCents,
+  includedWhenZero = false,
 }: {
   label: string;
   method?: string;
   amountCents: number;
+  includedWhenZero?: boolean;
 }) {
   return (
     <div className={`${PUBLIC_INVOICE_LINE_ROW_CLASS} py-3.5`}>
@@ -381,7 +447,11 @@ function PaymentRow({
           </p>
         ) : null}
       </div>
-      <ChargeAmount amountCents={amountCents} size="sm" />
+      <ChargeAmount
+        amountCents={amountCents}
+        size="sm"
+        includedWhenZero={includedWhenZero}
+      />
     </div>
   );
 }
@@ -395,6 +465,9 @@ export function PublicInvoicePageShell({
     snapshot.booking.scheduledDate,
     snapshot.booking.startTime
   );
+  const coveredByMembership = invoiceCoveredByMembership(snapshot);
+  const membershipFullyCovered =
+    coveredByMembership && snapshot.totals.totalCents === 0;
   const isPaidInFull =
     snapshot.totals.paidCents >= snapshot.totals.totalCents &&
     snapshot.totals.totalCents > 0;
@@ -408,6 +481,11 @@ export function PublicInvoicePageShell({
         group => group.id === 'session_fee' || group.id === 'discount'
       )
     : chargeGroups;
+  const hasPaidExtras = extraGroups.some(group => group.subtotalCents > 0);
+  const showLineItems =
+    !membershipFullyCovered ||
+    hasPaidExtras ||
+    Boolean(jobs && jobs.length > 1);
   const servicePriceOptionLabel =
     snapshot.booking.servicePriceOptionLabel?.trim() || null;
 
@@ -431,7 +509,11 @@ export function PublicInvoicePageShell({
                 <p className="mt-0.5 text-[13px] text-[#888480]">Receipt</p>
               </div>
             </div>
-            {isPaidInFull ? (
+            {membershipFullyCovered ? (
+              <span className="shrink-0 rounded-full bg-[#ecfdf3] px-2.5 py-1 text-[11px] font-semibold text-[#15803d] dark:bg-[#14532d]/40 dark:text-[#86efac]">
+                Covered
+              </span>
+            ) : isPaidInFull ? (
               <span className="shrink-0 rounded-full bg-[#ecfdf3] px-2.5 py-1 text-[11px] font-semibold text-[#15803d] dark:bg-[#14532d]/40 dark:text-[#86efac]">
                 Paid
               </span>
@@ -440,12 +522,28 @@ export function PublicInvoicePageShell({
 
           {/* Total hero */}
           <div className="px-5 py-6 sm:px-6 md:px-8">
-            <p className="text-[13px] font-medium text-[#888480]">
-              {isPaidInFull ? 'Amount paid' : 'Amount due'}
-            </p>
-            <p className="mt-1 text-[clamp(1.75rem,8vw,2.25rem)] font-semibold leading-none tracking-[-0.03em] text-[#0f0f0f] dark:text-white">
-              {formatCents(snapshot.totals.totalCents)}
-            </p>
+            {membershipFullyCovered ? (
+              <>
+                <p className="text-[13px] font-medium text-[#888480]">
+                  This visit
+                </p>
+                <p className="mt-1 text-[clamp(1.35rem,6vw,1.75rem)] font-semibold leading-tight tracking-[-0.03em] text-[#0f0f0f] dark:text-white">
+                  Covered by membership
+                </p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[#888480]">
+                  No extra charge for this visit.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[13px] font-medium text-[#888480]">
+                  {isPaidInFull ? 'Amount paid' : 'Amount due'}
+                </p>
+                <p className="mt-1 text-[clamp(1.75rem,8vw,2.25rem)] font-semibold leading-none tracking-[-0.03em] text-[#0f0f0f] dark:text-white">
+                  {formatCents(snapshot.totals.totalCents)}
+                </p>
+              </>
+            )}
           </div>
 
           <VisitSummary
@@ -456,18 +554,28 @@ export function PublicInvoicePageShell({
             jobCount={jobs?.length}
           />
 
-          {/* Line items slip */}
-          <div className="border-t border-[#ebe8e1] px-5 py-1 sm:px-6 md:px-8 dark:border-[#2a2a2a]">
-            <p className={`py-3 ${PUBLIC_INVOICE_SECTION_LABEL_CLASS}`}>
-              {jobs ? 'Jobs' : 'Charges'}
-            </p>
-            <div className="space-y-5 pb-1">
-              {jobs ? <JobsChargesSection jobs={jobs} /> : null}
-              {extraGroups.map(group => (
-                <ChargeGroupSection key={group.id} group={group} />
-              ))}
+          {showLineItems ? (
+            <div className="border-t border-[#ebe8e1] px-5 py-1 sm:px-6 md:px-8 dark:border-[#2a2a2a]">
+              <p className={`py-3 ${PUBLIC_INVOICE_SECTION_LABEL_CLASS}`}>
+                {coveredByMembership ? 'Visit' : jobs ? 'Jobs' : 'Charges'}
+              </p>
+              <div className="space-y-5 pb-1">
+                {jobs ? (
+                  <JobsChargesSection
+                    jobs={jobs}
+                    includedWhenZero={coveredByMembership}
+                  />
+                ) : null}
+                {extraGroups.map(group => (
+                  <ChargeGroupSection
+                    key={group.id}
+                    group={group}
+                    includedWhenZero={coveredByMembership}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           {/* Payments */}
           {snapshot.payments.length > 0 ? (
@@ -482,6 +590,9 @@ export function PublicInvoicePageShell({
                     label={payment.label}
                     method={payment.method}
                     amountCents={payment.amountCents}
+                    includedWhenZero={
+                      coveredByMembership && payment.kind === 'membership'
+                    }
                   />
                 ))}
               </div>

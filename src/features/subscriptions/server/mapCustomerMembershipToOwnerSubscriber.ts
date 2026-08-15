@@ -6,6 +6,10 @@ import type {
 } from '../types/ownerSubscriptionPlan';
 import { formatCadenceOptionLabel } from '../utils/formatSubscriptionPrice';
 import { formatMembershipPaymentMethodLabel } from './membershipPaymentMethodSnapshot';
+import {
+  periodVisitIsOnFile,
+  resolveMembershipVisitStatus,
+} from './membershipVisitStatus';
 
 type MembershipRow =
   Database['public']['Tables']['customer_memberships']['Row'];
@@ -41,6 +45,7 @@ export function mapMembershipStatusToOwner(
     case 'paused':
       return 'paused';
     case 'canceled':
+    case 'cancelled':
     case 'incomplete_expired':
       return 'canceled';
     case 'incomplete':
@@ -74,8 +79,9 @@ export function formatLastPaymentLabel(args: {
 }): string | undefined {
   const status = (args.invoiceStatus ?? '').trim();
   const paidDate = formatPaidDateLabel(args.paidAtIso);
+  // Skip bare "Paid" — not useful without a date.
   if (status === 'paid' || args.paidAtIso) {
-    return paidDate ? `Paid ${paidDate}` : 'Paid';
+    return paidDate ? `Paid ${paidDate}` : undefined;
   }
   if (!status) return undefined;
   if (status === 'open') return 'Open invoice';
@@ -105,7 +111,13 @@ export function isMembershipCancelScheduled(row: {
   status?: string | null;
 }): boolean {
   const status = (row.status ?? '').trim();
-  if (status === 'canceled' || status === 'incomplete_expired') return false;
+  if (
+    status === 'canceled' ||
+    status === 'cancelled' ||
+    status === 'incomplete_expired'
+  ) {
+    return false;
+  }
   if (row.cancel_at_period_end) return true;
   const cancelAt = row.cancel_at?.trim();
   if (!cancelAt) return false;
@@ -118,6 +130,11 @@ export function mapCustomerMembershipToOwnerSubscriber(
   planName: string,
   extras?: {
     lastPaymentLabel?: string | null;
+    visitDurationMinutes?: number | null;
+    periodVisitDate?: string | null;
+    periodVisitTime?: string | null;
+    periodVisitBookingStatus?: string | null;
+    planRemoved?: boolean;
   }
 ): OwnerSubscriber {
   const intervalUnit = asCadenceUnit(row.interval_unit);
@@ -133,26 +150,62 @@ export function mapCustomerMembershipToOwnerSubscriber(
 
   const status = mapMembershipStatusToOwner(row.status);
   const cancelScheduled = isMembershipCancelScheduled(row);
+  const visitStatus = resolveMembershipVisitStatus({
+    status,
+    cancelScheduled,
+    planRemoved: Boolean(extras?.planRemoved),
+    currentPeriodStart: row.current_period_start,
+    periodVisitBookingId: row.period_visit_booking_id,
+    periodVisitPeriodStart: row.period_visit_period_start,
+    periodVisitBookingStatus: extras?.periodVisitBookingStatus,
+  });
+
+  const visitOnFile = periodVisitIsOnFile(visitStatus);
+  const periodVisitBookingId = visitOnFile
+    ? row.period_visit_booking_id?.trim() || null
+    : null;
 
   return {
     id: row.id,
     customerName: displayCustomerName(row),
     email: row.customer_email?.trim() || '—',
     phone: row.customer_phone?.trim() || undefined,
+    customerId: row.customer_id?.trim() || null,
     planId: row.plan_id?.trim() || '',
     planName: planName.trim() || 'Plan',
+    planRemoved: Boolean(extras?.planRemoved),
+    visitDurationMinutes:
+      typeof extras?.visitDurationMinutes === 'number' &&
+      extras.visitDurationMinutes >= 30
+        ? extras.visitDurationMinutes
+        : undefined,
     cadenceLabel: formatCadenceOptionLabel({ intervalUnit, intervalCount }),
+    intervalUnit,
+    intervalCount,
     amountCents: Math.max(0, Math.round(row.amount_cents ?? 0)),
     status,
     startedAt: isoToDateLabel(row.created_at) ?? row.created_at.slice(0, 10),
-    // Prefer scheduled cancel date when Stripe set cancel_at without period end.
+    // Fully canceled → no next bill. Scheduled cancel keeps period/cancel_at as
+    // "access until" (UI labels that case separately).
     nextBillingAt:
-      isoToDateLabel(row.cancel_at) ?? isoToDateLabel(row.current_period_end),
+      status === 'canceled'
+        ? null
+        : (isoToDateLabel(row.cancel_at) ??
+          isoToDateLabel(row.current_period_end)),
     cancelAtPeriodEnd: cancelScheduled,
     lastPaymentLabel:
       extras?.lastPaymentLabel?.trim() ||
       formatLastPaymentLabel({ invoiceStatus: row.last_invoice_status }) ||
       undefined,
     paymentMethodLabel,
+    notes: row.notes?.trim() || null,
+    visitStatus,
+    periodVisitBookingId,
+    periodVisitDate: visitOnFile
+      ? extras?.periodVisitDate?.trim() || null
+      : null,
+    periodVisitTime: visitOnFile
+      ? extras?.periodVisitTime?.trim() || null
+      : null,
   };
 }

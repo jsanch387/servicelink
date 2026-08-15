@@ -19,6 +19,7 @@ import {
   membershipInvoicesOf,
 } from './membershipTablesQuery';
 import { recordMembershipEvent } from './recordMembershipEvent';
+import { sendMembershipInvoiceEmailIfApplicable } from './sendMembershipInvoiceEmailIfApplicable';
 import { findMembershipByStripeSubscription } from './upsertCustomerMembershipFromSubscription';
 
 function invoiceExpandableId(
@@ -212,6 +213,37 @@ export async function applyMembershipInvoiceEvent(
       amountDueCents: amountDue,
     },
   });
+
+  // First Checkout invoice already gets the subscribe-confirmed email — skip
+  // duplicate "Payment received" for subscription_create. Always email failures.
+  const billingReason = invoice.billing_reason ?? null;
+  const skipPaidReceipt =
+    args.kind === 'paid' && billingReason === 'subscription_create';
+
+  if (!skipPaidReceipt) {
+    try {
+      await sendMembershipInvoiceEmailIfApplicable(supabase, {
+        membershipId: membership.id,
+        stripeAccountId,
+        stripeInvoiceId: invoice.id,
+        kind: args.kind,
+        amountCents: args.kind === 'paid' ? amountPaid || amountDue : amountDue,
+        periodStart: unixSecondsToIso(invoice.period_start),
+        periodEnd: unixSecondsToIso(invoice.period_end),
+        eventAtIso:
+          args.kind === 'paid'
+            ? unixSecondsToIso(invoice.status_transitions?.paid_at) ||
+              new Date().toISOString()
+            : new Date().toISOString(),
+        stripeEventId: event.id,
+      });
+    } catch (err) {
+      logMemberships(event.id, 'warn', 'invoice_email.unexpected', {
+        membershipId: shortIdForLog(membership.id),
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+  }
 
   return { handled: true };
 }

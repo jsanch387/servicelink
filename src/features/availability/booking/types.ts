@@ -234,7 +234,7 @@ export interface CreateBookingRequest {
    * When checkout mode is `customer_choice` and the customer confirms without
    * Stripe (e.g. pay in person), the client sends `pay_in_person`. Otherwise omit.
    */
-  paymentMethodSelected?: 'pay_now' | 'pay_in_person' | 'none';
+  paymentMethodSelected?: 'pay_now' | 'pay_in_person' | 'none' | 'membership';
   /**
    * Dashboard owner booking on behalf of a customer (`for=owner`). Requires an
    * authenticated session for this business; customer email may be omitted.
@@ -272,4 +272,9 @@ export interface CreateBookingRequest {
    * Omitted / `true` keeps current behavior (apply if the date qualifies).
    */
   applySale?: boolean;
+  /**
+   * Owner create from a membership subscriber: after booking succeeds, link
+   * this appointment as the current billing-period visit.
+   */
+  membershipId?: string;
 }

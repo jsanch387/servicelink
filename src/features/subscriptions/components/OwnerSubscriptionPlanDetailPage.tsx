@@ -13,12 +13,14 @@ import type {
   OwnerSubscriber,
   OwnerSubscriptionPlan,
 } from '../types/ownerSubscriptionPlan';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   formatCadenceOptionLabel,
   formatCadencePriceSuffix,
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
 import { joinDescriptionAndBenefits } from '../utils/planDescription';
+import { isOwnerSubscriberCountedAsActive } from '../utils/ownerSubscriberDisplay';
 import { DeleteMembershipPlanModal } from './DeleteMembershipPlanModal';
 import { OwnerSubscriptionsSubscribers } from './OwnerSubscriptionsSubscribers';
 
@@ -26,16 +28,8 @@ interface OwnerSubscriptionPlanDetailPageProps {
   plan: OwnerSubscriptionPlan;
 }
 
-const ACTIVE_UI_STATUSES = new Set([
-  'active',
-  'trialing',
-  'past_due',
-  'unpaid',
-  'paused',
-]);
-
-/** Collapse long plan copy in the sidebar; expand to read the rest. */
-const PLAN_DESCRIPTION_COLLAPSED_MAX_CHARS = 180;
+/** Collapse long plan copy; expand to read the rest. */
+const PLAN_DESCRIPTION_COLLAPSED_MAX_CHARS = 220;
 
 function truncatePlanDescription(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
@@ -76,7 +70,7 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
 
   const handleSubscribersLoaded = useCallback((rows: OwnerSubscriber[]) => {
     setLiveActiveCount(
-      rows.filter(row => ACTIVE_UI_STATUSES.has(row.status)).length
+      rows.filter(row => isOwnerSubscriberCountedAsActive(row.status)).length
     );
   }, []);
 
@@ -109,7 +103,7 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
 
   return (
     <main className="min-h-screen w-full flex-1 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] px-4 pt-6 pb-28 sm:px-6 sm:pt-8 sm:pb-10 lg:px-8">
-      <div className="mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full max-w-5xl">
         <Link
           href={ROUTES.DASHBOARD.SUBSCRIPTIONS}
           className="mb-5 inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
@@ -124,6 +118,8 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
               {plan.name}
             </h1>
             <p className="mt-1.5 text-sm text-zinc-500">
+              {formatDurationMinutes(plan.visitDurationMinutes)}
+              {' · '}
               {activeSubscriberCount === 0
                 ? 'No subscribers yet'
                 : activeSubscriberCount === 1
@@ -171,98 +167,111 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
           onConfirm={() => void handleDelete()}
         />
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] lg:items-start lg:gap-8">
-          <aside className="min-w-0 space-y-5 lg:sticky lg:top-24">
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-white">Pricing</h2>
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-                {plan.cadenceOptions.length === 0 ? (
-                  <p className="px-4 py-4 text-sm text-zinc-500 sm:px-5">
-                    No pricing options on this plan.
-                  </p>
-                ) : (
-                  <ul className="divide-y divide-white/[0.06]">
-                    {plan.cadenceOptions.map(option => (
-                      <li
-                        key={option.id}
-                        className="flex items-baseline justify-between gap-3 px-4 py-3.5 sm:px-5"
-                      >
-                        <p className="min-w-0 text-sm text-zinc-400">
-                          {formatCadenceOptionLabel(option)}
-                        </p>
-                        <p className="shrink-0 text-right tabular-nums">
-                          <span className="text-sm font-semibold text-white">
-                            {formatSubscriptionPriceCents(option.priceCents)}
-                          </span>
-                          <span className="ml-1 text-xs text-zinc-500">
-                            {formatCadencePriceSuffix(option)}
-                          </span>
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </section>
+        <section className="mt-6" aria-labelledby="plan-pricing-heading">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2
+              id="plan-pricing-heading"
+              className="text-sm font-semibold text-white"
+            >
+              Pricing
+            </h2>
+            {plan.cadenceOptions.length > 0 ? (
+              <span className="text-xs font-medium tabular-nums text-zinc-500">
+                {plan.cadenceOptions.length} option
+                {plan.cadenceOptions.length === 1 ? '' : 's'}
+              </span>
+            ) : null}
+          </div>
+          {plan.cadenceOptions.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 text-sm text-zinc-500">
+              No pricing options on this plan.
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+              <ul className="divide-y divide-white/[0.06]">
+                {plan.cadenceOptions.map(option => (
+                  <li
+                    key={option.id}
+                    className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5"
+                  >
+                    <p className="min-w-0 truncate text-sm font-medium text-white">
+                      {formatCadenceOptionLabel(option)}
+                    </p>
+                    <p className="shrink-0 text-right tabular-nums">
+                      <span className="text-base font-semibold tracking-tight text-white sm:text-lg">
+                        {formatSubscriptionPriceCents(option.priceCents)}
+                      </span>
+                      <span className="ml-1 text-xs text-zinc-500 sm:text-sm">
+                        {formatCadencePriceSuffix(option)}
+                      </span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
 
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-white">
-                Description
-              </h2>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 sm:px-5">
-                {hasDescription ? (
-                  <>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
-                      {visibleDescription}
-                      {descriptionNeedsExpand && !isDescriptionExpanded
-                        ? '…'
-                        : null}
-                    </div>
-                    {descriptionNeedsExpand ? (
-                      <button
-                        type="button"
-                        onClick={() => setIsDescriptionExpanded(prev => !prev)}
-                        className="mt-2 inline-flex cursor-pointer touch-manipulation text-sm font-medium text-white transition-colors hover:text-zinc-200"
-                        aria-expanded={isDescriptionExpanded}
-                      >
-                        {isDescriptionExpanded ? 'See less' : 'See more'}
-                      </button>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="m-0 text-sm text-zinc-500">
-                    No description yet.{' '}
-                    <Link
-                      href={ROUTES.DASHBOARD.SUBSCRIPTIONS_EDIT(plan.id)}
-                      className="cursor-pointer font-medium text-zinc-300 underline-offset-2 hover:text-white hover:underline"
-                    >
-                      Add one
-                    </Link>
-                  </p>
-                )}
+        {hasDescription ? (
+          <section className="mt-6" aria-labelledby="plan-description-heading">
+            <h2
+              id="plan-description-heading"
+              className="mb-3 text-sm font-semibold text-white"
+            >
+              Description
+            </h2>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 sm:px-5">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
+                {visibleDescription}
+                {descriptionNeedsExpand && !isDescriptionExpanded ? '…' : null}
               </div>
-            </section>
-          </aside>
-
-          <section className="min-w-0">
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h2 className="text-sm font-semibold text-white">Subscribers</h2>
-              {liveActiveCount != null && liveActiveCount > 0 ? (
-                <span className="text-xs font-medium tabular-nums text-zinc-500">
-                  {liveActiveCount} active
-                </span>
+              {descriptionNeedsExpand ? (
+                <button
+                  type="button"
+                  onClick={() => setIsDescriptionExpanded(prev => !prev)}
+                  className="mt-2 inline-flex cursor-pointer touch-manipulation text-sm font-medium text-white transition-colors hover:text-zinc-200"
+                  aria-expanded={isDescriptionExpanded}
+                >
+                  {isDescriptionExpanded ? 'See less' : 'See more'}
+                </button>
               ) : null}
             </div>
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-              <OwnerSubscriptionsSubscribers
-                planIdFilter={plan.id}
-                variant="embedded"
-                hidePlanName
-                onLoaded={handleSubscribersLoaded}
-              />
-            </div>
           </section>
-        </div>
+        ) : (
+          <p className="mt-5 text-sm text-zinc-500">
+            No description yet.{' '}
+            <Link
+              href={ROUTES.DASHBOARD.SUBSCRIPTIONS_EDIT(plan.id)}
+              className="cursor-pointer font-medium text-zinc-300 underline-offset-2 hover:text-white hover:underline"
+            >
+              Add one
+            </Link>
+          </p>
+        )}
+
+        <section className="mt-8" aria-labelledby="plan-subscribers-heading">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2
+              id="plan-subscribers-heading"
+              className="text-sm font-semibold text-white"
+            >
+              Subscribers
+            </h2>
+            {liveActiveCount != null && liveActiveCount > 0 ? (
+              <span className="text-xs font-medium tabular-nums text-zinc-500">
+                {liveActiveCount} active
+              </span>
+            ) : null}
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+            <OwnerSubscriptionsSubscribers
+              planIdFilter={plan.id}
+              variant="embedded"
+              hidePlanName
+              onLoaded={handleSubscribersLoaded}
+            />
+          </div>
+        </section>
       </div>
     </main>
   );

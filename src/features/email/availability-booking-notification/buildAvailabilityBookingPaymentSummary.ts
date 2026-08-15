@@ -10,9 +10,15 @@ function formatMoney(cents: number, currency: string): string {
   }).format(Math.max(0, cents) / 100);
 }
 
+type NoCheckoutClientPaymentMethod =
+  | 'pay_in_person'
+  | 'pay_now'
+  | 'none'
+  | 'membership';
+
 function isPayInPersonBooking(params: {
   checkoutMode: string | null | undefined;
-  clientPaymentMethod?: 'pay_in_person' | 'pay_now' | 'none' | null;
+  clientPaymentMethod?: NoCheckoutClientPaymentMethod | null;
 }): boolean {
   const mode = String(params.checkoutMode ?? '').trim();
   return (
@@ -26,11 +32,15 @@ function isPayInPersonBooking(params: {
 export function buildPublicBookingNoCheckoutPaymentSummary(params: {
   paymentsEnabled: boolean;
   checkoutMode: string | null | undefined;
-  clientPaymentMethod?: 'pay_in_person' | 'pay_now' | 'none' | null;
+  clientPaymentMethod?: NoCheckoutClientPaymentMethod | null;
   currency: string;
   totalPriceCents: number;
   hasPriceLineItems: boolean;
 }): AvailabilityBookingPaymentSummary | undefined {
+  if (params.clientPaymentMethod === 'membership') {
+    return buildMembershipVisitPaymentSummary();
+  }
+
   const total = Math.max(0, Math.round(params.totalPriceCents));
   const fmt = (cents: number) => formatMoney(cents, params.currency);
 
@@ -86,4 +96,26 @@ export function buildStripeCheckoutPaymentSummary(params: {
     rows,
     stripeCardPayment: true,
   };
+}
+
+/** $0 membership visit — full-width copy so phones don’t wrap a dummy em dash. */
+export function buildMembershipVisitPaymentSummary(): AvailabilityBookingPaymentSummary {
+  return {
+    title: 'Payment',
+    rows: [],
+    statement: {
+      heading: 'Covered by membership',
+      detail: 'No extra charge for this visit.',
+    },
+  };
+}
+
+/** Hide generic membership placeholders; keep real customer/owner notes. */
+export function membershipVisitNotesForEmail(
+  notes: string | null | undefined
+): string | undefined {
+  const trimmed = (notes ?? '').trim();
+  if (!trimmed) return undefined;
+  if (/^memberships?\s+(first\s+)?visit\.?$/i.test(trimmed)) return undefined;
+  return trimmed;
 }

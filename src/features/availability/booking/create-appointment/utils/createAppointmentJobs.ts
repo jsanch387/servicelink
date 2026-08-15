@@ -12,7 +12,8 @@ import {
 } from './createAppointmentValidators';
 
 export function snapshotJobDraft(
-  draft: CreateAppointmentJobDraft
+  draft: CreateAppointmentJobDraft,
+  opts?: { membershipPriceIncluded?: boolean }
 ): CreateAppointmentJobSnapshot | null {
   if (draft.isCustomJob) {
     if (
@@ -20,6 +21,7 @@ export function snapshotJobDraft(
         serviceName: draft.serviceName,
         customPriceLabel: draft.customPriceLabel,
         durationMinutes: draft.durationMinutes,
+        membershipPriceIncluded: opts?.membershipPriceIncluded,
       })
     ) {
       return null;
@@ -81,8 +83,9 @@ export function visitDurationMinutes(
 /** Jobs to show on review / POST: committed + current draft snapshot. */
 export function reviewJobsFromState(
   committed: CreateAppointmentJobSnapshot[],
-  draft: CreateAppointmentJobDraft
+  draft: CreateAppointmentJobDraft,
+  opts?: { membershipPriceIncluded?: boolean }
 ): CreateAppointmentJobSnapshot[] {
-  const snap = snapshotJobDraft(draft);
+  const snap = snapshotJobDraft(draft, opts);
   return snap ? [...committed, snap] : [...committed];
 }

@@ -142,6 +142,32 @@ describe('buildAvailabilityBookingEmailHtml — booking + payments', () => {
     expect(html).toContain('&lt;script&gt;');
   });
 
+  it('membership payment uses full-width statement on phones (no em dash row)', () => {
+    const html = buildAvailabilityBookingEmailHtml(
+      {
+        ...basePayload(),
+        servicePriceCents: 0,
+        totalPriceCents: 0,
+        selectedAddOns: [],
+        paymentSummary: {
+          title: 'Payment',
+          rows: [],
+          statement: {
+            heading: 'Covered by membership',
+            detail: 'No extra charge for this visit.',
+          },
+        },
+      },
+      { audience: 'customer', businessName: 'Acme Detail' }
+    );
+    expect(html).toContain('Covered by membership');
+    expect(html).toContain('No extra charge for this visit.');
+    expect(html).toContain('email-payment-statement');
+    expect(html).toContain('colspan="2"');
+    expect(html).not.toContain('>—<');
+    expect(html).toContain('class="email-payment-statement"');
+  });
+
   it('includes notes when provided and omits the section when empty', () => {
     const withNotes = buildAvailabilityBookingEmailHtml(
       {
@@ -408,7 +434,7 @@ describe('buildAvailabilityBookingEmailHtml — service location', () => {
     });
     expect(ownerHtml).toContain('Customer');
     expect(ownerHtml).toContain('test@example.com');
-    expect(ownerHtml).toContain('(512) 555-1234');
+    expect(ownerHtml).toContain('+1 (512) 555-1234');
     expect(ownerHtml).toContain('When &amp; where');
     expect(ownerHtml).toContain('2 jobs');
   });

@@ -41,6 +41,8 @@ import {
 } from '../utils/createFlowNavigation';
 import { buildOwnerFlexibleWeeklySchedule } from '../utils/ownerFlexibleSchedule';
 import { CREATE_APPOINTMENT_SUBMIT_MIN_MS } from '../constants/submitStatus';
+import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
+import type { MembershipVisitPrefill } from '../types/membershipVisitPrefill';
 
 export type ServiceStepPhase = 'path' | 'list';
 
@@ -107,6 +109,8 @@ export interface UseCreateAppointmentControllerOptions {
   serviceLocation: PublicBookingServiceLocation;
   /** When true, schedule/review continue gates are bypassed (tests / stubs). */
   stubAfterVehicle?: boolean;
+  /** Prefill from membership Book visit. */
+  membershipVisit?: MembershipVisitPrefill | null;
 }
 
 export function useCreateAppointmentController(
@@ -118,25 +122,137 @@ export function useCreateAppointmentController(
     catalog,
     serviceLocation,
     stubAfterVehicle = false,
+    membershipVisit = null,
   } = options;
 
   const reactId = useId();
-  const [step, setStep] = useState<number>(CREATE_APPOINTMENT_STEP.SERVICE);
+  const membershipId = membershipVisit?.membershipId?.trim() || null;
+  const [step, setStep] = useState<number>(() => {
+    // Membership Book visit: land on custom job (Included price + duration).
+    if (membershipVisit) return CREATE_APPOINTMENT_STEP.PRICING;
+    return CREATE_APPOINTMENT_STEP.SERVICE;
+  });
   const [servicePhase, setServicePhase] = useState<ServiceStepPhase>('path');
   const [servicePath, setServicePath] = useState<ServicePathChoice | null>(
-    null
+    () => (membershipVisit ? 'custom' : null)
   );
   const [committedJobs, setCommittedJobs] = useState<
     CreateAppointmentJobSnapshot[]
   >([]);
-  const [draft, setDraft] = useState<CreateAppointmentJobDraft>(() =>
-    createEmptyJobDraft(`job_${reactId}_0`)
-  );
-  const [visit, setVisit] =
-    useState<CreateAppointmentVisitState>(createEmptyVisit);
+  const [draft, setDraft] = useState<CreateAppointmentJobDraft>(() => {
+    const base = createEmptyJobDraft(`job_${reactId}_0`);
+    if (!membershipVisit) return base;
+    const vehicle = membershipVisit.vehicle;
+    const rawMinutes = Math.round(membershipVisit.visitDurationMinutes);
+    const durationMinutes =
+      Number.isFinite(rawMinutes) && rawMinutes >= 30 ? rawMinutes : 60;
+    return {
+      ...base,
+      isCustomJob: true,
+      serviceName: membershipVisit.planName.trim() || 'Membership visit',
+      durationMinutes,
+      servicePriceCents: 0,
+      customPriceLabel: '0',
+      vehicle: vehicle
+        ? {
+            year: vehicle.year.trim(),
+            make: vehicle.make.trim(),
+            model: vehicle.model.trim(),
+          }
+        : base.vehicle,
+    };
+  });
+
+  // Keep membership price locked at $0 (Included UI) even if draft was stale.
+  useEffect(() => {
+    if (!membershipId) return;
+    setDraft(prev => {
+      if (
+        prev.servicePriceCents === 0 &&
+        prev.customPriceLabel === '0' &&
+        prev.isCustomJob
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        isCustomJob: true,
+        servicePriceCents: 0,
+        customPriceLabel: '0',
+      };
+    });
+  }, [membershipId]);
+  const [visit, setVisit] = useState<CreateAppointmentVisitState>(() => {
+    const base = createEmptyVisit();
+    if (!membershipVisit) return base;
+    let locationType = base.locationType;
+    let address = base.address;
+    const saved = membershipVisit.address;
+    const hasSavedAddress = Boolean(
+      saved?.street?.trim() &&
+        saved.city?.trim() &&
+        saved.state?.trim() &&
+        saved.zip?.trim()
+    );
+    if (serviceLocation.mode === 'mobile_only') {
+      locationType = 'mobile';
+      if (hasSavedAddress && saved) {
+        address = {
+          street: saved.street.trim(),
+          unit: saved.unit?.trim() || '',
+          city: saved.city.trim(),
+          state: saved.state.trim(),
+          zip: saved.zip.trim(),
+        };
+      }
+    } else if (serviceLocation.mode === 'shop_only') {
+      locationType = 'shop';
+      address = shopAddressFromLocation(serviceLocation);
+    } else if (hasSavedAddress && saved) {
+      // both: prefer mobile + CRM address so owner doesn't retype
+      locationType = 'mobile';
+      address = {
+        street: saved.street.trim(),
+        unit: saved.unit?.trim() || '',
+        city: saved.city.trim(),
+        state: saved.state.trim(),
+        zip: saved.zip.trim(),
+      };
+    }
+    return {
+      ...base,
+      customer: {
+        fullName: membershipVisit.customerName.trim(),
+        email:
+          membershipVisit.email.trim() === '—'
+            ? ''
+            : membershipVisit.email.trim(),
+        phone: normalizeUsPhoneDigits(membershipVisit.phone.trim()),
+      },
+      notes: membershipVisit.notes?.trim() || '',
+      locationType,
+      address,
+    };
+  });
   const [appointmentConfirmed, setAppointmentConfirmed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [locationSeeded, setLocationSeeded] = useState(false);
+  const [locationSeeded, setLocationSeeded] = useState(() => {
+    if (!membershipVisit) return false;
+    if (
+      serviceLocation.mode === 'mobile_only' ||
+      serviceLocation.mode === 'shop_only'
+    ) {
+      return true;
+    }
+    // both + CRM address → location already set to mobile
+    const saved = membershipVisit.address;
+    return Boolean(
+      saved?.street?.trim() &&
+        saved.city?.trim() &&
+        saved.state?.trim() &&
+        saved.zip?.trim()
+    );
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedBookingId, setConfirmedBookingId] = useState<string | null>(
     null
@@ -168,8 +284,11 @@ export function useCreateAppointmentController(
   );
 
   const reviewJobs = useMemo(
-    () => reviewJobsFromState(committedJobs, draft),
-    [committedJobs, draft]
+    () =>
+      reviewJobsFromState(committedJobs, draft, {
+        membershipPriceIncluded: Boolean(membershipId),
+      }),
+    [committedJobs, draft, membershipId]
   );
 
   useEffect(() => {
@@ -265,6 +384,7 @@ export function useCreateAppointmentController(
     serviceName: draft.serviceName,
     customPriceLabel: draft.customPriceLabel,
     durationMinutes: draft.durationMinutes,
+    membershipPriceIncluded: Boolean(membershipId),
   });
 
   const patchCustomer = useCallback(
@@ -412,7 +532,9 @@ export function useCreateAppointmentController(
       }
     };
 
-    const jobs = reviewJobsFromState(committedJobs, draft);
+    const jobs = reviewJobsFromState(committedJobs, draft, {
+      membershipPriceIncluded: Boolean(membershipId),
+    });
     if (jobs.length === 0) {
       setNotice('Add at least one job before confirming.');
       return;
@@ -431,6 +553,7 @@ export function useCreateAppointmentController(
         businessSlug,
         visit,
         jobs,
+        membershipId,
       });
       const res = await fetch('/api/public/bookings', {
         method: 'POST',
@@ -464,7 +587,15 @@ export function useCreateAppointmentController(
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, committedJobs, draft, visit, businessId, businessSlug]);
+  }, [
+    isSubmitting,
+    committedJobs,
+    draft,
+    visit,
+    businessId,
+    businessSlug,
+    membershipId,
+  ]);
 
   const goContinue = useCallback(() => {
     if (!canContinue || isSubmitting) return;
@@ -593,7 +724,9 @@ export function useCreateAppointmentController(
       setNotice(gate.reason);
       return;
     }
-    const snap = snapshotJobDraft(draft);
+    const snap = snapshotJobDraft(draft, {
+      membershipPriceIncluded: Boolean(membershipId),
+    });
     if (!snap) {
       setNotice('Finish this job before adding another.');
       return;
@@ -604,7 +737,7 @@ export function useCreateAppointmentController(
     setServicePhase('path');
     setStep(CREATE_APPOINTMENT_STEP.SERVICE);
     setNotice(null);
-  }, [committedJobs.length, draft]);
+  }, [committedJobs.length, draft, membershipId]);
 
   const goBack = useCallback(() => {
     if (appointmentConfirmed || isSubmitting) return;
@@ -626,9 +759,22 @@ export function useCreateAppointmentController(
       return;
     }
 
+    // Membership Book visit starts on custom job — no prior step.
+    if (membershipId && step === CREATE_APPOINTMENT_STEP.PRICING) {
+      return;
+    }
+
     const prev = getPreviousStepOnBack({ step, ...navOpts });
     if (prev === CREATE_APPOINTMENT_STEP.SERVICE && servicePath === 'catalog') {
       setServicePhase('list');
+    }
+    // Don't send membership flow back to the service chooser.
+    if (
+      membershipId &&
+      (prev === CREATE_APPOINTMENT_STEP.SERVICE ||
+        prev < CREATE_APPOINTMENT_STEP.PRICING)
+    ) {
+      return;
     }
     setStep(Math.max(0, prev));
   }, [
@@ -639,6 +785,7 @@ export function useCreateAppointmentController(
     jobIndex,
     navOpts,
     servicePath,
+    membershipId,
     cancelInProgressExtraJob,
   ]);
 
@@ -698,6 +845,7 @@ export function useCreateAppointmentController(
     canContinue,
     appointmentConfirmed,
     confirmedBookingId,
+    membershipId,
     isSubmitting,
     submitError,
     clearSubmitError,

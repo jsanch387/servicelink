@@ -57,6 +57,7 @@ export interface BuildOwnerCreateAppointmentBodyArgs {
   businessSlug: string;
   visit: CreateAppointmentVisitState;
   jobs: CreateAppointmentJobSnapshot[];
+  membershipId?: string | null;
 }
 
 /**
@@ -68,17 +69,19 @@ export function buildOwnerCreateAppointmentBody(
 ): CreateBookingRequest {
   const { businessId, businessSlug, visit, jobs } = args;
   const locationType = visit.locationType ?? 'mobile';
+  const membershipId = args.membershipId?.trim() || undefined;
 
   return {
     businessId,
     businessSlug,
     scheduledDate: visit.scheduledDate!.trim(),
     startTime: visit.startTime!.trim(),
-    paymentMethodSelected: 'none',
+    paymentMethodSelected: membershipId ? 'membership' : 'none',
     ownerManualBooking: true,
     serviceLocationType: locationType,
     customerServiceLocation: locationType,
-    applySale: visit.applySale,
+    applySale: membershipId ? false : visit.applySale,
+    ...(membershipId ? { membershipId } : {}),
     customer: {
       fullName: visit.customer.fullName.trim(),
       email: visit.customer.email.trim(),

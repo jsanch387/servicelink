@@ -45,6 +45,7 @@ interface BookingPaymentsRow {
   id?: string;
   currency?: string | null;
   paid_online_amount_cents?: number | null;
+  payment_method_selected?: string | null;
 }
 
 export interface PersistJobCompletedInput {
@@ -110,7 +111,7 @@ async function loadBookingPayments(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from('booking_payments')
-    .select('id, currency, paid_online_amount_cents')
+    .select('id, currency, paid_online_amount_cents, payment_method_selected')
     .eq('booking_id', bookingId)
     .maybeSingle();
 
@@ -206,7 +207,9 @@ async function upsertBookingPaymentsForCompletion(
     booking_id: args.bookingId,
     business_id: args.businessId,
     provider: args.sessionPayment?.method === 'tap_to_pay' ? 'stripe' : 'none',
-    payment_method_selected: args.sessionPayment ? 'pay_in_person' : 'none',
+    payment_method_selected: args.sessionPayment
+      ? 'pay_in_person'
+      : args.existing?.payment_method_selected?.trim() || 'none',
     currency: args.existing?.currency?.trim()?.toLowerCase() || 'usd',
     required_online_amount_cents: 0,
     paid_online_amount_cents: paidOnline,
@@ -361,6 +364,8 @@ export async function persistJobCompletedTransaction(
     amountDue,
     sessionPaymentMethod: body.sessionPayment?.method,
     reviewRawToken,
+    coveredByMembership:
+      (payments?.payment_method_selected ?? '').trim() === 'membership',
   });
 
   const publicToken = generateInvoicePublicToken();
@@ -492,6 +497,7 @@ export async function persistJobCompletedTransaction(
           }
         : null,
     reviewUrl: snapshot.reviewUrl,
+    coveredByMembership: snapshot.coveredByMembership === true,
     jobs: snapshot.jobs?.map(job => ({
       serviceName: job.serviceName,
       servicePriceOptionLabel: job.servicePriceOptionLabel,

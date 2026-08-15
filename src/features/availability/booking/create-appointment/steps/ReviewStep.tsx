@@ -70,6 +70,8 @@ export interface ReviewStepProps {
   canAddAnotherJob: boolean;
   onAddAnotherJob?: () => void;
   addAnotherDisabled?: boolean;
+  /** Membership Book visit: show Membership instead of $0; hide sale toggle. */
+  membershipCovered?: boolean;
 }
 
 export function ReviewStep({
@@ -86,6 +88,7 @@ export function ReviewStep({
   canAddAnotherJob: showAddJob,
   onAddAnotherJob,
   addAnotherDisabled = false,
+  membershipCovered = false,
 }: ReviewStepProps) {
   const visitSubtotalCents = useMemo(
     () => jobs.reduce((s, j) => s + jobLineTotalCents(j), 0),
@@ -102,8 +105,9 @@ export function ReviewStep({
     [visitSubtotalCents, activeSale, scheduledDate]
   );
 
-  const showSaleToggle = Boolean(activeSale);
-  const saleApplied = applySale && salePricing.saleApplies;
+  const showSaleToggle = Boolean(activeSale) && !membershipCovered;
+  const saleApplied =
+    !membershipCovered && applySale && salePricing.saleApplies;
   const discountCents = saleApplied ? salePricing.discountCents : 0;
   const visitTotalCents = saleApplied
     ? salePricing.estimatedTotalCents
@@ -165,7 +169,9 @@ export function ReviewStep({
                 ) : null}
               </div>
               <p className="shrink-0 tabular-nums text-zinc-300">
-                {formatCatalogPriceCents(job.servicePriceCents)}
+                {membershipCovered && job.servicePriceCents === 0
+                  ? 'Membership'
+                  : formatCatalogPriceCents(job.servicePriceCents)}
               </p>
             </div>
 
@@ -223,7 +229,9 @@ export function ReviewStep({
                 {jobs.length > 1 ? 'Visit total' : 'Total'}
               </p>
               <p className="text-lg font-semibold tabular-nums text-white">
-                {formatCatalogPriceCents(visitTotalCents)}
+                {membershipCovered && visitTotalCents === 0
+                  ? 'Membership'
+                  : formatCatalogPriceCents(visitTotalCents)}
               </p>
             </div>
           </div>

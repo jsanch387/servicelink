@@ -1,3 +1,5 @@
+import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
+
 export const ROUTES = {
   // Public routes (smooth scroll sections)
   HOME: '#home',
@@ -175,6 +177,11 @@ export const API_ROUTES = {
   PUBLIC_BOOKING_CHECKOUT: '/api/public/booking-checkout',
   /** Public: start Stripe Checkout (subscription) for a membership plan price. */
   PUBLIC_MEMBERSHIPS_CHECKOUT: '/api/public/memberships/checkout',
+  /** Public: CRM address/vehicle lookup for membership subscribe / visit. */
+  PUBLIC_MEMBERSHIPS_CUSTOMER_SNAPSHOT:
+    '/api/public/memberships/customer-snapshot',
+  /** Public: member books next period visit with signed token. */
+  PUBLIC_MEMBERSHIPS_VISIT: '/api/public/memberships/visit',
   /** Public: fetch booking payment summary after successful checkout return. */
   PUBLIC_BOOKING_CHECKOUT_SUMMARY: '/api/public/booking-checkout-summary',
   /** Public: returning-customer saved vehicles/pets for the book flow. */
@@ -558,6 +565,47 @@ export function getPublicQuoteRequestPath(
 }
 
 /**
+ * Public membership subscribe step `/{slug}/subscribe?planId=&priceId=`.
+ * Explainer + first visit date before Stripe Checkout.
+ */
+export function getPublicMembershipSubscribePath(
+  businessSlug: string,
+  options: {
+    planId: string;
+    priceId: string;
+    lang?: PublicBookingFlowLocale | null;
+  }
+): string {
+  const s = businessSlug.trim();
+  const planId = options.planId.trim();
+  const priceId = options.priceId.trim();
+  if (!s || !planId || !priceId) return '/';
+  const q = new URLSearchParams();
+  q.set('planId', planId);
+  q.set('priceId', priceId);
+  appendPublicBookingFlowLang(q, options.lang);
+  return `/${encodeURIComponent(s)}/subscribe?${q.toString()}`;
+}
+
+/**
+ * Public membership next-visit scheduler `/{slug}/membership/visit?token=`.
+ * Token is the same HMAC shape as manage links (`membershipId.sig`).
+ */
+export function getPublicMembershipVisitPath(
+  businessSlug: string,
+  token: string,
+  options?: { lang?: PublicBookingFlowLocale | null }
+): string {
+  const s = businessSlug.trim();
+  const t = token.trim();
+  if (!s || !t) return '/';
+  const q = new URLSearchParams();
+  q.set('token', t);
+  appendPublicBookingFlowLang(q, options?.lang);
+  return `/${encodeURIComponent(s)}/membership/visit?${q.toString()}`;
+}
+
+/**
  * Customer-facing maintenance enrollment review link (raw URL-safe token in path).
  * Server resolves `customer_link_token_hash` = SHA-256 hex of the raw token.
  */
@@ -589,4 +637,34 @@ export function getPublicInvoiceShortPath(shortCode: string): string {
   const c = shortCode.trim();
   if (!c) return '/r';
   return `/r/${encodeURIComponent(c)}`;
+}
+
+/** Owner New appointment wizard with membership visit prefill query params. */
+export function getOwnerCreateAppointmentPath(args: {
+  membershipId: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+  planName: string;
+  visitDurationMinutes: number;
+}): string {
+  const q = new URLSearchParams();
+  q.set('membershipId', args.membershipId.trim());
+  q.set('name', args.name.trim());
+  const email = args.email?.trim();
+  if (email && email !== '—') q.set('email', email);
+  const phone = args.phone?.trim();
+  if (phone) {
+    const normalized = normalizeUsPhoneDigits(phone);
+    if (normalized) q.set('phone', normalized);
+  }
+  const notes = args.notes?.trim();
+  if (notes) q.set('notes', notes);
+  q.set('planName', args.planName.trim());
+  q.set(
+    'durationMinutes',
+    String(Math.max(30, Math.round(args.visitDurationMinutes)))
+  );
+  return `${ROUTES.DASHBOARD.BOOKINGS_NEW}?${q.toString()}`;
 }

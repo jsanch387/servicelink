@@ -216,6 +216,46 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS payment_failed_email_sent_at timestamptz;
 ```
 
+## Subscription lifecycle timestamps (analytics)
+
+Additive columns for “who canceled / when” and “who we can’t charge / when.”  
+**Do not** use these for access control — `subscription_tier` + `isProAccess` stay the source of truth.
+
+SQL file: `src/features/pricing/docs/migrations/001_profile_subscription_lifecycle_timestamps.sql`
+
+```sql
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS subscription_canceled_at timestamptz null;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS subscription_ended_at timestamptz null;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS last_payment_failed_at timestamptz null;
+```
+
+| Column                     | Set when                                                   | Cleared when                                           |
+| -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
+| `subscription_canceled_at` | Cancel-at-period-end turns **on** (`subscription.updated`) | Cancel undone or new checkout                          |
+| `subscription_ended_at`    | `customer.subscription.deleted`                            | New paid checkout                                      |
+| `last_payment_failed_at`   | Status enters `past_due` / `unpaid`                        | **Kept** after recovery (updated on next fail episode) |
+
+Useful queries:
+
+```sql
+-- Pending cancel (still Pro until period end)
+select user_id, subscription_canceled_at, subscription_current_period_end
+from profiles
+where subscription_cancel_at_period_end = true
+  and subscription_status in ('active', 'trialing');
+
+-- Can't charge (open sub, Stripe dunning) — app access is Free
+select user_id, subscription_status, last_payment_failed_at, stripe_subscription_id
+from profiles
+where subscription_status in ('past_due', 'unpaid')
+  and stripe_subscription_id is not null;
+```
+
 ## Configuring webhooks in Stripe
 
 We use **two** webhook destinations with different account scopes:

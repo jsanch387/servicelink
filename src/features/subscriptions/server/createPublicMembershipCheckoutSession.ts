@@ -7,6 +7,11 @@ import { getStripePlatform } from '@/libs/stripe/platformClient';
 import { userFacingStripeConnectCheckoutError } from '@/libs/stripe/userFacingStripeConnectCheckoutError';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { NextRequest } from 'next/server';
+import {
+  checkMaintenanceAnchorAgainstCalendar,
+  maintenanceSlotAvailabilityUserMessage,
+} from '@/features/maintenance/server/checkMaintenanceAnchorAgainstCalendar';
+import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import { isBusinessInMembershipsRollout } from './isBusinessInMembershipsRollout';
 import {
   logMemberships,
@@ -15,6 +20,10 @@ import {
   stripeErrorForLogs,
   supabaseErrorForLogs,
 } from './membershipsTransactionLog';
+import {
+  parseMembershipFirstVisitDate,
+  parseMembershipFirstVisitTime,
+} from './parseMembershipFirstVisit';
 import {
   membershipPlanPricesOf,
   membershipPlansOf,
@@ -26,6 +35,7 @@ type PlanRow = {
   name: string;
   deleted_at: string | null;
   is_published: boolean;
+  visit_duration_minutes: number | null;
 };
 
 type PriceRow = {
@@ -40,6 +50,17 @@ export type CreatePublicMembershipCheckoutInput = {
   businessSlug: string;
   planId: string;
   priceId: string;
+  firstVisitDate: string;
+  firstVisitTime: string;
+  /** Optional service details collected (or CRM-prefilled) before Checkout. */
+  street?: string;
+  unit?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  vehicleYear?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
 };
 
 export type CreatePublicMembershipCheckoutResult =
@@ -52,7 +73,8 @@ function encodeSlugPath(slug: string): string {
 
 /**
  * Public booking-link Continue → Stripe Checkout (`mode: 'subscription'`)
- * on the business connected account. No webhook / member row yet.
+ * on the business connected account. First-visit slot is stored on session
+ * metadata; the Connect webhook creates the calendar booking after pay.
  */
 export async function createPublicMembershipCheckoutSession(
   request: NextRequest,
@@ -62,12 +84,22 @@ export async function createPublicMembershipCheckoutSession(
   const businessSlug = input.businessSlug.trim().toLowerCase();
   const planId = input.planId.trim();
   const priceId = input.priceId.trim();
+  const firstVisitDate = parseMembershipFirstVisitDate(input.firstVisitDate);
+  const firstVisitTime = parseMembershipFirstVisitTime(input.firstVisitTime);
 
   if (!businessSlug || !planId || !priceId) {
     return {
       ok: false,
       status: 400,
       error: 'Business, plan, and pricing option are required.',
+    };
+  }
+
+  if (!firstVisitDate || !firstVisitTime) {
+    return {
+      ok: false,
+      status: 400,
+      error: 'Choose a date and time for your first visit.',
     };
   }
 
@@ -187,7 +219,9 @@ export async function createPublicMembershipCheckoutSession(
   }
 
   const { data: planData, error: planError } = await membershipPlansOf(supabase)
-    .select('id, business_id, name, deleted_at, is_published')
+    .select(
+      'id, business_id, name, deleted_at, is_published, visit_duration_minutes'
+    )
     .eq('id', planId)
     .eq('business_id', businessId)
     .maybeSingle();
@@ -208,6 +242,31 @@ export async function createPublicMembershipCheckoutSession(
       ok: false,
       status: 404,
       error: 'This plan is no longer available.',
+    };
+  }
+
+  const visitDurationMinutes =
+    typeof plan.visit_duration_minutes === 'number' &&
+    plan.visit_duration_minutes >= 30
+      ? plan.visit_duration_minutes
+      : MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT;
+
+  const slotCheck = await checkMaintenanceAnchorAgainstCalendar(supabase, {
+    businessId,
+    anchorDate: firstVisitDate,
+    anchorTime: firstVisitTime,
+    durationMinutes: visitDurationMinutes,
+  });
+  if (!slotCheck.ok) {
+    logMemberships(requestId, 'warn', 'checkout.slot_unavailable', {
+      businessId: shortIdForLog(businessId),
+      planId: shortIdForLog(planId),
+      reason: slotCheck.reason,
+    });
+    return {
+      ok: false,
+      status: 409,
+      error: maintenanceSlotAvailabilityUserMessage(slotCheck.reason),
     };
   }
 
@@ -253,13 +312,36 @@ export async function createPublicMembershipCheckoutSession(
   const cancelUrl = `${baseUrl}/${slugPath}?membershipCheckout=cancel`;
 
   const stripe = getStripePlatform();
-  const meta = {
+  const trimMeta = (v: string | undefined, max: number) => {
+    const t = (v ?? '').trim();
+    return t ? t.slice(0, max) : undefined;
+  };
+  const meta: Record<string, string> = {
     kind: 'membership_checkout',
     businessId,
     businessSlug,
     membershipPlanId: plan.id,
     membershipPlanPriceId: price.id,
+    firstVisitDate,
+    firstVisitTime,
+    visitDurationMinutes: String(visitDurationMinutes),
   };
+  const street = trimMeta(input.street, 200);
+  const unit = trimMeta(input.unit, 40);
+  const city = trimMeta(input.city, 80);
+  const state = trimMeta(input.state, 2);
+  const zip = trimMeta(input.zip, 10);
+  const vehicleYear = trimMeta(input.vehicleYear, 4);
+  const vehicleMake = trimMeta(input.vehicleMake, 40);
+  const vehicleModel = trimMeta(input.vehicleModel, 40);
+  if (street) meta.street = street;
+  if (unit) meta.unit = unit;
+  if (city) meta.city = city;
+  if (state) meta.state = state;
+  if (zip) meta.zip = zip;
+  if (vehicleYear) meta.vehicleYear = vehicleYear;
+  if (vehicleMake) meta.vehicleMake = vehicleMake;
+  if (vehicleModel) meta.vehicleModel = vehicleModel;
 
   try {
     const session = await stripe.checkout.sessions.create(

@@ -1,6 +1,8 @@
 import {
+  buildMembershipVisitPaymentSummary,
   buildPublicBookingNoCheckoutPaymentSummary,
   buildStripeCheckoutPaymentSummary,
+  membershipVisitNotesForEmail,
 } from '@/features/email/availability-booking-notification/buildAvailabilityBookingPaymentSummary';
 import { describe, expect, it } from 'vitest';
 
@@ -34,6 +36,19 @@ describe('buildPublicBookingNoCheckoutPaymentSummary', () => {
       { label: 'Payment method', value: 'Pay in person' },
       { label: 'Amount due at appointment', value: '$150.00' },
     ]);
+  });
+
+  it('membership visit uses covered-by-membership copy', () => {
+    expect(
+      buildPublicBookingNoCheckoutPaymentSummary({
+        paymentsEnabled: true,
+        checkoutMode: 'in_app',
+        clientPaymentMethod: 'membership',
+        currency: 'usd',
+        totalPriceCents: 0,
+        hasPriceLineItems: false,
+      })
+    ).toEqual(buildMembershipVisitPaymentSummary());
   });
 
   it('payments disabled omits payment section', () => {
@@ -76,5 +91,30 @@ describe('buildStripeCheckoutPaymentSummary', () => {
       { label: 'Deposit paid', value: '$50.00' },
       { label: 'Remaining balance', value: '$250.00' },
     ]);
+  });
+});
+
+describe('buildMembershipVisitPaymentSummary', () => {
+  it('uses a full-width statement instead of a dummy value row', () => {
+    expect(buildMembershipVisitPaymentSummary()).toEqual({
+      title: 'Payment',
+      rows: [],
+      statement: {
+        heading: 'Covered by membership',
+        detail: 'No extra charge for this visit.',
+      },
+    });
+  });
+});
+
+describe('membershipVisitNotesForEmail', () => {
+  it('omits generic membership visit placeholders', () => {
+    expect(membershipVisitNotesForEmail('Membership visit.')).toBeUndefined();
+    expect(membershipVisitNotesForEmail('memberships first visit')).toBeUndefined();
+    expect(membershipVisitNotesForEmail('  ')).toBeUndefined();
+  });
+
+  it('keeps real notes', () => {
+    expect(membershipVisitNotesForEmail('Gate code 1234')).toBe('Gate code 1234');
   });
 });

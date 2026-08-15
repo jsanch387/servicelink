@@ -74,6 +74,7 @@ import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/
 import { applyMembershipCheckoutSessionCompleted } from '@/features/subscriptions/server/applyMembershipCheckoutSessionCompleted';
 import { applyMembershipInvoiceEvent } from '@/features/subscriptions/server/applyMembershipInvoiceEvent';
 import { applyMembershipSubscriptionLifecycle } from '@/features/subscriptions/server/applyMembershipSubscriptionLifecycle';
+import { stripeSubscriptionIdFromInvoice } from '@/features/subscriptions/server/membershipStripeHelpers';
 import { getStripePlatform } from '@/libs/stripe';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
@@ -1327,15 +1328,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
-  // Recurring payment failed — sync profile only (no ServiceLink email; use in-app Settings banner + Stripe optional emails).
+  // Recurring Pro payment failed — sync profile + email owner once per episode.
   if (event.type === 'invoice.payment_failed') {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('stripe_webhook_events').insert({
-        event_id: event.id,
-        event_type: event.type,
-        processed_at: new Date().toISOString(),
-      });
+      const { error: insertError } = await (supabase as any)
+        .from('stripe_webhook_events')
+        .insert({
+          event_id: event.id,
+          event_type: event.type,
+          processed_at: new Date().toISOString(),
+        });
+      if (insertError) {
+        if (insertError.code === '23505') {
+          return NextResponse.json({ received: true }, { status: 200 });
+        }
+        console.error('Stripe webhook idempotency insert error:', insertError);
+        return NextResponse.json(
+          { error: 'Idempotency check failed' },
+          { status: 500 }
+        );
+      }
     } catch (insertError: unknown) {
       const code = (insertError as { code?: string })?.code;
       if (code === '23505') {
@@ -1361,17 +1374,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    const subscriptionRef = (
-      invoice as Stripe.Invoice & {
-        subscription?: string | Stripe.Subscription | null;
-      }
-    ).subscription;
-    const subscriptionId =
-      typeof subscriptionRef === 'string'
-        ? subscriptionRef
-        : subscriptionRef && typeof subscriptionRef === 'object'
-          ? (subscriptionRef as Stripe.Subscription).id
-          : null;
+    // Stripe API 2025+ / SDK v20: sub id may be on parent.subscription_details.
+    const subscriptionId = stripeSubscriptionIdFromInvoice(invoice);
     if (subscriptionId) {
       try {
         const stripe = getStripePlatform();
@@ -1405,15 +1409,26 @@ export async function POST(request: NextRequest) {
 
       // Tell the owner once per failure episode (Stripe retries fire this event
       // repeatedly; the atomic claim inside guards against re-sending).
+      // Use `after()` so Resend isn't dropped when the webhook response finishes.
       const invoiceCustomerEmail =
         typeof invoice.customer_email === 'string'
           ? invoice.customer_email
           : null;
-      void notifyPaymentFailedOnce(supabase, {
-        stripeSubscriptionId: subscriptionId,
-        invoiceCustomerEmail,
-      }).catch(err => {
-        console.error('[stripe:webhook] payment failed email', err);
+      after(async () => {
+        try {
+          const result = await notifyPaymentFailedOnce(supabase, {
+            stripeSubscriptionId: subscriptionId,
+            invoiceCustomerEmail,
+          });
+          if (!result.sent) {
+            console.warn('[stripe:webhook] payment failed email skipped', {
+              eventId: event.id,
+              reason: result.skippedReason ?? result.error ?? 'unknown',
+            });
+          }
+        } catch (err) {
+          console.error('[stripe:webhook] payment failed email', err);
+        }
       });
     } else {
       console.warn(

@@ -3,8 +3,8 @@
  *
  * Creates a Stripe Checkout Session (`mode: 'subscription'`) on the business’s
  * connected Express account for a published membership plan price.
- *
- * Webhooks / member rows / emails: not handled here yet.
+ * Requires a first-visit date/time (validated against the calendar).
+ * Connect webhook upserts the member and creates the calendar booking.
  */
 
 import { createPublicMembershipCheckoutSession } from '@/features/subscriptions/server/createPublicMembershipCheckoutSession';
@@ -26,13 +26,25 @@ export async function POST(req: NextRequest) {
             businessSlug?: unknown;
             planId?: unknown;
             priceId?: unknown;
+            firstVisitDate?: unknown;
+            firstVisitTime?: unknown;
+            street?: unknown;
+            unit?: unknown;
+            city?: unknown;
+            state?: unknown;
+            zip?: unknown;
+            vehicleYear?: unknown;
+            vehicleMake?: unknown;
+            vehicleModel?: unknown;
           })
         : null;
 
-    const businessSlug =
-      typeof body?.businessSlug === 'string' ? body.businessSlug : '';
-    const planId = typeof body?.planId === 'string' ? body.planId : '';
-    const priceId = typeof body?.priceId === 'string' ? body.priceId : '';
+    const str = (v: unknown) => (typeof v === 'string' ? v : '');
+    const businessSlug = str(body?.businessSlug);
+    const planId = str(body?.planId);
+    const priceId = str(body?.priceId);
+    const firstVisitDate = str(body?.firstVisitDate);
+    const firstVisitTime = str(body?.firstVisitTime);
 
     const rateLimited = await assertPublicMembershipCheckoutRateLimits(
       req,
@@ -42,7 +54,21 @@ export async function POST(req: NextRequest) {
 
     const result = await createPublicMembershipCheckoutSession(
       req,
-      { businessSlug, planId, priceId },
+      {
+        businessSlug,
+        planId,
+        priceId,
+        firstVisitDate,
+        firstVisitTime,
+        street: str(body?.street),
+        unit: str(body?.unit),
+        city: str(body?.city),
+        state: str(body?.state),
+        zip: str(body?.zip),
+        vehicleYear: str(body?.vehicleYear),
+        vehicleMake: str(body?.vehicleMake),
+        vehicleModel: str(body?.vehicleModel),
+      },
       requestId
     );
 

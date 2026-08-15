@@ -15,6 +15,9 @@ export interface CreateAppointmentHeaderProps {
   compact?: boolean;
   /** Hide Bookings nav (e.g. while submit is in progress). */
   hideBack?: boolean;
+  /** Override default Bookings back link (e.g. membership Book visit). */
+  backHref?: string;
+  backLabel?: string;
 }
 
 /**
@@ -26,9 +29,13 @@ export function CreateAppointmentHeader({
   subtitle,
   compact = false,
   hideBack = false,
+  backHref,
+  backLabel,
 }: CreateAppointmentHeaderProps) {
   const showNav = !hideBack;
   const showTitleBlock = Boolean(title || subtitle);
+  const href = backHref?.trim() || ROUTES.DASHBOARD.BOOKINGS;
+  const label = backLabel?.trim() || 'Bookings';
 
   return (
     <header className={compact ? 'mb-4 sm:mb-5' : 'mb-6 sm:mb-8'}>
@@ -39,12 +46,12 @@ export function CreateAppointmentHeader({
       >
         {showNav ? (
           <Link
-            href={ROUTES.DASHBOARD.BOOKINGS}
+            href={href}
             className={`${publicFlowBackNavClassName} -ml-1.5 min-h-10`}
-            aria-label="Back to Bookings"
+            aria-label={`Back to ${label}`}
           >
             <PublicFlowBackChevron />
-            <span>Bookings</span>
+            <span>{label}</span>
           </Link>
         ) : (
           // Keep the same vertical slot as the Bookings control so pending

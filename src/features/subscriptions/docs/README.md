@@ -7,6 +7,8 @@ Customer membership plans on the **booking link**. Owners create plans in the da
 | Doc                                            | Contents                                                                                        |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | [FLOWS.md](./FLOWS.md)                         | **Start here.** Owner create/edit/delete, public display, what we save & pull, gates, rollout   |
+| [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md)     | Round-2 pass/fail run (subscribe, appointments, cancel)                                         |
+| [SMOKE_TEST_FOLLOWUPS.md](./SMOKE_TEST_FOLLOWUPS.md) | Gaps found in testing — don’t file known skips as new bugs                                 |
 | [DATABASE.md](./DATABASE.md)                   | `membership_plans` + `membership_plan_prices` columns, constraints, RLS, Stripe ID placeholders |
 | [migrations/README.md](./migrations/README.md) | SQL run order for Supabase                                                                      |
 

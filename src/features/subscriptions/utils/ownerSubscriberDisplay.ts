@@ -1,5 +1,53 @@
 import type { OwnerSubscriberStatus } from '../types/ownerSubscriptionPlan';
 
+/** Same statuses as plan-card / delete-block active counts. */
+const ACTIVE_OWNER_SUBSCRIBER_STATUSES = new Set<OwnerSubscriberStatus>([
+  'active',
+  'trialing',
+  'past_due',
+  'unpaid',
+  'paused',
+]);
+
+export function isOwnerSubscriberCountedAsActive(
+  status: OwnerSubscriberStatus
+): boolean {
+  return ACTIVE_OWNER_SUBSCRIBER_STATUSES.has(status);
+}
+
+/** Live members on a current plan — not canceled history or a removed plan. */
+export function isCurrentOwnerSubscriber(subscriber: {
+  status: OwnerSubscriberStatus;
+  planRemoved?: boolean;
+}): boolean {
+  return (
+    isOwnerSubscriberCountedAsActive(subscriber.status) &&
+    !subscriber.planRemoved
+  );
+}
+
+export function formatSubscriberPlanLabel(
+  planName: string,
+  planRemoved?: boolean
+): string {
+  const name = planName.trim();
+  if (planRemoved) {
+    if (!name || name === 'Plan') return 'Removed plan';
+    return `${name} (removed)`;
+  }
+  return name || 'Plan';
+}
+
+export function formatEndedSubscribersToggleLabel(args: {
+  endedCount: number;
+  showingEnded: boolean;
+  allCanceled: boolean;
+}): string {
+  const noun = args.allCanceled ? 'canceled' : 'ended';
+  if (args.showingEnded) return `Hide ${noun}`;
+  return `Show ${noun} (${args.endedCount})`;
+}
+
 export const OWNER_SUBSCRIBER_STATUS_STYLES: Record<
   OwnerSubscriberStatus,
   { label: string; className: string }
@@ -118,4 +166,42 @@ export function formatSubscriberBillingDate(date: string | null): string {
   } catch {
     return date;
   }
+}
+
+/** `HH:mm` / `HH:mm:ss` → `9 AM` or `9:30 AM`. */
+export function formatSubscriberVisitTime(
+  time: string | null | undefined
+): string {
+  const raw = time?.trim() ?? '';
+  if (!raw) return '';
+  const [hStr, mStr] = raw.split(':');
+  const h = Number.parseInt(hStr ?? '', 10);
+  const m = Number.parseInt(mStr ?? '0', 10);
+  if (!Number.isFinite(h) || h < 0 || h > 23) return raw.slice(0, 5);
+  const minute = Number.isFinite(m) ? m : 0;
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const ampm = h < 12 ? 'AM' : 'PM';
+  return minute === 0
+    ? `${h12} ${ampm}`
+    : `${h12}:${String(minute).padStart(2, '0')} ${ampm}`;
+}
+
+export function subscriberHasUpcomingBill(args: {
+  status: OwnerSubscriberStatus;
+  cancelAtPeriodEnd?: boolean;
+  planRemoved?: boolean;
+}): boolean {
+  if (args.planRemoved || args.status === 'canceled') return false;
+  return !isSubscriberCancelScheduled(args.status, args.cancelAtPeriodEnd);
+}
+
+/** Next bill column — date when they will be charged, otherwise —. */
+export function formatSubscriberBillingDateValue(args: {
+  status: OwnerSubscriberStatus;
+  cancelAtPeriodEnd?: boolean;
+  nextBillingAt: string | null;
+  planRemoved?: boolean;
+}): string {
+  if (!subscriberHasUpcomingBill(args)) return '—';
+  return formatSubscriberBillingDate(args.nextBillingAt);
 }

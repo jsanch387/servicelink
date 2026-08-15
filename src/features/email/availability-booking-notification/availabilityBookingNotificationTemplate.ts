@@ -15,6 +15,7 @@ import {
   serviceLinkEmailPriceTotalRow,
   serviceLinkEmailSection,
   serviceLinkEmailServiceAndPricingContent,
+  serviceLinkEmailStatementBlock,
   SERVICE_LINK_EMAIL_FONT,
   wrapServiceLinkEmail,
 } from '../utils/serviceLinkEmailLayout';
@@ -73,8 +74,23 @@ function buildPaymentSummarySection(
   addSection: (title: string, rowsHtml: string) => void
 ): string {
   const block = payload.paymentSummary;
-  if (!block?.rows?.length) return '';
+  if (!block) return '';
+  const statementHeading = block.statement?.heading.trim() ?? '';
+  const hasRows = Boolean(block.rows?.length);
+  if (!statementHeading && !hasRows) return '';
+
   const title = (block.title ?? 'Payment').trim();
+  if (statementHeading) {
+    addSection(
+      title,
+      serviceLinkEmailStatementBlock(
+        statementHeading,
+        block.statement?.detail
+      )
+    );
+    return '';
+  }
+
   const rows = block.rows.map((r, i) =>
     serviceLinkEmailDetailRow(r.label, r.value, {
       isLast:

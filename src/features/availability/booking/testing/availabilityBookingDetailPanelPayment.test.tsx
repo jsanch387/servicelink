@@ -80,7 +80,7 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     expect(within(card).getByText('$150.00')).toBeTruthy();
   });
 
-  it('shows no-amount note for collect in person when total is zero', () => {
+  it('shows No charge when total is zero (not Collect in person)', () => {
     const payment: BookingPaymentSummaryDisplay = {
       paymentStatus: 'not_required',
       paymentMethodSelected: 'pay_in_person',
@@ -92,10 +92,28 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     renderPanel(baseBooking(payment));
 
     const card = getPaymentCard();
-    expect(within(card).getByText('Collect in person')).toBeTruthy();
+    expect(within(card).getByText('No charge')).toBeTruthy();
     expect(
-      within(card).getByText(/no amount due for this appointment/i)
+      within(card).getByText(/nothing to collect for this appointment/i)
     ).toBeTruthy();
+    expect(within(card).queryByText('Collect in person')).toBeNull();
+  });
+
+  it('shows Membership for plan-covered visits', () => {
+    const payment: BookingPaymentSummaryDisplay = {
+      paymentStatus: 'not_required',
+      paymentMethodSelected: 'membership',
+      currency: 'usd',
+      totalAmountCents: 0,
+      paidOnlineAmountCents: 0,
+      remainingAmountCents: 0,
+    };
+    renderPanel(baseBooking(payment));
+
+    const card = getPaymentCard();
+    expect(within(card).getByText('Membership')).toBeTruthy();
+    expect(within(card).getByText(/covered by their plan/i)).toBeTruthy();
+    expect(within(card).queryByText('Collect in person')).toBeNull();
   });
 
   it('shows Deposit paid heading plus Amount paid and Amount due rows', () => {
@@ -175,5 +193,34 @@ describe('AvailabilityBookingDetailPanel customer section', () => {
     expect(() => renderPanel(booking)).not.toThrow();
     expect(screen.getByText('Jane Customer')).toBeTruthy();
     expect(screen.queryByRole('link', { name: /email customer/i })).toBeNull();
+  });
+
+  it('formats US phones with +1 and does not treat country code as area code', () => {
+    const booking = baseBooking(undefined);
+    booking.customerPhone = '15807545207';
+    renderPanel(booking);
+
+    expect(screen.getByText('+1 (580) 754-5207')).toBeTruthy();
+    expect(screen.queryByText(/\(158\)/)).toBeNull();
+    const callLink = screen.getByRole('link', { name: /call customer/i });
+    expect(callLink.getAttribute('href')).toBe('tel:+15807545207');
+    expect(
+      screen.getByRole('button', { name: /copy phone number/i })
+    ).toBeTruthy();
+  });
+
+  it('marks membership visits on the customer card', () => {
+    renderPanel(
+      baseBooking({
+        paymentStatus: 'not_required',
+        paymentMethodSelected: 'membership',
+        currency: 'usd',
+        totalAmountCents: 0,
+        paidOnlineAmountCents: 0,
+        remainingAmountCents: 0,
+      })
+    );
+
+    expect(screen.getAllByText('Membership').length).toBeGreaterThanOrEqual(1);
   });
 });

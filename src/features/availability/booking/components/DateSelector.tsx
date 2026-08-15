@@ -35,6 +35,7 @@ interface DateSelectorProps {
   /** Called only for an explicit calendar click, not automatic initial selection. */
   onUserSelectDate?: (date: Date) => void;
   minDate?: Date;
+  maxDate?: Date;
   /** Calendar without outer card chrome (nested inside another panel). */
   plainCalendar?: boolean;
   /** Smaller nav + day cells for tight modals. */
@@ -48,6 +49,11 @@ interface DateSelectorProps {
    * Default true keeps public booking behavior (closed / fully booked days off).
    */
   requireAvailableSlots?: boolean;
+  /**
+   * Must match TimeSlotGrid for the same flow, or auto-select / disabled days
+   * disagree with the times list.
+   */
+  requireDurationWithinHours?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }
 
@@ -61,11 +67,13 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   onSelectDate,
   onUserSelectDate,
   minDate = new Date(),
+  maxDate,
   plainCalendar = false,
   compactCalendar = false,
   calendarTitle,
   calendarSubtitle,
   requireAvailableSlots = true,
+  requireDurationWithinHours = true,
   bookingFlowLocale = 'en',
 }) => {
   const isDateDisabled = useCallback(
@@ -82,12 +90,14 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         existingBookings,
         30,
         timeOffBlocks,
-        minimumNotice
+        minimumNotice,
+        { requireDurationWithinHours }
       );
       return slots.length === 0;
     },
     [
       requireAvailableSlots,
+      requireDurationWithinHours,
       weeklySchedule,
       serviceDurationMinutes,
       existingBookings,
@@ -102,6 +112,13 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       minDate.getMonth(),
       minDate.getDate()
     );
+    const latestDate = maxDate
+      ? new Date(
+          maxDate.getFullYear(),
+          maxDate.getMonth(),
+          maxDate.getDate()
+        )
+      : null;
     const selectedDay = selectedDate
       ? new Date(
           selectedDate.getFullYear(),
@@ -113,6 +130,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
     if (
       selectedDay &&
       selectedDay.getTime() >= earliestDate.getTime() &&
+      (latestDate == null || selectedDay.getTime() <= latestDate.getTime()) &&
       !isDateDisabled(selectedDay)
     ) {
       return;
@@ -121,12 +139,13 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
     for (let offset = 0; offset < 366; offset += 1) {
       const candidate = new Date(earliestDate);
       candidate.setDate(earliestDate.getDate() + offset);
+      if (latestDate && candidate.getTime() > latestDate.getTime()) return;
       if (!isDateDisabled(candidate)) {
         onSelectDate(candidate);
         return;
       }
     }
-  }, [isDateDisabled, minDate, onSelectDate, selectedDate]);
+  }, [isDateDisabled, maxDate, minDate, onSelectDate, selectedDate]);
 
   return (
     <Calendar
@@ -136,6 +155,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         onUserSelectDate?.(date);
       }}
       minDate={minDate}
+      maxDate={maxDate}
       isDateDisabled={isDateDisabled}
       showYear={true}
       plain={plainCalendar}

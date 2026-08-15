@@ -2,6 +2,7 @@ import { getStripeConnectClient } from '@/libs/stripe';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
+import { ensureMembershipInitialBooking } from './ensureMembershipInitialBooking';
 import {
   logMemberships,
   shortIdForLog,
@@ -17,7 +18,7 @@ import { upsertCustomerMembershipFromSubscription } from './upsertCustomerMember
 
 /**
  * Connect `checkout.session.completed` with `metadata.kind = membership_checkout`.
- * Creates/updates `customer_memberships` + `membership_events`.
+ * Creates/updates `customer_memberships` + first-visit booking + emails.
  */
 export async function applyMembershipCheckoutSessionCompleted(
   supabase: SupabaseClient<Database>,
@@ -137,6 +138,54 @@ export async function applyMembershipCheckoutSessionCompleted(
       planPriceId,
     },
   });
+
+  const meta = session.metadata ?? {};
+  const bookingResult = await ensureMembershipInitialBooking(supabase, {
+    membershipId: upsert.membershipId,
+    visitFromSession: {
+      firstVisitDate: meta.firstVisitDate ?? null,
+      firstVisitTime: meta.firstVisitTime ?? null,
+      visitDurationMinutes: meta.visitDurationMinutes ?? null,
+    },
+    customerSnapshot: {
+      name: details?.name ?? null,
+      email: details?.email ?? session.customer_email ?? null,
+      phone: phone || null,
+      street: meta.street ?? null,
+      unit: meta.unit ?? null,
+      city: meta.city ?? null,
+      state: meta.state ?? null,
+      zip: meta.zip ?? null,
+      vehicleYear: meta.vehicleYear ?? null,
+      vehicleMake: meta.vehicleMake ?? null,
+      vehicleModel: meta.vehicleModel ?? null,
+    },
+    stripeCheckoutSessionId: session.id,
+    requestId: event.id,
+  });
+
+  if (bookingResult.created) {
+    await recordMembershipEvent(supabase, {
+      businessId,
+      membershipId: upsert.membershipId,
+      eventType: 'initial_booking_created',
+      stripeEventId: `${event.id}:initial_booking`,
+      stripeAccountId,
+      summary: 'First membership visit booked',
+      payload: {
+        sessionId: session.id,
+        bookingId: bookingResult.bookingId,
+      },
+    });
+  } else if (bookingResult.skippedReason) {
+    logMemberships(event.id, 'warn', 'initial_booking.skipped', {
+      membershipId: shortIdForLog(upsert.membershipId),
+      reason: bookingResult.skippedReason,
+      bookingId: bookingResult.bookingId
+        ? shortIdForLog(bookingResult.bookingId)
+        : undefined,
+    });
+  }
 
   void sendMembershipSubscribeConfirmedIfApplicable(
     supabase,

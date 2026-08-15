@@ -66,7 +66,44 @@ type InvoiceRow = {
   paid_cents?: number;
   status?: string;
   business_id?: string;
+  booking_id?: string;
 };
+
+async function withMembershipCoverage(
+  admin: SupabaseClient,
+  snapshot: BookingInvoiceSnapshot,
+  bookingId: string | null
+): Promise<BookingInvoiceSnapshot> {
+  if (snapshot.coveredByMembership === true) return snapshot;
+  const id = bookingId?.trim();
+  if (!id) return snapshot;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (admin as any)
+    .from('booking_payments')
+    .select('payment_method_selected')
+    .eq('booking_id', id)
+    .maybeSingle();
+
+  const method = String(
+    (data as { payment_method_selected?: string | null } | null)
+      ?.payment_method_selected ?? ''
+  ).trim();
+  if (method !== 'membership') return snapshot;
+
+  const payments = snapshot.payments.some(p => p.kind === 'membership')
+    ? snapshot.payments
+    : [
+        ...snapshot.payments,
+        {
+          kind: 'membership' as const,
+          label: 'Covered by membership',
+          amountCents: 0,
+        },
+      ];
+
+  return { ...snapshot, coveredByMembership: true, payments };
+}
 
 async function mapInvoiceRow(
   admin: SupabaseClient,
@@ -85,13 +122,17 @@ async function mapInvoiceRow(
   const businessId =
     rawSnapshot.business.id?.trim() || String(data.business_id ?? '').trim();
 
-  const snapshot = await hydrateInvoiceSnapshotBusiness(admin, {
-    ...rawSnapshot,
-    business: {
-      ...rawSnapshot.business,
-      id: businessId || rawSnapshot.business.id,
-    },
-  });
+  const snapshot = await withMembershipCoverage(
+    admin,
+    await hydrateInvoiceSnapshotBusiness(admin, {
+      ...rawSnapshot,
+      business: {
+        ...rawSnapshot.business,
+        id: businessId || rawSnapshot.business.id,
+      },
+    }),
+    String(data.booking_id ?? '').trim() || null
+  );
 
   const shortCodeRaw = data.short_code;
   const shortCode =
@@ -114,7 +155,7 @@ async function mapInvoiceRow(
 }
 
 const INVOICE_SELECT =
-  'public_token, short_code, snapshot_json, subtotal_cents, total_cents, paid_cents, status, business_id';
+  'public_token, short_code, snapshot_json, subtotal_cents, total_cents, paid_cents, status, business_id, booking_id';
 
 export async function loadPublicBookingInvoiceByToken(
   admin: SupabaseClient,
