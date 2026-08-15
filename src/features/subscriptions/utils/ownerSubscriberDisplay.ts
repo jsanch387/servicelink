@@ -186,26 +186,22 @@ export function formatSubscriberVisitTime(
     : `${h12}:${String(minute).padStart(2, '0')} ${ampm}`;
 }
 
-/** Summary / table label for the billing date column. */
-export function getSubscriberBillingDateLabel(
-  status: OwnerSubscriberStatus,
-  cancelAtPeriodEnd?: boolean,
-  planRemoved?: boolean
-): string {
-  if (planRemoved || status === 'canceled') return 'Next bill';
-  if (isSubscriberCancelScheduled(status, cancelAtPeriodEnd)) {
-    return 'Access until';
-  }
-  return 'Next bill';
+export function subscriberHasUpcomingBill(args: {
+  status: OwnerSubscriberStatus;
+  cancelAtPeriodEnd?: boolean;
+  planRemoved?: boolean;
+}): boolean {
+  if (args.planRemoved || args.status === 'canceled') return false;
+  return !isSubscriberCancelScheduled(args.status, args.cancelAtPeriodEnd);
 }
 
-/** Value for next-bill / access-until column (— when fully canceled). */
+/** Next bill column — date when they will be charged, otherwise —. */
 export function formatSubscriberBillingDateValue(args: {
   status: OwnerSubscriberStatus;
   cancelAtPeriodEnd?: boolean;
   nextBillingAt: string | null;
   planRemoved?: boolean;
 }): string {
-  if (args.planRemoved || args.status === 'canceled') return '—';
+  if (!subscriberHasUpcomingBill(args)) return '—';
   return formatSubscriberBillingDate(args.nextBillingAt);
 }

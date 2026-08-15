@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatEndedSubscribersToggleLabel,
+  formatSubscriberBillingDate,
+  formatSubscriberBillingDateValue,
   formatSubscriberPlanLabel,
   isCurrentOwnerSubscriber,
   isOwnerSubscriberCountedAsActive,
@@ -44,6 +46,37 @@ describe('isCurrentOwnerSubscriber', () => {
     expect(
       isCurrentOwnerSubscriber({ status: 'active', planRemoved: false })
     ).toBe(true);
+  });
+});
+
+describe('formatSubscriberBillingDateValue', () => {
+  it('hides the date when they already canceled', () => {
+    expect(
+      formatSubscriberBillingDateValue({
+        status: 'canceled',
+        nextBillingAt: '2026-09-14',
+      })
+    ).toBe('—');
+  });
+
+  it('hides the date when cancel is scheduled', () => {
+    expect(
+      formatSubscriberBillingDateValue({
+        status: 'active',
+        cancelAtPeriodEnd: true,
+        nextBillingAt: '2026-09-14',
+      })
+    ).toBe('—');
+  });
+
+  it('shows the date for a live member', () => {
+    expect(
+      formatSubscriberBillingDateValue({
+        status: 'active',
+        cancelAtPeriodEnd: false,
+        nextBillingAt: '2026-09-14',
+      })
+    ).toBe(formatSubscriberBillingDate('2026-09-14'));
   });
 });
 

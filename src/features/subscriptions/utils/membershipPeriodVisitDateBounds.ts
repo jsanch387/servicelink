@@ -156,7 +156,7 @@ export function resolveMembershipPeriodVisitDateBounds(args: {
 
   let windowStart = periodStart;
   let windowEndExclusive = periodEnd;
-  if (usedThisPeriod) {
+  if (usedThisPeriod && periodStart) {
     windowStart = periodEnd ?? addCadenceToYmd(periodStart, unit, count);
     windowEndExclusive = windowStart
       ? addCadenceToYmd(windowStart, unit, count)

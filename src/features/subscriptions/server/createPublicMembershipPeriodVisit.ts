@@ -70,6 +70,7 @@ export type CreatePublicMembershipPeriodVisitResult =
         | 'wrong_business'
         | 'not_eligible'
         | 'already_scheduled'
+        | 'date_out_of_period'
         | 'slot_unavailable'
         | 'free_tier_cap'
         | 'create_failed';

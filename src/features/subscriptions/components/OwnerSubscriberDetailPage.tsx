@@ -33,7 +33,6 @@ import {
   formatSubscriberBillingDateValue,
   formatSubscriberPlanLabel,
   formatSubscriberVisitTime,
-  getSubscriberBillingDateLabel,
   getSubscriberStatusClassName,
   getSubscriberStatusLabel,
   isSubscriberCancelScheduled,
@@ -529,11 +528,7 @@ export const OwnerSubscriberDetailPage: React.FC<
               />
               <MetaRow label="Schedule" value={subscriber.cadenceLabel} />
               <MetaRow
-                label={getSubscriberBillingDateLabel(
-                  subscriber.status,
-                  subscriber.cancelAtPeriodEnd,
-                  subscriber.planRemoved
-                )}
+                label="Next bill"
                 value={formatSubscriberBillingDateValue({
                   status: subscriber.status,
                   cancelAtPeriodEnd: subscriber.cancelAtPeriodEnd,

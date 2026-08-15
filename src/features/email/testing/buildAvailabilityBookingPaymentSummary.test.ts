@@ -38,6 +38,19 @@ describe('buildPublicBookingNoCheckoutPaymentSummary', () => {
     ]);
   });
 
+  it('membership visit uses covered-by-membership copy', () => {
+    expect(
+      buildPublicBookingNoCheckoutPaymentSummary({
+        paymentsEnabled: true,
+        checkoutMode: 'in_app',
+        clientPaymentMethod: 'membership',
+        currency: 'usd',
+        totalPriceCents: 0,
+        hasPriceLineItems: false,
+      })
+    ).toEqual(buildMembershipVisitPaymentSummary());
+  });
+
   it('payments disabled omits payment section', () => {
     expect(
       buildPublicBookingNoCheckoutPaymentSummary({
