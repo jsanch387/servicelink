@@ -33,13 +33,17 @@ export async function notifyOwnerForNewMembershipSubscriber(
 
   const eventId = args.stripeEventId?.trim() || undefined;
 
-  const { data: business, error: bizError } = await supabase
+  const { data: profileRow, error: bizError } = await supabase
     .from('business_profiles')
     .select('profile_id')
     .eq('id', businessId)
     .maybeSingle();
 
-  if (bizError || !business?.profile_id) {
+  const profileId =
+    (profileRow as { profile_id?: string | null } | null)?.profile_id?.trim() ||
+    '';
+
+  if (bizError || !profileId) {
     logMemberships(eventId, 'warn', 'new_subscriber.notify_skip', {
       membershipId: shortIdForLog(membershipId),
       businessId: shortIdForLog(businessId),
@@ -48,9 +52,6 @@ export async function notifyOwnerForNewMembershipSubscriber(
     });
     return;
   }
-
-  const profileId = String(business.profile_id).trim();
-  if (!profileId) return;
 
   let planName: string | null = null;
   const planId = args.planId?.trim();
@@ -115,7 +116,6 @@ export async function notifyOwnerForNewMembershipSubscriber(
     data: {
       reference_type: 'membership',
       reference_id: membershipId,
-      type: 'membership_subscriber',
     },
   });
 }
