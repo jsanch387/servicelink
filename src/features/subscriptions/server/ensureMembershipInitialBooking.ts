@@ -353,8 +353,8 @@ export async function ensureMembershipInitialBooking(
     };
   }
 
-  try {
-    await db.from('booking_payments').insert({
+  {
+    const { error: payErr } = await db.from('booking_payments').insert({
       booking_id: bookingId,
       business_id: membership.business_id,
       provider: 'none',
@@ -367,19 +367,19 @@ export async function ensureMembershipInitialBooking(
       remaining_amount_cents: 0,
       last_checkout_session_id: args.stripeCheckoutSessionId?.trim() || null,
     });
-  } catch (payErr) {
-    logMemberships(requestId, 'error', 'initial_booking.payment_row_failed', {
-      membershipId: shortIdForLog(membershipId),
-      bookingId: shortIdForLog(bookingId),
-      reason:
-        payErr instanceof Error ? payErr.message.slice(0, 120) : 'unknown',
-    });
-    await db.from('bookings').delete().eq('id', bookingId);
-    return {
-      bookingId: null,
-      created: false,
-      skippedReason: 'payment_row_failed',
-    };
+    if (payErr) {
+      logMemberships(requestId, 'error', 'initial_booking.payment_row_failed', {
+        membershipId: shortIdForLog(membershipId),
+        bookingId: shortIdForLog(bookingId),
+        ...supabaseErrorForLogs(payErr),
+      });
+      await db.from('bookings').delete().eq('id', bookingId);
+      return {
+        bookingId: null,
+        created: false,
+        skippedReason: 'payment_row_failed',
+      };
+    }
   }
 
   const periodStart = membership.current_period_start?.trim() || null;

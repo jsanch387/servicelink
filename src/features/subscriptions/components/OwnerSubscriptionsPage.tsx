@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import type { LoadOwnerMembershipsResult } from '../server/loadOwnerMembershipsState';
 import type { MembershipsAccess } from '../types/membershipsAccess';
+import type { OwnerSubscriber } from '../types/ownerSubscriptionPlan';
 import { SubscriptionsConnectGate } from './gates/SubscriptionsConnectGate';
 import { SubscriptionsNotProGate } from './gates/SubscriptionsNotProGate';
 import { SubscriptionsPaymentsGate } from './gates/SubscriptionsPaymentsGate';
+import { SubscriptionsProPausedBanner } from './gates/SubscriptionsProPausedBanner';
 import { OwnerSubscriptionsCreateFirst } from './OwnerSubscriptionsCreateFirst';
 import { OwnerSubscriptionsPlanList } from './OwnerSubscriptionsPlanList';
 
@@ -17,21 +19,32 @@ type ViewPhase = 'create_first' | 'list';
 interface OwnerSubscriptionsPageProps {
   loadResult: LoadOwnerMembershipsResult;
   access: MembershipsAccess;
+  /** Prefetched for the Subscribers tab. */
+  subscribers?: OwnerSubscriber[];
 }
 
 /**
  * Owner dashboard: gates (Pro / Connect / payments) → create first plan → list.
- * No separate "turned on" flag — presence of plans drives the UI.
+ * When Pro lapses with existing plans: read-only list + paused banner (members still billing).
  */
 export const OwnerSubscriptionsPage: React.FC<OwnerSubscriptionsPageProps> = ({
   loadResult,
   access,
+  subscribers,
 }) => {
   const router = useRouter();
   const gate = access.gate;
   const plans = loadResult.ok ? loadResult.plans : [];
   const phase: ViewPhase = plans.length === 0 ? 'create_first' : 'list';
-  const showReadyContent = gate === 'ready' && loadResult.ok;
+  const catalogWritable = gate === 'ready';
+  const showPausedCatalog =
+    gate === 'not_pro' && loadResult.ok && plans.length > 0;
+  const showReadyContent = catalogWritable && loadResult.ok;
+  const showCatalog = showReadyContent || showPausedCatalog;
+  const activeMemberCount = plans.reduce(
+    (sum, plan) => sum + (plan.activeSubscriberCount ?? 0),
+    0
+  );
 
   const goCreatePlan = () => {
     router.push(ROUTES.DASHBOARD.SUBSCRIPTIONS_NEW);
@@ -41,7 +54,7 @@ export const OwnerSubscriptionsPage: React.FC<OwnerSubscriptionsPageProps> = ({
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] px-4 pt-8 pb-28 sm:px-6 sm:pt-10 sm:pb-10 lg:px-8">
       <div
         className={`flex w-full min-w-0 flex-1 flex-col ${
-          showReadyContent && phase === 'list'
+          showCatalog && phase === 'list'
             ? 'mx-auto max-w-5xl'
             : 'mx-auto max-w-6xl'
         }`}
@@ -55,7 +68,17 @@ export const OwnerSubscriptionsPage: React.FC<OwnerSubscriptionsPageProps> = ({
           </p>
         </div>
 
-        {gate === 'not_pro' ? <SubscriptionsNotProGate /> : null}
+        {gate === 'not_pro' && !showPausedCatalog ? (
+          <SubscriptionsNotProGate />
+        ) : null}
+
+        {showPausedCatalog ? (
+          <div className="mt-6 sm:mt-8">
+            <SubscriptionsProPausedBanner
+              activeMemberCount={activeMemberCount}
+            />
+          </div>
+        ) : null}
 
         {gate === 'needs_connect' ? (
           <SubscriptionsConnectGate
@@ -66,7 +89,7 @@ export const OwnerSubscriptionsPage: React.FC<OwnerSubscriptionsPageProps> = ({
 
         {gate === 'needs_payments' ? <SubscriptionsPaymentsGate /> : null}
 
-        {gate === 'ready' && !loadResult.ok ? (
+        {(gate === 'ready' || gate === 'not_pro') && !loadResult.ok ? (
           <div className="mt-6 rounded-2xl border border-red-400/20 bg-red-400/10 p-4 sm:mt-8 sm:p-5">
             <p className="text-sm text-red-200">{loadResult.error}</p>
             <Button
@@ -89,11 +112,13 @@ export const OwnerSubscriptionsPage: React.FC<OwnerSubscriptionsPageProps> = ({
           </div>
         ) : null}
 
-        {showReadyContent && phase === 'list' ? (
-          <div className="mt-6 sm:mt-8">
+        {showCatalog && phase === 'list' ? (
+          <div className={showPausedCatalog ? 'mt-5 sm:mt-6' : 'mt-6 sm:mt-8'}>
             <OwnerSubscriptionsPlanList
               plans={plans}
               onCreatePlan={goCreatePlan}
+              catalogWritable={catalogWritable}
+              initialSubscribers={subscribers}
             />
           </div>
         ) : null}

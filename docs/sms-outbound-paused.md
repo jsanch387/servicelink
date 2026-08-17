@@ -23,7 +23,7 @@ Lifecycle actions (`on_the_way`, etc.) remain SMS-only.
 | Owner taps **On my way**                                                     | `on_the_way`                                | `src/app/api/availability/bookings/[id]/actions/route.ts`                          |
 | Owner taps **Job started**                                                   | `job_started`                               | `src/app/api/availability/bookings/[id]/actions/route.ts`                          |
 | Owner taps **Done** (work handoff)                                           | `work_finished`                             | `src/features/availability/booking/server/handleWorkFinishedAction.ts`             |
-| Owner completes job — invoice / receipt (`job_completed`)                    | `job_completed` (SMS-first; email fallback) | `src/features/availability/booking/server/sendJobCompletedCustomerNotification.ts` |
+| Owner completes job — invoice / receipt (`job_completed`)                    | `job_completed` (SMS and/or email) | `src/features/availability/booking/server/sendJobCompletedCustomerNotification.ts` |
 
 ## Still paused
 

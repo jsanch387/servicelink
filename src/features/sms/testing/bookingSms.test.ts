@@ -8,6 +8,8 @@ import {
   buildOnMyWaySms,
   buildReviewRequestSms,
   buildWorkFinishedSms,
+  buildMembershipScheduleLinkSms,
+  buildMembershipVisitReminderSms,
 } from '../messages/bookingSms';
 
 const OPT_OUT = 'Reply STOP to opt out.';
@@ -96,6 +98,31 @@ describe('booking SMS templates (ServiceLink)', () => {
       expectOptOutBlock(
         msg,
         'Enjoyed your service? Leave a quick review: https://servicelink.app/review/abc123'
+      );
+    });
+  });
+
+  describe('membership schedule SMS', () => {
+    it('owner schedule link asks to book without saying the period started', () => {
+      expectOptOutBlock(
+        buildMembershipScheduleLinkSms({
+          scheduleUrl: 'https://app.test/m/visit',
+        }),
+        'Book your next visit: https://app.test/m/visit'
+      );
+      expect(
+        buildMembershipScheduleLinkSms({
+          scheduleUrl: 'https://app.test/m/visit',
+        })
+      ).not.toMatch(/period started/i);
+    });
+
+    it('automatic period reminder still mentions the new period', () => {
+      expectOptOutBlock(
+        buildMembershipVisitReminderSms({
+          scheduleUrl: 'https://app.test/m/visit',
+        }),
+        'Your membership period started. Book your next visit: https://app.test/m/visit'
       );
     });
   });

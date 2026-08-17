@@ -3,7 +3,7 @@
  * Owner: list customer memberships for the current business.
  */
 
-import { assertMembershipsReady } from '@/features/subscriptions/server/assertMembershipsReady';
+import { assertMembershipsSubscriberAccess } from '@/features/subscriptions/server/assertMembershipsReady';
 import { listOwnerCustomerMemberships } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
 import {
   getMembershipsRequestId,
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const ready = await assertMembershipsReady(
+    const ready = await assertMembershipsSubscriberAccess(
       supabase,
       user.id,
       resolved.businessId,

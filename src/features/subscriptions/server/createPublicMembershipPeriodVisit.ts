@@ -373,8 +373,8 @@ export async function createPublicMembershipPeriodVisit(
     };
   }
 
-  try {
-    await db.from('booking_payments').insert({
+  {
+    const { error: payErr } = await db.from('booking_payments').insert({
       booking_id: bookingId,
       business_id: biz.id,
       provider: 'none',
@@ -387,20 +387,20 @@ export async function createPublicMembershipPeriodVisit(
       remaining_amount_cents: 0,
       last_checkout_session_id: null,
     });
-  } catch (payErr) {
-    logMemberships(requestId, 'error', 'period_visit.public_payment_failed', {
-      membershipId: shortIdForLog(membershipId),
-      bookingId: shortIdForLog(bookingId),
-      reason:
-        payErr instanceof Error ? payErr.message.slice(0, 120) : 'unknown',
-    });
-    await db.from('bookings').delete().eq('id', bookingId);
-    return {
-      ok: false,
-      error: 'Could not book that visit. Try again.',
-      status: 500,
-      code: 'create_failed',
-    };
+    if (payErr) {
+      logMemberships(requestId, 'error', 'period_visit.public_payment_failed', {
+        membershipId: shortIdForLog(membershipId),
+        bookingId: shortIdForLog(bookingId),
+        ...supabaseErrorForLogs(payErr),
+      });
+      await db.from('bookings').delete().eq('id', bookingId);
+      return {
+        ok: false,
+        error: 'Could not book that visit. Try again.',
+        status: 500,
+        code: 'create_failed',
+      };
+    }
   }
 
   const linked = await linkMembershipPeriodVisit(supabase, {

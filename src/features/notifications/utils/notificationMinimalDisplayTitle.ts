@@ -61,6 +61,13 @@ export function notificationMinimalDisplayTitle(
     return 'New review';
   }
 
+  if (blob.includes('membership_subscriber') || blob.includes('new_subscriber')) {
+    return 'New subscriber';
+  }
+  if (blob.includes('membership_visit')) {
+    return 'Member needs a visit';
+  }
+
   if (blob.includes('cancel')) return 'Appointment canceled';
   if (blob.includes('reschedule') || blob.includes('rescheduled')) {
     return 'Appointment updated';

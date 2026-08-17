@@ -32,7 +32,7 @@ This document defines the `booking_payments` table for availability bookings wit
 | `business_id`                  | `uuid`        |       no | FK -> `business_profiles(id)`                                             |
 | `provider`                     | `text`        |       no | `none` or `stripe`                                                        |
 | `payment_status`               | `text`        |       no | `not_required`, `awaiting_payment`, `deposit_paid`, `paid_full`, `failed` |
-| `payment_method_selected`      | `text`        |       no | `none`, `pay_in_person`, `pay_now`                                        |
+| `payment_method_selected`      | `text`        |       no | `none`, `pay_in_person`, `pay_now`, `membership`                          |
 | `currency`                     | `text`        |       no | lowercase ISO-3 (e.g. `usd`)                                              |
 | `total_amount_cents`           | `int4`        |       no | Total booking price snapshot                                              |
 | `required_online_amount_cents` | `int4`        |       no | Amount required online to secure booking                                  |

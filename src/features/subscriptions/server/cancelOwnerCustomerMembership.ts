@@ -14,6 +14,7 @@ import { customerMembershipsOf } from './membershipTablesQuery';
 import { recordMembershipEvent } from './recordMembershipEvent';
 import { upsertCustomerMembershipFromSubscription } from './upsertCustomerMembershipFromSubscription';
 import { isMembershipCancelScheduled } from './mapCustomerMembershipToOwnerSubscriber';
+import { sendMembershipCanceledEmailIfApplicable } from './sendMembershipCanceledEmailIfApplicable';
 
 function stripeErrorCode(err: unknown): string | null {
   if (!err || typeof err !== 'object') return null;
@@ -149,6 +150,15 @@ export async function cancelOwnerCustomerMembership(
           : 'Owner requested cancel at period end',
       payload: { mode: args.mode, subscriptionId: stripeSubscriptionId },
     });
+
+    try {
+      await sendMembershipCanceledEmailIfApplicable(admin, {
+        membershipId,
+        previouslyCanceling: false,
+      });
+    } catch {
+      // Best-effort; webhook path also attempts send.
+    }
 
     return returnFresh(false);
   } catch (err) {

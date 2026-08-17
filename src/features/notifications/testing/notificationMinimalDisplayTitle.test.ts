@@ -18,6 +18,16 @@ describe('notificationMinimalDisplayTitle', () => {
     expect(
       notificationMinimalDisplayTitle('review_submitted', 'review', '')
     ).toBe('New review');
+    expect(
+      notificationMinimalDisplayTitle('membership_subscriber', 'membership', '')
+    ).toBe('New subscriber');
+    expect(
+      notificationMinimalDisplayTitle(
+        'membership_visit_needed',
+        'membership',
+        ''
+      )
+    ).toBe('Member needs a visit');
   });
 
   it('payment failed before generic payment', () => {

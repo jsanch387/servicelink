@@ -11,6 +11,11 @@ export type {
 
 export { sendAvailabilityBookingCustomerConfirmationEmail } from './availability-booking-notification/sendAvailabilityBookingCustomerConfirmationEmail';
 export { sendAvailabilityBookingNotificationEmail } from './availability-booking-notification/sendAvailabilityBookingNotificationEmail';
+export { sendAvailabilityBookingCanceledEmail } from './availability-booking-canceled/sendAvailabilityBookingCanceledEmail';
+export type {
+  AvailabilityBookingCanceledPayload,
+  SendAvailabilityBookingCanceledResult,
+} from './availability-booking-canceled/types';
 export type {
   AvailabilityBookingEmailJob,
   AvailabilityBookingNotificationPayload,
@@ -40,6 +45,12 @@ export type {
   SendMembershipManageLinkResult,
 } from './membership-manage-link/types';
 export { sendMembershipSubscribeConfirmedEmail } from './membership-subscribe-confirmed/sendMembershipSubscribeConfirmedEmail';
+export { sendMembershipCanceledEmail } from './membership-canceled/sendMembershipCanceledEmail';
+export type {
+  MembershipCanceledEmailKind,
+  MembershipCanceledEmailPayload,
+  SendMembershipCanceledEmailResult,
+} from './membership-canceled/types';
 export { sendMembershipVisitReminderEmail } from './membership-visit-reminder/sendMembershipVisitReminderEmail';
 export type {
   MembershipVisitReminderPayload,

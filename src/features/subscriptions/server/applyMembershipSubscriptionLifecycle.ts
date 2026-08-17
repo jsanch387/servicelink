@@ -8,7 +8,13 @@ import {
   shortStripeIdForLog,
 } from './membershipsTransactionLog';
 import { isMembershipCheckoutKind } from './membershipStripeHelpers';
+import {
+  isMembershipCancelScheduled,
+  mapMembershipStatusToOwner,
+} from './mapCustomerMembershipToOwnerSubscriber';
+import { customerMembershipsOf } from './membershipTablesQuery';
 import { recordMembershipEvent } from './recordMembershipEvent';
+import { sendMembershipCanceledEmailIfApplicable } from './sendMembershipCanceledEmailIfApplicable';
 import { sendMembershipPeriodVisitRemindersIfApplicable } from './sendMembershipPeriodVisitRemindersIfApplicable';
 import {
   findMembershipByStripeSubscription,
@@ -110,6 +116,19 @@ export async function applyMembershipSubscriptionLifecycle(
     return { handled: true };
   }
 
+  const prior = await customerMembershipsOf(supabase)
+    .select('status, cancel_at_period_end, cancel_at')
+    .eq('stripe_account_id', stripeAccountId)
+    .eq('stripe_subscription_id', fresh.id)
+    .maybeSingle();
+
+  const previouslyCanceling = Boolean(
+    prior.data &&
+      (mapMembershipStatusToOwner(String(prior.data.status ?? '')) ===
+        'canceled' ||
+        isMembershipCancelScheduled(prior.data))
+  );
+
   const upsert = await upsertCustomerMembershipFromSubscription(supabase, {
     stripeAccountId,
     subscription: fresh,
@@ -146,7 +165,20 @@ export async function applyMembershipSubscriptionLifecycle(
     (typeof fresh.cancel_at === 'number' &&
       fresh.cancel_at * 1000 > Date.now());
 
-  if (args.kind === 'updated' && !canceling) {
+  if (canceling) {
+    try {
+      await sendMembershipCanceledEmailIfApplicable(supabase, {
+        membershipId: upsert.membershipId,
+        previouslyCanceling,
+        stripeEventId: event.id,
+      });
+    } catch (err) {
+      logMemberships(event.id, 'warn', 'cancel_email.unexpected', {
+        membershipId: shortIdForLog(upsert.membershipId),
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+  } else if (args.kind === 'updated') {
     try {
       await sendMembershipPeriodVisitRemindersIfApplicable(supabase, {
         membershipId: upsert.membershipId,

@@ -69,6 +69,21 @@ export function buildMembershipVisitReminderSms(ctx: {
   );
 }
 
+/**
+ * Owner “Send schedule link” (e.g. after a canceled visit) — ask to book,
+ * without implying a new billing period started.
+ */
+export function buildMembershipScheduleLinkSms(ctx: {
+  scheduleUrl: string;
+}): string {
+  const url = ctx.scheduleUrl.trim();
+  return withOptOut(
+    url
+      ? `Book your next visit: ${url}`
+      : `Book your next visit with your provider.`
+  );
+}
+
 /** Sent when the business marks themselves en route. */
 export function buildOnMyWaySms(ctx: { businessName: string }): string {
   const name = ctx.businessName.trim() || 'Your service provider';

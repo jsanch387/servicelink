@@ -3,6 +3,8 @@ import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelper
 import { OwnerSubscriptionPlanDetailPage } from '@/features/subscriptions';
 import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptions/config/membershipsRolloutAllowlist';
 import { getMembershipPlanForBusiness } from '@/features/subscriptions/server/getMembershipPlan';
+import { listOwnerCustomerMemberships } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
+import { loadMembershipsAccess } from '@/features/subscriptions/server/loadMembershipsAccess';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { notFound, redirect } from 'next/navigation';
@@ -42,15 +44,44 @@ export default async function SubscriptionPlanDetailPage({
     redirect(ROUTES.DASHBOARD.SUBSCRIPTIONS);
   }
 
-  const plan = await getMembershipPlanForBusiness(
+  const access = await loadMembershipsAccess(
     supabase,
+    user.id,
     businessResolved.businessId,
-    planId
+    user.email
   );
+
+  if (!access.inRollout) {
+    redirect(ROUTES.DASHBOARD.MAIN);
+  }
+
+  // View existing plans when Pro lapsed; other incomplete gates go back to list.
+  if (access.gate !== 'ready' && access.gate !== 'not_pro') {
+    redirect(ROUTES.DASHBOARD.SUBSCRIPTIONS);
+  }
+
+  const [plan, subscribersResult] = await Promise.all([
+    getMembershipPlanForBusiness(
+      supabase,
+      businessResolved.businessId,
+      planId
+    ),
+    listOwnerCustomerMemberships(supabase, businessResolved.businessId, {
+      planId,
+    }),
+  ]);
 
   if (!plan) {
     notFound();
   }
 
-  return <OwnerSubscriptionPlanDetailPage plan={plan} />;
+  return (
+    <OwnerSubscriptionPlanDetailPage
+      plan={plan}
+      catalogWritable={access.gate === 'ready'}
+      subscribers={
+        subscribersResult.ok ? subscribersResult.subscribers : undefined
+      }
+    />
+  );
 }

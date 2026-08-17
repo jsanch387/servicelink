@@ -3,6 +3,7 @@ import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelper
 import { logConnect } from '@/features/payments/server/connectOnboardingLog';
 import { syncConnectPaymentAccountForBusiness } from '@/features/payments/server/syncConnectPaymentAccount';
 import { OwnerSubscriptionsPage } from '@/features/subscriptions';
+import { listOwnerCustomerMemberships } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
 import { loadMembershipsAccess } from '@/features/subscriptions/server/loadMembershipsAccess';
 import { loadOwnerMembershipsState } from '@/features/subscriptions/server/loadOwnerMembershipsState';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -65,14 +66,23 @@ export default async function SubscriptionsDashboardPage({
     redirect(ROUTES.DASHBOARD.SUBSCRIPTIONS);
   }
 
-  const [loadResult, access] = await Promise.all([
+  const [loadResult, access, subscribersResult] = await Promise.all([
     loadOwnerMembershipsState(supabase, businessId),
     loadMembershipsAccess(supabase, user.id, businessId, user.email),
+    listOwnerCustomerMemberships(supabase, businessId),
   ]);
 
   if (!access.inRollout) {
     redirect(ROUTES.DASHBOARD.MAIN);
   }
 
-  return <OwnerSubscriptionsPage loadResult={loadResult} access={access} />;
+  return (
+    <OwnerSubscriptionsPage
+      loadResult={loadResult}
+      access={access}
+      subscribers={
+        subscribersResult.ok ? subscribersResult.subscribers : undefined
+      }
+    />
+  );
 }

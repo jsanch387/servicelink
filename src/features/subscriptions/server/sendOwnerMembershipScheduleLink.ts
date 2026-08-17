@@ -5,7 +5,7 @@
 import { getPublicMembershipVisitPath } from '@/constants/routes';
 import { sendMembershipVisitReminderEmail } from '@/features/email/membership-visit-reminder/sendMembershipVisitReminderEmail';
 import {
-  buildMembershipVisitReminderSms,
+  buildMembershipScheduleLinkSms,
   sendAndRecordSms,
 } from '@/features/sms';
 import { getAppBaseUrl } from '@/libs/stripe';
@@ -160,6 +160,7 @@ export async function sendOwnerMembershipScheduleLink(
       customerName: (row.customer_name as string | null)?.trim() || null,
       planName,
       scheduleUrl,
+      kind: 'schedule_link',
     });
     emailed = mail.sent;
     if (!mail.sent) {
@@ -178,7 +179,7 @@ export async function sendOwnerMembershipScheduleLink(
       customerId: (row.customer_id as string | null) ?? null,
       type: 'membership_visit_reminder',
       to: phone,
-      message: buildMembershipVisitReminderSms({ scheduleUrl }),
+      message: buildMembershipScheduleLinkSms({ scheduleUrl }),
       dedupeKey: `${membershipId}:schedule_link:${periodStart}:${sendCount}`,
     });
     smsed = sms.sent;

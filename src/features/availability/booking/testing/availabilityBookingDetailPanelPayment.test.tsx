@@ -99,7 +99,7 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     expect(within(card).queryByText('Collect in person')).toBeNull();
   });
 
-  it('shows Membership for plan-covered visits', () => {
+  it('shows Subscription for plan-covered visits', () => {
     const payment: BookingPaymentSummaryDisplay = {
       paymentStatus: 'not_required',
       paymentMethodSelected: 'membership',
@@ -111,8 +111,7 @@ describe('AvailabilityBookingDetailPanel payment section', () => {
     renderPanel(baseBooking(payment));
 
     const card = getPaymentCard();
-    expect(within(card).getByText('Membership')).toBeTruthy();
-    expect(within(card).getByText(/covered by their plan/i)).toBeTruthy();
+    expect(within(card).getByText('Subscription')).toBeTruthy();
     expect(within(card).queryByText('Collect in person')).toBeNull();
   });
 

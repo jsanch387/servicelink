@@ -33,6 +33,18 @@ describe('buildMembershipVisitReminderHtml', () => {
     expect(html).not.toContain('>ServiceLink</span>');
     expect(html).not.toContain('letter-spacing:1.4px');
   });
+
+  it('owner schedule-link copy skips “new period started”', () => {
+    const html = buildMembershipVisitReminderHtml({
+      ...payload,
+      kind: 'schedule_link',
+    });
+    expect(html).toContain(
+      'Hi Tessa, book your next visit for Super Maintenance with Urban Detailing. Choose a date and time that works for you.'
+    );
+    expect(html).not.toMatch(/new period/i);
+    expect(html).not.toMatch(/started\./i);
+  });
 });
 
 describe('buildMembershipVisitReminderPlainText', () => {
@@ -42,5 +54,16 @@ describe('buildMembershipVisitReminderPlainText', () => {
     expect(text).toContain(payload.scheduleUrl);
     expect(text).toContain('Sent for Urban Detailing via ServiceLink');
     expect(text).not.toContain('— ServiceLink');
+  });
+
+  it('owner schedule-link plain text matches', () => {
+    const text = buildMembershipVisitReminderPlainText({
+      ...payload,
+      kind: 'schedule_link',
+    });
+    expect(text).toContain(
+      'Hi Tessa, book your next visit for Super Maintenance with Urban Detailing.'
+    );
+    expect(text).not.toMatch(/new period/i);
   });
 });

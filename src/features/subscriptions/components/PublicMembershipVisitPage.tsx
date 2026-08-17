@@ -34,6 +34,7 @@ import {
   MembershipServiceDetailsFields,
   type MembershipServiceDetailsValue,
 } from './MembershipServiceDetailsFields';
+import { PublicMembershipStepHeading } from './PublicMembershipStepHeading';
 import { PublicMembershipSuccessScreen } from './PublicMembershipSuccessScreen';
 
 type VisitStep = 'details' | 'schedule';
@@ -249,7 +250,6 @@ export const PublicMembershipVisitPage: React.FC<
         scheduledDate: json.scheduledDate,
         startTime: json.startTime?.trim() || '',
       });
-      toast.success(ui.subscriptions.periodVisitBookSuccess);
     } catch {
       toast.error(ui.subscriptions.periodVisitBookFailed);
     } finally {
@@ -269,12 +269,11 @@ export const PublicMembershipVisitPage: React.FC<
           </div>
         </div>
         <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
-          <h1 className="text-2xl font-black tracking-tight text-white">
-            {ui.subscriptions.periodVisitInactiveTitle}
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-            {ui.subscriptions.periodVisitInactiveBody}
-          </p>
+          <PublicMembershipStepHeading
+            id="period-visit-inactive-heading"
+            title={ui.subscriptions.periodVisitInactiveTitle}
+            hint={ui.subscriptions.periodVisitInactiveBody}
+          />
         </main>
       </div>
     );
@@ -357,50 +356,48 @@ export const PublicMembershipVisitPage: React.FC<
         </div>
 
         {step === 'details' ? (
-          <section aria-labelledby="period-visit-details-heading">
-            <h1
+          <section
+            aria-labelledby="period-visit-details-heading"
+            className="space-y-6"
+          >
+            <PublicMembershipStepHeading
               id="period-visit-details-heading"
-              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
-            >
-              {ui.subscriptions.serviceDetailsTitle}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              {needsAddress
-                ? ui.subscriptions.periodVisitDetailsHint
-                : ui.subscriptions.periodVisitDetailsHintShop}
-            </p>
-            <div className="mt-6">
-              <MembershipServiceDetailsFields
-                value={details}
-                onChange={setDetails}
-                showContact={false}
-                showAddress={needsAddress}
-                showVehicle={needsVehicle}
-                vehicleReadOnly
-                savedBanner={
-                  needsAddress && (usingSavedDetails || serviceDetailsComplete)
-                    ? ui.subscriptions.periodVisitUsingSavedDetails
-                    : null
-                }
-                bookingFlowLocale={bookingFlowLocale}
-              />
-            </div>
+              title={ui.subscriptions.serviceDetailsTitle}
+              hint={
+                needsAddress
+                  ? ui.subscriptions.periodVisitDetailsHint
+                  : ui.subscriptions.periodVisitDetailsHintShop
+              }
+            />
+            <MembershipServiceDetailsFields
+              value={details}
+              onChange={setDetails}
+              showContact={false}
+              showAddress={needsAddress}
+              showVehicle={needsVehicle}
+              vehicleReadOnly
+              savedBanner={
+                needsAddress && (usingSavedDetails || serviceDetailsComplete)
+                  ? ui.subscriptions.periodVisitUsingSavedDetails
+                  : null
+              }
+              bookingFlowLocale={bookingFlowLocale}
+            />
           </section>
         ) : null}
 
         {step === 'schedule' ? (
-          <section aria-labelledby="period-visit-heading">
-            <h1
+          <section
+            aria-labelledby="period-visit-heading"
+            className="space-y-6"
+          >
+            <PublicMembershipStepHeading
               id="period-visit-heading"
-              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
-            >
-              {ui.subscriptions.periodVisitTitle}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              {ui.subscriptions.periodVisitHint(planName)}
-            </p>
+              title={ui.subscriptions.periodVisitTitle}
+              hint={ui.subscriptions.periodVisitHint(planName)}
+            />
 
-            <div className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 lg:p-5">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 lg:p-5">
               <DateSelector
                 weeklySchedule={weeklySchedule}
                 serviceDurationMinutes={visitDurationMinutes}
@@ -423,7 +420,7 @@ export const PublicMembershipVisitPage: React.FC<
               />
             </div>
 
-            <div className="mt-6 lg:mt-8">
+            <div>
               <TimeSlotGrid
                 selectedDate={visitDate}
                 serviceDurationMinutes={visitDurationMinutes}

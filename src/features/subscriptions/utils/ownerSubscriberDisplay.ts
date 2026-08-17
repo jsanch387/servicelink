@@ -26,6 +26,44 @@ export function isCurrentOwnerSubscriber(subscriber: {
   );
 }
 
+/**
+ * Scheduled cancel (still has access until period / cancel_at).
+ * Listed under Canceled — access-until lives on banner / tooltip.
+ */
+export function isSubscriberCancelScheduled(
+  status: OwnerSubscriberStatus,
+  cancelAtPeriodEnd?: boolean
+): boolean {
+  return Boolean(cancelAtPeriodEnd) && status !== 'canceled';
+}
+
+/**
+ * Active list filter: still subscribed with no cancel requested.
+ * Cancel-at-period-end counts under Canceled (they’ve already canceled).
+ */
+export function isOwnerSubscriberInActiveList(subscriber: {
+  status: OwnerSubscriberStatus;
+  planRemoved?: boolean;
+  cancelAtPeriodEnd?: boolean;
+}): boolean {
+  return (
+    isCurrentOwnerSubscriber(subscriber) &&
+    !isSubscriberCancelScheduled(
+      subscriber.status,
+      subscriber.cancelAtPeriodEnd
+    )
+  );
+}
+
+/** Canceled list filter: cancel requested, fully canceled, incomplete, or removed plan. */
+export function isOwnerSubscriberInCanceledList(subscriber: {
+  status: OwnerSubscriberStatus;
+  planRemoved?: boolean;
+  cancelAtPeriodEnd?: boolean;
+}): boolean {
+  return !isOwnerSubscriberInActiveList(subscriber);
+}
+
 export function formatSubscriberPlanLabel(
   planName: string,
   planRemoved?: boolean
@@ -38,14 +76,26 @@ export function formatSubscriberPlanLabel(
   return name || 'Plan';
 }
 
-export function formatEndedSubscribersToggleLabel(args: {
-  endedCount: number;
-  showingEnded: boolean;
-  allCanceled: boolean;
-}): string {
-  const noun = args.allCanceled ? 'canceled' : 'ended';
-  if (args.showingEnded) return `Hide ${noun}`;
-  return `Show ${noun} (${args.endedCount})`;
+export type OwnerSubscriberListFilter = 'active' | 'canceled';
+
+/** Second filter pill: “Canceled” when every row is canceled/canceling, else “Ended”. */
+export function formatOwnerSubscriberEndedFilterLabel(
+  allCanceled: boolean
+): string {
+  return allCanceled ? 'Canceled' : 'Ended';
+}
+
+export function isOwnerSubscriberCanceledForFilterLabel(subscriber: {
+  status: OwnerSubscriberStatus;
+  cancelAtPeriodEnd?: boolean;
+}): boolean {
+  return (
+    subscriber.status === 'canceled' ||
+    isSubscriberCancelScheduled(
+      subscriber.status,
+      subscriber.cancelAtPeriodEnd
+    )
+  );
 }
 
 export const OWNER_SUBSCRIBER_STATUS_STYLES: Record<
@@ -119,17 +169,6 @@ export function getSubscriberStatusDotClass(
     default:
       return 'bg-zinc-500';
   }
-}
-
-/**
- * Scheduled cancel (still has access until period / cancel_at).
- * Shown as "Canceled" so owners don't miss it; banner explains access end date.
- */
-export function isSubscriberCancelScheduled(
-  status: OwnerSubscriberStatus,
-  cancelAtPeriodEnd?: boolean
-): boolean {
-  return Boolean(cancelAtPeriodEnd) && status !== 'canceled';
 }
 
 export function getSubscriberStatusLabel(

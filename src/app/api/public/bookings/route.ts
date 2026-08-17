@@ -82,6 +82,7 @@ import { paymentSettingsOf } from '@/features/payments/server/paymentSettingsQue
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertPublicBookingsRateLimits } from '@/server/rateLimit/publicApiRateLimit';
+import { supabaseErrorForLogs } from '@/server/logging/structuredLog';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -683,10 +684,15 @@ export async function POST(request: NextRequest) {
       } catch (payErr) {
         logBookingTransaction(requestId, 'error', 'payments_failed', {
           bookingId: result.id,
+          ...supabaseErrorForLogs(
+            payErr && typeof payErr === 'object'
+              ? (payErr as { code?: string; message?: string })
+              : null
+          ),
           err:
             payErr instanceof Error
               ? payErr.message.slice(0, 80)
-              : String(payErr).slice(0, 80),
+              : undefined,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('bookings').delete().eq('id', result.id);
@@ -945,10 +951,15 @@ export async function POST(request: NextRequest) {
     } catch (payErr) {
       logBookingTransaction(requestId, 'error', 'payments_failed', {
         bookingId: result.id,
+        ...supabaseErrorForLogs(
+          payErr && typeof payErr === 'object'
+            ? (payErr as { code?: string; message?: string })
+            : null
+        ),
         err:
           payErr instanceof Error
             ? payErr.message.slice(0, 80)
-            : String(payErr).slice(0, 80),
+            : undefined,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('bookings').delete().eq('id', result.id);

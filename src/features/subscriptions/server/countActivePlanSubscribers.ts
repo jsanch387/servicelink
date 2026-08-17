@@ -1,8 +1,12 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isMembershipCancelScheduled } from './mapCustomerMembershipToOwnerSubscriber';
 import { customerMembershipsOf } from './membershipTablesQuery';
 
-/** Statuses that block plan delete / cadence removal. */
+/**
+ * Statuses that count as active for plan cards / delete / cadence removal.
+ * Cancel-at-period-end (and future cancel_at) are excluded — treated as canceled.
+ */
 const ACTIVE_MEMBERSHIP_STATUSES = [
   'active',
   'trialing',
@@ -11,8 +15,18 @@ const ACTIVE_MEMBERSHIP_STATUSES = [
   'paused',
 ] as const;
 
+type ActiveCountRow = {
+  status?: string | null;
+  cancel_at_period_end?: boolean | null;
+  cancel_at?: string | null;
+};
+
+function isCountedAsActiveSubscriber(row: ActiveCountRow): boolean {
+  return !isMembershipCancelScheduled(row);
+}
+
 /**
- * Active customer memberships on a plan.
+ * Active customer memberships on a plan (excludes cancel requested).
  */
 export async function countActivePlanSubscribers(
   supabase: SupabaseClient<Database>,
@@ -23,14 +37,14 @@ export async function countActivePlanSubscribers(
   const pid = planId.trim();
   if (!bid || !pid) return 0;
 
-  const { count, error } = await customerMembershipsOf(supabase)
-    .select('id', { count: 'exact', head: true })
+  const { data, error } = await customerMembershipsOf(supabase)
+    .select('status, cancel_at_period_end, cancel_at')
     .eq('business_id', bid)
     .eq('plan_id', pid)
     .in('status', [...ACTIVE_MEMBERSHIP_STATUSES]);
 
-  if (error) return 0;
-  return typeof count === 'number' && Number.isFinite(count) ? count : 0;
+  if (error || !data) return 0;
+  return data.filter(row => isCountedAsActiveSubscriber(row)).length;
 }
 
 /**
@@ -45,12 +59,12 @@ export async function countActivePriceSubscribers(
   const pid = priceId.trim();
   if (!bid || !pid) return 0;
 
-  const { count, error } = await customerMembershipsOf(supabase)
-    .select('id', { count: 'exact', head: true })
+  const { data, error } = await customerMembershipsOf(supabase)
+    .select('status, cancel_at_period_end, cancel_at')
     .eq('business_id', bid)
     .eq('plan_price_id', pid)
     .in('status', [...ACTIVE_MEMBERSHIP_STATUSES]);
 
-  if (error) return 0;
-  return typeof count === 'number' && Number.isFinite(count) ? count : 0;
+  if (error || !data) return 0;
+  return data.filter(row => isCountedAsActiveSubscriber(row)).length;
 }

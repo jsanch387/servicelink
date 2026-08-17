@@ -51,7 +51,10 @@ export async function upsertCustomerMembershipFromSubscription(
     /** Merge into metadata jsonb (ids only — no PII). */
     extraMetadata?: Record<string, string> | null;
   }
-): Promise<{ ok: true; membershipId: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; membershipId: string; created: boolean }
+  | { ok: false; error: string }
+> {
   const stripeAccountId = args.stripeAccountId.trim();
   const subscriptionId = args.subscription.id?.trim();
   if (!stripeAccountId || !subscriptionId) {
@@ -70,6 +73,8 @@ export async function upsertCustomerMembershipFromSubscription(
     .eq('stripe_account_id', stripeAccountId)
     .eq('stripe_subscription_id', subscriptionId)
     .maybeSingle();
+
+  const created = !existing?.id;
 
   const billing = membershipBillingSnapshot(args.subscription);
   const periods = membershipSubscriptionPeriodBounds(args.subscription);
@@ -177,7 +182,7 @@ export async function upsertCustomerMembershipFromSubscription(
     return { ok: false, error: error?.message ?? 'Upsert returned no id' };
   }
 
-  return { ok: true, membershipId: String(data.id) };
+  return { ok: true, membershipId: String(data.id), created };
 }
 
 /** Lookup membership by Connect subscription id (for lifecycle events without checkout metadata). */

@@ -182,7 +182,7 @@ If the text couldn't be sent (state still changed):
 
 `sms.reason` ∈ `no_phone | invalid_number | duplicate | not_configured | error`.
 
-For `job_completed`, the response additionally carries `bookingStatus` (the booking is now finalized) and **always** includes both an `sms` and an `email` block. Each block is `{ sent, messageId, reason }` — when `sent: true`, `reason` is `null`; when `sent: false`, `messageId` is `null` and `reason` explains why. **Only one channel is ever `sent: true`** (SMS-first, email fallback — never both).
+For `job_completed`, the response additionally carries `bookingStatus` (the booking is now finalized) and **always** includes both an `sms` and an `email` block. Each block is `{ sent, messageId, reason }` — when `sent: true`, `reason` is `null`; when `sent: false`, `messageId` is `null` and `reason` explains why. **Send every available channel:** phone → SMS, email → email receipt (both when both exist).
 
 ```json
 {

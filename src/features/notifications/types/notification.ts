@@ -8,7 +8,9 @@ export type NotificationType =
   | 'booking_request'
   | 'availability_booking'
   | 'quote_request'
-  | 'review_submitted';
+  | 'review_submitted'
+  | 'membership_subscriber'
+  | 'membership_visit_needed';
 
 /** Row from notifications table (API/DB) */
 export interface Notification {

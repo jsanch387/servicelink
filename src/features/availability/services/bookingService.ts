@@ -640,6 +640,15 @@ export async function updateBookingStatus(
     } catch {
       // Membership unlink is best-effort; cancel already succeeded.
     }
+
+    try {
+      const { notifyCustomerAvailabilityBookingCanceled } = await import(
+        '@/features/availability/services/notifyCustomerAvailabilityBookingCanceled'
+      );
+      await notifyCustomerAvailabilityBookingCanceled(supabase, row);
+    } catch {
+      // Customer email is best-effort; cancel already succeeded.
+    }
   }
 
   return row;

@@ -30,6 +30,7 @@ Run **one file at a time**. Confirm success before the next.
 | 9     | `009_membership_plan_visit_duration.sql` | `visit_duration_minutes` on `membership_plans` _(applied)_ |
 | 10    | `010_membership_initial_booking.sql`     | `initial_booking_id` on `customer_memberships` _(applied)_ |
 | 11    | `011_membership_period_visit.sql`        | Period visit booking + period start _(applied)_            |
+| 12    | `012_booking_payments_membership_method.sql` | Allow `membership` on `booking_payments.payment_method_selected` _(applied)_ |
 
 ## Phase 2 RLS model
 
