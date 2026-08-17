@@ -48,8 +48,7 @@ function StatusPill({ subscriber }: { subscriber: OwnerSubscriber }) {
   );
   const paymentProblem =
     subscriber.status === 'past_due' || subscriber.status === 'unpaid';
-  const canceled =
-    subscriber.status === 'canceled' || cancelScheduled;
+  const canceled = subscriber.status === 'canceled' || cancelScheduled;
 
   if (
     !paymentProblem &&
@@ -101,8 +100,8 @@ export const OwnerSubscriptionsSubscribers: React.FC<
   onLoaded,
 }) => {
   const router = useRouter();
-  const [subscribers, setSubscribers] = useState<OwnerSubscriber[] | null>(() =>
-    initialSubscribers !== undefined ? initialSubscribers : null
+  const [subscribers, setSubscribers] = useState<OwnerSubscriber[] | null>(
+    () => (initialSubscribers !== undefined ? initialSubscribers : null)
   );
   const [error, setError] = useState<string | null>(null);
   const [listFilter, setListFilter] =

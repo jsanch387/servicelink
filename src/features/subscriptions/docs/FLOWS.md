@@ -12,13 +12,13 @@ Resolved by `loadMembershipsAccess` / `assertMembershipsReady`:
 not_in_rollout → not_pro → needs_connect → needs_payments → ready
 ```
 
-| Gate             | Meaning                                            | UI                                |
-| ---------------- | -------------------------------------------------- | --------------------------------- |
-| `not_in_rollout` | Owner email not on allowlist (and open-to-all off) | Redirect `/dashboard`; nav hidden |
+| Gate             | Meaning                                            | UI                                                                   |
+| ---------------- | -------------------------------------------------- | -------------------------------------------------------------------- |
+| `not_in_rollout` | Owner email not on allowlist (and open-to-all off) | Redirect `/dashboard`; nav hidden                                    |
 | `not_pro`        | No Pro entitlement                                 | Teaser if no plans; paused banner + read-only catalog if plans exist |
-| `needs_connect`  | Stripe Connect incomplete / charges not enabled    | `SubscriptionsConnectGate`        |
-| `needs_payments` | `payment_settings.payments_enabled` false          | `SubscriptionsPaymentsGate`       |
-| `ready`          | Can manage plans                                   | Create-first or plan list         |
+| `needs_connect`  | Stripe Connect incomplete / charges not enabled    | `SubscriptionsConnectGate`                                           |
+| `needs_payments` | `payment_settings.payments_enabled` false          | `SubscriptionsPaymentsGate`                                          |
+| `ready`          | Can manage plans                                   | Create-first or plan list                                            |
 
 **Pro paused (had plans):** public new signups stay hidden; existing Stripe memberships keep billing. Owner can list/manage subscribers (`assertMembershipsSubscriberAccess`); create/edit/delete plans stay behind `assertMembershipsReady`.
 

@@ -61,11 +61,7 @@ export default async function SubscriptionPlanDetailPage({
   }
 
   const [plan, subscribersResult] = await Promise.all([
-    getMembershipPlanForBusiness(
-      supabase,
-      businessResolved.businessId,
-      planId
-    ),
+    getMembershipPlanForBusiness(supabase, businessResolved.businessId, planId),
     listOwnerCustomerMemberships(supabase, businessResolved.businessId, {
       planId,
     }),

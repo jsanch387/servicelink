@@ -147,9 +147,7 @@ export async function upsertCustomerMembershipFromSubscription(
       existing?.current_period_start ||
       null,
     current_period_end:
-      unixSecondsToIso(periods.endUnix) ||
-      existing?.current_period_end ||
-      null,
+      unixSecondsToIso(periods.endUnix) || existing?.current_period_end || null,
     cancel_at_period_end: Boolean(args.subscription.cancel_at_period_end),
     cancel_at: unixSecondsToIso(args.subscription.cancel_at),
     canceled_at: unixSecondsToIso(args.subscription.canceled_at),

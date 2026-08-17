@@ -227,7 +227,7 @@ export async function createPublicMembershipPeriodVisit(
       ok: false,
       error:
         visitStatus === 'completed'
-          ? 'This period\'s visit is already complete.'
+          ? "This period's visit is already complete."
           : 'A visit is already scheduled for this period.',
       status: 409,
       code: 'already_scheduled',

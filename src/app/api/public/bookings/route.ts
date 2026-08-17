@@ -690,9 +690,7 @@ export async function POST(request: NextRequest) {
               : null
           ),
           err:
-            payErr instanceof Error
-              ? payErr.message.slice(0, 80)
-              : undefined,
+            payErr instanceof Error ? payErr.message.slice(0, 80) : undefined,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('bookings').delete().eq('id', result.id);
@@ -956,10 +954,7 @@ export async function POST(request: NextRequest) {
             ? (payErr as { code?: string; message?: string })
             : null
         ),
-        err:
-          payErr instanceof Error
-            ? payErr.message.slice(0, 80)
-            : undefined,
+        err: payErr instanceof Error ? payErr.message.slice(0, 80) : undefined,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('bookings').delete().eq('id', result.id);

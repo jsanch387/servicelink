@@ -18,11 +18,7 @@ export function parseYmd(raw: string | null | undefined): string | null {
   const [y, m, d] = value.split('-').map(Number);
   if (!y || !m || !d) return null;
   const dt = new Date(y, m - 1, d);
-  if (
-    dt.getFullYear() !== y ||
-    dt.getMonth() !== m - 1 ||
-    dt.getDate() !== d
-  ) {
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) {
     return null;
   }
   return value;
@@ -85,9 +81,7 @@ export function addCadenceToYmd(
   return ymdFromLocalDate(d);
 }
 
-function maxYmd(
-  values: Array<string | null | undefined>
-): string | null {
+function maxYmd(values: Array<string | null | undefined>): string | null {
   let best: string | null = null;
   for (const value of values) {
     const ymd = parseYmd(value);

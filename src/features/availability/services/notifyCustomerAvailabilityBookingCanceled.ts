@@ -30,16 +30,16 @@ export async function notifyCustomerAvailabilityBookingCanceled(
   } | null;
 
   const businessName =
-    biz?.business_name?.trim() ||
-    biz?.business_slug?.trim() ||
-    'your provider';
+    biz?.business_name?.trim() || biz?.business_slug?.trim() || 'your provider';
 
   const result = await sendAvailabilityBookingCanceledEmail(email, {
     businessName,
     customerName: booking.customer_name?.trim() || null,
     serviceName: booking.service_name?.trim() || 'Appointment',
     scheduledDate: String(booking.scheduled_date ?? '').trim(),
-    startTime: String(booking.start_time ?? '').trim().slice(0, 5),
+    startTime: String(booking.start_time ?? '')
+      .trim()
+      .slice(0, 5),
   });
 
   if (!result.sent) {

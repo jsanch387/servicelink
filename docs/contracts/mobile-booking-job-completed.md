@@ -106,11 +106,11 @@ Load `service_price_cents`, `addon_details`, and join/read `booking_payments` wh
 }
 ```
 
-| Field                         | Notes                                                                                                    |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                                                           |
-| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                                                       |
-| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today)                                     |
+| Field                         | Notes                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                                                       |
+| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                                                   |
+| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today)                                 |
 | `sms` / `email`               | Always present. Each channel sends independently when that contact exists (both can be `sent: true`) |
 
 Customer invoice URL (for debugging): `{EXPO_PUBLIC_WEB_APP_URL}/i/{invoicePublicToken}`

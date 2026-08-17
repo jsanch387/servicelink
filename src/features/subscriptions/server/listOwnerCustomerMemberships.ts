@@ -43,9 +43,7 @@ async function loadPlanSnapshotsForBusiness(
       name: String(plan.name ?? '').trim() || 'Plan',
       visitDurationMinutes:
         Number.isInteger(minutes) && minutes >= 30 ? minutes : undefined,
-      removed: Boolean(
-        (plan as { deleted_at?: string | null }).deleted_at
-      ),
+      removed: Boolean((plan as { deleted_at?: string | null }).deleted_at),
     });
   }
   return snapshots;
@@ -89,10 +87,14 @@ export async function listOwnerCustomerMemberships(
   const subscribers = (rows ?? []).map(row => {
     const planId = String(row.plan_id ?? '').trim();
     const snapshot = planId ? snapshots.get(planId) : undefined;
-    return mapCustomerMembershipToOwnerSubscriber(row, snapshot?.name ?? 'Plan', {
-      visitDurationMinutes: snapshot?.visitDurationMinutes,
-      planRemoved: !snapshot || snapshot.removed,
-    });
+    return mapCustomerMembershipToOwnerSubscriber(
+      row,
+      snapshot?.name ?? 'Plan',
+      {
+        visitDurationMinutes: snapshot?.visitDurationMinutes,
+        planRemoved: !snapshot || snapshot.removed,
+      }
+    );
   });
 
   return { ok: true, subscribers };

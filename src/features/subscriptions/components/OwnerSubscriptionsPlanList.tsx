@@ -22,12 +22,7 @@ interface OwnerSubscriptionsPlanListProps {
 
 export const OwnerSubscriptionsPlanList: React.FC<
   OwnerSubscriptionsPlanListProps
-> = ({
-  plans,
-  onCreatePlan,
-  catalogWritable = true,
-  initialSubscribers,
-}) => {
+> = ({ plans, onCreatePlan, catalogWritable = true, initialSubscribers }) => {
   const [tab, setTab] = useState<OwnerSubscriptionsListTab>('plans');
 
   return (

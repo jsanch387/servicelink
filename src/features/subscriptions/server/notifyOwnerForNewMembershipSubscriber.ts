@@ -69,9 +69,7 @@ export async function notifyOwnerForNewMembershipSubscriber(
     'New subscriber',
     'New subscriber'
   );
-  const fromCustomer = notificationInboxSubtitleFromCustomer(
-    args.customerName
-  );
+  const fromCustomer = notificationInboxSubtitleFromCustomer(args.customerName);
   const bodyText = planName
     ? fromCustomer
       ? `${fromCustomer} · ${planName}`

@@ -61,7 +61,10 @@ export function notificationMinimalDisplayTitle(
     return 'New review';
   }
 
-  if (blob.includes('membership_subscriber') || blob.includes('new_subscriber')) {
+  if (
+    blob.includes('membership_subscriber') ||
+    blob.includes('new_subscriber')
+  ) {
     return 'New subscriber';
   }
   if (blob.includes('membership_visit')) {

@@ -131,9 +131,7 @@ export async function sendMembershipCanceledEmailIfApplicable(
     business_slug?: string | null;
   } | null;
   const businessName =
-    biz?.business_name?.trim() ||
-    biz?.business_slug?.trim() ||
-    'your provider';
+    biz?.business_name?.trim() || biz?.business_slug?.trim() || 'your provider';
 
   const mail = await sendMembershipCanceledEmail(email, {
     businessName,

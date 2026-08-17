@@ -200,10 +200,7 @@ export const PublicMembershipVisitPage: React.FC<
       String(visitDate.getMonth() + 1).padStart(2, '0'),
       String(visitDate.getDate()).padStart(2, '0'),
     ].join('-');
-    if (
-      visitDateBounds &&
-      !isYmdInInclusiveRange(visitYmd, visitDateBounds)
-    ) {
+    if (visitDateBounds && !isYmdInInclusiveRange(visitYmd, visitDateBounds)) {
       toast.warning(ui.subscriptions.periodVisitDateOutOfPeriod);
       return;
     }
@@ -387,10 +384,7 @@ export const PublicMembershipVisitPage: React.FC<
         ) : null}
 
         {step === 'schedule' ? (
-          <section
-            aria-labelledby="period-visit-heading"
-            className="space-y-6"
-          >
+          <section aria-labelledby="period-visit-heading" className="space-y-6">
             <PublicMembershipStepHeading
               id="period-visit-heading"
               title={ui.subscriptions.periodVisitTitle}

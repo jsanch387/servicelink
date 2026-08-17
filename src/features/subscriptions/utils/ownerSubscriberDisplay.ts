@@ -91,10 +91,7 @@ export function isOwnerSubscriberCanceledForFilterLabel(subscriber: {
 }): boolean {
   return (
     subscriber.status === 'canceled' ||
-    isSubscriberCancelScheduled(
-      subscriber.status,
-      subscriber.cancelAtPeriodEnd
-    )
+    isSubscriberCancelScheduled(subscriber.status, subscriber.cancelAtPeriodEnd)
   );
 }
 
