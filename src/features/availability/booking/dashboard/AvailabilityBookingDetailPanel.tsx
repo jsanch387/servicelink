@@ -5,7 +5,6 @@ import type { WeeklySchedule } from '@/features/availability/types/availability'
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
-  ArrowPathRoundedSquareIcon,
   ArrowTopRightOnSquareIcon,
   CalendarIcon,
   CheckCircleIcon,
@@ -307,20 +306,9 @@ export function AvailabilityBookingDetailPanel({
               </h3>
               <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
                 {paymentDetailVariant === 'membership' && (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <ArrowPathRoundedSquareIcon
-                        className="h-5 w-5 shrink-0 text-gray-400"
-                        aria-hidden
-                      />
-                      <p className="text-sm font-semibold text-white">
-                        Membership
-                      </p>
-                    </div>
-                    <p className="text-xs text-gray-400">
-                      Covered by their plan — nothing to collect.
-                    </p>
-                  </>
+                  <p className="text-sm font-semibold text-white">
+                    Subscription
+                  </p>
                 )}
 
                 {paymentDetailVariant === 'no_charge' && (

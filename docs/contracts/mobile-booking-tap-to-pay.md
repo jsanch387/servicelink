@@ -1,6 +1,6 @@
 # Contract: Mobile — Tap to Pay (Complete sheet / Phase 2)
 
-> **SMS (2026-08):** After a successful tap, `job_completed` sends the receipt via **SMS first** (short `/r/…` link) when a phone is on file; email is the fallback if SMS does not send. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS (2026-08):** After a successful tap, `job_completed` sends the receipt SMS (short `/r/…` link) when a phone is on file, and the receipt email when an email is on file (both when both exist). See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 Owner collects the **remaining balance** on-site using **Stripe Tap to Pay on iPhone**:
 

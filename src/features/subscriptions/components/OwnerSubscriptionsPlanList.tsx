@@ -4,6 +4,7 @@ import { Button } from '@/components/shared';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 import type {
+  OwnerSubscriber,
   OwnerSubscriptionPlan,
   OwnerSubscriptionsListTab,
 } from '../types/ownerSubscriptionPlan';
@@ -13,11 +14,15 @@ import { OwnerSubscriptionsSubscribers } from './OwnerSubscriptionsSubscribers';
 interface OwnerSubscriptionsPlanListProps {
   plans: OwnerSubscriptionPlan[];
   onCreatePlan: () => void;
+  /** When false (Pro paused), hide create / catalog writes. */
+  catalogWritable?: boolean;
+  /** Prefetched business subscribers — Subscribers tab skips client fetch. */
+  initialSubscribers?: OwnerSubscriber[];
 }
 
 export const OwnerSubscriptionsPlanList: React.FC<
   OwnerSubscriptionsPlanListProps
-> = ({ plans, onCreatePlan }) => {
+> = ({ plans, onCreatePlan, catalogWritable = true, initialSubscribers }) => {
   const [tab, setTab] = useState<OwnerSubscriptionsListTab>('plans');
 
   return (
@@ -48,7 +53,7 @@ export const OwnerSubscriptionsPlanList: React.FC<
           })}
         </div>
 
-        {tab === 'plans' ? (
+        {tab === 'plans' && catalogWritable ? (
           <Button
             type="button"
             variant="inverse"
@@ -65,8 +70,9 @@ export const OwnerSubscriptionsPlanList: React.FC<
       {tab === 'plans' ? (
         <div className="space-y-4">
           <p className="text-sm text-gray-500">
-            {plans.length} plan{plans.length === 1 ? '' : 's'} on your booking
-            link
+            {catalogWritable
+              ? `${plans.length} plan${plans.length === 1 ? '' : 's'} on your booking link`
+              : `${plans.length} plan${plans.length === 1 ? '' : 's'} · new signups paused`}
           </p>
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
@@ -80,7 +86,10 @@ export const OwnerSubscriptionsPlanList: React.FC<
           </div>
         </div>
       ) : (
-        <OwnerSubscriptionsSubscribers plans={plans} />
+        <OwnerSubscriptionsSubscribers
+          plans={plans}
+          initialSubscribers={initialSubscribers}
+        />
       )}
     </div>
   );

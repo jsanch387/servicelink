@@ -27,6 +27,13 @@ function reminderBodyCopy(payload: MembershipVisitReminderPayload): string {
   const business = businessLabel(payload.businessName);
   const plan = planLabel(payload.planName);
   const hello = greetingName(payload.customerName);
+  const kind = payload.kind ?? 'period_started';
+
+  if (kind === 'schedule_link') {
+    const lead = hello ? `Hi ${hello}, book` : 'Book';
+    return `${lead} your next visit for ${plan} with ${business}. Choose a date and time that works for you.`;
+  }
+
   const lead = hello ? `Hi ${hello}, a` : 'A';
   return `${lead} new period of ${plan} with ${business} started. Choose a date and time that works for you.`;
 }

@@ -83,10 +83,7 @@ function buildPaymentSummarySection(
   if (statementHeading) {
     addSection(
       title,
-      serviceLinkEmailStatementBlock(
-        statementHeading,
-        block.statement?.detail
-      )
+      serviceLinkEmailStatementBlock(statementHeading, block.statement?.detail)
     );
     return '';
   }

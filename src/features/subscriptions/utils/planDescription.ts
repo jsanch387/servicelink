@@ -36,7 +36,8 @@ export function joinDescriptionAndBenefits(
   description: string,
   benefits: string[]
 ): string {
-  const prose = description.trim();
+  // Keep internal blank lines from the textarea (Enter / spacing).
+  const prose = description.replace(/\r\n/g, '\n').replace(/^\n+|\n+$/g, '');
   const bullets = benefits
     .map(line => line.trim())
     .filter(Boolean)

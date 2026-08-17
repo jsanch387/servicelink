@@ -381,14 +381,6 @@ export const CreateSubscriptionPlanPage: React.FC<
                           </button>
                         );
                       })}
-                      <button
-                        type="button"
-                        disabled
-                        className="cursor-not-allowed rounded-full border border-dashed border-white/15 px-3.5 py-2 text-sm font-medium text-gray-500 opacity-60"
-                        title="Custom schedules coming soon"
-                      >
-                        Custom
-                      </button>
                     </div>
                   </div>
 

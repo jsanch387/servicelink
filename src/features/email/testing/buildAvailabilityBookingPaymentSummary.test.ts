@@ -110,11 +110,15 @@ describe('buildMembershipVisitPaymentSummary', () => {
 describe('membershipVisitNotesForEmail', () => {
   it('omits generic membership visit placeholders', () => {
     expect(membershipVisitNotesForEmail('Membership visit.')).toBeUndefined();
-    expect(membershipVisitNotesForEmail('memberships first visit')).toBeUndefined();
+    expect(
+      membershipVisitNotesForEmail('memberships first visit')
+    ).toBeUndefined();
     expect(membershipVisitNotesForEmail('  ')).toBeUndefined();
   });
 
   it('keeps real notes', () => {
-    expect(membershipVisitNotesForEmail('Gate code 1234')).toBe('Gate code 1234');
+    expect(membershipVisitNotesForEmail('Gate code 1234')).toBe(
+      'Gate code 1234'
+    );
   });
 });

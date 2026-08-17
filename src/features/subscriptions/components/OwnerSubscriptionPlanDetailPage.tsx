@@ -2,6 +2,10 @@
 
 import { Button, toast } from '@/components/shared';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
+import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { ServiceDescriptionFormatted } from '@/features/business-profile/components/ServiceDescriptionFormatted';
+import { useServiceDescriptionClamp } from '@/features/business-profile/hooks/useServiceDescriptionClamp';
+import { SERVICE_CARD_DESCRIPTION_CLAMP_CLASS } from '@/features/business-profile/utils/serviceDescriptionDisplay';
 import {
   ChevronLeftIcon,
   PencilSquareIcon,
@@ -13,64 +17,53 @@ import type {
   OwnerSubscriber,
   OwnerSubscriptionPlan,
 } from '../types/ownerSubscriptionPlan';
-import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
 import {
   formatCadenceOptionLabel,
   formatCadencePriceSuffix,
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
 import { joinDescriptionAndBenefits } from '../utils/planDescription';
-import { isOwnerSubscriberCountedAsActive } from '../utils/ownerSubscriberDisplay';
+import { isOwnerSubscriberInActiveList } from '../utils/ownerSubscriberDisplay';
 import { DeleteMembershipPlanModal } from './DeleteMembershipPlanModal';
+import { SubscriptionsProPausedBanner } from './gates/SubscriptionsProPausedBanner';
 import { OwnerSubscriptionsSubscribers } from './OwnerSubscriptionsSubscribers';
 
 interface OwnerSubscriptionPlanDetailPageProps {
   plan: OwnerSubscriptionPlan;
-}
-
-/** Collapse long plan copy; expand to read the rest. */
-const PLAN_DESCRIPTION_COLLAPSED_MAX_CHARS = 220;
-
-function truncatePlanDescription(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
-  const slice = text.slice(0, maxChars);
-  const lastBreak = Math.max(slice.lastIndexOf('\n'), slice.lastIndexOf(' '));
-  const cut =
-    lastBreak > Math.floor(maxChars * 0.55)
-      ? slice.slice(0, lastBreak)
-      : slice.trimEnd();
-  return cut.trimEnd();
+  /** When false (Pro paused), hide Edit/Delete and description “Add one”. */
+  catalogWritable?: boolean;
+  /** Prefetched for this plan — avoids a client waterfall. */
+  subscribers?: OwnerSubscriber[];
 }
 
 export const OwnerSubscriptionPlanDetailPage: React.FC<
   OwnerSubscriptionPlanDetailPageProps
-> = ({ plan }) => {
+> = ({ plan, catalogWritable = true, subscribers: initialSubscribers }) => {
   const description = joinDescriptionAndBenefits(
     plan.description,
     plan.benefits
-  ).trim();
-  const hasDescription = description.length > 0;
-  const descriptionNeedsExpand =
-    description.length > PLAN_DESCRIPTION_COLLAPSED_MAX_CHARS;
+  );
+  const hasDescription = description.trim().length > 0;
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const visibleDescription =
-    !descriptionNeedsExpand || isDescriptionExpanded
-      ? description
-      : truncatePlanDescription(
-          description,
-          PLAN_DESCRIPTION_COLLAPSED_MAX_CHARS
-        );
+  const { ref: descriptionClampRef, isTruncatable } =
+    useServiceDescriptionClamp(description, isDescriptionExpanded);
+  const showDescriptionToggle = isTruncatable || isDescriptionExpanded;
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [liveActiveCount, setLiveActiveCount] = useState<number | null>(null);
+  const [liveActiveCount, setLiveActiveCount] = useState<number | null>(() =>
+    initialSubscribers !== undefined
+      ? initialSubscribers.filter(row => isOwnerSubscriberInActiveList(row))
+          .length
+      : null
+  );
 
   const activeSubscriberCount = liveActiveCount ?? plan.activeSubscriberCount;
   const canDelete = activeSubscriberCount === 0;
 
   const handleSubscribersLoaded = useCallback((rows: OwnerSubscriber[]) => {
     setLiveActiveCount(
-      rows.filter(row => isOwnerSubscriberCountedAsActive(row.status)).length
+      rows.filter(row => isOwnerSubscriberInActiveList(row)).length
     );
   }, []);
 
@@ -128,44 +121,58 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
             </p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              icon={<PencilSquareIcon className="h-4 w-4" aria-hidden />}
-              href={ROUTES.DASHBOARD.SUBSCRIPTIONS_EDIT(plan.id)}
-            >
-              Edit
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="hover:bg-red-500/10 hover:text-red-300"
-              icon={<TrashIcon className="h-4 w-4 text-red-400" aria-hidden />}
-              onClick={() => {
-                setDeleteError(null);
-                setDeleteOpen(true);
-              }}
-            >
-              Delete
-            </Button>
-          </div>
+          {catalogWritable ? (
+            <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                icon={<PencilSquareIcon className="h-4 w-4" aria-hidden />}
+                href={ROUTES.DASHBOARD.SUBSCRIPTIONS_EDIT(plan.id)}
+              >
+                Edit
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="hover:bg-red-500/10 hover:text-red-300"
+                icon={
+                  <TrashIcon className="h-4 w-4 text-red-400" aria-hidden />
+                }
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteOpen(true);
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          ) : null}
         </header>
 
-        <DeleteMembershipPlanModal
-          isOpen={deleteOpen}
-          planName={plan.name}
-          canDelete={canDelete}
-          activeSubscriberCount={activeSubscriberCount}
-          isDeleting={isDeleting}
-          error={deleteError}
-          onClose={() => {
-            if (!isDeleting) setDeleteOpen(false);
-          }}
-          onConfirm={() => void handleDelete()}
-        />
+        {!catalogWritable ? (
+          <div className="mt-5">
+            <SubscriptionsProPausedBanner
+              activeMemberCount={activeSubscriberCount}
+            />
+          </div>
+        ) : null}
+
+        {catalogWritable ? (
+          <DeleteMembershipPlanModal
+            isOpen={deleteOpen}
+            planName={plan.name}
+            canDelete={canDelete}
+            activeSubscriberCount={activeSubscriberCount}
+            isDeleting={isDeleting}
+            error={deleteError}
+            onClose={() => {
+              if (!isDeleting) setDeleteOpen(false);
+            }}
+            onConfirm={() => void handleDelete()}
+          />
+        ) : null}
 
         <section className="mt-6" aria-labelledby="plan-pricing-heading">
           <div className="mb-3 flex items-baseline justify-between gap-3">
@@ -221,11 +228,17 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
               Description
             </h2>
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 sm:px-5">
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
-                {visibleDescription}
-                {descriptionNeedsExpand && !isDescriptionExpanded ? '…' : null}
+              <div
+                ref={descriptionClampRef}
+                className={`text-sm text-zinc-300 ${
+                  isDescriptionExpanded
+                    ? ''
+                    : SERVICE_CARD_DESCRIPTION_CLAMP_CLASS
+                }`.trim()}
+              >
+                <ServiceDescriptionFormatted description={description} />
               </div>
-              {descriptionNeedsExpand ? (
+              {showDescriptionToggle ? (
                 <button
                   type="button"
                   onClick={() => setIsDescriptionExpanded(prev => !prev)}
@@ -237,7 +250,7 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
               ) : null}
             </div>
           </section>
-        ) : (
+        ) : catalogWritable ? (
           <p className="mt-5 text-sm text-zinc-500">
             No description yet.{' '}
             <Link
@@ -247,30 +260,24 @@ export const OwnerSubscriptionPlanDetailPage: React.FC<
               Add one
             </Link>
           </p>
+        ) : (
+          <p className="mt-5 text-sm text-zinc-500">No description yet.</p>
         )}
 
         <section className="mt-8" aria-labelledby="plan-subscribers-heading">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2
-              id="plan-subscribers-heading"
-              className="text-sm font-semibold text-white"
-            >
-              Subscribers
-            </h2>
-            {liveActiveCount != null && liveActiveCount > 0 ? (
-              <span className="text-xs font-medium tabular-nums text-zinc-500">
-                {liveActiveCount} active
-              </span>
-            ) : null}
-          </div>
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-            <OwnerSubscriptionsSubscribers
-              planIdFilter={plan.id}
-              variant="embedded"
-              hidePlanName
-              onLoaded={handleSubscribersLoaded}
-            />
-          </div>
+          <h2
+            id="plan-subscribers-heading"
+            className="mb-3 text-sm font-semibold text-white"
+          >
+            Subscribers
+          </h2>
+          <OwnerSubscriptionsSubscribers
+            planIdFilter={plan.id}
+            variant="embedded"
+            hidePlanName
+            initialSubscribers={initialSubscribers}
+            onLoaded={handleSubscribersLoaded}
+          />
         </section>
       </div>
     </main>

@@ -319,7 +319,9 @@ export const OwnerSubscriberDetailPage: React.FC<
                 )
               ) : (
                 <Link
-                  href={ROUTES.DASHBOARD.SUBSCRIPTIONS_DETAIL(subscriber.planId)}
+                  href={ROUTES.DASHBOARD.SUBSCRIPTIONS_DETAIL(
+                    subscriber.planId
+                  )}
                   className="cursor-pointer text-zinc-400 transition-colors hover:text-white"
                 >
                   {subscriber.planName}
@@ -365,8 +367,8 @@ export const OwnerSubscriberDetailPage: React.FC<
 
         {subscriber.planRemoved ? (
           <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300">
-            This plan was removed. The subscriber is kept for history — they
-            are not on a live plan.
+            This plan was removed. The subscriber is kept for history — they are
+            not on a live plan.
           </div>
         ) : cancelScheduled ? (
           <div className="mt-5 rounded-xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3 text-sm text-amber-100/90">

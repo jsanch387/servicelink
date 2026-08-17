@@ -2,7 +2,9 @@
 
 Living list of gaps / polish from local testing. Check items off as they ship. Add new notes at the bottom under **Inbox**.
 
-Last updated: 2026-08-13
+**Round-2 run-through:** [SMOKE_CHECKLIST.md](./SMOKE_CHECKLIST.md)
+
+Last updated: 2026-08-14
 
 ---
 
@@ -75,10 +77,10 @@ Revisit subscribe + first/period visit booking payload end-to-end — several fi
 
 ## Owner UX
 
-- [ ] **Subscribers filters** — Needs visit / past due / canceling (canceled history is behind Show canceled)
-- [x] **Subscribers tab vs plan count** — tab defaults to current members on a live plan (matches plan cards). Canceled / ended / removed-plan rows behind **Show canceled/ended**. Removed plan detail says history, not “access until”.
+- [ ] **Subscribers filters** — Needs visit / past due / canceling (canceled history is behind Active / Canceled pills)
+- [x] **Subscribers tab vs plan count** — tab defaults to **Active** (no cancel requested). Cancel-at-period-end + fully canceled / ended / removed-plan behind **Canceled** / **Ended**. Plan-card active count matches (cancel requested → not counted). Removed plan detail says history, not “access until”.
 - [ ] **Cancel UX** — re-verify toast + immediate UI after cancel (idempotent fix landed; confirm in smoke)
-- [ ] **Next bill vs Access until** — canceled shows `—`; cancel-at-period-end shows Access until
+- [x] **Next bill vs Access until** — canceled (including cancel-at-period-end) keeps **Next bill** with no date; access until lives on the banner / tooltip (amber Canceled pill)
 - [ ] **Owner past-due nudge** for memberships (customer failed email exists; owner still light)
 - [x] Better loading skeleton on subscriber detail
 

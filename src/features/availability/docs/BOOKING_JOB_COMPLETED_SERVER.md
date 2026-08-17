@@ -37,7 +37,7 @@ Mobile and web completion are **not** identical today. Web dashboard Complete do
 3. Insert `booking_invoices` (immutable snapshot + `public_token`)
 4. Mark booking `job_status` + `status` = `completed`
 5. Best-effort maintenance side effect
-6. SMS-first customer notification with invoice URL
+6. Customer receipt notification with invoice URL (SMS and/or email from available contacts)
 
 Invoice insert runs **before** booking completion so a failed invoice write does not leave a completed booking without a receipt.
 

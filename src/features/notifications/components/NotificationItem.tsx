@@ -8,6 +8,12 @@ function notificationHref(notification: NotificationDisplay): string {
   if (notification.type === 'review_submitted') {
     return ROUTES.DASHBOARD.REVIEWS;
   }
+  if (
+    notification.type === 'membership_subscriber' ||
+    notification.type === 'membership_visit_needed'
+  ) {
+    return ROUTES.DASHBOARD.SUBSCRIPTIONS_SUBSCRIBER(notification.referenceId);
+  }
   return ROUTES.DASHBOARD.BOOKINGS;
 }
 

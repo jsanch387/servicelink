@@ -13,6 +13,7 @@ import {
   stripeIdFromExpandable,
 } from './membershipStripeHelpers';
 import { recordMembershipEvent } from './recordMembershipEvent';
+import { notifyOwnerForNewMembershipSubscriber } from './notifyOwnerForNewMembershipSubscriber';
 import { sendMembershipSubscribeConfirmedIfApplicable } from './sendMembershipSubscribeConfirmedIfApplicable';
 import { upsertCustomerMembershipFromSubscription } from './upsertCustomerMembershipFromSubscription';
 
@@ -121,6 +122,23 @@ export async function applyMembershipCheckoutSessionCompleted(
 
   if (!upsert.ok) {
     return { handled: true };
+  }
+
+  if (upsert.created) {
+    try {
+      await notifyOwnerForNewMembershipSubscriber(supabase, {
+        businessId,
+        membershipId: upsert.membershipId,
+        customerName: details?.name ?? null,
+        planId,
+        stripeEventId: event.id,
+      });
+    } catch (err) {
+      logMemberships(event.id, 'warn', 'new_subscriber.notify_unexpected', {
+        membershipId: shortIdForLog(upsert.membershipId),
+        reason: err instanceof Error ? err.message : 'unknown',
+      });
+    }
   }
 
   await recordMembershipEvent(supabase, {

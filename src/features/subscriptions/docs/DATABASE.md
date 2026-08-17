@@ -159,7 +159,7 @@ No anon/public policies. Public booking-link reads use the **admin / service-rol
 
 **RLS:** owners **SELECT** only; writes via `service_role` (webhooks / trusted owner APIs). See [migrations/005–007](./migrations/).
 
-`countActivePlanSubscribers` counts `status in ('active','trialing','past_due','unpaid','paused')`.
+`countActivePlanSubscribers` counts `status in ('active','trialing','past_due','unpaid','paused')` and excludes cancel-at-period-end / future `cancel_at` (same as the Active list filter).
 
 ---
 

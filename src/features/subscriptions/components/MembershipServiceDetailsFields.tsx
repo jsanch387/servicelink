@@ -185,7 +185,9 @@ export function MembershipServiceDetailsFields({
           {vehicleReadOnly ? (
             <div>
               {vehicleLine ? (
-                <p className="text-base font-medium text-white">{vehicleLine}</p>
+                <p className="text-base font-medium text-white">
+                  {vehicleLine}
+                </p>
               ) : (
                 <p className="text-sm text-zinc-400">
                   {ui.subscriptions.vehicleLockedEmpty}

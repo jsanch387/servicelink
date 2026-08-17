@@ -66,8 +66,7 @@ function groupDigitsLoose(digits: string): string {
 function formatMainNumber(body: string, digits: string): string {
   const leadingPlus = /^\s*\+/.test(body);
   const isUsNational =
-    digits.length === 10 ||
-    (digits.length === 11 && digits.startsWith('1'));
+    digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
   const national = normalizeUsPhoneDigits(body);
 
   if (isUsNational && national.length === 10) {

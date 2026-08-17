@@ -45,6 +45,7 @@ import {
   MembershipServiceDetailsFields,
   type MembershipServiceDetailsValue,
 } from './MembershipServiceDetailsFields';
+import { PublicMembershipStepHeading } from './PublicMembershipStepHeading';
 
 interface PublicMembershipSubscribePageProps {
   businessSlug: string;
@@ -342,14 +343,13 @@ export const PublicMembershipSubscribePage: React.FC<
 
         {step === 'howItWorks' ? (
           <section aria-labelledby="subscribe-how-heading">
-            <h1
+            <PublicMembershipStepHeading
               id="subscribe-how-heading"
-              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
-            >
-              {ui.subscriptions.howItWorksTitle}
-            </h1>
+              title={ui.subscriptions.howItWorksTitle}
+              className="mb-8"
+            />
 
-            <ol className="relative mt-8">
+            <ol className="relative">
               <div
                 aria-hidden
                 className="absolute top-5 bottom-5 left-5 w-px -translate-x-1/2 bg-gradient-to-b from-white/25 via-white/12 to-white/5"
@@ -366,11 +366,11 @@ export const PublicMembershipSubscribePage: React.FC<
                     <span className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/12 bg-[var(--dashboard-bg)] text-zinc-200 shadow-[0_0_0_4px_var(--dashboard-bg)]">
                       <Icon className="h-5 w-5" aria-hidden />
                     </span>
-                    <div className="min-w-0 pt-1.5">
+                    <div className="min-w-0 space-y-0.5 pt-1.5">
                       <p className="text-sm font-semibold text-white">
                         {item.title}
                       </p>
-                      <p className="mt-1 text-sm leading-relaxed text-zinc-400">
+                      <p className="text-sm leading-snug text-zinc-400">
                         {item.body}
                       </p>
                     </div>
@@ -382,71 +382,62 @@ export const PublicMembershipSubscribePage: React.FC<
         ) : null}
 
         {step === 'contact' ? (
-          <section aria-labelledby="subscribe-contact-heading">
-            <h1
+          <section
+            aria-labelledby="subscribe-contact-heading"
+            className="space-y-6"
+          >
+            <PublicMembershipStepHeading
               id="subscribe-contact-heading"
-              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
-            >
-              {ui.subscriptions.contactTitle}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              {ui.subscriptions.contactHint}
-            </p>
-            <div className="mt-5">
-              <MembershipServiceDetailsFields
-                value={details}
-                onChange={setDetails}
-                showContact
-                showAddress={false}
-                showVehicle={false}
-                bookingFlowLocale={bookingFlowLocale}
-              />
-            </div>
+              title={ui.subscriptions.contactTitle}
+              hint={ui.subscriptions.contactHint}
+            />
+            <MembershipServiceDetailsFields
+              value={details}
+              onChange={setDetails}
+              showContact
+              showAddress={false}
+              showVehicle={false}
+              bookingFlowLocale={bookingFlowLocale}
+            />
           </section>
         ) : null}
 
         {step === 'serviceDetails' ? (
-          <section aria-labelledby="subscribe-details-heading">
-            <h1
+          <section
+            aria-labelledby="subscribe-details-heading"
+            className="space-y-6"
+          >
+            <PublicMembershipStepHeading
               id="subscribe-details-heading"
-              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
-            >
-              {ui.subscriptions.serviceDetailsTitle}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              {ui.subscriptions.serviceDetailsHint}
-            </p>
-            <div className="mt-6">
-              <MembershipServiceDetailsFields
-                value={details}
-                onChange={setDetails}
-                showContact={false}
-                showAddress={needsAddress}
-                showVehicle={needsVehicle}
-                savedBanner={
-                  usedSavedDetails ? ui.subscriptions.usingSavedDetails : null
-                }
-                bookingFlowLocale={bookingFlowLocale}
-              />
-            </div>
+              title={ui.subscriptions.serviceDetailsTitle}
+              hint={ui.subscriptions.serviceDetailsHint}
+            />
+            <MembershipServiceDetailsFields
+              value={details}
+              onChange={setDetails}
+              showContact={false}
+              showAddress={needsAddress}
+              showVehicle={needsVehicle}
+              savedBanner={
+                usedSavedDetails ? ui.subscriptions.usingSavedDetails : null
+              }
+              bookingFlowLocale={bookingFlowLocale}
+            />
           </section>
         ) : null}
 
         {step === 'firstVisit' ? (
-          <section aria-labelledby="subscribe-visit-heading">
-            <h1
+          <section
+            aria-labelledby="subscribe-visit-heading"
+            className="space-y-6"
+          >
+            <PublicMembershipStepHeading
               id="subscribe-visit-heading"
-              className="text-2xl font-black tracking-tight text-white sm:text-[1.75rem]"
-            >
-              {ui.subscriptions.firstVisitTitle}
-            </h1>
-            {ui.subscriptions.firstVisitHint ? (
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                {ui.subscriptions.firstVisitHint}
-              </p>
-            ) : null}
+              title={ui.subscriptions.firstVisitTitle}
+              hint={ui.subscriptions.firstVisitHint}
+            />
 
-            <div className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 lg:p-5">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4 lg:p-5">
               <DateSelector
                 weeklySchedule={weeklySchedule}
                 serviceDurationMinutes={visitDurationMinutes}
@@ -462,7 +453,7 @@ export const PublicMembershipSubscribePage: React.FC<
               />
             </div>
 
-            <div className="mt-6 lg:mt-8">
+            <div>
               <TimeSlotGrid
                 selectedDate={firstVisitDate}
                 serviceDurationMinutes={visitDurationMinutes}

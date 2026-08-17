@@ -1,10 +1,7 @@
 'use client';
 
 import { copyTextToClipboardSync } from '@/lib/copyTextToClipboard';
-import {
-  formatUsPhoneWithCountry,
-  usPhoneTelHref,
-} from '@/lib/formatUsPhone';
+import { formatUsPhoneWithCountry, usPhoneTelHref } from '@/lib/formatUsPhone';
 import {
   ArrowPathRoundedSquareIcon,
   ClipboardDocumentIcon,
@@ -20,13 +17,7 @@ const COPIED_RESET_MS = 1600;
 const iconBtnClass =
   'inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed';
 
-function CopyIconButton({
-  value,
-  label,
-}: {
-  value: string;
-  label: string;
-}) {
+function CopyIconButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
 

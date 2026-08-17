@@ -5,7 +5,7 @@
  */
 
 import { API_ROUTES } from '@/constants/routes';
-import { assertMembershipsReady } from '@/features/subscriptions/server/assertMembershipsReady';
+import { assertMembershipsSubscriberAccess } from '@/features/subscriptions/server/assertMembershipsReady';
 import { cancelOwnerCustomerMembership } from '@/features/subscriptions/server/cancelOwnerCustomerMembership';
 import { createMembershipBillingPortalSession } from '@/features/subscriptions/server/createMembershipBillingPortalSession';
 import { getOwnerCustomerMembership } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
@@ -57,7 +57,7 @@ async function requireOwnerMembershipsContext(req: Request) {
     };
   }
 
-  const ready = await assertMembershipsReady(
+  const ready = await assertMembershipsSubscriberAccess(
     supabase,
     user.id,
     resolved.businessId,

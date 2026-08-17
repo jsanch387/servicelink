@@ -113,11 +113,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       minDate.getDate()
     );
     const latestDate = maxDate
-      ? new Date(
-          maxDate.getFullYear(),
-          maxDate.getMonth(),
-          maxDate.getDate()
-        )
+      ? new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate())
       : null;
     const selectedDay = selectedDate
       ? new Date(

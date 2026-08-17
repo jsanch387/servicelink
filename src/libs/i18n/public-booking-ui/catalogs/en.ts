@@ -354,9 +354,8 @@ export const publicBookingUiEn: PublicBookingUi = {
       },
     ],
     howItWorksContinueCta: 'Continue',
-    contactTitle: 'Your contact info',
-    contactHint:
-      'We’ll use this to find your saved address and vehicle if you’ve booked here before.',
+    contactTitle: 'Contact info',
+    contactHint: 'Add your details.',
     contactContinueCta: 'Continue',
     contactIncomplete: 'Enter your name, a valid email, and a 10-digit phone.',
     serviceDetailsTitle: 'Service details',
@@ -402,12 +401,9 @@ export const publicBookingUiEn: PublicBookingUi = {
     manageSendFailed: 'Could not send a link right now. Try again.',
     manageRateLimited: 'Too many attempts. Please try again in a few minutes.',
     periodVisitTitle: 'Choose your next visit',
-    periodVisitHint: planName =>
-      `Pick a date and time for ${planName}. This visit is included with your membership.`,
-    periodVisitDetailsHint:
-      'Confirm where we should come. You can update the address. This visit is for the vehicle on your plan.',
-    periodVisitDetailsHintShop:
-      'This visit is for the vehicle on your plan. Next, pick a date and time.',
+    periodVisitHint: planName => `Pick a date and time for ${planName}.`,
+    periodVisitDetailsHint: 'Confirm your address for this visit.',
+    periodVisitDetailsHintShop: 'Confirm your details, then pick a date.',
     periodVisitUsingSavedDetails:
       'We filled this from your last visit — you can update the address.',
     periodVisitAddressIncomplete: 'Fill in the required address fields.',

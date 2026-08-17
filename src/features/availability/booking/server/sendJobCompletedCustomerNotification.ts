@@ -1,6 +1,7 @@
 /**
- * Customer notification after job_completed persistence — SMS-first, email
- * fallback, never both. Failures do not roll back the DB commit.
+ * Customer notification after job_completed persistence.
+ * Sends receipt SMS and/or email based on available contact info
+ * (both when both exist). Failures do not roll back the DB commit.
  */
 
 import {
@@ -67,20 +68,19 @@ export async function sendJobCompletedCustomerNotification(
     businessId: input.businessId,
   });
 
-  let sms: NotifyChannelOutcome = {
-    sent: false,
-    messageId: null,
-    reason: null,
-  };
-  let email: NotifyChannelOutcome = {
-    sent: false,
-    messageId: null,
-    reason: null,
-  };
-
   const phone = input.customerPhone?.trim() || '';
+  const recipient = input.customerEmail?.trim() || '';
 
-  if (phone) {
+  const sendSms = async (): Promise<NotifyChannelOutcome> => {
+    if (!phone) {
+      logJobCompletedStage(trace, 'notify_sms', {
+        invoiceUrl,
+        skipped: true,
+        reason: 'no_phone',
+      });
+      return { sent: false, messageId: null, reason: 'no_phone' };
+    }
+
     logJobCompletedStage(trace, 'notify_sms', {
       invoiceUrl,
       invoicePublicToken: input.invoicePublicToken,
@@ -109,33 +109,26 @@ export async function sendJobCompletedCustomerNotification(
         sent: true,
         messageId: smsResult.messageId,
       });
-      return {
-        sms: { sent: true, messageId: smsResult.messageId, reason: null },
-        email,
-      };
+      return { sent: true, messageId: smsResult.messageId, reason: null };
     }
-    sms = { sent: false, messageId: null, reason: smsResult.reason };
+
     logJobCompletedStage(trace, 'notify_sms', {
       invoiceUrl,
       sent: false,
       reason: smsResult.reason,
     });
-  } else {
-    sms = { sent: false, messageId: null, reason: 'no_phone' };
-    logJobCompletedStage(trace, 'notify_sms', {
-      invoiceUrl,
-      skipped: true,
-      reason: 'no_phone',
-    });
-  }
+    return { sent: false, messageId: null, reason: smsResult.reason };
+  };
 
-  const recipient = input.customerEmail?.trim() || '';
-  if (recipient) {
+  const sendEmail = async (): Promise<NotifyChannelOutcome> => {
+    if (!recipient) {
+      return { sent: false, messageId: null, reason: 'no_email' };
+    }
+
     logJobCompletedStage(trace, 'notify_email', {
       invoiceUrl,
       toEmail: maskEmailForLog(recipient),
       includeReviewHint: input.includeReviewHint,
-      smsFailedFirst: !sms.sent,
     });
 
     const emailResult = await sendJobCompletedInvoiceEmail(recipient, {
@@ -156,18 +149,19 @@ export async function sendJobCompletedCustomerNotification(
 
     if (emailResult.sent) {
       return {
-        sms,
-        email: { sent: true, messageId: emailResult.messageId, reason: null },
+        sent: true,
+        messageId: emailResult.messageId,
+        reason: null,
       };
     }
-    email = {
+
+    return {
       sent: false,
       messageId: null,
       reason: mapJobCompletedEmailFailureReason(emailResult.error),
     };
-  } else {
-    email = { sent: false, messageId: null, reason: 'no_email' };
-  }
+  };
 
+  const [sms, email] = await Promise.all([sendSms(), sendEmail()]);
   return { sms, email };
 }

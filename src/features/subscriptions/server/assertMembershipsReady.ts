@@ -22,6 +22,7 @@ export type AssertMembershipsReadyResult =
       gate: Exclude<MembershipsAccessGate, 'ready'>;
     };
 
+/** Full access — create / edit / delete plans (requires Pro + Connect + payments). */
 export async function assertMembershipsReady(
   supabase: SupabaseClient<Database>,
   userId: string,
@@ -35,6 +36,33 @@ export async function assertMembershipsReady(
     ownerEmail
   );
   if (access.gate === 'ready') {
+    return { ok: true };
+  }
+  return {
+    ok: false,
+    status: 403,
+    error: MEMBERSHIPS_GATE_ERRORS[access.gate],
+    gate: access.gate,
+  };
+}
+
+/**
+ * Owner can still list/manage existing members when Pro lapses.
+ * Plan catalog writes stay behind {@link assertMembershipsReady}.
+ */
+export async function assertMembershipsSubscriberAccess(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  businessId: string,
+  ownerEmail?: string | null
+): Promise<AssertMembershipsReadyResult> {
+  const access = await loadMembershipsAccess(
+    supabase,
+    userId,
+    businessId,
+    ownerEmail
+  );
+  if (access.gate === 'ready' || access.gate === 'not_pro') {
     return { ok: true };
   }
   return {

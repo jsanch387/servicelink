@@ -52,14 +52,32 @@ describe('stripe cancellation flows', () => {
 
   it('marks tier free when Stripe status is canceled in subscription.updated sync', async () => {
     let capturedUpdates: Record<string, unknown> | null = null;
-    const select = async () => ({ data: [{ user_id: 'user-3' }], error: null });
-    const eq = () => ({ select });
+    const updateSelect = async () => ({
+      data: [{ user_id: 'user-3' }],
+      error: null,
+    });
+    const updateEq = () => ({ select: updateSelect });
     const update = (updates: Record<string, unknown>) => {
       capturedUpdates = updates;
-      return { eq };
+      return { eq: updateEq };
     };
+    const loadMaybeSingle = async () => ({
+      data: {
+        user_id: 'user-3',
+        subscription_status: 'active',
+        subscription_cancel_at_period_end: false,
+        subscription_canceled_at: null,
+        last_payment_failed_at: null,
+      },
+      error: null,
+    });
+    const loadEq = () => ({ maybeSingle: loadMaybeSingle });
+    const loadSelect = () => ({ eq: loadEq });
     const supabase = {
-      from: () => ({ update }),
+      from: () => ({
+        select: loadSelect,
+        update,
+      }),
     };
 
     const result = await syncProfileFromSubscriptionUpdated(supabase as never, {

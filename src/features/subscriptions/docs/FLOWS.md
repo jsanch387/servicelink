@@ -12,13 +12,15 @@ Resolved by `loadMembershipsAccess` / `assertMembershipsReady`:
 not_in_rollout → not_pro → needs_connect → needs_payments → ready
 ```
 
-| Gate             | Meaning                                            | UI                                |
-| ---------------- | -------------------------------------------------- | --------------------------------- |
-| `not_in_rollout` | Owner email not on allowlist (and open-to-all off) | Redirect `/dashboard`; nav hidden |
-| `not_pro`        | No Pro entitlement                                 | `SubscriptionsNotProGate`         |
-| `needs_connect`  | Stripe Connect incomplete / charges not enabled    | `SubscriptionsConnectGate`        |
-| `needs_payments` | `payment_settings.payments_enabled` false          | `SubscriptionsPaymentsGate`       |
-| `ready`          | Can manage plans                                   | Create-first or plan list         |
+| Gate             | Meaning                                            | UI                                                                   |
+| ---------------- | -------------------------------------------------- | -------------------------------------------------------------------- |
+| `not_in_rollout` | Owner email not on allowlist (and open-to-all off) | Redirect `/dashboard`; nav hidden                                    |
+| `not_pro`        | No Pro entitlement                                 | Teaser if no plans; paused banner + read-only catalog if plans exist |
+| `needs_connect`  | Stripe Connect incomplete / charges not enabled    | `SubscriptionsConnectGate`                                           |
+| `needs_payments` | `payment_settings.payments_enabled` false          | `SubscriptionsPaymentsGate`                                          |
+| `ready`          | Can manage plans                                   | Create-first or plan list                                            |
+
+**Pro paused (had plans):** public new signups stay hidden; existing Stripe memberships keep billing. Owner can list/manage subscribers (`assertMembershipsSubscriberAccess`); create/edit/delete plans stay behind `assertMembershipsReady`.
 
 **Rollout config:** `config/membershipsRolloutAllowlist.ts`
 
@@ -46,7 +48,7 @@ Central definitions: `src/constants/routes.ts`.
 1. **0 plans** → create-first empty state → `/new`
 2. **≥1 plan** → Plans | Subscribers tabs
    - Plans: cards → detail. Card count is **active** members only (`active` / `trialing` / `past_due` / `unpaid` / `paused`).
-   - Subscribers: **current** members by default (same statuses as the plan count, and still on a live plan). Canceled / incomplete / removed-plan rows stay behind **Show canceled (N)** or **Show ended (N)**. Removed plans keep their name with `(removed)` (or **Removed plan** if the name is gone) and do not link to plan detail.
+   - Subscribers: **Active** by default (live members with no cancel requested). Cancel-at-period-end and fully canceled (plus incomplete / removed-plan) sit under **Canceled** (or **Ended**). Plan-card / delete **active** counts use the same rule (cancel requested → not active). Removed plans keep their name with `(removed)` (or **Removed plan** if the name is gone) and do not link to plan detail.
 
 ---
 
@@ -219,15 +221,18 @@ Server loads `visit_duration_minutes` from the plan, re-checks the calendar slot
 1. Membership confirmation (manage/cancel portal link)
 2. Appointment confirmation (same V2 booking email as public bookings)
 
+**Cancel confirmation:** when cancel is newly requested (owner cancel or Customer Portal → Connect `customer.subscription.updated` / `deleted`), send the customer a “subscription canceled” email (at-period-end includes access-until date; immediate says ended now). Idempotent via `metadata.cancel_confirmation_sent_key` so owner + webhook do not double-send.
+
 **Live:** owner Subscribers list/detail from `customer_memberships`; calendar shows the first visit; owner gets the usual new-appointment notify.
 
-**Period visits (owner):** Detail shows **Needs visit** when no booking is linked for `current_period_start`. Canceled and cancel-at-period-end do **not** show Needs visit (list pill stays **Canceled**); a leftover scheduled/completed visit for this period still shows. **Book visit** opens New appointment prefilled (plan name, duration, customer, notes, vehicle) with `membershipId`; on create, `linkMembershipPeriodVisit` sets `period_visit_*`. Completing that booking keeps the link (so they cannot book another visit this period) and detail shows **Visit completed** instead of **Next visit**. Cancel / delete still clears `period_visit_*` → Needs visit again. List rows show a Needs visit badge. Owner notes save via `POST …/subscribers/:id` `{ action: 'save_notes' }`.
+**Period visits (owner):** Detail shows **Needs visit** when no booking is linked for `current_period_start`. **Canceled** (immediate or cancel-at-period-end) do **not** show Needs visit; a leftover scheduled/completed visit for this period still shows. **Book visit** opens New appointment prefilled (plan name, duration, customer, notes, vehicle) with `membershipId`; on create, `linkMembershipPeriodVisit` sets `period_visit_*`. Completing that booking keeps the link (so they cannot book another visit this period) and detail shows **Visit completed** instead of **Next visit**. Cancel / delete still clears `period_visit_*` → Needs visit again. List rows show a Needs visit badge. Owner notes save via `POST …/subscribers/:id` `{ action: 'save_notes' }`.
 
 **Period visits (customer self-serve):**
 
 - URL: `/{slug}/membership/visit?token={membershipId}.{sig}` (`getPublicMembershipVisitPath`; same HMAC token as manage links).
 - UI: subscribe-style stepper (service details → date/time) → `POST /api/public/memberships/visit` → create $0 booking + `linkMembershipPeriodVisit`. Address is prefilled and editable; vehicle is shown but locked to the membership car (server ignores a posted vehicle). Calendar opens at the next Stripe bill date (not last-visit + cadence).
 - **Reminders:** on Connect `customer.subscription.updated` **when the period actually needs a visit** (not cancel / cancel-at-period-end). After upsert, if `needs_visit` and `initial_booking_id` is set and we have not already reminded for this `current_period_start` (`metadata.visit_reminder_sent_for_period_start`), send customer email + SMS with the schedule link and nudge the owner (in-app notification + push).
+- **New subscriber:** on first `checkout.session.completed` membership upsert (`created`), owner gets in-app + push (`membership_subscriber` → subscriber detail). First-visit booking still also sends the usual new-appointment owner notify when that booking is created.
 - **Owner Send schedule link:** `POST …/subscribers/:id` `{ action: 'send_schedule_link' }` emails/texts the same URL (when status is Needs visit). Capped at 1 send / 10 minutes per subscriber and 3 per billing period (plus an owner hourly cap).
 - **Cancel / delete booking:** if that booking is `period_visit_booking_id`, clear `period_visit_*` → Needs visit again (owner can Book visit or Send schedule link).
 

@@ -360,9 +360,8 @@ export const publicBookingUiEs: PublicBookingUi = {
       },
     ],
     howItWorksContinueCta: 'Continuar',
-    contactTitle: 'Tus datos de contacto',
-    contactHint:
-      'Los usaremos para encontrar tu dirección y vehículo guardados si ya has reservado aquí.',
+    contactTitle: 'Datos de contacto',
+    contactHint: 'Agrega tus datos.',
     contactContinueCta: 'Continuar',
     contactIncomplete:
       'Ingresa tu nombre, un correo válido y un teléfono de 10 dígitos.',
@@ -411,16 +410,13 @@ export const publicBookingUiEs: PublicBookingUi = {
     manageRateLimited:
       'Demasiados intentos. Vuelve a intentarlo en unos minutos.',
     periodVisitTitle: 'Elige tu próxima visita',
-    periodVisitDetailsHint:
-      'Confirma dónde debemos ir. Puedes actualizar la dirección. Esta visita es para el vehículo de tu plan.',
-    periodVisitDetailsHintShop:
-      'Esta visita es para el vehículo de tu plan. Luego elige fecha y hora.',
+    periodVisitDetailsHint: 'Confirma la dirección para esta visita.',
+    periodVisitDetailsHintShop: 'Confirma tus datos y luego elige una fecha.',
     periodVisitUsingSavedDetails:
       'Lo llenamos con tu última visita — puedes actualizar la dirección.',
     periodVisitAddressIncomplete:
       'Completa los campos obligatorios de dirección.',
-    periodVisitHint: planName =>
-      `Elige fecha y hora para ${planName}. Esta visita está incluida en tu membresía.`,
+    periodVisitHint: planName => `Elige fecha y hora para ${planName}.`,
     periodVisitTimeTitle: 'Elige una hora',
     periodVisitDateRequired: 'Elige una fecha para tu visita.',
     periodVisitDateOutOfPeriod:

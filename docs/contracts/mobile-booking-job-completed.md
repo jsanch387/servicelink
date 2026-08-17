@@ -1,6 +1,6 @@
 # Contract: Mobile — `job_completed` (Complete sheet / Phase 1)
 
-> **SMS (2026-08):** Completion persists fees, payment, invoice, and marks the booking complete. Receipt is **SMS-first** (short `/r/…` link when `short_code` exists); email is the fallback if SMS does not send. See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
+> **SMS (2026-08):** Completion persists fees, payment, invoice, and marks the booking complete. Receipt goes to SMS and/or email based on available contacts (both when both exist; short `/r/…` link when `short_code` exists). See [`../sms-outbound-paused.md`](../sms-outbound-paused.md).
 
 Owner closes out a field job from the **Complete** full-screen sheet: add fees, collect balance, tap **Complete**. This is **cycle 2** of the extended booking lifecycle — payment close-out, invoice, and customer notification.
 
@@ -106,12 +106,12 @@ Load `service_price_cents`, `addon_details`, and join/read `booking_payments` wh
 }
 ```
 
-| Field                         | Notes                                                                                                    |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                                                           |
-| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                                                       |
-| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today)                                     |
-| `sms` / `email`               | Always present. SMS-first: if `sms.sent`, email is skipped. Else check `email.sent` for receipt fallback |
+| Field                         | Notes                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `jobStatus` / `bookingStatus` | Both `"completed"` — booking drops off Next Up                                                       |
+| `workHandoffStatus`           | Echoes `notified` or `skipped` from Done/Skip step                                                   |
+| `invoicePublicToken`          | Opaque token for customer invoice URL (optional for mobile UI today)                                 |
+| `sms` / `email`               | Always present. Each channel sends independently when that contact exists (both can be `sent: true`) |
 
 Customer invoice URL (for debugging): `{EXPO_PUBLIC_WEB_APP_URL}/i/{invoicePublicToken}`
 
