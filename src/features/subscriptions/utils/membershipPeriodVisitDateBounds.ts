@@ -1,6 +1,7 @@
 /**
  * Inclusive YYYY-MM-DD window for a membership period visit.
  * Next visit cannot land in a cadence the member already used.
+ * Canceled visits do not count as used.
  */
 
 import type { SubscriptionCadenceUnit } from '../types/customerSubscriptionPlan';
@@ -107,23 +108,29 @@ export function isYmdInInclusiveRange(
   return value >= bounds.minYmd && value <= bounds.maxYmd;
 }
 
-function lastVisitUsedPeriod(args: {
+function lastVisitUsedCycle(args: {
   lastVisit: string | null;
-  periodStart: string | null;
-  periodEnd: string | null;
+  cycleStart: string | null;
+  cycleEndExclusive: string | null;
 }): boolean {
-  if (!args.lastVisit || !args.periodStart) return false;
-  if (args.lastVisit < args.periodStart) return false;
-  if (args.periodEnd && args.lastVisit >= args.periodEnd) return false;
+  if (!args.lastVisit || !args.cycleStart) return false;
+  if (args.lastVisit < args.cycleStart) return false;
+  if (args.cycleEndExclusive && args.lastVisit >= args.cycleEndExclusive) {
+    return false;
+  }
   return true;
 }
 
 /**
  * Bookable days for the public period-visit calendar.
  *
- * Window follows the Stripe billing period (next bill), not last visit + cadence.
- * An August visit on a monthly plan does not push the calendar to late September —
- * it opens at period end (next bill), through the following period.
+ * Window length follows the membership cadence (weekly / every 2 weeks /
+ * monthly), starting at the current Stripe period start. Stripe `period_end`
+ * is only a fallback when period start is missing.
+ *
+ * Canceled visits do not count as used — the member can rebook remaining
+ * days in this cadence cycle. A completed/scheduled visit in this cycle
+ * opens the next cadence window.
  */
 export function resolveMembershipPeriodVisitDateBounds(args: {
   todayYmd: string;
@@ -140,21 +147,24 @@ export function resolveMembershipPeriodVisitDateBounds(args: {
       ? args.intervalCount
       : 1;
   const periodStart = isoToYmd(args.periodStartIso);
-  const periodEnd = isoToYmd(args.periodEndIso);
+  const stripePeriodEnd = isoToYmd(args.periodEndIso);
   const lastVisit = parseYmd(args.lastVisitYmd);
-  const usedThisPeriod = lastVisitUsedPeriod({
+
+  const cycleStart = periodStart ?? today;
+  const cycleEndExclusive =
+    addCadenceToYmd(cycleStart, unit, count) ?? stripePeriodEnd;
+
+  const usedThisCycle = lastVisitUsedCycle({
     lastVisit,
-    periodStart,
-    periodEnd,
+    cycleStart: periodStart,
+    cycleEndExclusive,
   });
 
   let windowStart = periodStart;
-  let windowEndExclusive = periodEnd;
-  if (usedThisPeriod && periodStart) {
-    windowStart = periodEnd ?? addCadenceToYmd(periodStart, unit, count);
-    windowEndExclusive = windowStart
-      ? addCadenceToYmd(windowStart, unit, count)
-      : null;
+  let windowEndExclusive = cycleEndExclusive;
+  if (usedThisCycle && cycleEndExclusive) {
+    windowStart = cycleEndExclusive;
+    windowEndExclusive = addCadenceToYmd(cycleEndExclusive, unit, count);
   }
 
   const minYmd = maxYmd([today, windowStart]);

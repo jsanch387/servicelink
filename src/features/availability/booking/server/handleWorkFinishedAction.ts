@@ -22,6 +22,7 @@ interface BookingForWorkFinished {
   job_status: string | null;
   work_handoff_status: string | null;
   customer_phone: string | null;
+  customer_id: string | null;
 }
 
 interface WorkFinishedAuth {
@@ -66,7 +67,7 @@ export async function handleWorkFinishedAction(opts: {
     (auth.supabase as any)
       .from('bookings')
       .select(
-        'id, business_id, status, job_status, work_handoff_status, customer_phone'
+        'id, business_id, status, job_status, work_handoff_status, customer_phone, customer_id'
       )
       .eq('id', bookingId)
       .maybeSingle();
@@ -206,7 +207,7 @@ export async function handleWorkFinishedAction(opts: {
     admin,
     businessId: business.id,
     bookingId: booking.id,
-    customerId: null,
+    customerId: booking.customer_id,
     type: 'work_finished',
     to: booking.customer_phone,
     message: buildWorkFinishedSms(),

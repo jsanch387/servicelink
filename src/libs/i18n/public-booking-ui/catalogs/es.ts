@@ -387,6 +387,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     continueToCheckoutCta: 'Continuar al pago',
     checkoutComingSoon: 'El pago estará disponible pronto.',
     checkoutStartFailed: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
+    alreadySubscribed:
+      'Ya tienes una suscripción. Administra tu plan si necesitas hacer cambios.',
     checkoutReturnSuccess: 'Pago recibido — gracias por suscribirte.',
     checkoutReturnCancel:
       'Pago cancelado. Puedes intentarlo de nuevo cuando quieras.',

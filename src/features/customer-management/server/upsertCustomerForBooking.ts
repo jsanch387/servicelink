@@ -19,9 +19,30 @@ export interface UpsertCustomerForBookingInput {
   fullName: string;
   email: string;
   phone?: string | null;
+  /**
+   * When set (public booking / membership subscribe), persist to `customers.sms_opt_in`.
+   * When omitted (e.g. owner manual), leave existing preference alone; new rows default true.
+   */
+  smsOptIn?: boolean;
 }
 
 type CustomerIdRow = { id: string };
+
+async function applySmsOptInIfProvided(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  customerId: string,
+  smsOptIn: boolean | undefined
+): Promise<void> {
+  if (typeof smsOptIn !== 'boolean') return;
+  await db
+    .from('customers')
+    .update({
+      sms_opt_in: smsOptIn,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', customerId);
+}
 
 /**
  * Find existing customer for `business_id` or insert a new row.
@@ -43,6 +64,8 @@ export async function upsertCustomerForBooking(
   const phone = phone_normalized;
   /** Canonical email in DB when provided; otherwise null (owner booking without email). */
   const email = email_normalized;
+  const sms_opt_in =
+    typeof input.smsOptIn === 'boolean' ? input.smsOptIn : true;
 
   if (phone_normalized) {
     const { data: byPhone } = await db
@@ -54,6 +77,7 @@ export async function upsertCustomerForBooking(
 
     const row = byPhone as CustomerIdRow | null;
     if (row?.id) {
+      await applySmsOptInIfProvided(db, row.id, input.smsOptIn);
       return { id: row.id };
     }
   }
@@ -68,6 +92,7 @@ export async function upsertCustomerForBooking(
 
     const emailRow = byEmail as CustomerIdRow | null;
     if (emailRow?.id) {
+      await applySmsOptInIfProvided(db, emailRow.id, input.smsOptIn);
       return { id: emailRow.id };
     }
   }
@@ -82,6 +107,7 @@ export async function upsertCustomerForBooking(
       phone_normalized,
       email_normalized,
       notes: null,
+      sms_opt_in,
     })
     .select('id')
     .single();
@@ -97,6 +123,7 @@ export async function upsertCustomerForBooking(
           .maybeSingle();
         const r = againPhone as CustomerIdRow | null;
         if (r?.id) {
+          await applySmsOptInIfProvided(db, r.id, input.smsOptIn);
           return { id: r.id };
         }
       }
@@ -109,6 +136,7 @@ export async function upsertCustomerForBooking(
           .maybeSingle();
         const r2 = againEmail as CustomerIdRow | null;
         if (r2?.id) {
+          await applySmsOptInIfProvided(db, r2.id, input.smsOptIn);
           return { id: r2.id };
         }
       }

@@ -27,7 +27,7 @@ describe('notificationMinimalDisplayTitle', () => {
         'membership',
         ''
       )
-    ).toBe('Member needs a visit');
+    ).toBe('Subscription needs a visit');
   });
 
   it('payment failed before generic payment', () => {

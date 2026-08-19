@@ -15,7 +15,7 @@ const payload = {
 describe('getMembershipVisitReminderSubject', () => {
   it('names the business, not ServiceLink', () => {
     expect(getMembershipVisitReminderSubject('Urban Detailing')).toBe(
-      'Book your next visit with Urban Detailing'
+      'Schedule your visit with Urban Detailing'
     );
   });
 });
@@ -23,11 +23,11 @@ describe('getMembershipVisitReminderSubject', () => {
 describe('buildMembershipVisitReminderHtml', () => {
   it('uses shared layout with business-first copy and no ServiceLink header', () => {
     const html = buildMembershipVisitReminderHtml(payload);
-    expect(html).toContain('Book your next visit');
+    expect(html).toContain('Schedule your visit');
     expect(html).toContain(
-      'Hi Tessa, a new period of Super Maintenance with Urban Detailing started. Choose a date and time that works for you.'
+      'Hi Tessa, a new period of Super Maintenance with Urban Detailing started. Schedule your included visit.'
     );
-    expect(html).toContain('Choose a date');
+    expect(html).toContain('Schedule visit');
     expect(html).toContain(payload.scheduleUrl);
     expect(html).toContain('Sent for Urban Detailing via ServiceLink');
     expect(html).not.toContain('>ServiceLink</span>');
@@ -40,7 +40,7 @@ describe('buildMembershipVisitReminderHtml', () => {
       kind: 'schedule_link',
     });
     expect(html).toContain(
-      'Hi Tessa, book your next visit for Super Maintenance with Urban Detailing. Choose a date and time that works for you.'
+      'Hi Tessa, your Super Maintenance with Urban Detailing includes a visit this period. Pick a date and time that works for you.'
     );
     expect(html).not.toMatch(/new period/i);
     expect(html).not.toMatch(/started\./i);
@@ -62,7 +62,7 @@ describe('buildMembershipVisitReminderPlainText', () => {
       kind: 'schedule_link',
     });
     expect(text).toContain(
-      'Hi Tessa, book your next visit for Super Maintenance with Urban Detailing.'
+      'Hi Tessa, your Super Maintenance with Urban Detailing includes a visit this period.'
     );
     expect(text).not.toMatch(/new period/i);
   });

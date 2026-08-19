@@ -17,6 +17,9 @@ business_profiles
        │         │
        │         └── membership_plan_prices   (cadence options: week/month/year × amount)
        │
+       ├── customer_memberships      (live subscribers — SELECT-only for owners)
+       ├── membership_events         (append-only timeline)
+       ├── membership_invoices       (invoice ledger)
        ├── payment_accounts          (Stripe Connect — required to offer plans)
        └── payment_settings          (payments_enabled — required to offer plans)
 ```
@@ -34,7 +37,7 @@ business_profiles
 
 ## Table: `membership_plans`
 
-**Purpose:** Owner-authored offer (name, description, benefits). Soft-delete hides from owner list and public link without canceling future Stripe members (delete is blocked while active members exist — once members table exists).
+**Purpose:** Owner-authored offer (name, description). Soft-delete hides from owner list and public link without canceling Stripe members (delete is blocked while active members exist).
 
 **Used by:** Owner dashboard CRUD, public plan loader, Stripe Product sync via `stripe_product_id`.
 
@@ -45,8 +48,7 @@ business_profiles
 | `id`                     | `uuid`        | no       | `gen_random_uuid()` | Primary key                                                                 |
 | `business_id`            | `uuid`        | no       | —                   | FK → `business_profiles(id)` ON DELETE CASCADE                              |
 | `name`                   | `text`        | no       | —                   | Plan title; CHECK non-empty trim                                            |
-| `description`            | `text`        | no       | `''`                | Prose only (bullets stripped into `benefits`)                               |
-| `benefits`               | `text[]`      | no       | `'{}'`              | Bullet lines for public card / modal                                        |
+| `description`            | `text`        | no       | `''`                | Full owner copy (prose + bullets in one field)                              |
 | `is_published`           | `boolean`     | no       | `true`              | Public loader requires `true`. Create always publishes; no owner toggle yet |
 | `is_popular`             | `boolean`     | no       | `false`             | Optional highlight; create hardcodes `false`                                |
 | `sort_order`             | `integer`     | no       | `0`                 | Owner list / public order                                                   |
@@ -68,7 +70,7 @@ business_profiles
 
 **Purpose:** One row per billing cadence on a plan (e.g. weekly $49, monthly $159). Shape matches Stripe Price recurring fields.
 
-**Used by:** Create/update plan APIs, public cards (price + cadence pills), Stripe Price sync / (future) Checkout via `stripe_price_id`.
+**Used by:** Create/update plan APIs, public cards (price + cadence pills), Stripe Price sync / Checkout via `stripe_price_id`.
 
 ### Columns
 
@@ -107,14 +109,9 @@ business_profiles
 
 ---
 
-## Description ↔ benefits storage
+## Description storage
 
-Owner writes one textarea. On save, `splitDescriptionAndBenefits` (`utils/planDescription.ts`):
-
-- Lines starting with `•`, `-`, or `*` → `benefits[]` (marker stripped)
-- Other lines → `description` (line breaks kept)
-
-Edit hydrate uses `joinDescriptionAndBenefits` to rebuild the textarea.
+Owner writes one textarea. On save, the full text goes into `membership_plans.description` (including any bullet lines).
 
 ---
 

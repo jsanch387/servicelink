@@ -26,6 +26,7 @@ Intended schema (create/migrate in Supabase SQL editor or migrations):
 | `phone_normalized` | `text`        | Nullable; digits-only (or E.164) for dedupe on booking submit.  |
 | `email_normalized` | `text`        | Nullable; `lower(trim(email))` for dedupe.                      |
 | `notes`            | `text`        | Nullable; internal notes (maps to UI `note`).                   |
+| `sms_opt_in`       | `boolean`     | Not null, default `true`. Transactional SMS preference.         |
 | `created_at`       | `timestamptz` | Default `now()`.                                                |
 | `updated_at`       | `timestamptz` | Maintain via trigger or app updates.                            |
 
@@ -58,7 +59,9 @@ If you add another API that inserts into **`bookings`**, route through **`create
 | File                                      | Role                                                                                                                                                                                                                       |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`server/normalizeCustomerContact.ts`**  | `normalizeEmailForLookup`, `normalizePhoneForLookup` (digits-only phone).                                                                                                                                                  |
-| **`server/upsertCustomerForBooking.ts`**  | **`upsertCustomerForBooking(supabase, businessId, input)`** — find-or-create `customers` row. Uses a small internal cast for `.from('customers')` until the repo’s `Database` type matches Supabase client generics fully. |
+| **`server/upsertCustomerForBooking.ts`**  | **`upsertCustomerForBooking(supabase, businessId, input)`** — find-or-create `customers` row. Optional `smsOptIn` updates `sms_opt_in` on match/insert (public booking). Owner manual omits it so preference is unchanged. |
+| **`server/loadCustomerSmsOptIn.ts`**      | Load `customers.sms_opt_in` for outbound SMS gates (missing → opted in).                                                                                                                                                   |
+| **`utils/customerSmsOptIn.ts`**           | `customerSmsOptedIn(value)` helper.                                                                                                                                                                                        |
 | **`utils/customerAssetTypes.ts`**         | Vehicle fingerprint / label / attribute helpers (shared; not server-only).                                                                                                                                                 |
 | **`server/upsertCustomerAssets.ts`**      | Deduped upsert into **`customer_assets`** after a booking is created.                                                                                                                                                      |
 | **`server/listCustomerAssetsByPhone.ts`** | Lookup assets by business + phone (for a future returning-customer UI).                                                                                                                                                    |
@@ -69,7 +72,9 @@ If you add another API that inserts into **`bookings`**, route through **`create
 2. If **`phone_normalized`** is non-null: look up by `(business_id, phone_normalized)`. If found → return that **`id`**.
 3. Else look up by **`(business_id, email_normalized)`** (email is required on the booking form). If found → return **`id`**.
 4. Else **insert** a new customer: **`email`** and **`email_normalized`** both set to the normalized address; **`notes`** stays **`null`** (booking form “notes” are **only** on the **`bookings`** row, e.g. access instructions).
-5. On unique violation **`23505`** (rare race): re-select by phone then email and return **`id`** if found.
+5. On unique violation **`23505`** (rare race): re-select by phone then email and return **`id`** if found (and apply `smsOptIn` when provided).
+
+**SMS consent:** Public book / paid checkout / membership subscribe write `customers.sms_opt_in` from the contact checkbox (`agreedToNotifications`). Owner manual omits it so an existing preference is unchanged. Migration: `docs/migrations/001_customers_sms_opt_in.sql`.
 
 **Note:** We do **not** merge/update an existing customer’s name on match. Profile **`customers.notes`** are for owner-entered customer notes only, not per-booking text.
 

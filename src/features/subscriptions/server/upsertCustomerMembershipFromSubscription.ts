@@ -114,6 +114,9 @@ export async function upsertCustomerMembershipFromSubscription(
     ...(typeof metaFromSub.visitDurationMinutes === 'string'
       ? { visitDurationMinutes: metaFromSub.visitDurationMinutes }
       : {}),
+    ...(typeof metaFromSub.smsOptIn === 'string'
+      ? { smsOptIn: metaFromSub.smsOptIn }
+      : {}),
     ...(args.extraMetadata ?? {}),
   };
 

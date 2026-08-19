@@ -21,6 +21,7 @@ import { quoteStartTimeToHHmm } from '@/features/quotes/server/createBookingFrom
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
+import { membershipCustomerSmsOptedIn } from '../utils/membershipSmsOptIn';
 import {
   logMemberships,
   shortIdForLog,
@@ -124,7 +125,7 @@ export async function ensureMembershipInitialBooking(
 
   const { data: row, error: loadErr } = await customerMembershipsOf(supabase)
     .select(
-      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, initial_booking_id, current_period_start'
+      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, initial_booking_id, current_period_start, metadata'
     )
     .eq('id', membershipId)
     .maybeSingle();
@@ -147,6 +148,7 @@ export async function ensureMembershipInitialBooking(
     customer_phone: string | null;
     initial_booking_id: string | null;
     current_period_start: string | null;
+    metadata: unknown;
   } | null;
 
   if (!membership) {
@@ -338,6 +340,7 @@ export async function ensureMembershipInitialBooking(
       scheduledDate,
       startTime,
       customer,
+      smsOptIn: membershipCustomerSmsOptedIn(membership.metadata),
     });
     bookingId = out.id;
     customerId = out.customerId;

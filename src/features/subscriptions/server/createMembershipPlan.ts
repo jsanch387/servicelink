@@ -6,7 +6,7 @@ import type { OwnerSubscriptionPlan } from '../types/ownerSubscriptionPlan';
 import { getBusinessStripeConnectAccountId } from './getBusinessStripeConnectAccountId';
 import {
   mapMembershipPlanToOwner,
-  splitDescriptionAndBenefits,
+  normalizePlanDescriptionForStorage,
 } from './mapMembershipPlanRow';
 import {
   logMemberships,
@@ -61,9 +61,7 @@ export async function createMembershipPlanForBusiness(
     return { ok: false, error: connect.error };
   }
 
-  const { description, benefits } = splitDescriptionAndBenefits(
-    input.description
-  );
+  const description = normalizePlanDescriptionForStorage(input.description);
 
   const visitDurationMinutes =
     input.visitDurationMinutes ?? MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT;
@@ -73,7 +71,6 @@ export async function createMembershipPlanForBusiness(
       business_id: businessId,
       name,
       description,
-      benefits,
       visit_duration_minutes: visitDurationMinutes,
       is_published: input.isPublished !== false,
       is_popular: false,

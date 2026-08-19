@@ -32,8 +32,6 @@ export interface CustomerSubscriptionPlan {
   visitDurationMinutes?: number;
   /** Cadences the customer can choose from (at least one). */
   cadenceOptions: SubscriptionCadenceOption[];
-  /** Short benefit bullets — keep to 3–4 for easy scanning. */
-  benefits: string[];
   /** Optional highlight for the recommended / most popular plan. */
   isPopular?: boolean;
 }

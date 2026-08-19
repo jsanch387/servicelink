@@ -277,4 +277,9 @@ export interface CreateBookingRequest {
    * this appointment as the current billing-period visit.
    */
   membershipId?: string;
+  /**
+   * Public customers only: transactional SMS opt-in from the contact checkbox.
+   * Default true when omitted on public create; owner manual should omit.
+   */
+  agreedToNotifications?: boolean;
 }

@@ -22,7 +22,7 @@ import {
   formatCadencePriceSuffix,
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
-import { joinDescriptionAndBenefits } from '../utils/planDescription';
+import { planDescriptionForDisplay } from '../utils/planDescription';
 import { isOwnerSubscriberInActiveList } from '../utils/ownerSubscriberDisplay';
 import { DeleteMembershipPlanModal } from './DeleteMembershipPlanModal';
 import { SubscriptionsProPausedBanner } from './gates/SubscriptionsProPausedBanner';
@@ -39,10 +39,7 @@ interface OwnerSubscriptionPlanDetailPageProps {
 export const OwnerSubscriptionPlanDetailPage: React.FC<
   OwnerSubscriptionPlanDetailPageProps
 > = ({ plan, catalogWritable = true, subscribers: initialSubscribers }) => {
-  const description = joinDescriptionAndBenefits(
-    plan.description,
-    plan.benefits
-  );
+  const description = planDescriptionForDisplay(plan.description);
   const hasDescription = description.trim().length > 0;
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { ref: descriptionClampRef, isTruncatable } =

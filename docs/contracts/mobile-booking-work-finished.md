@@ -186,7 +186,9 @@ Appends `Reply STOP to opt out.` like other transactional SMS.
 }
 ```
 
-`sms.reason` when `sent: false` ∈ `no_phone | invalid_number | duplicate | not_configured | error | null`  
+`sms.reason` when `sent: false` ∈ `no_phone | invalid_number | duplicate | not_configured | not_eligible | sms_opt_out | carrier_opt_out | error | null`
+
+See [`mobile-sms-skip.md`](./mobile-sms-skip.md) for skip conditions and toast copy. Action still succeeds on `200` even when SMS is skipped.  
 (`null` = Skip path or SMS not attempted)
 
 ---

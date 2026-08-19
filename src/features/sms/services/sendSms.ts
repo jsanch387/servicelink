@@ -23,13 +23,36 @@ export type SendSmsResult =
   | { sent: true; providerMessageId: string | null }
   | {
       sent: false;
-      reason: 'not_configured' | 'invalid_number' | 'error';
+      reason: 'not_configured' | 'invalid_number' | 'carrier_opt_out' | 'error';
       /** Provider/exception detail for DB + ops (truncated). */
       detail?: string;
     };
 
 /** Max length stored in `sms_messages.error` / returned as `detail`. */
 const ERROR_DETAIL_MAX = 500;
+
+/** Telnyx 40300 — recipient texted STOP (messaging-profile block). */
+export function isTelnyxCarrierOptOutError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const withErrors = error as {
+    error?: { errors?: Array<{ code?: string | number }> };
+    raw?: { errors?: Array<{ code?: string | number }> };
+    message?: string;
+  };
+  const codes = [
+    ...(withErrors.error?.errors ?? []),
+    ...(withErrors.raw?.errors ?? []),
+  ]
+    .map(e => String(e.code ?? '').trim())
+    .filter(Boolean);
+  if (codes.some(c => c === '40300')) return true;
+  const detail = formatSmsProviderError(error).toLowerCase();
+  return (
+    detail.includes('code=40300') ||
+    detail.includes('blocked due to stop') ||
+    detail.includes('existing block rule')
+  );
+}
 
 function phoneLast4(e164: string): string {
   const digits = e164.replace(/\D/g, '');
@@ -98,12 +121,18 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
     return { sent: true, providerMessageId };
   } catch (e) {
     const detail = formatSmsProviderError(e);
+    const carrierOptOut = isTelnyxCarrierOptOutError(e);
     logSms(correlationId, 'warn', 'send_failed', {
       type,
       toLast4: phoneLast4(number),
       from,
       error: detail.slice(0, 200),
+      ...(carrierOptOut ? { carrierOptOut: true } : {}),
     });
-    return { sent: false, reason: 'error', detail };
+    return {
+      sent: false,
+      reason: carrierOptOut ? 'carrier_opt_out' : 'error',
+      detail,
+    };
   }
 }

@@ -54,17 +54,19 @@ Central definitions: `src/constants/routes.ts`.
 
 ## HTTP APIs
 
-| Method   | Path                              | Purpose                                 |
-| -------- | --------------------------------- | --------------------------------------- |
-| `GET`    | `/api/memberships`                | List owner plans (non-deleted)          |
-| `POST`   | `/api/memberships/plans`          | Create plan + prices                    |
-| `PATCH`  | `/api/memberships/plans/[planId]` | Update plan + sync prices               |
-| `DELETE` | `/api/memberships/plans/[planId]` | Soft-delete (409 if active subscribers) |
+| Method   | Path                                | Purpose                                         |
+| -------- | ----------------------------------- | ----------------------------------------------- |
+| `GET`    | `/api/memberships`                  | List owner plans (non-deleted)                  |
+| `POST`   | `/api/memberships/plans`            | Create plan + prices                            |
+| `PATCH`  | `/api/memberships/plans/[planId]`   | Update plan + sync prices                       |
+| `DELETE` | `/api/memberships/plans/[planId]`   | Soft-delete (409 if active subscribers)         |
+| `GET`    | `/api/memberships/subscribers`      | List subscribers (`?planId=` optional)          |
+| `GET`    | `/api/memberships/subscribers/[id]` | Subscriber detail                               |
+| `POST`   | `/api/memberships/subscribers/[id]` | Notes, schedule link, portal, cancel membership |
 
 Constants: `API_ROUTES.MEMBERSHIPS`, `MEMBERSHIPS_PLANS`, `MEMBERSHIPS_PLAN(id)`.
 
-**Auth:** Supabase session + `resolveCurrentBusinessId`.  
-**Writes:** also `assertMembershipsReady` (403 + `gate` if not ready).
+**Auth:** cookies (web) or `Authorization: Bearer` (mobile) via `getAuthenticatedUser`. Plan writes also `assertMembershipsReady` (`requireMembershipsPlanWriteAccess`). Subscriber list/detail/actions use `requireOwnerMembershipsSubscriberAccess`. Mobile: [docs/contracts/README.md](../../../../../docs/contracts/README.md).
 
 ### Write body (create + update)
 
@@ -93,11 +95,11 @@ Validated by `parseMembershipPlanWriteBody`:
 
 ### Create — `createMembershipPlanForBusiness`
 
-| Destination              | Fields written                                                                                                                                                                |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `membership_plans`       | `business_id`, `name`, `description`, `visit_duration_minutes`, `benefits` (from split), `is_published: true`, `is_popular: false`, `sort_order: 0`, then `stripe_product_id` |
-| `membership_plan_prices` | one row per cadence: `interval_*`, `price_cents`, `currency: 'usd'`, `is_default` (first = true), then `stripe_price_id`                                                      |
-| Stripe Connect           | Product + Price(s) via `syncMembershipPlanStripeCatalog`                                                                                                                      |
+| Destination              | Fields written                                                                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `membership_plans`       | `business_id`, `name`, `description` (full copy), `visit_duration_minutes`, `is_published: true`, `is_popular: false`, `sort_order: 0`, then `stripe_product_id` |
+| `membership_plan_prices` | one row per cadence: `interval_*`, `price_cents`, `currency: 'usd'`, `is_default` (first = true), then `stripe_price_id`                                         |
+| Stripe Connect           | Product + Price(s) via `syncMembershipPlanStripeCatalog`                                                                                                         |
 
 Order: resolve Connect account → insert DB → Stripe sync → store IDs.  
 If price insert **or** Stripe sync fails → plan row **hard-deleted** (cascade prices).
@@ -106,7 +108,7 @@ If price insert **or** Stripe sync fails → plan row **hard-deleted** (cascade 
 
 | Destination | Behavior                                                                                                                   |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Plan row    | Update name / description / benefits / `visit_duration_minutes` (always allowed)                                           |
+| Plan row    | Update name / description (full copy) / `visit_duration_minutes` (always allowed)                                          |
 | Prices      | Match by `interval_unit:interval_count`; update cents + default; **insert** new cadences; **hard-delete** removed cadences |
 | Stripe      | Re-sync Product; new Price when amount/interval no longer matches; archive removed cadence Prices (best-effort)            |
 
@@ -130,8 +132,6 @@ If Stripe sync fails after DB update → API returns error (owner can retry edit
 **UI:** Delete opens a confirm modal only when `activeSubscriberCount === 0`. If there are subscribers, the modal explains delete is blocked (no Delete action).
 
 **Policy:** soft-delete in DB (`deleted_at`); never auto-cancel Stripe members. After soft-delete, archive Stripe Product + Prices (`active: false`) on the connected account (best-effort). Stripe objects are not hard-deleted; IDs stay on our rows.
-
-Stub today: plan/price subscriber counters always return `0`.
 
 ---
 
@@ -175,7 +175,7 @@ Component: `CreateSubscriptionPlanPage` (`mode: 'create'`).
 
 ```
 /subscriptions/[planId] → Edit → /edit
-  hydrate textarea via joinDescriptionAndBenefits
+  hydrate textarea from `description`
   PATCH /api/memberships/plans/[planId]
   → detail
 ```
@@ -209,10 +209,10 @@ Booking link → Subscriptions tab
        → cancel → profile + toast warning
 ```
 
-Body: `{ businessSlug, planId, priceId, firstVisitDate, firstVisitTime }`  
+Body: `{ businessSlug, planId, priceId, firstVisitDate, firstVisitTime, agreedToNotifications?, …service details }`  
 (`priceId` = `membership_plan_prices.id`; date `YYYY-MM-DD`; time `HH:mm`).  
 Requires published plan, `stripe_price_id`, Pro + rollout + payments enabled + Connect ready.  
-Server loads `visit_duration_minutes` from the plan, re-checks the calendar slot, and stores visit fields on Checkout session metadata.
+Server loads `visit_duration_minutes` from the plan, re-checks the calendar slot, and stores visit fields on Checkout session metadata. Contact step collects SMS consent (default on); `smsOptIn` is stored on session/subscription metadata and copied into `customer_memberships.metadata`, and written to **`customers.sms_opt_in`** when the CRM customer is upserted (first visit booking). Customer membership SMS prefers `customers.sms_opt_in`, with membership metadata as fallback.
 
 **Webhook (live):** Connect `/api/stripe/webhook-connect` → `customer_memberships` + first-visit `bookings` row (`ensureMembershipInitialBooking`) + `membership_events` (+ invoices on `invoice.paid` / `invoice.payment_failed`).
 
@@ -230,11 +230,12 @@ Server loads `visit_duration_minutes` from the plan, re-checks the calendar slot
 **Period visits (customer self-serve):**
 
 - URL: `/{slug}/membership/visit?token={membershipId}.{sig}` (`getPublicMembershipVisitPath`; same HMAC token as manage links).
-- UI: subscribe-style stepper (service details → date/time) → `POST /api/public/memberships/visit` → create $0 booking + `linkMembershipPeriodVisit`. Address is prefilled and editable; vehicle is shown but locked to the membership car (server ignores a posted vehicle). Calendar opens at the next Stripe bill date (not last-visit + cadence).
+- UI: subscribe-style stepper (service details → date/time) → `POST /api/public/memberships/visit` → create $0 booking + `linkMembershipPeriodVisit`. Address is prefilled and editable; vehicle is shown but locked to the membership car (server ignores a posted vehicle). Calendar window is **one cadence** from `current_period_start` (weekly / every 2 weeks / monthly) — not Stripe `period_end` if that is longer. After a canceled visit they rebook remaining days in this cycle. A completed visit opens the next cadence window.
 - **Reminders:** on Connect `customer.subscription.updated` **when the period actually needs a visit** (not cancel / cancel-at-period-end). After upsert, if `needs_visit` and `initial_booking_id` is set and we have not already reminded for this `current_period_start` (`metadata.visit_reminder_sent_for_period_start`), send customer email + SMS with the schedule link and nudge the owner (in-app notification + push).
 - **New subscriber:** on first `checkout.session.completed` membership upsert (`created`), owner gets in-app + push (`membership_subscriber` → subscriber detail). First-visit booking still also sends the usual new-appointment owner notify when that booking is created.
-- **Owner Send schedule link:** `POST …/subscribers/:id` `{ action: 'send_schedule_link' }` emails/texts the same URL (when status is Needs visit). Capped at 1 send / 10 minutes per subscriber and 3 per billing period (plus an owner hourly cap).
-- **Cancel / delete booking:** if that booking is `period_visit_booking_id`, clear `period_visit_*` → Needs visit again (owner can Book visit or Send schedule link).
+- **Owner Send schedule link:** `POST …/subscribers/:id` `{ action: 'send_schedule_link' }` emails/texts the same URL (when status is Needs visit). Capped at 1 send / 10 minutes per subscriber and 3 per billing period (plus an owner hourly cap). Mobile: Bearer auth + [`docs/contracts/mobile-subscriptions-send-schedule-link.md`](../../../docs/contracts/mobile-subscriptions-send-schedule-link.md).
+- **Owner Cancel subscription:** `POST …/subscribers/:id` `{ action: 'cancel_at_period_end' | 'cancel_now' }`. Mobile: [`docs/contracts/mobile-subscriptions-cancel.md`](../../../docs/contracts/mobile-subscriptions-cancel.md).
+- **Cancel / delete booking:** if that booking is `period_visit_booking_id`, clear `period_visit_*` → Needs visit again, then nudge the **owner** (in-app + push, `membership_visit_needed`) so they can Book visit or Send schedule link. Customer is not re-reminded (they already get the booking cancel email).
 
 **Invoice emails (customer):** on Connect `invoice.paid` / `invoice.payment_failed`, after ledger upsert, send branded receipt or payment-failed email (manage/update-card portal link). Idempotent via `membership_invoices.metadata.customer_email_sent_at`. Footer: “Sent for {business} via ServiceLink”.
 
@@ -312,7 +313,7 @@ Each failure includes a short `reason` plus safe ids (`businessId`/`planId` trun
 | `applyMembershipInvoiceEvent.ts`             | invoice.paid / payment_failed                          |
 | `parseMembershipPlanWriteBody.ts`            | Shared create/update validation                        |
 | `mapMembershipPlanRow.ts`                    | DB row → app types                                     |
-| `utils/planDescription.ts`                   | split / join description + benefits                    |
+| `utils/planDescription.ts`                   | normalize description storage                          |
 
 ---
 

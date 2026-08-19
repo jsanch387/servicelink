@@ -28,6 +28,8 @@ import {
   customerMembershipsOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
+import { membershipCustomerSmsOptedIn } from '../utils/membershipSmsOptIn';
+import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 
 export async function sendOwnerMembershipScheduleLink(
   supabase: SupabaseClient<Database>,
@@ -173,16 +175,22 @@ export async function sendOwnerMembershipScheduleLink(
 
   let smsed = false;
   if (phone) {
-    const sms = await sendAndRecordSms({
-      admin,
-      businessId,
-      customerId: (row.customer_id as string | null) ?? null,
-      type: 'membership_visit_reminder',
-      to: phone,
-      message: buildMembershipScheduleLinkSms({ scheduleUrl }),
-      dedupeKey: `${membershipId}:schedule_link:${periodStart}:${sendCount}`,
-    });
-    smsed = sms.sent;
+    const customerId = (row.customer_id as string | null) ?? null;
+    const optedIn = customerId
+      ? await loadCustomerSmsOptIn(admin, customerId)
+      : membershipCustomerSmsOptedIn(row.metadata);
+    if (optedIn) {
+      const sms = await sendAndRecordSms({
+        admin,
+        businessId,
+        customerId,
+        type: 'membership_visit_reminder',
+        to: phone,
+        message: buildMembershipScheduleLinkSms({ scheduleUrl }),
+        dedupeKey: `${membershipId}:schedule_link:${periodStart}:${sendCount}`,
+      });
+      smsed = sms.sent;
+    }
   }
 
   if (!emailed && !smsed) {

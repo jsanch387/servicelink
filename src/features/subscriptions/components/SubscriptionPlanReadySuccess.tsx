@@ -22,7 +22,6 @@ function toPublicPreviewPlan(
     name: plan.name,
     description: plan.description,
     cadenceOptions: plan.cadenceOptions,
-    benefits: plan.benefits ?? [],
   };
 }
 

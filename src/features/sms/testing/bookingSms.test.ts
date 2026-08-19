@@ -108,7 +108,7 @@ describe('booking SMS templates (ServiceLink)', () => {
         buildMembershipScheduleLinkSms({
           scheduleUrl: 'https://app.test/m/visit',
         }),
-        'Book your next visit: https://app.test/m/visit'
+        'Your subscription includes a visit this period. Schedule it: https://app.test/m/visit'
       );
       expect(
         buildMembershipScheduleLinkSms({
@@ -122,7 +122,7 @@ describe('booking SMS templates (ServiceLink)', () => {
         buildMembershipVisitReminderSms({
           scheduleUrl: 'https://app.test/m/visit',
         }),
-        'Your membership period started. Book your next visit: https://app.test/m/visit'
+        'Your subscription period started. Schedule your visit: https://app.test/m/visit'
       );
     });
   });

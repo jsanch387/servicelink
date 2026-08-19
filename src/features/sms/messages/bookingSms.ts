@@ -64,8 +64,8 @@ export function buildMembershipVisitReminderSms(ctx: {
   const url = ctx.scheduleUrl.trim();
   return withOptOut(
     url
-      ? `Your membership period started. Book your next visit: ${url}`
-      : `Your membership period started. Book your next visit with your provider.`
+      ? `Your subscription period started. Schedule your visit: ${url}`
+      : `Your subscription period started. Schedule your visit with your provider.`
   );
 }
 
@@ -79,8 +79,8 @@ export function buildMembershipScheduleLinkSms(ctx: {
   const url = ctx.scheduleUrl.trim();
   return withOptOut(
     url
-      ? `Book your next visit: ${url}`
-      : `Book your next visit with your provider.`
+      ? `Your subscription includes a visit this period. Schedule it: ${url}`
+      : `Your subscription includes a visit this period. Schedule it with your provider.`
   );
 }
 

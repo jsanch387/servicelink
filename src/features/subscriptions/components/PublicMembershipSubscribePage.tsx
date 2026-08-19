@@ -5,6 +5,7 @@ import {
   PublicFlowBackChevron,
   publicFlowBackNavClassName,
   publicFlowStickyBackHeaderClassName,
+  SmsNotificationsConsent,
   toast,
 } from '@/components/shared';
 import {
@@ -49,6 +50,7 @@ import { PublicMembershipStepHeading } from './PublicMembershipStepHeading';
 
 interface PublicMembershipSubscribePageProps {
   businessSlug: string;
+  businessName: string;
   plan: CustomerSubscriptionPlan;
   cadenceOption: SubscriptionCadenceOption;
   bookingFlowLocale?: PublicBookingFlowLocale;
@@ -91,6 +93,7 @@ export const PublicMembershipSubscribePage: React.FC<
   PublicMembershipSubscribePageProps
 > = ({
   businessSlug,
+  businessName,
   plan,
   cadenceOption,
   bookingFlowLocale = 'en',
@@ -111,6 +114,8 @@ export const PublicMembershipSubscribePage: React.FC<
   const [details, setDetails] = useState<MembershipServiceDetailsValue>(
     EMPTY_MEMBERSHIP_SERVICE_DETAILS
   );
+  /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
+  const [agreedToNotifications, setAgreedToNotifications] = useState(true);
   const [usedSavedDetails, setUsedSavedDetails] = useState(false);
   const [firstVisitDate, setFirstVisitDate] = useState<Date | null>(null);
   const [firstVisitTime, setFirstVisitTime] = useState<string | null>(null);
@@ -169,6 +174,8 @@ export const PublicMembershipSubscribePage: React.FC<
       const json = (await res.json().catch(() => null)) as {
         success?: boolean;
         matched?: boolean;
+        code?: string;
+        error?: string;
         hasUsableAddress?: boolean;
         hasVehicle?: boolean;
         address?: {
@@ -180,6 +187,11 @@ export const PublicMembershipSubscribePage: React.FC<
         } | null;
         vehicle?: { year?: string; make?: string; model?: string } | null;
       } | null;
+
+      if (json?.code === 'already_subscribed' || res.status === 409) {
+        toast.error(json?.error || ui.subscriptions.alreadySubscribed);
+        return;
+      }
 
       let next = { ...details };
       let saved = false;
@@ -263,16 +275,24 @@ export const PublicMembershipSubscribePage: React.FC<
           vehicleYear: details.vehicleYear.trim(),
           vehicleMake: details.vehicleMake.trim(),
           vehicleModel: details.vehicleModel.trim(),
+          email: details.email.trim(),
+          phone: details.phone.trim(),
+          agreedToNotifications,
         }),
       });
       const json = (await res.json().catch(() => null)) as {
         success?: boolean;
         url?: string;
         error?: string;
+        code?: string;
       } | null;
 
       if (!res.ok || !json?.success || !json.url) {
-        toast.error(json?.error ?? ui.subscriptions.checkoutStartFailed);
+        toast.error(
+          json?.code === 'already_subscribed'
+            ? ui.subscriptions.alreadySubscribed
+            : (json?.error ?? ui.subscriptions.checkoutStartFailed)
+        );
         return;
       }
 
@@ -398,6 +418,14 @@ export const PublicMembershipSubscribePage: React.FC<
               showAddress={false}
               showVehicle={false}
               bookingFlowLocale={bookingFlowLocale}
+              contactFooter={
+                <SmsNotificationsConsent
+                  businessName={businessName}
+                  agreed={agreedToNotifications}
+                  onAgreedChange={setAgreedToNotifications}
+                  bookingFlowLocale={bookingFlowLocale}
+                />
+              }
             />
           </section>
         ) : null}

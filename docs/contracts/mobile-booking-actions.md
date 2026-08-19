@@ -180,7 +180,19 @@ If the text couldn't be sent (state still changed):
 }
 ```
 
-`sms.reason` ∈ `no_phone | invalid_number | duplicate | not_configured | error`.
+`sms.reason` ∈ `no_phone | invalid_number | duplicate | not_configured | not_eligible | sms_opt_out | carrier_opt_out | error`.
+
+| `sms.reason`                      | Meaning                                            | Suggested soft toast                                         |
+| --------------------------------- | -------------------------------------------------- | ------------------------------------------------------------ |
+| `no_phone`                        | Booking has no phone                               | “No phone number on file — customer wasn’t texted.”          |
+| `invalid_number`                  | Can’t normalize to E.164                           | “Phone number looks invalid — customer wasn’t texted.”       |
+| `sms_opt_out`                     | `customers.sms_opt_in = false` (unchecked consent) | “Customer opted out of texts — status still updated.”        |
+| `carrier_opt_out`                 | Telnyx **40300** — they texted STOP                | “Customer opted out of texts (STOP) — status still updated.” |
+| `duplicate`                       | Already sent for this action                       | Silent / no extra toast                                      |
+| `not_configured` / `not_eligible` | SMS off or account not eligible                    | Soft “couldn’t send text”                                    |
+| `error`                           | Provider/network failure                           | Soft “couldn’t send text”                                    |
+
+**Do not treat SMS skip as a failed action.** Always update UI from `jobStatus` on `200`. Skip reasons, opt-out vs STOP, and toast copy: [`mobile-sms-skip.md`](./mobile-sms-skip.md).
 
 For `job_completed`, the response additionally carries `bookingStatus` (the booking is now finalized) and **always** includes both an `sms` and an `email` block. Each block is `{ sent, messageId, reason }` — when `sent: true`, `reason` is `null`; when `sent: false`, `messageId` is `null` and `reason` explains why. **Send every available channel:** phone → SMS, email → email receipt (both when both exist).
 

@@ -346,6 +346,7 @@ export type PublicBookingUi = {
     continueToCheckoutCta: string;
     checkoutComingSoon: string;
     checkoutStartFailed: string;
+    alreadySubscribed: string;
     checkoutReturnSuccess: string;
     checkoutReturnCancel: string;
     successTitle: string;

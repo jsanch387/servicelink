@@ -403,7 +403,9 @@ export const PublicMembershipVisitPage: React.FC<
                 minDate={calendarMinDate}
                 maxDate={calendarMaxDate}
                 calendarSubtitle={
-                  visitDateBounds
+                  visitDateBounds &&
+                  visitMinDate &&
+                  visitMinDate > localTodayYmd()
                     ? ui.subscriptions.periodVisitCalendarSubtitle
                     : undefined
                 }

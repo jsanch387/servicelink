@@ -42,7 +42,7 @@ import {
   formatCadencePriceSuffix,
   formatSubscriptionPriceCents,
 } from '../utils/formatSubscriptionPrice';
-import { joinDescriptionAndBenefits } from '../utils/planDescription';
+import { planDescriptionForDisplay } from '../utils/planDescription';
 import { SubscriptionPlanReadySuccess } from './SubscriptionPlanReadySuccess';
 
 const CREATE_STEP_META: Record<
@@ -118,12 +118,7 @@ export const CreateSubscriptionPlanPage: React.FC<
     )
   );
   const [description, setDescription] = useState(
-    initialPlan
-      ? joinDescriptionAndBenefits(
-          initialPlan.description,
-          initialPlan.benefits
-        )
-      : ''
+    initialPlan ? planDescriptionForDisplay(initialPlan.description) : ''
   );
   const [selectedPreset, setSelectedPreset] =
     useState<OwnerCadencePresetId | null>('monthly');

@@ -3,10 +3,7 @@
  * Best-effort; webhook retries are safe via notifications.dedupe_key.
  */
 
-import {
-  notificationInboxSubtitleFromCustomer,
-  notificationMinimalDisplayTitle,
-} from '@/features/notifications/utils/notificationMinimalDisplayTitle';
+import { notificationMinimalDisplayTitle } from '@/features/notifications/utils/notificationMinimalDisplayTitle';
 import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -70,12 +67,10 @@ export async function notifyOwnerForNewMembershipSubscriber(
     'New subscriber',
     'New subscriber'
   );
-  const fromCustomer = notificationInboxSubtitleFromCustomer(args.customerName);
+  const customerName = args.customerName?.trim() || 'A customer';
   const bodyText = planName
-    ? fromCustomer
-      ? `${fromCustomer} · ${planName}`
-      : planName
-    : fromCustomer;
+    ? `${customerName} subscribed to ${planName}`
+    : `${customerName} subscribed`;
 
   const notificationRow: Database['public']['Tables']['notifications']['Insert'] =
     {

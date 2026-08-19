@@ -26,6 +26,8 @@ import {
   localTodayYmd,
   resolveMembershipPeriodVisitDateBounds,
 } from '../utils/membershipPeriodVisitDateBounds';
+import { membershipCustomerSmsOptedIn } from '../utils/membershipSmsOptIn';
+import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 import { linkMembershipPeriodVisit } from './linkMembershipPeriodVisit';
 import { loadLatestMembershipVisitYmd } from './loadLatestMembershipVisitYmd';
 import {
@@ -171,7 +173,7 @@ export async function createPublicMembershipPeriodVisit(
 
   const { data: row, error: loadErr } = await customerMembershipsOf(supabase)
     .select(
-      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, notes, status, cancel_at_period_end, cancel_at, current_period_start, current_period_end, interval_unit, interval_count, period_visit_booking_id, period_visit_period_start, initial_booking_id'
+      'id, business_id, plan_id, customer_id, customer_name, customer_email, customer_phone, notes, status, cancel_at_period_end, cancel_at, current_period_start, current_period_end, interval_unit, interval_count, period_visit_booking_id, period_visit_period_start, initial_booking_id, metadata'
     )
     .eq('id', membershipId)
     .maybeSingle();
@@ -254,7 +256,7 @@ export async function createPublicMembershipPeriodVisit(
     return {
       ok: false,
       error:
-        'Pick a date in this billing period. Your last visit already used the previous one.',
+        'Pick a date in this visit window. Your last visit already used the previous one.',
       status: 400,
       code: 'date_out_of_period',
     };
@@ -478,23 +480,28 @@ export async function createPublicMembershipPeriodVisit(
   }
 
   if (customer.phone) {
-    try {
-      await sendAndRecordSms({
-        admin: supabase,
-        businessId: biz.id,
-        bookingId,
-        customerId,
-        type: 'booking_confirmation',
-        to: customer.phone,
-        message: buildBookingConfirmedSms({
-          scheduledDate,
-          startTime,
-        }),
-        dedupeKey: `${bookingId}:booking_confirmation`,
-        correlationId: requestId,
-      });
-    } catch {
-      // best-effort
+    const optedIn = customerId
+      ? await loadCustomerSmsOptIn(supabase, customerId)
+      : membershipCustomerSmsOptedIn(row.metadata);
+    if (optedIn) {
+      try {
+        await sendAndRecordSms({
+          admin: supabase,
+          businessId: biz.id,
+          bookingId,
+          customerId,
+          type: 'booking_confirmation',
+          to: customer.phone,
+          message: buildBookingConfirmedSms({
+            scheduledDate,
+            startTime,
+          }),
+          dedupeKey: `${bookingId}:booking_confirmation`,
+          correlationId: requestId,
+        });
+      } catch {
+        // best-effort
+      }
     }
   }
 

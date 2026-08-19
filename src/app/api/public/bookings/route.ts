@@ -48,6 +48,7 @@ import {
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { isSlotAllowedByLeadTime } from '@/features/availability/utils/minimumNotice';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
+import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 import {
   parseStoredTimeOffBlocks,
   toTimeOffIntervalFields,
@@ -105,6 +106,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CreateBookingRequest;
     const ownerManualBooking = body.ownerManualBooking === true;
+    /** Public only — persist + gate confirmation SMS. Owner omits so CRM preference stays. */
+    const publicSmsOptIn = ownerManualBooking
+      ? undefined
+      : body.agreedToNotifications === false
+        ? false
+        : true;
     const hasJobsArray = Array.isArray(body.jobs);
 
     let parsedJobs: OwnerManualBookingJobInput[] | null = null;
@@ -650,6 +657,9 @@ export async function POST(request: NextRequest) {
           discountSnapshot,
           jobDetails,
           visitJobCount: parsedJobs.length,
+          ...(typeof publicSmsOptIn === 'boolean'
+            ? { smsOptIn: publicSmsOptIn }
+            : {}),
         });
       } catch (createErr) {
         logBookingTransaction(requestId, 'error', 'appointment_create_failed', {
@@ -794,7 +804,11 @@ export async function POST(request: NextRequest) {
       // Both channels when both contacts exist — complementary, not exclusive.
       let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
         'skipped';
-      if (sanitizedCustomer.phone) {
+      const allowCustomerSms =
+        typeof publicSmsOptIn === 'boolean'
+          ? publicSmsOptIn
+          : await loadCustomerSmsOptIn(supabase, result.customerId);
+      if (sanitizedCustomer.phone && allowCustomerSms) {
         const smsResult = await sendAndRecordSms({
           admin: supabase,
           businessId,
@@ -810,8 +824,10 @@ export async function POST(request: NextRequest) {
           correlationId: requestId,
         });
         customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
-      } else {
+      } else if (!sanitizedCustomer.phone) {
         customerSmsOutcome = 'no_phone';
+      } else {
+        customerSmsOutcome = 'skipped';
       }
 
       const membershipId =
@@ -931,6 +947,9 @@ export async function POST(request: NextRequest) {
       customer: sanitizedCustomer,
       serviceLocationType: persistedServiceLocationType,
       discountSnapshot,
+      ...(typeof publicSmsOptIn === 'boolean'
+        ? { smsOptIn: publicSmsOptIn }
+        : {}),
     });
 
     try {
@@ -1046,7 +1065,11 @@ export async function POST(request: NextRequest) {
     // Both channels when both contacts exist — complementary, not exclusive.
     let customerSmsOutcome: 'sent' | 'failed' | 'skipped' | 'no_phone' =
       'skipped';
-    if (sanitizedCustomer.phone) {
+    const allowCustomerSms =
+      typeof publicSmsOptIn === 'boolean'
+        ? publicSmsOptIn
+        : await loadCustomerSmsOptIn(supabase, result.customerId);
+    if (sanitizedCustomer.phone && allowCustomerSms) {
       const smsResult = await sendAndRecordSms({
         admin: supabase,
         businessId,
@@ -1062,8 +1085,10 @@ export async function POST(request: NextRequest) {
         correlationId: requestId,
       });
       customerSmsOutcome = smsResult.sent ? 'sent' : 'failed';
-    } else {
+    } else if (!sanitizedCustomer.phone) {
       customerSmsOutcome = 'no_phone';
+    } else {
+      customerSmsOutcome = 'skipped';
     }
 
     logBookingTransaction(requestId, 'info', 'created', {

@@ -14,6 +14,10 @@ import {
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
 import { isBusinessInMembershipsRollout } from './isBusinessInMembershipsRollout';
 import {
+  ALREADY_SUBSCRIBED_ERROR,
+  findLiveCustomerMembership,
+} from './findLiveCustomerMembership';
+import {
   logMemberships,
   shortIdForLog,
   shortStripeIdForLog,
@@ -61,11 +65,19 @@ export type CreatePublicMembershipCheckoutInput = {
   vehicleYear?: string;
   vehicleMake?: string;
   vehicleModel?: string;
+  /** Contact from the public subscribe step — used to block duplicate members. */
+  email?: string;
+  phone?: string;
+  /**
+   * Transactional SMS opt-in from the contact step (default true when omitted).
+   * Stored as Checkout/subscription metadata `smsOptIn`.
+   */
+  agreedToNotifications?: boolean;
 };
 
 export type CreatePublicMembershipCheckoutResult =
   | { ok: true; url: string; sessionId: string }
-  | { ok: false; error: string; status: number };
+  | { ok: false; error: string; status: number; code?: string };
 
 function encodeSlugPath(slug: string): string {
   return encodeURIComponent(slug.trim().toLowerCase());
@@ -153,6 +165,25 @@ export async function createPublicMembershipCheckoutSession(
       ok: false,
       status: 403,
       error: 'Subscriptions are not available for this business.',
+    };
+  }
+
+  const duplicate = await findLiveCustomerMembership({
+    supabase,
+    businessId,
+    email: input.email,
+    phone: input.phone,
+  });
+  if (duplicate) {
+    logMemberships(requestId, 'info', 'checkout.already_subscribed', {
+      businessId: shortIdForLog(businessId),
+      membershipId: shortIdForLog(duplicate.id),
+    });
+    return {
+      ok: false,
+      status: 409,
+      code: 'already_subscribed',
+      error: ALREADY_SUBSCRIBED_ERROR,
     };
   }
 
@@ -325,6 +356,7 @@ export async function createPublicMembershipCheckoutSession(
     firstVisitDate,
     firstVisitTime,
     visitDurationMinutes: String(visitDurationMinutes),
+    smsOptIn: input.agreedToNotifications === false ? 'false' : 'true',
   };
   const street = trimMeta(input.street, 200);
   const unit = trimMeta(input.unit, 40);
@@ -342,6 +374,10 @@ export async function createPublicMembershipCheckoutSession(
   if (vehicleYear) meta.vehicleYear = vehicleYear;
   if (vehicleMake) meta.vehicleMake = vehicleMake;
   if (vehicleModel) meta.vehicleModel = vehicleModel;
+  const email = trimMeta(input.email, 254);
+  const phone = trimMeta(input.phone, 20);
+  if (email) meta.customerEmail = email;
+  if (phone) meta.customerPhone = phone;
 
   try {
     const session = await stripe.checkout.sessions.create(
@@ -351,6 +387,7 @@ export async function createPublicMembershipCheckoutSession(
         success_url: successUrl,
         cancel_url: cancelUrl,
         phone_number_collection: { enabled: true },
+        ...(email ? { customer_email: email } : {}),
         metadata: meta,
         subscription_data: {
           metadata: meta,

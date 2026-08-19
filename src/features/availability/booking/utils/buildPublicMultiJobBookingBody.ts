@@ -60,6 +60,7 @@ export interface BuildPublicMultiJobBookingBodyArgs {
   customerServiceLocation?: 'mobile' | 'shop';
   paymentMethodSelected?: 'pay_now' | 'pay_in_person' | 'none';
   promoCode?: string;
+  agreedToNotifications?: boolean;
 }
 
 /**
@@ -90,6 +91,9 @@ export function buildPublicMultiJobBookingBody(
         }
       : {}),
     ...(args.promoCode?.trim() ? { promoCode: args.promoCode.trim() } : {}),
+    ...(typeof args.agreedToNotifications === 'boolean'
+      ? { agreedToNotifications: args.agreedToNotifications }
+      : {}),
   };
 }
 

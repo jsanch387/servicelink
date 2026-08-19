@@ -52,6 +52,8 @@ type Props = {
   /** Period rebook: show the membership vehicle, no editing. */
   vehicleReadOnly?: boolean;
   savedBanner?: string | null;
+  /** Below contact glass card (e.g. SMS consent), matching booking CustomerForm. */
+  contactFooter?: React.ReactNode;
   bookingFlowLocale?: PublicBookingFlowLocale;
 };
 
@@ -67,6 +69,7 @@ export function MembershipServiceDetailsFields({
   showVehicle = true,
   vehicleReadOnly = false,
   savedBanner = null,
+  contactFooter = null,
   bookingFlowLocale = 'en',
 }: Props) {
   const ui = publicBookingUi(bookingFlowLocale);
@@ -87,7 +90,7 @@ export function MembershipServiceDetailsFields({
       ) : null}
 
       {showContact ? (
-        <FormStepSection title={cf.yourDetails}>
+        <FormStepSection title={cf.yourDetails} footer={contactFooter}>
           <Input
             label={cf.fullName}
             value={value.fullName}

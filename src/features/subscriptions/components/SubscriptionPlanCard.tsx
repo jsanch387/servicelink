@@ -13,7 +13,7 @@ import {
   formatSubscriptionPriceCents,
   getDefaultCadenceOption,
 } from '../utils/formatSubscriptionPrice';
-import { joinDescriptionAndBenefits } from '../utils/planDescription';
+import { planDescriptionForDisplay } from '../utils/planDescription';
 
 interface SubscriptionPlanCardProps {
   plan: CustomerSubscriptionPlan;
@@ -37,10 +37,7 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
   );
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const description = joinDescriptionAndBenefits(
-    plan.description,
-    plan.benefits
-  );
+  const description = planDescriptionForDisplay(plan.description);
   const { ref: descriptionClampRef, isTruncatable } =
     useServiceDescriptionClamp(description, isDescriptionExpanded);
   const showDescriptionToggle = isTruncatable || isDescriptionExpanded;

@@ -1,91 +1,52 @@
 /**
  * POST /api/memberships/plans
- * Owner: create a membership plan + cadence prices.
+ * Owner: create a membership plan + cadence prices + Stripe Connect catalog sync.
+ * Auth: web cookies or mobile `Authorization: Bearer <access_token>`.
  */
 
-import { assertMembershipsReady } from '@/features/subscriptions/server/assertMembershipsReady';
 import { createMembershipPlanForBusiness } from '@/features/subscriptions/server/createMembershipPlan';
 import {
   getMembershipsRequestId,
   logMemberships,
   membershipsJsonResponse,
-  shortIdForLog,
 } from '@/features/subscriptions/server/membershipsTransactionLog';
 import { parseMembershipPlanWriteBody } from '@/features/subscriptions/server/parseMembershipPlanWriteBody';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireMembershipsPlanWriteAccess } from '@/features/subscriptions/server/requireMembershipsPlanWriteAccess';
 
 export async function POST(req: Request) {
   const requestId = getMembershipsRequestId(req);
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user?.id) {
-      return membershipsJsonResponse(
-        requestId,
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const resolved = await resolveCurrentBusinessId(supabase);
-
-    if (!resolved.ok) {
-      return membershipsJsonResponse(
-        requestId,
-        { success: false, error: resolved.error },
-        { status: resolved.status }
-      );
-    }
-
-    const ready = await assertMembershipsReady(
-      supabase,
-      user.id,
-      resolved.businessId,
-      user.email
-    );
-    if (!ready.ok) {
-      logMemberships(requestId, 'warn', 'create.gate_blocked', {
-        businessId: shortIdForLog(resolved.businessId),
-        gate: ready.gate,
-      });
-      return membershipsJsonResponse(
-        requestId,
-        { success: false, error: ready.error, gate: ready.gate },
-        { status: ready.status }
-      );
-    }
-
     const raw: unknown = await req.json().catch(() => null);
+    const auth = await requireMembershipsPlanWriteAccess(req, {
+      bodyForBusinessCheck: raw,
+    });
+    if (!auth.ok) return auth.response;
+
     const parsed = parseMembershipPlanWriteBody(raw);
     if (!parsed.ok) {
       return membershipsJsonResponse(
-        requestId,
+        auth.requestId,
         { success: false, error: parsed.error },
         { status: 400 }
       );
     }
 
     const result = await createMembershipPlanForBusiness(
-      supabase,
-      resolved.businessId,
+      auth.supabase,
+      auth.businessId,
       parsed.value,
-      requestId
+      auth.requestId
     );
 
     if (!result.ok) {
       return membershipsJsonResponse(
-        requestId,
+        auth.requestId,
         { success: false, error: result.error },
         { status: 400 }
       );
     }
 
-    return membershipsJsonResponse(requestId, {
+    return membershipsJsonResponse(auth.requestId, {
       success: true,
       plan: result.plan,
     });
