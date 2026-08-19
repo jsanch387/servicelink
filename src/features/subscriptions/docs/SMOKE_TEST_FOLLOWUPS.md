@@ -70,7 +70,7 @@ Revisit subscribe + first/period visit booking payload end-to-end — several fi
 - [ ] **Cancel membership → cancel leftover period visit** — customer still has to cancel the appointment themselves
 - [x] **Cancel must not send “book next visit”** — `subscription.updated` from Customer Portal cancel was firing the period-start reminder + SMS. Skip when canceling / canceled.
 - [x] **Canceled UI must not say Needs visit** — cancel-at-period-end is still Stripe `active`, so the list pill was preferring Needs visit over Canceled. Visit status is `none` unless a leftover appointment is already on file.
-- [x] **Period visit dates follow billing period** — public rebook opens at next bill (Stripe period end), not last visit + a month. August visit stays closed; Sep 13–14 is bookable. Server rejects dates outside that window.
+- [x] **Period visit dates follow cadence** — public rebook is one cadence from `current_period_start` (weekly / every 2 weeks / monthly). Canceled visits stay in this cycle; a completed visit opens the next cadence window. Server rejects dates outside that window.
 - [ ] **V2: preferred day/time** — remember first-visit weekday + time and auto-offer that slot each period (less picking). Don’t build until the loop is shipping.
 
 ---

@@ -25,6 +25,8 @@ From the booking link → Subscriptions → Subscribe:
 
 - [ x] Pick first visit date + time (slot is real on the calendar).
 - [ x] Address + vehicle (mobile). Shop-only: vehicle only.
+- [ ] Contact step: SMS consent checkbox checked by default; can uncheck.
+- [ ] Unchecking SMS consent → `customers.sms_opt_in = false` after pay (no confirmation SMS).
 - [ x] Stripe Checkout with `4242`. Success screen, then Done.
 - [ x] Email: membership confirmation (manage/cancel link).
 - [ x] Email: appointment confirmation — **Covered by membership**, not collect-in-person.
@@ -58,7 +60,7 @@ If this period’s visit is still upcoming:
 - [ x] Subscriber detail back to **Needs visit**.
 - [ x] List pill: **Needs visit** (not Active).
 - [ x] **Send schedule link** → customer email + SMS. Link opens public visit stepper.
-- [ x] Public visit: address editable, vehicle locked, calendar at **next bill** (not last visit + a month).
+- [ x] Public visit: address editable, vehicle locked, calendar is **one cadence** from period start (weekly / every 2 weeks / monthly). Canceled visits stay in this cycle.
 - [ x] Book a new slot. Detail: **Visit scheduled**. Booking is $0 / membership.
 
 **Owner Book visit** (instead of send link, on a Needs visit row):

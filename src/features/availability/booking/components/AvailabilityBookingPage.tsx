@@ -1227,6 +1227,9 @@ export function AvailabilityBookingPage({
                 customerServiceLocationPayload ?? undefined,
               paymentMethodSelected: customerPaymentChoice ?? 'none',
               promoCode: appliedPromo?.code,
+              ...(!isOwnerManualBooking
+                ? { agreedToNotifications: agreedToPublicNotifications }
+                : {}),
             }),
             ...publicMultiJobCheckoutTotals(visitJobs),
             totalPriceCents: bookingDisplayTotalCents,
@@ -1288,6 +1291,9 @@ export function AvailabilityBookingPage({
                 ? (paymentSettings?.depositValue ?? null)
                 : null,
               ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
+              ...(!isOwnerManualBooking
+                ? { agreedToNotifications: agreedToPublicNotifications }
+                : {}),
             }
           : null,
       ...(resumeQueryForCheckout
@@ -1380,6 +1386,9 @@ export function AvailabilityBookingPage({
               customerServiceLocationPayload ?? undefined,
             paymentMethodSelected: paymentMethodForPublicCreate,
             promoCode: appliedPromo?.code,
+            ...(!isOwnerManualBooking
+              ? { agreedToNotifications: agreedToPublicNotifications }
+              : {}),
           })
         : {
             businessSlug,
@@ -1412,6 +1421,9 @@ export function AvailabilityBookingPage({
             ...(isOwnerManualBooking ? { ownerManualBooking: true } : {}),
             ...(!isOwnerManualBooking && appliedPromo?.code
               ? { promoCode: appliedPromo.code }
+              : {}),
+            ...(!isOwnerManualBooking
+              ? { agreedToNotifications: agreedToPublicNotifications }
               : {}),
           };
 

@@ -20,7 +20,7 @@ function businessLabel(businessName: string): string {
 export function getMembershipVisitReminderSubject(
   businessName: string
 ): string {
-  return `Book your next visit with ${businessLabel(businessName)}`;
+  return `Schedule your visit with ${businessLabel(businessName)}`;
 }
 
 function reminderBodyCopy(payload: MembershipVisitReminderPayload): string {
@@ -30,12 +30,12 @@ function reminderBodyCopy(payload: MembershipVisitReminderPayload): string {
   const kind = payload.kind ?? 'period_started';
 
   if (kind === 'schedule_link') {
-    const lead = hello ? `Hi ${hello}, book` : 'Book';
-    return `${lead} your next visit for ${plan} with ${business}. Choose a date and time that works for you.`;
+    const lead = hello ? `Hi ${hello}, your` : 'Your';
+    return `${lead} ${plan} with ${business} includes a visit this period. Pick a date and time that works for you.`;
   }
 
   const lead = hello ? `Hi ${hello}, a` : 'A';
-  return `${lead} new period of ${plan} with ${business} started. Choose a date and time that works for you.`;
+  return `${lead} new period of ${plan} with ${business} started. Schedule your included visit.`;
 }
 
 export function buildMembershipVisitReminderPlainText(
@@ -44,11 +44,11 @@ export function buildMembershipVisitReminderPlainText(
   const business = businessLabel(payload.businessName);
 
   return [
-    'Book your next visit',
+    'Schedule your visit',
     '',
     reminderBodyCopy(payload),
     '',
-    'Choose a date:',
+    'Schedule visit:',
     payload.scheduleUrl.trim(),
     '',
     `Sent for ${business} via ServiceLink`,
@@ -62,10 +62,10 @@ export function buildMembershipVisitReminderHtml(
   const year = new Date().getFullYear();
 
   return wrapServiceLinkEmail({
-    title: 'Book your next visit',
-    heading: 'Book your next visit',
+    title: 'Schedule your visit',
+    heading: 'Schedule your visit',
     subtitle: reminderBodyCopy(payload),
-    bodyHtml: serviceLinkEmailCta(payload.scheduleUrl.trim(), 'Choose a date'),
+    bodyHtml: serviceLinkEmailCta(payload.scheduleUrl.trim(), 'Schedule visit'),
     footerHtml: `Sent for ${business} via ServiceLink.<br>&copy; ${year} ServiceLink.`,
   });
 }

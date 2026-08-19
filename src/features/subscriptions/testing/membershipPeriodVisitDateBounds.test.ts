@@ -66,6 +66,31 @@ describe('resolveMembershipPeriodVisitDateBounds', () => {
     expect(bounds).toEqual({ minYmd: '2026-08-27', maxYmd: '2026-09-09' });
   });
 
+  it('does not skip to the next period when the last visit was canceled', () => {
+    const bounds = resolveMembershipPeriodVisitDateBounds({
+      todayYmd: '2026-08-18',
+      periodStartIso: '2026-08-13T00:00:00.000Z',
+      periodEndIso: '2026-08-27T00:00:00.000Z',
+      lastVisitYmd: null,
+      intervalUnit: 'week',
+      intervalCount: 2,
+    });
+    expect(bounds).toEqual({ minYmd: '2026-08-18', maxYmd: '2026-08-26' });
+  });
+
+  it('keeps a bi-weekly rebook in the two-week cycle even if Stripe period is longer', () => {
+    const bounds = resolveMembershipPeriodVisitDateBounds({
+      todayYmd: '2026-08-18',
+      periodStartIso: '2026-08-13T00:00:00.000Z',
+      periodEndIso: '2026-09-13T00:00:00.000Z',
+      lastVisitYmd: null,
+      intervalUnit: 'week',
+      intervalCount: 2,
+    });
+    expect(bounds).toEqual({ minYmd: '2026-08-18', maxYmd: '2026-08-26' });
+    expect(isYmdInInclusiveRange('2026-09-01', bounds!)).toBe(false);
+  });
+
   it('does not allow past days inside an open period', () => {
     const bounds = resolveMembershipPeriodVisitDateBounds({
       todayYmd: '2026-10-01',

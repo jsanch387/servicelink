@@ -7,6 +7,8 @@
  * DELETE /api/availability/bookings/[id]
  *
  * Owner-only (RLS): permanently remove the booking.
+ *
+ * Auth: `getAuthenticatedUser` (mobile Bearer or web cookie) — same as `/actions`.
  */
 
 import { mapBookingRowToDisplay } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
@@ -19,8 +21,9 @@ import {
 } from '@/features/availability/services/bookingService';
 import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -49,20 +52,14 @@ async function loadPaymentRowForBooking(
   } | null;
 }
 
-async function getAuthAndBusinessId(supabase: SupabaseClient) {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: 'Authentication required', status: 401 as const };
-  }
-
+async function getBusinessIdForOwner(
+  supabase: SupabaseClient,
+  profileId: string
+) {
   const { data: businessProfile, error: businessError } = await supabase
     .from('business_profiles')
     .select('id')
-    .eq('profile_id', user.id)
+    .eq('profile_id', profileId)
     .single();
 
   if (businessError || !businessProfile) {
@@ -121,9 +118,16 @@ export async function PATCH(
       );
     }
 
-    const supabase = await createSupabaseServerClient();
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
 
-    const authResult = await getAuthAndBusinessId(supabase);
+    const { supabase, user } = auth;
+    const authResult = await getBusinessIdForOwner(supabase, user.id);
     if ('status' in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },
@@ -193,7 +197,7 @@ export async function PATCH(
       status === 'completed'
         ? ((
             await completeBookingWithSideEffects(
-              supabase,
+              supabase as SupabaseClient<Database>,
               createSupabaseAdminClient(),
               bookingId,
               {
@@ -203,7 +207,7 @@ export async function PATCH(
             )
           )?.booking ?? null)
         : await updateBookingStatus(
-            supabase,
+            supabase as SupabaseClient<Database>,
             bookingId,
             status as BookingStatusUpdate
           );
@@ -241,8 +245,15 @@ export async function DELETE(
       );
     }
 
-    const supabase = await createSupabaseServerClient();
-    const authResult = await getAuthAndBusinessId(supabase);
+    const auth = await getAuthenticatedUser(_request);
+    if ('error' in auth) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const authResult = await getBusinessIdForOwner(auth.supabase, auth.user.id);
     if ('status' in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },
@@ -250,7 +261,7 @@ export async function DELETE(
       );
     }
 
-    const result = await deleteBookingForOwner(supabase, {
+    const result = await deleteBookingForOwner(auth.supabase, {
       businessId: authResult.businessId,
       bookingId: bookingId.trim(),
     });

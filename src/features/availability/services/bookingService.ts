@@ -162,6 +162,11 @@ export async function createBooking(
     jobDetails?: BookingJobDetailsItem[] | null;
     /** Job count denormalized on the row; defaults from jobDetails length or 1. */
     visitJobCount?: number;
+    /**
+     * When set, written to `customers.sms_opt_in` (public booking / membership).
+     * Omit for owner manual so we do not overwrite an existing preference.
+     */
+    smsOptIn?: boolean;
   }
 ): Promise<{ id: string; customerId: string; visitId: string }> {
   const addonDetails =
@@ -176,6 +181,9 @@ export async function createBooking(
       fullName: payload.customer.fullName,
       email: payload.customer.email,
       phone: payload.customer.phone,
+      ...(typeof payload.smsOptIn === 'boolean'
+        ? { smsOptIn: payload.smsOptIn }
+        : {}),
     }
   );
 

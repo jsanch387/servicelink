@@ -31,6 +31,10 @@ vi.mock('@/features/sms/services/telnyxClient', () => ({
   isTelnyxSmsConfigured: isTelnyxSmsConfiguredMock,
 }));
 
+vi.mock('@/features/customer-management/server/loadCustomerSmsOptIn', () => ({
+  loadCustomerSmsOptIn: vi.fn(async () => true),
+}));
+
 interface AdminOpts {
   /** Error returned by the queued-row INSERT (e.g. unique violation). */
   insertError?: { code?: string; message?: string } | null;
@@ -88,12 +92,16 @@ function baseParams(admin: unknown, overrides: Record<string, unknown> = {}) {
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   isSmsOutboundEnabledMock.mockReturnValue(true);
   isTelnyxSmsConfiguredMock.mockReturnValue(true);
   sendSmsMock.mockResolvedValue({ sent: true, providerMessageId: 'telnyx-1' });
   canBusinessSendCustomerSmsMock.mockResolvedValue({ ok: true });
+  const { loadCustomerSmsOptIn } = await import(
+    '@/features/customer-management/server/loadCustomerSmsOptIn'
+  );
+  vi.mocked(loadCustomerSmsOptIn).mockResolvedValue(true);
 });
 
 describe('sendAndRecordSms', () => {
@@ -223,6 +231,40 @@ describe('sendAndRecordSms', () => {
       error: 'error',
       dedupe_key: null,
     });
+  });
+
+  it('carrier_opt_out: records skipped_opt_out status', async () => {
+    sendSmsMock.mockResolvedValue({
+      sent: false,
+      reason: 'carrier_opt_out',
+      detail: 'HTTP 403: code=40300: Blocked due to STOP message',
+    });
+    const { admin, updates } = makeAdmin();
+
+    const res = await sendAndRecordSms(baseParams(admin));
+
+    expect(res).toEqual({ sent: false, reason: 'carrier_opt_out' });
+    expect(updates[0].patch).toMatchObject({
+      status: 'skipped_opt_out',
+      error: 'HTTP 403: code=40300: Blocked due to STOP message',
+      dedupe_key: null,
+    });
+  });
+
+  it('sms_opt_out: skips send when customer opted out of SMS consent', async () => {
+    const { loadCustomerSmsOptIn } = await import(
+      '@/features/customer-management/server/loadCustomerSmsOptIn'
+    );
+    vi.mocked(loadCustomerSmsOptIn).mockResolvedValueOnce(false);
+    const { admin, inserts } = makeAdmin();
+
+    const res = await sendAndRecordSms(
+      baseParams(admin, { customerId: 'cust-1' })
+    );
+
+    expect(res).toEqual({ sent: false, reason: 'sms_opt_out' });
+    expect(inserts).toHaveLength(0);
+    expect(sendSmsMock).not.toHaveBeenCalled();
   });
 
   it('not_configured (missing Telnyx): skips send and log without inserting', async () => {

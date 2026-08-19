@@ -10,6 +10,7 @@ import {
 } from '@/features/email/job-completed/sendJobCompletedInvoiceEmail';
 import type { JobCompletedInvoiceEmailJob } from '@/features/email/job-completed/jobCompletedInvoiceTemplate';
 import { buildJobCompletedInvoiceSms, sendAndRecordSms } from '@/features/sms';
+import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 import type { NotifyChannelOutcome } from '@/features/reviews/server/createReviewInviteIfEligible';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -79,6 +80,16 @@ export async function sendJobCompletedCustomerNotification(
         reason: 'no_phone',
       });
       return { sent: false, messageId: null, reason: 'no_phone' };
+    }
+
+    const optedIn = await loadCustomerSmsOptIn(input.admin, input.customerId);
+    if (!optedIn) {
+      logJobCompletedStage(trace, 'notify_sms', {
+        invoiceUrl,
+        skipped: true,
+        reason: 'sms_opt_out',
+      });
+      return { sent: false, messageId: null, reason: 'sms_opt_out' };
     }
 
     logJobCompletedStage(trace, 'notify_sms', {

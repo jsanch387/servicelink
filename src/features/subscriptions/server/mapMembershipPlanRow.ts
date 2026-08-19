@@ -51,8 +51,8 @@ function mapCadenceOptions(prices: PriceRow[]): SubscriptionCadenceOption[] {
 }
 
 export {
-  joinDescriptionAndBenefits,
-  splitDescriptionAndBenefits,
+  normalizePlanDescriptionForStorage,
+  planDescriptionForDisplay,
 } from '../utils/planDescription';
 
 export function mapMembershipPlanToOwner(
@@ -64,7 +64,6 @@ export function mapMembershipPlanToOwner(
     id: plan.id,
     name: plan.name,
     description: plan.description,
-    benefits: Array.isArray(plan.benefits) ? plan.benefits : [],
     visitDurationMinutes: planVisitDurationMinutes(plan),
     cadenceOptions: mapCadenceOptions(prices),
     createdAt: plan.created_at,
@@ -81,7 +80,6 @@ export function mapMembershipPlanToCustomer(
     id: plan.id,
     name: plan.name,
     description: plan.description,
-    benefits: Array.isArray(plan.benefits) ? plan.benefits : [],
     visitDurationMinutes: planVisitDurationMinutes(plan),
     cadenceOptions: mapCadenceOptions(prices),
     isPopular: plan.is_popular,

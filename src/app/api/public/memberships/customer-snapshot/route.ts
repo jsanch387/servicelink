@@ -12,6 +12,10 @@ import {
   membershipsJsonResponse,
 } from '@/features/subscriptions/server/membershipsTransactionLog';
 import { resolveMembershipCustomerServiceSnapshot } from '@/features/subscriptions/server/resolveMembershipCustomerServiceSnapshot';
+import {
+  ALREADY_SUBSCRIBED_ERROR,
+  findLiveCustomerMembership,
+} from '@/features/subscriptions/server/findLiveCustomerMembership';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
 import { assertPublicMembershipCheckoutRateLimits } from '@/server/rateLimit/publicApiRateLimit';
@@ -74,6 +78,24 @@ export async function POST(req: NextRequest) {
         requestId,
         { success: false, error: 'Business not found.' },
         { status: 404 }
+      );
+    }
+
+    const live = await findLiveCustomerMembership({
+      supabase,
+      businessId,
+      email: emailRaw || null,
+      phone: phone || null,
+    });
+    if (live) {
+      return membershipsJsonResponse(
+        requestId,
+        {
+          success: false,
+          error: ALREADY_SUBSCRIBED_ERROR,
+          code: 'already_subscribed',
+        },
+        { status: 409 }
       );
     }
 

@@ -68,7 +68,7 @@ export function notificationMinimalDisplayTitle(
     return 'New subscriber';
   }
   if (blob.includes('membership_visit')) {
-    return 'Member needs a visit';
+    return 'Subscription needs a visit';
   }
 
   if (blob.includes('cancel')) return 'Appointment canceled';

@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
             vehicleYear?: unknown;
             vehicleMake?: unknown;
             vehicleModel?: unknown;
+            agreedToNotifications?: unknown;
+            email?: unknown;
+            phone?: unknown;
           })
         : null;
 
@@ -45,6 +48,8 @@ export async function POST(req: NextRequest) {
     const priceId = str(body?.priceId);
     const firstVisitDate = str(body?.firstVisitDate);
     const firstVisitTime = str(body?.firstVisitTime);
+    const agreedToNotifications =
+      body?.agreedToNotifications === false ? false : true;
 
     const rateLimited = await assertPublicMembershipCheckoutRateLimits(
       req,
@@ -68,6 +73,9 @@ export async function POST(req: NextRequest) {
         vehicleYear: str(body?.vehicleYear),
         vehicleMake: str(body?.vehicleMake),
         vehicleModel: str(body?.vehicleModel),
+        agreedToNotifications,
+        email: str(body?.email),
+        phone: str(body?.phone),
       },
       requestId
     );
@@ -75,7 +83,11 @@ export async function POST(req: NextRequest) {
     if (!result.ok) {
       return membershipsJsonResponse(
         requestId,
-        { success: false, error: result.error },
+        {
+          success: false,
+          error: result.error,
+          ...(result.code ? { code: result.code } : {}),
+        },
         { status: result.status }
       );
     }

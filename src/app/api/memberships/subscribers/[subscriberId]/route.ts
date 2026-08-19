@@ -2,92 +2,32 @@
  * GET  /api/memberships/subscribers/:id
  * POST /api/memberships/subscribers/:id
  *   { action: 'cancel_at_period_end' | 'cancel_now' | 'portal_link' | 'portal_session' | 'save_notes' | 'send_schedule_link' }
+ *
+ * Auth: `getAuthenticatedUser` (mobile Bearer or web cookie).
  */
 
 import { API_ROUTES } from '@/constants/routes';
-import { assertMembershipsSubscriberAccess } from '@/features/subscriptions/server/assertMembershipsReady';
 import { cancelOwnerCustomerMembership } from '@/features/subscriptions/server/cancelOwnerCustomerMembership';
 import { createMembershipBillingPortalSession } from '@/features/subscriptions/server/createMembershipBillingPortalSession';
 import { getOwnerCustomerMembership } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
 import { signMembershipManageToken } from '@/features/subscriptions/server/membershipManageToken';
-import { sendOwnerMembershipScheduleLink } from '@/features/subscriptions/server/sendOwnerMembershipScheduleLink';
-import { updateOwnerMembershipNotes } from '@/features/subscriptions/server/updateOwnerMembershipNotes';
 import {
   getMembershipsRequestId,
   membershipsJsonResponse,
 } from '@/features/subscriptions/server/membershipsTransactionLog';
+import { requireOwnerMembershipsSubscriberAccess } from '@/features/subscriptions/server/requireOwnerMembershipsSubscriberAccess';
+import { sendOwnerMembershipScheduleLink } from '@/features/subscriptions/server/sendOwnerMembershipScheduleLink';
+import { updateOwnerMembershipNotes } from '@/features/subscriptions/server/updateOwnerMembershipNotes';
 import { getAppBaseUrl } from '@/libs/stripe';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { assertOwnerMembershipScheduleLinkRateLimits } from '@/server/rateLimit/ownerMembershipScheduleLinkRateLimit';
 import type { NextRequest } from 'next/server';
 
 type RouteContext = { params: Promise<{ subscriberId: string }> };
 
-async function requireOwnerMembershipsContext(req: Request) {
-  const requestId = getMembershipsRequestId(req);
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user?.id) {
-    return {
-      ok: false as const,
-      requestId,
-      response: membershipsJsonResponse(
-        requestId,
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      ),
-    };
-  }
-
-  const resolved = await resolveCurrentBusinessId(supabase);
-  if (!resolved.ok) {
-    return {
-      ok: false as const,
-      requestId,
-      response: membershipsJsonResponse(
-        requestId,
-        { success: false, error: resolved.error },
-        { status: resolved.status }
-      ),
-    };
-  }
-
-  const ready = await assertMembershipsSubscriberAccess(
-    supabase,
-    user.id,
-    resolved.businessId,
-    user.email
-  );
-  if (!ready.ok) {
-    return {
-      ok: false as const,
-      requestId,
-      response: membershipsJsonResponse(
-        requestId,
-        { success: false, error: ready.error, gate: ready.gate },
-        { status: ready.status }
-      ),
-    };
-  }
-
-  return {
-    ok: true as const,
-    requestId,
-    supabase,
-    businessId: resolved.businessId,
-    userId: user.id,
-  };
-}
-
 export async function GET(req: Request, context: RouteContext) {
   try {
     const { subscriberId } = await context.params;
-    const ctx = await requireOwnerMembershipsContext(req);
+    const ctx = await requireOwnerMembershipsSubscriberAccess(req);
     if (!ctx.ok) return ctx.response;
 
     const result = await getOwnerCustomerMembership(
@@ -120,7 +60,7 @@ export async function GET(req: Request, context: RouteContext) {
 export async function POST(req: Request, context: RouteContext) {
   try {
     const { subscriberId } = await context.params;
-    const ctx = await requireOwnerMembershipsContext(req);
+    const ctx = await requireOwnerMembershipsSubscriberAccess(req);
     if (!ctx.ok) return ctx.response;
 
     const body = (await req.json().catch(() => ({}))) as {

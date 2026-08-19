@@ -8,7 +8,7 @@ import { countActivePriceSubscribers } from './countActivePlanSubscribers';
 import { getBusinessStripeConnectAccountId } from './getBusinessStripeConnectAccountId';
 import {
   mapMembershipPlanToOwner,
-  splitDescriptionAndBenefits,
+  normalizePlanDescriptionForStorage,
 } from './mapMembershipPlanRow';
 import {
   logMemberships,
@@ -130,14 +130,11 @@ export async function updateMembershipPlanForBusiness(
     }
   }
 
-  const { description, benefits } = splitDescriptionAndBenefits(
-    input.description
-  );
+  const description = normalizePlanDescriptionForStorage(input.description);
 
   const planUpdate = {
     name,
     description,
-    benefits,
     visit_duration_minutes:
       input.visitDurationMinutes ?? MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT,
   } satisfies PlanUpdate;

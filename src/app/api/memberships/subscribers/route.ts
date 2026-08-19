@@ -1,74 +1,40 @@
 /**
  * GET /api/memberships/subscribers
  * Owner: list customer memberships for the current business.
+ *
+ * Auth: `getAuthenticatedUser` (mobile Bearer or web cookie).
  */
 
-import { assertMembershipsSubscriberAccess } from '@/features/subscriptions/server/assertMembershipsReady';
 import { listOwnerCustomerMemberships } from '@/features/subscriptions/server/listOwnerCustomerMemberships';
 import {
   getMembershipsRequestId,
   membershipsJsonResponse,
 } from '@/features/subscriptions/server/membershipsTransactionLog';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireOwnerMembershipsSubscriberAccess } from '@/features/subscriptions/server/requireOwnerMembershipsSubscriberAccess';
 
 export async function GET(req: Request) {
   const requestId = getMembershipsRequestId(req);
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user?.id) {
-      return membershipsJsonResponse(
-        requestId,
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const resolved = await resolveCurrentBusinessId(supabase);
-    if (!resolved.ok) {
-      return membershipsJsonResponse(
-        requestId,
-        { success: false, error: resolved.error },
-        { status: resolved.status }
-      );
-    }
-
-    const ready = await assertMembershipsSubscriberAccess(
-      supabase,
-      user.id,
-      resolved.businessId,
-      user.email
-    );
-    if (!ready.ok) {
-      return membershipsJsonResponse(
-        requestId,
-        { success: false, error: ready.error, gate: ready.gate },
-        { status: ready.status }
-      );
-    }
+    const ctx = await requireOwnerMembershipsSubscriberAccess(req);
+    if (!ctx.ok) return ctx.response;
 
     const url = new URL(req.url);
     const planId = url.searchParams.get('planId');
     const result = await listOwnerCustomerMemberships(
-      supabase,
-      resolved.businessId,
+      ctx.supabase,
+      ctx.businessId,
       { planId }
     );
 
     if (!result.ok) {
       return membershipsJsonResponse(
-        requestId,
+        ctx.requestId,
         { success: false, error: result.error },
         { status: 500 }
       );
     }
 
-    return membershipsJsonResponse(requestId, {
+    return membershipsJsonResponse(ctx.requestId, {
       success: true,
       subscribers: result.subscribers,
     });

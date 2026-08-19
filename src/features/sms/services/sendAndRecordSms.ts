@@ -20,6 +20,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isSmsOutboundEnabled } from '../config/isSmsOutboundEnabled';
 import { canBusinessSendCustomerSms } from '../server/canBusinessSendCustomerSms';
 import { logSms } from '../server/smsLog';
+import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 import { sendSms, type SendSmsResult } from './sendSms';
 import { isTelnyxSmsConfigured } from './telnyxClient';
 import { toE164 } from '../utils/toE164';
@@ -53,6 +54,10 @@ export type SendAndRecordSmsResult =
         | 'duplicate'
         | 'not_configured'
         | 'not_eligible'
+        /** Customer unchecked SMS consent (`customers.sms_opt_in = false`). */
+        | 'sms_opt_out'
+        /** Telnyx block — recipient texted STOP (code 40300). */
+        | 'carrier_opt_out'
         | 'error';
     };
 
@@ -93,6 +98,18 @@ export async function sendAndRecordSms(
       reason: eligibility.reason,
     });
     return { sent: false, reason: 'not_eligible' };
+  }
+
+  // App / checkbox consent — skip before claiming a dedupe row.
+  if (params.customerId?.trim()) {
+    const optedIn = await loadCustomerSmsOptIn(admin, params.customerId);
+    if (!optedIn) {
+      logSms(correlationId, 'info', 'skip_sms_opt_out', {
+        type,
+        customerId: params.customerId.trim(),
+      });
+      return { sent: false, reason: 'sms_opt_out' };
+    }
   }
 
   const phone = toE164(rawPhone);
@@ -165,8 +182,10 @@ export async function sendAndRecordSms(
       });
     } else {
       // Clear the dedupe key so the owner can retry a failed send.
+      // Carrier STOP: mark skipped_opt_out for history clarity.
       await updateRow(admin, messageId, {
-        status: 'failed',
+        status:
+          result.reason === 'carrier_opt_out' ? 'skipped_opt_out' : 'failed',
         error: smsFailureErrorForDb(result),
         dedupe_key: null,
       });
@@ -182,7 +201,10 @@ export async function sendAndRecordSms(
 function smsFailureErrorForDb(
   result: Extract<SendSmsResult, { sent: false }>
 ): string {
-  if (result.reason === 'error' && result.detail) {
+  if (
+    (result.reason === 'error' || result.reason === 'carrier_opt_out') &&
+    result.detail
+  ) {
     return result.detail;
   }
   return result.reason;

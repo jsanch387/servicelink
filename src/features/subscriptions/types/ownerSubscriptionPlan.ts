@@ -8,8 +8,6 @@ export interface OwnerSubscriptionPlan {
   id: string;
   name: string;
   description: string;
-  /** Bullet lines extracted from the description (public card). */
-  benefits: string[];
   /** How long each membership visit lasts (minutes). */
   visitDurationMinutes: number;
   cadenceOptions: SubscriptionCadenceOption[];

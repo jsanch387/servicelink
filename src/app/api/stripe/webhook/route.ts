@@ -165,6 +165,8 @@ type StoredBookingCheckoutPayload = {
   promoCode?: string;
   referralSource?: BookingReferralSource | null;
   jobs?: CreateBookingJobItem[];
+  /** Public SMS opt-in from contact checkbox (default true when omitted). */
+  agreedToNotifications?: boolean;
 };
 
 function customerFormFromCheckoutStored(
@@ -315,6 +317,12 @@ function parseStoredBookingCheckoutPayload(
     ...(Array.isArray(p.jobs)
       ? { jobs: p.jobs as CreateBookingJobItem[] }
       : {}),
+    agreedToNotifications:
+      p.agreedToNotifications === false
+        ? false
+        : p.agreedToNotifications === true
+          ? true
+          : undefined,
   };
 }
 
@@ -675,6 +683,9 @@ export async function POST(request: NextRequest) {
         discountSnapshot = saleFallback.ok ? saleFallback.snapshot : null;
       }
 
+      const checkoutSmsOptIn =
+        bookingPayload.agreedToNotifications === false ? false : true;
+
       const createdBooking = await createBooking(supabase, {
         businessId: bookingPayload.businessId,
         businessSlug: bookingPayload.businessSlug,
@@ -693,6 +704,7 @@ export async function POST(request: NextRequest) {
           businessMode: serviceLocation.mode,
         }),
         discountSnapshot,
+        smsOptIn: checkoutSmsOptIn,
         ...(jobDetails
           ? {
               jobDetails,
@@ -855,6 +867,7 @@ export async function POST(request: NextRequest) {
         availabilityEmailPayload,
         resolvedCustomerEmail,
         businessDisplayName,
+        smsOptIn: checkoutSmsOptIn,
       };
       after(async () => {
         try {
@@ -892,7 +905,10 @@ export async function POST(request: NextRequest) {
             }
           }
           // SMS ping + email details when both exist (complementary channels).
-          if (bookingCheckoutNotifyContext.customerPhone) {
+          if (
+            bookingCheckoutNotifyContext.customerPhone &&
+            bookingCheckoutNotifyContext.smsOptIn
+          ) {
             const smsResult = await sendAndRecordSms({
               admin: supabase,
               businessId: bookingCheckoutNotifyContext.businessId,
@@ -915,6 +931,15 @@ export async function POST(request: NextRequest) {
                 bookingId: bookingCheckoutNotifyContext.bookingId,
               }
             );
+          } else if (
+            bookingCheckoutNotifyContext.customerPhone &&
+            !bookingCheckoutNotifyContext.smsOptIn
+          ) {
+            logBookingCheckoutStage('customer_sms.skipped_opt_out', {
+              eventId: bookingCheckoutNotifyContext.eventId,
+              sessionId: bookingCheckoutNotifyContext.sessionId,
+              bookingId: bookingCheckoutNotifyContext.bookingId,
+            });
           }
         } catch (err) {
           console.error(

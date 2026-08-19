@@ -49,6 +49,7 @@ interface BookingForAction {
   status: string | null;
   job_status: string | null;
   customer_phone: string | null;
+  customer_id: string | null;
 }
 
 export async function POST(
@@ -153,7 +154,9 @@ export async function POST(
       await // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (auth.supabase as any)
         .from('bookings')
-        .select('id, business_id, status, job_status, customer_phone')
+        .select(
+          'id, business_id, status, job_status, customer_phone, customer_id'
+        )
         .eq('id', bookingId)
         .maybeSingle();
 
@@ -262,7 +265,7 @@ export async function POST(
       admin: createSupabaseAdminClient(),
       businessId: business.id,
       bookingId: booking.id,
-      customerId: null,
+      customerId: booking.customer_id,
       type: config.smsType,
       to: booking.customer_phone,
       message: config.buildMessage({ businessName }),

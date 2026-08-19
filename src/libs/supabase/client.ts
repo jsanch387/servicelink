@@ -594,6 +594,8 @@ export type Database = {
           phone_normalized: string | null;
           email_normalized: string | null;
           notes: string | null;
+          /** Transactional SMS opt-in (appointments / membership updates). */
+          sms_opt_in: boolean;
           maintenance_visits_completed: number;
           created_at: string;
           updated_at: string;
@@ -607,6 +609,7 @@ export type Database = {
           phone_normalized?: string | null;
           email_normalized?: string | null;
           notes?: string | null;
+          sms_opt_in?: boolean;
           maintenance_visits_completed?: number;
           created_at?: string;
           updated_at?: string;
@@ -620,6 +623,7 @@ export type Database = {
           phone_normalized?: string | null;
           email_normalized?: string | null;
           notes?: string | null;
+          sms_opt_in?: boolean;
           maintenance_visits_completed?: number;
           created_at?: string;
           updated_at?: string;
@@ -671,7 +675,6 @@ export type Database = {
           business_id: string;
           name: string;
           description: string;
-          benefits: string[];
           is_published: boolean;
           is_popular: boolean;
           sort_order: number;
@@ -686,7 +689,6 @@ export type Database = {
           business_id: string;
           name: string;
           description?: string;
-          benefits?: string[];
           is_published?: boolean;
           is_popular?: boolean;
           sort_order?: number;
@@ -701,7 +703,6 @@ export type Database = {
           business_id?: string;
           name?: string;
           description?: string;
-          benefits?: string[];
           is_published?: boolean;
           is_popular?: boolean;
           sort_order?: number;

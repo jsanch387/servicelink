@@ -7,11 +7,6 @@
 import { getPublicMembershipVisitPath } from '@/constants/routes';
 import { sendMembershipVisitReminderEmail } from '@/features/email/membership-visit-reminder/sendMembershipVisitReminderEmail';
 import {
-  notificationInboxSubtitleFromCustomer,
-  notificationMinimalDisplayTitle,
-} from '@/features/notifications/utils/notificationMinimalDisplayTitle';
-import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
-import {
   buildMembershipVisitReminderSms,
   sendAndRecordSms,
 } from '@/features/sms';
@@ -34,10 +29,13 @@ import {
   resolveMembershipVisitStatus,
   shouldSendMembershipPeriodVisitReminder,
 } from './membershipVisitStatus';
+import { notifyOwnerMembershipVisitNeeded } from './notifyOwnerMembershipVisitNeeded';
 import {
   customerMembershipsOf,
   membershipPlansOf,
 } from './membershipTablesQuery';
+import { membershipCustomerSmsOptedIn } from '../utils/membershipSmsOptIn';
+import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 
 export async function sendMembershipPeriodVisitRemindersIfApplicable(
   supabase: SupabaseClient<Database>,
@@ -161,54 +159,33 @@ export async function sendMembershipPeriodVisitRemindersIfApplicable(
 
   let smsSent = false;
   if (phone) {
-    const sms = await sendAndRecordSms({
-      admin,
-      businessId: row.business_id as string,
-      customerId: (row.customer_id as string | null) ?? null,
-      type: 'membership_visit_reminder',
-      to: phone,
-      message: buildMembershipVisitReminderSms({ scheduleUrl }),
-      dedupeKey: `${mid}:visit_reminder:${periodStart}`,
-      correlationId: eventId,
-    });
-    smsSent = sms.sent;
+    const customerId = (row.customer_id as string | null) ?? null;
+    const optedIn = customerId
+      ? await loadCustomerSmsOptIn(admin, customerId)
+      : membershipCustomerSmsOptedIn(meta);
+    if (optedIn) {
+      const sms = await sendAndRecordSms({
+        admin,
+        businessId: row.business_id as string,
+        customerId,
+        type: 'membership_visit_reminder',
+        to: phone,
+        message: buildMembershipVisitReminderSms({ scheduleUrl }),
+        dedupeKey: `${mid}:visit_reminder:${periodStart}`,
+        correlationId: eventId,
+      });
+      smsSent = sms.sent;
+    }
   }
 
   const profileId = biz?.profile_id?.trim();
   if (profileId) {
-    const title = notificationMinimalDisplayTitle(
-      'membership_visit_needed',
-      'membership',
-      'Member needs a visit',
-      'Member needs a visit'
-    );
-    const bodyText = notificationInboxSubtitleFromCustomer(
-      customerName || 'Member'
-    );
-    try {
-      const notificationRow: Database['public']['Tables']['notifications']['Insert'] =
-        {
-          user_id: profileId,
-          type: 'membership_visit_needed',
-          reference_type: 'membership',
-          reference_id: mid,
-          title,
-          body: bodyText,
-          dedupe_key: `membership_visit_needed:${mid}:${periodStart}`,
-        };
-      await admin.from('notifications').insert(notificationRow as never);
-    } catch {
-      // best-effort
-    }
-
-    await sendExpoPushToUser(admin, {
-      userId: profileId,
-      title,
-      body: bodyText,
-      data: {
-        reference_type: 'membership',
-        reference_id: mid,
-      },
+    await notifyOwnerMembershipVisitNeeded(admin, {
+      businessId: row.business_id as string,
+      membershipId: mid,
+      customerName,
+      periodStart,
+      requestId: eventId,
     });
   }
 
