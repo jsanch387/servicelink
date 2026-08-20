@@ -29,7 +29,16 @@ export function BestBookingAppForMobileDetailersContent() {
         That is why more detailers are switching to a dedicated{' '}
         <strong className="text-gray-300">booking app for detailers</strong>—a
         simple way for customers to see your services, pick a time, and confirm
-        without playing phone tag.
+        without playing phone tag. Comparing options? Read our{' '}
+        <Link
+          href={ROUTES.RESOURCE_GUIDE(
+            'servicelink-vs-detail-connect-vs-detailermade-2026'
+          )}
+          className={linkClasses}
+        >
+          ServiceLink vs Detail Connect vs DetailerMade
+        </Link>{' '}
+        guide for 2026.
       </p>
 
       <section className={sectionClasses}>

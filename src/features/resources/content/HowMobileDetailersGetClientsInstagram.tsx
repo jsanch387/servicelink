@@ -221,7 +221,16 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           >
             Get your free booking page here
           </Link>
-          . Not sure which tool to use? Read our guide on the{' '}
+          . Comparing apps? See{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE(
+              'servicelink-vs-detail-connect-vs-detailermade-2026'
+            )}
+            className={linkClasses}
+          >
+            ServiceLink vs Detail Connect vs DetailerMade
+          </Link>{' '}
+          or our checklist for the{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
               'best-booking-app-for-mobile-detailers'

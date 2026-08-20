@@ -3,6 +3,10 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { MarketingAttributionRoot } from '@/features/marketing-attribution';
+import {
+  HOME_SEO_DESCRIPTION,
+  HOME_SEO_TITLE,
+} from '@/features/landing-page/data/homeSeoContent';
 import { ToastViewport } from '@/components/shared';
 import type { Metadata } from 'next';
 import {
@@ -72,11 +76,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: 'ServiceLink',
   title: {
-    default: 'ServiceLink | One Link. Your Services. Get Booked.',
+    default: HOME_SEO_TITLE,
     template: '%s | ServiceLink',
   },
-  description:
-    'Create a professional booking link for your service business. Share one link—myservicelink.app/yourbusiness—and let customers see your services and book instantly. Built for detailers, pressure washers, lawn care, and service pros.',
+  description: HOME_SEO_DESCRIPTION,
   icons: {
     icon: [
       {
@@ -90,7 +93,7 @@ export const metadata: Metadata = {
         type: 'image/png',
       },
       { url: MARKETING_IMAGES.brand.faviconIco, sizes: 'any' },
-      // Google Search prefers a 48×48 opaque icon; keep after browser favicons.
+      // Google Search circle-crops this 48×48 — file is a round disc so it isn’t a clipped square.
       {
         url: MARKETING_IMAGES.brand.googleSiteIcon48,
         sizes: '48x48',
@@ -107,6 +110,11 @@ export const metadata: Metadata = {
     ],
   },
   keywords: [
+    'booking software for detailers',
+    'booking software built for detailers',
+    'booking app for mobile detailers',
+    'mobile detailers',
+    'mobile detailing booking app',
     'booking link for business',
     'service business link',
     'myservicelink',
@@ -139,24 +147,22 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: siteUrl,
     siteName: 'ServiceLink',
-    title: 'ServiceLink | One Link. Your Services. Get Booked.',
-    description:
-      'Create a professional booking link. Share one link and let customers see your services and book instantly. Built for service pros.',
+    title: HOME_SEO_TITLE,
+    description: HOME_SEO_DESCRIPTION,
     images: [
       {
         url: MARKETING_IMAGES.brand.openGraph,
         width: 1200,
         height: 630,
-        alt: 'ServiceLink — Your business, ready to book.',
+        alt: 'ServiceLink — booking app for mobile detailers.',
         type: 'image/png',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ServiceLink | One Link. Your Services. Get Booked.',
-    description:
-      'Create a professional booking link. Share one link and let customers see your services and book instantly.',
+    title: HOME_SEO_TITLE,
+    description: HOME_SEO_DESCRIPTION,
     images: [MARKETING_IMAGES.brand.openGraph],
   },
   alternates: {

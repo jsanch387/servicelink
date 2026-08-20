@@ -606,6 +606,19 @@ export function getPublicMembershipVisitPath(
 }
 
 /**
+ * Stripe Customer Portal `return_url` path after manage/cancel.
+ * Lands on the public booking link Subscriptions tab.
+ */
+export function getPublicMembershipPortalReturnPath(
+  businessSlug: string
+): string {
+  const base = getPublicBusinessProfilePath(businessSlug);
+  if (base === '/') return '/';
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}tab=subscriptions`;
+}
+
+/**
  * Customer-facing maintenance enrollment review link (raw URL-safe token in path).
  * Server resolves `customer_link_token_hash` = SHA-256 hex of the raw token.
  */

@@ -4,6 +4,9 @@ import {
   PricingComparisonTable,
   PublicPricingPlans,
 } from '@/features/pricing';
+import { getPricingPageMetadata } from '@/features/pricing/data/pricingSeoContent';
+
+export const metadata = getPricingPageMetadata();
 
 export default function PricingPage() {
   const free = PLANS.free;

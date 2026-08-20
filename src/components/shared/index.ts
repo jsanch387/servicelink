@@ -10,6 +10,7 @@ export {
   publicFlowStickyBackHeaderClassName,
   publicFlowStickyBackHeaderInnerClassName,
 } from './publicFlowBackNav';
+export { useScrollWindowToTopOnChange } from './useScrollWindowToTopOnChange';
 export {
   PhoneInput,
   US_PHONE_COUNTRY_CODE,

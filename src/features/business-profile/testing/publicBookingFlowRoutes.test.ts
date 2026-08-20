@@ -4,6 +4,7 @@ import {
   getBusinessBookPath,
   getBusinessBookScheduleUrl,
   getPublicBusinessProfilePath,
+  getPublicMembershipPortalReturnPath,
   getPublicQuoteRequestPath,
   isPublicBookingFlowLocale,
   OWNER_MANUAL_BOOKING_FOR,
@@ -43,6 +44,18 @@ describe('public booking flow route helpers', () => {
 
     it('encodes slug', () => {
       expect(getPublicBusinessProfilePath('a b')).toBe('/a%20b');
+    });
+  });
+
+  describe('getPublicMembershipPortalReturnPath', () => {
+    it('opens the public subscriptions tab', () => {
+      expect(getPublicMembershipPortalReturnPath('blacklabelauto')).toBe(
+        '/blacklabelauto?tab=subscriptions'
+      );
+    });
+
+    it('returns root when slug is empty', () => {
+      expect(getPublicMembershipPortalReturnPath('   ')).toBe('/');
     });
   });
 

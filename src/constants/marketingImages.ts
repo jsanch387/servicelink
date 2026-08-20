@@ -4,7 +4,7 @@ export const MARKETING_IMAGES = {
     logo: '/brand/service-link-logo.png',
     favicon: '/brand/favicon.png',
     faviconIco: '/brand/favicon.ico',
-    /** Opaque dark-bg icon for Google Search / Organization schema only. */
+    /** Circular opaque-black icon for Google Search (circle-cropped in results). */
     googleSiteIcon: '/brand/google-site-icon.png',
     googleSiteIcon48: '/brand/google-site-icon-48.png',
     openGraph: '/brand/open-graph.png',
@@ -26,11 +26,15 @@ export const MARKETING_IMAGES = {
     exterior: '/marketplace/exterior.png',
     interiorOne: '/marketplace/inside-1.png',
     interiorTwo: '/marketplace/interior-2.png',
+    /** 1200×630 share card for /find-detailers (Facebook, iMessage, etc.). */
+    openGraph: '/marketplace/find-detailers-og.png',
   },
   resources: {
     bookingApp: '/marketing/resources/guide-booking-app-cover.webp',
     deposits: '/marketing/resources/guide-deposits-cover.webp',
     instagram: '/marketing/resources/guide-instagram-cover.webp',
+    comparison2026:
+      '/marketing/resources/guide-servicelink-vs-detailermade-cover.webp',
   },
   store: {
     googlePlay: '/store/google-play.png',

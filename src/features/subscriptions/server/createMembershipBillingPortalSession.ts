@@ -1,3 +1,4 @@
+import { getPublicMembershipPortalReturnPath } from '@/constants/routes';
 import { getAppBaseUrl, getStripeConnectClient } from '@/libs/stripe';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -14,7 +15,7 @@ export async function createMembershipBillingPortalSession(
   args: {
     membershipId: string;
     request?: Request;
-    /** Optional override return path (defaults to business booking slug). */
+    /** Optional override return path (defaults to public subscriptions tab). */
     returnPath?: string | null;
   }
 ): Promise<
@@ -52,7 +53,7 @@ export async function createMembershipBillingPortalSession(
     const slug =
       typeof meta?.businessSlug === 'string' ? meta.businessSlug.trim() : '';
     if (slug) {
-      returnPath = `/${encodeURIComponent(slug)}`;
+      returnPath = getPublicMembershipPortalReturnPath(slug);
     } else {
       const { data: bp } = await supabase
         .from('business_profiles')
@@ -62,7 +63,9 @@ export async function createMembershipBillingPortalSession(
       const businessSlug = (
         bp as { business_slug?: string | null } | null
       )?.business_slug?.trim();
-      returnPath = businessSlug ? `/${encodeURIComponent(businessSlug)}` : '/';
+      returnPath = businessSlug
+        ? getPublicMembershipPortalReturnPath(businessSlug)
+        : '/';
     }
   }
 

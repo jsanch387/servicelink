@@ -1,5 +1,10 @@
 export const LANDING_FAQS = [
   {
+    question: 'What is ServiceLink?',
+    answer:
+      'ServiceLink is the booking app built for mobile detailers. You get your own booking link, collect deposits, manage appointments, and accept payments—free to start.',
+  },
+  {
     question: 'Will I be notified when someone books?',
     answer:
       'Yes. You get an email notification whenever someone books a service, so you never miss a request.',

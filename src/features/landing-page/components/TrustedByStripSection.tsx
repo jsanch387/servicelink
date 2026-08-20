@@ -53,7 +53,7 @@ export const TrustedByStripSection: React.FC = () => {
 
       <div className="mb-3 px-4 sm:px-6">
         <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-gray-500 text-center">
-          Used by 500+ businesses
+          Used by 1,000+ detailers
         </p>
       </div>
 

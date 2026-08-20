@@ -97,7 +97,7 @@ export function matchMarketplaceCity(
 }
 
 export function marketplaceCityTitle(city: MarketplaceCity): string {
-  return `Auto Detailers in ${city.displayName} | Find Local Detailing`;
+  return `Auto Detailers in ${city.displayName}`;
 }
 
 export function marketplaceCityDescription(
@@ -108,5 +108,5 @@ export function marketplaceCityDescription(
     typeof resultCount === 'number' && resultCount > 0
       ? `Browse ${resultCount} trusted detailer${resultCount === 1 ? '' : 's'}`
       : 'Find trusted auto detailers';
-  return `${countPart} in ${city.displayName}. Compare mobile and shop detailing, ratings, and book online on Service Link.`;
+  return `${countPart} in ${city.displayName}. Compare mobile and shop detailing, ratings, and book online on ServiceLink.`;
 }

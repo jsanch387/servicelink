@@ -81,7 +81,7 @@ export async function notifyOwnerMembershipVisitNeeded(
     {
       user_id: profileId,
       type: 'membership_visit_needed',
-      reference_type: 'membership',
+      reference_type: 'subscriber',
       reference_id: membershipId,
       title,
       body: bodyText,
@@ -113,7 +113,7 @@ export async function notifyOwnerMembershipVisitNeeded(
     title,
     body: bodyText,
     data: {
-      reference_type: 'membership',
+      reference_type: 'subscriber',
       reference_id: membershipId,
     },
   });

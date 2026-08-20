@@ -109,6 +109,7 @@ export function getWorkshopPageMetadata(): Metadata {
       card: 'summary_large_image',
       title: WORKSHOP_PAGE_METADATA.title,
       description: WORKSHOP_PAGE_METADATA.description,
+      images: [MARKETING_IMAGES.brand.openGraph],
     },
     robots: {
       index: true,

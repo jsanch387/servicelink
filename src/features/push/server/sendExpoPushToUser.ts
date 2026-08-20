@@ -19,6 +19,12 @@ type ExpoPushMessage = {
   to: string;
   title: string;
   body?: string;
+  /** iOS: must be the string "default" (omit = silent, no vibration). */
+  sound: 'default';
+  /** Android: must match the app-registered “ServiceLink” channel. */
+  channelId: 'default';
+  /** Android: high so FCM is more likely to deliver immediately. */
+  priority: 'high';
   data: Record<string, string>;
 };
 
@@ -41,6 +47,9 @@ function buildExpoPushMessages(
     const msg: ExpoPushMessage = {
       to,
       title,
+      sound: 'default',
+      channelId: 'default',
+      priority: 'high',
       data: dataStrings,
     };
     if (bodyTrimmed) {

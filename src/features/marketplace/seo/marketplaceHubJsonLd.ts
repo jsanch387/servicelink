@@ -1,4 +1,4 @@
-import { MARKETING_IMAGES } from '@/constants/marketingImages';
+import { MARKETPLACE_OG_IMAGE } from './marketplaceOpenGraph';
 import { getFindDetailersCityPath, ROUTES } from '@/constants/routes';
 import { MARKETPLACE_CITIES } from '../config/marketplaceCities';
 
@@ -13,11 +13,11 @@ export function buildMarketplaceHubJsonLd() {
     '@type': 'CollectionPage',
     name: 'Find Auto Detailers Near You',
     description:
-      'Search trusted mobile and shop auto detailers by city or ZIP. Compare ratings, services, and book online on Service Link.',
+      'Search trusted mobile and shop auto detailers by city or ZIP. Compare ratings, services, and book online on ServiceLink.',
     url: `${siteUrl}${ROUTES.FIND_DETAILERS}`,
     isPartOf: {
       '@type': 'WebSite',
-      name: 'Service Link',
+      name: 'ServiceLink',
       url: siteUrl,
     },
     about: {
@@ -38,7 +38,9 @@ export function buildMarketplaceHubJsonLd() {
     },
     primaryImageOfPage: {
       '@type': 'ImageObject',
-      url: `${siteUrl}${MARKETING_IMAGES.brand.openGraph}`,
+      url: `${siteUrl}${MARKETPLACE_OG_IMAGE.url}`,
+      width: MARKETPLACE_OG_IMAGE.width,
+      height: MARKETPLACE_OG_IMAGE.height,
     },
   };
 }

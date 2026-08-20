@@ -2,7 +2,7 @@ import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMark
 import { MARKETPLACE_CITIES } from '@/features/marketplace/config/marketplaceCities';
 import { MarketplacePage } from '@/features/marketplace';
 import { buildMarketplaceHubJsonLd } from '@/features/marketplace/seo/marketplaceHubJsonLd';
-import { MARKETING_IMAGES } from '@/constants/marketingImages';
+import { MARKETPLACE_OG_IMAGE } from '@/features/marketplace/seo/marketplaceOpenGraph';
 import { getFindDetailersCityPath, ROUTES } from '@/constants/routes';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -14,9 +14,9 @@ const siteUrl = (
 ).replace(/\/$/, '');
 const marketplacePublicEnabled = isMarketplacePublicEnabled();
 
-const title = 'Find Auto Detailers Near You | Service Link';
+const title = 'Find Auto Detailers Near You';
 const description =
-  'Find trusted auto detailers near you. Search by city or ZIP, compare mobile and shop detailing, ratings, and prices, then book online on Service Link.';
+  'Find trusted auto detailers near you. Search by city or ZIP, compare mobile and shop detailing, ratings, and prices, then book online on ServiceLink.';
 
 export const metadata: Metadata = {
   title,
@@ -24,23 +24,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: `${siteUrl}${ROUTES.FIND_DETAILERS}`,
-    title,
+    title: `${title} | ServiceLink`,
     description,
-    siteName: 'Service Link',
-    images: [
-      {
-        url: MARKETING_IMAGES.brand.openGraph,
-        width: 1200,
-        height: 630,
-        alt: 'Find auto detailers near you on Service Link',
-      },
-    ],
+    siteName: 'ServiceLink',
+    images: [MARKETPLACE_OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
-    title,
+    title: `${title} | ServiceLink`,
     description,
-    images: [MARKETING_IMAGES.brand.openGraph],
+    images: [MARKETPLACE_OG_IMAGE.url],
   },
   alternates: {
     canonical: `${siteUrl}${ROUTES.FIND_DETAILERS}`,

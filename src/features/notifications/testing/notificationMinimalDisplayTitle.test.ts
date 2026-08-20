@@ -19,12 +19,12 @@ describe('notificationMinimalDisplayTitle', () => {
       notificationMinimalDisplayTitle('review_submitted', 'review', '')
     ).toBe('New review');
     expect(
-      notificationMinimalDisplayTitle('membership_subscriber', 'membership', '')
+      notificationMinimalDisplayTitle('membership_subscriber', 'subscriber', '')
     ).toBe('New subscriber');
     expect(
       notificationMinimalDisplayTitle(
         'membership_visit_needed',
-        'membership',
+        'subscriber',
         ''
       )
     ).toBe('Subscription needs a visit');

@@ -22,8 +22,9 @@ export const FEATURES_HERO = {
   subtitle: 'Booking, scheduling, payments, and client tools in one platform.',
   /** `<title>`, Open Graph, and JSON-LD — keyword-focused for search */
   seoTitle: 'Mobile Detailer Booking System Features',
+  /** Meta description — keep under ~160 characters. */
   seoDescription:
-    'ServiceLink is a mobile detailer booking system with a shareable booking link, availability calendar, service menu with categories and vehicle pricing, in-app deposits, quote requests, and a CRM that builds from every appointment.',
+    'ServiceLink is a mobile detailer booking system with a booking link, calendar, vehicle pricing, deposits, quotes, and a CRM that builds from every appointment.',
 } as const;
 
 export type FeatureCardContent = {
@@ -268,7 +269,7 @@ export function getFeaturesSeoFeatureList(): FeaturesSeoFeatureEntry[] {
 export function getFeaturesPageMetadata(): Metadata {
   return {
     title: FEATURES_HERO.seoTitle,
-    description: FEATURES_HERO.seoDescription.slice(0, 160),
+    description: FEATURES_HERO.seoDescription,
     keywords: FEATURES_KEYWORDS,
     alternates: {
       canonical: FEATURES_CANONICAL_URL,

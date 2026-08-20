@@ -8,6 +8,7 @@ import {
   PhoneInput,
   SmsNotificationsConsent,
   TextArea,
+  useScrollWindowToTopOnChange,
 } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { API_ROUTES, getPublicBusinessProfilePath } from '@/constants/routes';
@@ -21,7 +22,7 @@ import {
   publicFlowBackNavClassName,
 } from '@/components/shared';
 import Link from 'next/link';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type {
   PublicQuoteRequestFormData,
   PublicQuoteRequestFormErrors,
@@ -151,9 +152,7 @@ export const PublicQuoteRequestScreen: React.FC<
     return showVehicleFields ? ui.nav.backToVehicle : ui.nav.backToYourDetails;
   }, [showVehicleFields, step, ui.nav]);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [step]);
+  useScrollWindowToTopOnChange([step]);
 
   const setField = <K extends keyof PublicQuoteRequestFormData>(
     key: K,

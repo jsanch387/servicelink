@@ -6,6 +6,7 @@ import {
   publicFlowBackNavClassName,
   publicFlowStickyBackHeaderClassName,
   toast,
+  useScrollWindowToTopOnChange,
 } from '@/components/shared';
 import {
   API_ROUTES,
@@ -149,6 +150,8 @@ export const PublicMembershipVisitPage: React.FC<
   const { blockedSlots } = usePublicBlockedSlots(
     canSchedule && step === 'schedule' ? businessSlug : undefined
   );
+
+  useScrollWindowToTopOnChange([step]);
 
   useEffect(() => {
     setVisitTime(null);

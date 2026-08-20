@@ -16,6 +16,8 @@ Allow: /signup
 Allow: /login
 Allow: /resources
 Allow: /resources/
+Allow: /find-detailers
+Allow: /find-detailers/
 Disallow: /dashboard/
 Disallow: /auth/
 Disallow: /api/

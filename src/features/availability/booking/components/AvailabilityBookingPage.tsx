@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, toast } from '@/components/shared';
+import { Button, toast, useScrollWindowToTopOnChange } from '@/components/shared';
 import {
   API_ROUTES,
   ROUTES,
@@ -803,6 +803,10 @@ export function AvailabilityBookingPage({
   /** Skip one scroll-to-top after Stripe return so the fixed pay bar stays tappable on mobile. */
   const skipNextStepScrollRef = useRef(false);
 
+  useScrollWindowToTopOnChange([step, detailsSubStep], {
+    skipRef: skipNextStepScrollRef,
+  });
+
   const paymentSettingsEnabled =
     paymentSettings?.paymentsEnabled === true && !isOwnerManualBooking;
   const hasCheckoutModeConfigured = paymentSettings?.checkoutMode != null;
@@ -1106,15 +1110,6 @@ export function AvailabilityBookingPage({
     isMultiJobVisit,
     onPublicMultiJobBookingCreated,
   ]);
-
-  // Scroll to top when step changes so user sees the top of the form (especially on mobile)
-  useEffect(() => {
-    if (skipNextStepScrollRef.current) {
-      skipNextStepScrollRef.current = false;
-      return;
-    }
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [step, detailsSubStep]);
 
   const continueFromSchedule = () => {
     // Customer path: date & time → your information.

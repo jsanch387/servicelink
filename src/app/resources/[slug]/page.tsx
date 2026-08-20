@@ -1,3 +1,4 @@
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ROUTES } from '@/constants/routes';
 import { GuideKeyTakeaways } from '@/features/resources/components/GuideCallouts';
 import { GUIDES, getGuideBySlug } from '@/features/resources';
@@ -147,7 +148,9 @@ export default async function ResourceGuidePage({
       url: SITE_URL,
       logo: {
         '@type': 'ImageObject',
-        url: `${SITE_URL}/brand/service-link-logo.png`,
+        url: `${SITE_URL}${MARKETING_IMAGES.brand.googleSiteIcon}`,
+        width: 512,
+        height: 512,
       },
     },
     mainEntityOfPage: {

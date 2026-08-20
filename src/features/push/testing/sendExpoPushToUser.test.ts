@@ -65,6 +65,9 @@ describe('sendExpoPushToUser', () => {
         to: 'ExponentPushToken[aaa]',
         title: 'New appointment',
         body: 'Details',
+        sound: 'default',
+        channelId: 'default',
+        priority: 'high',
         data: {
           reference_type: 'booking',
           reference_id: 'bid-1',
@@ -101,6 +104,9 @@ describe('sendExpoPushToUser', () => {
     expect(parsed[0]).toEqual({
       to: 'ExponentPushToken[bbb]',
       title: 'New appointment',
+      sound: 'default',
+      channelId: 'default',
+      priority: 'high',
       data: {
         reference_type: 'booking',
         reference_id: 'bid-1',
@@ -109,6 +115,7 @@ describe('sendExpoPushToUser', () => {
       },
     });
     expect(parsed[0].body).toBeUndefined();
+    expect(parsed[0].sound).toBe('default');
   });
 });
 
@@ -161,5 +168,14 @@ describe('sendExpoPushBroadcast', () => {
     expect(body).toHaveLength(2);
     expect(body[0].to).toBe('ExponentPushToken[one]');
     expect(body[1].to).toBe('ExponentPushToken[two]');
+    expect(body[0]).toMatchObject({
+      sound: 'default',
+      channelId: 'default',
+      priority: 'high',
+      data: {
+        reference_type: 'announcement',
+        reference_id: 'launch-1',
+      },
+    });
   });
 });

@@ -1,11 +1,14 @@
 import React from 'react';
 import { BestBookingAppForMobileDetailersContent } from './BestBookingAppForMobileDetailers';
 import { HowMobileDetailersGetClientsInstagramContent } from './HowMobileDetailersGetClientsInstagram';
+import { ServiceLinkVsDetailConnectVsDetailerMadeContent } from './ServiceLinkVsDetailConnectVsDetailerMade';
 import { StopNoShowsDepositsMobileDetailingContent } from './StopNoShowsDepositsMobileDetailing';
 
 /** Map of guide slug to content component. Add new guides here. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export const GUIDE_CONTENT: Record<string, React.ComponentType<{}>> = {
+  'servicelink-vs-detail-connect-vs-detailermade-2026':
+    ServiceLinkVsDetailConnectVsDetailerMadeContent,
   'best-booking-app-for-mobile-detailers':
     BestBookingAppForMobileDetailersContent,
   'stop-no-shows-deposits-mobile-detailing':

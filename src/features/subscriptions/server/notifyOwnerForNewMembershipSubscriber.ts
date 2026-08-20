@@ -76,7 +76,7 @@ export async function notifyOwnerForNewMembershipSubscriber(
     {
       user_id: profileId,
       type: 'membership_subscriber',
-      reference_type: 'membership',
+      reference_type: 'subscriber',
       reference_id: membershipId,
       title,
       body: bodyText,
@@ -109,7 +109,7 @@ export async function notifyOwnerForNewMembershipSubscriber(
     title,
     body: bodyText,
     data: {
-      reference_type: 'membership',
+      reference_type: 'subscriber',
       reference_id: membershipId,
     },
   });

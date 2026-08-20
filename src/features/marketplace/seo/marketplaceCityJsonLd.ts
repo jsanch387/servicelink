@@ -1,4 +1,4 @@
-import { MARKETING_IMAGES } from '@/constants/marketingImages';
+import { MARKETPLACE_OG_IMAGE } from './marketplaceOpenGraph';
 import { getPublicBusinessProfilePath } from '@/constants/routes';
 import type { MarketplaceBusiness } from '../types/marketplace';
 import type { MarketplaceCity } from '../config/marketplaceCities';
@@ -22,7 +22,7 @@ export function buildMarketplaceCityItemListJsonLd(input: {
     url: pageUrl,
     isPartOf: {
       '@type': 'WebSite',
-      name: 'Service Link',
+      name: 'ServiceLink',
       url: siteUrl,
     },
     about: {
@@ -50,7 +50,9 @@ export function buildMarketplaceCityItemListJsonLd(input: {
     },
     primaryImageOfPage: {
       '@type': 'ImageObject',
-      url: `${siteUrl}${MARKETING_IMAGES.brand.openGraph}`,
+      url: `${siteUrl}${MARKETPLACE_OG_IMAGE.url}`,
+      width: MARKETPLACE_OG_IMAGE.width,
+      height: MARKETPLACE_OG_IMAGE.height,
     },
   };
 }

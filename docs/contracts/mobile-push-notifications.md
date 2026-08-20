@@ -58,6 +58,9 @@ Every push from the server uses this shape when posted to Expo:
   "to": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
   "title": "Short headline shown on the lock screen",
   "body": "Optional subtitle (may be omitted)",
+  "sound": "default",
+  "channelId": "default",
+  "priority": "high",
   "data": {
     "reference_type": "booking",
     "reference_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -71,6 +74,9 @@ Every push from the server uses this shape when posted to Expo:
 
 - `title` is always present.
 - `body` may be absent (server omits the key when empty).
+- `sound` is always the string `"default"` (not `true`, never omitted). Omit = silent on iOS (no sound, no vibration).
+- `channelId` is always `"default"` (matches the Android channel the app registers as “ServiceLink”).
+- `priority` is always `"high"` so Android is more likely to deliver immediately.
 - `data` values are **always strings** (Expo requirement).
 - Both **snake_case** and **camelCase** keys are sent for `reference_type` / `reference_id` so older and newer app builds can read either. **Mobile must read both** (prefer snake_case, fall back to camelCase).
 
@@ -107,8 +113,12 @@ These are sent automatically when business events occur. `reference_id` is alway
 | `booking_request` | Booking-request UUID | Legacy booking request detail (or map to booking detail if unified) |
 | `quote`           | Quote UUID           | Quote **detail** screen for that id                                 |
 | `review`          | Review UUID          | Review **detail** screen for that id                                |
+| `subscriber`      | Membership UUID      | Subscriber **detail** (`customer_memberships.id`)                   |
+| `membership`      | Membership UUID      | **Alias for `subscriber`** — older payloads used this type          |
 
-**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `POST /api/booking-request/submit`, etc.
+**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `POST /api/booking-request/submit`, etc.
+
+`subscriber` / `membership` `reference_id` is always `customer_memberships.id` — the same id as web `/dashboard/subscriptions/subscribers/{id}` and `GET /api/memberships/subscribers/{id}`.
 
 #### B. Broadcast — screen destinations (product updates)
 
@@ -174,6 +184,8 @@ Keep push routing and universal linking in sync. Example mapping (mobile team ad
 | `quote_edit`     | `{uuid}`                | `servicelinkmobile://quotes/{uuid}/edit`   |
 | `review`         | `{uuid}`                | `servicelinkmobile://reviews/{uuid}`       |
 | `customer`       | `{uuid}`                | `servicelinkmobile://customers/{uuid}`     |
+| `subscriber`     | `{uuid}`                | `servicelinkmobile://subscriptions/subscribers/{uuid}` |
+| `membership`     | `{uuid}`                | Same as `subscriber` (alias)               |
 | `screen`         | `maintenance`           | `servicelinkmobile://maintenance`          |
 | `screen`         | `notification_settings` | `servicelinkmobile://more/notifications`   |
 
@@ -189,6 +201,9 @@ function resolvePushDestination(referenceType: string, referenceId: string) {
   }
   if (type === 'booking') return { name: 'BookingDetail', params: { id } };
   if (type === 'booking_edit') return { name: 'BookingEdit', params: { id } };
+  if (type === 'subscriber' || type === 'membership') {
+    return { name: 'SubscriberDetail', params: { id } };
+  }
   // ... etc.
   return { name: 'Home' };
 }
@@ -208,6 +223,8 @@ Server sends to **one owner** when an event happens. Also inserts a row into **`
 | Legacy booking request   | `booking_request` | Booking request id |
 | Public quote request     | `quote`           | Quote id           |
 | Review submitted         | `review`          | Review id          |
+| New membership subscriber | `subscriber`     | Membership id (`customer_memberships.id`) |
+| Subscription needs a visit | `subscriber`    | Membership id                              |
 
 ### 2. Broadcast (manual — product updates)
 
@@ -362,6 +379,7 @@ curl -X POST http://localhost:3000/api/internal/push/broadcast \
 - [ ] Request notification permission and obtain Expo push token (`expo-notifications`).
 - [ ] Upsert token into `user_push_tokens` on login and on token refresh.
 - [ ] Implement `resolvePushDestination(referenceType, referenceId)` per routing tables **A–D**.
+- [ ] Handle `subscriber` (and alias `membership`) → subscriber detail; `reference_id` is `customer_memberships.id`.
 - [ ] Handle notification tap via `addNotificationResponseReceivedListener`.
 - [ ] Handle cold start via `getLastNotificationResponseAsync()` after navigation is ready.
 - [ ] Read both `reference_type` / `referenceType` and `reference_id` / `referenceId` from `data`.
@@ -427,6 +445,7 @@ If a new slug requires server validation (e.g. allowlist), extend `parseInternal
 
 | Date       | Change                                                                   |
 | ---------- | ------------------------------------------------------------------------ |
+| 2026-08-19 | Added `subscriber` deep link (membership id → subscriber detail); `membership` kept as alias |
 | 2026-08-06 | Added `screen` → `notification_settings` slug + SMS launch example       |
 | 2026-07-22 | Added `screen` → `qr_code` slug + example broadcast payload              |
 | 2026-07-02 | Initial contract: push payload, routing tables, broadcast API, test mode |

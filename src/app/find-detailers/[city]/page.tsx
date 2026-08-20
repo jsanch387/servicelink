@@ -6,13 +6,13 @@ import {
 } from '@/features/marketplace/config/marketplaceCities';
 import { MarketplacePage } from '@/features/marketplace';
 import { buildMarketplaceCityItemListJsonLd } from '@/features/marketplace/seo/marketplaceCityJsonLd';
+import { MARKETPLACE_OG_IMAGE } from '@/features/marketplace/seo/marketplaceOpenGraph';
 import { searchMarketplaceBusinesses } from '@/features/marketplace/server/searchMarketplaceBusinesses';
 import type { MarketplaceBusiness } from '@/features/marketplace/types/marketplace';
 import {
   isCuratedMarketplaceCitySlug,
   resolveMarketplaceCityFromSlug,
 } from '@/features/marketplace/utils/marketplaceLocationSlug';
-import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import {
   getFindDetailersCityPath,
   getPublicBusinessProfilePath,
@@ -77,22 +77,21 @@ export async function generateMetadata({
     openGraph: {
       type: 'website',
       url: `${siteUrl}${cityPath}`,
-      title,
+      title: `${title} | ServiceLink`,
       description,
+      siteName: 'ServiceLink',
       images: [
         {
-          url: MARKETING_IMAGES.brand.openGraph,
-          width: 1200,
-          height: 630,
-          alt: `Detailers in ${city.displayName}`,
+          ...MARKETPLACE_OG_IMAGE,
+          alt: `Find auto detailers in ${city.displayName}`,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: `${title} | ServiceLink`,
       description,
-      images: [MARKETING_IMAGES.brand.openGraph],
+      images: [MARKETPLACE_OG_IMAGE.url],
     },
     alternates: {
       canonical: `${siteUrl}${cityPath}`,

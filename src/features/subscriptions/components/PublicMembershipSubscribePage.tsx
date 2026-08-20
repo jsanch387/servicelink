@@ -7,6 +7,7 @@ import {
   publicFlowStickyBackHeaderClassName,
   SmsNotificationsConsent,
   toast,
+  useScrollWindowToTopOnChange,
 } from '@/components/shared';
 import {
   API_ROUTES,
@@ -123,6 +124,8 @@ export const PublicMembershipSubscribePage: React.FC<
   const { blockedSlots } = usePublicBlockedSlots(
     step === 'firstVisit' ? businessSlug : undefined
   );
+
+  useScrollWindowToTopOnChange([step]);
 
   useEffect(() => {
     setFirstVisitTime(null);

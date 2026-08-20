@@ -19,17 +19,18 @@ export const HeroSection: React.FC = () => {
       <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
         <h1
           id="hero-heading"
-          className="logo-text text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 sm:mb-5 tracking-tight leading-[1.08] text-white uppercase max-w-4xl"
+          className="logo-text text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold mb-4 sm:mb-5 tracking-tight leading-[1.12] text-white max-w-4xl"
         >
-          MORE BOOKINGS.{' '}
+          The booking software
+          <br className="hidden sm:block" /> built for{' '}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-            LESS BACK-AND-FORTH.
+            mobile detailers.
           </span>
         </h1>
 
         <p className="text-base sm:text-lg text-gray-400 mb-6 sm:mb-8 leading-relaxed font-medium max-w-2xl">
-          One booking link for your customers. One dashboard to run your
-          business.
+          Let customers book and pay online while you manage appointments,
+          quotes, and sales from one powerful app.
         </p>
 
         <HeroCtaButton href={siteSignupPath('homepage')} className="mb-0">
