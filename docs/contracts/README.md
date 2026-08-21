@@ -44,6 +44,7 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | [mobile-stripe-connect-onboarding.md](./mobile-stripe-connect-onboarding.md) | Connect onboarding  |
 | [mobile-entitlement-paywall.md](./mobile-entitlement-paywall.md)             | Pro paywall         |
 | [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push           |
+| [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder) |
 | [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form |
 | [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area        |
 | [service-categories-data.md](./service-categories-data.md)                   | Service categories  |
