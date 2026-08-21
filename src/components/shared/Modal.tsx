@@ -1,7 +1,9 @@
 'use client';
 
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { IconButton } from './IconButton';
 
 interface ModalProps {
   isOpen: boolean;
@@ -13,6 +15,11 @@ interface ModalProps {
   fullScreenMobile?: boolean;
   /** Merged onto the modal panel (below the overlay). Use for desktop-only polish. */
   panelClassName?: string;
+  /**
+   * Replaces the default max-height classes when set (avoids Tailwind conflicts
+   * from stacking two `max-h-*` utilities).
+   */
+  panelHeightClassName?: string;
   /** Merged onto the scrollable content wrapper around `children`. */
   contentClassName?: string;
   /** Merged onto the fixed title row. */
@@ -26,6 +33,11 @@ interface ModalProps {
   uniformHorizontalPadding16?: boolean;
   /** When true, tapping the overlay does not dismiss (e.g. during async submit). */
   preventClose?: boolean;
+  /** Shows an X in the header to dismiss. */
+  showCloseButton?: boolean;
+  closeAriaLabel?: string;
+  /** Pinned below the scrollable body (does not scroll away). */
+  footer?: React.ReactNode;
   /**
    * `sheet` — bottom sheet on all screen sizes (slides up from bottom).
    * `default` — centered dialog from sm breakpoint up.
@@ -47,11 +59,15 @@ export const Modal: React.FC<ModalProps> = ({
   maxWidth = '2xl',
   fullScreenMobile = false,
   panelClassName = '',
+  panelHeightClassName,
   contentClassName = '',
   headerClassName = '',
   titleClassName = '',
   uniformHorizontalPadding16 = false,
   preventClose = false,
+  showCloseButton = false,
+  closeAriaLabel = 'Close',
+  footer,
   presentation = 'default',
 }) => {
   const isSheet = presentation === 'sheet';
@@ -138,11 +154,14 @@ export const Modal: React.FC<ModalProps> = ({
       ? 'rounded-t-3xl'
       : 'rounded-t-3xl sm:rounded-3xl';
 
-  const panelMaxHeightClass = fullScreenMobile
-    ? 'max-h-screen'
-    : isSheet
-      ? 'max-h-[min(420px,85dvh)] sm:max-h-[min(480px,90dvh)]'
-      : 'max-h-[95vh] sm:max-h-[90vh]';
+  const panelMaxHeightClass =
+    panelHeightClassName ??
+    (fullScreenMobile
+      ? 'max-h-screen'
+      : isSheet
+        ? 'max-h-[min(420px,85dvh)] sm:max-h-[min(480px,90dvh)]'
+        : 'max-h-[95vh] sm:max-h-[90vh]');
+  const showHeader = Boolean(title) || showCloseButton;
 
   const overlay = (
     <div
@@ -169,18 +188,32 @@ export const Modal: React.FC<ModalProps> = ({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Fixed Header: title only (close via Cancel button or overlay) */}
-        {title && (
+        {showHeader ? (
           <div
-            className={`flex min-w-0 items-center border-b border-white/10 flex-shrink-0 ${headerPaddingClass} ${headerClassName}`}
+            className={`flex min-w-0 items-center justify-between gap-3 border-b border-white/10 flex-shrink-0 ${headerPaddingClass} ${headerClassName}`}
           >
-            <h3
-              className={`text-lg font-semibold text-white min-w-0 ${titleClassName}`}
-            >
-              {title}
-            </h3>
+            {title ? (
+              <h3
+                className={`text-lg font-semibold text-white min-w-0 flex-1 ${titleClassName}`}
+              >
+                {title}
+              </h3>
+            ) : (
+              <span className="min-w-0 flex-1" />
+            )}
+            {showCloseButton ? (
+              <IconButton
+                variant="ghost"
+                size="sm"
+                className="shrink-0 rounded-lg text-zinc-400 hover:text-white"
+                icon={<XMarkIcon className="h-5 w-5" aria-hidden />}
+                aria-label={closeAriaLabel}
+                disabled={preventClose}
+                onClick={onClose}
+              />
+            ) : null}
           </div>
-        )}
+        ) : null}
 
         {/* Scrollable Content */}
         <div
@@ -190,6 +223,14 @@ export const Modal: React.FC<ModalProps> = ({
         >
           {children}
         </div>
+
+        {footer ? (
+          <div
+            className={`flex-shrink-0 border-t border-white/10 ${contentHorizontalClass} pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]`}
+          >
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   );

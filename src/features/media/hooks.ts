@@ -8,3 +8,4 @@
 export { useUploadLogo } from './useUploadLogo';
 export { useUploadBanner } from './useUploadBanner';
 export { useUploadPortfolio } from './useUploadPortfolio';
+export { useUploadServiceImage } from './useUploadServiceImage';

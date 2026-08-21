@@ -125,6 +125,74 @@ export class MediaDatabase {
   }
 
   /**
+   * Gets the current service image path
+   */
+  static async getCurrentServiceImagePath(
+    businessId: string,
+    serviceId: string
+  ): Promise<{ success: boolean; imagePath?: string | null; error?: string }> {
+    try {
+      const { data, error } = await this.supabase
+        .from('business_services')
+        .select('image_path')
+        .eq('id', serviceId)
+        .eq('business_id', businessId)
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return {
+        success: true,
+        imagePath: (data as { image_path?: string | null } | null)?.image_path,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to get service image path',
+      };
+    }
+  }
+
+  /**
+   * Updates a service row with a new image path (or clears it).
+   */
+  static async updateServiceImagePath(
+    businessId: string,
+    serviceId: string,
+    imagePath: string | null
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await (this.supabase as any)
+        .from('business_services')
+        .update({
+          image_path: imagePath,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', serviceId)
+        .eq('business_id', businessId);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to update service image',
+      };
+    }
+  }
+
+  /**
    * Updates portfolio images for a business
    */
   static async updatePortfolioImages(

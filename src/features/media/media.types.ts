@@ -50,6 +50,13 @@ export interface PortfolioUploadData {
   }>;
 }
 
+export interface ServiceImageUploadData {
+  businessId: string;
+  serviceId: string;
+  file: File;
+  previousPath?: string | null;
+}
+
 export interface MediaConfig {
   bucketName: string;
   maxFileSize: number; // in bytes
@@ -70,4 +77,4 @@ export const MEDIA_CONFIG: MediaConfig = {
   maxPortfolioImages: 10,
 };
 
-export type MediaType = 'logo' | 'banner' | 'portfolio';
+export type MediaType = 'logo' | 'banner' | 'portfolio' | 'service';

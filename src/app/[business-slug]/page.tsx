@@ -9,6 +9,8 @@ import { StructuredData } from '@/components/shared';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { isBusinessInBookingLinkV2Rollout } from '@/features/business-profile/booking-link-v2/server/isBusinessInBookingLinkV2Rollout';
+import { resolveShouldUseBookingLinkV2 } from '@/features/business-profile/booking-link-v2/utils/resolveBookingLinkV2';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
@@ -165,6 +167,7 @@ export default async function PublicProfilePage({
   const { 'business-slug': slug } = await params;
   const sp = (await searchParams) ?? {};
   const langParam = firstSearchParam(sp.lang);
+  const bookingLinkV2Param = firstSearchParam(sp.v2);
   const membershipCheckout = firstSearchParam(sp.membershipCheckout)?.trim();
   const membershipPlanId = firstSearchParam(sp.planId)?.trim() || null;
   const membershipPriceId = firstSearchParam(sp.priceId)?.trim() || null;
@@ -275,6 +278,14 @@ export default async function PublicProfilePage({
     { ownerHasPro: ownerTier === 'pro' }
   );
 
+  const useBookingLinkV2 = resolveShouldUseBookingLinkV2({
+    inRollout: await isBusinessInBookingLinkV2Rollout(
+      adminGate,
+      businessProfile.id
+    ),
+    queryOverride: bookingLinkV2Param,
+  });
+
   // Post-Checkout success: render confirmation only (no profile flash).
   if (membershipCheckout === 'success') {
     const successPlan =
@@ -323,6 +334,7 @@ export default async function PublicProfilePage({
         publicSubscriptionPlans={publicSubscriptionPlans}
         initialTab={initialTab}
         membershipCheckoutCanceled={membershipCheckout === 'cancel'}
+        useBookingLinkV2={useBookingLinkV2}
       />
     </div>
   );

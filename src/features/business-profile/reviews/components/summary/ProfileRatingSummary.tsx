@@ -29,13 +29,16 @@ export const ProfileRatingSummary: React.FC<ProfileRatingSummaryProps> = ({
     <p
       className={`inline-flex items-center justify-center gap-1.5 text-sm leading-none ${className}`}
       role="img"
-      aria-label={ui.profile.ratingAriaLabel(formattedAverage)}
+      aria-label={`${ui.profile.ratingAriaLabel(formattedAverage)}. ${ui.profile.reviewCountLabel(summary.reviewCount)}`}
     >
       <span className="inline-flex shrink-0 items-center justify-center">
         <StarIcon className={`h-4 w-4 ${reviewStarFilledClass}`} aria-hidden />
       </span>
       <span className="font-semibold tabular-nums text-white">
         {formattedAverage}
+      </span>
+      <span className="font-medium tabular-nums text-zinc-500">
+        ({summary.reviewCount})
       </span>
     </p>
   );

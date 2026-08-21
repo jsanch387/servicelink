@@ -3,6 +3,7 @@ import {
   formatUsPhoneDigits,
   formatUsPhoneWithCountry,
   normalizeUsPhoneDigits,
+  usPhoneSmsHref,
   usPhoneTelHref,
 } from './formatUsPhone';
 
@@ -46,5 +47,17 @@ describe('usPhoneTelHref', () => {
   it('returns null when the number is not a complete US phone', () => {
     expect(usPhoneTelHref('580')).toBeNull();
     expect(usPhoneTelHref('')).toBeNull();
+  });
+});
+
+describe('usPhoneSmsHref', () => {
+  it('returns E.164 sms links', () => {
+    expect(usPhoneSmsHref('5807545207')).toBe('sms:+15807545207');
+    expect(usPhoneSmsHref('15807545207')).toBe('sms:+15807545207');
+  });
+
+  it('returns null when the number is not a complete US phone', () => {
+    expect(usPhoneSmsHref('580')).toBeNull();
+    expect(usPhoneSmsHref('')).toBeNull();
   });
 });

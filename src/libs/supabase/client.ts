@@ -405,6 +405,7 @@ export type Database = {
           is_active: boolean;
           sort_order: number | null;
           category_id: string | null;
+          image_path: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -420,6 +421,7 @@ export type Database = {
           is_active?: boolean;
           sort_order?: number | null;
           category_id?: string | null;
+          image_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -435,6 +437,7 @@ export type Database = {
           is_active?: boolean;
           sort_order?: number | null;
           category_id?: string | null;
+          image_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };

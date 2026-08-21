@@ -43,15 +43,15 @@ import { useCallback, useMemo, useState } from 'react';
 import { BookCalendarLoadingSkeleton } from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
 import { AddOnSelector } from './AddOnSelector';
 import { PriceOptionSelector } from './PriceOptionSelector';
+import { SelectedServiceOverviewCard } from './SelectedServiceOverviewCard';
 import { ServiceDetailsBookingSummary } from './ServiceDetailsBookingSummary';
 import type { ServiceAddOn } from './types';
 
 /**
- * Price options and add-ons are collapsed into a single `details` screen
- * (fewer full-screen hops for the customer); `location` (mobile vs shop)
- * stays separate since it's a real branching decision.
+ * Overview shows the chosen service + description first.
+ * Price options and add-ons share `details`; `location` stays its own step.
  */
-type ServiceDetailsPhase = 'details' | 'location';
+type ServiceDetailsPhase = 'overview' | 'details' | 'location';
 
 interface ServiceDetailsScreenProps {
   businessSlug: string;
@@ -109,7 +109,15 @@ function resolveInitialPhase(params: {
     return 'location';
   }
 
-  return 'details';
+  if (
+    initialDetailsStep === 'price' ||
+    initialDetailsStep === 'addons' ||
+    initialDetailsStep === 'location'
+  ) {
+    return 'details';
+  }
+
+  return 'overview';
 }
 
 export function ServiceDetailsScreen({
@@ -374,8 +382,26 @@ export function ServiceDetailsScreen({
 
   const handleDetailsBack = () => {
     if (phase === 'location') {
-      setPhase('details');
+      setPhase(
+        needsPriceStep || showAddOnSection ? 'details' : 'overview'
+      );
+      return;
     }
+    if (phase === 'details') {
+      setPhase('overview');
+    }
+  };
+
+  const handleOverviewContinue = () => {
+    if (needsPriceStep || showAddOnSection) {
+      setPhase('details');
+      return;
+    }
+    if (needsLocationStep) {
+      setPhase('location');
+      return;
+    }
+    handleContinueToSchedule();
   };
 
   const handleDetailsContinue = () => {
@@ -387,10 +413,16 @@ export function ServiceDetailsScreen({
     handleContinueToSchedule();
   };
 
-  const canGoBackWithinDetails = phase === 'location';
+  const canGoBackWithinDetails = phase === 'location' || phase === 'details';
 
   const stickyBackLabel =
-    phase === 'location' ? ui.serviceDetails.backToOptions : exitDetailsLabel;
+    phase === 'location'
+      ? needsPriceStep || showAddOnSection
+        ? ui.serviceDetails.backToOptions
+        : ui.nav.backToService
+      : phase === 'details'
+        ? ui.nav.backToService
+        : exitDetailsLabel;
 
   if (isNavigatingToCalendar) {
     return <BookCalendarLoadingSkeleton />;
@@ -430,6 +462,15 @@ export function ServiceDetailsScreen({
               labels={ui.stepTracker}
             />
           ) : null}
+          {phase === 'overview' ? (
+            <section className="mb-6">
+              <SelectedServiceOverviewCard
+                service={service}
+                bookingFlowLocale={bookingFlowLocale}
+              />
+            </section>
+          ) : null}
+
           {phase === 'details' && needsPriceStep && (
             <section className="mb-6">
               <h2 className="text-base font-semibold text-white mb-3">
@@ -478,7 +519,7 @@ export function ServiceDetailsScreen({
             </section>
           )}
 
-          {phase !== 'location' ? (
+          {phase === 'details' ? (
             <section className="mb-8">
               <h2 className="mb-3 text-base font-semibold text-white">
                 {ui.common.summary}
@@ -530,6 +571,20 @@ export function ServiceDetailsScreen({
                 </Button>
               )
             ) : null}
+
+            {phase === 'overview' && (
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                onClick={handleOverviewContinue}
+                icon={<ChevronRightIcon className="h-5 w-5" />}
+                iconPosition="right"
+              >
+                {ui.serviceDetails.continue}
+              </Button>
+            )}
 
             {phase === 'details' && (
               <Button

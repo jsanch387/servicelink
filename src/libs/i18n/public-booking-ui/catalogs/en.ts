@@ -51,6 +51,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     optionalAddOns: 'Optional add-ons',
     dateAndTime: 'Date & time',
     continue: 'Continue',
+    startBooking: 'Start booking',
+    closeSheetAriaLabel: 'Close',
     backToOptions: 'Back to options',
     backToProfile: 'Back to profile',
     backToServices: 'Back to services',
@@ -321,9 +323,11 @@ export const publicBookingUiEn: PublicBookingUi = {
   },
   serviceCard: {
     startingAt: 'Starting at',
+    from: 'From',
     seeMore: 'See more',
     seeLess: 'See less',
     contactForQuote: 'Contact for quote',
+    bookNow: 'Book now',
   },
   subscriptions: {
     subscriptionsTab: 'Subscriptions',
@@ -454,6 +458,11 @@ export const publicBookingUiEn: PublicBookingUi = {
   profile: {
     requestQuote: 'Request Quote',
     contactPhoneCta: 'Contact',
+    contactCallCta: 'Call',
+    contactTextCta: 'Text',
+    contactCallAriaLabel: 'Call this business',
+    contactTextAriaLabel: 'Text this business',
+    bookNow: 'Book now',
     quotePageSubtitle: businessName =>
       `Share a few details and ${businessName} will send back a quote.`,
     servicesTab: 'Services',
@@ -464,6 +473,9 @@ export const publicBookingUiEn: PublicBookingUi = {
     bioTab: 'Bio',
     reviewsTab: 'Reviews',
     noBioYet: 'No bio added yet.',
+    contactHeading: 'Contact',
+    contactPhoneLabel: 'Phone',
+    contactEmailLabel: 'Email',
     notTakingBookingsRightNow:
       'Not taking bookings through ServiceLink right now.',
     reviewCountLabel: count => (count === 1 ? '1 review' : `${count} reviews`),

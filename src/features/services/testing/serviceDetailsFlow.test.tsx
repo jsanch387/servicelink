@@ -7,6 +7,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mockRouterPush = vi.fn();
 
+vi.mock('@/features/services/utils/serviceImageUrl', () => ({
+  getServiceImageUrl: () => null,
+}));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: vi.fn() }),
 }));
@@ -28,6 +32,7 @@ vi.mock('next/link', () => ({
 }));
 
 vi.mock('@/components/shared', () => ({
+  ImageWithFallback: () => <div data-testid="service-image" />,
   Button: ({
     children,
     href,
@@ -155,8 +160,14 @@ const bothLocation = {
   hasCompleteShopAddress: true,
 };
 
+async function continueFromOverview(
+  user: ReturnType<typeof userEvent.setup>
+) {
+  await user.click(screen.getByRole('button', { name: /^continue$/i }));
+}
+
 describe('ServiceDetailsScreen flow', () => {
-  it('keeps service details in the summary instead of repeating a header', () => {
+  it('shows the selected service and description before options', () => {
     render(
       <ServiceDetailsScreen
         businessSlug="acme-auto"
@@ -168,19 +179,15 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
+    expect(screen.getByText(baseService.name)).toBeTruthy();
+    expect(screen.getByText(baseService.description)).toBeTruthy();
     expect(
-      screen.getByRole('heading', { name: /choose pricing option/i })
-    ).toBeTruthy();
-    expect(
-      screen.queryByRole('heading', { name: baseService.name })
+      screen.queryByRole('heading', { name: /choose pricing option/i })
     ).toBeNull();
-    expect(
-      screen.queryByRole('button', { name: /see description/i })
-    ).toBeNull();
-    expect(screen.getByText('summary')).toBeTruthy();
+    expect(screen.queryByText('summary')).toBeNull();
   });
 
-  it('shows pricing options first, then reveals add-ons after a selection', async () => {
+  it('shows pricing options after continue, then reveals add-ons after a selection', async () => {
     const user = userEvent.setup();
     render(
       <ServiceDetailsScreen
@@ -192,6 +199,8 @@ describe('ServiceDetailsScreen flow', () => {
         serviceLocation={mobileOnlyLocation}
       />
     );
+
+    await continueFromOverview(user);
 
     expect(
       screen.getByRole('heading', { name: /choose pricing option/i })
@@ -215,6 +224,7 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
+    await continueFromOverview(user);
     await user.click(screen.getByRole('button', { name: /pick suv/i }));
     await user.click(screen.getByRole('button', { name: /toggle pet hair/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
@@ -241,6 +251,7 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
+    await continueFromOverview(user);
     await user.click(screen.getByRole('button', { name: /pick sedan/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
@@ -262,6 +273,7 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
+    await continueFromOverview(user);
     expect(screen.queryByText(/optional add-ons/i)).toBeNull();
     await user.click(screen.getByRole('button', { name: /pick sedan/i }));
     expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
@@ -280,6 +292,7 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
+    await continueFromOverview(user);
     await user.click(screen.getByRole('button', { name: /pick sedan/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
@@ -300,6 +313,7 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
+    await continueFromOverview(user);
     await user.click(screen.getByRole('button', { name: /pick suv/i }));
     await user.click(screen.getByRole('button', { name: /toggle pet hair/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
@@ -348,6 +362,7 @@ describe('ServiceDetailsScreen flow', () => {
       />
     );
 
+    await continueFromOverview(user);
     await user.click(screen.getByRole('button', { name: /pick suv/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 

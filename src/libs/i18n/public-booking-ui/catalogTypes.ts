@@ -55,6 +55,8 @@ export type PublicBookingUi = {
     optionalAddOns: string;
     dateAndTime: string;
     continue: string;
+    startBooking: string;
+    closeSheetAriaLabel: string;
     backToOptions: string;
     backToProfile: string;
     backToServices: string;
@@ -299,9 +301,12 @@ export type PublicBookingUi = {
   };
   serviceCard: {
     startingAt: string;
+    /** Short Airbnb-style price prefix, e.g. "From $80". */
+    from: string;
     seeMore: string;
     seeLess: string;
     contactForQuote: string;
+    bookNow: string;
   };
   /** Customer subscription plans on the public booking link. */
   subscriptions: {
@@ -408,6 +413,12 @@ export type PublicBookingUi = {
   profile: {
     requestQuote: string;
     contactPhoneCta: string;
+    contactCallCta: string;
+    contactTextCta: string;
+    contactCallAriaLabel: string;
+    contactTextAriaLabel: string;
+    /** Public booking link 2.0: primary CTA + services section heading. */
+    bookNow: string;
     quotePageSubtitle: (businessName: string) => string;
     /** Public profile preview tabs (same view as embedded “back to profile” from booking). */
     servicesTab: string;
@@ -417,6 +428,10 @@ export type PublicBookingUi = {
     bioTab: string;
     reviewsTab: string;
     noBioYet: string;
+    /** Public profile bio: contact block heading. */
+    contactHeading: string;
+    contactPhoneLabel: string;
+    contactEmailLabel: string;
     /** Public profile: free cap — clarify bookings are paused via ServiceLink only. */
     notTakingBookingsRightNow: string;
     reviewCountLabel: (count: number) => string;

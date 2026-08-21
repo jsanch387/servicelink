@@ -46,6 +46,7 @@ import {
 import { ServiceCategoryPickerSection } from './categories/ServiceCategoryPickerSection';
 import { EditAddOnModal } from './add-ons/EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
+import { ServiceImageField } from './ServiceImageField';
 
 function formatPrice(cents: number): string {
   if (cents == null || cents === 0) return 'Contact for quote';
@@ -369,6 +370,13 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
           <h1 className="text-xl font-bold text-white mb-4 sm:mb-6">
             Edit service
           </h1>
+
+          <ServiceImageField
+            businessId={service.business_id}
+            serviceId={service.id}
+            serviceName={name || service.name}
+            imagePath={service.image_path}
+          />
 
           {/* Service details */}
           <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 mb-6 sm:mb-8">

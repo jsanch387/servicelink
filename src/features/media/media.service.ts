@@ -12,6 +12,7 @@ import {
   BannerUploadData,
   LogoUploadData,
   PortfolioUploadData,
+  ServiceImageUploadData,
   UploadResult,
 } from './media.types';
 
@@ -144,6 +145,112 @@ export class MediaService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Banner upload failed',
+      };
+    }
+  }
+
+  /**
+   * Uploads and saves a service photo for the public booking link.
+   * Replaces the existing service image (deletes old one from storage).
+   */
+  static async uploadServiceImage(
+    data: ServiceImageUploadData
+  ): Promise<UploadResult> {
+    try {
+      const currentResult = await MediaDatabase.getCurrentServiceImagePath(
+        data.businessId,
+        data.serviceId
+      );
+      const currentPath = currentResult.success
+        ? currentResult.imagePath
+        : data.previousPath;
+
+      const newStoragePath = generateStoragePath(
+        data.businessId,
+        'service',
+        data.file
+      );
+
+      if (currentPath && currentPath.trim()) {
+        try {
+          await MediaStorage.deleteFile(currentPath);
+        } catch {
+          // Don't fail the entire operation if old image deletion fails
+        }
+      }
+
+      const uploadResult = await MediaStorage.uploadFile(
+        data.file,
+        newStoragePath
+      );
+      if (!uploadResult.success) {
+        return uploadResult;
+      }
+
+      const dbResult = await MediaDatabase.updateServiceImagePath(
+        data.businessId,
+        data.serviceId,
+        newStoragePath
+      );
+      if (!dbResult.success) {
+        await MediaStorage.deleteFile(newStoragePath);
+        return {
+          success: false,
+          error: dbResult.error,
+        };
+      }
+
+      return {
+        success: true,
+        storagePath: newStoragePath,
+        publicUrl: uploadResult.publicUrl,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Service image upload failed',
+      };
+    }
+  }
+
+  static async removeServiceImage(
+    businessId: string,
+    serviceId: string,
+    previousPath?: string | null
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const currentResult = await MediaDatabase.getCurrentServiceImagePath(
+        businessId,
+        serviceId
+      );
+      const currentPath = currentResult.success
+        ? currentResult.imagePath
+        : previousPath;
+
+      const dbResult = await MediaDatabase.updateServiceImagePath(
+        businessId,
+        serviceId,
+        null
+      );
+      if (!dbResult.success) {
+        return dbResult;
+      }
+
+      if (currentPath && currentPath.trim()) {
+        await MediaStorage.deleteFile(currentPath);
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to remove service image',
       };
     }
   }

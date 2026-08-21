@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, FilterPills, GlassCard } from '@/components/shared';
+import { Button, FilterPills } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { useServiceDescriptionClamp } from '@/features/business-profile/hooks/useServiceDescriptionClamp';
 import { SERVICE_CARD_DESCRIPTION_CLAMP_CLASS } from '@/features/business-profile/utils/serviceDescriptionDisplay';
@@ -68,16 +68,7 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
     : '';
 
   return (
-    <GlassCard
-      blurColor="bg-zinc-500"
-      rounded="rounded-2xl"
-      padding="none"
-      className={
-        plan.isPopular
-          ? 'border-white/20 bg-white/[0.045] transition-colors duration-200 hover:border-white/28 hover:bg-white/[0.055]'
-          : 'transition-colors duration-200 hover:border-white/14 hover:bg-white/[0.045]'
-      }
-    >
+    <div className="overflow-hidden rounded-2xl bg-[#121212] text-left ring-1 ring-white/8">
       <div className="flex h-full flex-col p-5 sm:p-6">
         <div
           className={`flex items-start justify-between gap-3 ${
@@ -159,7 +150,7 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
           <div className="mt-auto pt-1">
             <Button
               type="button"
-              variant={plan.isPopular ? 'inverse' : 'outline'}
+              variant="inverse"
               size="sm"
               fullWidth
               disabled={!selectedOption}
@@ -173,6 +164,6 @@ export const SubscriptionPlanCard: React.FC<SubscriptionPlanCardProps> = ({
           </div>
         )}
       </div>
-    </GlassCard>
+    </div>
   );
 };

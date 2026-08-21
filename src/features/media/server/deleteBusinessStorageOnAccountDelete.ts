@@ -11,7 +11,7 @@ import type { Database } from '@/libs/supabase/client';
 import { MEDIA_CONFIG } from '../media.types';
 
 const LOG = '[account-delete] storage';
-const SUBFOLDERS = ['logo', 'banner', 'portfolio'] as const;
+const SUBFOLDERS = ['logo', 'banner', 'portfolio', 'services'] as const;
 const LIST_PAGE_SIZE = 1000;
 const REMOVE_CHUNK_SIZE = 100;
 

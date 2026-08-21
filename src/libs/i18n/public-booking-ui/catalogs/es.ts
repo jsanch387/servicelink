@@ -51,6 +51,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     optionalAddOns: 'Complementos opcionales',
     dateAndTime: 'Fecha y hora',
     continue: 'Continuar',
+    startBooking: 'Empezar reserva',
+    closeSheetAriaLabel: 'Cerrar',
     backToOptions: 'Volver a las opciones',
     backToProfile: 'Volver al perfil',
     backToServices: 'Volver a servicios',
@@ -327,9 +329,11 @@ export const publicBookingUiEs: PublicBookingUi = {
   },
   serviceCard: {
     startingAt: 'Desde',
+    from: 'Desde',
     seeMore: 'Ver más',
     seeLess: 'Ver menos',
     contactForQuote: 'Solicitar cotización',
+    bookNow: 'Reservar',
   },
   subscriptions: {
     subscriptionsTab: 'Suscripciones',
@@ -465,6 +469,11 @@ export const publicBookingUiEs: PublicBookingUi = {
   profile: {
     requestQuote: 'Solicitar cotización',
     contactPhoneCta: 'Llamar',
+    contactCallCta: 'Llamar',
+    contactTextCta: 'Mensaje',
+    contactCallAriaLabel: 'Llamar a este negocio',
+    contactTextAriaLabel: 'Enviar mensaje a este negocio',
+    bookNow: 'Reservar ahora',
     quotePageSubtitle: businessName =>
       `Comparte algunos datos y ${businessName} te enviará una cotización.`,
     servicesTab: 'Servicios',
@@ -475,6 +484,9 @@ export const publicBookingUiEs: PublicBookingUi = {
     bioTab: 'Biografía',
     reviewsTab: 'Reseñas',
     noBioYet: 'Aún no hay biografía.',
+    contactHeading: 'Contacto',
+    contactPhoneLabel: 'Teléfono',
+    contactEmailLabel: 'Correo',
     notTakingBookingsRightNow:
       'No aceptan reservas por ServiceLink en este momento.',
     reviewCountLabel: count => (count === 1 ? '1 reseña' : `${count} reseñas`),

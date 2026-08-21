@@ -27,6 +27,8 @@ export function generateStoragePath(
       return `businesses/${businessId}/banner/${uuid}.${extension}`;
     case 'portfolio':
       return `businesses/${businessId}/portfolio/${uuid}.${extension}`;
+    case 'service':
+      return `businesses/${businessId}/services/${uuid}.${extension}`;
     default:
       throw new Error(`Unknown media type: ${mediaType}`);
   }
@@ -57,7 +59,11 @@ export function validateStoragePath(
 ): boolean {
   const expectedPrefix = `businesses/`;
   const expectedSuffix =
-    mediaType === 'portfolio' ? '/portfolio/' : `/${mediaType}/`;
+    mediaType === 'portfolio'
+      ? '/portfolio/'
+      : mediaType === 'service'
+        ? '/services/'
+        : `/${mediaType}/`;
 
   return path.startsWith(expectedPrefix) && path.includes(expectedSuffix);
 }
@@ -77,5 +83,6 @@ export function extractMediaTypeFromPath(path: string): MediaType | null {
   if (path.includes('/logo/')) return 'logo';
   if (path.includes('/banner/')) return 'banner';
   if (path.includes('/portfolio/')) return 'portfolio';
+  if (path.includes('/services/')) return 'service';
   return null;
 }

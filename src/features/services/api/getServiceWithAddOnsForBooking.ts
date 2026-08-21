@@ -14,6 +14,7 @@ export interface ServiceForBooking {
   description: string | null;
   priceCents: number;
   durationMinutes: number;
+  imagePath?: string | null;
   /** When true and `priceOptions` is non-empty, customer must pick an option before booking. */
   priceOptionsEnabled: boolean;
 }
@@ -56,7 +57,7 @@ export async function getServiceWithAddOnsForBooking(
     const { data: serviceRow, error: serviceError } = await supabase
       .from('business_services')
       .select(
-        'id, name, description, price_cents, duration_minutes, hours_to_complete, price_options_enabled'
+        'id, name, description, price_cents, duration_minutes, hours_to_complete, price_options_enabled, image_path'
       )
       .eq('id', serviceId)
       .eq('business_id', businessId)
@@ -151,6 +152,7 @@ export async function getServiceWithAddOnsForBooking(
       priceCents:
         (serviceRow as { price_cents: number | null }).price_cents ?? 0,
       durationMinutes,
+      imagePath: (serviceRow as { image_path?: string | null }).image_path,
       priceOptionsEnabled,
     };
 

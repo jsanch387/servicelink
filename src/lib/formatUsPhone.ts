@@ -42,6 +42,12 @@ export function usPhoneTelHref(raw: string | null | undefined): string | null {
   return e164 ? `tel:${e164}` : null;
 }
 
+/** `sms:+1XXXXXXXXXX` so the device Messages app opens with the number filled. */
+export function usPhoneSmsHref(raw: string | null | undefined): string | null {
+  const e164 = toUsE164(raw);
+  return e164 ? `sms:${e164}` : null;
+}
+
 export function toUsE164(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/\D/g, '');

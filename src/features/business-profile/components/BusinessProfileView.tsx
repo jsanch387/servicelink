@@ -39,6 +39,7 @@ import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
 import { ProfileWelcomeModal } from './ProfileWelcomeModal';
+import { BookingLinkV2View } from '../booking-link-v2/components/BookingLinkV2View';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
 type TabType = 'services' | 'subscriptions' | 'gallery' | 'bio' | 'reviews';
@@ -100,6 +101,8 @@ interface BusinessProfileViewProps {
   initialTab?: TabType;
   /** Stripe membership Checkout returned with cancel — show toast once. */
   membershipCheckoutCanceled?: boolean;
+  /** Booking Link 2.0 public profile redesign (rollout / ?v2=1). */
+  useBookingLinkV2?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -121,6 +124,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicSubscriptionPlans = [],
   initialTab,
   membershipCheckoutCanceled = false,
+  useBookingLinkV2 = false,
 }) => {
   const showReviewsTab = Boolean(
     publicReviewSummary &&
@@ -461,7 +465,35 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
             </div>
           )}
 
-          {editMode === 'view' ? (
+          {editMode === 'view' && useBookingLinkV2 ? (
+            <>
+              {profileCompletionTracker}
+              <BookingLinkV2View
+                businessProfile={businessProfile}
+                isPublic={isPublic}
+                showVerifiedBadge={showVerifiedBadge}
+                showRequestQuoteCta={showRequestQuoteCta}
+                publicOwnerHasProForPriceOptions={
+                  publicOwnerHasProForPriceOptions
+                }
+                publicFreeBookingsCapReached={publicFreeBookingsCapReached}
+                bookingFlowLocale={bookingFlowLocale}
+                publicReviewSummary={publicReviewSummary}
+                publicProfileSlug={publicProfileSlug}
+                publicActiveSale={publicActiveSale}
+                publicSubscriptionPlans={publicSubscriptionPlans}
+                initialTab={
+                  initialTab === 'subscriptions' ||
+                  initialTab === 'reviews' ||
+                  initialTab === 'gallery' ||
+                  initialTab === 'bio'
+                    ? initialTab
+                    : undefined
+                }
+                onEdit={!isPublic ? handleEdit : undefined}
+              />
+            </>
+          ) : editMode === 'view' ? (
             // Preview Mode - Show customer view
             <>
               {profileCompletionTracker}

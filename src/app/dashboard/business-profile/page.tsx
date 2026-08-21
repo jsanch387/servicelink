@@ -2,6 +2,8 @@ import {
   BusinessProfileApi,
   isOnboardingCompleted,
 } from '@/features/business-profile';
+import { isOwnerEmailAllowedForBookingLinkV2Rollout } from '@/features/business-profile/booking-link-v2/config/bookingLinkV2RolloutAllowlist';
+import { resolveShouldUseBookingLinkV2 } from '@/features/business-profile/booking-link-v2/utils/resolveBookingLinkV2';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { OnboardingCheckoutReturnGate } from '@/features/onboarding-v2/components/OnboardingCheckoutReturnGate';
 import {
@@ -38,7 +40,7 @@ export const dynamic = 'force-dynamic';
 export default async function BusinessProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string; onboarding?: string }>;
+  searchParams: Promise<{ mode?: string; onboarding?: string; v2?: string }>;
 }) {
   // Await searchParams since it's now a Promise in Next.js 15
   const params = await searchParams;
@@ -200,6 +202,10 @@ export default async function BusinessProfilePage({
         publicReviewSummary={publicReviewSummary}
         publicProfileSlug={publicProfileSlug}
         publicActiveSale={publicActiveSale}
+        useBookingLinkV2={resolveShouldUseBookingLinkV2({
+          inRollout: isOwnerEmailAllowedForBookingLinkV2Rollout(user.email),
+          queryOverride: params.v2,
+        })}
       />
     </div>
   );

@@ -52,6 +52,18 @@ describe('public booking UI catalogs', () => {
   });
 
   it('profile tab labels are localized', () => {
+    expect(publicBookingUi('en').serviceDetails.startBooking).toBe(
+      'Start booking'
+    );
+    expect(publicBookingUi('es').serviceDetails.startBooking).toBe(
+      'Empezar reserva'
+    );
+    expect(publicBookingUi('en').profile.bookNow).toBe('Book now');
+    expect(publicBookingUi('es').profile.bookNow).toBe('Reservar ahora');
+    expect(publicBookingUi('en').profile.contactHeading).toBe('Contact');
+    expect(publicBookingUi('es').profile.contactHeading).toBe('Contacto');
+    expect(publicBookingUi('en').profile.contactCallCta).toBe('Call');
+    expect(publicBookingUi('es').profile.contactTextCta).toBe('Mensaje');
     expect(publicBookingUi('en').profile.servicesTab).toBe('Services');
     expect(publicBookingUi('es').profile.servicesTab).toBe('Servicios');
     expect(publicBookingUi('es').profile.galleryTab).toBe('Galería');
@@ -66,5 +78,8 @@ describe('public booking UI catalogs', () => {
       'Cargando reseñas'
     );
     expect(publicBookingUi('es').serviceCard.seeMore).toBe('Ver más');
+    expect(publicBookingUi('en').serviceCard.bookNow).toBe('Book now');
+    expect(publicBookingUi('es').serviceCard.bookNow).toBe('Reservar');
+    expect(publicBookingUi('en').serviceCard.from).toBe('From');
   });
 });
