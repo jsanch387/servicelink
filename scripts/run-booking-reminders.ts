@@ -1,15 +1,18 @@
 /**
- * Run the owner appointment-reminder job locally (uses .env.local).
+ * Run the daily reminder job locally (uses .env.local).
  *
- * Dry-run (default — no push, no inbox row):
+ * Dry-run (default — no push, email, or SMS):
  *   npx tsx --env-file=.env.local scripts/run-booking-reminders.ts
  *
- * Send to one owner only:
+ * Send owner push to one account:
  *   npx tsx --env-file=.env.local scripts/run-booking-reminders.ts --send --only-email you@example.com
+ *
+ * Send customer email/SMS for bookings matching that customer email:
+ *   npx tsx --env-file=.env.local scripts/run-booking-reminders.ts --send --only-customer-email them@example.com
  */
 
 import { findAuthUserIdByEmail } from '../src/features/account/server/updateAccountEmailAdmin';
-import { runOwnerBookingReminders } from '../src/features/availability/booking/server/runOwnerBookingReminders';
+import { runBookingReminders } from '../src/features/availability/booking/server/reminders';
 import { createSupabaseAdminClient } from '../src/libs/supabase/admin';
 
 function readArg(flag: string): string | undefined {
@@ -21,10 +24,11 @@ function readArg(flag: string): string | undefined {
 async function main() {
   const send = process.argv.includes('--send');
   const onlyEmail = readArg('--only-email');
+  const onlyCustomerEmail = readArg('--only-customer-email');
 
-  if (send && !onlyEmail) {
+  if (send && !onlyEmail && !onlyCustomerEmail) {
     console.error(
-      'Refusing to send to every owner. Pass --only-email you@example.com'
+      'Refusing to notify everyone. Pass --only-email and/or --only-customer-email'
     );
     process.exit(1);
   }
@@ -39,13 +43,16 @@ async function main() {
   }
 
   const admin = createSupabaseAdminClient();
-  const result = await runOwnerBookingReminders(admin, {
+  const result = await runBookingReminders(admin, {
     dryRun: !send,
+    skipOwner: send && !onlyEmail,
+    skipCustomer: send && !onlyCustomerEmail,
     onlyProfileId,
+    onlyCustomerEmail: onlyCustomerEmail ?? null,
     correlationId: 'local-script',
   });
 
-  console.log(send ? 'Sent (one owner):' : 'Dry run (nothing sent):');
+  console.log(send ? 'Sent (filtered):' : 'Dry run (nothing sent):');
   console.log(result);
 }
 

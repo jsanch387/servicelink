@@ -1,4 +1,4 @@
-import { runOwnerBookingReminders } from '@/features/availability/booking/server/runOwnerBookingReminders';
+import { runOwnerBookingReminders } from '@/features/availability/booking/server/reminders';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/push/server/sendExpoPushToUser', () => ({

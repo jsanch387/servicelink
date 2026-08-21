@@ -5,7 +5,7 @@ import {
   ownerBookingReminderBody,
   ownerBookingReminderDedupeKey,
   ownerBookingReminderTitle,
-} from '../server/ownerBookingReminderCopy';
+} from '../server/reminders/ownerBookingReminderCopy';
 
 describe('ownerBookingReminderCopy', () => {
   it('uses the upcoming-appointment headline', () => {

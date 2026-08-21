@@ -10,7 +10,7 @@ export const CRON_JOBS = [
     path: API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS,
     schedule: '0 14 * * *',
     description:
-      'One owner push + inbox row when they have confirmed bookings tomorrow.',
+      'Tomorrow’s confirmed bookings: owner push, plus customer email/SMS when we have contact info.',
   },
 ] as const;
 

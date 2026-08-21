@@ -124,13 +124,14 @@ The public book flow branches on mode: **mobile** collects customer address on t
 - **Planner** mode: the page server-loads **`time_off_blocks`** and passes them into `DayPlannerView`. Time-off windows render as non-interactive blocks on the day timeline (alongside appointment cards). Reload the page after editing time off on **Availability** to refresh planner data.
 - Mark as completed or Cancel calls PATCH with the booking id and new status; the hook updates local state (and cache) from the response so no refetch is needed.
 
-### Day-before owner reminder
+### Day-before reminders
 
 See **[`src/features/cron/docs/README.md`](../../../cron/docs/README.md)** for what a cron job is and how Vercel calls this one.
 
-- **GET `/api/internal/cron/booking-reminders`** (daily 14:00 UTC) finds owners with at least one `confirmed` booking whose `scheduled_date` is **tomorrow** in `America/Chicago`.
-- One inbox row + Expo push per owner: title **Upcoming appointment**, body **You have an appointment coming up.** Tap is `screen` → `bookings` (calendar / bookings screen — no booking UUID).
-- Idempotent via `notifications.dedupe_key` = `booking_reminder:{profileId}:{targetDate}`.
+- **GET `/api/internal/cron/booking-reminders`** (daily 14:00 UTC) finds `confirmed` bookings whose `scheduled_date` is **tomorrow** in `America/Chicago`.
+- **Owner:** one inbox row + Expo push: title **Upcoming appointment**, body **You have an appointment coming up.** Tap is `screen` → `bookings`.
+- **Customer:** email if we have an address; SMS if we have a phone (logged to `sms_messages` as `booking_reminder` so it shows in the owner message inbox). Missing contact = skip that channel. SMS uses the same opt-in / eligibility gates as confirmation texts.
+- Owner idempotency: `notifications.dedupe_key` = `booking_reminder:{profileId}:{targetDate}`. Customer SMS: `{bookingId}:booking_reminder:{scheduledDate}`.
 
 ---
 
@@ -151,7 +152,7 @@ See **[`src/features/cron/docs/README.md`](../../../cron/docs/README.md)** for w
 | Blocked slots hook                                | `features/availability/booking/hooks/usePublicBlockedSlots.ts`                                                         |
 | Planner time-off overlay                          | `features/availability/booking/dashboard/DayPlannerView.tsx`                                                           |
 | Create booking (server)                           | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`) |
-| Day-before owner reminder                         | Cron feature + `runOwnerBookingReminders` (`src/features/cron`)                                                        |
+| Day-before reminders                              | `booking/server/reminders` + cron feature                                                                              |
 | Business service location (mobile/shop/both)      | `business_profiles` columns + [serviceLocation.md](../../business-profile/docs/serviceLocation.md)                     |
 
 Keeping **time in minutes** everywhere (DB, APIs, slot logic) and converting to human-readable duration only in the UI (`formatDurationMinutes`, etc.) keeps the data model simple and avoids timezone/format issues. **Booked slot length** is always the **total** minutes (service + selected add-on time).

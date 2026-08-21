@@ -20,6 +20,10 @@ email/
 ├── subscription-payment-failed/ (legacy send helper; not used by webhooks)
 │   ├── types.ts
 │   └── sendSubscriptionPaymentFailedEmail.ts
+├── availability-booking-reminder/ (day-before customer reminder from cron)
+│   ├── types.ts
+│   ├── availabilityBookingReminderTemplate.ts
+│   └── sendAvailabilityBookingReminderEmail.ts
 ├── quote-sent-to-customer/   (owner sent quote → customer email)
 │   ├── README.md
 │   ├── types.ts
@@ -34,6 +38,7 @@ email/
 - **`services/`** – shared Resend client and URL/from helpers used by all email types.
 - **`utils/`** – shared helpers (e.g. escaping for HTML).
 - **`booking-notification/`** – one subfolder per “email use case”; each can have its own README, types, template, and send function.
+- **`availability-booking-reminder/`** – customer day-before reminder, sent from `booking/server/reminders`.
 - **`subscription-payment-failed/`** – `sendSubscriptionPaymentFailedEmail`, sent once per failure episode from `invoice.payment_failed` via `notifyPaymentFailedOnce` (in-app Settings still handles the actual fix).
 
 ## Billing email flow

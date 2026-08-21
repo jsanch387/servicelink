@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   addCalendarDays,
   calendarDateInTimeZone,
-  ownerBookingReminderTargetDate,
-} from '../server/ownerBookingReminderDate';
+  bookingReminderTargetDate,
+} from '../server/reminders/ownerBookingReminderDate';
 
 describe('calendarDateInTimeZone', () => {
   it('uses the named timezone, not UTC', () => {
@@ -21,9 +21,9 @@ describe('addCalendarDays', () => {
   });
 });
 
-describe('ownerBookingReminderTargetDate', () => {
+describe('bookingReminderTargetDate', () => {
   it('is the next calendar day in Chicago', () => {
     const now = new Date('2026-08-20T14:00:00.000Z');
-    expect(ownerBookingReminderTargetDate(now)).toBe('2026-08-21');
+    expect(bookingReminderTargetDate(now)).toBe('2026-08-21');
   });
 });

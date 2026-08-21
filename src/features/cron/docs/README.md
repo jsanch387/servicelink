@@ -48,14 +48,19 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 
 | id | Schedule | What it does |
 | -- | -------- | ------------ |
-| `booking-reminders` | `0 14 * * *` (14:00 UTC daily) | Owners with confirmed bookings **tomorrow** (`America/Chicago`) get one push + inbox row: “You have an appointment coming up.” Tap: `screen` → `bookings`. |
+| `booking-reminders` | `0 14 * * *` (14:00 UTC daily) | Confirmed bookings **tomorrow** (`America/Chicago`): one owner push (“You have an appointment coming up.”) plus customer email and/or SMS when we have that contact. |
 
 ### booking-reminders
 
 - **Route:** `GET /api/internal/cron/booking-reminders`
-- **Work:** `src/features/availability/booking/server/runOwnerBookingReminders.ts`
-- **Idempotency:** `notifications.dedupe_key` = `booking_reminder:{ownerProfileId}:{targetDate}`
-- **Mobile:** [`docs/contracts/mobile-push-notifications.md`](../../../../docs/contracts/mobile-push-notifications.md)
+- **Work:** `src/features/availability/booking/server/reminders/`
+  - Owner: `runOwnerBookingReminders` — Expo push + in-app bell
+  - Customer: `runCustomerBookingReminders` — email via Resend, SMS via `sendAndRecordSms` (shows in the owner message inbox)
+- **Owner idempotency:** `notifications.dedupe_key` = `booking_reminder:{ownerProfileId}:{targetDate}`
+- **Customer SMS idempotency:** `sms_messages.dedupe_key` = `{bookingId}:booking_reminder:{scheduledDate}`
+- **SMS type:** `booking_reminder` (same table as confirmation / on-the-way)
+- **SMS gates:** same as other customer texts (opt-in, Telnyx, business eligible)
+- **Mobile tap (owner):** [`docs/contracts/mobile-push-notifications.md`](../../../../docs/contracts/mobile-push-notifications.md) — `screen` → `bookings`
 
 ---
 

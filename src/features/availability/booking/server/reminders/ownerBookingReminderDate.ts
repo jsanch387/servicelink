@@ -1,8 +1,8 @@
 /**
- * Day-before owner reminders use a single US timezone so “tomorrow” is stable
+ * Day-before reminders use a single US timezone so “tomorrow” is stable
  * across cron runs. Bookings themselves store floating local wall dates.
  */
-export const OWNER_BOOKING_REMINDER_TIMEZONE = 'America/Chicago';
+export const BOOKING_REMINDER_TIMEZONE = 'America/Chicago';
 
 /** `YYYY-MM-DD` for `now` in `timeZone`. */
 export function calendarDateInTimeZone(now: Date, timeZone: string): string {
@@ -22,9 +22,9 @@ export function addCalendarDays(ymd: string, days: number): string {
 }
 
 /** Confirmed bookings on this date get the day-before reminder. */
-export function ownerBookingReminderTargetDate(
+export function bookingReminderTargetDate(
   now: Date,
-  timeZone: string = OWNER_BOOKING_REMINDER_TIMEZONE
+  timeZone: string = BOOKING_REMINDER_TIMEZONE
 ): string {
   return addCalendarDays(calendarDateInTimeZone(now, timeZone), 1);
 }

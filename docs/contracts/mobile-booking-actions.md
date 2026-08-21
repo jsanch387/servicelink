@@ -36,7 +36,7 @@ Every outbound SMS attempt is a row in **`public.sms_messages`**. This is the so
 | `business_id`            | uuid          | tenancy / RLS scope                                                                                                       |
 | `booking_id`             | uuid \| null  | links the message to an appointment                                                                                       |
 | `customer_id`            | uuid \| null  | links to the customer                                                                                                     |
-| `type`                   | text          | `booking_confirmation` \| `on_the_way` \| `job_started` \| `job_completed` \| `reminder` \| `invoice` … (grows over time) |
+| `type`                   | text          | `booking_confirmation` \| `on_the_way` \| `job_started` \| `job_completed` \| `booking_reminder` \| `invoice` … (grows over time) |
 | `channel`                | text          | `sms` (room for future channels)                                                                                          |
 | `direction`              | text          | `outbound`                                                                                                                |
 | `to_phone`               | text          | E.164 number actually used                                                                                                |
