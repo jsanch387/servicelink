@@ -5,16 +5,40 @@ import {
   isProAccess,
   needsPaidProResubscribeForDashboard,
 } from '@/features/pricing/utils/isProAccess';
+import {
+  expireCookieOptions,
+  sanitizeSupabaseAuthCookies,
+} from '@/libs/supabase/sanitizeAuthCookies';
 import { createSupabaseMiddlewareClient } from '@/libs/supabase/server';
 import type { User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+function expireStaleAuthCookies(
+  res: NextResponse,
+  staleNames: string[]
+): NextResponse {
+  const expire = expireCookieOptions();
+  staleNames.forEach(name => {
+    res.cookies.set({ name, value: '', ...expire });
   });
+  return res;
+}
+
+export async function middleware(request: NextRequest) {
+  const { staleNames: staleAuthCookieNames } = sanitizeSupabaseAuthCookies(
+    request.cookies.getAll()
+  );
+  const staleAuthCookieNameSet = new Set(staleAuthCookieNames);
+  const withStaleExpiry = (res: NextResponse) =>
+    expireStaleAuthCookies(res, staleAuthCookieNames);
+
+  let response = withStaleExpiry(
+    NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+  );
 
   const pathname = request.nextUrl.pathname;
 
@@ -24,12 +48,14 @@ export async function middleware(request: NextRequest) {
       pathname === ROUTES.FIND_DETAILERS ||
       pathname.startsWith(`${ROUTES.FIND_DETAILERS}/`)
     ) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return withStaleExpiry(NextResponse.redirect(new URL('/', request.url)));
     }
     if (pathname.startsWith('/api/public/marketplace')) {
-      return NextResponse.json(
-        { success: false, error: 'Not found' },
-        { status: 404 }
+      return withStaleExpiry(
+        NextResponse.json(
+          { success: false, error: 'Not found' },
+          { status: 404 }
+        )
       );
     }
   }
@@ -38,7 +64,7 @@ export async function middleware(request: NextRequest) {
   // though the customer goes through several pages before submitting.
   const referralCapture = bookingReferralCaptureRedirect(request);
   if (referralCapture) {
-    return referralCapture;
+    return withStaleExpiry(referralCapture);
   }
 
   // MVP LAUNCH MODE: All routes enabled
@@ -47,6 +73,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       get: (name: string) => {
+        if (staleAuthCookieNameSet.has(name)) return undefined;
         return request.cookies.get(name)?.value;
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,11 +83,13 @@ export async function middleware(request: NextRequest) {
           value,
           ...options,
         });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
+        response = withStaleExpiry(
+          NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+        );
         response.cookies.set({
           name,
           value,
@@ -74,11 +103,13 @@ export async function middleware(request: NextRequest) {
           value: '',
           ...options,
         });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
+        response = withStaleExpiry(
+          NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+        );
         response.cookies.set({
           name,
           value: '',
@@ -136,12 +167,16 @@ export async function middleware(request: NextRequest) {
     !isEmailConfirmedPage &&
     !isAuthCallbackPage
   ) {
-    return NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url));
+    return withStaleExpiry(
+      NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url))
+    );
   }
 
   // Redirect unauthenticated users to login from protected routes
   if (requiresAuth && !user) {
-    return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
+    return withStaleExpiry(
+      NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url))
+    );
   }
 
   // Centralized app access gate:
@@ -186,8 +221,8 @@ export async function middleware(request: NextRequest) {
         return response;
       }
       if (pathname !== ROUTES.DASHBOARD.MAIN) {
-        return NextResponse.redirect(
-          new URL(ROUTES.DASHBOARD.MAIN, request.url)
+        return withStaleExpiry(
+          NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url))
         );
       }
       return response;
@@ -203,14 +238,14 @@ export async function middleware(request: NextRequest) {
       );
 
       if (!hasAppAccess && !isUpgradeRoute) {
-        return NextResponse.redirect(
-          new URL(ROUTES.DASHBOARD.UPGRADE, request.url)
+        return withStaleExpiry(
+          NextResponse.redirect(new URL(ROUTES.DASHBOARD.UPGRADE, request.url))
         );
       }
 
       if (hasAppAccess && isUpgradeRoute) {
-        return NextResponse.redirect(
-          new URL(ROUTES.DASHBOARD.MAIN, request.url)
+        return withStaleExpiry(
+          NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url))
         );
       }
     }
