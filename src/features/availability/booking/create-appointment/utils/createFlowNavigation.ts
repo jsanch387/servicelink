@@ -7,6 +7,18 @@ export function isAddonsStepSkipped(
   return Boolean(addonCatalogKnown && addonsCount === 0);
 }
 
+function stepAfterWhere(p: {
+  vehicleSkipped?: boolean;
+  jobIndex?: number;
+}): number {
+  if (p.vehicleSkipped) {
+    return (p.jobIndex ?? 0) > 0
+      ? CREATE_APPOINTMENT_STEP.REVIEW
+      : CREATE_APPOINTMENT_STEP.SCHEDULE;
+  }
+  return CREATE_APPOINTMENT_STEP.VEHICLE;
+}
+
 /**
  * After add-ons on job 1: customer → location → address → vehicle.
  * Job 2+: straight to vehicle (visit who/where already set).
@@ -14,10 +26,11 @@ export function isAddonsStepSkipped(
 export function getStepAfterAddons(p: {
   locationSkipped?: boolean;
   addressSkipped?: boolean;
+  vehicleSkipped?: boolean;
   jobIndex?: number;
 }): number {
   if ((p.jobIndex ?? 0) > 0) {
-    return CREATE_APPOINTMENT_STEP.VEHICLE;
+    return stepAfterWhere(p);
   }
   return CREATE_APPOINTMENT_STEP.CUSTOMER;
 }
@@ -26,10 +39,11 @@ export function getStepAfterAddons(p: {
 export function getStepAfterCustomer(p: {
   locationSkipped?: boolean;
   addressSkipped?: boolean;
+  vehicleSkipped?: boolean;
 }): number {
   if (!p.locationSkipped) return CREATE_APPOINTMENT_STEP.LOCATION;
   if (!p.addressSkipped) return CREATE_APPOINTMENT_STEP.ADDRESS;
-  return CREATE_APPOINTMENT_STEP.VEHICLE;
+  return stepAfterWhere({ ...p, jobIndex: 0 });
 }
 
 /**
@@ -43,7 +57,8 @@ export function getCreateAppointmentVisibleStepOrder(
   addonsSkipped: boolean,
   locationSkipped = false,
   addressSkipped = false,
-  jobIndex = 0
+  jobIndex = 0,
+  vehicleSkipped = false
 ): number[] {
   const o: number[] = [CREATE_APPOINTMENT_STEP.SERVICE];
   if (!pricingSkipped) o.push(CREATE_APPOINTMENT_STEP.PRICING);
@@ -53,7 +68,7 @@ export function getCreateAppointmentVisibleStepOrder(
     if (!locationSkipped) o.push(CREATE_APPOINTMENT_STEP.LOCATION);
     if (!addressSkipped) o.push(CREATE_APPOINTMENT_STEP.ADDRESS);
   }
-  o.push(CREATE_APPOINTMENT_STEP.VEHICLE);
+  if (!vehicleSkipped) o.push(CREATE_APPOINTMENT_STEP.VEHICLE);
   if (jobIndex === 0) {
     o.push(CREATE_APPOINTMENT_STEP.SCHEDULE);
   }
@@ -68,6 +83,7 @@ export function getCreateAppointmentWizardStepIndex(
     addonsSkipped: boolean;
     locationSkipped?: boolean;
     addressSkipped?: boolean;
+    vehicleSkipped?: boolean;
     jobIndex?: number;
   }
 ): number {
@@ -76,7 +92,8 @@ export function getCreateAppointmentWizardStepIndex(
     opts.addonsSkipped,
     opts.locationSkipped ?? false,
     opts.addressSkipped ?? false,
-    opts.jobIndex ?? 0
+    opts.jobIndex ?? 0,
+    opts.vehicleSkipped ?? false
   );
   const idx = order.indexOf(step);
   if (idx < 0) {
@@ -90,6 +107,7 @@ export function getCreateAppointmentWizardStepCount(opts: {
   addonsSkipped: boolean;
   locationSkipped?: boolean;
   addressSkipped?: boolean;
+  vehicleSkipped?: boolean;
   jobIndex?: number;
 }): number {
   return getCreateAppointmentVisibleStepOrder(
@@ -97,7 +115,8 @@ export function getCreateAppointmentWizardStepCount(opts: {
     opts.addonsSkipped,
     opts.locationSkipped ?? false,
     opts.addressSkipped ?? false,
-    opts.jobIndex ?? 0
+    opts.jobIndex ?? 0,
+    opts.vehicleSkipped ?? false
   ).length;
 }
 
@@ -109,6 +128,7 @@ export function getCreateAppointmentProgressFraction(
     addonsSkipped: boolean;
     locationSkipped?: boolean;
     addressSkipped?: boolean;
+    vehicleSkipped?: boolean;
     jobIndex?: number;
   }
 ): number {
@@ -124,18 +144,25 @@ export function getNextStepOnContinue(p: {
   pricingSkipped: boolean;
   locationSkipped?: boolean;
   addressSkipped?: boolean;
+  vehicleSkipped?: boolean;
   jobIndex?: number;
   /** @deprecated Unused — job 1 always visits schedule; job 2+ skips it. */
   hasScheduleSlot?: boolean;
 }): number {
   const locationSkipped = p.locationSkipped ?? false;
   const addressSkipped = p.addressSkipped ?? false;
+  const vehicleSkipped = p.vehicleSkipped ?? false;
   const jobIndex = p.jobIndex ?? 0;
 
   const afterAddons = () =>
-    getStepAfterAddons({ locationSkipped, addressSkipped, jobIndex });
+    getStepAfterAddons({
+      locationSkipped,
+      addressSkipped,
+      vehicleSkipped,
+      jobIndex,
+    });
   const afterCustomer = () =>
-    getStepAfterCustomer({ locationSkipped, addressSkipped });
+    getStepAfterCustomer({ locationSkipped, addressSkipped, vehicleSkipped });
 
   if (p.step === CREATE_APPOINTMENT_STEP.SERVICE) {
     if (p.pricingSkipped) {
@@ -158,12 +185,12 @@ export function getNextStepOnContinue(p: {
 
   if (p.step === CREATE_APPOINTMENT_STEP.LOCATION) {
     return addressSkipped
-      ? CREATE_APPOINTMENT_STEP.VEHICLE
+      ? stepAfterWhere({ vehicleSkipped, jobIndex })
       : CREATE_APPOINTMENT_STEP.ADDRESS;
   }
 
   if (p.step === CREATE_APPOINTMENT_STEP.ADDRESS) {
-    return CREATE_APPOINTMENT_STEP.VEHICLE;
+    return stepAfterWhere({ vehicleSkipped, jobIndex });
   }
 
   if (p.step === CREATE_APPOINTMENT_STEP.VEHICLE) {
@@ -187,20 +214,29 @@ export function getPreviousStepOnBack(p: {
   pricingSkipped: boolean;
   locationSkipped?: boolean;
   addressSkipped?: boolean;
+  vehicleSkipped?: boolean;
   jobIndex?: number;
 }): number {
   const locationSkipped = p.locationSkipped ?? false;
   const addressSkipped = p.addressSkipped ?? false;
+  const vehicleSkipped = p.vehicleSkipped ?? false;
   const jobIndex = p.jobIndex ?? 0;
 
   if (p.step === CREATE_APPOINTMENT_STEP.SCHEDULE) {
-    return CREATE_APPOINTMENT_STEP.VEHICLE;
+    if (!vehicleSkipped) return CREATE_APPOINTMENT_STEP.VEHICLE;
+    if (!addressSkipped) return CREATE_APPOINTMENT_STEP.ADDRESS;
+    if (!locationSkipped) return CREATE_APPOINTMENT_STEP.LOCATION;
+    return CREATE_APPOINTMENT_STEP.CUSTOMER;
   }
 
   if (p.step === CREATE_APPOINTMENT_STEP.REVIEW) {
-    return jobIndex > 0
-      ? CREATE_APPOINTMENT_STEP.VEHICLE
-      : CREATE_APPOINTMENT_STEP.SCHEDULE;
+    if (jobIndex > 0) {
+      if (!vehicleSkipped) return CREATE_APPOINTMENT_STEP.VEHICLE;
+      if (!p.addonsSkipped) return CREATE_APPOINTMENT_STEP.ADDONS;
+      if (!p.pricingSkipped) return CREATE_APPOINTMENT_STEP.PRICING;
+      return CREATE_APPOINTMENT_STEP.SERVICE;
+    }
+    return CREATE_APPOINTMENT_STEP.SCHEDULE;
   }
 
   if (p.step === CREATE_APPOINTMENT_STEP.VEHICLE) {

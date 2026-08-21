@@ -49,6 +49,17 @@ function formatVehicle(customer: CustomerFormData): string | null {
   return parts.join(' ');
 }
 
+function formatPet(customer: CustomerFormData): string | null {
+  const identity = [customer.petName?.trim(), customer.petBreed?.trim()]
+    .filter(Boolean)
+    .join(' · ');
+  const extras = [customer.petSpecies?.trim(), customer.petSize?.trim()]
+    .filter(Boolean)
+    .join(' · ');
+  if (identity && extras) return `${identity} · ${extras}`;
+  return identity || extras || null;
+}
+
 export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   businessName,
   businessSlug,
@@ -78,6 +89,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
   );
 
   const vehicleLine = formatVehicle(customer);
+  const petLine = formatPet(customer);
   const showSalePricing =
     Boolean(saleAppliesLine) &&
     saleSubtotalCents != null &&
@@ -232,6 +244,15 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
                   {ui.common.vehicle}
                 </p>
                 <p className="text-white font-medium">{vehicleLine}</p>
+              </div>
+            </>
+          )}
+          {petLine && (
+            <>
+              <div className="h-px bg-white/10" />
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">{ui.common.pet}</p>
+                <p className="text-white font-medium">{petLine}</p>
               </div>
             </>
           )}

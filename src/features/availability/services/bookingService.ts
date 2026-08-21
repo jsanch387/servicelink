@@ -9,7 +9,11 @@ import {
 } from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
-import { upsertCustomerVehiclesFromBooking } from '@/features/customer-management/server/upsertCustomerAssets';
+import {
+  upsertCustomerPetsFromBooking,
+  upsertCustomerVehiclesFromBooking,
+} from '@/features/customer-management/server/upsertCustomerAssets';
+import { buildPetAssetDraft } from '@/features/customer-management/utils/customerAssetTypes';
 import {
   customerAlreadyReviewedForBooking,
   loadReviewInviteEligibilityContext,
@@ -191,10 +195,32 @@ export async function createBooking(
     payload.discountSnapshot
   );
 
-  const jobDetails =
+  const customerPetDraft = buildPetAssetDraft({
+    name: payload.customer.petName ?? '',
+    species: payload.customer.petSpecies ?? '',
+    breed: payload.customer.petBreed ?? '',
+    size: payload.customer.petSize ?? '',
+  });
+  const incomingJobDetails =
     payload.jobDetails && payload.jobDetails.length > 0
       ? payload.jobDetails
       : null;
+  const jobDetails =
+    incomingJobDetails ??
+    (customerPetDraft
+      ? [
+          {
+            serviceId: payload.serviceId ?? null,
+            serviceName: payload.serviceName.trim(),
+            servicePriceOptionLabel: null,
+            servicePriceCents: payload.servicePriceCents ?? 0,
+            selectedAddOns: payload.selectedAddOns ?? [],
+            durationMinutes: payload.durationMinutes,
+            vehicle: null,
+            pet: customerPetDraft.attributes,
+          },
+        ]
+      : null);
   const visitJobCount =
     payload.visitJobCount ??
     (jobDetails?.length && jobDetails.length > 0 ? jobDetails.length : 1);
@@ -263,6 +289,17 @@ export async function createBooking(
         model: payload.customer.vehicleModel,
       },
       jobVehicles: (jobDetails ?? []).map(job => job.vehicle ?? null),
+    });
+    await upsertCustomerPetsFromBooking(supabase, {
+      businessId: payload.businessId,
+      customerId: data.customer_id as string,
+      customerPet: {
+        name: payload.customer.petName,
+        species: payload.customer.petSpecies,
+        breed: payload.customer.petBreed,
+        size: payload.customer.petSize,
+      },
+      jobPets: (jobDetails ?? []).map(job => job.pet ?? null),
     });
   } catch (assetErr) {
     console.error('[createBooking] customer asset upsert failed', {
@@ -407,6 +444,10 @@ export async function createBookingForExistingCustomer(
     vehicleYear: fromPrior?.vehicleYear ?? '',
     vehicleMake: fromPrior?.vehicleMake ?? '',
     vehicleModel: fromPrior?.vehicleModel ?? '',
+    petName: '',
+    petSpecies: '',
+    petBreed: '',
+    petSize: '',
     notes: (payload.bookingCustomerNotes ?? '').trim(),
   };
 

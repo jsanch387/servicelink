@@ -24,6 +24,10 @@ const emptyCustomer: CustomerFormData = {
   vehicleYear: '',
   vehicleMake: '',
   vehicleModel: '',
+  petName: '',
+  petSpecies: '',
+  petBreed: '',
+  petSize: '',
   notes: '',
 };
 
@@ -236,6 +240,43 @@ describe('bookingServiceLocationFlow', () => {
         }
       )
     ).toBe(false);
+  });
+
+  it('requires pet fields when configured', () => {
+    expect(
+      isBookingDetailsSubStepValid(
+        'vehicleNotes',
+        customerWithAddress,
+        mobileOnly,
+        null,
+        {
+          showVehicleFields: false,
+          showPetFields: true,
+          requirePetFields: true,
+          emailOptional: true,
+        }
+      )
+    ).toBe(false);
+    expect(
+      isBookingDetailsSubStepValid(
+        'vehicleNotes',
+        {
+          ...customerWithAddress,
+          petName: 'Buddy',
+          petSpecies: 'Dog',
+          petBreed: 'Golden Retriever',
+          petSize: 'Medium',
+        },
+        mobileOnly,
+        null,
+        {
+          showVehicleFields: false,
+          showPetFields: true,
+          requirePetFields: true,
+          emailOptional: true,
+        }
+      )
+    ).toBe(true);
   });
 
   it('navigates back from vehicle notes to the merged contact screen', () => {

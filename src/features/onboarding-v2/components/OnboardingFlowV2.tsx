@@ -126,6 +126,7 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
         return (
           <Step3Availability
             businessProfileId={businessProfileId}
+            businessType={state.businessType}
             schedule={state.schedule}
             selectedPreset={state.selectedPreset}
             onUpdate={updates =>
@@ -145,6 +146,7 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
         return (
           <Step4ClaimLink
             businessProfileId={businessProfileId}
+            businessType={state.businessType}
             slug={state.slug}
             onUpdate={(slug: string) => updateState({ slug })}
             onNext={() => setStep(5)}
@@ -152,7 +154,13 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
           />
         );
       case 5:
-        return <Step5Done slug={state.slug} onBack={() => setStep(4)} />;
+        return (
+          <Step5Done
+            slug={state.slug}
+            businessType={state.businessType}
+            onBack={() => setStep(4)}
+          />
+        );
       default:
         return null;
     }

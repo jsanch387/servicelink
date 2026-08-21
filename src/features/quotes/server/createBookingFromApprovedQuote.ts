@@ -93,6 +93,10 @@ export async function createBookingFromApprovedQuote(
     vehicleYear: quote.vehicle_year?.trim() ?? '',
     vehicleMake: quote.vehicle_make?.trim() ?? '',
     vehicleModel: quote.vehicle_model?.trim() ?? '',
+    petName: '',
+    petSpecies: '',
+    petBreed: '',
+    petSize: '',
     notes: bookingNotes,
   };
 

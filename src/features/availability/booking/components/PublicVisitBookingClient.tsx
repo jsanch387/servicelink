@@ -31,6 +31,7 @@ type PublicVisitBookingClientProps = {
   businessId: string;
   businessSlug: string;
   showVehicleFields?: boolean;
+  showPetFields?: boolean;
   weeklySchedule?: WeeklySchedule | null;
   timeOffBlocks?: TimeOffInterval[];
   minimumNotice?: string;
@@ -53,6 +54,7 @@ export function PublicVisitBookingClient({
   businessId,
   businessSlug,
   showVehicleFields = false,
+  showPetFields = false,
   weeklySchedule,
   timeOffBlocks,
   minimumNotice,
@@ -158,6 +160,7 @@ export function PublicVisitBookingClient({
       businessId={businessId}
       businessSlug={businessSlug}
       showVehicleFields={showVehicleFields}
+      showPetFields={showPetFields}
       serviceName={serviceName}
       serviceDurationMinutes={durationMinutes}
       servicePriceCents={servicePriceOnly}

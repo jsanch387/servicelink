@@ -8,6 +8,7 @@ import {
   WarningCallout,
   formatUsPhoneDigits,
 } from '@/components/shared';
+import { resolveBusinessIndustry } from '@/constants/businessTypes';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
 import { DateSelector } from '@/features/availability/booking/components/DateSelector';
 import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
@@ -54,6 +55,7 @@ import React, {
 
 export type CreateQuoteScreenProps = {
   businessSlug: string | null;
+  businessType?: string | null;
   mode?: 'create' | 'edit';
   quoteId?: string;
   /** Active catalog services for “from your services” on the service step. */
@@ -110,6 +112,7 @@ function isValidEmail(value: string): boolean {
 
 export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   businessSlug,
+  businessType,
   mode = 'create',
   quoteId,
   serviceCatalog = [],
@@ -117,6 +120,11 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
 }) => {
   const isEdit = mode === 'edit' && Boolean(quoteId?.trim());
   const editId = quoteId?.trim() ?? '';
+  const resolvedIndustry = resolveBusinessIndustry(businessType);
+  const showVehicleFields =
+    resolvedIndustry.value == null || resolvedIndustry.showVehicleFields;
+  const stepAfterCustomer: Step = showVehicleFields ? 'vehicle' : 'service';
+  const stepBeforeService: Step = showVehicleFields ? 'vehicle' : 'customer';
 
   const {
     quote,
@@ -591,8 +599,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
             }
             subtitle={
               isEdit && !isFinishingCustomerRequest
-                ? 'Update customer, vehicle, service, and schedule, then save. Your customer will see changes the next time they open the link.'
-                : 'Customer, vehicle, service, then date — or let them choose when they accept.'
+                ? 'Update customer, service, and schedule, then save. Your customer will see changes the next time they open the link.'
+                : 'Customer, service, then date — or let them choose when they accept.'
             }
           />
         ) : null}
@@ -1218,7 +1226,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
               fullWidth
               className="font-semibold"
               disabled={!canProceedCustomer}
-              onClick={() => setStep('vehicle')}
+              onClick={() => setStep(stepAfterCustomer)}
             >
               Continue
             </Button>
@@ -1319,7 +1327,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     setServiceMode(null);
                     return;
                   }
-                  setStep('vehicle');
+                  setStep(stepBeforeService);
                 }}
               >
                 Back

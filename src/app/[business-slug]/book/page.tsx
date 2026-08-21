@@ -5,7 +5,7 @@
  * Displays the booking request form for a specific business
  */
 
-import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import { resolveBusinessIndustry } from '@/constants/businessTypes';
 import {
   OWNER_MANUAL_BOOKING_FOR,
   ROUTES,
@@ -462,9 +462,9 @@ export default async function BookingRequestPage({
       ? await getAddOnsByIdsForBooking(businessProfile.id, addonIdList)
       : [];
 
-  const showVehicleFields = isVehicleRelatedBusinessType(
-    businessProfile.business_type
-  );
+  const industry = resolveBusinessIndustry(businessProfile.business_type);
+  const showVehicleFields = industry.showVehicleFields;
+  const showPetFields = industry.showPetFields;
 
   const { data: paymentSettingsRow, error: paymentSettingsError } =
     await adminClient
@@ -601,6 +601,7 @@ export default async function BookingRequestPage({
             businessId={businessProfile.id}
             businessSlug={slugForRoutes}
             showVehicleFields={showVehicleFields}
+            showPetFields={showPetFields}
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             minimumNotice={minimumNotice}
@@ -624,6 +625,7 @@ export default async function BookingRequestPage({
             businessId={businessProfile.id}
             businessSlug={slugForRoutes}
             showVehicleFields={showVehicleFields}
+            showPetFields={showPetFields}
             serviceId={
               isCustomOwnerBooking ? undefined : serviceId?.trim() || undefined
             }
@@ -671,6 +673,7 @@ export default async function BookingRequestPage({
             businessId={businessProfile.id}
             businessSlug={slugForRoutes}
             showVehicleFields={showVehicleFields}
+            showPetFields={showPetFields}
             serviceId={
               isCustomOwnerBooking ? undefined : serviceId?.trim() || undefined
             }

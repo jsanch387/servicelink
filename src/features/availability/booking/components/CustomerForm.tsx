@@ -13,6 +13,7 @@ import { isValidEmail } from '@/features/auth/utils/validation';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import React from 'react';
+import { BookingPetFields } from './BookingPetFields';
 import { BookingVehicleFields } from './BookingVehicleFields';
 import type { CustomerFormData } from '../types';
 import {
@@ -22,12 +23,18 @@ import {
   BOOKING_CUSTOMER_NOTES_MAX,
   BOOKING_CUSTOMER_STREET_MAX,
   BOOKING_CUSTOMER_UNIT_MAX,
+  BOOKING_PET_BREED_MAX,
+  BOOKING_PET_NAME_MAX,
   BOOKING_VEHICLE_MAKE_MAX,
   BOOKING_VEHICLE_MODEL_MAX,
   isValidUsZipDigits,
   isValidVehicleYearFourDigit,
   sanitizeUsZipInput,
 } from '../utils/bookingCustomerFieldLimits';
+import {
+  isPetSizeValue,
+  isPetSpeciesValue,
+} from '@/features/customer-management/utils/customerAssetTypes';
 
 export type CustomerFormStep = 'contact' | 'vehicleNotes';
 
@@ -46,6 +53,10 @@ interface CustomerFormProps {
   showVehicleFields?: boolean;
   /** When false, visible vehicle fields can be left blank. */
   requireVehicleFields?: boolean;
+  /** When true, show pet fields (name/species/breed/size). */
+  showPetFields?: boolean;
+  /** When false, visible pet fields can be left blank. */
+  requirePetFields?: boolean;
   /** When true, hide the submit button (parent uses sticky CTA). */
   hideSubmitButton?: boolean;
   submitLabel?: string;
@@ -98,7 +109,8 @@ function isAddressStepValid(data: CustomerFormData): boolean {
 
 function isVehicleNotesStepValid(
   data: CustomerFormData,
-  requireVehicleFields: boolean
+  requireVehicleFields: boolean,
+  requirePetFields = false
 ): boolean {
   if (data.notes.length > BOOKING_CUSTOMER_NOTES_MAX) return false;
 
@@ -106,12 +118,25 @@ function isVehicleNotesStepValid(
   const vmk = data.vehicleMake.trim();
   const vmd = data.vehicleModel.trim();
   const anyVehicle = vy.length > 0 || vmk.length > 0 || vmd.length > 0;
-  if (!requireVehicleFields && !anyVehicle) return true;
+  if (requireVehicleFields || anyVehicle) {
+    if (!vy || !vmk || !vmd) return false;
+    if (!isValidVehicleYearFourDigit(vy)) return false;
+    if (vmk.length > BOOKING_VEHICLE_MAKE_MAX) return false;
+    if (vmd.length > BOOKING_VEHICLE_MODEL_MAX) return false;
+  }
 
-  if (!vy || !vmk || !vmd) return false;
-  if (!isValidVehicleYearFourDigit(vy)) return false;
-  if (vmk.length > BOOKING_VEHICLE_MAKE_MAX) return false;
-  if (vmd.length > BOOKING_VEHICLE_MODEL_MAX) return false;
+  const pn = data.petName.trim();
+  const ps = data.petSpecies.trim();
+  const pb = data.petBreed.trim();
+  const pz = data.petSize.trim();
+  const anyPet = pn.length > 0 || ps.length > 0 || pb.length > 0 || pz.length > 0;
+  if (requirePetFields || anyPet) {
+    if (!pn || !ps || !pb || !pz) return false;
+    if (pn.length > BOOKING_PET_NAME_MAX) return false;
+    if (pb.length > BOOKING_PET_BREED_MAX) return false;
+    if (!isPetSpeciesValue(ps) || !isPetSizeValue(pz)) return false;
+  }
+
   return true;
 }
 
@@ -120,7 +145,8 @@ export function isCustomerFormStepValid(
   step: CustomerFormStep,
   requireVehicleFields = false,
   emailOptional = false,
-  requireCustomerAddress = false
+  requireCustomerAddress = false,
+  requirePetFields = false
 ): boolean {
   if (step === 'contact') {
     return (
@@ -128,19 +154,24 @@ export function isCustomerFormStepValid(
       (requireCustomerAddress ? isAddressStepValid(data) : true)
     );
   }
-  return isVehicleNotesStepValid(data, requireVehicleFields);
+  return isVehicleNotesStepValid(
+    data,
+    requireVehicleFields,
+    requirePetFields
+  );
 }
 
 export function isCustomerFormValid(
   data: CustomerFormData,
   requireVehicleFields = false,
   emailOptional = false,
-  requireCustomerAddress = true
+  requireCustomerAddress = true,
+  requirePetFields = false
 ): boolean {
   return (
     isContactStepValid(data, emailOptional) &&
     (requireCustomerAddress ? isAddressStepValid(data) : true) &&
-    isVehicleNotesStepValid(data, requireVehicleFields)
+    isVehicleNotesStepValid(data, requireVehicleFields, requirePetFields)
   );
 }
 
@@ -199,6 +230,8 @@ function computeVehicleNotesErrors(
   value: CustomerFormData,
   showVehicleFields: boolean,
   requireVehicleFields: boolean,
+  showPetFields: boolean,
+  requirePetFields: boolean,
   cf: ReturnType<typeof publicBookingUi>['customerForm']
 ): CustomerFormErrors {
   const next: CustomerFormErrors = {};
@@ -225,6 +258,27 @@ function computeVehicleNotesErrors(
     }
   }
 
+  if (showPetFields) {
+    const pn = value.petName.trim();
+    const ps = value.petSpecies.trim();
+    const pb = value.petBreed.trim();
+    const pz = value.petSize.trim();
+    const anyPet =
+      pn.length > 0 || ps.length > 0 || pb.length > 0 || pz.length > 0;
+    if (requirePetFields || anyPet) {
+      if (!pn) next.petName = cf.errPetName;
+      else if (pn.length > BOOKING_PET_NAME_MAX)
+        next.petName = cf.errValueTooLong;
+      if (!ps) next.petSpecies = cf.errPetSpecies;
+      else if (!isPetSpeciesValue(ps)) next.petSpecies = cf.errPetSpecies;
+      if (!pb) next.petBreed = cf.errPetBreed;
+      else if (pb.length > BOOKING_PET_BREED_MAX)
+        next.petBreed = cf.errValueTooLong;
+      if (!pz) next.petSize = cf.errPetSize;
+      else if (!isPetSizeValue(pz)) next.petSize = cf.errPetSize;
+    }
+  }
+
   return next;
 }
 
@@ -236,6 +290,8 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   showAddressFields = false,
   showVehicleFields = false,
   requireVehicleFields = showVehicleFields,
+  showPetFields = false,
+  requirePetFields = showPetFields,
   hideSubmitButton = false,
   submitLabel,
   id,
@@ -268,6 +324,8 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           value,
           showVehicleFields,
           requireVehicleFields,
+          showPetFields,
+          requirePetFields,
           cf
         );
 
@@ -485,6 +543,34 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
                 }}
                 bookingFlowLocale={bookingFlowLocale}
                 required={requireVehicleFields}
+              />
+            </FormStepSection>
+          )}
+
+          {showPetFields && (
+            <FormStepSection
+              title={cf.pet}
+              description={
+                requirePetFields ? undefined : cf.optionalPetDetails
+              }
+            >
+              <BookingPetFields
+                value={{
+                  petName: value.petName,
+                  petSpecies: value.petSpecies,
+                  petBreed: value.petBreed,
+                  petSize: value.petSize,
+                }}
+                onChange={updates => update(updates)}
+                onBlurField={handleFieldBlur}
+                errors={{
+                  petName: errors.petName,
+                  petSpecies: errors.petSpecies,
+                  petBreed: errors.petBreed,
+                  petSize: errors.petSize,
+                }}
+                bookingFlowLocale={bookingFlowLocale}
+                required={requirePetFields}
               />
             </FormStepSection>
           )}

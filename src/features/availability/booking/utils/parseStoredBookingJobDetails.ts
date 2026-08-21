@@ -39,6 +39,17 @@ function parseVehicle(raw: unknown): BookingJobDetailsItem['vehicle'] {
   return { year, make, model };
 }
 
+function parsePet(raw: unknown): NonNullable<BookingJobDetailsItem['pet']> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const name = str(r.name);
+  const species = str(r.species);
+  const breed = str(r.breed);
+  const size = str(r.size);
+  if (!name && !species && !breed && !size) return null;
+  return { name, species, breed, size };
+}
+
 /** Returns [] when missing or invalid — never throws. */
 export function parseStoredBookingJobDetails(
   raw: unknown
@@ -77,6 +88,7 @@ export function parseStoredBookingJobDetails(
       selectedAddOns: parseAddOns(r.selectedAddOns),
       durationMinutes,
       vehicle: parseVehicle(r.vehicle),
+      pet: parsePet(r.pet),
     });
   }
 
@@ -91,6 +103,22 @@ export function formatJobVehicleLine(
     .map(p => (p ?? '').trim())
     .filter(Boolean);
   return parts.length > 0 ? parts.join(' ') : null;
+}
+
+export function formatJobPetLine(
+  pet: BookingJobDetailsItem['pet'] | null | undefined
+): string | null {
+  if (!pet) return null;
+  const identity = [pet.name, pet.breed]
+    .map(p => (p ?? '').trim())
+    .filter(Boolean)
+    .join(' · ');
+  const extras = [pet.species, pet.size]
+    .map(p => (p ?? '').trim())
+    .filter(Boolean)
+    .join(' · ');
+  if (identity && extras) return `${identity} · ${extras}`;
+  return identity || extras || null;
 }
 
 /** Sum service cents across job_details (multi-job appointment total). */

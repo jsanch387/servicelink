@@ -7,7 +7,7 @@ import {
   Select,
   TextArea,
 } from '@/components/shared';
-import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
+import { getBusinessTypeSelectOptions } from '@/constants/businessTypes';
 import { BUSINESS_BIO_MAX_LENGTH } from '@/features/business-profile/constants/businessBio';
 import React, { useEffect, useState } from 'react';
 import { saveStepAndProgress } from '../utils/onboardingHelpers';
@@ -49,7 +49,9 @@ export const Step2BusinessInfo: React.FC<Step2BusinessInfoProps> = ({
     }
   }, [existingData]);
 
-  const businessTypeOptions = BUSINESS_TYPE_OPTIONS;
+  const businessTypeOptions = getBusinessTypeSelectOptions(
+    formData.business_type
+  );
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({

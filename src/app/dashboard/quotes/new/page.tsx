@@ -27,7 +27,7 @@ export default async function NewQuotePage() {
 
   const { data: businessRow, error: businessError } = await supabase
     .from('business_profiles')
-    .select('id, business_slug')
+    .select('id, business_slug, business_type')
     .eq('profile_id', user.id)
     .maybeSingle();
 
@@ -38,6 +38,7 @@ export default async function NewQuotePage() {
   const business = businessRow as {
     id: string;
     business_slug: string | null;
+    business_type?: string | null;
   };
 
   const [serviceCatalog, categoriesResult] = await Promise.all([
@@ -48,6 +49,7 @@ export default async function NewQuotePage() {
   return (
     <CreateQuoteScreen
       businessSlug={business.business_slug}
+      businessType={business.business_type}
       serviceCatalog={serviceCatalog}
       serviceCategories={categoriesResult.data ?? []}
     />

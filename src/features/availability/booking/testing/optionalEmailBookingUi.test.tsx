@@ -40,6 +40,10 @@ function filledCustomer(
     vehicleYear: '',
     vehicleMake: '',
     vehicleModel: '',
+    petName: '',
+    petSpecies: '',
+    petBreed: '',
+    petSize: '',
     notes: '',
     ...overrides,
   };

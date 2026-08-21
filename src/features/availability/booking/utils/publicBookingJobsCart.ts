@@ -165,6 +165,10 @@ function parseCartVisitDraft(
       vehicleYear: String(c.vehicleYear ?? ''),
       vehicleMake: String(c.vehicleMake ?? ''),
       vehicleModel: String(c.vehicleModel ?? ''),
+      petName: String(c.petName ?? ''),
+      petSpecies: String(c.petSpecies ?? ''),
+      petBreed: String(c.petBreed ?? ''),
+      petSize: String(c.petSize ?? ''),
       notes: String(c.notes ?? ''),
     },
     selectedDateIso:
@@ -248,6 +252,12 @@ function buildPublicBookingJobDraft(
       year: job.vehicle.year.trim(),
       make: job.vehicle.make.trim(),
       model: job.vehicle.model.trim(),
+    },
+    pet: {
+      name: job.pet?.name.trim() ?? '',
+      species: job.pet?.species.trim() ?? '',
+      breed: job.pet?.breed.trim() ?? '',
+      size: job.pet?.size.trim() ?? '',
     },
   };
 }

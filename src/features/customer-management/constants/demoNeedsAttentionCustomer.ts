@@ -5,7 +5,7 @@ export const DEMO_NEEDS_ATTENTION_CUSTOMER: CustomerRecord = {
   name: 'Sample Customer',
   phone: '(555) 555-5555',
   email: 'sample@email.com',
-  lastService: 'Black Label Detail',
+  lastService: 'Standard service',
   lastVisitDate: '2025-12-05',
   lastVisitDaysAgo: 112,
   nextAppointmentDate: null,

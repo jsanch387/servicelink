@@ -8,9 +8,15 @@
 import type { AddOnAtBooking } from '../types';
 import { coerceBookingCents } from './coerceBookingCents';
 import {
+  isPetSizeValue,
+  isPetSpeciesValue,
+} from '@/features/customer-management/utils/customerAssetTypes';
+import {
   isValidVehicleYearFourDigit,
   sanitizeVehicleTextInput,
   sanitizeVehicleYearInput,
+  BOOKING_PET_BREED_MAX,
+  BOOKING_PET_NAME_MAX,
   BOOKING_VEHICLE_MAKE_MAX,
   BOOKING_VEHICLE_MODEL_MAX,
 } from './bookingCustomerFieldLimits';
@@ -23,6 +29,13 @@ export interface OwnerManualBookingJobVehicle {
   model: string;
 }
 
+export interface OwnerManualBookingJobPet {
+  name: string;
+  species: string;
+  breed: string;
+  size: string;
+}
+
 export interface OwnerManualBookingJobInput {
   serviceName: string;
   serviceId?: string | null;
@@ -31,6 +44,7 @@ export interface OwnerManualBookingJobInput {
   selectedAddOns: AddOnAtBooking[];
   durationMinutes: number;
   vehicle: OwnerManualBookingJobVehicle;
+  pet?: OwnerManualBookingJobPet;
   /** Mobile local id — not persisted in v1. */
   clientJobId?: string;
 }
@@ -47,6 +61,12 @@ export interface BookingJobDetailsItem {
     year: string;
     make: string;
     model: string;
+  } | null;
+  pet?: {
+    name: string;
+    species: string;
+    breed: string;
+    size: string;
   } | null;
 }
 
@@ -100,6 +120,51 @@ function parseJobVehicle(
     };
   }
   return { ok: true, vehicle: { year, make, model } };
+}
+
+function parseJobPet(
+  raw: unknown,
+  jobIndex: number
+):
+  | { ok: true; pet: OwnerManualBookingJobPet }
+  | { ok: false; error: string } {
+  if (raw == null) {
+    return { ok: true, pet: { name: '', species: '', breed: '', size: '' } };
+  }
+  if (typeof raw !== 'object') {
+    return {
+      ok: false,
+      error: `Job ${jobIndex + 1}: pet must be an object`,
+    };
+  }
+  const r = raw as Record<string, unknown>;
+  const name = strField(r.name).trim().slice(0, BOOKING_PET_NAME_MAX);
+  const species = strField(r.species).trim();
+  const breed = strField(r.breed).trim().slice(0, BOOKING_PET_BREED_MAX);
+  const size = strField(r.size).trim();
+  const any = name.length > 0 || species.length > 0 || breed.length > 0 || size.length > 0;
+  if (!any) {
+    return { ok: true, pet: { name: '', species: '', breed: '', size: '' } };
+  }
+  if (!name || !species || !breed || !size) {
+    return {
+      ok: false,
+      error: `Job ${jobIndex + 1}: pet name, species, breed, and size are all required when any is set`,
+    };
+  }
+  if (!isPetSpeciesValue(species)) {
+    return {
+      ok: false,
+      error: `Job ${jobIndex + 1}: pet species is invalid`,
+    };
+  }
+  if (!isPetSizeValue(size)) {
+    return {
+      ok: false,
+      error: `Job ${jobIndex + 1}: pet size is invalid`,
+    };
+  }
+  return { ok: true, pet: { name, species, breed, size } };
 }
 
 /**
@@ -216,6 +281,8 @@ export function parseOwnerManualBookingJobs(
 
     const vehicleParsed = parseJobVehicle(j.vehicle, i);
     if (!vehicleParsed.ok) return vehicleParsed;
+    const petParsed = parseJobPet(j.pet, i);
+    if (!petParsed.ok) return petParsed;
 
     const clientJobId = strField(j.clientJobId).trim() || undefined;
 
@@ -227,6 +294,7 @@ export function parseOwnerManualBookingJobs(
       selectedAddOns,
       durationMinutes,
       vehicle: vehicleParsed.vehicle,
+      pet: petParsed.pet,
       clientJobId,
     });
   }
@@ -335,6 +403,12 @@ export function toBookingJobDetails(
       Boolean(job.vehicle.year) ||
       Boolean(job.vehicle.make) ||
       Boolean(job.vehicle.model);
+    const pet = job.pet ?? { name: '', species: '', breed: '', size: '' };
+    const hasPet =
+      Boolean(pet.name) ||
+      Boolean(pet.species) ||
+      Boolean(pet.breed) ||
+      Boolean(pet.size);
     return {
       serviceId: job.serviceId ?? null,
       serviceName: job.serviceName.trim(),
@@ -347,6 +421,14 @@ export function toBookingJobDetails(
             year: job.vehicle.year,
             make: job.vehicle.make,
             model: job.vehicle.model,
+          }
+        : null,
+      pet: hasPet
+        ? {
+            name: pet.name,
+            species: pet.species,
+            breed: pet.breed,
+            size: pet.size,
           }
         : null,
     };

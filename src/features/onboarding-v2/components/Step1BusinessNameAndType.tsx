@@ -1,7 +1,10 @@
 'use client';
 
 import { Button, Input, Select } from '@/components/shared';
-import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
+import {
+  getBusinessTypeSelectOptions,
+  getIndustryOnboardingCopy,
+} from '@/constants/businessTypes';
 import { trackMetaLeadOnce } from '@/features/analytics/utils/metaLeadTracking';
 import React, { useEffect, useState } from 'react';
 
@@ -24,6 +27,7 @@ export const Step1BusinessNameAndType: React.FC<
     trackMetaLeadOnce();
   }, []);
 
+  const onboardingCopy = getIndustryOnboardingCopy(businessType);
   const canContinue =
     businessName.trim().length > 0 && businessType.trim().length > 0;
 
@@ -74,7 +78,7 @@ export const Step1BusinessNameAndType: React.FC<
         <div className="space-y-6">
           <Input
             label="Business name"
-            placeholder="e.g. Shine Auto Detailing"
+            placeholder={onboardingCopy.businessNamePlaceholder}
             value={businessName}
             onChange={value => onUpdate({ businessName: value })}
             required
@@ -84,15 +88,14 @@ export const Step1BusinessNameAndType: React.FC<
             placeholder="Pick one"
             value={businessType}
             onChange={value => onUpdate({ businessType: value })}
-            options={BUSINESS_TYPE_OPTIONS}
+            options={getBusinessTypeSelectOptions(businessType)}
             required
           />
         </div>
       </div>
 
       <p className="mt-3 text-left text-sm text-gray-400 leading-relaxed sm:mt-4">
-        Pick the type that fits your business best. We use it so your booking
-        form and settings make sense for what you offer.
+        {onboardingCopy.typeHelper} You can change this later.
       </p>
 
       <div className="mt-8 hidden flex-col gap-3 sm:flex sm:flex-row sm:justify-end">

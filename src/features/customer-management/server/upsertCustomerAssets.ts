@@ -6,7 +6,9 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  buildPetAssetDraft,
   buildVehicleAssetDraft,
+  type PetAssetAttributes,
   type VehicleAssetAttributes,
 } from '../utils/customerAssetTypes';
 
@@ -60,6 +62,59 @@ export function collectVehicleAssetsFromBooking(args: {
   for (const v of args.jobVehicles ?? []) {
     if (!v) continue;
     push(v.year, v.make, v.model);
+  }
+
+  return drafts;
+}
+
+/**
+ * Collect unique pet drafts from booking customer fields and/or job pets.
+ */
+export function collectPetAssetsFromBooking(args: {
+  customerPet?: {
+    name?: string | null;
+    species?: string | null;
+    breed?: string | null;
+    size?: string | null;
+  } | null;
+  jobPets?: Array<{
+    name?: string | null;
+    species?: string | null;
+    breed?: string | null;
+    size?: string | null;
+  } | null>;
+}): CustomerAssetUpsertInput[] {
+  const drafts: CustomerAssetUpsertInput[] = [];
+  const seen = new Set<string>();
+
+  const push = (
+    name?: string | null,
+    species?: string | null,
+    breed?: string | null,
+    size?: string | null
+  ) => {
+    const draft = buildPetAssetDraft({
+      name: name ?? '',
+      species: species ?? '',
+      breed: breed ?? '',
+      size: size ?? '',
+    });
+    if (!draft || seen.has(draft.fingerprint)) return;
+    seen.add(draft.fingerprint);
+    drafts.push(draft);
+  };
+
+  if (args.customerPet) {
+    push(
+      args.customerPet.name,
+      args.customerPet.species,
+      args.customerPet.breed,
+      args.customerPet.size
+    );
+  }
+  for (const pet of args.jobPets ?? []) {
+    if (!pet) continue;
+    push(pet.name, pet.species, pet.breed, pet.size);
   }
 
   return drafts;
@@ -122,4 +177,33 @@ export async function upsertCustomerVehiclesFromBooking(
     assets,
   });
   return assets.map(a => a.attributes as VehicleAssetAttributes);
+}
+
+/** Convenience: persist pets from a just-created booking. */
+export async function upsertCustomerPetsFromBooking(
+  supabase: SupabaseClient<Database>,
+  args: {
+    businessId: string;
+    customerId: string;
+    customerPet?: {
+      name?: string | null;
+      species?: string | null;
+      breed?: string | null;
+      size?: string | null;
+    } | null;
+    jobPets?: Array<{
+      name?: string | null;
+      species?: string | null;
+      breed?: string | null;
+      size?: string | null;
+    } | null>;
+  }
+): Promise<PetAssetAttributes[]> {
+  const assets = collectPetAssetsFromBooking(args);
+  await upsertCustomerAssets(supabase, {
+    businessId: args.businessId,
+    customerId: args.customerId,
+    assets,
+  });
+  return assets.map(a => a.attributes as PetAssetAttributes);
 }

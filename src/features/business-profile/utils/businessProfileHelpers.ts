@@ -5,6 +5,7 @@
  * Clean, reusable helper functions.
  */
 
+import { resolveBusinessIndustry } from '@/constants/businessTypes';
 import { BusinessProfileFormData } from '../types/businessProfile';
 
 /**
@@ -93,10 +94,13 @@ export function isOnboardingCompleted(
 export function getBusinessTypeDisplay(businessType: string | null): string {
   if (!businessType) return 'Not specified';
 
+  const industry = resolveBusinessIndustry(businessType);
+  if (industry.value) return industry.label;
+
   const typeMap: Record<string, string> = {
-    auto_detailing: 'Auto Detailing',
+    auto_detailing: 'Auto detailing',
     car_wash: 'Car Wash',
-    mobile_detailing: 'Mobile Detailing',
+    mobile_detailing: 'Auto detailing',
     paint_correction: 'Paint Correction',
     ceramic_coating: 'Ceramic Coating',
     other: 'Other',

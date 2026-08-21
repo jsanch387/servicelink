@@ -21,8 +21,12 @@ import {
   PUBLIC_BOOKING_MAX_JOBS,
   PUBLIC_BOOKING_MAX_JOBS_MESSAGE,
 } from '@/features/availability/booking/constants/publicBookingJobs';
-import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import {
+  isPetRelatedBusinessType,
+  isVehicleRelatedBusinessType,
+} from '@/constants/businessTypes';
 import { isJobVehicleComplete } from '@/features/availability/booking/utils/visitJobVehicles';
+import { isJobPetComplete } from '@/features/availability/booking/utils/visitJobPets';
 import {
   appointmentFitsSameDay,
   appointmentServiceNameSummary,
@@ -210,6 +214,10 @@ export async function POST(request: NextRequest) {
         vehicleYear: '',
         vehicleMake: '',
         vehicleModel: '',
+        petName: '',
+        petSpecies: '',
+        petBreed: '',
+        petSize: '',
       };
     }
 
@@ -323,6 +331,11 @@ export async function POST(request: NextRequest) {
       isVehicleRelatedBusinessType(
         (profile as { business_type?: string | null }).business_type
       );
+    const requirePetFields =
+      !ownerManualBooking &&
+      isPetRelatedBusinessType(
+        (profile as { business_type?: string | null }).business_type
+      );
 
     if (requireVehicleFields && parsedJobs) {
       const incompleteJob = parsedJobs.findIndex(
@@ -340,12 +353,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (requirePetFields && parsedJobs) {
+      const incompleteJob = parsedJobs.findIndex(
+        job => !isJobPetComplete(job.pet ?? {})
+      );
+      if (incompleteJob >= 0) {
+        return publicBookingJson(
+          requestId,
+          {
+            success: false,
+            error: `Job ${incompleteJob + 1}: pet name, species, breed, and size are required`,
+          },
+          400
+        );
+      }
+    }
+
     const customerPayloadErr = bookingCustomerPayloadErrorMessage(
       coercedCustomer,
       {
         requireCustomerAddress,
         // Multi-job vehicles live on jobs[]; only require top-level for single-job.
         requireVehicleFields: requireVehicleFields && !parsedJobs,
+        requirePetFields: requirePetFields && !parsedJobs,
       }
     );
     if (customerPayloadErr) {
@@ -725,6 +755,10 @@ export async function POST(request: NextRequest) {
         customerVehicleYear: job.vehicle.year || undefined,
         customerVehicleMake: job.vehicle.make || undefined,
         customerVehicleModel: job.vehicle.model || undefined,
+        customerPetName: job.pet?.name || undefined,
+        customerPetSpecies: job.pet?.species || undefined,
+        customerPetBreed: job.pet?.breed || undefined,
+        customerPetSize: job.pet?.size || undefined,
         totalPriceCents: jobGrossCents(job),
       }));
 
@@ -1006,6 +1040,10 @@ export async function POST(request: NextRequest) {
       customerVehicleYear: sanitizedCustomer.vehicleYear?.trim(),
       customerVehicleMake: sanitizedCustomer.vehicleMake?.trim(),
       customerVehicleModel: sanitizedCustomer.vehicleModel?.trim(),
+      customerPetName: sanitizedCustomer.petName?.trim(),
+      customerPetSpecies: sanitizedCustomer.petSpecies?.trim(),
+      customerPetBreed: sanitizedCustomer.petBreed?.trim(),
+      customerPetSize: sanitizedCustomer.petSize?.trim(),
       serviceName: body.serviceName!.trim(),
       servicePriceOptionLabel: optionLabel || undefined,
       scheduledDate: body.scheduledDate,

@@ -8,6 +8,12 @@ describe('getDefaultPlaceholderService', () => {
     expect(lawn.durationMinutes).toBe(60);
   });
 
+  it('returns a pet grooming default for that type', () => {
+    const pet = getDefaultPlaceholderService('Pet Grooming');
+    expect(pet.name).toBe('Full Groom');
+    expect(pet.durationMinutes).toBe(90);
+  });
+
   it('returns generic defaults for unknown or empty business type', () => {
     expect(getDefaultPlaceholderService('Other').name).toBe('Standard Service');
     expect(getDefaultPlaceholderService('').name).toBe('Standard Service');
