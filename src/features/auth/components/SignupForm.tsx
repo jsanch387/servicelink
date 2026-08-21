@@ -2,9 +2,9 @@
 
 import { Button, Input } from '@/components/shared';
 import {
-  markMetaLeadPending,
-  trackMetaLeadOnce,
-} from '@/features/analytics/utils/metaLeadTracking';
+  markSignupLeadPending,
+  trackSignupLeadOnce,
+} from '@/features/analytics/utils/signupLeadTracking';
 import { completeWorkshopSignupTracking } from '@/features/ads-workshop/utils/completeWorkshopSignupTracking';
 import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
 import { markPendingSignupAttribution } from '@/features/marketing-attribution';
@@ -76,7 +76,7 @@ export const SignupForm: React.FC = () => {
 
       if (result.needsEmailVerification) {
         markPendingSignupAttribution();
-        markMetaLeadPending();
+        markSignupLeadPending();
         const q = result.email
           ? `?email=${encodeURIComponent(result.email)}`
           : '';
@@ -84,7 +84,7 @@ export const SignupForm: React.FC = () => {
         return;
       }
 
-      trackMetaLeadOnce();
+      trackSignupLeadOnce();
       markPendingSignupAttribution();
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));

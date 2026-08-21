@@ -56,8 +56,8 @@ export const GUIDES: GuideMeta[] = [
       'start detailing business 2026',
       'ServiceLink',
     ],
-    datePublished: '2026-08-20',
-    dateModified: '2026-08-20',
+    datePublished: '2026-08-21',
+    dateModified: '2026-08-21',
     faqs: [
       {
         question: 'How much does it cost to start a mobile detailing business?',

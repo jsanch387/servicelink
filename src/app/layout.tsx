@@ -71,6 +71,11 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1456318202654985';
+const googleAdsId =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || 'AW-18403168896';
+const gaMeasurementId =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-7S62H6CP84';
+const gtagPrimaryId = gaMeasurementId || googleAdsId;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -179,6 +184,23 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#171717" />
+        {gtagPrimaryId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gtagPrimaryId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-gtag" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                ${gaMeasurementId ? `gtag('config', '${gaMeasurementId}');` : ''}
+                ${googleAdsId ? `gtag('config', '${googleAdsId}');` : ''}
+              `}
+            </Script>
+          </>
+        ) : null}
         {metaPixelId ? (
           <Script id="meta-pixel-base" strategy="afterInteractive">
             {`
