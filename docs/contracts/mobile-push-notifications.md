@@ -11,6 +11,7 @@ The web/API server sends pushes via the **Expo Push API**. Pushes are **not** tr
 | Expo sender                | `src/features/push/server/sendExpoPushToUser.ts`                                     |
 | Broadcast route            | `POST /api/internal/push/broadcast` → `src/app/api/internal/push/broadcast/route.ts` |
 | Single-user internal route | `POST /api/internal/push/send` → `src/app/api/internal/push/send/route.ts`           |
+| Day-before booking reminder | `GET /api/internal/cron/booking-reminders` (Vercel Cron)                            |
 | Token table (Supabase)     | `user_push_tokens`                                                                   |
 
 ---
@@ -116,7 +117,7 @@ These are sent automatically when business events occur. `reference_id` is alway
 | `subscriber`      | Membership UUID      | Subscriber **detail** (`customer_memberships.id`)                   |
 | `membership`      | Membership UUID      | **Alias for `subscriber`** — older payloads used this type          |
 
-**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `POST /api/booking-request/submit`, etc.
+**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForBookingReminder`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `POST /api/booking-request/submit`, etc.
 
 `subscriber` / `membership` `reference_id` is always `customer_memberships.id` — the same id as web `/dashboard/subscriptions/subscribers/{id}` and `GET /api/memberships/subscribers/{id}`.
 
@@ -127,7 +128,7 @@ Used when ops sends a **feature announcement** via `POST /api/internal/push/broa
 | `reference_type` | `reference_id` (screen slug) | Navigate to                                 |
 | ---------------- | ---------------------------- | ------------------------------------------- |
 | `screen`         | `home`                       | App home / dashboard tab                    |
-| `screen`         | `bookings`                   | Bookings list                               |
+| `screen`         | `bookings`                   | Bookings / calendar list (also the day-before reminder tap) |
 | `screen`         | `quotes`                     | Quotes list                                 |
 | `screen`         | `customers`                  | Customers list                              |
 | `screen`         | `reviews`                    | Reviews list                                |
@@ -217,14 +218,17 @@ function resolvePushDestination(referenceType: string, referenceId: string) {
 
 Server sends to **one owner** when an event happens. Also inserts a row into **`notifications`** for the in-app bell.
 
-| Event                      | `reference_type`  | `reference_id`                            |
-| -------------------------- | ----------------- | ----------------------------------------- |
-| New availability booking   | `booking`         | Booking id                                |
-| Legacy booking request     | `booking_request` | Booking request id                        |
-| Public quote request       | `quote`           | Quote id                                  |
-| Review submitted           | `review`          | Review id                                 |
-| New membership subscriber  | `subscriber`      | Membership id (`customer_memberships.id`) |
-| Subscription needs a visit | `subscriber`      | Membership id                             |
+| Event                             | `reference_type`  | `reference_id`                            |
+| --------------------------------- | ----------------- | ----------------------------------------- |
+| New availability booking          | `booking`         | Booking id                                |
+| Day-before appointment reminder   | `screen`          | `bookings`                                |
+| Legacy booking request            | `booking_request` | Booking request id                        |
+| Public quote request              | `quote`           | Quote id                                  |
+| Review submitted                  | `review`          | Review id                                 |
+| New membership subscriber         | `subscriber`      | Membership id (`customer_memberships.id`) |
+| Subscription needs a visit        | `subscriber`      | Membership id                             |
+
+Day-before reminders are sent by **GET `/api/internal/cron/booking-reminders`** (daily 14:00 UTC). Cron feature: [`src/features/cron/docs/README.md`](../../src/features/cron/docs/README.md). Auth: Vercel `Authorization: Bearer $CRON_SECRET`, or `x-internal-push-secret` for a manual run. Title is **Upcoming appointment**; body is **You have an appointment coming up.** One push per owner. Tap uses table B: `screen` → `bookings` (calendar / bookings list) — no booking UUID.
 
 ### 2. Broadcast (manual — product updates)
 
@@ -416,6 +420,7 @@ curl -X POST http://localhost:3000/api/internal/push/broadcast \
 | -------------------------- | ---------------------------------------------------- |
 | `EXPO_ACCESS_TOKEN`        | Expo Push API credential — required for any delivery |
 | `INTERNAL_PUSH_API_SECRET` | Shared secret for `/api/internal/push/*` routes      |
+| `CRON_SECRET`              | Vercel Cron bearer for `/api/internal/cron/*`        |
 
 Set the same values in production (e.g. Vercel) before sending live broadcasts.
 
@@ -445,6 +450,7 @@ If a new slug requires server validation (e.g. allowlist), extend `parseInternal
 
 | Date       | Change                                                                                       |
 | ---------- | -------------------------------------------------------------------------------------------- |
+| 2026-08-20 | Day-before owner reminder: `screen` → `bookings` (no booking UUID)                           |
 | 2026-08-19 | Added `subscriber` deep link (membership id → subscriber detail); `membership` kept as alias |
 | 2026-08-06 | Added `screen` → `notification_settings` slug + SMS launch example                           |
 | 2026-07-22 | Added `screen` → `qr_code` slug + example broadcast payload                                  |

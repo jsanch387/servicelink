@@ -12,6 +12,11 @@ export type {
 export { sendAvailabilityBookingCustomerConfirmationEmail } from './availability-booking-notification/sendAvailabilityBookingCustomerConfirmationEmail';
 export { sendAvailabilityBookingNotificationEmail } from './availability-booking-notification/sendAvailabilityBookingNotificationEmail';
 export { sendAvailabilityBookingCanceledEmail } from './availability-booking-canceled/sendAvailabilityBookingCanceledEmail';
+export { sendAvailabilityBookingReminderEmail } from './availability-booking-reminder/sendAvailabilityBookingReminderEmail';
+export type {
+  AvailabilityBookingReminderPayload,
+  SendAvailabilityBookingReminderResult,
+} from './availability-booking-reminder/types';
 export type {
   AvailabilityBookingCanceledPayload,
   SendAvailabilityBookingCanceledResult,

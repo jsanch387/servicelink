@@ -76,6 +76,9 @@ describe('notificationMinimalDisplayTitle', () => {
     expect(notificationMinimalDisplayTitle('booking', 'reminder', '')).toBe(
       'Upcoming appointment'
     );
+    expect(
+      notificationMinimalDisplayTitle('booking_reminder', 'booking', '')
+    ).toBe('Upcoming appointment');
   });
 
   it('customer / billing', () => {

@@ -211,6 +211,8 @@ export const API_ROUTES = {
   WORKSHOP_CONVERTED: '/api/workshop/converted',
   /** Authenticated: write-once signup source attribution. */
   MARKETING_ATTRIBUTION_SIGNUP: '/api/attribution/signup',
+  /** Vercel Cron: day-before owner appointment reminder. */
+  INTERNAL_CRON_BOOKING_REMINDERS: '/api/internal/cron/booking-reminders',
 } as const;
 
 export const PUBLIC_ROUTES = [

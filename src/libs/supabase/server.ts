@@ -2,6 +2,10 @@ import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { Database } from './client';
+import {
+  expireCookieOptions,
+  sanitizeSupabaseAuthCookies,
+} from './sanitizeAuthCookies';
 
 // Server-side Supabase client (for use in server components and route handlers)
 export const createSupabaseServerClient =
@@ -15,7 +19,19 @@ export const createSupabaseServerClient =
         cookieEncoding: 'raw',
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            const { cookies: safeCookies, staleNames } =
+              sanitizeSupabaseAuthCookies(cookieStore.getAll());
+            if (staleNames.length > 0) {
+              const expire = expireCookieOptions();
+              staleNames.forEach(name => {
+                try {
+                  cookieStore.set(name, '', expire);
+                } catch {
+                  // Server Components cannot always write cookies.
+                }
+              });
+            }
+            return safeCookies;
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {

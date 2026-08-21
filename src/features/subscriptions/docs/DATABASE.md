@@ -145,7 +145,7 @@ No anon/public policies. Public booking-link reads use the **admin / service-rol
 | Table                  | Role                                                      |
 | ---------------------- | --------------------------------------------------------- |
 | `customer_memberships` | Current Stripe Subscription state per customer            |
-| `membership_events`    | Append-only lifecycle timeline (`stripe_event_id` unique) |
+| `membership_events`    | Append-only lifecycle timeline (`stripe_event_id` unique). `event_type` CHECK includes `checkout_completed`, `initial_booking_created`, subscription/invoice/cancel types, and `other`. |
 | `membership_invoices`  | Invoice / payment ledger                                  |
 
 `customer_memberships.initial_booking_id` → first-visit `bookings.id` (set by webhook after Checkout; idempotency).
