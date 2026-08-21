@@ -174,21 +174,21 @@ Use the `_edit` suffix types when the announcement should land on an **edit** fl
 
 Keep push routing and universal linking in sync. Example mapping (mobile team adjusts to match actual navigator paths):
 
-| `reference_type` | `reference_id`          | Suggested deep link                        |
-| ---------------- | ----------------------- | ------------------------------------------ |
-| `screen`         | `payments`              | `servicelinkmobile://payments`             |
-| `screen`         | `payments_connect`      | `servicelinkmobile://payments/connect`     |
-| `screen`         | `bookings`              | `servicelinkmobile://bookings`             |
-| `booking`        | `{uuid}`                | `servicelinkmobile://bookings/{uuid}`      |
-| `booking_edit`   | `{uuid}`                | `servicelinkmobile://bookings/{uuid}/edit` |
-| `quote`          | `{uuid}`                | `servicelinkmobile://quotes/{uuid}`        |
-| `quote_edit`     | `{uuid}`                | `servicelinkmobile://quotes/{uuid}/edit`   |
-| `review`         | `{uuid}`                | `servicelinkmobile://reviews/{uuid}`       |
-| `customer`       | `{uuid}`                | `servicelinkmobile://customers/{uuid}`     |
+| `reference_type` | `reference_id`          | Suggested deep link                                    |
+| ---------------- | ----------------------- | ------------------------------------------------------ |
+| `screen`         | `payments`              | `servicelinkmobile://payments`                         |
+| `screen`         | `payments_connect`      | `servicelinkmobile://payments/connect`                 |
+| `screen`         | `bookings`              | `servicelinkmobile://bookings`                         |
+| `booking`        | `{uuid}`                | `servicelinkmobile://bookings/{uuid}`                  |
+| `booking_edit`   | `{uuid}`                | `servicelinkmobile://bookings/{uuid}/edit`             |
+| `quote`          | `{uuid}`                | `servicelinkmobile://quotes/{uuid}`                    |
+| `quote_edit`     | `{uuid}`                | `servicelinkmobile://quotes/{uuid}/edit`               |
+| `review`         | `{uuid}`                | `servicelinkmobile://reviews/{uuid}`                   |
+| `customer`       | `{uuid}`                | `servicelinkmobile://customers/{uuid}`                 |
 | `subscriber`     | `{uuid}`                | `servicelinkmobile://subscriptions/subscribers/{uuid}` |
-| `membership`     | `{uuid}`                | Same as `subscriber` (alias)               |
-| `screen`         | `maintenance`           | `servicelinkmobile://maintenance`          |
-| `screen`         | `notification_settings` | `servicelinkmobile://more/notifications`   |
+| `membership`     | `{uuid}`                | Same as `subscriber` (alias)                           |
+| `screen`         | `maintenance`           | `servicelinkmobile://maintenance`                      |
+| `screen`         | `notification_settings` | `servicelinkmobile://more/notifications`               |
 
 Implementation pattern:
 
@@ -218,15 +218,15 @@ function resolvePushDestination(referenceType: string, referenceId: string) {
 
 Server sends to **one owner** when an event happens. Also inserts a row into **`notifications`** for the in-app bell.
 
-| Event                    | `reference_type`  | `reference_id`     |
-| ------------------------ | ----------------- | ------------------ |
-| New availability booking | `booking`         | Booking id         |
-| Day-before appointment reminder | `screen`   | `bookings`         |
-| Legacy booking request   | `booking_request` | Booking request id |
-| Public quote request     | `quote`           | Quote id           |
-| Review submitted         | `review`          | Review id          |
-| New membership subscriber | `subscriber`     | Membership id (`customer_memberships.id`) |
-| Subscription needs a visit | `subscriber`    | Membership id                              |
+| Event                             | `reference_type`  | `reference_id`                            |
+| --------------------------------- | ----------------- | ----------------------------------------- |
+| New availability booking          | `booking`         | Booking id                                |
+| Day-before appointment reminder   | `screen`          | `bookings`                                |
+| Legacy booking request            | `booking_request` | Booking request id                        |
+| Public quote request              | `quote`           | Quote id                                  |
+| Review submitted                  | `review`          | Review id                                 |
+| New membership subscriber         | `subscriber`      | Membership id (`customer_memberships.id`) |
+| Subscription needs a visit        | `subscriber`      | Membership id                             |
 
 Day-before reminders are sent by **GET `/api/internal/cron/booking-reminders`** (daily 14:00 UTC). Cron feature: [`src/features/cron/docs/README.md`](../../src/features/cron/docs/README.md). Auth: Vercel `Authorization: Bearer $CRON_SECRET`, or `x-internal-push-secret` for a manual run. Title is **Upcoming appointment**; body is **You have an appointment coming up.** One push per owner. Tap uses table B: `screen` → `bookings` (calendar / bookings list) — no booking UUID.
 
@@ -448,10 +448,10 @@ If a new slug requires server validation (e.g. allowlist), extend `parseInternal
 
 ## Changelog
 
-| Date       | Change                                                                   |
-| ---------- | ------------------------------------------------------------------------ |
-| 2026-08-20 | Day-before owner reminder: `screen` → `bookings` (no booking UUID)       |
+| Date       | Change                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| 2026-08-20 | Day-before owner reminder: `screen` → `bookings` (no booking UUID)                           |
 | 2026-08-19 | Added `subscriber` deep link (membership id → subscriber detail); `membership` kept as alias |
-| 2026-08-06 | Added `screen` → `notification_settings` slug + SMS launch example       |
-| 2026-07-22 | Added `screen` → `qr_code` slug + example broadcast payload              |
-| 2026-07-02 | Initial contract: push payload, routing tables, broadcast API, test mode |
+| 2026-08-06 | Added `screen` → `notification_settings` slug + SMS launch example                           |
+| 2026-07-22 | Added `screen` → `qr_code` slug + example broadcast payload                                  |
+| 2026-07-02 | Initial contract: push payload, routing tables, broadcast API, test mode                     |
