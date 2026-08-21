@@ -190,7 +190,11 @@ async function loadOwnerProfileIds(
     return map;
   }
 
-  for (const row of data ?? []) {
+  const rows = (data ?? []) as Array<{
+    id?: string | null;
+    profile_id?: string | null;
+  }>;
+  for (const row of rows) {
     const id = row.id?.trim();
     const profileId = row.profile_id?.trim();
     if (id && profileId) {
