@@ -71,6 +71,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1456318202654985';
+const googleAdsId =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || 'AW-18403168896';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -179,6 +181,22 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#171717" />
+        {googleAdsId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-ads-gtag" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${googleAdsId}');
+              `}
+            </Script>
+          </>
+        ) : null}
         {metaPixelId ? (
           <Script id="meta-pixel-base" strategy="afterInteractive">
             {`
