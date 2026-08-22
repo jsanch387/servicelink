@@ -342,6 +342,17 @@ export async function persistJobCompletedTransaction(
   ]);
 
   const reviewInvite = await ensureReviewInviteRecordIfEligible(admin, booking);
+  if (!reviewInvite.ok) {
+    console.warn('[job_completed] review invite failed', {
+      bookingId,
+      error: reviewInvite.error,
+    });
+  } else if (reviewInvite.skipped) {
+    console.info('[job_completed] review invite skipped', {
+      bookingId,
+      reason: reviewInvite.reason,
+    });
+  }
   const includeReviewHint =
     reviewInvite.ok &&
     !reviewInvite.skipped &&

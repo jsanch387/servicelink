@@ -216,6 +216,13 @@ export default function RootLayout({
             `}
           </Script>
         ) : null}
+        <Script
+          id="affonso-pixel"
+          src="https://cdn.affonso.io/js/pixel.min.js"
+          strategy="afterInteractive"
+          data-affonso="cmt3x7fvr000p1fgvn76tv3t4"
+          data-cookie_duration="30"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable} ${outfit.variable} ${manrope.variable} ${poppins.variable} ${plusJakartaSans.variable} antialiased`}
