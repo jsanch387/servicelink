@@ -29,6 +29,69 @@ export interface GuideMeta {
 
 export const GUIDES: GuideMeta[] = [
   {
+    slug: 'how-to-start-a-mobile-detailing-business-2026',
+    title: 'How to Start a Mobile Detailing Business in 2026',
+    subheading:
+      'A practical playbook for solo operators—startup costs, equipment, insurance, pricing, and how to get your first bookings without a shop.',
+    coverImage: MARKETING_IMAGES.resources.startBusiness,
+    coverImageAlt:
+      'Mobile detailer with pressure washer, buckets, and towels beside a freshly washed car on a driveway',
+    keyTakeaways: [
+      'Most solo operators launch with $2,500–$8,000—not a shop lease or a custom van.',
+      'Insurance, a simple LLC, and a clear service menu matter more than extra machines.',
+      'Price packages by vehicle size on day one so you stop quoting every job over text.',
+      'Get a Google Business Profile and one booking link live before you buy more gear.',
+      'Your first 10 jobs come from neighbors, referrals, and local search—not a huge following.',
+    ],
+    metaDescription:
+      'Start a mobile detailing business in 2026: startup costs, equipment, licenses, pricing, and how to get your first clients with a booking page.',
+    keywords: [
+      'how to start a mobile detailing business',
+      'start a mobile detailing business',
+      'mobile detailing business',
+      'how to start a car detailing business',
+      'mobile car detailing business',
+      'mobile detailing startup costs',
+      'mobile detailing equipment list',
+      'start detailing business 2026',
+      'ServiceLink',
+    ],
+    datePublished: '2026-08-21',
+    dateModified: '2026-08-21',
+    faqs: [
+      {
+        question: 'How much does it cost to start a mobile detailing business?',
+        answer:
+          'A lean solo setup usually costs $2,500–$8,000 for a pressure washer, extractor, chemicals, insurance, and basic branding. A more complete kit with a water tank and better machines often lands between $8,000 and $15,000. Custom van buildouts can run much higher—and most new operators do not need one in month one.',
+      },
+      {
+        question: 'Do I need a license to start a mobile detailing business?',
+        answer:
+          'Requirements vary by city and state. Most operators form an LLC, get an EIN, open a business bank account, and carry general liability insurance. Many cities also want a local business license or mobile vendor permit. Check your city clerk and state rules before you take paid jobs.',
+      },
+      {
+        question: 'Is a mobile detailing business profitable?',
+        answer:
+          'It can be. Solo mobile detailers often keep stronger margins than a leased shop because rent is low. Profit depends on pricing, drive time, no-shows, and how many repeat customers you keep. Operators who publish clear packages, take deposits, and stay booked locally typically do better than those who quote every job from scratch.',
+      },
+      {
+        question: 'What equipment do I need to start mobile detailing?',
+        answer:
+          'Start with a pressure washer, hose and water plan, shop vac or extractor, buckets, mitts, towels, a foam cannon, interior brushes, and a core set of soaps and cleaners. Add a polisher and ceramic tools after you have consistent bookings—not before.',
+      },
+      {
+        question: 'How do I get my first detailing customers?',
+        answer:
+          'Detail cars for friends and neighbors in exchange for Google reviews, set up a Google Business Profile as a service-area business, and put one booking link in your bio, texts, and profile. Local posts, door hangers, and Nextdoor beat a big following when you are just starting.',
+      },
+      {
+        question: 'How long does it take to start a mobile detailing business?',
+        answer:
+          'Legal setup and insurance can take a few days to a couple of weeks. Equipment can be sourced in a weekend if you start lean. Many operators are ready to take paid bookings the same week they launch a simple service menu and booking page.',
+      },
+    ],
+  },
+  {
     slug: 'servicelink-vs-detail-connect-vs-detailermade-2026',
     title: 'ServiceLink vs Detail Connect vs DetailerMade (2026)',
     subheading:

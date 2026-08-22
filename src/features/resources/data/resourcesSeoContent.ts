@@ -9,21 +9,22 @@ export const RESOURCES_CANONICAL_URL = `${SITE_URL}${RESOURCES_PAGE_PATH}`;
 
 /** Browser tab + Open Graph title (layout template adds "| ServiceLink"). */
 export const RESOURCES_PAGE_SEO_TITLE =
-  'Mobile Detailer Guides: Booking Apps, Comparisons & Instagram';
+  'Mobile Detailer Guides: Start a Business, Booking Apps & Instagram';
 
 /** Meta description — keep under ~160 characters. */
 export const RESOURCES_META_DESCRIPTION =
-  'Free guides for mobile detailers: ServiceLink vs Detail Connect vs DetailerMade, booking apps, deposits to stop no-shows, and Instagram marketing.';
+  'Free guides for mobile detailers: how to start a detailing business, booking apps, ServiceLink vs Detail Connect vs DetailerMade, deposits, and Instagram.';
 
 /** Visible page header — keyword-rich but scannable. */
 export const RESOURCES_HERO = {
   title: 'ServiceLink guides for mobile detailers',
   subtitle:
-    'Articles on booking apps, software comparisons, deposits, Instagram marketing, and growing your local detailing business—written for owner-operators who want more confirmed jobs.',
+    'Articles on starting a mobile detailing business, booking apps, software comparisons, deposits, Instagram marketing, and growing local demand—written for owner-operators who want more confirmed jobs.',
 } as const;
 
 const RESOURCES_KEYWORDS = [
   'mobile detailer marketing resources',
+  'how to start a mobile detailing business',
   'ServiceLink vs Detail Connect vs DetailerMade',
   'best app for mobile detailers 2026',
   'mobile detailing deposits',

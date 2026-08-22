@@ -9,7 +9,7 @@ import {
   getBusinessTypeSelectOptions,
   getIndustryOnboardingCopy,
 } from '@/constants/businessTypes';
-import { trackMetaLeadOnce } from '@/features/analytics/utils/metaLeadTracking';
+import { trackSignupLeadOnce } from '@/features/analytics/utils/signupLeadTracking';
 import React, { useEffect, useState } from 'react';
 
 import { SpecialtyChips } from './SpecialtyChips';
@@ -42,7 +42,7 @@ export const Step1BusinessNameAndType: React.FC<
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    trackMetaLeadOnce();
+    trackSignupLeadOnce();
   }, []);
 
   const onboardingCopy = getIndustryOnboardingCopy(businessType);

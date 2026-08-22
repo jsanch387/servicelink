@@ -9,6 +9,7 @@ import {
   CalendarDaysIcon,
   ChevronDownIcon,
   DevicePhoneMobileIcon,
+  TruckIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -26,6 +27,7 @@ const NAV_ICONS = {
   calendar: CalendarDaysIcon,
   deposit: BanknotesIcon,
   instagram: DevicePhoneMobileIcon,
+  start: TruckIcon,
   workshop: AcademicCapIcon,
 } as const;
 

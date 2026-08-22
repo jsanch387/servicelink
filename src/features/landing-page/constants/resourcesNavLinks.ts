@@ -4,7 +4,7 @@ export type ResourcesNavItem = {
   label: string;
   href: string;
   description: string;
-  icon: 'book' | 'calendar' | 'deposit' | 'instagram' | 'workshop';
+  icon: 'book' | 'calendar' | 'deposit' | 'instagram' | 'start' | 'workshop';
 };
 
 export type ResourcesNavColumn = {
@@ -22,6 +22,14 @@ export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] = [
         href: ROUTES.RESOURCES,
         description: 'Free tips to grow your business',
         icon: 'book',
+      },
+      {
+        label: 'Start a business',
+        href: ROUTES.RESOURCE_GUIDE(
+          'how-to-start-a-mobile-detailing-business-2026'
+        ),
+        description: 'Costs, gear, and first clients',
+        icon: 'start',
       },
       {
         label: 'Best booking app',
