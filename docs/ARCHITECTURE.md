@@ -143,7 +143,7 @@ Code is grouped by **feature** under `src/features/`, not by file type. Pages an
 | Domain                  | Docs                                                                                                            |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Availability / bookings | [`src/features/availability/docs/FLOWS.md`](../src/features/availability/docs/FLOWS.md)                         |
-| Scheduled jobs (cron)   | [`src/features/cron/docs/README.md`](../src/features/cron/docs/README.md)                                        |
+| Scheduled jobs (cron)   | [`src/features/cron/docs/README.md`](../src/features/cron/docs/README.md)                                       |
 | Payments                | [`src/features/payments/docs/BOOKING_CHECKOUT_FLOW.md`](../src/features/payments/docs/BOOKING_CHECKOUT_FLOW.md) |
 | Memberships             | [`src/features/subscriptions/docs/FLOWS.md`](../src/features/subscriptions/docs/FLOWS.md)                       |
 | Quotes                  | [`src/features/quotes/docs/README.md`](../src/features/quotes/docs/README.md)                                   |

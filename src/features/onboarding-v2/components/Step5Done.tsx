@@ -1,8 +1,9 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { getIndustryOnboardingCopy } from '@/constants/businessTypes';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
-import { IOS_APP_STORE_URL } from '@/constants/appStore';
+import { GOOGLE_PLAY_STORE_URL, IOS_APP_STORE_URL } from '@/constants/appStore';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { BoltIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,7 @@ import { OnboardingStepNav } from './OnboardingStepNav';
 interface Step5DoneProps {
   /** Slug for the public booking link path. */
   slug: string;
+  businessType?: string;
   onBack: () => void;
 }
 
@@ -35,7 +37,11 @@ function publicBookingHost(): string {
   }
 }
 
-export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
+export const Step5Done: React.FC<Step5DoneProps> = ({
+  slug,
+  businessType,
+  onBack,
+}) => {
   const router = useRouter();
   const [phase, setPhase] = useState<'activate' | 'app-promo'>('activate');
   const [loading, setLoading] = useState(false);
@@ -80,7 +86,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
 
       if (res.ok && data.success) {
         trackCompleteRegistrationOnce();
-        if (IOS_APP_STORE_URL) {
+        if (IOS_APP_STORE_URL || GOOGLE_PLAY_STORE_URL) {
           setPhase('app-promo');
         } else {
           redirectToProfile();
@@ -107,7 +113,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({ slug, onBack }) => {
         <p className="max-w-xl text-sm sm:text-base text-gray-400 leading-relaxed">
           Your link goes live next.{' '}
           <span className="font-semibold text-white">
-            Share it. Get booked.
+            {getIndustryOnboardingCopy(businessType).goLiveSubtitle}
           </span>
         </p>
       </div>

@@ -8,6 +8,7 @@ import {
   TextArea,
   TimeSelect,
 } from '@/components/shared';
+import { getIndustryOnboardingCopy } from '@/constants/businessTypes';
 import {
   isValidServiceDurationHHmm,
   minutesToServiceDurationHHmm,
@@ -53,6 +54,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
   const [error, setError] = useState<string>('');
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const hasPrefilledPlaceholder = useRef(false);
+  const onboardingCopy = getIndustryOnboardingCopy(businessType);
 
   useEffect(() => {
     if (hasPrefilledPlaceholder.current || services.length > 0) return;
@@ -178,10 +180,10 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
     <div className="w-full">
       <div className="mb-6 sm:mb-8">
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
-          Add at least one service
+          {onboardingCopy.serviceStepTitle}
         </h1>
         <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-          Fill in one service and tap Next — you can add more after onboarding.
+          {onboardingCopy.serviceStepSubtitle}
         </p>
       </div>
 
@@ -198,7 +200,7 @@ export const Step2AddService: React.FC<Step2AddServiceProps> = ({
           <div className="space-y-4">
             <Input
               label="Service name"
-              placeholder="e.g. Full detail, Lawn mowing"
+              placeholder={onboardingCopy.serviceNamePlaceholder}
               value={name}
               onChange={setName}
               required

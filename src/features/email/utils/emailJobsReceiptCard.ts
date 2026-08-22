@@ -21,6 +21,10 @@ export interface EmailJobsReceiptJob {
   customerVehicleYear?: string | null;
   customerVehicleMake?: string | null;
   customerVehicleModel?: string | null;
+  customerPetName?: string | null;
+  customerPetSpecies?: string | null;
+  customerPetBreed?: string | null;
+  customerPetSize?: string | null;
 }
 
 function formatPriceCents(cents: number): string {
@@ -34,6 +38,17 @@ function vehicleLine(job: EmailJobsReceiptJob): string | null {
     job.customerVehicleModel?.trim(),
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' ') : null;
+}
+
+function petLine(job: EmailJobsReceiptJob): string | null {
+  const identity = [job.customerPetName?.trim(), job.customerPetBreed?.trim()]
+    .filter(Boolean)
+    .join(' · ');
+  const extras = [job.customerPetSpecies?.trim(), job.customerPetSize?.trim()]
+    .filter(Boolean)
+    .join(' · ');
+  if (identity && extras) return `${identity} · ${extras}`;
+  return identity || extras || null;
 }
 
 /**
@@ -51,6 +66,7 @@ export function buildEmailJobsReceiptCardHtml(
     const job = jobs[i];
     const optionLabel = job.servicePriceOptionLabel?.trim() || '';
     const vehicle = vehicleLine(job);
+    const pet = petLine(job);
     const addOns = job.selectedAddOns ?? [];
     const serviceCents =
       job.servicePriceCents != null && Number.isFinite(job.servicePriceCents)
@@ -64,7 +80,7 @@ export function buildEmailJobsReceiptCardHtml(
         : null;
     const durationLabel =
       durationMinutes != null ? formatDurationForEmail(durationMinutes) : null;
-    const metaParts = [vehicle, durationLabel].filter(Boolean) as string[];
+    const metaParts = [vehicle, pet, durationLabel].filter(Boolean) as string[];
     const isLastJob = i === jobs.length - 1;
     const hasAddOns = addOns.length > 0;
     const metaPad = hasAddOns ? '8px' : isLastJob ? '0' : '14px';

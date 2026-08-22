@@ -45,6 +45,8 @@ describe('handleCronGet', () => {
     });
     const res = await GET(requestWith({ authorization: 'Bearer cron-secret' }));
     expect(res.status).toBe(500);
-    await expect(res.json()).resolves.toMatchObject({ error: 'Internal error' });
+    await expect(res.json()).resolves.toMatchObject({
+      error: 'Internal error',
+    });
   });
 });

@@ -38,6 +38,7 @@ export interface CreateAppointmentWizardProps {
   businessId: string;
   businessSlug: string | null;
   businessName: string;
+  businessType?: string | null;
   serviceCatalog: QuoteCatalogService[];
   serviceCategories: ServiceCategoryRow[];
   serviceLocation: PublicBookingServiceLocation;
@@ -49,6 +50,7 @@ export function CreateAppointmentWizard({
   businessId,
   businessSlug,
   businessName: _businessName,
+  businessType,
   serviceCatalog,
   serviceCategories,
   serviceLocation,
@@ -59,6 +61,7 @@ export function CreateAppointmentWizard({
   const ctrl = useCreateAppointmentController({
     businessId,
     businessSlug: businessSlug?.trim() || '',
+    businessType,
     catalog: serviceCatalog,
     serviceLocation,
     membershipVisit,

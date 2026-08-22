@@ -142,7 +142,7 @@ export const EditAddOnModal: React.FC<EditAddOnModalProps> = ({
 
         <Input
           label="Add-on name"
-          placeholder="e.g., Extra polish, Rush delivery"
+          placeholder="e.g. Extra time, Rush appointment"
           value={name}
           onChange={setName}
           required

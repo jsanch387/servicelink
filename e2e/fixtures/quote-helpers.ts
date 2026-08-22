@@ -271,7 +271,7 @@ export async function submitPublicQuoteRequest(
   await page.getByPlaceholder('(555) 123-4567').fill(fixture.customerPhone);
   await page.getByRole('button', { name: 'Continue' }).last().click();
 
-  const serviceInput = page.getByPlaceholder('e.g. Interior + exterior detail');
+  const serviceInput = page.getByPlaceholder('e.g. Standard service');
   if (!(await serviceInput.isVisible().catch(() => false))) {
     await page.getByPlaceholder('2018').fill('2020');
     await page.getByPlaceholder('Toyota').fill('Toyota');

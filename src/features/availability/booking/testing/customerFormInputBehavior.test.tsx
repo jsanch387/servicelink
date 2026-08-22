@@ -41,6 +41,10 @@ function baseCustomer(
     vehicleYear: '',
     vehicleMake: '',
     vehicleModel: '',
+    petName: '',
+    petSpecies: '',
+    petBreed: '',
+    petSize: '',
     notes: '',
     ...overrides,
   };

@@ -25,11 +25,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { businessProfileId, businessName, businessType } = body as {
-      businessProfileId?: string | null;
-      businessName?: string;
-      businessType?: string;
-    };
+    const { businessProfileId, businessName, businessType, specialties } =
+      body as {
+        businessProfileId?: string | null;
+        businessName?: string;
+        businessType?: string;
+        specialties?: string[] | null;
+      };
 
     if (!businessName || typeof businessName !== 'string') {
       return NextResponse.json(
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
       businessProfileId: businessProfileId ?? null,
       businessName: businessName.trim(),
       businessType: businessType.trim(),
+      specialties: Array.isArray(specialties) ? specialties : [],
     });
 
     if (!result.success) {

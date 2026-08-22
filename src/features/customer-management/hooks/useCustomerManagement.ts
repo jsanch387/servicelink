@@ -33,7 +33,7 @@ function winBackTemplateForCustomer(
   bookingLink: string
 ): string {
   const firstName = customerName.trim().split(' ')[0] || 'there';
-  return `Hey ${firstName}! It's ${businessName}. Realized it's been a few months since your last detail and wanted to check in. If you need a refresh, here's my booking link:\n\n${bookingLink}`;
+  return `Hey ${firstName}! It's ${businessName}. Realized it's been a few months since your last visit and wanted to check in. If you'd like to book again, here's my booking link:\n\n${bookingLink}`;
 }
 
 type LoadStatus = 'loading' | 'ready' | 'error';

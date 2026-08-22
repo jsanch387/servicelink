@@ -2,10 +2,10 @@
 
 One cron job, two audiences. Schedule and auth live in [`src/features/cron`](../../../../cron/docs/README.md).
 
-| Audience | Channel | Entry |
-| -------- | ------- | ----- |
-| Owner | Expo push + in-app bell | `notifyOwnerForBookingReminder` |
-| Customer | Email and/or SMS | `notifyCustomerForBookingReminder` |
+| Audience | Channel                 | Entry                              |
+| -------- | ----------------------- | ---------------------------------- |
+| Owner    | Expo push + in-app bell | `notifyOwnerForBookingReminder`    |
+| Customer | Email and/or SMS        | `notifyCustomerForBookingReminder` |
 
 `runBookingReminders` is what `/api/internal/cron/booking-reminders` calls.
 

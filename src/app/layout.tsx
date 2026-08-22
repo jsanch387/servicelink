@@ -73,7 +73,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1456318202654985';
 const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || 'AW-18403168896';
 const gaMeasurementId =
-  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-7S62H6CP84';
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || 'G-7S62H6CP84';
 const gtagPrimaryId = gaMeasurementId || googleAdsId;
 
 export const metadata: Metadata = {

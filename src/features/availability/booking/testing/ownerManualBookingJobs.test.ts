@@ -69,6 +69,42 @@ describe('parseOwnerManualBookingJobs', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('persists complete pet details on job_details', () => {
+    const result = parseOwnerManualBookingJobs([
+      {
+        serviceName: 'Full Groom',
+        servicePriceCents: 7500,
+        durationMinutes: 60,
+        pet: {
+          name: 'Buddy',
+          species: 'Dog',
+          breed: 'Golden Retriever',
+          size: 'Medium',
+        },
+      },
+    ]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(toBookingJobDetails(result.jobs)[0].pet).toEqual({
+      name: 'Buddy',
+      species: 'Dog',
+      breed: 'Golden Retriever',
+      size: 'Medium',
+    });
+  });
+
+  it('rejects partial pet details', () => {
+    const result = parseOwnerManualBookingJobs([
+      {
+        serviceName: 'Full Groom',
+        servicePriceCents: 7500,
+        durationMinutes: 60,
+        pet: { name: 'Buddy', species: 'Dog', breed: '', size: 'Medium' },
+      },
+    ]);
+    expect(result.ok).toBe(false);
+  });
+
   it('keeps digits in vehicle model (e.g. Ram 2500)', () => {
     const result = parseOwnerManualBookingJobs([
       {

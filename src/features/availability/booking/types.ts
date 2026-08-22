@@ -27,6 +27,10 @@ export interface CustomerFormData {
   vehicleYear: string;
   vehicleMake: string;
   vehicleModel: string;
+  petName: string;
+  petSpecies: string;
+  petBreed: string;
+  petSize: string;
   notes: string;
 }
 
@@ -73,6 +77,8 @@ export interface AvailabilityBookingPageProps {
   businessSlug: string;
   /** When true, booking details form includes vehicle year/make/model. */
   showVehicleFields?: boolean;
+  /** When true, booking details form includes pet name/species/breed/size. */
+  showPetFields?: boolean;
   serviceId?: string;
   /** Comma-separated add-on IDs from service details page. */
   addOnIds?: string;
@@ -159,6 +165,14 @@ export type PublicBookingJobVehicleDraft = {
   model: string;
 };
 
+/** Per-job pet draft for public multi-job cart. */
+export type PublicBookingJobPetDraft = {
+  name: string;
+  species: string;
+  breed: string;
+  size: string;
+};
+
 /**
  * One catalog job in the public visit cart (sessionStorage → `jobs[]` on create).
  */
@@ -171,6 +185,7 @@ export type PublicBookingJobDraft = {
   selectedAddOns: AddOnAtBooking[];
   durationMinutes: number;
   vehicle: PublicBookingJobVehicleDraft;
+  pet?: PublicBookingJobPetDraft;
 };
 
 /** Per-job vehicle for owner multi-job visits (`jobs[]`). */
@@ -178,6 +193,13 @@ export interface CreateBookingJobVehicle {
   year?: string;
   make?: string;
   model?: string;
+}
+
+export interface CreateBookingJobPet {
+  name?: string;
+  species?: string;
+  breed?: string;
+  size?: string;
 }
 
 /**
@@ -195,6 +217,7 @@ export interface CreateBookingJobItem {
   /** This job only (service + its add-ons). Integer ≥ 1. */
   durationMinutes: number;
   vehicle?: CreateBookingJobVehicle;
+  pet?: CreateBookingJobPet;
   /** Mobile local id for support correlation — not persisted in v1. */
   clientJobId?: string;
   /** Optional sale preview fields — ignored; server recomputes. */

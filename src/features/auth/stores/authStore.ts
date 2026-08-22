@@ -55,13 +55,12 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       ...initialState,
 
-      // Initialize auth state (re-check session when persisted user is missing)
+      // Always verify the live Supabase session. Persisted `user` can be stale
+      // after cookies expire — that made marketing nav show Dashboard + send
+      // logged-out visitors to /login.
       initialize: async () => {
-        const { isLoading, isInitialized, user } = get();
-        if (isLoading) {
-          return;
-        }
-        if (isInitialized && user) {
+        const { isLoading, isInitialized } = get();
+        if (isLoading || isInitialized) {
           return;
         }
 
@@ -70,36 +69,34 @@ export const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true });
 
-          // Get current session
+          // Validate with the server. getSession() only reads local storage and
+          // can look logged-in after cookies are gone (nav showed Dashboard,
+          // /api/attribution/signup 401'd).
           const {
-            data: { session },
-            error: sessionError,
-          } = await supabase.auth.getSession();
+            data: { user: authUser },
+            error: userError,
+          } = await supabase.auth.getUser();
 
-          if (sessionError) {
-            console.error('Error getting session:', sessionError);
-            set({ isLoading: false, isInitialized: true });
-            return;
-          }
-
-          if (session?.user) {
-            // Use the auth.users data directly
-            const user: AuthUser = {
-              id: session.user.id,
-              email: session.user.email!,
-              name: session.user.user_metadata?.name || null,
-            };
-
+          if (userError || !authUser) {
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => {
+              // Local store may already be empty.
+            });
             set({
-              user,
-              supabaseUser: session.user,
+              user: null,
+              supabaseUser: null,
               isLoading: false,
               isInitialized: true,
             });
           } else {
+            const user: AuthUser = {
+              id: authUser.id,
+              email: authUser.email!,
+              name: authUser.user_metadata?.name || null,
+            };
+
             set({
-              user: null,
-              supabaseUser: null,
+              user,
+              supabaseUser: authUser,
               isLoading: false,
               isInitialized: true,
             });
@@ -353,7 +350,6 @@ export const useAuthStore = create<AuthStore>()(
       name: 'auth-store',
       partialize: state => ({
         user: state.user,
-        isInitialized: state.isInitialized,
       }),
     }
   )

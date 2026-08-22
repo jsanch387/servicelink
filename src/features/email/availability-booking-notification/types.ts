@@ -36,6 +36,10 @@ export interface AvailabilityBookingNotificationPayload {
   customerVehicleYear?: string;
   customerVehicleMake?: string;
   customerVehicleModel?: string;
+  customerPetName?: string;
+  customerPetSpecies?: string;
+  customerPetBreed?: string;
+  customerPetSize?: string;
   serviceName: string;
   /** Multi-price option selected by customer (e.g., Sedan, SUV). */
   servicePriceOptionLabel?: string;
@@ -81,6 +85,10 @@ export interface AvailabilityBookingEmailJob {
   customerVehicleYear?: string;
   customerVehicleMake?: string;
   customerVehicleModel?: string;
+  customerPetName?: string;
+  customerPetSpecies?: string;
+  customerPetBreed?: string;
+  customerPetSize?: string;
   /** Gross job total (service + add-ons), pre-discount. */
   totalPriceCents?: number;
   discount?: {

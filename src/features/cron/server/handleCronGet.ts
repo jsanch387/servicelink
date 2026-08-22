@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyInternalCronAuth } from './verifyInternalCronAuth';
 
-export type CronJobRunner = (ctx: {
-  request: NextRequest;
-}) => Promise<object>;
+export type CronJobRunner = (ctx: { request: NextRequest }) => Promise<object>;
 
 /**
  * Shared GET wrapper for `/api/internal/cron/*`.

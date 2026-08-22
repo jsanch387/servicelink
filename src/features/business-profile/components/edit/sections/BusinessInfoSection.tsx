@@ -2,7 +2,7 @@
 
 import { GlassCard, Input, Select, TextArea } from '@/components/shared';
 import { BUSINESS_BIO_MAX_LENGTH } from '@/features/business-profile/constants/businessBio';
-import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
+import { getBusinessTypeSelectOptions } from '@/constants/businessTypes';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
 import {
   formatServiceArea,
@@ -54,7 +54,7 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
                 placeholder="Select type"
                 value={formData.business_type}
                 onChange={value => onInputChange('business_type', value)}
-                options={BUSINESS_TYPE_OPTIONS}
+                options={getBusinessTypeSelectOptions(formData.business_type)}
                 required
                 error={
                   errors.some(e => e.includes('Business type'))

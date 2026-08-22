@@ -10,6 +10,7 @@ import {
   TextArea,
   useScrollWindowToTopOnChange,
 } from '@/components/shared';
+import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { API_ROUTES, getPublicBusinessProfilePath } from '@/constants/routes';
 import { BookingVehicleFields } from '@/features/availability/booking/components/BookingVehicleFields';
@@ -84,11 +85,7 @@ export const PublicQuoteRequestScreen: React.FC<
   const [agreedToSmsNotifications, setAgreedToSmsNotifications] =
     useState(true);
 
-  const showVehicleFields = useMemo(() => {
-    const t = (businessType ?? '').trim().toLowerCase();
-    if (!t) return false;
-    return t.includes('auto') || t.includes('detail');
-  }, [businessType]);
+  const showVehicleFields = isVehicleRelatedBusinessType(businessType);
 
   const steps = useMemo(
     () =>

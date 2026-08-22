@@ -95,13 +95,13 @@ export function ServicePriceOptionsSection({
     () => [
       {
         id: 'teaser-suv',
-        label: 'SUV detail',
+        label: 'Medium',
         price: '145',
         durationHHmm: '02:00',
       },
       {
         id: 'teaser-truck',
-        label: 'Truck detail',
+        label: 'Large',
         price: '185',
         durationHHmm: '02:30',
       },
@@ -431,7 +431,7 @@ export function ServicePriceOptionsSection({
                                       Name
                                     </span>
                                     <Input
-                                      placeholder="e.g. Sedan, crew cab truck"
+                                      placeholder="e.g. Small, Medium, Large"
                                       value={opt.label}
                                       onChange={v =>
                                         updateOption(opt.id, { label: v })

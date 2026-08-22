@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { getIndustryOnboardingCopy } from '@/constants/businessTypes';
 import { SLUG_MAX_LENGTH, sanitizeSlugInput } from '@/constants/slug';
 import React, { useState } from 'react';
 import { OnboardingStepNav } from './OnboardingStepNav';
@@ -9,6 +10,7 @@ const APP_DOMAIN = 'myservicelink.app';
 
 interface Step4ClaimLinkProps {
   businessProfileId: string | undefined;
+  businessType?: string;
   slug: string;
   onUpdate: (slug: string) => void;
   onNext: () => void;
@@ -17,6 +19,7 @@ interface Step4ClaimLinkProps {
 
 export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
   businessProfileId,
+  businessType,
   slug,
   onUpdate,
   onNext,
@@ -24,6 +27,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
 }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const onboardingCopy = getIndustryOnboardingCopy(businessType);
 
   const slugClean = sanitizeSlugInput(slug);
   const canContinue = slugClean.length >= 3;
@@ -89,7 +93,7 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
                 type="text"
                 value={slug}
                 onChange={e => onUpdate(sanitizeSlugInput(e.target.value))}
-                placeholder="my-business"
+                placeholder={onboardingCopy.slugExample}
                 disabled={saving}
                 className="flex-1 min-w-0 py-3 px-4 bg-transparent text-white font-mono text-base outline-none placeholder:text-gray-500"
                 aria-label="Your link slug"
@@ -98,7 +102,8 @@ export const Step4ClaimLink: React.FC<Step4ClaimLinkProps> = ({
             </div>
             <div className="flex justify-between text-xs text-gray-500">
               <span>
-                Use letters, numbers, and hyphens only (e.g. elite-detail)
+                Use letters, numbers, and hyphens only (e.g.{' '}
+                {onboardingCopy.slugExample})
               </span>
               <span
                 className={

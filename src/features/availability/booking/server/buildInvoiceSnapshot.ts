@@ -8,6 +8,7 @@ import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import type { JobCompletedSessionFeeInput } from './jobCompletedTypes';
 import type { BookingAmountDueResult } from './computeBookingAmountDue';
 import {
+  formatJobPetLine,
   formatJobVehicleLine,
   parseStoredBookingJobDetails,
 } from '../utils/parseStoredBookingJobDetails';
@@ -148,7 +149,8 @@ function buildJobSnapshotParts(jobDetailsRaw: unknown): {
       servicePriceOptionLabel: option,
       servicePriceCents: job.servicePriceCents,
       durationMinutes: job.durationMinutes,
-      vehicleLabel: formatJobVehicleLine(job.vehicle),
+      vehicleLabel:
+        formatJobVehicleLine(job.vehicle) ?? formatJobPetLine(job.pet),
       vehicleYear: job.vehicle?.year?.trim() || null,
       vehicleMake: job.vehicle?.make?.trim() || null,
       vehicleModel: job.vehicle?.model?.trim() || null,

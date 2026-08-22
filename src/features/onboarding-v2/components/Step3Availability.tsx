@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { getIndustryOnboardingCopy } from '@/constants/businessTypes';
 import type { PresetKey } from '@/features/availability/components/QuickPresetsSection';
 import { WorkingHoursCard } from '@/features/availability/components/WorkingHoursCard';
 import { type WeeklySchedule } from '@/features/availability/types/availability';
@@ -27,6 +28,7 @@ function getPresetSchedule(preset: PresetKey): WeeklySchedule | null {
 
 interface Step3AvailabilityProps {
   businessProfileId: string | undefined;
+  businessType?: string;
   schedule: WeeklySchedule;
   selectedPreset: PresetKey | null;
   onUpdate: (updates: {
@@ -39,6 +41,7 @@ interface Step3AvailabilityProps {
 
 export const Step3Availability: React.FC<Step3AvailabilityProps> = ({
   businessProfileId,
+  businessType,
   schedule,
   selectedPreset,
   onUpdate,
@@ -101,8 +104,8 @@ export const Step3Availability: React.FC<Step3AvailabilityProps> = ({
           When do you work?
         </h1>
         <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-          Pick your usual hours. Customers will only see times when you&apos;re
-          free.
+          Pick your usual hours.{' '}
+          {getIndustryOnboardingCopy(businessType).hoursSubtitle}
         </p>
       </div>
 

@@ -6,13 +6,13 @@ The web/API server sends pushes via the **Expo Push API**. Pushes are **not** tr
 
 **Server implementation (reference):**
 
-| Piece                      | Path                                                                                 |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| Expo sender                | `src/features/push/server/sendExpoPushToUser.ts`                                     |
-| Broadcast route            | `POST /api/internal/push/broadcast` → `src/app/api/internal/push/broadcast/route.ts` |
-| Single-user internal route | `POST /api/internal/push/send` → `src/app/api/internal/push/send/route.ts`           |
-| Day-before booking reminder | `GET /api/internal/cron/booking-reminders` (Vercel Cron)                            |
-| Token table (Supabase)     | `user_push_tokens`                                                                   |
+| Piece                       | Path                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| Expo sender                 | `src/features/push/server/sendExpoPushToUser.ts`                                     |
+| Broadcast route             | `POST /api/internal/push/broadcast` → `src/app/api/internal/push/broadcast/route.ts` |
+| Single-user internal route  | `POST /api/internal/push/send` → `src/app/api/internal/push/send/route.ts`           |
+| Day-before booking reminder | `GET /api/internal/cron/booking-reminders` (Vercel Cron)                             |
+| Token table (Supabase)      | `user_push_tokens`                                                                   |
 
 ---
 
@@ -125,23 +125,23 @@ These are sent automatically when business events occur. `reference_id` is alway
 
 Used when ops sends a **feature announcement** via `POST /api/internal/push/broadcast`. There is **no entity UUID** — `reference_id` is a **screen slug** the app understands.
 
-| `reference_type` | `reference_id` (screen slug) | Navigate to                                 |
-| ---------------- | ---------------------------- | ------------------------------------------- |
-| `screen`         | `home`                       | App home / dashboard tab                    |
+| `reference_type` | `reference_id` (screen slug) | Navigate to                                                 |
+| ---------------- | ---------------------------- | ----------------------------------------------------------- |
+| `screen`         | `home`                       | App home / dashboard tab                                    |
 | `screen`         | `bookings`                   | Bookings / calendar list (also the day-before reminder tap) |
-| `screen`         | `quotes`                     | Quotes list                                 |
-| `screen`         | `customers`                  | Customers list                              |
-| `screen`         | `reviews`                    | Reviews list                                |
-| `screen`         | `payments`                   | Payments / payouts settings                 |
-| `screen`         | `payments_connect`           | Stripe Connect onboarding / connect status  |
-| `screen`         | `maintenance`                | Maintenance enrollments                     |
-| `screen`         | `availability`               | Availability / calendar settings            |
-| `screen`         | `services`                   | Services management                         |
-| `screen`         | `profile`                    | Business profile edit                       |
-| `screen`         | `qr_code`                    | Business QR code (view / share)             |
-| `screen`         | `notification_settings`      | Notification settings (push + customer SMS) |
-| `screen`         | `upgrade`                    | Pro / upgrade paywall                       |
-| `screen`         | `settings`                   | Account / settings                          |
+| `screen`         | `quotes`                     | Quotes list                                                 |
+| `screen`         | `customers`                  | Customers list                                              |
+| `screen`         | `reviews`                    | Reviews list                                                |
+| `screen`         | `payments`                   | Payments / payouts settings                                 |
+| `screen`         | `payments_connect`           | Stripe Connect onboarding / connect status                  |
+| `screen`         | `maintenance`                | Maintenance enrollments                                     |
+| `screen`         | `availability`               | Availability / calendar settings                            |
+| `screen`         | `services`                   | Services management                                         |
+| `screen`         | `profile`                    | Business profile edit                                       |
+| `screen`         | `qr_code`                    | Business QR code (view / share)                             |
+| `screen`         | `notification_settings`      | Notification settings (push + customer SMS)                 |
+| `screen`         | `upgrade`                    | Pro / upgrade paywall                                       |
+| `screen`         | `settings`                   | Account / settings                                          |
 
 **Convention:** `reference_type: "screen"` + `reference_id: "<slug>"`.
 

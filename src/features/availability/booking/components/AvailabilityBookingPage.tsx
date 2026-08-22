@@ -103,6 +103,12 @@ import {
   areVisitJobVehiclesComplete,
   firstIncompleteVisitJob,
 } from '../utils/visitJobVehicles';
+import {
+  areVisitJobPetsComplete,
+  firstIncompleteVisitPetJob,
+  jobPetDraft,
+} from '../utils/visitJobPets';
+import { BookingPetFields } from './BookingPetFields';
 
 const CUSTOMER_FORM_ID = 'availability-booking-details-form';
 
@@ -233,6 +239,7 @@ export function AvailabilityBookingPage({
   businessId,
   businessSlug,
   showVehicleFields = false,
+  showPetFields = false,
   serviceId,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   addOnIds,
@@ -328,6 +335,7 @@ export function AvailabilityBookingPage({
 
   // Multi-job: vehicles live on each job, not the customer form.
   const effectiveShowVehicleFields = showVehicleFields && !isMultiJobVisit;
+  const effectiveShowPetFields = showPetFields && !isMultiJobVisit;
 
   // Hydrate once on client mount (visit page only mounts after cart load).
   const multiJobBoot = useMemo(() => {
@@ -910,6 +918,7 @@ export function AvailabilityBookingPage({
     customerServiceChoice
   );
   const requireVehicleFields = showVehicleFields && !isOwnerManualBooking;
+  const requirePetFields = showPetFields && !isOwnerManualBooking;
   const detailsFormValid = isBookingDetailsSubStepValid(
     detailsSubStep,
     customerData,
@@ -918,6 +927,8 @@ export function AvailabilityBookingPage({
     {
       showVehicleFields: effectiveShowVehicleFields,
       requireVehicleFields: effectiveShowVehicleFields && requireVehicleFields,
+      showPetFields: effectiveShowPetFields,
+      requirePetFields: effectiveShowPetFields && requirePetFields,
       emailOptional: true,
     }
   );
@@ -926,6 +937,11 @@ export function AvailabilityBookingPage({
     isMultiJobVisit &&
     requireVehicleFields &&
     !areVisitJobVehiclesComplete(visitJobs);
+  const multiJobPetsIncomplete =
+    detailsSubStep === 'vehicleNotes' &&
+    isMultiJobVisit &&
+    requirePetFields &&
+    !areVisitJobPetsComplete(visitJobs);
 
   const toastMultiJobVehicleRequired = () => {
     const incomplete = firstIncompleteVisitJob(visitJobs);
@@ -934,6 +950,23 @@ export function AvailabilityBookingPage({
         ? ui.multiJob.vehicleRequiredToastForJob(incomplete.serviceName)
         : ui.multiJob.vehicleRequiredToast
     );
+  };
+  const toastMultiJobPetRequired = () => {
+    const incomplete = firstIncompleteVisitPetJob(visitJobs);
+    toast.error(
+      incomplete
+        ? ui.multiJob.petRequiredToastForJob(incomplete.serviceName)
+        : ui.multiJob.petRequiredToast
+    );
+  };
+  const multiJobAssetsIncomplete =
+    multiJobVehiclesIncomplete || multiJobPetsIncomplete;
+  const toastMultiJobAssetRequired = () => {
+    if (multiJobVehiclesIncomplete) {
+      toastMultiJobVehicleRequired();
+      return;
+    }
+    toastMultiJobPetRequired();
   };
   const detailsPrimaryCtaLabel =
     detailsSubStep === 'vehicleNotes'
@@ -1134,8 +1167,8 @@ export function AvailabilityBookingPage({
   };
 
   const handleDetailsSubStepSubmit = () => {
-    if (multiJobVehiclesIncomplete) {
-      toastMultiJobVehicleRequired();
+    if (multiJobAssetsIncomplete) {
+      toastMultiJobAssetRequired();
       return;
     }
 
@@ -1806,6 +1839,8 @@ export function AvailabilityBookingPage({
                   onSubmit={handleDetailsSubStepSubmit}
                   showVehicleFields={effectiveShowVehicleFields}
                   requireVehicleFields={requireVehicleFields}
+                  showPetFields={effectiveShowPetFields}
+                  requirePetFields={requirePetFields}
                   hideSubmitButton
                   submitLabel={detailsPrimaryCtaLabel}
                   bookingFlowLocale={bookingFlowLocale}
@@ -1896,7 +1931,91 @@ export function AvailabilityBookingPage({
                       ) : null}
                     </div>
                   ) : null}
-                  {isMultiJobVisit && !showVehicleFields ? (
+                  {isMultiJobVisit && showPetFields ? (
+                    <div className="space-y-4">
+                      <h2 className="text-base font-semibold text-white">
+                        {ui.multiJob.petPerService}
+                      </h2>
+                      {visitJobs.map(job => {
+                        const pet = jobPetDraft(job);
+                        return (
+                          <div
+                            key={job.localId}
+                            className="rounded-xl border border-white/10 p-4"
+                          >
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-white">
+                                  {job.serviceName}
+                                </p>
+                                {job.servicePriceOptionLabel?.trim() ? (
+                                  <p className="mt-0.5 text-sm text-gray-400">
+                                    {job.servicePriceOptionLabel.trim()}
+                                  </p>
+                                ) : null}
+                              </div>
+                              {visitJobs.length > 1 ? (
+                                <button
+                                  type="button"
+                                  className="cursor-pointer shrink-0 text-xs text-red-400 hover:text-red-300"
+                                  onClick={() => removeVisitJob(job.localId)}
+                                >
+                                  {ui.multiJob.remove}
+                                </button>
+                              ) : null}
+                            </div>
+                            <BookingPetFields
+                              value={{
+                                petName: pet.name,
+                                petSpecies: pet.species,
+                                petBreed: pet.breed,
+                                petSize: pet.size,
+                              }}
+                              onChange={updates => {
+                                updateVisitJobs(
+                                  visitJobs.map(j =>
+                                    j.localId === job.localId
+                                      ? {
+                                          ...j,
+                                          pet: {
+                                            name:
+                                              updates.petName ??
+                                              jobPetDraft(j).name,
+                                            species:
+                                              updates.petSpecies ??
+                                              jobPetDraft(j).species,
+                                            breed:
+                                              updates.petBreed ??
+                                              jobPetDraft(j).breed,
+                                            size:
+                                              updates.petSize ??
+                                              jobPetDraft(j).size,
+                                          },
+                                        }
+                                      : j
+                                  )
+                                );
+                              }}
+                              bookingFlowLocale={bookingFlowLocale}
+                              required={requirePetFields}
+                            />
+                          </div>
+                        );
+                      })}
+                      {addAnotherJobHref &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS ? (
+                        <AddAnotherJobCard
+                          label={ui.multiJob.addAnotherService}
+                          onPress={persistVisitDraftAndAddAnother}
+                        />
+                      ) : visitJobs.length >= PUBLIC_BOOKING_MAX_JOBS ? (
+                        <p className="text-xs text-amber-400/90">
+                          {ui.multiJob.maxJobsReached}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {isMultiJobVisit && !showVehicleFields && !showPetFields ? (
                     <div className="space-y-3">
                       {visitJobs.length > 1 ? (
                         <ul className="space-y-2">
@@ -1944,6 +2063,10 @@ export function AvailabilityBookingPage({
                     showVehicleFields={effectiveShowVehicleFields}
                     requireVehicleFields={
                       effectiveShowVehicleFields && requireVehicleFields
+                    }
+                    showPetFields={effectiveShowPetFields}
+                    requirePetFields={
+                      effectiveShowPetFields && requirePetFields
                     }
                     hideSubmitButton
                     submitLabel={detailsPrimaryCtaLabel}
@@ -2430,15 +2553,15 @@ export function AvailabilityBookingPage({
                 key={`details-form-${detailsSubStep}`}
                 // When vehicles are incomplete, stay clickable as a button so we
                 // can toast the next step instead of a silent disabled state.
-                type={multiJobVehiclesIncomplete ? 'button' : 'submit'}
+                type={multiJobAssetsIncomplete ? 'button' : 'submit'}
                 form={CUSTOMER_FORM_ID}
                 variant="inverse"
                 fullWidth
                 className="font-semibold"
                 disabled={!detailsFormValid}
                 onClick={
-                  multiJobVehiclesIncomplete
-                    ? toastMultiJobVehicleRequired
+                  multiJobAssetsIncomplete
+                    ? toastMultiJobAssetRequired
                     : undefined
                 }
               >

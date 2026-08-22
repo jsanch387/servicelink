@@ -35,19 +35,19 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 
 ## Quotes, maintenance, onboarding, other
 
-| Doc                                                                          | What it covers      |
-| ---------------------------------------------------------------------------- | ------------------- |
-| [mobile-quote-read.md](./mobile-quote-read.md)                               | Read quotes         |
-| [mobile-quote-send.md](./mobile-quote-send.md)                               | Send quote          |
-| [mobile-maintenance-enrollment.md](./mobile-maintenance-enrollment.md)       | Maintenance plans   |
-| [mobile-onboarding-complete.md](./mobile-onboarding-complete.md)             | Onboarding complete |
-| [mobile-stripe-connect-onboarding.md](./mobile-stripe-connect-onboarding.md) | Connect onboarding  |
-| [mobile-entitlement-paywall.md](./mobile-entitlement-paywall.md)             | Pro paywall         |
-| [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push           |
+| Doc                                                                          | What it covers                                     |
+| ---------------------------------------------------------------------------- | -------------------------------------------------- |
+| [mobile-quote-read.md](./mobile-quote-read.md)                               | Read quotes                                        |
+| [mobile-quote-send.md](./mobile-quote-send.md)                               | Send quote                                         |
+| [mobile-maintenance-enrollment.md](./mobile-maintenance-enrollment.md)       | Maintenance plans                                  |
+| [mobile-onboarding-complete.md](./mobile-onboarding-complete.md)             | Onboarding complete                                |
+| [mobile-stripe-connect-onboarding.md](./mobile-stripe-connect-onboarding.md) | Connect onboarding                                 |
+| [mobile-entitlement-paywall.md](./mobile-entitlement-paywall.md)             | Pro paywall                                        |
+| [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push                                          |
 | [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder) |
-| [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form |
-| [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area        |
-| [service-categories-data.md](./service-categories-data.md)                   | Service categories  |
+| [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form                                |
+| [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area                                       |
+| [service-categories-data.md](./service-categories-data.md)                   | Service categories                                 |
 
 ## Conventions
 

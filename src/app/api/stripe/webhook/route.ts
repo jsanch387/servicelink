@@ -153,6 +153,10 @@ type StoredBookingCheckoutPayload = {
     vehicleYear?: string;
     vehicleMake?: string;
     vehicleModel?: string;
+    petName?: string;
+    petSpecies?: string;
+    petBreed?: string;
+    petSize?: string;
     notes?: string;
   };
   totalPriceCents: number;
@@ -184,6 +188,10 @@ function customerFormFromCheckoutStored(
     vehicleYear: typeof c.vehicleYear === 'string' ? c.vehicleYear : '',
     vehicleMake: typeof c.vehicleMake === 'string' ? c.vehicleMake : '',
     vehicleModel: typeof c.vehicleModel === 'string' ? c.vehicleModel : '',
+    petName: typeof c.petName === 'string' ? c.petName : '',
+    petSpecies: typeof c.petSpecies === 'string' ? c.petSpecies : '',
+    petBreed: typeof c.petBreed === 'string' ? c.petBreed : '',
+    petSize: typeof c.petSize === 'string' ? c.petSize : '',
     notes: typeof c.notes === 'string' ? c.notes : '',
   };
 }
@@ -294,6 +302,11 @@ function parseStoredBookingCheckoutPayload(
         typeof customer?.vehicleMake === 'string' ? customer.vehicleMake : '',
       vehicleModel:
         typeof customer?.vehicleModel === 'string' ? customer.vehicleModel : '',
+      petName: typeof customer?.petName === 'string' ? customer.petName : '',
+      petSpecies:
+        typeof customer?.petSpecies === 'string' ? customer.petSpecies : '',
+      petBreed: typeof customer?.petBreed === 'string' ? customer.petBreed : '',
+      petSize: typeof customer?.petSize === 'string' ? customer.petSize : '',
       notes: typeof customer?.notes === 'string' ? customer.notes : '',
     },
     totalPriceCents,
@@ -754,6 +767,10 @@ export async function POST(request: NextRequest) {
         customerVehicleYear: job.vehicle.year || undefined,
         customerVehicleMake: job.vehicle.make || undefined,
         customerVehicleModel: job.vehicle.model || undefined,
+        customerPetName: job.pet?.name || undefined,
+        customerPetSpecies: job.pet?.species || undefined,
+        customerPetBreed: job.pet?.breed || undefined,
+        customerPetSize: job.pet?.size || undefined,
         totalPriceCents: jobGrossCents(job),
       }));
       const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
@@ -764,6 +781,10 @@ export async function POST(request: NextRequest) {
         customerVehicleMake: customerForCreate.vehicleMake?.trim() || undefined,
         customerVehicleModel:
           customerForCreate.vehicleModel?.trim() || undefined,
+        customerPetName: customerForCreate.petName?.trim() || undefined,
+        customerPetSpecies: customerForCreate.petSpecies?.trim() || undefined,
+        customerPetBreed: customerForCreate.petBreed?.trim() || undefined,
+        customerPetSize: customerForCreate.petSize?.trim() || undefined,
         serviceName:
           jobCount > 1 ? `${jobCount} jobs` : serviceNameForBooking.trim(),
         servicePriceOptionLabel: parsedJobs

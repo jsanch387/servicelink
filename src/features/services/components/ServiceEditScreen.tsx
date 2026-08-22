@@ -402,7 +402,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
               >
                 <Input
                   label="Service name"
-                  placeholder="e.g., House Cleaning, Logo Design"
+                  placeholder="e.g. Standard service, Premium package"
                   value={name}
                   onChange={setName}
                   error={

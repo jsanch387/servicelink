@@ -1,5 +1,6 @@
 'use client';
 
+import { resolveBusinessIndustry } from '@/constants/businessTypes';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
 import type { QuoteCatalogService } from '@/features/quotes/server/loadQuoteServiceCatalog';
@@ -105,6 +106,7 @@ function applyCatalogServiceToDraft(
 export interface UseCreateAppointmentControllerOptions {
   businessId: string;
   businessSlug: string;
+  businessType?: string | null;
   catalog: QuoteCatalogService[];
   serviceLocation: PublicBookingServiceLocation;
   /** When true, schedule/review continue gates are bypassed (tests / stubs). */
@@ -119,6 +121,7 @@ export function useCreateAppointmentController(
   const {
     businessId,
     businessSlug,
+    businessType,
     catalog,
     serviceLocation,
     stubAfterVehicle = false,
@@ -321,6 +324,9 @@ export function useCreateAppointmentController(
   const addressSkipped =
     serviceLocation.mode === 'shop_only' ||
     (serviceLocation.mode === 'both' && visit.locationType === 'shop');
+  const resolvedIndustry = resolveBusinessIndustry(businessType);
+  const vehicleSkipped =
+    resolvedIndustry.value != null && !resolvedIndustry.showVehicleFields;
 
   const shopAddressMissing =
     visit.locationType === 'shop' && !serviceLocation.hasCompleteShopAddress;
@@ -331,9 +337,17 @@ export function useCreateAppointmentController(
       addonsSkipped,
       locationSkipped,
       addressSkipped,
+      vehicleSkipped,
       jobIndex,
     }),
-    [pricingSkipped, addonsSkipped, locationSkipped, addressSkipped, jobIndex]
+    [
+      pricingSkipped,
+      addonsSkipped,
+      locationSkipped,
+      addressSkipped,
+      vehicleSkipped,
+      jobIndex,
+    ]
   );
 
   const progress = getCreateAppointmentProgressFraction(step, {
@@ -344,6 +358,7 @@ export function useCreateAppointmentController(
     addonsSkipped: false,
     locationSkipped,
     addressSkipped,
+    vehicleSkipped,
     jobIndex,
   });
 
@@ -613,6 +628,7 @@ export function useCreateAppointmentController(
             addonsSkipped: true,
             locationSkipped,
             addressSkipped,
+            vehicleSkipped,
             jobIndex,
             hasScheduleSlot,
           });
@@ -656,6 +672,7 @@ export function useCreateAppointmentController(
     hasScheduleSlot,
     locationSkipped,
     addressSkipped,
+    vehicleSkipped,
     jobIndex,
     submitAppointment,
     scheduleExactConflict,
@@ -708,12 +725,12 @@ export function useCreateAppointmentController(
     setServicePath(last.isCustomJob ? 'custom' : 'catalog');
     setServicePhase('path');
     setStep(
-      hasScheduleSlot
+      hasScheduleSlot || vehicleSkipped
         ? CREATE_APPOINTMENT_STEP.REVIEW
         : CREATE_APPOINTMENT_STEP.VEHICLE
     );
     setNotice(null);
-  }, [committedJobs, hasScheduleSlot]);
+  }, [committedJobs, hasScheduleSlot, vehicleSkipped]);
 
   const addAnotherJob = useCallback(() => {
     const gate = canAddAnotherJob({

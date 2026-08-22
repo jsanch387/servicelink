@@ -84,6 +84,10 @@ function emptyCustomerForm(snapshot: {
     vehicleYear: (snapshot.vehicleYear ?? '').trim(),
     vehicleMake: (snapshot.vehicleMake ?? '').trim(),
     vehicleModel: (snapshot.vehicleModel ?? '').trim(),
+    petName: '',
+    petSpecies: '',
+    petBreed: '',
+    petSize: '',
     notes: 'Membership visit.',
   };
 }

@@ -74,9 +74,7 @@ export async function runOwnerBookingReminders(
 
   const onlyProfileId = params?.onlyProfileId?.trim() || '';
   const ownerIds = [
-    ...new Set(
-      [...businesses.values()].map(b => b.profileId).filter(Boolean)
-    ),
+    ...new Set([...businesses.values()].map(b => b.profileId).filter(Boolean)),
   ].filter(id => !onlyProfileId || id === onlyProfileId);
   result.considered = ownerIds.length;
   result.skipped = [...new Set(bookings.map(b => b.business_id))].filter(
