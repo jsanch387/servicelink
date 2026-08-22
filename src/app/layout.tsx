@@ -4,6 +4,10 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { MarketingAttributionRoot } from '@/features/marketing-attribution';
 import {
+  AFFONSO_COOKIE_DURATION_DAYS,
+  AFFONSO_PUBLIC_PROGRAM_ID,
+} from '@/features/marketing-attribution/constants';
+import {
   HOME_SEO_DESCRIPTION,
   HOME_SEO_TITLE,
 } from '@/features/landing-page/data/homeSeoContent';
@@ -219,9 +223,9 @@ export default function RootLayout({
         <Script
           id="affonso-pixel"
           src="https://cdn.affonso.io/js/pixel.min.js"
-          strategy="afterInteractive"
-          data-affonso="cmt3x7fvr000p1fgvn76tv3t4"
-          data-cookie_duration="30"
+          strategy="beforeInteractive"
+          data-affonso={AFFONSO_PUBLIC_PROGRAM_ID}
+          data-cookie_duration={String(AFFONSO_COOKIE_DURATION_DAYS)}
         />
       </head>
       <body

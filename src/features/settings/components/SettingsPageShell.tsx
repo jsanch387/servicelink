@@ -14,7 +14,7 @@ export const SettingsPageShell: React.FC<SettingsPageShellProps> = ({
           Settings
         </h1>
         <p className="mt-1 text-sm text-gray-500 sm:text-base">
-          Manage your sharing, billing, and account.
+          Manage your sharing, billing, referrals, and account.
         </p>
       </header>
       <div className="space-y-7 w-full min-w-0">{children}</div>

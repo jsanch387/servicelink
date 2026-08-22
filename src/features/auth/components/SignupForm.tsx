@@ -84,7 +84,7 @@ export const SignupForm: React.FC = () => {
         return;
       }
 
-      trackSignupLeadOnce();
+      trackSignupLeadOnce({ email: formData.email });
       markPendingSignupAttribution();
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));

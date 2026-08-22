@@ -1,4 +1,6 @@
 export {
+  AFFONSO_COOKIE_DURATION_DAYS,
+  AFFONSO_PUBLIC_PROGRAM_ID,
   MARKETING_UTM_STORAGE_KEY,
   PENDING_SIGNUP_ATTRIBUTION_KEY,
   SIGNUP_ATTRIBUTION_PROFILE_MAX_AGE_MS,
@@ -40,3 +42,6 @@ export {
   markPendingSignupAttribution,
 } from './utils/pendingSignupAttribution';
 export { tryRecordSignupAttribution } from './utils/attributionApi';
+export { trackAffonsoSignupOnce } from './utils/affonsoSignupTracking';
+export type { AffonsoSignupDetails } from './utils/affonsoSignupTracking';
+export { getAffonsoReferralId } from './utils/affonsoReferral';

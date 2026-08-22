@@ -1,3 +1,9 @@
+/** Affonso public program ID (pixel `data-affonso`). */
+export const AFFONSO_PUBLIC_PROGRAM_ID = 'cmt3x7fvr000p1fgvn76tv3t4';
+
+/** How long the `affonso_referral` cookie persists, in days. */
+export const AFFONSO_COOKIE_DURATION_DAYS = 30;
+
 /** First-touch UTM payload from marketing landing URLs. */
 export const MARKETING_UTM_STORAGE_KEY = 'sl_marketing_utm_attribution';
 

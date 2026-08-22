@@ -38,8 +38,8 @@ export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
   const [resendOk, setResendOk] = useState(false);
 
   useEffect(() => {
-    flushSignupLeadIfPending();
-  }, []);
+    flushSignupLeadIfPending({ email: trimmed || undefined });
+  }, [trimmed]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;

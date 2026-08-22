@@ -1,4 +1,8 @@
 import {
+  trackAffonsoSignupOnce,
+  type AffonsoSignupDetails,
+} from '@/features/marketing-attribution/utils/affonsoSignupTracking';
+import {
   flushGoogleAdsSignupIfPending,
   markGoogleAdsSignupPending,
   trackGoogleAdsSignupOnce,
@@ -15,14 +19,16 @@ export function markSignupLeadPending(): void {
   markGoogleAdsSignupPending();
 }
 
-/** Fire Meta Lead + Google Ads signup once per browser (deduped). */
-export function trackSignupLeadOnce(): void {
+/** Fire Meta / Google / Affonso signup once per browser (deduped). */
+export function trackSignupLeadOnce(details?: AffonsoSignupDetails): void {
   trackMetaLeadOnce();
   trackGoogleAdsSignupOnce();
+  void trackAffonsoSignupOnce(details);
 }
 
 /** Send leads queued before redirect (check-email page). */
-export function flushSignupLeadIfPending(): void {
+export function flushSignupLeadIfPending(details?: AffonsoSignupDetails): void {
   flushMetaLeadIfPending();
   flushGoogleAdsSignupIfPending();
+  void trackAffonsoSignupOnce(details);
 }

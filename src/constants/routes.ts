@@ -16,6 +16,7 @@ export const ROUTES = {
   // Marketing pages
   FEATURES_PAGE: '/features',
   PRICING_PAGE: '/pricing',
+  AFFILIATES: '/affiliates',
   FIND_DETAILERS: '/find-detailers',
   /** City SEO page; use getFindDetailersCityPath(slug). */
   FIND_DETAILERS_CITY: (citySlug: string) =>

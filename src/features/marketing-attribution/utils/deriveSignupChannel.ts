@@ -59,6 +59,7 @@ function isSiteMarketingPath(path?: string | null): boolean {
     normalized === '/' ||
     normalized === '/pricing' ||
     normalized === '/features' ||
+    normalized === '/affiliates' ||
     normalized === '/find-detailers' ||
     normalized === '/contact' ||
     normalized === '/workshop' ||

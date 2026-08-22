@@ -218,15 +218,15 @@ function resolvePushDestination(referenceType: string, referenceId: string) {
 
 Server sends to **one owner** when an event happens. Also inserts a row into **`notifications`** for the in-app bell.
 
-| Event                             | `reference_type`  | `reference_id`                            |
-| --------------------------------- | ----------------- | ----------------------------------------- |
-| New availability booking          | `booking`         | Booking id                                |
-| Day-before appointment reminder   | `screen`          | `bookings`                                |
-| Legacy booking request            | `booking_request` | Booking request id                        |
-| Public quote request              | `quote`           | Quote id                                  |
-| Review submitted                  | `review`          | Review id                                 |
-| New membership subscriber         | `subscriber`      | Membership id (`customer_memberships.id`) |
-| Subscription needs a visit        | `subscriber`      | Membership id                             |
+| Event                           | `reference_type`  | `reference_id`                            |
+| ------------------------------- | ----------------- | ----------------------------------------- |
+| New availability booking        | `booking`         | Booking id                                |
+| Day-before appointment reminder | `screen`          | `bookings`                                |
+| Legacy booking request          | `booking_request` | Booking request id                        |
+| Public quote request            | `quote`           | Quote id                                  |
+| Review submitted                | `review`          | Review id                                 |
+| New membership subscriber       | `subscriber`      | Membership id (`customer_memberships.id`) |
+| Subscription needs a visit      | `subscriber`      | Membership id                             |
 
 Day-before reminders are sent by **GET `/api/internal/cron/booking-reminders`** (daily 14:00 UTC). Cron feature: [`src/features/cron/docs/README.md`](../../src/features/cron/docs/README.md). Auth: Vercel `Authorization: Bearer $CRON_SECRET`, or `x-internal-push-secret` for a manual run. Title is **Upcoming appointment**; body is **You have an appointment coming up.** One push per owner. Tap uses table B: `screen` → `bookings` (calendar / bookings list) — no booking UUID.
 
