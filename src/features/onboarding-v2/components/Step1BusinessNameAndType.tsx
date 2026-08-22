@@ -2,24 +2,42 @@
 
 import { Button, Input, Select } from '@/components/shared';
 import {
+  getSpecialtiesForBusinessType,
+  sanitizeBusinessSpecialties,
+} from '@/constants/businessSpecialties';
+import {
   getBusinessTypeSelectOptions,
   getIndustryOnboardingCopy,
 } from '@/constants/businessTypes';
 import { trackMetaLeadOnce } from '@/features/analytics/utils/metaLeadTracking';
 import React, { useEffect, useState } from 'react';
 
+import { SpecialtyChips } from './SpecialtyChips';
+
 interface Step1BusinessNameAndTypeProps {
   profileId: string;
   businessProfileId?: string;
   businessName: string;
   businessType: string;
-  onUpdate: (updates: { businessName?: string; businessType?: string }) => void;
+  specialties: string[];
+  onUpdate: (updates: {
+    businessName?: string;
+    businessType?: string;
+    specialties?: string[];
+  }) => void;
   onNext: (newBusinessProfileId?: string) => void;
 }
 
 export const Step1BusinessNameAndType: React.FC<
   Step1BusinessNameAndTypeProps
-> = ({ businessProfileId, businessName, businessType, onUpdate, onNext }) => {
+> = ({
+  businessProfileId,
+  businessName,
+  businessType,
+  specialties,
+  onUpdate,
+  onNext,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
@@ -28,8 +46,24 @@ export const Step1BusinessNameAndType: React.FC<
   }, []);
 
   const onboardingCopy = getIndustryOnboardingCopy(businessType);
+  const specialtyOptions = businessType
+    ? getSpecialtiesForBusinessType(businessType)
+    : [];
   const canContinue =
-    businessName.trim().length > 0 && businessType.trim().length > 0;
+    businessName.trim().length > 0 &&
+    businessType.trim().length > 0 &&
+    specialties.length > 0;
+
+  const handleTypeChange = (value: string) => {
+    const allowed = new Set(
+      getSpecialtiesForBusinessType(value).map(option => option.slug)
+    );
+    const kept = specialties.filter(slug => allowed.has(slug));
+    onUpdate({
+      businessType: value,
+      specialties: value === 'Other' && kept.length === 0 ? ['other'] : kept,
+    });
+  };
 
   const handleNext = async () => {
     if (!canContinue || isLoading) return;
@@ -43,6 +77,7 @@ export const Step1BusinessNameAndType: React.FC<
           businessProfileId: businessProfileId ?? null,
           businessName: businessName.trim(),
           businessType: businessType.trim(),
+          specialties: sanitizeBusinessSpecialties(specialties),
         }),
       });
       const data = await res.json();
@@ -87,10 +122,17 @@ export const Step1BusinessNameAndType: React.FC<
             label="What type of business is this?"
             placeholder="Pick one"
             value={businessType}
-            onChange={value => onUpdate({ businessType: value })}
+            onChange={handleTypeChange}
             options={getBusinessTypeSelectOptions(businessType)}
             required
           />
+          {specialtyOptions.length > 0 ? (
+            <SpecialtyChips
+              options={specialtyOptions}
+              value={specialties}
+              onChange={next => onUpdate({ specialties: next })}
+            />
+          ) : null}
         </div>
       </div>
 

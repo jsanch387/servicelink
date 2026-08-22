@@ -125,9 +125,7 @@ function parseJobVehicle(
 function parseJobPet(
   raw: unknown,
   jobIndex: number
-):
-  | { ok: true; pet: OwnerManualBookingJobPet }
-  | { ok: false; error: string } {
+): { ok: true; pet: OwnerManualBookingJobPet } | { ok: false; error: string } {
   if (raw == null) {
     return { ok: true, pet: { name: '', species: '', breed: '', size: '' } };
   }
@@ -142,7 +140,11 @@ function parseJobPet(
   const species = strField(r.species).trim();
   const breed = strField(r.breed).trim().slice(0, BOOKING_PET_BREED_MAX);
   const size = strField(r.size).trim();
-  const any = name.length > 0 || species.length > 0 || breed.length > 0 || size.length > 0;
+  const any =
+    name.length > 0 ||
+    species.length > 0 ||
+    breed.length > 0 ||
+    size.length > 0;
   if (!any) {
     return { ok: true, pet: { name: '', species: '', breed: '', size: '' } };
   }

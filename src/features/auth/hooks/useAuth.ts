@@ -36,7 +36,9 @@ export const useAuth = () => {
     supabaseUser,
     isLoading,
     isInitialized,
-    isAuthenticated: Boolean(user ?? supabaseUser),
+    // Persist can keep `user` after cookies die. Only a live client session
+    // (supabaseUser, never persisted) counts as logged in.
+    isAuthenticated: Boolean(supabaseUser),
 
     // Actions
     signIn,

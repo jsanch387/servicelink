@@ -97,7 +97,9 @@ export function BookingPetFields({
       <Input
         label={cf.petBreed}
         value={value.petBreed}
-        onChange={v => onChange({ petBreed: v.slice(0, BOOKING_PET_BREED_MAX) })}
+        onChange={v =>
+          onChange({ petBreed: v.slice(0, BOOKING_PET_BREED_MAX) })
+        }
         onBlur={onBlurField ? () => onBlurField('petBreed') : undefined}
         placeholder={cf.petBreedPlaceholder}
         error={errors.petBreed}

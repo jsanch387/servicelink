@@ -37,7 +37,12 @@ describe('collectPetAssetsFromBooking', () => {
   it('ignores incomplete or invalid pets', () => {
     expect(
       collectPetAssetsFromBooking({
-        customerPet: { name: 'Buddy', species: 'Hamster', breed: 'Syrian', size: 'Small' },
+        customerPet: {
+          name: 'Buddy',
+          species: 'Hamster',
+          breed: 'Syrian',
+          size: 'Small',
+        },
         jobPets: [{ name: 'Milo', species: 'Cat', breed: '', size: 'Small' }],
       })
     ).toEqual([]);

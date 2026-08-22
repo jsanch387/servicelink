@@ -12,7 +12,7 @@ import { captureMarketingUtmsFromSearchParams } from '../utils/utmCapture';
 export function MarketingAttributionRoot() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user, isInitialized, isLoading } = useAuth();
+  const { supabaseUser, isInitialized, isLoading } = useAuth();
 
   useEffect(() => {
     if (!pathname) return;
@@ -20,9 +20,9 @@ export function MarketingAttributionRoot() {
   }, [searchParams, pathname]);
 
   useEffect(() => {
-    if (!isInitialized || isLoading || !user?.id) return;
-    void tryRecordSignupAttribution(user.id);
-  }, [isInitialized, isLoading, user?.id]);
+    if (!isInitialized || isLoading || !supabaseUser?.id) return;
+    void tryRecordSignupAttribution(supabaseUser.id);
+  }, [isInitialized, isLoading, supabaseUser?.id]);
 
   return null;
 }

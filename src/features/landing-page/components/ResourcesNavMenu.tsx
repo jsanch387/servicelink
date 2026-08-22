@@ -29,16 +29,6 @@ const NAV_ICONS = {
   workshop: AcademicCapIcon,
 } as const;
 
-function isResourcesActive(pathname: string): boolean {
-  return (
-    pathname === ROUTES.RESOURCES ||
-    pathname.startsWith(`${ROUTES.RESOURCES}/`) ||
-    pathname === ROUTES.WORKSHOP ||
-    pathname === ROUTES.WORKSHOP_WATCH ||
-    pathname === ROUTES.WORKSHOP_RUN_ADS
-  );
-}
-
 function useResourcesMenuOpen() {
   const [open, setOpen] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,7 +105,6 @@ export function ResourcesNavMenuDesktop() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { open, openMenu, scheduleClose, closeMenu, toggleMenu } =
     useResourcesMenuOpen();
-  const active = isResourcesActive(pathname);
 
   useEffect(() => {
     closeMenu();
@@ -152,9 +141,7 @@ export function ResourcesNavMenuDesktop() {
       <button
         type="button"
         onClick={toggleMenu}
-        className={`inline-flex items-center gap-1 cursor-pointer hover:text-white transition-colors focus:outline-none focus-visible:outline-none ${
-          active || open ? 'text-white' : 'text-gray-400'
-        }`}
+        className="inline-flex items-center gap-1 cursor-pointer text-white hover:text-white/80 transition-colors focus:outline-none focus-visible:outline-none"
         aria-expanded={open}
         aria-haspopup="true"
         aria-controls={menuId}

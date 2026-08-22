@@ -4,13 +4,13 @@ A **cron job** is a task the server runs on a clock — not because a user tappe
 
 This feature owns the **shared plumbing**. Each job’s work stays in the domain feature that owns the data (availability, SMS, etc.).
 
-| Piece | Path |
-| ----- | ---- |
-| Job catalog | `src/features/cron/jobs.ts` |
-| Auth | `src/features/cron/server/verifyInternalCronAuth.ts` |
-| GET helper | `src/features/cron/server/handleCronGet.ts` |
-| Vercel schedule | [`vercel.json`](../../../../vercel.json) (`crons`) |
-| Routes | `API_ROUTES.INTERNAL_CRON_*` in `src/constants/routes.ts` |
+| Piece           | Path                                                      |
+| --------------- | --------------------------------------------------------- |
+| Job catalog     | `src/features/cron/jobs.ts`                               |
+| Auth            | `src/features/cron/server/verifyInternalCronAuth.ts`      |
+| GET helper      | `src/features/cron/server/handleCronGet.ts`               |
+| Vercel schedule | [`vercel.json`](../../../../vercel.json) (`crons`)        |
+| Routes          | `API_ROUTES.INTERNAL_CRON_*` in `src/constants/routes.ts` |
 
 ---
 
@@ -46,8 +46,8 @@ sequenceDiagram
 
 Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift.
 
-| id | Schedule | What it does |
-| -- | -------- | ------------ |
+| id                  | Schedule                       | What it does                                                                                                                                                         |
+| ------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `booking-reminders` | `0 14 * * *` (14:00 UTC daily) | Confirmed bookings **tomorrow** (`America/Chicago`): one owner push (“You have an appointment coming up.”) plus customer email and/or SMS when we have that contact. |
 
 ### booking-reminders
@@ -68,10 +68,10 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 
 The routes are on the public internet, so they fail closed:
 
-| Header | When |
-| ------ | ---- |
-| `Authorization: Bearer $CRON_SECRET` | Vercel’s automatic cron call |
-| `x-internal-push-secret: $INTERNAL_PUSH_API_SECRET` | Manual test |
+| Header                                              | When                         |
+| --------------------------------------------------- | ---------------------------- |
+| `Authorization: Bearer $CRON_SECRET`                | Vercel’s automatic cron call |
+| `x-internal-push-secret: $INTERNAL_PUSH_API_SECRET` | Manual test                  |
 
 If **neither** secret is set → `503`. Wrong secret → `401`.
 

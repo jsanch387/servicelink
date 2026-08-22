@@ -104,7 +104,8 @@ export const Step3Availability: React.FC<Step3AvailabilityProps> = ({
           When do you work?
         </h1>
         <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-          Pick your usual hours. {getIndustryOnboardingCopy(businessType).hoursSubtitle}
+          Pick your usual hours.{' '}
+          {getIndustryOnboardingCopy(businessType).hoursSubtitle}
         </p>
       </div>
 

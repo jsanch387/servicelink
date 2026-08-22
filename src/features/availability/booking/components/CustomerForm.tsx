@@ -129,7 +129,8 @@ function isVehicleNotesStepValid(
   const ps = data.petSpecies.trim();
   const pb = data.petBreed.trim();
   const pz = data.petSize.trim();
-  const anyPet = pn.length > 0 || ps.length > 0 || pb.length > 0 || pz.length > 0;
+  const anyPet =
+    pn.length > 0 || ps.length > 0 || pb.length > 0 || pz.length > 0;
   if (requirePetFields || anyPet) {
     if (!pn || !ps || !pb || !pz) return false;
     if (pn.length > BOOKING_PET_NAME_MAX) return false;
@@ -154,11 +155,7 @@ export function isCustomerFormStepValid(
       (requireCustomerAddress ? isAddressStepValid(data) : true)
     );
   }
-  return isVehicleNotesStepValid(
-    data,
-    requireVehicleFields,
-    requirePetFields
-  );
+  return isVehicleNotesStepValid(data, requireVehicleFields, requirePetFields);
 }
 
 export function isCustomerFormValid(
@@ -550,9 +547,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           {showPetFields && (
             <FormStepSection
               title={cf.pet}
-              description={
-                requirePetFields ? undefined : cf.optionalPetDetails
-              }
+              description={requirePetFields ? undefined : cf.optionalPetDetails}
             >
               <BookingPetFields
                 value={{

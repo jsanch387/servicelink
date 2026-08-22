@@ -18,6 +18,7 @@ export interface OnboardingV2Service {
 export interface OnboardingV2FlowState {
   businessName: string;
   businessType: string;
+  specialties: string[];
   services: OnboardingV2Service[];
   schedule: WeeklySchedule;
   selectedPreset: PresetKey | null;

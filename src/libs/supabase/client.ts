@@ -165,6 +165,8 @@ export type Database = {
           public_id: string;
           business_name: string;
           business_type: string | null;
+          /** Explicit marketplace tags. Null/empty = derive from business_type. */
+          specialties: string[] | null;
           service_area: string | null;
           business_zip: string | null;
           service_location_mode: string;
@@ -207,6 +209,7 @@ export type Database = {
           public_id: string;
           business_name: string;
           business_type?: string | null;
+          specialties?: string[] | null;
           free_bookings_month?: string | null;
           free_bookings_count?: number;
           service_area?: string | null;
@@ -245,6 +248,7 @@ export type Database = {
           public_id?: string;
           business_name?: string;
           business_type?: string | null;
+          specialties?: string[] | null;
           service_area?: string | null;
           business_zip?: string | null;
           service_location_mode?: string;

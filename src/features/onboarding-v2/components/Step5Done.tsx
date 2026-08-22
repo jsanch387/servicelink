@@ -3,7 +3,7 @@
 import { Button } from '@/components/shared';
 import { getIndustryOnboardingCopy } from '@/constants/businessTypes';
 import { API_ROUTES, ROUTES } from '@/constants/routes';
-import { IOS_APP_STORE_URL } from '@/constants/appStore';
+import { GOOGLE_PLAY_STORE_URL, IOS_APP_STORE_URL } from '@/constants/appStore';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { BoltIcon } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
@@ -86,7 +86,7 @@ export const Step5Done: React.FC<Step5DoneProps> = ({
 
       if (res.ok && data.success) {
         trackCompleteRegistrationOnce();
-        if (IOS_APP_STORE_URL) {
+        if (IOS_APP_STORE_URL || GOOGLE_PLAY_STORE_URL) {
           setPhase('app-promo');
         } else {
           redirectToProfile();

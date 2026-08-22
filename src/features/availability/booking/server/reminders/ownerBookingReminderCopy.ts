@@ -13,8 +13,7 @@ export const OWNER_BOOKING_REMINDER_REFERENCE_ID = 'bookings';
 export const OWNER_BOOKING_REMINDER_INBOX_REFERENCE_ID =
   '00000000-0000-4000-a000-0000000000b1';
 
-export const OWNER_BOOKING_REMINDER_BODY =
-  'You have an appointment coming up.';
+export const OWNER_BOOKING_REMINDER_BODY = 'You have an appointment coming up.';
 
 export function ownerBookingReminderTitle(): string {
   return notificationMinimalDisplayTitle(

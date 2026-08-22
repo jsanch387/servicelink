@@ -1,10 +1,10 @@
 /**
  * Industry catalog — the app-wide context for what to load.
  *
- * Store only `business_profiles.business_type` (the dropdown value).
- * Resolve everything else here: booking subject, asset fields, onboarding
- * copy. Adding trash-bin cleaning, poop scooping, or massage later is a new
- * catalog row — not a new table or column.
+ * Store `business_profiles.business_type` (the job bucket) and optional
+ * `specialties` (what customers hire them for). Resolve booking fields
+ * and copy here. New signups pick a bucket, then chips. Specific trades
+ * stay resolvable as hidden rows so legacy shops keep working.
  */
 
 export type IndustryTemplate = 'vehicle' | 'pet' | 'property' | 'person';
@@ -110,34 +110,35 @@ const GENERIC_ONBOARDING: IndustryOnboardingCopy = {
 
 const VEHICLE_ONBOARDING: IndustryOnboardingCopy = {
   ...GENERIC_ONBOARDING,
-  businessNamePlaceholder: 'e.g. Shine Auto Detailing',
-  typeHelper: 'Customers will add their vehicle when they book.',
-  serviceNamePlaceholder: 'e.g. Full detail, Interior',
-  slugExample: 'elite-detail',
+  businessNamePlaceholder: 'e.g. your shop name',
+  typeHelper:
+    'Detailing, tint, glass, repairs — customers add their vehicle when they book.',
+  serviceNamePlaceholder: 'e.g. Standard service',
+  slugExample: 'my-shop',
   firstService: {
-    name: 'Full Detail',
+    name: 'Standard Service',
     description:
-      'Exterior wash, interior vacuum, and wipe-down. Edit the name, price, and details to match your offering.',
+      'A booked vehicle job. Edit the name, price, and time to match what you offer.',
     price: '150',
     durationMinutes: 120,
   },
 };
 
 const PET_ONBOARDING: IndustryOnboardingCopy = {
-  businessNamePlaceholder: 'e.g. Paws Mobile Grooming',
+  businessNamePlaceholder: 'e.g. your pet-care business',
   typeHelper:
-    'Customers will add their pet — name, breed, and size — when they book.',
-  serviceStepTitle: 'Add at least one grooming service',
+    'Grooming and other pet jobs — customers add their pet when they book.',
+  serviceStepTitle: 'Add at least one service',
   serviceStepSubtitle:
-    'Start with the groom you book most. You can add baths, haircuts, and add-ons later.',
-  serviceNamePlaceholder: 'e.g. Full Groom, Bath & Brush',
-  hoursSubtitle: "Pet owners will only see times when you're free.",
-  slugExample: 'paws-grooming',
-  goLiveSubtitle: 'Share it. Let pet owners book.',
+    'Start with the job you book most. You can add more after onboarding.',
+  serviceNamePlaceholder: 'e.g. Full Groom, Nail trim',
+  hoursSubtitle: "Customers will only see times when you're free.",
+  slugExample: 'my-pet-care',
+  goLiveSubtitle: 'Share it. Get booked.',
   firstService: {
-    name: 'Full Groom',
+    name: 'Standard Service',
     description:
-      'Bath, haircut, and nail trim. Edit the name, price, and time to match how you book pets.',
+      'A booked pet job. Edit the name, price, and time to match how you work.',
     price: '75',
     durationMinutes: 90,
   },
@@ -145,10 +146,18 @@ const PET_ONBOARDING: IndustryOnboardingCopy = {
 
 const PROPERTY_ONBOARDING: IndustryOnboardingCopy = {
   ...GENERIC_ONBOARDING,
-  businessNamePlaceholder: 'e.g. Bright Side Pressure Washing',
-  typeHelper: 'Customers will add their address when they book.',
-  serviceNamePlaceholder: 'e.g. Driveway wash',
-  slugExample: 'bright-side',
+  businessNamePlaceholder: 'e.g. your business name',
+  typeHelper:
+    'Washing, exterior, and home jobs — customers add their address when they book.',
+  serviceNamePlaceholder: 'e.g. Standard service',
+  slugExample: 'my-business',
+  firstService: {
+    name: 'Standard Service',
+    description:
+      "A booked job at the customer's place. Edit the name, price, and time to match what you offer.",
+    price: '150',
+    durationMinutes: 120,
+  },
 };
 
 const FALLBACK_INDUSTRY: BusinessIndustry = {
@@ -165,12 +174,52 @@ const FALLBACK_INDUSTRY: BusinessIndustry = {
 
 const BUSINESS_TYPE_CATALOG: readonly BusinessTypeDefinition[] = [
   {
+    value: 'Vehicle Services',
+    label: 'Vehicle services',
+    slug: 'vehicle_services',
+    template: 'vehicle',
+    asset: { kind: 'vehicle', fields: VEHICLE_ASSET_FIELDS },
+    offeredAtSignup: true,
+    onboarding: VEHICLE_ONBOARDING,
+  },
+  {
+    value: 'Pet Services',
+    label: 'Pet services',
+    slug: 'pet_services',
+    template: 'pet',
+    asset: { kind: 'pet', fields: PET_ASSET_FIELDS },
+    offeredAtSignup: true,
+    onboarding: PET_ONBOARDING,
+  },
+  {
+    value: 'Property Services',
+    label: 'Property services',
+    slug: 'property_services',
+    template: 'property',
+    asset: { kind: 'property', fields: PROPERTY_ASSET_FIELDS },
+    offeredAtSignup: true,
+    onboarding: PROPERTY_ONBOARDING,
+  },
+  {
+    value: 'Other',
+    label: 'Other',
+    slug: 'other',
+    template: 'person',
+    asset: { kind: 'none', fields: [] },
+    offeredAtSignup: true,
+    onboarding: {
+      ...GENERIC_ONBOARDING,
+      typeHelper:
+        "Don't see your kind of job? Pick this — you can still take bookings and run the business.",
+    },
+  },
+  {
     value: 'Auto & Detailing',
     label: 'Auto detailing',
     slug: 'auto_detailing',
     template: 'vehicle',
     asset: { kind: 'vehicle', fields: VEHICLE_ASSET_FIELDS },
-    offeredAtSignup: true,
+    offeredAtSignup: false,
     aliases: ['Mobile Detailing', 'Automotive', 'Service Provider'],
     onboarding: VEHICLE_ONBOARDING,
   },
@@ -180,7 +229,7 @@ const BUSINESS_TYPE_CATALOG: readonly BusinessTypeDefinition[] = [
     slug: 'window_tinting',
     template: 'vehicle',
     asset: { kind: 'vehicle', fields: VEHICLE_ASSET_FIELDS },
-    offeredAtSignup: true,
+    offeredAtSignup: false,
     onboarding: {
       ...VEHICLE_ONBOARDING,
       businessNamePlaceholder: 'e.g. ClearView Tint',
@@ -201,7 +250,7 @@ const BUSINESS_TYPE_CATALOG: readonly BusinessTypeDefinition[] = [
     slug: 'mobile_repair',
     template: 'vehicle',
     asset: { kind: 'vehicle', fields: VEHICLE_ASSET_FIELDS },
-    offeredAtSignup: true,
+    offeredAtSignup: false,
     onboarding: {
       ...VEHICLE_ONBOARDING,
       businessNamePlaceholder: 'e.g. On-Site Auto Repair',
@@ -222,8 +271,17 @@ const BUSINESS_TYPE_CATALOG: readonly BusinessTypeDefinition[] = [
     slug: 'pet_grooming',
     template: 'pet',
     asset: { kind: 'pet', fields: PET_ASSET_FIELDS },
-    offeredAtSignup: true,
-    onboarding: PET_ONBOARDING,
+    offeredAtSignup: false,
+    onboarding: {
+      ...PET_ONBOARDING,
+      firstService: {
+        name: 'Full Groom',
+        description:
+          'Bath, haircut, and nail trim. Edit the name, price, and time to match how you book pets.',
+        price: '75',
+        durationMinutes: 90,
+      },
+    },
   },
   {
     value: 'Pressure Washing',
@@ -231,7 +289,7 @@ const BUSINESS_TYPE_CATALOG: readonly BusinessTypeDefinition[] = [
     slug: 'pressure_washing',
     template: 'property',
     asset: { kind: 'property', fields: PROPERTY_ASSET_FIELDS },
-    offeredAtSignup: true,
+    offeredAtSignup: false,
     onboarding: {
       ...PROPERTY_ONBOARDING,
       firstService: {
@@ -318,15 +376,6 @@ const BUSINESS_TYPE_CATALOG: readonly BusinessTypeDefinition[] = [
         durationMinutes: 60,
       },
     },
-  },
-  {
-    value: 'Other',
-    label: 'Other',
-    slug: 'other',
-    template: 'person',
-    asset: { kind: 'none', fields: [] },
-    offeredAtSignup: false,
-    onboarding: GENERIC_ONBOARDING,
   },
 ];
 
@@ -431,7 +480,7 @@ export function getBusinessTypeSelectOptions(
 
 /**
  * True when the booking form should collect year / make / model.
- * Window tinting and mobile repair share this with detailing.
+ * Vehicle services, tint, repair, and detailing share this.
  */
 export function isVehicleRelatedBusinessType(
   businessType: string | null | undefined

@@ -30,24 +30,24 @@ Owner-created bookings and customer self-serve bookings both flow through `POST 
 
 Every outbound SMS attempt is a row in **`public.sms_messages`**. This is the source of truth for the "messages sent" screen.
 
-| Column                   | Type          | Notes                                                                                                                     |
-| ------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `id`                     | uuid          | —                                                                                                                         |
-| `business_id`            | uuid          | tenancy / RLS scope                                                                                                       |
-| `booking_id`             | uuid \| null  | links the message to an appointment                                                                                       |
-| `customer_id`            | uuid \| null  | links to the customer                                                                                                     |
+| Column                   | Type          | Notes                                                                                                                             |
+| ------------------------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                     | uuid          | —                                                                                                                                 |
+| `business_id`            | uuid          | tenancy / RLS scope                                                                                                               |
+| `booking_id`             | uuid \| null  | links the message to an appointment                                                                                               |
+| `customer_id`            | uuid \| null  | links to the customer                                                                                                             |
 | `type`                   | text          | `booking_confirmation` \| `on_the_way` \| `job_started` \| `job_completed` \| `booking_reminder` \| `invoice` … (grows over time) |
-| `channel`                | text          | `sms` (room for future channels)                                                                                          |
-| `direction`              | text          | `outbound`                                                                                                                |
-| `to_phone`               | text          | E.164 number actually used                                                                                                |
-| `body`                   | text          | exact message sent (display this in history)                                                                              |
-| `status`                 | text          | `queued` \| `sent` \| `delivered` \| `failed` \| `undelivered` \| `skipped_opt_out`                                       |
-| `provider`               | text          | SMS provider id when wired (e.g. `telnyx`); may be null until then                                                        |
-| `provider_message_id`    | text \| null  | provider id (for delivery webhooks; may be null for now)                                                                  |
-| `error`                  | text \| null  | failure reason                                                                                                            |
-| `dedupe_key`             | text \| null  | server idempotency key; ignore on the client                                                                              |
-| `metadata`               | jsonb \| null | extensible (e.g. invoice link)                                                                                            |
-| `created_at` / `sent_at` | timestamptz   | —                                                                                                                         |
+| `channel`                | text          | `sms` (room for future channels)                                                                                                  |
+| `direction`              | text          | `outbound`                                                                                                                        |
+| `to_phone`               | text          | E.164 number actually used                                                                                                        |
+| `body`                   | text          | exact message sent (display this in history)                                                                                      |
+| `status`                 | text          | `queued` \| `sent` \| `delivered` \| `failed` \| `undelivered` \| `skipped_opt_out`                                               |
+| `provider`               | text          | SMS provider id when wired (e.g. `telnyx`); may be null until then                                                                |
+| `provider_message_id`    | text \| null  | provider id (for delivery webhooks; may be null for now)                                                                          |
+| `error`                  | text \| null  | failure reason                                                                                                                    |
+| `dedupe_key`             | text \| null  | server idempotency key; ignore on the client                                                                                      |
+| `metadata`               | jsonb \| null | extensible (e.g. invoice link)                                                                                                    |
+| `created_at` / `sent_at` | timestamptz   | —                                                                                                                                 |
 
 **Status meaning:** `sent` = accepted by the provider; `delivered`/`failed`/`undelivered` come later from delivery webhooks (not wired yet — for now expect `sent` or `failed`).
 

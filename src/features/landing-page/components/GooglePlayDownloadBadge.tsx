@@ -4,15 +4,15 @@ import Image from 'next/image';
 
 const GOOGLE_PLAY_BADGE_SRC = MARKETING_IMAGES.store.googlePlay;
 
-const BADGE_IMAGE_CLASS = 'h-12 w-auto object-contain sm:h-14';
-
 type GooglePlayDownloadBadgeProps = {
   className?: string;
+  imageClassName?: string;
 };
 
 /** Google Play badge — links out when live, otherwise a grayed-out coming-soon placeholder. */
 export function GooglePlayDownloadBadge({
   className = '',
+  imageClassName = 'h-12 sm:h-14',
 }: GooglePlayDownloadBadgeProps) {
   const isLive = Boolean(GOOGLE_PLAY_STORE_URL);
 
@@ -22,7 +22,7 @@ export function GooglePlayDownloadBadge({
       alt={isLive ? 'Get it on Google Play' : 'Google Play — Coming Soon'}
       width={155}
       height={45}
-      className={`${BADGE_IMAGE_CLASS} ${
+      className={`w-auto object-contain ${imageClassName} ${
         isLive
           ? 'opacity-90 transition-opacity duration-200 group-hover:opacity-100'
           : 'opacity-40 grayscale'

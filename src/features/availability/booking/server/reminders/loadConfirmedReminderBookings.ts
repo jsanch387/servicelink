@@ -84,9 +84,14 @@ export async function loadReminderBusinesses(
     .in('id', unique);
 
   if (error) {
-    logAvailabilityOwnerNotify(undefined, 'warn', 'reminder_businesses_query_failed', {
-      ...supabaseErrorForLogs(error),
-    });
+    logAvailabilityOwnerNotify(
+      undefined,
+      'warn',
+      'reminder_businesses_query_failed',
+      {
+        ...supabaseErrorForLogs(error),
+      }
+    );
     return map;
   }
 

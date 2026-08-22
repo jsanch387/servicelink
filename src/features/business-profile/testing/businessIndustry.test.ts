@@ -13,26 +13,27 @@ import {
 } from '@/constants/businessTypes';
 
 describe('business industry context', () => {
-  it('offers only types we can serve on new signup', () => {
+  it('offers job buckets on new signup', () => {
     expect(BUSINESS_TYPE_OPTIONS.map(option => option.value)).toEqual([
-      'Auto & Detailing',
-      'Window Tinting',
-      'Mobile Repair',
-      'Pet Grooming',
-      'Pressure Washing',
+      'Vehicle Services',
+      'Pet Services',
+      'Property Services',
+      'Other',
     ]);
   });
 
-  it('does not offer beauty, cleaning, or other on signup', () => {
+  it('does not offer specific trades or leftover types on signup', () => {
     const values = BUSINESS_TYPE_OPTIONS.map(option => option.value);
+    expect(values).not.toContain('Auto & Detailing');
+    expect(values).not.toContain('Pet Grooming');
     expect(values).not.toContain('Beauty');
     expect(values).not.toContain('Cleaning Services');
-    expect(values).not.toContain('Other');
     expect(values).not.toContain('Lawn Care & Landscaping');
   });
 
   it('treats detailing, tint, and repair as the same vehicle template', () => {
     for (const type of [
+      'Vehicle Services',
       'Auto & Detailing',
       'Window Tinting',
       'Mobile Repair',
@@ -47,21 +48,22 @@ describe('business industry context', () => {
     }
   });
 
-  it('maps pet grooming to the pet template and onboarding copy', () => {
-    const industry = resolveBusinessIndustry('Pet Grooming');
+  it('maps pet services and legacy grooming to the pet template', () => {
+    const industry = resolveBusinessIndustry('Pet Services');
     expect(industry.template).toBe('pet');
     expect(industry.assetKind).toBe('pet');
     expect(industry.assetFields).toEqual(PET_ASSET_FIELDS);
     expect(industry.showPetFields).toBe(true);
     expect(industry.showVehicleFields).toBe(false);
+    expect(isPetRelatedBusinessType('Pet Services')).toBe(true);
     expect(isPetRelatedBusinessType('Pet Grooming')).toBe(true);
-    expect(isVehicleRelatedBusinessType('Pet Grooming')).toBe(false);
+    expect(isVehicleRelatedBusinessType('Pet Services')).toBe(false);
+    expect(getIndustryOnboardingCopy('Pet Services').typeHelper).toContain(
+      'customers add their pet'
+    );
     expect(getIndustryOnboardingCopy('Pet Grooming').firstService.name).toBe(
       'Full Groom'
     );
-    expect(
-      getIndustryOnboardingCopy('Pet Grooming').businessNamePlaceholder
-    ).toContain('Paws');
   });
 
   it('attaches the same vehicle fields to detailing, tint, and repair', () => {
@@ -74,9 +76,12 @@ describe('business industry context', () => {
   });
 
   it('leaves property types ready for extra fields later', () => {
-    const pressure = resolveBusinessIndustry('Pressure Washing');
-    expect(pressure.assetKind).toBe('property');
-    expect(pressure.assetFields).toEqual([]);
+    const property = resolveBusinessIndustry('Property Services');
+    expect(property.assetKind).toBe('property');
+    expect(property.assetFields).toEqual([]);
+    expect(resolveBusinessIndustry('Pressure Washing').assetKind).toBe(
+      'property'
+    );
   });
 
   it('keeps hidden legacy types resolvable without vehicle fields', () => {
@@ -106,6 +111,6 @@ describe('business industry context', () => {
   it('keeps a legacy stored type visible in settings', () => {
     const options = getBusinessTypeSelectOptions('Beauty');
     expect(options[0]).toEqual({ value: 'Beauty', label: 'Beauty' });
-    expect(options.some(option => option.value === 'Pet Grooming')).toBe(true);
+    expect(options.some(option => option.value === 'Pet Services')).toBe(true);
   });
 });

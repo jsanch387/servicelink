@@ -2,10 +2,7 @@ import {
   isPetSizeValue,
   isPetSpeciesValue,
 } from '@/features/customer-management/utils/customerAssetTypes';
-import type {
-  PublicBookingJobDraft,
-  PublicBookingJobPetDraft,
-} from '../types';
+import type { PublicBookingJobDraft, PublicBookingJobPetDraft } from '../types';
 
 export const EMPTY_BOOKING_PET: PublicBookingJobPetDraft = {
   name: '',

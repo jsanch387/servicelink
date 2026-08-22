@@ -154,7 +154,8 @@ export function bookingCustomerPayloadErrorMessage(
   const ps = (c.petSpecies ?? '').trim();
   const pb = (c.petBreed ?? '').trim();
   const pz = (c.petSize ?? '').trim();
-  const anyPet = pn.length > 0 || ps.length > 0 || pb.length > 0 || pz.length > 0;
+  const anyPet =
+    pn.length > 0 || ps.length > 0 || pb.length > 0 || pz.length > 0;
   if (requirePetFields || anyPet) {
     if (!pn || !ps || !pb || !pz) {
       return 'Pet name, species, breed, and size are required';

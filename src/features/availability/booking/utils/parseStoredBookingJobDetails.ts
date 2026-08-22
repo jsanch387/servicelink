@@ -39,7 +39,9 @@ function parseVehicle(raw: unknown): BookingJobDetailsItem['vehicle'] {
   return { year, make, model };
 }
 
-function parsePet(raw: unknown): NonNullable<BookingJobDetailsItem['pet']> | null {
+function parsePet(
+  raw: unknown
+): NonNullable<BookingJobDetailsItem['pet']> | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   const name = str(r.name);

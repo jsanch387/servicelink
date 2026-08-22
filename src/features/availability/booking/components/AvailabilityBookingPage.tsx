@@ -1,6 +1,10 @@
 'use client';
 
-import { Button, toast, useScrollWindowToTopOnChange } from '@/components/shared';
+import {
+  Button,
+  toast,
+  useScrollWindowToTopOnChange,
+} from '@/components/shared';
 import {
   API_ROUTES,
   ROUTES,
