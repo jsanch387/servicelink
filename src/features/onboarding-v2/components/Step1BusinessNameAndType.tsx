@@ -55,7 +55,7 @@ export const Step1BusinessNameAndType: React.FC<
     specialties.length > 0;
 
   const handleTypeChange = (value: string) => {
-    const allowed = new Set(
+    const allowed = new Set<string>(
       getSpecialtiesForBusinessType(value).map(option => option.slug)
     );
     const kept = specialties.filter(slug => allowed.has(slug));
