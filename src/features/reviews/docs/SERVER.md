@@ -20,8 +20,14 @@ How review data is loaded today and where API routes will live.
 | ------------------------------- | ------------------------------------------------------------------------------------ |
 | `loadDashboardReviews`          | `dashboard/server/loadDashboardReviews.ts` — all reviews for business (incl. hidden) |
 | `mapReviewRowToDashboardReview` | `dashboard/server/mapReviewRowToDashboardReview.ts`                                  |
-| `GET /api/reviews`              | `app/api/reviews/route.ts`                                                           |
+| `GET /api/reviews`                 | Inbox: ServiceLink + imported Google (`app/api/reviews/route.ts`)     |
+| `POST /api/reviews/google/connect` | Starts Google Business OAuth; returns authorize URL                   |
+| `GET /api/reviews/google/callback` | OAuth return: exchange code, store connection, redirect to Reviews    |
+| `GET /api/reviews/google/status`   | Whether this business has a Google connection (no tokens)             |
+| `POST /api/reviews/google/sync`    | Find listing (internal; pull calls this path’s server helper)         |
+| `POST /api/reviews/google/pull`    | Find listing + import reviews into `google_reviews`                   |
 | `useDashboardReviews`           | `dashboard/hooks/useDashboardReviews.ts`                                             |
+| Google connect / pull           | `google-connect/server/` — see [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md) |
 
 **Booking complete + public submit (wired):**
 

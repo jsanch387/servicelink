@@ -5,10 +5,12 @@ const {
   createSupabaseServerClientMock,
   resolveCurrentBusinessIdMock,
   loadDashboardReviewsMock,
+  loadDashboardGoogleReviewsMock,
 } = vi.hoisted(() => ({
   createSupabaseServerClientMock: vi.fn(),
   resolveCurrentBusinessIdMock: vi.fn(),
   loadDashboardReviewsMock: vi.fn(),
+  loadDashboardGoogleReviewsMock: vi.fn(),
 }));
 
 vi.mock('@/libs/supabase/server', () => ({
@@ -23,10 +25,15 @@ vi.mock('@/features/reviews/dashboard/server/loadDashboardReviews', () => ({
   loadDashboardReviews: loadDashboardReviewsMock,
 }));
 
+vi.mock('@/features/reviews/google-connect/server/loadGoogleReviews', () => ({
+  loadDashboardGoogleReviews: loadDashboardGoogleReviewsMock,
+}));
+
 describe('GET /api/reviews', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createSupabaseServerClientMock.mockResolvedValue({} as never);
+    loadDashboardGoogleReviewsMock.mockResolvedValue([]);
   });
 
   it('returns auth/business resolution errors', async () => {

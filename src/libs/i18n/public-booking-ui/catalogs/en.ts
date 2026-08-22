@@ -495,6 +495,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     reviewCountLabel: count => (count === 1 ? '1 review' : `${count} reviews`),
     ratingAriaLabel: average => `${average} out of 5 stars`,
     reviewsSectionTitle: 'Customer reviews',
+    googleReviewsSectionTitle: 'Google reviews',
     reviewsShowingSample: 'Showing recent reviews',
     reviewsLoadError: 'Reviews could not be loaded. Please try again.',
     reviewsRetry: 'Try again',

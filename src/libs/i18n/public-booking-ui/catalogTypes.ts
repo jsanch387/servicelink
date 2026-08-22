@@ -446,6 +446,7 @@ export type PublicBookingUi = {
     reviewCountLabel: (count: number) => string;
     ratingAriaLabel: (average: string) => string;
     reviewsSectionTitle: string;
+    googleReviewsSectionTitle: string;
     reviewsShowingSample: string;
     reviewsLoadError: string;
     reviewsRetry: string;

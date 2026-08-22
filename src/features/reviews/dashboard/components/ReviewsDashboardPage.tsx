@@ -4,13 +4,19 @@ import { Button } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { deriveReviewsSummary } from '@/features/reviews/utils/deriveReviewsSummary';
 import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  GOOGLE_CONNECT_RETURN_CONNECTED,
+  GOOGLE_CONNECT_RETURN_ERROR,
+} from '../copy/googleConnectCopy';
 import { useDashboardReviews } from '../hooks/useDashboardReviews';
+import { useGoogleBusinessConnection } from '../hooks/useGoogleBusinessConnection';
 import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
 import { reviewMatchesFilter } from '../utils/reviewFilters';
 import { ReviewsDashboardHeader } from './ReviewsDashboardHeader';
 import { ReviewsDashboardShell } from './ReviewsDashboardShell';
 import { ReviewsCollectCard } from './cards/ReviewsCollectCard';
+import { ReviewsGoogleConnectCard } from './cards/ReviewsGoogleConnectCard';
 import { ReviewsSummaryCard } from './cards/ReviewsSummaryCard';
 import { ReviewListRow } from './list/ReviewListRow';
 import { ReviewsDashboardSkeleton } from './list/ReviewsDashboardSkeleton';
@@ -27,6 +33,18 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
   const { reviews, loadStatus, loadError, reloadReviews, updateReview } =
     useDashboardReviews();
+  const {
+    connected: googleConnected,
+    importedCount,
+    connectLoading,
+    pullLoading,
+    connectError,
+    startConnect,
+    pullReviews,
+  } = useGoogleBusinessConnection();
+  const [googleReturnNotice, setGoogleReturnNotice] = useState<
+    'connected' | 'error' | null
+  >(null);
   const [filter, setFilter] = useState<ReviewsDashboardFilterId>('all');
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
 
@@ -73,6 +91,18 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     setOpenReplyId(prev => (prev === reviewId ? null : reviewId));
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const google = params.get('google');
+    if (google === 'connected' || google === 'error') {
+      setGoogleReturnNotice(google);
+      params.delete('google');
+      const next = params.toString();
+      const path = `${window.location.pathname}${next ? `?${next}` : ''}`;
+      window.history.replaceState({}, '', path);
+    }
+  }, []);
+
   const hasAnyReviews = reviews.length > 0;
   /** Full skeleton only on first load — avoids flashing over existing data on retry. */
   const showLoadingSkeleton = loadStatus === 'loading' && !hasAnyReviews;
@@ -81,7 +111,33 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
     <ReviewsDashboardShell>
       <ReviewsDashboardHeader />
 
-      <div className="mb-6">
+      {googleReturnNotice ? (
+        <p
+          className={`mb-4 text-sm ${
+            googleReturnNotice === 'error' ? 'text-red-300' : 'text-zinc-400'
+          }`}
+          role="status"
+        >
+          {googleReturnNotice === 'error'
+            ? GOOGLE_CONNECT_RETURN_ERROR
+            : GOOGLE_CONNECT_RETURN_CONNECTED}
+        </p>
+      ) : null}
+
+      <div className="mb-6 space-y-3">
+        <ReviewsGoogleConnectCard
+          connected={googleConnected || googleReturnNotice === 'connected'}
+          importedCount={importedCount}
+          connectLoading={connectLoading}
+          pullLoading={pullLoading}
+          connectError={connectError}
+          onConnect={() => void startConnect()}
+          onPullReviews={() => {
+            void pullReviews().then(ok => {
+              if (ok) void reloadReviews();
+            });
+          }}
+        />
         <ReviewsCollectCard />
       </div>
 

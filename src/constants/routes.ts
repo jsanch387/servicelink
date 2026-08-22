@@ -213,6 +213,16 @@ export const API_ROUTES = {
   MARKETING_ATTRIBUTION_SIGNUP: '/api/attribution/signup',
   /** Vercel Cron: day-before owner appointment reminder. */
   INTERNAL_CRON_BOOKING_REMINDERS: '/api/internal/cron/booking-reminders',
+  /** Owner: start Google Business Profile OAuth (reviews connect). */
+  REVIEWS_GOOGLE_CONNECT: '/api/reviews/google/connect',
+  /** Google OAuth redirect target for Business Profile connect. */
+  REVIEWS_GOOGLE_CALLBACK: '/api/reviews/google/callback',
+  /** Owner: whether this business has a Google Business connection. */
+  REVIEWS_GOOGLE_STATUS: '/api/reviews/google/status',
+  /** Owner: find/save the Google listing on an existing connection. */
+  REVIEWS_GOOGLE_SYNC: '/api/reviews/google/sync',
+  /** Owner: import Google reviews for the connected listing. */
+  REVIEWS_GOOGLE_PULL: '/api/reviews/google/pull',
 } as const;
 
 export const PUBLIC_ROUTES = [

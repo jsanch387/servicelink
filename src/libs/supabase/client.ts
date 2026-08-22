@@ -1077,6 +1077,103 @@ export type Database = {
           updated_at?: string;
         };
       };
+      google_reviews: {
+        Row: {
+          id: string;
+          business_id: string;
+          provider_review_id: string;
+          rating: number;
+          body: string;
+          author_display_name: string;
+          author_photo_url: string | null;
+          is_anonymous: boolean;
+          provider_create_time: string;
+          provider_update_time: string | null;
+          owner_reply_body: string | null;
+          owner_replied_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          provider_review_id: string;
+          rating: number;
+          body?: string;
+          author_display_name: string;
+          author_photo_url?: string | null;
+          is_anonymous?: boolean;
+          provider_create_time: string;
+          provider_update_time?: string | null;
+          owner_reply_body?: string | null;
+          owner_replied_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          provider_review_id?: string;
+          rating?: number;
+          body?: string;
+          author_display_name?: string;
+          author_photo_url?: string | null;
+          is_anonymous?: boolean;
+          provider_create_time?: string;
+          provider_update_time?: string | null;
+          owner_reply_body?: string | null;
+          owner_replied_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      google_business_connections: {
+        Row: {
+          id: string;
+          business_id: string;
+          google_account_name: string | null;
+          google_location_name: string | null;
+          google_location_title: string | null;
+          refresh_token: string;
+          access_token: string | null;
+          access_token_expires_at: string | null;
+          scopes: string;
+          connected_at: string;
+          last_synced_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          google_account_name?: string | null;
+          google_location_name?: string | null;
+          google_location_title?: string | null;
+          refresh_token: string;
+          access_token?: string | null;
+          access_token_expires_at?: string | null;
+          scopes?: string;
+          connected_at?: string;
+          last_synced_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          google_account_name?: string | null;
+          google_location_name?: string | null;
+          google_location_title?: string | null;
+          refresh_token?: string;
+          access_token?: string | null;
+          access_token_expires_at?: string | null;
+          scopes?: string;
+          connected_at?: string;
+          last_synced_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       payment_accounts: {
         Row: {
           id: string;

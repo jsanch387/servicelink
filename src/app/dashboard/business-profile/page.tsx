@@ -12,6 +12,7 @@ import {
   loadPublicReviewSummary,
   publicReviewSummaryFromLoadResult,
 } from '@/features/reviews';
+import { countPublicGoogleReviews } from '@/features/reviews/google-connect/server/loadGoogleReviews';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -176,6 +177,9 @@ export default async function BusinessProfilePage({
   const publicReviewSummary = publicReviewSummaryFromLoadResult(
     publicReviewSummaryResult
   );
+  const publicGoogleReviewCount = await countPublicGoogleReviews(
+    businessProfileData.id
+  );
   const publicProfileSlug =
     businessProfileData.business_slug?.trim() || undefined;
 
@@ -198,6 +202,7 @@ export default async function BusinessProfilePage({
         showRequestQuoteCta={showRequestQuoteCta}
         bookingFlowLocale={bookingFlowLocale}
         publicReviewSummary={publicReviewSummary}
+        publicGoogleReviewCount={publicGoogleReviewCount}
         publicProfileSlug={publicProfileSlug}
         publicActiveSale={publicActiveSale}
       />

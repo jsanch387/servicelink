@@ -51,17 +51,20 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           rating={review.rating}
           locale={locale}
           authorAs="h3"
+          source={review.source}
         />
 
-        <div className="mt-3 sm:mt-4">
-          <ReviewExpandableText
-            text={review.body}
-            variant="reviewBody"
-            className={reviewBodyTextClass}
-            seeMoreLabel={expandLabels.seeMore}
-            seeLessLabel={expandLabels.seeLess}
-          />
-        </div>
+        {review.body.trim() ? (
+          <div className="mt-3 sm:mt-4">
+            <ReviewExpandableText
+              text={review.body}
+              variant="reviewBody"
+              className={reviewBodyTextClass}
+              seeMoreLabel={expandLabels.seeMore}
+              seeLessLabel={expandLabels.seeLess}
+            />
+          </div>
+        ) : null}
 
         {hasReply && review.ownerReply ? (
           <ReviewOwnerReplyDisplay
@@ -72,7 +75,7 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           />
         ) : null}
 
-        {!hasReply && !isReplyOpen ? (
+        {review.source !== 'google' && !hasReply && !isReplyOpen ? (
           <Button
             type="button"
             variant="secondary"
@@ -84,7 +87,7 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           </Button>
         ) : null}
 
-        {!hasReply && isReplyOpen ? (
+        {review.source !== 'google' && !hasReply && isReplyOpen ? (
           <ReviewReplyForm
             onSend={body => onSendReply(review.id, body)}
             onCancel={onToggleReply}

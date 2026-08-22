@@ -3,6 +3,10 @@ import {
   loadPublicBusinessReviews,
   publicReviewsDataFromLoadResult,
 } from '@/features/reviews';
+import {
+  googleReviewsSummaryFromList,
+  loadPublicGoogleReviews,
+} from '@/features/reviews/google-connect/server/loadGoogleReviews';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { assertPublicProfileGetRateLimits } from '@/server/rateLimit/publicApiRateLimit';
@@ -57,16 +61,40 @@ export async function GET(
     }
 
     const result = await loadPublicBusinessReviews(admin, businessId);
-    const data = publicReviewsDataFromLoadResult(result);
+    const serviceLinkData = publicReviewsDataFromLoadResult(result);
+    const google = await loadPublicGoogleReviews(businessId);
+    const googleSummary = googleReviewsSummaryFromList(google.reviews);
 
-    if (!data) {
+    if (!serviceLinkData && google.reviews.length === 0) {
       return NextResponse.json(
         { success: false, error: 'No reviews available' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    const data = serviceLinkData ?? {
+      reviews: [],
+      summary: {
+        averageRating: 0,
+        reviewCount: 0,
+        breakdown: [
+          { stars: 5, percent: 0 },
+          { stars: 4, percent: 0 },
+          { stars: 3, percent: 0 },
+          { stars: 2, percent: 0 },
+          { stars: 1, percent: 0 },
+        ],
+      },
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...data,
+        googleReviews: google.reviews,
+        googleSummary,
+      },
+    });
   } catch (err) {
     console.error('[reviews] GET public profile reviews failed', err);
     return NextResponse.json(

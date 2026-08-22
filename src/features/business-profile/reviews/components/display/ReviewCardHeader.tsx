@@ -15,6 +15,7 @@ interface ReviewCardHeaderProps {
   locale: string;
   /** Use `h3` on dashboard list rows; default `p` on public profile cards. */
   authorAs?: 'p' | 'h3';
+  source?: 'servicelink' | 'google';
 }
 
 export const ReviewCardHeader: React.FC<ReviewCardHeaderProps> = ({
@@ -23,6 +24,7 @@ export const ReviewCardHeader: React.FC<ReviewCardHeaderProps> = ({
   rating,
   locale,
   authorAs = 'p',
+  source,
 }) => {
   const AuthorTag = authorAs;
 
@@ -32,6 +34,11 @@ export const ReviewCardHeader: React.FC<ReviewCardHeaderProps> = ({
         <AuthorTag className={reviewAuthorNameClass}>
           {authorDisplayName}
         </AuthorTag>
+        {source === 'google' ? (
+          <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+            Google
+          </p>
+        ) : null}
         <time className={`mt-1 block ${reviewDateClass}`} dateTime={createdAt}>
           {formatReviewDate(createdAt, locale)}
         </time>

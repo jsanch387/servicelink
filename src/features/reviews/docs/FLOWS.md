@@ -8,6 +8,7 @@ Human-readable reference for how the reviews feature works today: product rules,
 | ---------------------------------------------------- | ----------------------------------- |
 | [DATABASE.md](./DATABASE.md)                         | Schema, RLS, tokens, SQL examples   |
 | [SERVER.md](./SERVER.md)                             | Server modules and loading strategy |
+| [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md)             | Google connect, pull, import, display |
 | [REVIEW_INVITES_TABLE.md](./REVIEW_INVITES_TABLE.md) | `review_invites` columns            |
 | [REVIEWS_TABLE.md](./REVIEWS_TABLE.md)               | `reviews` columns                   |
 
@@ -112,10 +113,15 @@ Validation: `loadPublicReviewInviteByToken` — hash token, require `status = pe
 | `PATCH` | `/api/availability/bookings/[id]`               | Owner                  | `status: completed` → `applyReviewInviteOnBookingCompleted`                     |
 | `POST`  | `/api/availability/bookings/[id]/review-invite` | Owner                  | Create invite + send email for a **completed** booking (mobile)                 |
 | `GET`   | `/api/availability/bookings`                    | Owner                  | Bookings list incl. `customerAlreadyReviewed`, `willSendReviewInviteOnComplete` |
-| `GET`   | `/api/reviews`                                  | Owner                  | Dashboard inbox list                                                            |
-| `PATCH` | `/api/reviews/[id]`                             | Owner                  | `{ ownerReplyBody }` or `null` to clear reply                                   |
+| `GET`   | `/api/reviews`                                  | Owner                  | Dashboard inbox list (ServiceLink + imported Google)                            |
+| `PATCH` | `/api/reviews/[id]`                             | Owner                  | `{ ownerReplyBody }` or `null` to clear reply (ServiceLink rows only)           |
+| `POST`  | `/api/reviews/google/connect`                   | Owner                  | Start Google Business OAuth                                                     |
+| `GET`   | `/api/reviews/google/callback`                  | Owner                  | OAuth return; store tokens; redirect to Reviews                                 |
+| `GET`   | `/api/reviews/google/status`                    | Owner                  | Whether this business has a Google connection (no tokens)                       |
+| `POST`  | `/api/reviews/google/sync`                      | Owner                  | Find listing (used by pull; not shown in UI)                                    |
+| `POST`  | `/api/reviews/google/pull`                      | Owner                  | Find listing + import Google reviews                                            |
 | `POST`  | `/api/public/reviews/submit`                    | Public (token in body) | Customer submit `{ token, rating, body }`                                       |
-| `GET`   | `/api/public/profile/[slug]/reviews`            | Public                 | Full visible reviews (lazy tab)                                                 |
+| `GET`   | `/api/public/profile/[slug]/reviews`            | Public                 | Full visible reviews (lazy tab) + `googleReviews` / `googleSummary`             |
 
 **Pages**
 
@@ -132,16 +138,19 @@ Validation: `loadPublicReviewInviteByToken` — hash token, require `status = pe
 
 ### Owner dashboard (`src/features/reviews/dashboard/`)
 
-- **`ReviewsDashboardPage`** — summary card, filter pills (All / Needs reply / Replied), list + inline reply
-- **`GET /api/reviews`** via `useDashboardReviews`
-- Loads **all** reviews including `is_hidden = true`
-- Reply: `PATCH /api/reviews/[id]`
+- **`ReviewsDashboardPage`** — Google connect/pull card, summary card, filter pills (All / Needs reply / Replied), list + inline reply
+- **`GET /api/reviews`** via `useDashboardReviews` (merges ServiceLink + `google_reviews`)
+- Loads **all** ServiceLink reviews including `is_hidden = true`
+- Google rows: `source: 'google'`, no reply UI, excluded from Needs reply
+- Reply: `PATCH /api/reviews/[id]` (ServiceLink only)
+- Google connect: [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md)
 
 ### Public profile (`src/features/business-profile/reviews/`)
 
-- **SSR:** `loadPublicReviewSummary` — ratings only for header + tab visibility
+- **SSR:** `loadPublicReviewSummary` — ServiceLink ratings only for header + tab visibility
+- Tab also opens when imported Google count > 0 (`publicGoogleReviewCount`)
 - **Tab click:** `LazyPublicReviewsSection` → `GET /api/public/profile/[slug]/reviews`
-- Loads **`is_hidden = false`** only
+- ServiceLink list: **`is_hidden = false`** only. Google list is separate; averages are not mixed.
 - Summary: average, count, star breakdown via `deriveReviewsSummary`
 
 ### Customer review page (`src/features/reviews/public/`)
@@ -177,6 +186,10 @@ Key columns: `business_id`, `booking_id`, `review_invite_id`, `customer_id`, `ra
 Unique: one review per `(business_id, customer_id)` when `customer_id` is set.
 
 See [REVIEWS_TABLE.md](./REVIEWS_TABLE.md).
+
+### `google_business_connections` / `google_reviews`
+
+Imported Google Business Profile reviews. Separate from `reviews`. Service role only. See [GOOGLE_REVIEWS.md](./GOOGLE_REVIEWS.md).
 
 Full ER diagram and RLS: [DATABASE.md](./DATABASE.md).
 
@@ -243,6 +256,7 @@ Batch for all bookings on load:
   rating: number;        // 1–5
   body: string;
   createdAt: string;     // ISO
+  source?: 'servicelink' | 'google';
   ownerReply?: { body: string; repliedAt: string };
 }
 ```
@@ -254,7 +268,12 @@ Batch for all bookings on load:
 ### `PublicProfileReviewsData`
 
 ```ts
-{ reviews: PublicProfileReview[]; summary: PublicProfileReviewsSummary }
+{
+  reviews: PublicProfileReview[];
+  summary: PublicProfileReviewsSummary;
+  googleReviews?: PublicProfileReview[];
+  googleSummary?: PublicProfileReviewsSummary | null;
+}
 ```
 
 ### Submit body (`validateSubmitReviewBody`)

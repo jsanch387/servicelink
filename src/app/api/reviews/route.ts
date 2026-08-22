@@ -1,5 +1,6 @@
 import type { ReviewsListResponse } from '@/features/reviews/dashboard/api/types';
 import { loadDashboardReviews } from '@/features/reviews/dashboard/server/loadDashboardReviews';
+import { loadDashboardGoogleReviews } from '@/features/reviews/google-connect/server/loadGoogleReviews';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
@@ -25,9 +26,17 @@ export async function GET() {
       );
     }
 
+    const googleReviews = await loadDashboardGoogleReviews(
+      resolved.businessId
+    ).catch(() => []);
+    const reviews = [...loaded.reviews, ...googleReviews].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     return NextResponse.json({
       success: true,
-      reviews: loaded.reviews,
+      reviews,
     } satisfies ReviewsListResponse);
   } catch (err) {
     console.error('[reviews] GET /api/reviews failed', err);

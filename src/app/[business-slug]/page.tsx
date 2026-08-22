@@ -16,6 +16,7 @@ import {
   loadPublicReviewSummary,
   publicReviewSummaryFromLoadResult,
 } from '@/features/reviews';
+import { countPublicGoogleReviews } from '@/features/reviews/google-connect/server/loadGoogleReviews';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import { MediaService } from '@/features/media';
 import {
@@ -262,6 +263,9 @@ export default async function PublicProfilePage({
   const publicReviewSummary = publicReviewSummaryFromLoadResult(
     publicReviewSummaryResult
   );
+  const publicGoogleReviewCount = await countPublicGoogleReviews(
+    businessProfile.id
+  );
 
   const publicActiveSale = await loadPublicActiveSale(
     adminGate,
@@ -318,6 +322,7 @@ export default async function PublicProfilePage({
         publicFreeBookingsCapReached={publicFreeBookingsCapReached}
         bookingFlowLocale={bookingFlowLocale}
         publicReviewSummary={publicReviewSummary}
+        publicGoogleReviewCount={publicGoogleReviewCount}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
         publicSubscriptionPlans={publicSubscriptionPlans}

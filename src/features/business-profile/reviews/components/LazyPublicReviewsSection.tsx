@@ -62,16 +62,25 @@ export const LazyPublicReviewsSection: React.FC<
   }, [isActive, data, loadState, fetchReviews]);
 
   const displaySummary = data?.summary ?? summary;
+  const googleReviews = data?.googleReviews ?? [];
+  const googleSummary = data?.googleSummary ?? null;
+  const showServiceLinkSummary = displaySummary.reviewCount > 0;
+  const showServiceLinkList =
+    loadState === 'ready' && data && data.reviews.length > 0;
+  const showGoogleBlock =
+    loadState === 'ready' && googleReviews.length > 0 && googleSummary;
 
   return (
     <section
       className="px-4 pt-6 pb-6 sm:px-8 sm:pt-8 sm:pb-8"
       aria-label={ui.profile.reviewsSectionTitle}
     >
-      <ProfileReviewsSummary
-        bookingFlowLocale={bookingFlowLocale}
-        summary={displaySummary}
-      />
+      {showServiceLinkSummary ? (
+        <ProfileReviewsSummary
+          bookingFlowLocale={bookingFlowLocale}
+          summary={displaySummary}
+        />
+      ) : null}
 
       {loadState === 'loading' || loadState === 'idle' ? (
         <ReviewsSectionLoading ariaLabel={ui.profile.reviewsLoadingAriaLabel} />
@@ -93,11 +102,27 @@ export const LazyPublicReviewsSection: React.FC<
         </div>
       ) : null}
 
-      {loadState === 'ready' && data ? (
+      {showServiceLinkList ? (
         <ProfileReviewsList
           reviews={data.reviews}
           bookingFlowLocale={bookingFlowLocale}
         />
+      ) : null}
+
+      {showGoogleBlock ? (
+        <div className={showServiceLinkSummary ? 'mt-10' : undefined}>
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-400">
+            {ui.profile.googleReviewsSectionTitle}
+          </h3>
+          <ProfileReviewsSummary
+            bookingFlowLocale={bookingFlowLocale}
+            summary={googleSummary}
+          />
+          <ProfileReviewsList
+            reviews={googleReviews}
+            bookingFlowLocale={bookingFlowLocale}
+          />
+        </div>
       ) : null}
     </section>
   );

@@ -35,17 +35,20 @@ export const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({
         createdAt={review.createdAt}
         rating={review.rating}
         locale={locale}
+        source={review.source}
       />
 
-      <div className="mt-3 sm:mt-4">
-        <ReviewExpandableText
-          text={review.body}
-          variant="reviewBody"
-          className={reviewBodyTextClass}
-          seeMoreLabel={expandLabels.seeMore}
-          seeLessLabel={expandLabels.seeLess}
-        />
-      </div>
+      {review.body.trim() ? (
+        <div className="mt-3 sm:mt-4">
+          <ReviewExpandableText
+            text={review.body}
+            variant="reviewBody"
+            className={reviewBodyTextClass}
+            seeMoreLabel={expandLabels.seeMore}
+            seeLessLabel={expandLabels.seeLess}
+          />
+        </div>
+      ) : null}
 
       {review.ownerReply ? (
         <ReviewOwnerReplyDisplay

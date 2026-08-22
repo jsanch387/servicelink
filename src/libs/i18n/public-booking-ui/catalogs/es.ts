@@ -506,6 +506,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     reviewCountLabel: count => (count === 1 ? '1 reseña' : `${count} reseñas`),
     ratingAriaLabel: average => `${average} de 5 estrellas`,
     reviewsSectionTitle: 'Reseñas de clientes',
+    googleReviewsSectionTitle: 'Reseñas de Google',
     reviewsShowingSample: 'Mostrando reseñas recientes',
     reviewsLoadError: 'No se pudieron cargar las reseñas. Vuelve a intentarlo.',
     reviewsRetry: 'Reintentar',

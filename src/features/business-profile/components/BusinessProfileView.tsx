@@ -14,6 +14,7 @@ import { ROUTES } from '@/constants/routes';
 import { TryProPostOnboardingModal } from '@/features/pricing';
 import { ONBOARDING_PRO_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
+import { deriveReviewsSummary } from '@/features/reviews/utils/deriveReviewsSummary';
 import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import {
@@ -87,6 +88,8 @@ interface BusinessProfileViewProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** Ratings summary for header + Reviews tab; full list loads on tab click. */
   publicReviewSummary?: PublicProfileReviewsSummary | null;
+  /** Google reviews already imported — shows Reviews tab even with no ServiceLink reviews. */
+  publicGoogleReviewCount?: number;
   /** Slug for lazy reviews API (public profile + booking-link preview). */
   publicProfileSlug?: string;
   /** Live sale to announce on the public booking link (Pro owners only). */
@@ -116,6 +119,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicFreeBookingsCapReached = false,
   bookingFlowLocale = 'en',
   publicReviewSummary = null,
+  publicGoogleReviewCount = 0,
   publicProfileSlug,
   publicActiveSale = null,
   publicSubscriptionPlans = [],
@@ -123,9 +127,9 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   membershipCheckoutCanceled = false,
 }) => {
   const showReviewsTab = Boolean(
-    publicReviewSummary &&
-      publicReviewSummary.reviewCount > 0 &&
-      publicProfileSlug
+    publicProfileSlug &&
+      ((publicReviewSummary && publicReviewSummary.reviewCount > 0) ||
+        publicGoogleReviewCount > 0)
   );
   const showSubscriptionsTab = publicSubscriptionPlans.length > 0;
   const [editMode, setEditMode] = useState<EditMode>(initialMode);
@@ -136,7 +140,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
     if (initialTab === 'subscriptions' && publicSubscriptionPlans.length > 0) {
       return 'subscriptions';
     }
-    if (initialTab === 'reviews' && publicReviewSummary?.reviewCount) {
+    if (
+      initialTab === 'reviews' &&
+      (publicReviewSummary?.reviewCount || publicGoogleReviewCount)
+    ) {
       return 'reviews';
     }
     if (
@@ -608,10 +615,10 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                     bookingFlowLocale={bookingFlowLocale}
                   />
                 </section>
-              ) : showReviewsTab && publicReviewSummary && publicProfileSlug ? (
+              ) : showReviewsTab && publicProfileSlug ? (
                 <LazyPublicReviewsSection
                   businessSlug={publicProfileSlug}
-                  summary={publicReviewSummary}
+                  summary={publicReviewSummary ?? deriveReviewsSummary([])}
                   bookingFlowLocale={bookingFlowLocale}
                   isActive={activeTab === 'reviews'}
                 />

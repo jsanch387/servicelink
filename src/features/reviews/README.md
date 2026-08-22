@@ -4,12 +4,13 @@ Owner dashboard inbox, public profile display, and customer submit via **email i
 
 ## Start here
 
-| Doc                                    | Contents                                                              |
-| -------------------------------------- | --------------------------------------------------------------------- |
-| **[docs/FLOWS.md](./docs/FLOWS.md)**   | **End-to-end flows** — product rules, identity, APIs, UI, data shapes |
-| [docs/DATABASE.md](./docs/DATABASE.md) | Schema, lifecycle, RLS, tokens, SQL                                   |
-| [docs/SERVER.md](./docs/SERVER.md)     | Server modules and loading strategy                                   |
-| [docs/README.md](./docs/README.md)     | Full documentation index                                              |
+| Doc                                              | Contents                                                              |
+| ------------------------------------------------ | --------------------------------------------------------------------- |
+| **[docs/FLOWS.md](./docs/FLOWS.md)**             | **End-to-end flows** — product rules, identity, APIs, UI, data shapes |
+| [docs/GOOGLE_REVIEWS.md](./docs/GOOGLE_REVIEWS.md) | Google Business connect, pull, import, and public display           |
+| [docs/DATABASE.md](./docs/DATABASE.md)           | Schema, lifecycle, RLS, tokens, SQL                                   |
+| [docs/SERVER.md](./docs/SERVER.md)               | Server modules and loading strategy                                   |
+| [docs/README.md](./docs/README.md)               | Full documentation index                                              |
 
 ## Folder layout
 
@@ -18,6 +19,7 @@ reviews/
   index.ts
   README.md
   docs/                    # Feature + database reference
+  google-connect/          # Google OAuth, listing sync, review pull
   server/                  # Invites, submit, public loaders
   dashboard/               # /dashboard/reviews UI + APIs
   public/                  # /review/[token] customer UI
@@ -43,6 +45,8 @@ Review invite email lives in `src/features/email/review-invite/`.
 | SMS invites                             | Not built                                     |
 | Receipt on complete                     | Not built                                     |
 | Dashboard hide-review UI                | Not built                                     |
+| Google Business connect (OAuth)         | Wired                                         |
+| Google review pull + public display     | Wired — live pull waits on Google API quota   |
 
 ## Product policy (short)
 
@@ -51,3 +55,4 @@ Review invite email lives in `src/features/email/review-invite/`.
 - Link valid **90 days**, **one-time use**.
 - Public profile shows non-hidden reviews only.
 - No owner copy/share review link.
+- Google reviews are a **second source** (connect + pull). They do not mix into the ServiceLink star average. See [docs/GOOGLE_REVIEWS.md](./docs/GOOGLE_REVIEWS.md).
