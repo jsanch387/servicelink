@@ -1,5 +1,9 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
 import { bookingReferralCaptureRedirect } from '@/features/booking-attribution/server/bookingReferralCookie';
+import {
+  paymentLinkResumeCookie,
+  paymentLinkShortCodeFromPathname,
+} from '@/features/payments/walk-up/paymentLinkResumeCookie';
 import { isMarketplacePublicEnabled } from '@/features/marketplace/config/isMarketplacePublicEnabled';
 import {
   isProAccess,
@@ -29,8 +33,15 @@ export async function middleware(request: NextRequest) {
     request.cookies.getAll()
   );
   const staleAuthCookieNameSet = new Set(staleAuthCookieNames);
-  const withStaleExpiry = (res: NextResponse) =>
-    expireStaleAuthCookies(res, staleAuthCookieNames);
+  const pathname = request.nextUrl.pathname;
+  const resumeCode = paymentLinkShortCodeFromPathname(pathname);
+  const withStaleExpiry = (res: NextResponse) => {
+    const out = expireStaleAuthCookies(res, staleAuthCookieNames);
+    if (resumeCode) {
+      out.cookies.set(paymentLinkResumeCookie(resumeCode));
+    }
+    return out;
+  };
 
   let response = withStaleExpiry(
     NextResponse.next({
@@ -39,8 +50,6 @@ export async function middleware(request: NextRequest) {
       },
     })
   );
-
-  const pathname = request.nextUrl.pathname;
 
   // Marketplace discovery is live; flip `isMarketplacePublicEnabled` to pull it.
   if (!isMarketplacePublicEnabled()) {

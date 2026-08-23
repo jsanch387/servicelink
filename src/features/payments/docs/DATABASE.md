@@ -15,6 +15,7 @@ Broader schema context snapshot: **`SUPABASE_SCHEMA_CONTEXT.md`**.
 | ------------------ | -------------------- | --------------------------------------------------------------------------------------------------------- |
 | `payment_accounts` | One row per business | Stripe Connect account id (`acct_…`) and capability / onboarding flags.                                   |
 | `payment_settings` | One row per business | ServiceLink checkout: **payments on/off**, **checkout mode** (how customers pay), **deposits**, currency. |
+| `payment_requests` | Many per business    | Walk-up charges (payment link now; Tap to Pay later). **Not** bookings. See **`PAYMENT_REQUESTS_TABLE.md`**. |
 
 Both tables reference **`business_profiles(id)`** (tenant root). The owner is `business_profiles.profile_id` → `auth.users`.
 
@@ -138,6 +139,9 @@ auth.users
       (Stripe Connect)                 (checkout + deposits + payments_enabled)
               ▲                               │
               └──── payment_account_id (optional FK) ────┘
+
+      payment_requests (many)
+      walk-up payment links / later Tap to Pay
 ```
 
 ---

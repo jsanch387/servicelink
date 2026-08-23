@@ -12,6 +12,11 @@ export const ROUTES = {
   TERMS: '/terms',
   PRIVACY: '/privacy',
   CONTACT_PAGE: '/contact',
+  /** Public return page after a create-payment Checkout. */
+  PAY_COMPLETE: '/pay/complete',
+  /** Short branded pay link the owner shares (`/p/{shortCode}`). */
+  PAY_LINK: (shortCode: string) =>
+    `/p/${encodeURIComponent(shortCode.trim())}`,
 
   // Marketing pages
   FEATURES_PAGE: '/features',
@@ -144,6 +149,11 @@ export const API_ROUTES = {
   PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
   /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */
   PAYMENTS_SERVICELINK_SETTINGS: '/api/payments/servicelink/settings',
+  /**
+   * Owner: create a one-time walk-up Stripe Checkout URL (amount + note).
+   * Mobile: Home → Create payment → Payment link.
+   */
+  PAYMENTS_LINK: '/api/payments/link',
   CUSTOMERS: '/api/customers',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',
@@ -653,6 +663,13 @@ export function getPublicInvoiceShortPath(shortCode: string): string {
   const c = shortCode.trim();
   if (!c) return '/r';
   return `/r/${encodeURIComponent(c)}`;
+}
+
+/** Short branded create-payment link (`/p/{shortCode}`). */
+export function getPublicPaymentLinkPath(shortCode: string): string {
+  const c = shortCode.trim();
+  if (!c) return '/p';
+  return ROUTES.PAY_LINK(c);
 }
 
 /** Owner New appointment wizard with membership visit prefill query params. */

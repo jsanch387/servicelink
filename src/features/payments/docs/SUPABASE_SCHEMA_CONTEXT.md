@@ -22,6 +22,7 @@ Tables included in the provided snapshot:
 - `notifications`
 - `payment_accounts`
 - `payment_settings`
+- `payment_requests`
 - `profiles`
 - `quote_public_links`
 - `quotes`
@@ -62,6 +63,7 @@ Tables included in the provided snapshot:
 
 - `payment_accounts` (Stripe Connect account and capabilities)
 - `payment_settings` (payments_enabled, checkout mode, deposits config, currency)
+- `payment_requests` (walk-up payment links / later Tap to Pay; not booking-scoped)
 - `booking_payments` (1:1 payment summary per booking)
 - `booking_checkout_sessions` (Stripe checkout session lifecycle + webhook payload context)
 - `stripe_webhook_events` (idempotency/event ledger for processed webhook ids)
@@ -137,6 +139,7 @@ auth.users
          ├─ booking_checkout_sessions(business_id, booking_id?)
          ├─ payment_accounts(business_id)
          ├─ payment_settings(business_id, payment_account_id?)
+         ├─ payment_requests(business_id)
          └─ quotes(business_id)
 ```
 

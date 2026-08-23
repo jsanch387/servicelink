@@ -42,6 +42,7 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | [mobile-maintenance-enrollment.md](./mobile-maintenance-enrollment.md)       | Maintenance plans                                  |
 | [mobile-onboarding-complete.md](./mobile-onboarding-complete.md)             | Onboarding complete                                |
 | [mobile-stripe-connect-onboarding.md](./mobile-stripe-connect-onboarding.md) | Connect onboarding                                 |
+| [mobile-create-payment-link.md](./mobile-create-payment-link.md)             | Create payment link (`POST /api/payments/link`)    |
 | [mobile-entitlement-paywall.md](./mobile-entitlement-paywall.md)             | Pro paywall                                        |
 | [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push                                          |
 | [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder) |

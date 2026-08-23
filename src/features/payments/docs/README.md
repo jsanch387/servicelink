@@ -10,5 +10,9 @@ Reference docs for Payments feature schema and flows.
 | **`BOOKING_CHECKOUT_FLOW.md`**       | **End-to-end availability booking + Stripe Checkout (v1): APIs, webhook, DB, client, emails, and Vitest coverage pointers.** |
 | `BOOKING_PAYMENTS_TABLE.md`          | `booking_payments` table (1:1 booking payment summary).                                                                      |
 | `BOOKING_CHECKOUT_SESSIONS_TABLE.md` | `booking_checkout_sessions` table (Stripe session lifecycle + webhook context).                                              |
+| **`WALKUP_PAYMENT_LINK.md`**         | **Create payment link (v1):** `POST /api/payments/link`, `/p/…`, Checkout on Connect, webhook → `payment_requests`.         |
+| `PAYMENT_REQUESTS_TABLE.md`          | `payment_requests` table (merchant-scoped walk-up charges; not bookings).                                                    |
+| `sql/001_payment_requests.sql`       | Create `payment_requests` + RLS + indexes. Run in Supabase SQL Editor.                                                       |
+| `sql/002_payment_requests_short_code.sql` | `short_code` + `stripe_checkout_url` for branded `/p/…` share links.                                                    |
 
 Keep these docs updated when schema or payment behavior changes.
