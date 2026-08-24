@@ -6,7 +6,7 @@ This is the server contract for `POST /api/payments/link`. Mobile already posts 
 
 **Stripe Connect prerequisite:** connected Express account with onboarding `complete` and **`charges_enabled`** — see [`mobile-stripe-connect-onboarding.md`](./mobile-stripe-connect-onboarding.md).
 
-**Not this flow:** booking Tap to Pay (`mobile-booking-tap-to-pay.md`). Create-payment **Tap to Pay** (`POST /api/payments/tap-to-pay/intent`) is a later pass.
+**Not this flow:** booking Tap to Pay (`mobile-booking-tap-to-pay.md`). Create-payment **Tap to Pay** is [`mobile-create-payment-tap-to-pay.md`](./mobile-create-payment-tap-to-pay.md).
 
 ---
 
@@ -196,7 +196,6 @@ Add **`checkout.session.expired`** on the Connect webhook destination if it is n
 
 ## Out of scope (later)
 
-- Create-payment Tap to Pay (`POST /api/payments/tap-to-pay/intent`)
 - Deposit links on appointment create
 - Auto-text the URL
 - In-app “this link was paid” list

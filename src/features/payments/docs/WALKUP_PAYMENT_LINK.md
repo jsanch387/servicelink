@@ -76,4 +76,4 @@ Connect webhook (`/api/stripe/webhook-connect`) must include:
 
 ## Not in this pass
 
-Create-payment Tap to Pay, deposit-on-booking links, CRM customer, SMS of the URL, in-app paid list, owner revoke.
+Deposit-on-booking links, CRM customer, SMS of the URL, in-app paid list, owner revoke. Create-payment Tap to Pay is [`WALKUP_TAP_TO_PAY.md`](./WALKUP_TAP_TO_PAY.md).

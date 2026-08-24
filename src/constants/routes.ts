@@ -154,6 +154,17 @@ export const API_ROUTES = {
    * Mobile: Home → Create payment → Payment link.
    */
   PAYMENTS_LINK: '/api/payments/link',
+  /**
+   * Owner: walk-up Tap to Pay PaymentIntent (amount + note, no booking).
+   * Mobile: Home → Create payment → Tap to pay.
+   */
+  PAYMENTS_TAP_TO_PAY_INTENT: '/api/payments/tap-to-pay/intent',
+  /**
+   * Owner: merchant-scoped Stripe Terminal connection token (app warm-up).
+   * Walk-up collection uses this, not the booking token.
+   */
+  PAYMENTS_TAP_TO_PAY_CONNECTION_TOKEN:
+    '/api/payments/tap-to-pay/connection-token',
   CUSTOMERS: '/api/customers',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',

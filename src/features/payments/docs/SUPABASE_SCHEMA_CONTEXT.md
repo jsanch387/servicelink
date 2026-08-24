@@ -63,7 +63,7 @@ Tables included in the provided snapshot:
 
 - `payment_accounts` (Stripe Connect account and capabilities)
 - `payment_settings` (payments_enabled, checkout mode, deposits config, currency)
-- `payment_requests` (walk-up payment links / later Tap to Pay; not booking-scoped)
+- `payment_requests` (walk-up payment links + Tap to Pay; not booking-scoped)
 - `booking_payments` (1:1 payment summary per booking)
 - `booking_checkout_sessions` (Stripe checkout session lifecycle + webhook payload context)
 - `stripe_webhook_events` (idempotency/event ledger for processed webhook ids)
