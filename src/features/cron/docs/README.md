@@ -53,13 +53,14 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 ### booking-reminders
 
 - **Route:** `GET /api/internal/cron/booking-reminders`
+- **Duration:** `maxDuration = 300` (Vercel Pro). Owner + customer already run in parallel; each side sends up to 5 at a time. Per customer, email and SMS run together.
 - **Work:** `src/features/availability/booking/server/reminders/`
   - Owner: `runOwnerBookingReminders` — Expo push + in-app bell
   - Customer: `runCustomerBookingReminders` — email via Resend, SMS via `sendAndRecordSms` (shows in the owner message inbox)
 - **Owner idempotency:** `notifications.dedupe_key` = `booking_reminder:{ownerProfileId}:{targetDate}`
 - **Customer SMS idempotency:** `sms_messages.dedupe_key` = `{bookingId}:booking_reminder:{scheduledDate}`
 - **SMS type:** `booking_reminder` (same table as confirmation / on-the-way)
-- **SMS gates:** same as other customer texts (opt-in, Telnyx, business eligible)
+- **SMS gates:** same as other customer texts (opt-in, Telnyx, business eligible). Telnyx STOP (`carrier_opt_out`) is skipped, not failed.
 - **Mobile tap (owner):** [`docs/contracts/mobile-push-notifications.md`](../../../../docs/contracts/mobile-push-notifications.md) — `screen` → `bookings`
 
 ---
