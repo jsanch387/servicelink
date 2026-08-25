@@ -61,8 +61,7 @@ export function parseCreatePaymentLinkBody(
     return { ok: false, error: 'Only USD payments are supported.' };
   }
 
-  const note =
-    typeof payload.note === 'string' ? payload.note.trim() : '';
+  const note = typeof payload.note === 'string' ? payload.note.trim() : '';
   if (!note) {
     return {
       ok: false,

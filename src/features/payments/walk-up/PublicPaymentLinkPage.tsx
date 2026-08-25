@@ -65,10 +65,7 @@ export function PublicPaymentLinkPage({
     <PaymentLinkChrome payment={payment}>
       <div className="overflow-hidden rounded-[28px] border border-black/[0.06] bg-white shadow-[0_18px_50px_-24px_rgba(20,18,16,0.45)]">
         <div className="px-6 pb-2 pt-8 text-center sm:px-8">
-          <BusinessMark
-            name={payment.businessName}
-            logoUrl={payment.logoUrl}
-          />
+          <BusinessMark name={payment.businessName} logoUrl={payment.logoUrl} />
           <p className="mt-4 text-sm text-neutral-500">
             {payment.businessName} requested a payment
           </p>
@@ -215,9 +212,12 @@ function BusinessMark({
 }) {
   if (logoUrl) {
     return (
-      <img
+      <Image
         src={logoUrl}
         alt=""
+        width={64}
+        height={64}
+        unoptimized
         className="mx-auto h-16 w-16 rounded-2xl object-cover ring-1 ring-black/10"
       />
     );

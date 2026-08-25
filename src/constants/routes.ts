@@ -15,8 +15,7 @@ export const ROUTES = {
   /** Public return page after a create-payment Checkout. */
   PAY_COMPLETE: '/pay/complete',
   /** Short branded pay link the owner shares (`/p/{shortCode}`). */
-  PAY_LINK: (shortCode: string) =>
-    `/p/${encodeURIComponent(shortCode.trim())}`,
+  PAY_LINK: (shortCode: string) => `/p/${encodeURIComponent(shortCode.trim())}`,
 
   // Marketing pages
   FEATURES_PAGE: '/features',
@@ -165,6 +164,11 @@ export const API_ROUTES = {
    */
   PAYMENTS_TAP_TO_PAY_CONNECTION_TOKEN:
     '/api/payments/tap-to-pay/connection-token',
+  /**
+   * Owner: connected-account activity (balance + payments, refunds, payouts).
+   * Mobile: Payments → Transactions.
+   */
+  PAYMENTS_TRANSACTIONS: '/api/payments/transactions',
   CUSTOMERS: '/api/customers',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',

@@ -10,10 +10,10 @@ This is the server contract for `POST /api/payments/tap-to-pay/intent`. Mobile a
 
 **Related:**
 
-| Doc | What it is |
-| --- | ---------- |
-| [`mobile-create-payment-link.md`](./mobile-create-payment-link.md) | Same Get paid screen, payment-link path |
-| [`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md) | Booking complete Tap to Pay (different route, has a booking) |
+| Doc                                                                | What it is                                                   |
+| ------------------------------------------------------------------ | ------------------------------------------------------------ |
+| [`mobile-create-payment-link.md`](./mobile-create-payment-link.md) | Same Get paid screen, payment-link path                      |
+| [`mobile-booking-tap-to-pay.md`](./mobile-booking-tap-to-pay.md)   | Booking complete Tap to Pay (different route, has a booking) |
 
 **Not this flow:** `POST /api/availability/bookings/{bookingId}/tap-to-pay/intent`. Do not send a booking id. Do not call `job_completed`.
 
@@ -32,12 +32,12 @@ Home FAB → Create payment → Tap to pay
 
 There is **no ServiceLink sheet** after Charge. The reader is the UI. **Do not poll.** **Do not** write `payment_requests` or create the PaymentIntent in the app.
 
-| Step | Mobile UI                         | Server                                                                 |
-| ---- | --------------------------------- | ---------------------------------------------------------------------- |
-| 1    | Amount + “what’s it for”          | Auth + Connect gate                                                    |
-| 2    | Charge                            | `ensureTerminalLocation` + PI on the connected account                 |
-| 3    | Native Tap to Pay UI              | Insert `payment_requests` (`status: open`, `collection_method: tap_to_pay`) |
-| 4    | Owner toast “Paid”                | Connect webhook marks the row `paid`                                   |
+| Step | Mobile UI                | Server                                                                      |
+| ---- | ------------------------ | --------------------------------------------------------------------------- |
+| 1    | Amount + “what’s it for” | Auth + Connect gate                                                         |
+| 2    | Charge                   | `ensureTerminalLocation` + PI on the connected account                      |
+| 3    | Native Tap to Pay UI     | Insert `payment_requests` (`status: open`, `collection_method: tap_to_pay`) |
+| 4    | Owner toast “Paid”       | Connect webhook marks the row `paid`                                        |
 
 Warm-up uses **`POST /api/payments/tap-to-pay/connection-token`** (merchant-scoped, no booking). Do **not** use the booking `…/bookings/{id}/tap-to-pay/connection-token` for this screen.
 
@@ -49,10 +49,10 @@ Cancel on Apple’s UI is **not** an error. Charge again creates a **new** Payme
 
 ## Endpoints
 
-| Method | Path                                        | Purpose                                   |
-| ------ | ------------------------------------------- | ----------------------------------------- |
-| `POST` | `/api/payments/tap-to-pay/intent`           | Walk-up PaymentIntent for amount + note   |
-| `POST` | `/api/payments/tap-to-pay/connection-token` | Merchant Terminal token (app warm-up)     |
+| Method | Path                                        | Purpose                                 |
+| ------ | ------------------------------------------- | --------------------------------------- |
+| `POST` | `/api/payments/tap-to-pay/intent`           | Walk-up PaymentIntent for amount + note |
+| `POST` | `/api/payments/tap-to-pay/connection-token` | Merchant Terminal token (app warm-up)   |
 
 **Example (local):** `http://localhost:3000/api/payments/tap-to-pay/intent`
 
@@ -88,12 +88,12 @@ Cookie auth (web) is also accepted. Mobile always sends Bearer.
 }
 ```
 
-| Field             | Required | Type    | Rules                                                                 |
-| ----------------- | -------- | ------- | --------------------------------------------------------------------- |
-| `amountCents`     | yes      | integer | `50`–`999999` (Stripe $0.50 min; mobile keypad cap $9,999.99)         |
-| `currency`        | no       | string  | Must be `usd` when sent. Defaults to `usd`.                           |
+| Field             | Required | Type    | Rules                                                                  |
+| ----------------- | -------- | ------- | ---------------------------------------------------------------------- |
+| `amountCents`     | yes      | integer | `50`–`999999` (Stripe $0.50 min; mobile keypad cap $9,999.99)          |
+| `currency`        | no       | string  | Must be `usd` when sent. Defaults to `usd`.                            |
 | `note`            | yes      | string  | Trimmed, non-empty, max **200**. Goes on the PI description + metadata |
-| `stripeAccountId` | no       | string  | Sent when mobile knows it. Must match this business’s `acct_…`.       |
+| `stripeAccountId` | no       | string  | Sent when mobile knows it. Must match this business’s `acct_…`.        |
 
 `note` is the only description of the charge (“Lights”, “Cabin detail”). Do not send a customer, booking id, or phone.
 
@@ -135,15 +135,15 @@ Charge model is **direct charges** on the connected account. Mobile does **not**
 
 Body is always `{ "success": false, "error": "human-readable message" }` with a real HTTP status. `X-Request-ID` is echoed when present.
 
-| Status  | When                                      | Example `error`                                                     |
-| ------- | ----------------------------------------- | ------------------------------------------------------------------- |
-| 401     | Signed out / bad token                    | `Sign in again to collect payment.`                                 |
+| Status  | When                                      | Example `error`                                                                                                                                                            |
+| ------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 401     | Signed out / bad token                    | `Sign in again to collect payment.`                                                                                                                                        |
 | 400     | Bad amount, note, currency, or account id | `Enter an amount greater than $0.` / `Add a short note for what this payment is for.` / `Only USD payments are supported.` / `stripeAccountId must be a non-empty string.` |
-| 404     | No business profile                       | `Business profile not found`                                        |
-| 422     | Connect not ready                         | `Set up Stripe payments to use Tap to Pay.`                         |
-| 403     | `stripeAccountId` mismatch                | `Stripe account does not match this business.`                      |
-| 429     | Rate limited                              | `Too many Tap to Pay requests. Please wait a moment and try again.` |
-| 500/502 | Persist or Stripe create failed           | `Couldn't start Tap to Pay. Try again.`                             |
+| 404     | No business profile                       | `Business profile not found`                                                                                                                                               |
+| 422     | Connect not ready                         | `Set up Stripe payments to use Tap to Pay.`                                                                                                                                |
+| 403     | `stripeAccountId` mismatch                | `Stripe account does not match this business.`                                                                                                                             |
+| 429     | Rate limited                              | `Too many Tap to Pay requests. Please wait a moment and try again.`                                                                                                        |
+| 500/502 | Persist or Stripe create failed           | `Couldn't start Tap to Pay. Try again.`                                                                                                                                    |
 
 `429` includes `Retry-After` (seconds). Intent limits are **15/min and 80/hour per owner** (also IP caps), shared with booking Tap to Pay.
 
@@ -153,13 +153,13 @@ Treat **404** as “no business,” and **422** as “finish Stripe setup.”
 
 ## Connect / payments gate
 
-| Check                                | Required |
-| ------------------------------------ | -------- |
-| Signed-in owner                      | yes      |
-| `business_profiles` row              | yes      |
-| `payment_accounts.stripe_account_id` | yes      |
+| Check                                | Required   |
+| ------------------------------------ | ---------- |
+| Signed-in owner                      | yes        |
+| `business_profiles` row              | yes        |
+| `payment_accounts.stripe_account_id` | yes        |
 | `payment_accounts.onboarding_status` | `complete` |
-| `payment_accounts.charges_enabled`   | `true`   |
+| `payment_accounts.charges_enabled`   | `true`     |
 
 If the gate fails → **422**. Hide or disable Tap to pay in the UI until Connect is ready (same as payment link).
 

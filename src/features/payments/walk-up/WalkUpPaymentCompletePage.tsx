@@ -2,11 +2,7 @@ import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/component
 import { XCircleIcon } from '@heroicons/react/24/outline';
 import '@/features/subscriptions/components/SubscriptionPlanReadySuccess.css';
 
-export function WalkUpPaymentCompletePage({
-  canceled,
-}: {
-  canceled: boolean;
-}) {
+export function WalkUpPaymentCompletePage({ canceled }: { canceled: boolean }) {
   if (canceled) {
     return (
       <main className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-[var(--dashboard-bg)] px-4 py-10">

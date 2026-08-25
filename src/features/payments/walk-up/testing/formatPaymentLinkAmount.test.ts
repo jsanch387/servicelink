@@ -17,7 +17,8 @@ describe('truncatePaymentLinkNote', () => {
   });
 
   it('truncates long notes with an ellipsis', () => {
-    const note = 'A very long description of extra work that should not overflow';
+    const note =
+      'A very long description of extra work that should not overflow';
     const out = truncatePaymentLinkNote(note, 20);
     expect(out.endsWith('…')).toBe(true);
     expect(out.length).toBeLessThanOrEqual(20);

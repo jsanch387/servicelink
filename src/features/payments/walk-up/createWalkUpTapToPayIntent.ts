@@ -53,10 +53,7 @@ export async function createWalkUpTapToPayIntent(
     };
   }
 
-  const rate = await assertOwnerTapToPayIntentRateLimits(
-    request,
-    auth.user.id
-  );
+  const rate = await assertOwnerTapToPayIntentRateLimits(request, auth.user.id);
   if (!rate.ok) {
     return {
       ok: false,

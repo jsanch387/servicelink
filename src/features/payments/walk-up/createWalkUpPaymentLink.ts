@@ -170,7 +170,10 @@ export async function createWalkUpPaymentLink(
       paymentRequestId,
     };
   } catch (error) {
-    console.error('[walk-up:payment-link] checkout.sessions.create failed', error);
+    console.error(
+      '[walk-up:payment-link] checkout.sessions.create failed',
+      error
+    );
     await paymentRequestsOf(admin)
       .update({ status: WALKUP_PAYMENT_STATUS.FAILED })
       .eq('id', paymentRequestId);

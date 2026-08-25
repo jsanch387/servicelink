@@ -125,7 +125,9 @@ describe('createWalkUpPaymentLink', () => {
     if (!result.ok) return;
     expect(result.paymentLinkId).toBe('cs_test_live');
     expect(result.paymentRequestId).toBe('req_1');
-    expect(result.url).toMatch(/^https:\/\/myservicelink\.app\/p\/[A-Za-z0-9]+$/);
+    expect(result.url).toMatch(
+      /^https:\/\/myservicelink\.app\/p\/[A-Za-z0-9]+$/
+    );
     expect(mockCheckoutCreate).toHaveBeenCalledTimes(1);
     const [params, options] = mockCheckoutCreate.mock.calls[0] as [
       {

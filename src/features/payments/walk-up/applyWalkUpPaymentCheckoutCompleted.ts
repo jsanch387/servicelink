@@ -1,10 +1,7 @@
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
-import {
-  WALKUP_PAYMENT_LINK_KIND,
-  WALKUP_PAYMENT_STATUS,
-} from './constants';
+import { WALKUP_PAYMENT_LINK_KIND, WALKUP_PAYMENT_STATUS } from './constants';
 import { paymentRequestsOf } from './paymentRequestsQuery';
 
 export function isWalkUpPaymentLinkKind(
@@ -64,7 +61,9 @@ export async function applyWalkUpPaymentCheckoutCompleted(
   } | null = null;
 
   if (paymentRequestId) {
-    const { data, error } = await query.eq('id', paymentRequestId).maybeSingle();
+    const { data, error } = await query
+      .eq('id', paymentRequestId)
+      .maybeSingle();
     if (error) {
       console.error('[walk-up:webhook] load payment_requests failed', {
         eventId: event.id,

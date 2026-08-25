@@ -24,10 +24,13 @@ vi.mock('@/server/rateLimit/ownerTapToPayRateLimit', () => ({
     'Too many Tap to Pay requests. Please wait a moment and try again.',
 }));
 
-vi.mock('@/features/payments/server/resolveMerchantTapToPayPaymentAccount', () => ({
-  resolveMerchantTapToPayPaymentAccount: (...args: unknown[]) =>
-    mockResolveAccount(...args),
-}));
+vi.mock(
+  '@/features/payments/server/resolveMerchantTapToPayPaymentAccount',
+  () => ({
+    resolveMerchantTapToPayPaymentAccount: (...args: unknown[]) =>
+      mockResolveAccount(...args),
+  })
+);
 
 vi.mock('@/features/payments/server/ensureTerminalLocation', () => ({
   ensureTerminalLocation: (...args: unknown[]) => mockEnsureTerminal(...args),

@@ -20,10 +20,7 @@ function makePaymentIntent(
   } as Stripe.PaymentIntent;
 }
 
-function makeEvent(
-  type: Stripe.Event['type'],
-  account?: string
-): Stripe.Event {
+function makeEvent(type: Stripe.Event['type'], account?: string): Stripe.Event {
   return { id: 'evt_1', type, account } as Stripe.Event;
 }
 

@@ -20,34 +20,34 @@ Without this row, `checkout.session.completed` has only Stripe metadata. We alre
 
 ## Columns
 
-| Column                         | Type          | Nullable | Notes                                              |
-| ------------------------------ | ------------- | -------: | -------------------------------------------------- |
-| `id`                           | `uuid`        |       no | PK                                                 |
-| `business_id`                  | `uuid`        |       no | FK → `business_profiles(id)`                       |
-| `created_by`                   | `uuid`        |      yes | Owner `auth.users` id                              |
-| `collection_method`            | `text`        |       no | `checkout_link` or `tap_to_pay`                    |
-| `status`                       | `text`        |       no | `open`, `paid`, `expired`, `canceled`, `failed`    |
-| `amount_cents`                 | `int4`        |       no | Owner-typed amount (> 0)                           |
-| `currency`                     | `text`        |       no | `usd`                                              |
-| `note`                         | `text`        |       no | Required; 1–200 chars                              |
-| `short_code`                   | `text`        |      yes | Unique share code for `/p/{code}`                  |
-| `stripe_checkout_session_id`   | `text`        |      yes | Unique when set (`cs_…`)                           |
-| `stripe_checkout_url`          | `text`        |      yes | Hosted Checkout URL (not shared with the owner)    |
-| `stripe_payment_intent_id`     | `text`        |      yes | Set on Tap to Pay create; Checkout when paid       |
-| `paid_amount_cents`            | `int4`        |      yes | Stripe `amount_total` after success                |
-| `paid_at`                      | `timestamptz` |      yes | Required when `status = paid`                      |
-| `created_at`                   | `timestamptz` |       no | default `now()`                                    |
-| `updated_at`                   | `timestamptz` |       no | `public.set_updated_at()`                          |
+| Column                       | Type          | Nullable | Notes                                           |
+| ---------------------------- | ------------- | -------: | ----------------------------------------------- |
+| `id`                         | `uuid`        |       no | PK                                              |
+| `business_id`                | `uuid`        |       no | FK → `business_profiles(id)`                    |
+| `created_by`                 | `uuid`        |      yes | Owner `auth.users` id                           |
+| `collection_method`          | `text`        |       no | `checkout_link` or `tap_to_pay`                 |
+| `status`                     | `text`        |       no | `open`, `paid`, `expired`, `canceled`, `failed` |
+| `amount_cents`               | `int4`        |       no | Owner-typed amount (> 0)                        |
+| `currency`                   | `text`        |       no | `usd`                                           |
+| `note`                       | `text`        |       no | Required; 1–200 chars                           |
+| `short_code`                 | `text`        |      yes | Unique share code for `/p/{code}`               |
+| `stripe_checkout_session_id` | `text`        |      yes | Unique when set (`cs_…`)                        |
+| `stripe_checkout_url`        | `text`        |      yes | Hosted Checkout URL (not shared with the owner) |
+| `stripe_payment_intent_id`   | `text`        |      yes | Set on Tap to Pay create; Checkout when paid    |
+| `paid_amount_cents`          | `int4`        |      yes | Stripe `amount_total` after success             |
+| `paid_at`                    | `timestamptz` |      yes | Required when `status = paid`                   |
+| `created_at`                 | `timestamptz` |       no | default `now()`                                 |
+| `updated_at`                 | `timestamptz` |       no | `public.set_updated_at()`                       |
 
 ---
 
 ## RLS
 
-| Role              | Access                                      |
-| ----------------- | ------------------------------------------- |
-| `authenticated`   | **SELECT** rows for the owner’s business    |
-| `anon`            | none                                        |
-| `service_role`    | ALL (create-link API + webhook)             |
+| Role            | Access                                   |
+| --------------- | ---------------------------------------- |
+| `authenticated` | **SELECT** rows for the owner’s business |
+| `anon`          | none                                     |
+| `service_role`  | ALL (create-link API + webhook)          |
 
 No client insert/update. Mobile never writes this table directly.
 

@@ -139,12 +139,15 @@ async function loadWalkUpTapToPayPaymentRequest(
       .eq('id', paymentRequestId)
       .maybeSingle();
     if (error) {
-      console.error('[walk-up:tap-to-pay:webhook] load payment_requests failed', {
-        eventId: args.eventId,
-        paymentIntentId: args.paymentIntent.id,
-        paymentRequestId,
-        error,
-      });
+      console.error(
+        '[walk-up:tap-to-pay:webhook] load payment_requests failed',
+        {
+          eventId: args.eventId,
+          paymentIntentId: args.paymentIntent.id,
+          paymentRequestId,
+          error,
+        }
+      );
       return { ok: false, reason: 'lookup_failed', retry: true };
     }
     row = (data as PaymentRequestLookupRow | null) ?? null;
@@ -218,14 +221,11 @@ async function assertWalkUpTapToPayEventAccount(
     .maybeSingle();
 
   if (error) {
-    console.error(
-      '[walk-up:tap-to-pay:webhook] load payment_accounts failed',
-      {
-        eventId: args.event.id,
-        businessId: args.row.business_id,
-        error,
-      }
-    );
+    console.error('[walk-up:tap-to-pay:webhook] load payment_accounts failed', {
+      eventId: args.event.id,
+      businessId: args.row.business_id,
+      error,
+    });
     return { ok: false, reason: 'account_lookup_failed', retry: true };
   }
 

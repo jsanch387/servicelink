@@ -46,14 +46,14 @@ Does **not** require `payment_settings.payments_enabled`. Does **not** write `bo
 
 ## Reuse
 
-| Already exists                                              | Reuse                                      |
-| ----------------------------------------------------------- | ------------------------------------------ |
-| Booking `createBookingTapToPayIntent` PI options            | `card_present` + automatic capture         |
-| `ensureTerminalLocation`                                    | Before creating the PI                     |
-| `POST /api/payments/tap-to-pay/connection-token`            | App warm-up                                |
-| `resolveMerchantTapToPayPaymentAccount`                     | Connect gate                               |
-| `verifyTapToPayDirectChargeOnConnectedAccount`              | Direct-charge check                        |
-| `payment_requests`                                          | Same ad-hoc ledger as payment links        |
+| Already exists                                   | Reuse                               |
+| ------------------------------------------------ | ----------------------------------- |
+| Booking `createBookingTapToPayIntent` PI options | `card_present` + automatic capture  |
+| `ensureTerminalLocation`                         | Before creating the PI              |
+| `POST /api/payments/tap-to-pay/connection-token` | App warm-up                         |
+| `resolveMerchantTapToPayPaymentAccount`          | Connect gate                        |
+| `verifyTapToPayDirectChargeOnConnectedAccount`   | Direct-charge check                 |
+| `payment_requests`                               | Same ad-hoc ledger as payment links |
 
 ## Stripe Dashboard
 

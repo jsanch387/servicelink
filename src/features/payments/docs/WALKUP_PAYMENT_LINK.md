@@ -46,24 +46,24 @@ Does **not** require `payment_settings.payments_enabled` (that flag is booking c
 
 Set in `sql/001_payment_requests.sql`. `002` only adds columns — no new policies.
 
-| Role            | Access                                           |
-| --------------- | ------------------------------------------------ |
-| `authenticated` | **SELECT** rows for the owner’s business         |
-| `anon`          | none                                             |
-| `service_role`  | ALL (create API + webhook + public page loader)  |
+| Role            | Access                                          |
+| --------------- | ----------------------------------------------- |
+| `authenticated` | **SELECT** rows for the owner’s business        |
+| `anon`          | none                                            |
+| `service_role`  | ALL (create API + webhook + public page loader) |
 
 No client insert/update. Public `/p/…` reads through the admin client and only renders amount, note, business name, and the Checkout URL.
 
 ## Customer pages
 
-| Status / event        | UI                                                                 |
-| --------------------- | ------------------------------------------------------------------ |
-| `open`                | Light receipt card on dark chrome; Pay → Stripe                    |
-| Cancel from Stripe    | Back to the same receipt                                           |
-| Success               | `/pay/complete?status=success` — checkmark, “Payment successful”   |
-| `paid`                | Centered “Already paid” + success checkmark                        |
-| `expired`             | “This link expired” — ask the business for a new one               |
-| `canceled` / `failed` | “Link unavailable”                                                 |
+| Status / event        | UI                                                               |
+| --------------------- | ---------------------------------------------------------------- |
+| `open`                | Light receipt card on dark chrome; Pay → Stripe                  |
+| Cancel from Stripe    | Back to the same receipt                                         |
+| Success               | `/pay/complete?status=success` — checkmark, “Payment successful” |
+| `paid`                | Centered “Already paid” + success checkmark                      |
+| `expired`             | “This link expired” — ask the business for a new one             |
+| `canceled` / `failed` | “Link unavailable”                                               |
 
 Share unfurl is generic: **Payment Link** / **Secure checkout** / `$` icon (not ServiceLink, not the amount).
 
