@@ -213,7 +213,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 pendingCount={dashboardData.pendingRequestsCount}
               />
             )}
-            <QuickActionsCard />
+            <QuickActionsCard
+              hasPublicPageSlug={Boolean(slugData?.hasSlug)}
+              atFreeBookingCap={atFreeBookingCap}
+            />
           </div>
         </div>
       </div>
