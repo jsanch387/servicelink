@@ -5,10 +5,13 @@
 import { logAvailabilityOwnerNotify } from '@/features/availability/server/availabilityOwnerNotifyLog';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { BOOKING_REMINDER_SEND_CONCURRENCY } from './constants';
 import {
   loadConfirmedReminderBookings,
   loadReminderBusinesses,
+  type ReminderBookingRow,
 } from './loadConfirmedReminderBookings';
+import { mapWithConcurrency } from './mapWithConcurrency';
 import { notifyCustomerForBookingReminder } from './notifyCustomerForBookingReminder';
 import {
   BOOKING_REMINDER_TIMEZONE,
@@ -75,6 +78,7 @@ export async function runCustomerBookingReminders(
     filtered.map(b => b.business_id)
   );
 
+  const toNotify: ReminderBookingRow[] = [];
   for (const booking of filtered) {
     const hasEmail = Boolean(booking.customer_email?.trim());
     const hasPhone = Boolean(booking.customer_phone?.trim());
@@ -84,24 +88,31 @@ export async function runCustomerBookingReminders(
     }
 
     result.considered += 1;
-    if (params?.dryRun) {
-      continue;
+    if (!params?.dryRun) {
+      toNotify.push(booking);
     }
+  }
 
-    const outcome = await notifyCustomerForBookingReminder(supabase, {
-      bookingId: booking.id,
-      businessId: booking.business_id,
-      businessName: businesses.get(booking.business_id)?.businessName ?? '',
-      scheduledDate: booking.scheduled_date,
-      startTime: booking.start_time,
-      serviceName: booking.service_name,
-      customerName: booking.customer_name,
-      customerEmail: booking.customer_email,
-      customerPhone: booking.customer_phone,
-      customerId: booking.customer_id,
-      correlationId,
-    });
+  const outcomes = await mapWithConcurrency(
+    toNotify,
+    BOOKING_REMINDER_SEND_CONCURRENCY,
+    booking =>
+      notifyCustomerForBookingReminder(supabase, {
+        bookingId: booking.id,
+        businessId: booking.business_id,
+        businessName: businesses.get(booking.business_id)?.businessName ?? '',
+        scheduledDate: booking.scheduled_date,
+        startTime: booking.start_time,
+        serviceName: booking.service_name,
+        customerName: booking.customer_name,
+        customerEmail: booking.customer_email,
+        customerPhone: booking.customer_phone,
+        customerId: booking.customer_id,
+        correlationId,
+      })
+  );
 
+  for (const outcome of outcomes) {
     if (outcome.email === 'sent') result.emailSent += 1;
     if (outcome.sms === 'sent') result.smsSent += 1;
     if (outcome.email === 'failed' || outcome.sms === 'failed') {

@@ -71,6 +71,10 @@ import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stri
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/applyPlatformProCheckoutSessionCompleted';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
+import { applyWalkUpPaymentCheckoutCompleted } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutCompleted';
+import { applyWalkUpPaymentCheckoutExpired } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutExpired';
+import { applyWalkUpTapToPayPaymentIntent } from '@/features/payments/walk-up/applyWalkUpTapToPayPaymentIntent';
+import { WALKUP_PAYMENT_TAP_TO_PAY_KIND } from '@/features/payments/walk-up/constants';
 import { applyMembershipCheckoutSessionCompleted } from '@/features/subscriptions/server/applyMembershipCheckoutSessionCompleted';
 import { applyMembershipInvoiceEvent } from '@/features/subscriptions/server/applyMembershipInvoiceEvent';
 import { applyMembershipSubscriptionLifecycle } from '@/features/subscriptions/server/applyMembershipSubscriptionLifecycle';
@@ -1120,6 +1124,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
+    if (session.metadata?.kind === 'walkup_payment_link') {
+      await applyWalkUpPaymentCheckoutCompleted(supabase, {
+        event,
+        session,
+      });
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
     const userId = session.metadata?.userId as string | undefined;
     if (!userId?.trim()) {
       console.error(
@@ -1180,6 +1192,77 @@ export async function POST(request: NextRequest) {
     void sendProWelcomeIfFirstPaidPro(supabase, { userId }).catch(err => {
       console.error('[stripe:webhook] pro welcome email (checkout)', err);
     });
+  }
+
+  if (event.type === 'checkout.session.expired') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+
+    const expiredSession = event.data.object as Stripe.Checkout.Session;
+    if (expiredSession.metadata?.kind === 'walkup_payment_link') {
+      await applyWalkUpPaymentCheckoutExpired(supabase, {
+        event,
+        session: expiredSession,
+      });
+    }
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
+  if (
+    event.type === 'payment_intent.succeeded' ||
+    event.type === 'payment_intent.canceled' ||
+    event.type === 'payment_intent.payment_failed'
+  ) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code !== '23505') {
+        console.error('Stripe webhook idempotency insert error:', insertError);
+        return NextResponse.json(
+          { error: 'Idempotency check failed' },
+          { status: 500 }
+        );
+      }
+      // Duplicate event id: still apply (idempotent) in case the first
+      // attempt stored the event then failed to persist payment_requests.
+    }
+
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    if (paymentIntent.metadata?.kind === WALKUP_PAYMENT_TAP_TO_PAY_KIND) {
+      const applyResult = await applyWalkUpTapToPayPaymentIntent(supabase, {
+        event,
+        paymentIntent,
+      });
+      if ('retry' in applyResult && applyResult.retry) {
+        return NextResponse.json(
+          { error: 'Walk-up Tap to Pay apply failed' },
+          { status: 500 }
+        );
+      }
+    }
+    return NextResponse.json({ received: true }, { status: 200 });
   }
 
   // Subscription updated (renewal, status change to past_due/unpaid, etc.)

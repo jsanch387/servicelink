@@ -167,7 +167,7 @@ Existing Pro subscribers: interval is filled on the next `customer.subscription.
 
 ## Webhook idempotency table
 
-We store event IDs for every event type we process: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Other events are acknowledged with 200 but not stored. Create this table in Supabase:
+We store event IDs for every event type we process: `checkout.session.completed`, `checkout.session.expired`, `payment_intent.succeeded`, `payment_intent.canceled`, `payment_intent.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Other events are acknowledged with 200 but not stored. Create this table in Supabase:
 
 ```sql
 CREATE TABLE IF NOT EXISTS stripe_webhook_events (
@@ -266,7 +266,7 @@ We use **two** webhook destinations with different account scopes:
 
 2. **Connect booking checkout webhook** (`/api/stripe/webhook-connect`)  
    Scope: **Connected and v2 accounts**  
-   Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` (and optionally `account.updated`).
+   Events: `checkout.session.completed`, `checkout.session.expired` (create-payment links), `payment_intent.succeeded`, `payment_intent.canceled`, `payment_intent.payment_failed` (create-payment Tap to Pay), `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` (and optionally `account.updated`).
 
 Why this split: production booking payments are created on connected accounts. Without a connected-account destination, live customer charges can succeed while booking finalization webhook logic never runs.
 

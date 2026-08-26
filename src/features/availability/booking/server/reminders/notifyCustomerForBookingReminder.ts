@@ -1,6 +1,7 @@
 /**
  * Day-before customer reminder: email if we have an address, SMS if we have
  * a phone. SMS goes through sendAndRecordSms so it appears in the owner inbox.
+ * Email and SMS run in parallel when both contacts exist.
  */
 
 import { logAvailabilityOwnerNotify } from '@/features/availability/server/availabilityOwnerNotifyLog';
@@ -15,6 +16,15 @@ export type CustomerBookingReminderNotifyResult = {
   email: 'sent' | 'skipped' | 'failed';
   sms: 'sent' | 'skipped' | 'failed';
 };
+
+const SMS_SKIP_REASONS = new Set([
+  'duplicate',
+  'no_phone',
+  'sms_opt_out',
+  'carrier_opt_out',
+  'not_eligible',
+  'not_configured',
+]);
 
 export function customerBookingReminderSmsDedupeKey(
   bookingId: string,
@@ -39,14 +49,13 @@ export async function notifyCustomerForBookingReminder(
     correlationId?: string | null;
   }
 ): Promise<CustomerBookingReminderNotifyResult> {
-  const result: CustomerBookingReminderNotifyResult = {
-    email: 'skipped',
-    sms: 'skipped',
-  };
   const correlationId = params.correlationId ?? undefined;
 
-  const email = params.customerEmail?.trim() || '';
-  if (email) {
+  const sendEmail = async (): Promise<
+    CustomerBookingReminderNotifyResult['email']
+  > => {
+    const email = params.customerEmail?.trim() || '';
+    if (!email) return 'skipped';
     try {
       const mail = await sendAvailabilityBookingReminderEmail(email, {
         businessName: params.businessName,
@@ -55,7 +64,6 @@ export async function notifyCustomerForBookingReminder(
         scheduledDate: params.scheduledDate,
         startTime: params.startTime,
       });
-      result.email = mail.sent ? 'sent' : 'failed';
       if (!mail.sent) {
         logAvailabilityOwnerNotify(
           correlationId,
@@ -63,9 +71,10 @@ export async function notifyCustomerForBookingReminder(
           'customer_reminder_email_failed',
           { bookingId: params.bookingId, error: mail.error }
         );
+        return 'failed';
       }
+      return 'sent';
     } catch (e) {
-      result.email = 'failed';
       logAvailabilityOwnerNotify(
         correlationId,
         'warn',
@@ -75,11 +84,16 @@ export async function notifyCustomerForBookingReminder(
           message: e instanceof Error ? e.message.slice(0, 200) : String(e),
         }
       );
+      return 'failed';
     }
-  }
+  };
 
-  const phone = params.customerPhone?.trim() || '';
-  if (phone) {
+  const sendSms = async (): Promise<
+    CustomerBookingReminderNotifyResult['sms']
+  > => {
+    const phone = params.customerPhone?.trim() || '';
+    if (!phone) return 'skipped';
+
     const sms = await sendAndRecordSms({
       admin,
       businessId: params.businessId,
@@ -97,20 +111,11 @@ export async function notifyCustomerForBookingReminder(
       ),
       correlationId,
     });
-    if (sms.sent) {
-      result.sms = 'sent';
-    } else if (
-      sms.reason === 'duplicate' ||
-      sms.reason === 'no_phone' ||
-      sms.reason === 'sms_opt_out' ||
-      sms.reason === 'not_eligible' ||
-      sms.reason === 'not_configured'
-    ) {
-      result.sms = 'skipped';
-    } else {
-      result.sms = 'failed';
-    }
-  }
+    if (sms.sent) return 'sent';
+    if (SMS_SKIP_REASONS.has(sms.reason)) return 'skipped';
+    return 'failed';
+  };
 
-  return result;
+  const [email, sms] = await Promise.all([sendEmail(), sendSms()]);
+  return { email, sms };
 }

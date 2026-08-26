@@ -21,7 +21,7 @@ export function resolveMerchantTapToPayStripeAccountId(opts: {
     return {
       ok: false,
       httpStatus: 403,
-      error: 'Not authorized for this Stripe account.',
+      error: 'Stripe account does not match this business.',
     };
   }
 

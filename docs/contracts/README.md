@@ -35,19 +35,22 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 
 ## Quotes, maintenance, onboarding, other
 
-| Doc                                                                          | What it covers                                     |
-| ---------------------------------------------------------------------------- | -------------------------------------------------- |
-| [mobile-quote-read.md](./mobile-quote-read.md)                               | Read quotes                                        |
-| [mobile-quote-send.md](./mobile-quote-send.md)                               | Send quote                                         |
-| [mobile-maintenance-enrollment.md](./mobile-maintenance-enrollment.md)       | Maintenance plans                                  |
-| [mobile-onboarding-complete.md](./mobile-onboarding-complete.md)             | Onboarding complete                                |
-| [mobile-stripe-connect-onboarding.md](./mobile-stripe-connect-onboarding.md) | Connect onboarding                                 |
-| [mobile-entitlement-paywall.md](./mobile-entitlement-paywall.md)             | Pro paywall                                        |
-| [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push                                          |
-| [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder) |
-| [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form                                |
-| [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area                                       |
-| [service-categories-data.md](./service-categories-data.md)                   | Service categories                                 |
+| Doc                                                                          | What it covers                                                       |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| [mobile-quote-read.md](./mobile-quote-read.md)                               | Read quotes                                                          |
+| [mobile-quote-send.md](./mobile-quote-send.md)                               | Send quote                                                           |
+| [mobile-maintenance-enrollment.md](./mobile-maintenance-enrollment.md)       | Maintenance plans                                                    |
+| [mobile-onboarding-complete.md](./mobile-onboarding-complete.md)             | Onboarding complete                                                  |
+| [mobile-stripe-connect-onboarding.md](./mobile-stripe-connect-onboarding.md) | Connect onboarding                                                   |
+| [mobile-create-payment-link.md](./mobile-create-payment-link.md)             | Create payment → Payment link (`POST /api/payments/link`)            |
+| [mobile-create-payment-tap-to-pay.md](./mobile-create-payment-tap-to-pay.md) | Create payment → Tap to pay (`POST /api/payments/tap-to-pay/intent`) |
+| [mobile-payments-transactions.md](./mobile-payments-transactions.md)         | Payments → Transactions (`GET /api/payments/transactions`)           |
+| [mobile-entitlement-paywall.md](./mobile-entitlement-paywall.md)             | Pro paywall                                                          |
+| [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push                                                            |
+| [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder)                   |
+| [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form                                                  |
+| [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area                                                         |
+| [service-categories-data.md](./service-categories-data.md)                   | Service categories                                                   |
 
 ## Conventions
 

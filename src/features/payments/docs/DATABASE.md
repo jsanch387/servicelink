@@ -15,6 +15,7 @@ Broader schema context snapshot: **`SUPABASE_SCHEMA_CONTEXT.md`**.
 | ------------------ | -------------------- | --------------------------------------------------------------------------------------------------------- |
 | `payment_accounts` | One row per business | Stripe Connect account id (`acct_…`) and capability / onboarding flags.                                   |
 | `payment_settings` | One row per business | ServiceLink checkout: **payments on/off**, **checkout mode** (how customers pay), **deposits**, currency. |
+| `payment_requests` | Many per business    | Walk-up charges (payment link + Tap to Pay). **Not** bookings. See **`PAYMENT_REQUESTS_TABLE.md`**.       |
 
 Both tables reference **`business_profiles(id)`** (tenant root). The owner is `business_profiles.profile_id` → `auth.users`.
 
@@ -138,6 +139,9 @@ auth.users
       (Stripe Connect)                 (checkout + deposits + payments_enabled)
               ▲                               │
               └──── payment_account_id (optional FK) ────┘
+
+      payment_requests (many)
+      walk-up payment links + Tap to Pay
 ```
 
 ---
@@ -152,4 +156,4 @@ auth.users
 
 ## v1 scope note
 
-**In-app transaction history** is deferred for v1; owners use **Stripe Dashboard** (Express) for charges/refunds/payouts until a transactions table exists.
+**In-app transaction history** is `GET /api/payments/transactions` (live Stripe Balance Transactions on the connected account, merged with offline `booking_payments` session collections). There is no local `payment_transactions` table in v1. See **`PAYMENTS_TRANSACTIONS.md`**.
