@@ -1,5 +1,9 @@
 import { isValidEmail } from '@/features/auth/utils/validation';
 import { CUSTOMER_NOTE_MAX_LENGTH } from '@/features/customer-management/utils/parseCreateCustomerBody';
+import {
+  isPetSizeValue,
+  isPetSpeciesValue,
+} from '@/features/customer-management/utils/customerAssetTypes';
 import type { CustomerFormData } from '../types';
 
 export const BOOKING_CUSTOMER_EMAIL_MAX = 254;
@@ -10,6 +14,8 @@ export const BOOKING_CUSTOMER_UNIT_MAX = 50;
 export const BOOKING_CUSTOMER_NOTES_MAX = CUSTOMER_NOTE_MAX_LENGTH;
 export const BOOKING_VEHICLE_MAKE_MAX = 80;
 export const BOOKING_VEHICLE_MODEL_MAX = 80;
+export const BOOKING_PET_NAME_MAX = 80;
+export const BOOKING_PET_BREED_MAX = 80;
 
 /** US ZIP: 5 digits only. */
 export function sanitizeUsZipInput(value: string): string {
@@ -59,6 +65,10 @@ export function coerceCustomerFormData(raw: unknown): CustomerFormData {
     vehicleYear: strField(r.vehicleYear),
     vehicleMake: strField(r.vehicleMake),
     vehicleModel: strField(r.vehicleModel),
+    petName: strField(r.petName),
+    petSpecies: strField(r.petSpecies),
+    petBreed: strField(r.petBreed),
+    petSize: strField(r.petSize),
     notes: strField(r.notes),
   };
 }
@@ -73,10 +83,13 @@ export function bookingCustomerPayloadErrorMessage(
     requireCustomerAddress?: boolean;
     /** When true, year/make/model are required (vehicle-related public booking). */
     requireVehicleFields?: boolean;
+    /** When true, pet name/species/breed/size are required (pet-related public booking). */
+    requirePetFields?: boolean;
   }
 ): string | null {
   const requireCustomerAddress = options?.requireCustomerAddress !== false;
   const requireVehicleFields = options?.requireVehicleFields === true;
+  const requirePetFields = options?.requirePetFields === true;
   const name = c.fullName.trim();
   if (!name) return 'Customer name is required';
   if (name.length > BOOKING_CUSTOMER_FULL_NAME_MAX)
@@ -137,6 +150,30 @@ export function bookingCustomerPayloadErrorMessage(
     }
   }
 
+  const pn = (c.petName ?? '').trim();
+  const ps = (c.petSpecies ?? '').trim();
+  const pb = (c.petBreed ?? '').trim();
+  const pz = (c.petSize ?? '').trim();
+  const anyPet =
+    pn.length > 0 || ps.length > 0 || pb.length > 0 || pz.length > 0;
+  if (requirePetFields || anyPet) {
+    if (!pn || !ps || !pb || !pz) {
+      return 'Pet name, species, breed, and size are required';
+    }
+    if (pn.length > BOOKING_PET_NAME_MAX) {
+      return 'Pet name is too long';
+    }
+    if (pb.length > BOOKING_PET_BREED_MAX) {
+      return 'Pet breed is too long';
+    }
+    if (!isPetSpeciesValue(ps)) {
+      return 'Please choose a valid pet species';
+    }
+    if (!isPetSizeValue(pz)) {
+      return 'Please choose a valid pet size';
+    }
+  }
+
   return null;
 }
 
@@ -157,6 +194,10 @@ export function normalizeBookingCustomerInput(
     vehicleYear: sanitizeVehicleYearInput(c.vehicleYear),
     vehicleMake: c.vehicleMake.trim(),
     vehicleModel: c.vehicleModel.trim(),
+    petName: c.petName.trim().slice(0, BOOKING_PET_NAME_MAX),
+    petSpecies: c.petSpecies.trim(),
+    petBreed: c.petBreed.trim().slice(0, BOOKING_PET_BREED_MAX),
+    petSize: c.petSize.trim(),
     notes: c.notes.trim(),
   };
 }

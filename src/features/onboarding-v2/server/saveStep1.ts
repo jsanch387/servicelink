@@ -2,21 +2,23 @@
  * Onboarding V2 – Step 1 server-side save.
  * Ensures business_profiles row exists, saves business_name + business_type,
  * and advances profiles.onboarding_step to 2.
- * Uses existing tables: profiles (onboarding_status, onboarding_step), business_profiles (business_name, business_type).
+ * Uses existing tables: profiles (onboarding_status, onboarding_step),
+ * business_profiles (business_name, business_type, specialties).
  */
 
-import { BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes';
+import { sanitizeBusinessSpecialties } from '@/constants/businessSpecialties';
+import {
+  canonicalizeBusinessType,
+  isAllowedBusinessTypeValue,
+} from '@/constants/businessTypes';
 import type { SupabaseClient } from '@supabase/supabase-js';
-
-const ALLOWED_BUSINESS_TYPES = new Set(
-  BUSINESS_TYPE_OPTIONS.map(option => option.value)
-);
 
 export interface SaveStep1Params {
   profileId: string;
   businessProfileId?: string | null;
   businessName: string;
   businessType: string;
+  specialties?: string[] | null;
 }
 
 export interface SaveStep1Result {
@@ -30,6 +32,7 @@ export async function saveStep1(
   params: SaveStep1Params
 ): Promise<SaveStep1Result> {
   const { profileId, businessProfileId, businessName, businessType } = params;
+  const specialtiesToStore = sanitizeBusinessSpecialties(params.specialties);
 
   try {
     const typeTrimmed = businessType.trim();
@@ -39,12 +42,19 @@ export async function saveStep1(
         error: 'Business type is required',
       };
     }
-    if (!ALLOWED_BUSINESS_TYPES.has(typeTrimmed)) {
+    if (!isAllowedBusinessTypeValue(typeTrimmed)) {
       return {
         success: false,
         error: 'Please choose a business type from the list',
       };
     }
+    if (specialtiesToStore.length === 0) {
+      return {
+        success: false,
+        error: 'Pick at least one thing people hire you for',
+      };
+    }
+    const typeToStore = canonicalizeBusinessType(typeTrimmed) ?? typeTrimmed;
     let resolvedBusinessProfileId = businessProfileId?.trim() || null;
 
     // Reuse an existing business when the client lost the id (refresh, back nav,
@@ -105,7 +115,8 @@ export async function saveStep1(
       .from('business_profiles')
       .update({
         business_name: businessName.trim(),
-        business_type: typeTrimmed,
+        business_type: typeToStore,
+        specialties: specialtiesToStore,
         updated_at: new Date().toISOString(),
         last_edited: new Date().toISOString(),
       } as never)

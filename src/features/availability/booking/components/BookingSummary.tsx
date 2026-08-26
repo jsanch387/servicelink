@@ -10,6 +10,7 @@ import {
   CalendarDaysIcon,
   ChatBubbleLeftEllipsisIcon,
   ClockIcon,
+  HeartIcon,
   MapPinIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -37,6 +38,17 @@ function formatVehicle(customer: CustomerFormData): string | null {
   ].filter(Boolean);
   if (parts.length === 0) return null;
   return parts.join(' ');
+}
+
+function formatPet(customer: CustomerFormData): string | null {
+  const identity = [customer.petName?.trim(), customer.petBreed?.trim()]
+    .filter(Boolean)
+    .join(' · ');
+  const extras = [customer.petSpecies?.trim(), customer.petSize?.trim()]
+    .filter(Boolean)
+    .join(' · ');
+  if (identity && extras) return `${identity} · ${extras}`;
+  return identity || extras || null;
 }
 
 function formatCents(cents: number): string {
@@ -141,6 +153,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   );
   const timeDisplay = formatBookingWallTime(startTimeHhmm, bookingFlowLocale);
   const vehicle = formatVehicle(customer);
+  const pet = formatPet(customer);
   const email = customer.email.trim();
   const phone = formatPhoneUsDisplay(customer.phone);
   const showSalePricing =
@@ -198,6 +211,19 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         <>
           <p className="text-xs text-gray-500 mb-0.5">{ui.common.vehicle}</p>
           <p className="text-sm text-white">{vehicle}</p>
+        </>
+      ),
+    });
+  }
+
+  if (pet) {
+    detailRows.push({
+      key: 'pet',
+      icon: HeartIcon,
+      content: (
+        <>
+          <p className="text-xs text-gray-500 mb-0.5">{ui.common.pet}</p>
+          <p className="text-sm text-white">{pet}</p>
         </>
       ),
     });

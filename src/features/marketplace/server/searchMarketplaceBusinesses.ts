@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { hasDetailingMarketplaceListing } from '@/constants/businessSpecialties';
 import { isProAccess } from '@/features/pricing/utils/isProAccess';
 import { isPublicBusinessProfileLive } from '@/features/pricing/utils/publicBusinessProfileLive';
 import { MEDIA_CONFIG } from '@/features/media/media.types';
@@ -17,6 +18,13 @@ export type { ParsedMarketplaceLocation };
 
 const MAX_RESULTS = 50;
 
+const BUSINESS_PROFILE_LISTING_SELECT =
+  'id, profile_id, business_name, business_slug, business_type, specialties, service_area, business_zip, service_location_mode, bio, logo_path, banner_path';
+
+/** Legacy `Auto & Detailing` rows plus new shops that tagged detailing. */
+const DETAILING_LISTING_OR =
+  'business_type.ilike.%detail%,specialties.cs.{detailing}';
+
 export interface MarketplaceSearchResult {
   location: string;
   businesses: MarketplaceBusiness[];
@@ -28,6 +36,7 @@ type BusinessProfileRow = {
   business_name: string;
   business_slug: string;
   business_type: string | null;
+  specialties: string[] | null;
   service_area: string;
   business_zip: string | null;
   service_location_mode: string | null;
@@ -111,10 +120,8 @@ export async function searchMarketplaceBusinesses(
     (async () => {
       let query = (admin as any)
         .from('business_profiles')
-        .select(
-          'id, profile_id, business_name, business_slug, business_type, service_area, business_zip, service_location_mode, bio, logo_path, banner_path'
-        )
-        .ilike('business_type', '%detail%')
+        .select(BUSINESS_PROFILE_LISTING_SELECT)
+        .or(DETAILING_LISTING_OR)
         .not('business_slug', 'is', null)
         .limit(MAX_RESULTS);
 
@@ -202,11 +209,9 @@ export async function searchMarketplaceBusinesses(
   if (radiusIdsNeedingFetch.length > 0) {
     const { data, error } = await (admin as any)
       .from('business_profiles')
-      .select(
-        'id, profile_id, business_name, business_slug, business_type, service_area, business_zip, service_location_mode, bio, logo_path, banner_path'
-      )
+      .select(BUSINESS_PROFILE_LISTING_SELECT)
       .in('id', radiusIdsNeedingFetch)
-      .ilike('business_type', '%detail%')
+      .or(DETAILING_LISTING_OR)
       .not('business_slug', 'is', null);
     if (error) throw error;
     for (const row of (data ?? []) as BusinessProfileRow[]) {
@@ -216,7 +221,11 @@ export async function searchMarketplaceBusinesses(
     }
   }
 
-  const candidates = [...candidatesById.values()].slice(0, MAX_RESULTS);
+  const candidates = [...candidatesById.values()]
+    .filter(row =>
+      hasDetailingMarketplaceListing(row.business_type, row.specialties)
+    )
+    .slice(0, MAX_RESULTS);
 
   if (candidates.length === 0) {
     return { location: parsed.display, businesses: [] };

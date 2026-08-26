@@ -10,6 +10,7 @@ import type {
 } from '../types';
 import {
   flattenJobDetailsAddOns,
+  formatJobPetLine,
   formatJobVehicleLine,
   parseStoredBookingJobDetails,
 } from '../../utils/parseStoredBookingJobDetails';
@@ -138,7 +139,8 @@ export function mapBookingRowToDisplay(
       name: a.name,
       priceCents: a.priceCents,
     })),
-    vehicleLabel: formatJobVehicleLine(job.vehicle),
+    vehicleLabel:
+      formatJobVehicleLine(job.vehicle) ?? formatJobPetLine(job.pet),
   }));
 
   return {

@@ -1,3 +1,4 @@
+import { resolveBusinessSpecialties } from '@/constants/businessSpecialties';
 import type { PresetKey } from '@/features/availability/components/QuickPresetsSection';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
@@ -124,6 +125,11 @@ export default async function DashboardPage() {
           initialStep1={{
             businessName: (businessProfile?.business_name as string) ?? '',
             businessType: (businessProfile?.business_type as string) ?? '',
+            specialties: resolveBusinessSpecialties(
+              (businessProfile?.business_type as string) ?? '',
+              (businessProfile as { specialties?: string[] | null } | null)
+                ?.specialties
+            ),
           }}
           initialStep2={
             initialStep2Services?.length

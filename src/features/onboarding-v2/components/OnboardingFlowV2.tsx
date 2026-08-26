@@ -22,6 +22,7 @@ const STEP_LABELS = ['Business', 'Services', 'Hours', 'Link', 'Go live'];
 const getInitialState = (): OnboardingV2FlowState => ({
   businessName: '',
   businessType: '',
+  specialties: [],
   services: [],
   schedule: { ...DEFAULT_SCHEDULE },
   selectedPreset: 'mon_fri_9_5' as PresetKey,
@@ -32,7 +33,11 @@ export interface OnboardingFlowV2Props {
   profileId: string;
   businessProfileId?: string;
   currentStep?: number;
-  initialStep1?: { businessName: string; businessType: string };
+  initialStep1?: {
+    businessName: string;
+    businessType: string;
+    specialties?: string[];
+  };
   initialStep2?: { services: OnboardingV2Service[] };
   initialStep3?: {
     schedule?: WeeklySchedule;
@@ -61,6 +66,7 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
     if (initialStep1) {
       base.businessName = initialStep1.businessName ?? '';
       base.businessType = initialStep1.businessType ?? '';
+      base.specialties = initialStep1.specialties ?? [];
     }
     if (initialStep2?.services?.length) {
       base.services = initialStep2.services;
@@ -100,10 +106,12 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
             businessProfileId={businessProfileId}
             businessName={state.businessName}
             businessType={state.businessType}
+            specialties={state.specialties}
             onUpdate={updates =>
               updateState({
                 businessName: updates.businessName ?? state.businessName,
                 businessType: updates.businessType ?? state.businessType,
+                specialties: updates.specialties ?? state.specialties,
               })
             }
             onNext={handleStep1Next}
@@ -126,6 +134,7 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
         return (
           <Step3Availability
             businessProfileId={businessProfileId}
+            businessType={state.businessType}
             schedule={state.schedule}
             selectedPreset={state.selectedPreset}
             onUpdate={updates =>
@@ -145,6 +154,7 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
         return (
           <Step4ClaimLink
             businessProfileId={businessProfileId}
+            businessType={state.businessType}
             slug={state.slug}
             onUpdate={(slug: string) => updateState({ slug })}
             onNext={() => setStep(5)}
@@ -152,7 +162,13 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
           />
         );
       case 5:
-        return <Step5Done slug={state.slug} onBack={() => setStep(4)} />;
+        return (
+          <Step5Done
+            slug={state.slug}
+            businessType={state.businessType}
+            onBack={() => setStep(4)}
+          />
+        );
       default:
         return null;
     }
@@ -162,7 +178,10 @@ export const OnboardingFlowV2: React.FC<OnboardingFlowV2Props> = ({
 
   return (
     <main className="flex flex-col flex-1 min-h-screen bg-[var(--dashboard-bg)]">
-      <div className="flex-1 overflow-y-auto py-6 sm:py-8 md:py-10 px-4 sm:px-6 lg:px-8">
+      <div
+        id="onboarding-v2-scroll"
+        className="flex-1 overflow-y-auto py-6 sm:py-8 md:py-10 px-4 sm:px-6 lg:px-8"
+      >
         <div className="max-w-2xl mx-auto relative">
           {showProgress && (
             <div className="mb-6 sm:mb-8 md:mb-10">

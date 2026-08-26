@@ -49,7 +49,7 @@ export const PRICING_COMPARISON_ROWS: readonly PricingComparisonRow[] = [
     pro: { kind: 'included' },
   },
   {
-    feature: 'Listed on the detailer marketplace',
+    feature: 'Listed on the ServiceLink marketplace',
     free: { kind: 'excluded' },
     pro: { kind: 'included' },
   },

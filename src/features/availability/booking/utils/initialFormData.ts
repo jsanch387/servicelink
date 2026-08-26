@@ -12,5 +12,9 @@ export const INITIAL_CUSTOMER_FORM_DATA: CustomerFormData = {
   vehicleYear: '',
   vehicleMake: '',
   vehicleModel: '',
+  petName: '',
+  petSpecies: '',
+  petBreed: '',
+  petSize: '',
   notes: '',
 };

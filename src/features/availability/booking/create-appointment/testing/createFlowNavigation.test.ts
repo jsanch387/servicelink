@@ -80,4 +80,43 @@ describe('createFlowNavigation', () => {
       })
     ).toBe(CREATE_APPOINTMENT_STEP.SCHEDULE);
   });
+
+  it('skips the vehicle step when the industry does not use vehicles', () => {
+    expect(
+      getCreateAppointmentVisibleStepOrder(false, false, false, false, 0, true)
+    ).toEqual([
+      CREATE_APPOINTMENT_STEP.SERVICE,
+      CREATE_APPOINTMENT_STEP.PRICING,
+      CREATE_APPOINTMENT_STEP.ADDONS,
+      CREATE_APPOINTMENT_STEP.CUSTOMER,
+      CREATE_APPOINTMENT_STEP.LOCATION,
+      CREATE_APPOINTMENT_STEP.ADDRESS,
+      CREATE_APPOINTMENT_STEP.SCHEDULE,
+      CREATE_APPOINTMENT_STEP.REVIEW,
+    ]);
+
+    expect(
+      getNextStepOnContinue({
+        step: CREATE_APPOINTMENT_STEP.ADDRESS,
+        pricingSkipped: false,
+        addonsSkipped: false,
+        vehicleSkipped: true,
+        jobIndex: 0,
+      })
+    ).toBe(CREATE_APPOINTMENT_STEP.SCHEDULE);
+
+    expect(
+      getPreviousStepOnBack({
+        step: CREATE_APPOINTMENT_STEP.SCHEDULE,
+        pricingSkipped: false,
+        addonsSkipped: false,
+        vehicleSkipped: true,
+        jobIndex: 0,
+      })
+    ).toBe(CREATE_APPOINTMENT_STEP.ADDRESS);
+
+    expect(getStepAfterAddons({ jobIndex: 1, vehicleSkipped: true })).toBe(
+      CREATE_APPOINTMENT_STEP.REVIEW
+    );
+  });
 });

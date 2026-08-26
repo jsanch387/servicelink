@@ -19,6 +19,10 @@
  */
 
 import {
+  resolveAffonsoReferral,
+  withAffonsoCheckoutMetadata,
+} from '@/features/marketing-attribution/server/affonsoCheckoutMetadata';
+import {
   findOpenInvoiceIdForSubscriptionResume,
   isSubscriptionResumableViaInvoice,
 } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
@@ -36,6 +40,7 @@ import type Stripe from 'stripe';
 type CheckoutRequestBody = {
   client?: unknown;
   billingInterval?: unknown;
+  affonsoReferral?: unknown;
 };
 
 function parseBillingInterval(value: unknown): BillingInterval {
@@ -74,6 +79,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const affonsoReferral = resolveAffonsoReferral(
+      request,
+      body.affonsoReferral
+    );
     const billingInterval = parseBillingInterval(body.billingInterval);
     const priceId = resolveStripeProPriceId(billingInterval);
     if (!priceId) {
@@ -171,10 +180,13 @@ export async function POST(request: NextRequest) {
             ...(existingStripeCustomerId
               ? { customer: existingStripeCustomerId }
               : { customer_email: user.email ?? undefined }),
-            metadata: {
-              userId: user.id,
-              source: 'upgrade',
-            },
+            metadata: withAffonsoCheckoutMetadata(
+              {
+                userId: user.id,
+                source: 'upgrade',
+              },
+              affonsoReferral
+            ),
           } as unknown as Stripe.Checkout.SessionCreateParams);
 
           if (!resumeSession.url) {
@@ -188,7 +200,8 @@ export async function POST(request: NextRequest) {
           }
 
           console.info(
-            `${LOG} checkout session created (invoice resume, same subscription)`
+            `${LOG} checkout session created (invoice resume, same subscription)`,
+            { hasAffonsoReferral: Boolean(affonsoReferral) }
           );
           onboardingStripeDebug(
             'create-checkout',
@@ -200,6 +213,7 @@ export async function POST(request: NextRequest) {
               subscriptionIdSuffix: existingStripeSubscriptionId.slice(-8),
               invoiceIdSuffix: openInv.slice(-8),
               subscriptionStatus: status,
+              hasAffonsoReferral: Boolean(affonsoReferral),
             }
           );
 
@@ -300,11 +314,21 @@ export async function POST(request: NextRequest) {
       ...(existingStripeCustomerId
         ? { customer: existingStripeCustomerId }
         : { customer_email: user.email ?? undefined }),
-      metadata: {
-        userId: user.id,
-        source: 'upgrade',
-        billingInterval,
-      },
+      metadata: withAffonsoCheckoutMetadata(
+        {
+          userId: user.id,
+          source: 'upgrade',
+          billingInterval,
+        },
+        affonsoReferral
+      ),
+      ...(affonsoReferral
+        ? {
+            subscription_data: {
+              metadata: { affonso_referral: affonsoReferral },
+            },
+          }
+        : {}),
     });
 
     if (!session.url) {
@@ -315,12 +339,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.info(`${LOG} checkout session created`);
+    console.info(`${LOG} checkout session created`, {
+      hasAffonsoReferral: Boolean(affonsoReferral),
+    });
 
     onboardingStripeDebug('create-checkout', 'session created', {
       userId: user.id,
       sessionIdSuffix: session.id.slice(-8),
       billingInterval,
+      hasAffonsoReferral: Boolean(affonsoReferral),
     });
 
     return NextResponse.json({ success: true, url: session.url });

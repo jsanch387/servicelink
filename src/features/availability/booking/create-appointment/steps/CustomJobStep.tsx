@@ -40,7 +40,7 @@ export function CustomJobStep({
       <div className="space-y-5">
         <Input
           label="Service name"
-          placeholder="e.g. Interior deep clean"
+          placeholder="e.g. Standard service"
           value={draft.serviceName}
           onChange={value => onChange({ serviceName: value })}
           required

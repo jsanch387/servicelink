@@ -165,6 +165,8 @@ export type Database = {
           public_id: string;
           business_name: string;
           business_type: string | null;
+          /** Explicit marketplace tags. Null/empty = derive from business_type. */
+          specialties: string[] | null;
           service_area: string | null;
           business_zip: string | null;
           service_location_mode: string;
@@ -207,6 +209,7 @@ export type Database = {
           public_id: string;
           business_name: string;
           business_type?: string | null;
+          specialties?: string[] | null;
           free_bookings_month?: string | null;
           free_bookings_count?: number;
           service_area?: string | null;
@@ -245,6 +248,7 @@ export type Database = {
           public_id?: string;
           business_name?: string;
           business_type?: string | null;
+          specialties?: string[] | null;
           service_area?: string | null;
           business_zip?: string | null;
           service_location_mode?: string;
@@ -1176,6 +1180,62 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           payments_enabled?: boolean;
+        };
+      };
+      payment_requests: {
+        Row: {
+          id: string;
+          business_id: string;
+          created_by: string | null;
+          collection_method: 'checkout_link' | 'tap_to_pay';
+          status: 'open' | 'paid' | 'expired' | 'canceled' | 'failed';
+          amount_cents: number;
+          currency: string;
+          note: string;
+          short_code: string | null;
+          stripe_checkout_session_id: string | null;
+          stripe_checkout_url: string | null;
+          stripe_payment_intent_id: string | null;
+          paid_amount_cents: number | null;
+          paid_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          created_by?: string | null;
+          collection_method: 'checkout_link' | 'tap_to_pay';
+          status?: 'open' | 'paid' | 'expired' | 'canceled' | 'failed';
+          amount_cents: number;
+          currency?: string;
+          note: string;
+          short_code?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_checkout_url?: string | null;
+          stripe_payment_intent_id?: string | null;
+          paid_amount_cents?: number | null;
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          created_by?: string | null;
+          collection_method?: 'checkout_link' | 'tap_to_pay';
+          status?: 'open' | 'paid' | 'expired' | 'canceled' | 'failed';
+          amount_cents?: number;
+          currency?: string;
+          note?: string;
+          short_code?: string | null;
+          stripe_checkout_session_id?: string | null;
+          stripe_checkout_url?: string | null;
+          stripe_payment_intent_id?: string | null;
+          paid_amount_cents?: number | null;
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };

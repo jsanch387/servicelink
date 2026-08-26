@@ -201,7 +201,7 @@ export const EditServiceModal: React.FC<EditServiceModalProps> = ({
 
         <Input
           label="Service name"
-          placeholder="e.g., Full Exterior, Interior Detail"
+          placeholder="e.g. Standard service, Premium package"
           value={name}
           onChange={setName}
           required

@@ -28,8 +28,12 @@ import {
   appointmentServiceNameSummary,
 } from '@/features/availability/booking/utils/ownerManualBookingJobs';
 import { PUBLIC_BOOKING_MAX_JOBS } from '@/features/availability/booking/constants/publicBookingJobs';
-import { isVehicleRelatedBusinessType } from '@/constants/businessTypes';
+import {
+  isPetRelatedBusinessType,
+  isVehicleRelatedBusinessType,
+} from '@/constants/businessTypes';
 import { isJobVehicleComplete } from '@/features/availability/booking/utils/visitJobVehicles';
+import { isJobPetComplete } from '@/features/availability/booking/utils/visitJobPets';
 import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
@@ -248,6 +252,11 @@ function parseBookingCheckoutDraftPayload(
         typeof customer?.vehicleMake === 'string' ? customer.vehicleMake : '',
       vehicleModel:
         typeof customer?.vehicleModel === 'string' ? customer.vehicleModel : '',
+      petName: typeof customer?.petName === 'string' ? customer.petName : '',
+      petSpecies:
+        typeof customer?.petSpecies === 'string' ? customer.petSpecies : '',
+      petBreed: typeof customer?.petBreed === 'string' ? customer.petBreed : '',
+      petSize: typeof customer?.petSize === 'string' ? customer.petSize : '',
       notes: typeof customer?.notes === 'string' ? customer.notes : '',
     },
     totalPriceCents: resolvedTotalPriceCents,
@@ -384,6 +393,9 @@ export async function POST(request: NextRequest) {
     const requireVehicleFields = isVehicleRelatedBusinessType(
       (profile as { business_type?: string | null }).business_type
     );
+    const requirePetFields = isPetRelatedBusinessType(
+      (profile as { business_type?: string | null }).business_type
+    );
     const checkoutJobs = Array.isArray(parsedBookingPayload.jobs)
       ? parsedBookingPayload.jobs
       : null;
@@ -403,11 +415,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (requirePetFields && checkoutJobs) {
+      const incompleteJob = checkoutJobs.findIndex(
+        job => !isJobPetComplete(job.pet ?? {})
+      );
+      if (incompleteJob >= 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Job ${incompleteJob + 1}: pet name, species, breed, and size are required`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const customerPayloadErr = bookingCustomerPayloadErrorMessage(
       parsedBookingPayload.customer,
       {
         requireCustomerAddress,
         requireVehicleFields: requireVehicleFields && !checkoutJobs,
+        requirePetFields: requirePetFields && !checkoutJobs,
       }
     );
     if (customerPayloadErr) {

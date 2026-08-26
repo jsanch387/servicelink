@@ -99,6 +99,8 @@ export function isBookingDetailsSubStepValid(
   options: {
     showVehicleFields: boolean;
     requireVehicleFields?: boolean;
+    showPetFields?: boolean;
+    requirePetFields?: boolean;
     emailOptional: boolean;
   }
 ): boolean {
@@ -119,7 +121,8 @@ export function isBookingDetailsSubStepValid(
       step,
       options.requireVehicleFields ?? options.showVehicleFields,
       options.emailOptional,
-      requireCustomerAddress
+      requireCustomerAddress,
+      options.requirePetFields ?? options.showPetFields ?? false
     );
   }
 
@@ -143,7 +146,8 @@ export function isBookingCustomerDetailsValid(
   customerChoice: CustomerServiceChoice,
   showVehicleFields: boolean,
   emailOptional: boolean,
-  requireVehicleFields = showVehicleFields
+  requireVehicleFields = showVehicleFields,
+  requirePetFields = false
 ): boolean {
   if (serviceLocation.mode === 'both' && customerChoice === null) {
     return false;
@@ -165,6 +169,7 @@ export function isBookingCustomerDetailsValid(
     customer,
     requireVehicleFields,
     emailOptional,
-    requireCustomerAddress
+    requireCustomerAddress,
+    requirePetFields
   );
 }

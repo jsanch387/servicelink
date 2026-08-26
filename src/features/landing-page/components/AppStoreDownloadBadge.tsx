@@ -6,11 +6,13 @@ const APP_STORE_BADGE_SRC = MARKETING_IMAGES.store.appStoreSticker;
 
 type AppStoreDownloadBadgeProps = {
   className?: string;
+  imageClassName?: string;
 };
 
 /** Clickable App Store badge for the live ServiceLink iOS app. */
 export function AppStoreDownloadBadge({
   className = '',
+  imageClassName = 'h-12 sm:h-14',
 }: AppStoreDownloadBadgeProps) {
   if (!IOS_APP_STORE_URL) return null;
 
@@ -27,7 +29,7 @@ export function AppStoreDownloadBadge({
         alt="Download on the App Store"
         width={135}
         height={45}
-        className="h-12 w-auto object-contain sm:h-14 opacity-90 transition-opacity duration-200 group-hover:opacity-100"
+        className={`w-auto object-contain opacity-90 transition-opacity duration-200 group-hover:opacity-100 ${imageClassName}`}
         unoptimized
       />
     </a>

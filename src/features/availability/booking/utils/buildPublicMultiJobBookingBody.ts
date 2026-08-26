@@ -20,6 +20,17 @@ function jobVehiclePayload(
   return { year, make, model };
 }
 
+function jobPetPayload(
+  pet: PublicBookingJobDraft['pet'] | undefined
+): CreateBookingJobItem['pet'] | undefined {
+  const name = pet?.name.trim() ?? '';
+  const species = pet?.species.trim() ?? '';
+  const breed = pet?.breed.trim() ?? '';
+  const size = pet?.size.trim() ?? '';
+  if (!name && !species && !breed && !size) return undefined;
+  return { name, species, breed, size };
+}
+
 export function buildPublicBookingJobItem(
   job: PublicBookingJobDraft
 ): CreateBookingJobItem {
@@ -47,6 +58,8 @@ export function buildPublicBookingJobItem(
   }
   const vehicle = jobVehiclePayload(job.vehicle);
   if (vehicle) item.vehicle = vehicle;
+  const pet = jobPetPayload(job.pet);
+  if (pet) item.pet = pet;
   return item;
 }
 
@@ -82,6 +95,10 @@ export function buildPublicMultiJobBookingBody(
       vehicleYear: '',
       vehicleMake: '',
       vehicleModel: '',
+      petName: '',
+      petSpecies: '',
+      petBreed: '',
+      petSize: '',
     },
     jobs: args.jobs.map(buildPublicBookingJobItem),
     ...(locationType

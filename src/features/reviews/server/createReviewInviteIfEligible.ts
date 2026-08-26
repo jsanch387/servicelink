@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { getPublicReviewPath } from '@/constants/routes';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import { sendReviewInviteEmail } from '@/features/email/review-invite/sendReviewInviteEmail';
@@ -6,8 +5,7 @@ import { normalizedCustomerRecipientEmail } from '@/features/email/utils/normali
 import { pausedSmsChannelOutcome } from '@/features/sms/config/smsOutboundPaused';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
-
-const INVITE_EXPIRY_DAYS = 90;
+import { ensureReviewInviteRecordIfEligible } from './ensureReviewInviteRecordIfEligible';
 
 /** Which channel delivered (or attempted) the review invite. */
 export type ReviewInviteChannel = 'sms' | 'email' | 'none';
@@ -50,12 +48,6 @@ function emailFailureReason(
   return 'error';
 }
 
-type ReviewInviteRow = {
-  id: string;
-  status: string;
-  email_sent_at: string | null;
-};
-
 async function loadBusinessName(
   supabase: SupabaseClient,
   businessId: string
@@ -69,69 +61,6 @@ async function loadBusinessName(
   const name = (data as { business_name?: string | null } | null)
     ?.business_name;
   return typeof name === 'string' ? name.trim() : '';
-}
-
-async function hasExistingReviewForCustomer(
-  supabase: SupabaseClient,
-  businessId: string,
-  customerId: string
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('reviews')
-    .select('id')
-    .eq('business_id', businessId)
-    .eq('customer_id', customerId)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-  return Boolean(data?.id);
-}
-
-async function hasPendingInviteForCustomer(
-  supabase: SupabaseClient,
-  businessId: string,
-  customerId: string
-): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('review_invites')
-    .select('id')
-    .eq('business_id', businessId)
-    .eq('customer_id', customerId)
-    .eq('status', 'pending')
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-  return Boolean(data?.id);
-}
-
-async function findInviteByBookingId(
-  supabase: SupabaseClient,
-  bookingId: string
-): Promise<ReviewInviteRow | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('review_invites')
-    .select('id, status, email_sent_at')
-    .eq('booking_id', bookingId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-  return (data as ReviewInviteRow | null) ?? null;
-}
-
-function expiresAtFromNow(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + INVITE_EXPIRY_DAYS);
-  return d.toISOString();
 }
 
 async function markInvite(
@@ -190,50 +119,20 @@ export async function createReviewInviteIfEligible(
     return { ok: true, skipped: true, reason: 'no_contact_method' };
   }
 
-  const existingInvite = await findInviteByBookingId(supabase, bookingId);
-  if (existingInvite) {
-    return { ok: true, skipped: true, reason: 'invite_already_exists' };
+  const record = await ensureReviewInviteRecordIfEligible(supabase, booking);
+  if (!record.ok) {
+    return { ok: false, error: record.error };
   }
-
-  if (await hasExistingReviewForCustomer(supabase, businessId, customerId)) {
-    return { ok: true, skipped: true, reason: 'customer_already_reviewed' };
+  if (record.skipped) {
+    return { ok: true, skipped: true, reason: record.reason };
   }
-
-  if (await hasPendingInviteForCustomer(supabase, businessId, customerId)) {
-    return { ok: true, skipped: true, reason: 'pending_invite_exists' };
-  }
-
-  const rawToken = crypto.randomBytes(32).toString('base64url');
-  const linkTokenHash = crypto
-    .createHash('sha256')
-    .update(rawToken)
-    .digest('hex');
 
   const businessName = await loadBusinessName(supabase, businessId);
-  const publicReviewUrl = `${getAppBaseUrl()}${getPublicReviewPath(rawToken)}`;
+  const publicReviewUrl = `${getAppBaseUrl()}${getPublicReviewPath(
+    record.rawReviewToken
+  )}`;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error: insertError } = await (supabase as any)
-    .from('review_invites')
-    .insert({
-      business_id: businessId,
-      booking_id: bookingId,
-      customer_id: customerId,
-      link_token_hash: linkTokenHash,
-      status: 'pending',
-      expires_at: expiresAtFromNow(),
-    })
-    .select('id')
-    .single();
-
-  if (insertError || !inserted?.id) {
-    return {
-      ok: false,
-      error: insertError?.message ?? 'Failed to create review invite',
-    };
-  }
-
-  const inviteId = inserted.id as string;
+  const inviteId = record.inviteId;
   const now = new Date().toISOString();
 
   let sms: NotifyChannelOutcome = { ...NOT_ATTEMPTED };

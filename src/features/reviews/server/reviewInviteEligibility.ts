@@ -34,7 +34,8 @@ export function willSendReviewInviteOnBookingComplete(
 
   if (context.bookingIdsWithInvite.has(bookingId)) return false;
   if (context.reviewedCustomerIds.has(customerId)) return false;
-  if (context.pendingInviteCustomerIds.has(customerId)) return false;
+  // A pending invite from an earlier visit is reused (same link, one review) —
+  // still send it on this complete so the customer gets another chance.
 
   return true;
 }

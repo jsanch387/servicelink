@@ -199,6 +199,12 @@ ${GUIDES.map(guide => {
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/affiliates</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>${resourcesUrls}
 ${
   isMarketplacePublicEnabled()

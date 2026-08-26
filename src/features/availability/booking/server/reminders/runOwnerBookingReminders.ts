@@ -6,10 +6,12 @@
 import { logAvailabilityOwnerNotify } from '@/features/availability/server/availabilityOwnerNotifyLog';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { BOOKING_REMINDER_SEND_CONCURRENCY } from './constants';
 import {
   loadConfirmedReminderBookings,
   loadReminderBusinesses,
 } from './loadConfirmedReminderBookings';
+import { mapWithConcurrency } from './mapWithConcurrency';
 import { notifyOwnerForBookingReminder } from './notifyOwnerForBookingReminder';
 import {
   BOOKING_REMINDER_TIMEZONE,
@@ -74,9 +76,7 @@ export async function runOwnerBookingReminders(
 
   const onlyProfileId = params?.onlyProfileId?.trim() || '';
   const ownerIds = [
-    ...new Set(
-      [...businesses.values()].map(b => b.profileId).filter(Boolean)
-    ),
+    ...new Set([...businesses.values()].map(b => b.profileId).filter(Boolean)),
   ].filter(id => !onlyProfileId || id === onlyProfileId);
   result.considered = ownerIds.length;
   result.skipped = [...new Set(bookings.map(b => b.business_id))].filter(
@@ -96,12 +96,17 @@ export async function runOwnerBookingReminders(
     return result;
   }
 
-  for (const profileId of ownerIds) {
-    const outcome = await notifyOwnerForBookingReminder(supabase, {
-      profileId,
-      targetDate,
-      correlationId,
-    });
+  const outcomes = await mapWithConcurrency(
+    ownerIds,
+    BOOKING_REMINDER_SEND_CONCURRENCY,
+    profileId =>
+      notifyOwnerForBookingReminder(supabase, {
+        profileId,
+        targetDate,
+        correlationId,
+      })
+  );
+  for (const outcome of outcomes) {
     result[outcome] += 1;
   }
 

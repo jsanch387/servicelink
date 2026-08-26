@@ -38,6 +38,7 @@ export type PublicBookingUi = {
     time: string;
     duration: string;
     vehicle: string;
+    pet: string;
     notes: string;
     contact: string;
     address: string;
@@ -128,10 +129,13 @@ export type PublicBookingUi = {
     addAnotherVehicle: string;
     visitSummary: (count: number) => string;
     vehiclePerService: string;
+    petPerService: string;
     maxJobsReached: string;
     /** Toast when Continue is blocked because a job is missing vehicle details. */
     vehicleRequiredToast: string;
     vehicleRequiredToastForJob: (serviceName: string) => string;
+    petRequiredToast: string;
+    petRequiredToastForJob: (serviceName: string) => string;
     /** Toast when add-another hits the visit job cap. */
     maxJobsReachedToast: string;
     couldNotAddServiceToast: string;
@@ -233,6 +237,26 @@ export type PublicBookingUi = {
     serviceAddress: string;
     vehicle: string;
     optionalVehicleDetails: string;
+    pet: string;
+    optionalPetDetails: string;
+    petName: string;
+    petNamePlaceholder: string;
+    petSpecies: string;
+    petSpeciesPlaceholder: string;
+    petBreed: string;
+    petBreedPlaceholder: string;
+    petSize: string;
+    petSizePlaceholder: string;
+    speciesDog: string;
+    speciesCat: string;
+    sizeSmall: string;
+    sizeMedium: string;
+    sizeLarge: string;
+    sizeXl: string;
+    errPetName: string;
+    errPetSpecies: string;
+    errPetBreed: string;
+    errPetSize: string;
     /** Returning customer: chips of previously saved vehicles. */
     savedVehiclesTitle: string;
     savedVehiclesLoading: string;

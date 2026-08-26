@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/shared';
 import { API_ROUTES } from '@/constants/routes';
+import { getAffonsoReferralId } from '@/features/marketing-attribution';
 import React, { useState } from 'react';
 import {
   PUBLIC_PRICING_FREE_PLAN_FEATURES,
@@ -60,7 +61,10 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
       const res = await fetch(API_ROUTES.STRIPE_CREATE_CHECKOUT_SESSION, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billingInterval }),
+        body: JSON.stringify({
+          billingInterval,
+          affonsoReferral: getAffonsoReferralId(),
+        }),
       });
       const data = (await res.json()) as {
         success?: boolean;

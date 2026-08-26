@@ -71,6 +71,10 @@ import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stri
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/applyPlatformProCheckoutSessionCompleted';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
+import { applyWalkUpPaymentCheckoutCompleted } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutCompleted';
+import { applyWalkUpPaymentCheckoutExpired } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutExpired';
+import { applyWalkUpTapToPayPaymentIntent } from '@/features/payments/walk-up/applyWalkUpTapToPayPaymentIntent';
+import { WALKUP_PAYMENT_TAP_TO_PAY_KIND } from '@/features/payments/walk-up/constants';
 import { applyMembershipCheckoutSessionCompleted } from '@/features/subscriptions/server/applyMembershipCheckoutSessionCompleted';
 import { applyMembershipInvoiceEvent } from '@/features/subscriptions/server/applyMembershipInvoiceEvent';
 import { applyMembershipSubscriptionLifecycle } from '@/features/subscriptions/server/applyMembershipSubscriptionLifecycle';
@@ -153,6 +157,10 @@ type StoredBookingCheckoutPayload = {
     vehicleYear?: string;
     vehicleMake?: string;
     vehicleModel?: string;
+    petName?: string;
+    petSpecies?: string;
+    petBreed?: string;
+    petSize?: string;
     notes?: string;
   };
   totalPriceCents: number;
@@ -184,6 +192,10 @@ function customerFormFromCheckoutStored(
     vehicleYear: typeof c.vehicleYear === 'string' ? c.vehicleYear : '',
     vehicleMake: typeof c.vehicleMake === 'string' ? c.vehicleMake : '',
     vehicleModel: typeof c.vehicleModel === 'string' ? c.vehicleModel : '',
+    petName: typeof c.petName === 'string' ? c.petName : '',
+    petSpecies: typeof c.petSpecies === 'string' ? c.petSpecies : '',
+    petBreed: typeof c.petBreed === 'string' ? c.petBreed : '',
+    petSize: typeof c.petSize === 'string' ? c.petSize : '',
     notes: typeof c.notes === 'string' ? c.notes : '',
   };
 }
@@ -294,6 +306,11 @@ function parseStoredBookingCheckoutPayload(
         typeof customer?.vehicleMake === 'string' ? customer.vehicleMake : '',
       vehicleModel:
         typeof customer?.vehicleModel === 'string' ? customer.vehicleModel : '',
+      petName: typeof customer?.petName === 'string' ? customer.petName : '',
+      petSpecies:
+        typeof customer?.petSpecies === 'string' ? customer.petSpecies : '',
+      petBreed: typeof customer?.petBreed === 'string' ? customer.petBreed : '',
+      petSize: typeof customer?.petSize === 'string' ? customer.petSize : '',
       notes: typeof customer?.notes === 'string' ? customer.notes : '',
     },
     totalPriceCents,
@@ -754,6 +771,10 @@ export async function POST(request: NextRequest) {
         customerVehicleYear: job.vehicle.year || undefined,
         customerVehicleMake: job.vehicle.make || undefined,
         customerVehicleModel: job.vehicle.model || undefined,
+        customerPetName: job.pet?.name || undefined,
+        customerPetSpecies: job.pet?.species || undefined,
+        customerPetBreed: job.pet?.breed || undefined,
+        customerPetSize: job.pet?.size || undefined,
         totalPriceCents: jobGrossCents(job),
       }));
       const availabilityEmailPayload: AvailabilityBookingNotificationPayload = {
@@ -764,6 +785,10 @@ export async function POST(request: NextRequest) {
         customerVehicleMake: customerForCreate.vehicleMake?.trim() || undefined,
         customerVehicleModel:
           customerForCreate.vehicleModel?.trim() || undefined,
+        customerPetName: customerForCreate.petName?.trim() || undefined,
+        customerPetSpecies: customerForCreate.petSpecies?.trim() || undefined,
+        customerPetBreed: customerForCreate.petBreed?.trim() || undefined,
+        customerPetSize: customerForCreate.petSize?.trim() || undefined,
         serviceName:
           jobCount > 1 ? `${jobCount} jobs` : serviceNameForBooking.trim(),
         servicePriceOptionLabel: parsedJobs
@@ -1099,6 +1124,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
+    if (session.metadata?.kind === 'walkup_payment_link') {
+      await applyWalkUpPaymentCheckoutCompleted(supabase, {
+        event,
+        session,
+      });
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
     const userId = session.metadata?.userId as string | undefined;
     if (!userId?.trim()) {
       console.error(
@@ -1159,6 +1192,77 @@ export async function POST(request: NextRequest) {
     void sendProWelcomeIfFirstPaidPro(supabase, { userId }).catch(err => {
       console.error('[stripe:webhook] pro welcome email (checkout)', err);
     });
+  }
+
+  if (event.type === 'checkout.session.expired') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code === '23505') {
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      console.error('Stripe webhook idempotency insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Idempotency check failed' },
+        { status: 500 }
+      );
+    }
+
+    const expiredSession = event.data.object as Stripe.Checkout.Session;
+    if (expiredSession.metadata?.kind === 'walkup_payment_link') {
+      await applyWalkUpPaymentCheckoutExpired(supabase, {
+        event,
+        session: expiredSession,
+      });
+    }
+    return NextResponse.json({ received: true }, { status: 200 });
+  }
+
+  if (
+    event.type === 'payment_intent.succeeded' ||
+    event.type === 'payment_intent.canceled' ||
+    event.type === 'payment_intent.payment_failed'
+  ) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('stripe_webhook_events').insert({
+        event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+      });
+    } catch (insertError: unknown) {
+      const code = (insertError as { code?: string })?.code;
+      if (code !== '23505') {
+        console.error('Stripe webhook idempotency insert error:', insertError);
+        return NextResponse.json(
+          { error: 'Idempotency check failed' },
+          { status: 500 }
+        );
+      }
+      // Duplicate event id: still apply (idempotent) in case the first
+      // attempt stored the event then failed to persist payment_requests.
+    }
+
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+    if (paymentIntent.metadata?.kind === WALKUP_PAYMENT_TAP_TO_PAY_KIND) {
+      const applyResult = await applyWalkUpTapToPayPaymentIntent(supabase, {
+        event,
+        paymentIntent,
+      });
+      if ('retry' in applyResult && applyResult.retry) {
+        return NextResponse.json(
+          { error: 'Walk-up Tap to Pay apply failed' },
+          { status: 500 }
+        );
+      }
+    }
+    return NextResponse.json({ received: true }, { status: 200 });
   }
 
   // Subscription updated (renewal, status change to past_due/unpaid, etc.)

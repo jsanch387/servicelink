@@ -43,7 +43,7 @@ describe('willSendReviewInviteOnBookingComplete', () => {
     ).toBe(false);
   });
 
-  it('returns false when customer has a pending invite', () => {
+  it('returns true when customer has a pending invite from an earlier visit', () => {
     expect(
       willSendReviewInviteOnBookingComplete(
         {
@@ -56,7 +56,7 @@ describe('willSendReviewInviteOnBookingComplete', () => {
           pendingInviteCustomerIds: new Set(['cust-1']),
         }
       )
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('returns false when booking already has an invite', () => {

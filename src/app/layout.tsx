@@ -4,6 +4,10 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { MarketingAttributionRoot } from '@/features/marketing-attribution';
 import {
+  AFFONSO_COOKIE_DURATION_DAYS,
+  AFFONSO_PUBLIC_PROGRAM_ID,
+} from '@/features/marketing-attribution/constants';
+import {
   HOME_SEO_DESCRIPTION,
   HOME_SEO_TITLE,
 } from '@/features/landing-page/data/homeSeoContent';
@@ -71,6 +75,10 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app';
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID || '1456318202654985';
+const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || 'AW-18403168896';
+const gaMeasurementId =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || 'G-7S62H6CP84';
+const gtagPrimaryId = gaMeasurementId || googleAdsId;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -179,6 +187,23 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#171717" />
+        {gtagPrimaryId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gtagPrimaryId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-gtag" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                ${gaMeasurementId ? `gtag('config', '${gaMeasurementId}');` : ''}
+                ${googleAdsId ? `gtag('config', '${googleAdsId}');` : ''}
+              `}
+            </Script>
+          </>
+        ) : null}
         {metaPixelId ? (
           <Script id="meta-pixel-base" strategy="afterInteractive">
             {`
@@ -195,6 +220,13 @@ export default function RootLayout({
             `}
           </Script>
         ) : null}
+        <Script
+          id="affonso-pixel"
+          src="https://cdn.affonso.io/js/pixel.min.js"
+          strategy="beforeInteractive"
+          data-affonso={AFFONSO_PUBLIC_PROGRAM_ID}
+          data-cookie_duration={String(AFFONSO_COOKIE_DURATION_DAYS)}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable} ${outfit.variable} ${manrope.variable} ${poppins.variable} ${plusJakartaSans.variable} antialiased`}

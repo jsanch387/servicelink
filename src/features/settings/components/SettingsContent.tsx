@@ -1,5 +1,6 @@
 'use client';
 
+import { AffiliateReferralWidget } from '@/features/affiliates/components/AffiliateReferralWidget';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ProWelcomeModal } from '@/features/pricing';
 import React from 'react';
@@ -60,6 +61,8 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
           settingsData.subscriptionBillingInterval ?? null
         }
       />
+
+      <AffiliateReferralWidget />
 
       <SettingsAccountSection
         accountEmail={settingsData.accountEmail}

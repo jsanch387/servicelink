@@ -12,10 +12,15 @@ export const ROUTES = {
   TERMS: '/terms',
   PRIVACY: '/privacy',
   CONTACT_PAGE: '/contact',
+  /** Public return page after a create-payment Checkout. */
+  PAY_COMPLETE: '/pay/complete',
+  /** Short branded pay link the owner shares (`/p/{shortCode}`). */
+  PAY_LINK: (shortCode: string) => `/p/${encodeURIComponent(shortCode.trim())}`,
 
   // Marketing pages
   FEATURES_PAGE: '/features',
   PRICING_PAGE: '/pricing',
+  AFFILIATES: '/affiliates',
   FIND_DETAILERS: '/find-detailers',
   /** City SEO page; use getFindDetailersCityPath(slug). */
   FIND_DETAILERS_CITY: (citySlug: string) =>
@@ -143,6 +148,27 @@ export const API_ROUTES = {
   PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
   /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */
   PAYMENTS_SERVICELINK_SETTINGS: '/api/payments/servicelink/settings',
+  /**
+   * Owner: create a one-time walk-up Stripe Checkout URL (amount + note).
+   * Mobile: Home → Create payment → Payment link.
+   */
+  PAYMENTS_LINK: '/api/payments/link',
+  /**
+   * Owner: walk-up Tap to Pay PaymentIntent (amount + note, no booking).
+   * Mobile: Home → Create payment → Tap to pay.
+   */
+  PAYMENTS_TAP_TO_PAY_INTENT: '/api/payments/tap-to-pay/intent',
+  /**
+   * Owner: merchant-scoped Stripe Terminal connection token (app warm-up).
+   * Walk-up collection uses this, not the booking token.
+   */
+  PAYMENTS_TAP_TO_PAY_CONNECTION_TOKEN:
+    '/api/payments/tap-to-pay/connection-token',
+  /**
+   * Owner: connected-account activity (balance + payments, refunds, payouts).
+   * Mobile: Payments → Transactions.
+   */
+  PAYMENTS_TRANSACTIONS: '/api/payments/transactions',
   CUSTOMERS: '/api/customers',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',
@@ -652,6 +678,13 @@ export function getPublicInvoiceShortPath(shortCode: string): string {
   const c = shortCode.trim();
   if (!c) return '/r';
   return `/r/${encodeURIComponent(c)}`;
+}
+
+/** Short branded create-payment link (`/p/{shortCode}`). */
+export function getPublicPaymentLinkPath(shortCode: string): string {
+  const c = shortCode.trim();
+  if (!c) return '/p';
+  return ROUTES.PAY_LINK(c);
 }
 
 /** Owner New appointment wizard with membership visit prefill query params. */

@@ -45,6 +45,13 @@ const FIND_DETAILERS_LINK = {
 
 const MENU_ANIMATION_MS = 300;
 
+const navCtaBase =
+  'inline-flex items-center justify-center h-9 w-[5.5rem] px-3 text-base font-semibold rounded-lg cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30';
+
+const navLoginClass = `${navCtaBase} bg-white/10 text-white hover:bg-white/15`;
+
+const navSignupClass = `${navCtaBase} bg-white text-black hover:bg-gray-100`;
+
 interface NavigationProps {
   /** When true, show a link to the public marketplace hub. */
   showFindDetailers?: boolean;
@@ -113,7 +120,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   };
 
   const navLinkClass =
-    'cursor-pointer text-gray-400 hover:text-white transition-colors focus:outline-none focus-visible:outline-none';
+    'cursor-pointer text-white hover:text-white/80 transition-colors focus:outline-none focus-visible:outline-none';
 
   const mobileMenu =
     portalReady && isMobileMenuMounted
@@ -177,7 +184,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             <div className="shrink-0 border-t border-[var(--dashboard-border)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               {!isInitialized ? (
                 <div
-                  className="h-[42px] w-full rounded-[10px] bg-white/5 animate-pulse"
+                  className="h-9 w-full rounded-lg bg-white/5 animate-pulse"
                   aria-hidden
                 />
               ) : isAuthenticated ? (
@@ -191,25 +198,21 @@ export const Navigation: React.FC<NavigationProps> = ({
                   Dashboard
                 </Button>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
                     href={ROUTES.AUTH.LOGIN}
-                    variant="secondary"
-                    size="sm"
-                    fullWidth
+                    className={`${navLoginClass} w-full`}
                     onClick={closeMobileMenu}
                   >
                     Login
-                  </Button>
-                  <Button
+                  </Link>
+                  <Link
                     href={siteSignupPath('homepage')}
-                    variant="primary"
-                    size="sm"
-                    fullWidth
+                    className={`${navSignupClass} w-full`}
                     onClick={closeMobileMenu}
                   >
                     Sign up
-                  </Button>
+                  </Link>
                 </div>
               )}
             </div>
@@ -241,10 +244,10 @@ export const Navigation: React.FC<NavigationProps> = ({
             <ResourcesNavMenuDesktop />
           </div>
 
-          <div className="hidden md:flex items-center gap-3 min-w-[7.5rem] justify-end">
+          <div className="hidden md:flex items-center gap-2 min-w-[7.5rem] justify-end">
             {!isInitialized ? (
               <span
-                className="h-[42px] w-[11.5rem] rounded-[10px] bg-white/5 animate-pulse"
+                className="h-9 w-[11.5rem] rounded-lg bg-white/5 animate-pulse"
                 aria-hidden
               />
             ) : isAuthenticated ? (
@@ -257,16 +260,15 @@ export const Navigation: React.FC<NavigationProps> = ({
               </Button>
             ) : (
               <>
-                <Button href={ROUTES.AUTH.LOGIN} variant="secondary" size="sm">
+                <Link href={ROUTES.AUTH.LOGIN} className={navLoginClass}>
                   Login
-                </Button>
-                <Button
+                </Link>
+                <Link
                   href={siteSignupPath('homepage')}
-                  variant="primary"
-                  size="sm"
+                  className={navSignupClass}
                 >
                   Sign up
-                </Button>
+                </Link>
               </>
             )}
           </div>

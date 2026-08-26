@@ -7,10 +7,7 @@ import { describe, expect, it } from 'vitest';
 type VercelCron = { path: string; schedule: string };
 
 function loadVercelCrons(): VercelCron[] {
-  const raw = readFileSync(
-    resolve(process.cwd(), 'vercel.json'),
-    'utf8'
-  );
+  const raw = readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8');
   const parsed = JSON.parse(raw) as { crons?: VercelCron[] };
   return parsed.crons ?? [];
 }

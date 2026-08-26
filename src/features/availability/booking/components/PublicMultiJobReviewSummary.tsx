@@ -137,6 +137,18 @@ export function PublicMultiJobReviewSummary({
           .map(s => s.trim())
           .filter(Boolean)
           .join(' ');
+        const petIdentity = [job.pet?.name, job.pet?.breed]
+          .map(s => (s ?? '').trim())
+          .filter(Boolean)
+          .join(' · ');
+        const petExtras = [job.pet?.species, job.pet?.size]
+          .map(s => (s ?? '').trim())
+          .filter(Boolean)
+          .join(' · ');
+        const petLine =
+          petIdentity && petExtras
+            ? `${petIdentity} · ${petExtras}`
+            : petIdentity || petExtras;
         const optionLabel = job.servicePriceOptionLabel?.trim();
         return (
           <GlassCard
@@ -161,6 +173,9 @@ export function PublicMultiJobReviewSummary({
                 </div>
                 {vehicleLine ? (
                   <p className="mt-2 text-sm text-zinc-400">{vehicleLine}</p>
+                ) : null}
+                {petLine ? (
+                  <p className="mt-2 text-sm text-zinc-400">{petLine}</p>
                 ) : null}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-2">

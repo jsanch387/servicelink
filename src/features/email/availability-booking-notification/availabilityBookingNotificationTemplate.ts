@@ -119,6 +119,29 @@ function formatVehicleLine(
   );
 }
 
+function formatPetLineFromParts(
+  name?: string,
+  species?: string,
+  breed?: string,
+  size?: string
+): string | null {
+  const identity = [name?.trim(), breed?.trim()].filter(Boolean).join(' · ');
+  const extras = [species?.trim(), size?.trim()].filter(Boolean).join(' · ');
+  if (identity && extras) return `${identity} · ${extras}`;
+  return identity || extras || null;
+}
+
+function formatPetLine(
+  payload: AvailabilityBookingNotificationPayload
+): string | null {
+  return formatPetLineFromParts(
+    payload.customerPetName,
+    payload.customerPetSpecies,
+    payload.customerPetBreed,
+    payload.customerPetSize
+  );
+}
+
 function buildMultiJobPricingRowsHtml(
   payload: AvailabilityBookingNotificationPayload
 ): string {
@@ -300,6 +323,7 @@ export function buildAvailabilityBookingEmailHtml(
   const durationLabel = formatDurationForEmail(payload.durationMinutes);
 
   const vehicleLine = formatVehicleLine(payload);
+  const petLine = formatPetLine(payload);
   const addOns = payload.selectedAddOns ?? [];
   const optionLabel = payload.servicePriceOptionLabel?.trim();
 
@@ -375,6 +399,7 @@ export function buildAvailabilityBookingEmailHtml(
     ownerCustomerRows.push({ label: 'Email', value: customerEmail });
   if (vehicleLine)
     ownerCustomerRows.push({ label: 'Vehicle', value: vehicleLine });
+  if (petLine) ownerCustomerRows.push({ label: 'Pet', value: petLine });
   ownerCustomerRows.push(
     { label: 'Date', value: dateLabel },
     { label: 'Time', value: `${timeLabel} (${durationLabel})` }
