@@ -214,7 +214,7 @@ Body: `{ businessSlug, planId, priceId, firstVisitDate, firstVisitTime, agreedTo
 Requires published plan, `stripe_price_id`, Pro + rollout + payments enabled + Connect ready.  
 Server loads `visit_duration_minutes` from the plan, re-checks the calendar slot, and stores visit fields on Checkout session metadata. Contact step collects SMS consent (default on); `smsOptIn` is stored on session/subscription metadata and copied into `customer_memberships.metadata`, and written to **`customers.sms_opt_in`** when the CRM customer is upserted (first visit booking). Customer membership SMS prefers `customers.sms_opt_in`, with membership metadata as fallback.
 
-**Webhook (live):** Connect `/api/stripe/webhook-connect` → `customer_memberships` + first-visit `bookings` row (`ensureMembershipInitialBooking`) + `membership_events` (+ invoices on `invoice.paid` / `invoice.payment_failed`).
+**Webhook (live):** Connect `/api/stripe/webhook-connect` → `customer_memberships` + first-visit `bookings` row (`ensureMembershipInitialBooking`) + `membership_events` (+ invoices on `invoice.paid` / `invoice.payment_failed`). Required Stripe event types: [`CONNECT_WEBHOOK_EVENTS.md`](../../../app/api/stripe/CONNECT_WEBHOOK_EVENTS.md).
 
 **Emails after pay:**
 

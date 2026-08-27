@@ -258,21 +258,18 @@ where subscription_status in ('past_due', 'unpaid')
 
 ## Configuring webhooks in Stripe
 
+**Event checklist (source of truth):** [`CONNECT_WEBHOOK_EVENTS.md`](./CONNECT_WEBHOOK_EVENTS.md).
+
 We use **two** webhook destinations with different account scopes:
 
-1. **Platform billing webhook** (`/api/stripe/webhook`)  
-   Scope: **Your account**  
-   Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
+1. **Platform billing webhook** (`/api/stripe/webhook`) — scope **Your account**. ServiceLink Pro only.
+2. **Connect webhook** (`/api/stripe/webhook-connect`) — scope **Connected and v2 accounts**. Booking checkout, memberships, maintenance card enroll, create-payment links, and create-payment Tap to Pay.
 
-2. **Connect booking checkout webhook** (`/api/stripe/webhook-connect`)  
-   Scope: **Connected and v2 accounts**  
-   Events: `checkout.session.completed`, `checkout.session.expired` (create-payment links), `payment_intent.succeeded`, `payment_intent.canceled`, `payment_intent.payment_failed` (create-payment Tap to Pay), `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` (and optionally `account.updated`).
-
-Why this split: production booking payments are created on connected accounts. Without a connected-account destination, live customer charges can succeed while booking finalization webhook logic never runs.
+Why this split: live customer charges are created on connected accounts. Without a connected-account destination, Stripe can charge the card while our booking / membership / payment-link logic never runs.
 
 1. Stripe Dashboard → Developers → Webhooks → Add destination.
-2. Create destination #1: URL `https://your-domain.com/api/stripe/webhook`, scope **Your account**, select platform billing events.
-3. Create destination #2: URL `https://your-domain.com/api/stripe/webhook-connect`, scope **Connected and v2 accounts**, select connect checkout events.
+2. Create destination #1: URL `https://your-domain.com/api/stripe/webhook`, scope **Your account**, select the platform events in `CONNECT_WEBHOOK_EVENTS.md`.
+3. Create destination #2: URL `https://your-domain.com/api/stripe/webhook-connect`, scope **Connected and v2 accounts**, select the **full required Connect list** in that same file (not checkout-only).
 4. Copy signing secrets:
    - destination #1 → `STRIPE_WEBHOOK_SECRET`
    - destination #2 → `STRIPE_CONNECT_WEBHOOK_SECRET`

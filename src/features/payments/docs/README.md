@@ -6,6 +6,7 @@ Reference docs for Payments feature schema and flows.
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE.md`                             | Current `payment_accounts` and `payment_settings` schema, constraints, and RLS model.                                                                       |
 | `CONNECT_ONBOARDING.md`                   | Planned Stripe Connect onboarding behavior and sync strategy.                                                                                               |
+| **[Connect webhook events](../../../app/api/stripe/CONNECT_WEBHOOK_EVENTS.md)** | **Required Stripe events on `/api/stripe/webhook-connect` (bookings, memberships, payment links, Tap to Pay).** |
 | `SUPABASE_SCHEMA_CONTEXT.md`              | Broader database snapshot/context for cross-feature planning.                                                                                               |
 | **`BOOKING_CHECKOUT_FLOW.md`**            | **End-to-end availability booking + Stripe Checkout (v1): APIs, webhook, DB, client, emails, and Vitest coverage pointers.**                                |
 | `BOOKING_PAYMENTS_TABLE.md`               | `booking_payments` table (1:1 booking payment summary).                                                                                                     |
