@@ -29,6 +29,10 @@ export type {
   LoadPublicReviewSummaryResult,
 } from './types/loadResults';
 export { getPublicProfileReviewsApiPath } from './utils/getPublicProfileReviewsApiPath';
+export {
+  REVIEW_BODY_EMPTY_PLACEHOLDER,
+  isVisibleReviewBody,
+} from './utils/reviewBodyDisplay';
 export { deriveReviewsSummary } from './utils/deriveReviewsSummary';
 export { buildReviewInviteCustomerUrl } from './utils/buildReviewInviteCustomerUrl';
 export { getPublicReviewPath } from '@/constants/routes';

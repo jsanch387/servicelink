@@ -354,6 +354,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     seeLess: 'See less',
     contactForQuote: 'Contact for quote',
     bookNow: 'Book now',
+    book: 'Book',
   },
   subscriptions: {
     subscriptionsTab: 'Subscriptions',
@@ -496,6 +497,11 @@ export const publicBookingUiEn: PublicBookingUi = {
     galleryEmptyTitle: 'No photos yet',
     galleryEmptyDescription:
       "This business hasn't shared any gallery photos yet.",
+    galleryImageAlt: 'Gallery photo',
+    galleryClosePhoto: 'Close photo',
+    galleryPreviousPhoto: 'Previous photo',
+    galleryNextPhoto: 'Next photo',
+    galleryPhotoCount: (current, total) => `${current} of ${total}`,
     bioTab: 'Bio',
     reviewsTab: 'Reviews',
     noBioYet: 'No bio added yet.',

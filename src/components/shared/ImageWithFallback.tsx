@@ -29,6 +29,8 @@ interface ImageWithFallbackProps {
   /** Responsive size hint for layout; e.g. "(max-width: 768px) 100vw, 1200px". */
   sizes?: string;
   onLoad?: () => void;
+  /** If `src` fails (e.g. image transform), try this before the SVG placeholder. */
+  retrySrc?: string;
 }
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
@@ -42,6 +44,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   priority = false,
   sizes,
   onLoad,
+  retrySrc,
 }) => {
   // Handle empty string or null/undefined src by using fallback immediately
   const fallbackSrc = DATA_SVG(
@@ -49,11 +52,21 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     fallbackSize.h,
     fallbackLabel || alt || 'Image'
   );
-  const [imageSrc, setImageSrc] = React.useState(
-    src && src.trim() !== '' ? src : fallbackSrc
-  );
+  const resolvedSrc = src && src.trim() !== '' ? src : fallbackSrc;
+  const [imageSrc, setImageSrc] = React.useState(resolvedSrc);
+  const [triedRetry, setTriedRetry] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageSrc(resolvedSrc);
+    setTriedRetry(false);
+  }, [resolvedSrc, retrySrc]);
 
   const handleError = () => {
+    if (retrySrc && retrySrc !== imageSrc && !triedRetry) {
+      setTriedRetry(true);
+      setImageSrc(retrySrc);
+      return;
+    }
     setImageSrc(fallbackSrc);
   };
 

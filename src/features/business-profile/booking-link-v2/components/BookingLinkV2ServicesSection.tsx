@@ -18,6 +18,7 @@ import {
   type BookingLinkV2BrowseService,
 } from './BookingLinkV2ServiceBrowseSheet';
 import { BookingLinkV2ServiceCard } from './BookingLinkV2ServiceCard';
+import { bookingLinkV2ServiceListClassName } from '../utils/bookingLinkV2Surface';
 
 interface BookingLinkV2ServicesSectionProps {
   businessProfile: CompleteBusinessProfile;
@@ -129,10 +130,11 @@ export function BookingLinkV2ServicesSection({
           ) : null}
 
           {displayServices.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3">
-              {displayServices.map(service => (
+            <div className={bookingLinkV2ServiceListClassName}>
+              {displayServices.map((service, index) => (
                 <BookingLinkV2ServiceCard
                   key={service.id}
+                  priority={index < 2}
                   service={{
                     id: service.id,
                     name: service.name,
@@ -160,6 +162,7 @@ export function BookingLinkV2ServicesSection({
                             priceOptionsEnabled:
                               service.price_options_enabled === true &&
                               allowPriceOptionSignals,
+                            image_path: service.image_path,
                           })
                       : undefined
                   }

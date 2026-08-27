@@ -17,7 +17,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { ProfileBioSection } from '../../components/ProfileBioSection';
-import { WorkShowcase } from '../../components/WorkShowcase';
+import { BookingLinkV2Gallery } from './BookingLinkV2Gallery';
 import { LazyPublicReviewsSection } from '../../reviews/components/LazyPublicReviewsSection';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
 import { BookingLinkV2Header } from './BookingLinkV2Header';
@@ -189,11 +189,8 @@ export function BookingLinkV2View({
           businessSlug={publicProfileSlug}
         />
       ) : activeTab === 'gallery' ? (
-        <WorkShowcase
+        <BookingLinkV2Gallery
           businessProfile={businessProfile}
-          editMode="view"
-          onSave={async () => undefined}
-          onCancel={() => undefined}
           isPublic={isPublic}
           bookingFlowLocale={bookingFlowLocale}
         />
@@ -220,14 +217,14 @@ export function BookingLinkV2View({
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
           }}
         >
-          <div className="mx-auto w-full max-w-4xl">
+          <div className="mx-auto w-full max-w-sm sm:flex sm:max-w-none sm:justify-center">
             <Button
               href={getPublicQuoteRequestPath(quoteSlug, {
                 lang: bookingFlowLocale,
               })}
               variant="inverse"
               fullWidth
-              className="font-semibold"
+              className="font-semibold sm:w-auto sm:min-w-[220px] sm:px-8"
               icon={<ChatBubbleLeftRightIcon className="h-4 w-4" />}
             >
               {bookingUi.profile.requestQuote}
@@ -264,7 +261,7 @@ export function BookingLinkV2View({
             <div className="flex flex-col items-center gap-2 text-center">
               <Link
                 href="/"
-                className="group inline-flex items-center gap-2 text-gray-500 transition-colors hover:text-gray-300"
+                className="group inline-flex cursor-pointer items-center gap-2 text-gray-500 transition-colors hover:text-gray-300"
               >
                 <span className="text-xs text-gray-500">Powered by</span>
                 <Image

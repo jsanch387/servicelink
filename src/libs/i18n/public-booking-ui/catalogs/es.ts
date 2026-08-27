@@ -360,6 +360,7 @@ export const publicBookingUiEs: PublicBookingUi = {
     seeLess: 'Ver menos',
     contactForQuote: 'Solicitar cotización',
     bookNow: 'Reservar',
+    book: 'Reservar',
   },
   subscriptions: {
     subscriptionsTab: 'Suscripciones',
@@ -507,6 +508,11 @@ export const publicBookingUiEs: PublicBookingUi = {
     galleryEmptyTitle: 'Aún no hay fotos',
     galleryEmptyDescription:
       'Este negocio aún no ha compartido fotos en la galería.',
+    galleryImageAlt: 'Foto de la galería',
+    galleryClosePhoto: 'Cerrar foto',
+    galleryPreviousPhoto: 'Foto anterior',
+    galleryNextPhoto: 'Foto siguiente',
+    galleryPhotoCount: (current, total) => `${current} de ${total}`,
     bioTab: 'Biografía',
     reviewsTab: 'Reseñas',
     noBioYet: 'Aún no hay biografía.',

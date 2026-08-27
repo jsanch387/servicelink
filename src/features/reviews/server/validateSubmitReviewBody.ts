@@ -1,8 +1,8 @@
+import { REVIEW_BODY_EMPTY_PLACEHOLDER } from '../utils/reviewBodyDisplay';
+
 const RATING_MIN = 1;
 const RATING_MAX = 5;
 const BODY_MAX = 2000;
-/** DB requires trimmed body length >= 1 when comment omitted. */
-const BODY_EMPTY_PLACEHOLDER = '—';
 
 export type SubmitReviewBody = {
   token: string;
@@ -16,7 +16,7 @@ type ValidateResult =
 
 export function normalizeReviewBodyForDb(raw: string): string {
   const trimmed = raw.trim();
-  if (trimmed.length === 0) return BODY_EMPTY_PLACEHOLDER;
+  if (trimmed.length === 0) return REVIEW_BODY_EMPTY_PLACEHOLDER;
   return trimmed.length > BODY_MAX ? trimmed.slice(0, BODY_MAX) : trimmed;
 }
 

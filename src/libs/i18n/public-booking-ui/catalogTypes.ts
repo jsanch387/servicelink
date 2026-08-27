@@ -331,6 +331,8 @@ export type PublicBookingUi = {
     seeLess: string;
     contactForQuote: string;
     bookNow: string;
+    /** Short bookable chip on booking-link service rows. */
+    book: string;
   };
   /** Customer subscription plans on the public booking link. */
   subscriptions: {
@@ -449,6 +451,11 @@ export type PublicBookingUi = {
     galleryTab: string;
     galleryEmptyTitle: string;
     galleryEmptyDescription: string;
+    galleryImageAlt: string;
+    galleryClosePhoto: string;
+    galleryPreviousPhoto: string;
+    galleryNextPhoto: string;
+    galleryPhotoCount: (current: number, total: number) => string;
     bioTab: string;
     reviewsTab: string;
     noBioYet: string;

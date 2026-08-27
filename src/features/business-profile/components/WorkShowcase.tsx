@@ -1,11 +1,13 @@
 'use client';
 
-import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { ImageWithFallback } from '@/components/shared/ImageWithFallback';
+import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import { buildPublicGalleryImages } from '../utils/galleryImageUrl';
 import { EmptyState } from './EmptyState';
+import { WorkShowcaseLightbox } from './WorkShowcaseLightbox';
 
 interface WorkShowcaseProps {
   businessProfile: CompleteBusinessProfile;
@@ -25,48 +27,56 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
   bookingFlowLocale = 'en',
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
-  const images = businessProfile.images || [];
-  const hasImages = images && images.length > 0;
-  const [loadedIds, setLoadedIds] = React.useState<Set<string>>(new Set());
+  const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const galleryImages = useMemo(
+    () =>
+      buildPublicGalleryImages(
+        businessProfile.images || [],
+        ui.profile.galleryImageAlt
+      ),
+    [businessProfile.images, ui.profile.galleryImageAlt]
+  );
 
   const handleImageLoad = React.useCallback((id: string) => {
     setLoadedIds(prev => new Set(prev).add(id));
   }, []);
 
   return (
-    <section className="px-4 py-6 sm:px-8 sm:py-8">
-      {hasImages ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {images.map((image, index) => {
-            const id = image.id || `image-${index}`;
-            const loaded = loadedIds.has(id);
+    <section className="px-4 py-5 sm:px-8 sm:py-8">
+      {galleryImages.length > 0 ? (
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2">
+          {galleryImages.map((image, index) => {
+            const loaded = loadedIds.has(image.id);
             return (
-              <div
-                key={id}
-                className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer"
+              <button
+                key={image.id}
+                type="button"
+                onClick={() => setLightboxIndex(index)}
+                className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-zinc-900 sm:rounded-xl"
+                aria-label={image.alt}
               >
-                {/* Animated skeleton until image loads */}
-                {!loaded && (
+                {!loaded ? (
                   <div
-                    className="absolute inset-0 skeleton-image rounded-xl"
+                    className="absolute inset-0 skeleton-image rounded-[inherit]"
                     aria-hidden
                   />
-                )}
+                ) : null}
                 <ImageWithFallback
-                  className="relative z-10 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  src={
-                    image.preview_url ||
-                    `https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/${image.storage_path}`
-                  }
-                  alt="Portfolio image"
-                  width={600}
-                  height={600}
+                  className="relative z-10 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  src={image.thumbSrc || image.fullSrc}
+                  retrySrc={image.fullSrc}
+                  alt={image.alt}
+                  width={640}
+                  height={640}
                   fallbackLabel="WORK"
-                  fallbackSize={{ w: 600, h: 600 }}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  onLoad={() => handleImageLoad(id)}
+                  fallbackSize={{ w: 640, h: 640 }}
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
+                  priority={index < 4}
+                  onLoad={() => handleImageLoad(image.id)}
                 />
-              </div>
+              </button>
             );
           })}
         </div>
@@ -80,6 +90,24 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
           }
         />
       )}
+
+      {lightboxIndex != null && galleryImages[lightboxIndex] ? (
+        <WorkShowcaseLightbox
+          images={galleryImages.map(image => ({
+            id: image.id,
+            src: image.fullSrc,
+            thumbSrc: image.thumbSrc || image.fullSrc,
+            alt: image.alt,
+          }))}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+          closeLabel={ui.profile.galleryClosePhoto}
+          previousLabel={ui.profile.galleryPreviousPhoto}
+          nextLabel={ui.profile.galleryNextPhoto}
+          countLabel={ui.profile.galleryPhotoCount}
+        />
+      ) : null}
     </section>
   );
 };

@@ -165,7 +165,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   const overlay = (
     <div
-      className={`fixed inset-0 z-[100] flex ${overlayAlignClass} bg-black/85 backdrop-blur-sm overscroll-none transition-opacity duration-300`}
+      className={`fixed inset-0 z-[100] flex ${overlayAlignClass} cursor-pointer bg-black/85 backdrop-blur-sm overscroll-none transition-opacity duration-300`}
       role="dialog"
       aria-modal="true"
       style={{
@@ -181,7 +181,7 @@ export const Modal: React.FC<ModalProps> = ({
       }}
     >
       <div
-        className={`bg-[var(--dashboard-bg)] border border-white/10 ${panelRoundedClass} w-full min-w-0 ${maxWidthClasses[maxWidth]} mx-auto ${panelMaxHeightClass} flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out ${panelClassName}`}
+        className={`bg-[var(--dashboard-bg)] border border-white/10 ${panelRoundedClass} w-full min-w-0 ${maxWidthClasses[maxWidth]} mx-auto ${panelMaxHeightClass} flex flex-col shadow-2xl relative cursor-default overflow-hidden transform transition-all duration-300 ease-out ${panelClassName}`}
         style={{
           transform: 'translateY(0)',
           animation: 'slideUp 0.3s ease-out',

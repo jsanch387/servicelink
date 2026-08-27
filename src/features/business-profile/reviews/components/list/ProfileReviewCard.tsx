@@ -2,6 +2,7 @@
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import type { PublicProfileReview } from '@/features/reviews';
+import { isVisibleReviewBody } from '@/features/reviews/utils/reviewBodyDisplay';
 import {
   bcp47ForBookingLocale,
   publicBookingUi,
@@ -37,15 +38,17 @@ export const ProfileReviewCard: React.FC<ProfileReviewCardProps> = ({
         locale={locale}
       />
 
-      <div className="mt-3 sm:mt-4">
-        <ReviewExpandableText
-          text={review.body}
-          variant="reviewBody"
-          className={reviewBodyTextClass}
-          seeMoreLabel={expandLabels.seeMore}
-          seeLessLabel={expandLabels.seeLess}
-        />
-      </div>
+      {isVisibleReviewBody(review.body) ? (
+        <div className="mt-3 sm:mt-4">
+          <ReviewExpandableText
+            text={review.body}
+            variant="reviewBody"
+            className={reviewBodyTextClass}
+            seeMoreLabel={expandLabels.seeMore}
+            seeLessLabel={expandLabels.seeLess}
+          />
+        </div>
+      ) : null}
 
       {review.ownerReply ? (
         <ReviewOwnerReplyDisplay

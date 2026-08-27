@@ -65,7 +65,7 @@ export function PublicBookingLanguageToggle({
   }
 
   const base =
-    'min-w-[2.25rem] px-2.5 py-1.5 text-xs font-semibold tracking-wide rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40';
+    'min-w-[2.25rem] cursor-pointer px-2.5 py-1.5 text-xs font-semibold tracking-wide rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-black/40';
 
   return (
     <div

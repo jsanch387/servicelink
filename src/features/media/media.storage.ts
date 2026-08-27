@@ -100,11 +100,12 @@ export class MediaStorage {
   }
 
   /**
-   * Gets public URL for a storage path with cache-busting
+   * Gets public URL for a storage path.
+   * Cache-busting is opt-in — public pages should keep URLs stable so browsers can cache.
    */
   static getPublicUrl(
     storagePath: string,
-    useCacheBuster: boolean = true
+    useCacheBuster: boolean = false
   ): string {
     const { data } = this.supabase.storage
       .from(MEDIA_CONFIG.bucketName)

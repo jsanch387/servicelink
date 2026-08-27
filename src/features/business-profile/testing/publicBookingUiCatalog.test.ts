@@ -80,6 +80,8 @@ describe('public booking UI catalogs', () => {
     expect(publicBookingUi('es').serviceCard.seeMore).toBe('Ver más');
     expect(publicBookingUi('en').serviceCard.bookNow).toBe('Book now');
     expect(publicBookingUi('es').serviceCard.bookNow).toBe('Reservar');
+    expect(publicBookingUi('en').serviceCard.book).toBe('Book');
+    expect(publicBookingUi('es').serviceCard.book).toBe('Reservar');
     expect(publicBookingUi('en').serviceCard.from).toBe('From');
   });
 });

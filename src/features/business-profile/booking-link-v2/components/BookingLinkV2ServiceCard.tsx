@@ -11,8 +11,8 @@ import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import Link from 'next/link';
 import React from 'react';
 import {
-  bookingLinkV2CardClassName,
-  bookingLinkV2CtaClassName,
+  bookingLinkV2BookButtonClassName,
+  bookingLinkV2ServiceRowClassName,
 } from '../utils/bookingLinkV2Surface';
 import { getBookingLinkV2MockServiceImage } from '../utils/serviceCardImage';
 
@@ -32,11 +32,14 @@ interface BookingLinkV2ServiceCardProps {
   onBrowse?: () => void;
   bookingFlowLocale?: PublicBookingFlowLocale;
   publicActiveSale?: PublicActiveSale | null;
+  priority?: boolean;
 }
 
 function formatPrice(cents: number, contactLabel: string): string {
   if (cents === 0) return contactLabel;
-  return `$${(cents / 100).toFixed(0)}`;
+  return `$${(cents / 100).toLocaleString('en-US', {
+    maximumFractionDigits: 0,
+  })}`;
 }
 
 export function BookingLinkV2ServiceCard({
@@ -47,10 +50,13 @@ export function BookingLinkV2ServiceCard({
   onBrowse,
   bookingFlowLocale = 'en',
   publicActiveSale = null,
+  priority = false,
 }: BookingLinkV2ServiceCardProps) {
   const ui = publicBookingUi(bookingFlowLocale);
-  const imageSrc =
+  const fullImageSrc =
     getServiceImageUrl(service) ?? getBookingLinkV2MockServiceImage(service.id);
+  const imageSrc =
+    getServiceImageUrl(service, { width: 320, quality: 70 }) ?? fullImageSrc;
 
   const effectiveDurationMinutes =
     service.duration_minutes != null && service.duration_minutes > 0
@@ -90,64 +96,60 @@ export function BookingLinkV2ServiceCard({
 
   const body = (
     <>
-      <div className="relative h-[108px] w-[108px] shrink-0 overflow-hidden rounded-[16px] bg-zinc-800 sm:h-[116px] sm:w-[116px]">
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[12px] bg-zinc-800 sm:h-[6.5rem] sm:w-[6.5rem] sm:rounded-[14px]">
         <ImageWithFallback
           src={imageSrc}
+          retrySrc={fullImageSrc}
           alt=""
-          width={232}
-          height={232}
+          width={220}
+          height={220}
           className="h-full w-full object-cover"
           fallbackLabel={service.name}
-          fallbackSize={{ w: 232, h: 232 }}
-          sizes="116px"
+          fallbackSize={{ w: 220, h: 220 }}
+          sizes="(max-width: 640px) 96px, 104px"
+          priority={priority}
         />
       </div>
 
-      <div className="flex min-h-[108px] min-w-0 flex-1 flex-col justify-between py-0.5 sm:min-h-[116px]">
-        <div className="min-w-0 space-y-0.5">
-          <p className="line-clamp-2 text-[16px] font-semibold leading-snug tracking-tight text-white">
+      <div className="flex min-h-24 min-w-0 flex-1 flex-col justify-between sm:min-h-[6.5rem]">
+        <div>
+          <p className="line-clamp-2 text-[17px] font-semibold leading-snug tracking-tight text-white">
             {service.name}
           </p>
           {durationLabel ? (
-            <p className="truncate text-[13px] text-zinc-500">{durationLabel}</p>
+            <p className="mt-0.5 text-[15px] leading-5 text-zinc-500">
+              {durationLabel}
+            </p>
           ) : null}
         </div>
-
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0">
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 text-[15px] leading-5">
             {isQuote ? (
-              <p className="text-sm font-medium text-zinc-400">
+              <span className="text-zinc-500">
                 {ui.serviceCard.contactForQuote}
-              </p>
+              </span>
             ) : (
-              <>
+              <span>
                 {showFrom ? (
-                  <p className="text-[11px] font-medium leading-none text-zinc-500">
-                    {ui.serviceCard.from}
-                  </p>
+                  <span className="text-zinc-500">{ui.serviceCard.from} </span>
                 ) : null}
-                <div
-                  className={`flex items-baseline gap-1.5 ${showFrom ? 'mt-0.5' : ''}`}
-                >
-                  <span className="text-[18px] font-semibold tabular-nums tracking-tight text-white">
-                    {formattedPrice}
+                <span className="font-medium tabular-nums text-zinc-300">
+                  {formattedPrice}
+                </span>
+                {salePrice ? (
+                  <span className="ml-1.5 text-zinc-600 line-through decoration-zinc-600 tabular-nums">
+                    {formatPrice(
+                      salePrice.originalCents,
+                      ui.serviceCard.contactForQuote
+                    )}
                   </span>
-                  {salePrice ? (
-                    <span className="text-sm font-medium text-zinc-500 line-through decoration-zinc-500/70 tabular-nums">
-                      {formatPrice(
-                        salePrice.originalCents,
-                        ui.serviceCard.contactForQuote
-                      )}
-                    </span>
-                  ) : null}
-                </div>
-              </>
+                ) : null}
+              </span>
             )}
-          </div>
-
+          </p>
           {canBook ? (
-            <span className={bookingLinkV2CtaClassName}>
-              {ui.serviceCard.bookNow}
+            <span className={bookingLinkV2BookButtonClassName}>
+              {ui.serviceCard.book}
             </span>
           ) : null}
         </div>
@@ -155,15 +157,12 @@ export function BookingLinkV2ServiceCard({
     </>
   );
 
-  const cardClassName = `flex w-full items-stretch gap-3 p-2.5 sm:gap-3.5 sm:p-3 ${bookingLinkV2CardClassName}`;
+  const rowClassName = bookingLinkV2ServiceRowClassName;
+  const interactiveClassName = `${rowClassName} cursor-pointer transition-colors hover:bg-white/[0.07] active:bg-white/[0.09]`;
 
   if (onBrowse && canBrowse) {
     return (
-      <button
-        type="button"
-        onClick={onBrowse}
-        className={`${cardClassName} cursor-pointer transition-opacity active:opacity-80`}
-      >
+      <button type="button" onClick={onBrowse} className={interactiveClassName}>
         {body}
       </button>
     );
@@ -171,14 +170,11 @@ export function BookingLinkV2ServiceCard({
 
   if (href) {
     return (
-      <Link
-        href={href}
-        className={`${cardClassName} cursor-pointer transition-opacity active:opacity-80`}
-      >
+      <Link href={href} className={interactiveClassName}>
         {body}
       </Link>
     );
   }
 
-  return <div className={cardClassName}>{body}</div>;
+  return <div className={rowClassName}>{body}</div>;
 }

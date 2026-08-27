@@ -14,4 +14,4 @@ export const reviewReplyTextClass =
   'text-xs leading-relaxed text-zinc-500 sm:text-sm sm:text-zinc-400';
 
 export const reviewExpandToggleClass =
-  'text-[11px] font-medium text-zinc-500 sm:text-xs sm:text-zinc-400';
+  'cursor-pointer text-[11px] font-medium text-zinc-500 sm:text-xs sm:text-zinc-400';

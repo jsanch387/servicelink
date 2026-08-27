@@ -1,11 +1,14 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import {
+  formatUsPhoneWithCountry,
+  usPhoneTelHref,
+} from '@/lib/formatUsPhone';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
-import { EnvelopeIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import type { CompleteBusinessProfile } from '../types/businessProfile';
-import { formatPhoneNumber } from '../utils/businessProfileHelpers';
 
 interface ProfileBioSectionProps {
   businessProfile: CompleteBusinessProfile;
@@ -21,8 +24,12 @@ export const ProfileBioSection: React.FC<ProfileBioSectionProps> = ({
   const bio = businessProfile.bio?.trim() || null;
   const phoneRaw = businessProfile.phone_number_call?.trim() || null;
   const email = businessProfile.email?.trim() || null;
-  const phoneDisplay = phoneRaw ? formatPhoneNumber(phoneRaw) : null;
-  const phoneHref = phoneRaw ? `tel:${phoneRaw.replace(/\D/g, '')}` : null;
+  const phoneHref = phoneRaw ? usPhoneTelHref(phoneRaw) : null;
+  const phoneDisplay = phoneRaw
+    ? phoneHref
+      ? formatUsPhoneWithCountry(phoneRaw)
+      : phoneRaw
+    : null;
   const hasAbout = Boolean(businessType || bio);
   const hasContact = Boolean(phoneDisplay || email);
 
@@ -53,20 +60,26 @@ export const ProfileBioSection: React.FC<ProfileBioSectionProps> = ({
             {ui.profile.contactHeading}
           </h3>
           <ul className="mt-3 space-y-2.5">
-            {phoneDisplay && phoneHref ? (
+            {phoneDisplay ? (
               <li>
-                <a
-                  href={phoneHref}
-                  className="inline-flex cursor-pointer items-center gap-2.5 text-sm text-zinc-300 transition-colors hover:text-white"
-                >
-                  <PhoneIcon className="h-4 w-4 shrink-0 text-zinc-500" />
-                  <span>
+                {phoneHref ? (
+                  <a
+                    href={phoneHref}
+                    className="inline-flex cursor-pointer items-center text-sm text-zinc-300 underline decoration-zinc-500 underline-offset-2 transition-colors hover:text-white hover:decoration-white"
+                  >
+                    <span className="sr-only">
+                      {ui.profile.contactPhoneLabel}:{' '}
+                    </span>
+                    {phoneDisplay}
+                  </a>
+                ) : (
+                  <span className="text-sm text-zinc-300">
                     <span className="sr-only">
                       {ui.profile.contactPhoneLabel}:{' '}
                     </span>
                     {phoneDisplay}
                   </span>
-                </a>
+                )}
               </li>
             ) : null}
             {email ? (

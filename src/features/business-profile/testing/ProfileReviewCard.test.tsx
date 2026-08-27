@@ -25,6 +25,20 @@ describe('ProfileReviewCard', () => {
     expect(screen.getByText('Thanks for the kind words!')).toBeTruthy();
   });
 
+  it('shows only stars when the review has no written comment', () => {
+    render(
+      <ProfileReviewCard
+        review={{ ...samplePublicReview, body: '—' }}
+      />
+    );
+
+    expect(screen.getByText('Alex Rivera')).toBeTruthy();
+    expect(
+      screen.queryByText('Great service and fast turnaround.')
+    ).toBeNull();
+    expect(screen.queryByText('—')).toBeNull();
+  });
+
   it('uses Spanish expand labels when locale is es', () => {
     const longBody = `${'Excelente servicio. '.repeat(20)}`.trim();
     render(
