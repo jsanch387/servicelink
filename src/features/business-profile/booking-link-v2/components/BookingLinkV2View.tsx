@@ -212,20 +212,21 @@ export function BookingLinkV2View({
 
       {showStickyQuote ? (
         <div
-          className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 px-4 py-4 backdrop-blur-sm sm:px-8"
+          className="fixed bottom-0 left-0 right-0 z-20 bg-[var(--dashboard-bg)]/95 px-4 py-4 backdrop-blur-sm sm:px-8"
           style={{
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
           }}
         >
-          <div className="mx-auto w-full max-w-sm sm:flex sm:max-w-none sm:justify-center">
+          <div className="mx-auto w-full max-w-2xl">
             <Button
               href={getPublicQuoteRequestPath(quoteSlug, {
                 lang: bookingFlowLocale,
               })}
               variant="inverse"
+              size="md"
               fullWidth
-              className="font-semibold sm:w-auto sm:min-w-[220px] sm:px-8"
-              icon={<ChatBubbleLeftRightIcon className="h-4 w-4" />}
+              className="font-semibold"
+              icon={<ChatBubbleLeftRightIcon className="h-5 w-5" />}
             >
               {bookingUi.profile.requestQuote}
             </Button>
@@ -257,28 +258,26 @@ export function BookingLinkV2View({
 
       {isPublic ? (
         <div className="mt-8 px-4 py-8 sm:px-8 sm:py-10">
-          <div className="w-full border-t border-white/[0.06] pt-6">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <Link
-                href="/"
-                className="group inline-flex cursor-pointer items-center gap-2 text-gray-500 transition-colors hover:text-gray-300"
-              >
-                <span className="text-xs text-gray-500">Powered by</span>
-                <Image
-                  src={MARKETING_IMAGES.brand.favicon}
-                  alt=""
-                  width={14}
-                  height={14}
-                  className="opacity-70 transition-opacity group-hover:opacity-100"
-                />
-                <span className="text-sm font-medium text-gray-400 transition-colors group-hover:text-white">
-                  ServiceLink
-                </span>
-              </Link>
-              <p className="max-w-xs text-[11px] leading-relaxed text-gray-500">
-                Get your own profile and start booking clients.
-              </p>
-            </div>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Link
+              href="/"
+              className="group inline-flex cursor-pointer items-center gap-2 text-gray-500 transition-colors hover:text-gray-300"
+            >
+              <span className="text-xs text-gray-500">Powered by</span>
+              <Image
+                src={MARKETING_IMAGES.brand.favicon}
+                alt=""
+                width={14}
+                height={14}
+                className="opacity-70 transition-opacity group-hover:opacity-100"
+              />
+              <span className="text-sm font-medium text-gray-400 transition-colors group-hover:text-white">
+                ServiceLink
+              </span>
+            </Link>
+            <p className="max-w-xs text-[11px] leading-relaxed text-gray-500">
+              Get your own profile and start booking clients.
+            </p>
           </div>
         </div>
       ) : null}

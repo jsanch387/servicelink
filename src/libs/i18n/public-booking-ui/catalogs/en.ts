@@ -494,9 +494,13 @@ export const publicBookingUiEn: PublicBookingUi = {
       `Share a few details and ${businessName} will send back a quote.`,
     servicesTab: 'Services',
     galleryTab: 'Gallery',
+    galleryHeading: 'Recent work',
     galleryEmptyTitle: 'No photos yet',
     galleryEmptyDescription:
       "This business hasn't shared any gallery photos yet.",
+    galleryEmptyInstagramDescription: 'See their latest work on Instagram.',
+    gallerySeeMoreOnInstagram: 'See more on Instagram',
+    galleryInstagramAriaLabel: handle => `See more on Instagram, @${handle}`,
     galleryImageAlt: 'Gallery photo',
     galleryClosePhoto: 'Close photo',
     galleryPreviousPhoto: 'Previous photo',

@@ -120,6 +120,17 @@ export function socialMediaForPersist(input: {
   };
 }
 
+/** Instagram handle + profile URL for public CTAs, or null if unset. */
+export function instagramProfileForDisplay(
+  raw: unknown
+): { handle: string; href: string } | null {
+  const handle = parseSocialMedia(raw).instagram;
+  if (!handle) return null;
+  const href = socialProfileUrl('instagram', handle);
+  if (!href) return null;
+  return { handle, href };
+}
+
 export function socialLinksForDisplay(
   raw: unknown
 ): Array<{ id: SocialPlatform; label: string; href: string }> {

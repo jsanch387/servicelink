@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  instagramProfileForDisplay,
   normalizeSocialInput,
   parseSocialMedia,
   socialLinksForDisplay,
@@ -55,5 +56,14 @@ describe('socialMedia', () => {
         href: 'https://instagram.com/mike',
       },
     ]);
+  });
+
+  it('returns Instagram handle and href for public CTAs', () => {
+    expect(instagramProfileForDisplay({ instagram: '@elite.wash' })).toEqual({
+      handle: 'elite.wash',
+      href: 'https://instagram.com/elite.wash',
+    });
+    expect(instagramProfileForDisplay({ tiktok: 'only.tiktok' })).toBeNull();
+    expect(instagramProfileForDisplay(null)).toBeNull();
   });
 });

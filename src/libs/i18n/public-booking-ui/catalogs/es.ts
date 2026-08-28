@@ -505,9 +505,14 @@ export const publicBookingUiEs: PublicBookingUi = {
       `Comparte algunos datos y ${businessName} te enviará una cotización.`,
     servicesTab: 'Servicios',
     galleryTab: 'Galería',
+    galleryHeading: 'Trabajos recientes',
     galleryEmptyTitle: 'Aún no hay fotos',
     galleryEmptyDescription:
       'Este negocio aún no ha compartido fotos en la galería.',
+    galleryEmptyInstagramDescription:
+      'Mira sus trabajos más recientes en Instagram.',
+    gallerySeeMoreOnInstagram: 'Ver más en Instagram',
+    galleryInstagramAriaLabel: handle => `Ver más en Instagram, @${handle}`,
     galleryImageAlt: 'Foto de la galería',
     galleryClosePhoto: 'Cerrar foto',
     galleryPreviousPhoto: 'Foto anterior',

@@ -14,8 +14,5 @@ export const bookingLinkV2TabUnderlineClassName =
 export const bookingLinkV2GallerySoloClassName =
   'group relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-[20px] bg-[#1c1c1e]';
 
-export const bookingLinkV2GalleryFeaturedClassName =
-  'group relative row-span-2 h-full min-h-0 cursor-pointer overflow-hidden rounded-[20px] bg-[#1c1c1e] sm:col-span-2';
-
 export const bookingLinkV2GalleryTileClassName =
   'group relative aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-[16px] bg-[#1c1c1e]';

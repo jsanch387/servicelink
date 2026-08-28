@@ -449,8 +449,14 @@ export type PublicBookingUi = {
     /** Public profile preview tabs (same view as embedded “back to profile” from booking). */
     servicesTab: string;
     galleryTab: string;
+    /** Public gallery: short heading above the work grid. */
+    galleryHeading: string;
     galleryEmptyTitle: string;
     galleryEmptyDescription: string;
+    /** Public gallery empty state when Instagram is available. */
+    galleryEmptyInstagramDescription: string;
+    gallerySeeMoreOnInstagram: string;
+    galleryInstagramAriaLabel: (handle: string) => string;
     galleryImageAlt: string;
     galleryClosePhoto: string;
     galleryPreviousPhoto: string;

@@ -67,6 +67,10 @@ describe('public booking UI catalogs', () => {
     expect(publicBookingUi('en').profile.servicesTab).toBe('Services');
     expect(publicBookingUi('es').profile.servicesTab).toBe('Servicios');
     expect(publicBookingUi('es').profile.galleryTab).toBe('Galería');
+    expect(publicBookingUi('en').profile.galleryHeading).toBe('Recent work');
+    expect(publicBookingUi('es').profile.gallerySeeMoreOnInstagram).toBe(
+      'Ver más en Instagram'
+    );
     expect(publicBookingUi('en').profile.reviewsTab).toBe('Reviews');
     expect(publicBookingUi('es').profile.reviewsTab).toBe('Reseñas');
   });
