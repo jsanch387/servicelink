@@ -309,6 +309,13 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
           >
             best booking app for mobile detailers
           </Link>
+          . Comparing a heavier field-service suite? See{' '}
+          <Link
+            href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026')}
+            className={linkClasses}
+          >
+            ServiceLink vs Urable
+          </Link>
           .
         </p>
       </section>

@@ -18,13 +18,11 @@ export async function saveSignupAttribution(
 ): Promise<SaveSignupAttributionResult> {
   const admin = createSupabaseAdminClient();
 
-  const { data: existing, error: existingError } =
-    await // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (admin as any)
-      .from('signup_attribution')
-      .select('user_id')
-      .eq('user_id', userId)
-      .maybeSingle();
+  const { data: existing, error: existingError } = await admin
+    .from('signup_attribution')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle();
 
   if (existingError) {
     console.error(
@@ -67,9 +65,10 @@ export async function saveSignupAttribution(
     signed_up_at: new Date().toISOString(),
   };
 
-  const { error: insertError } =
-    await // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (admin as any).from('signup_attribution').insert(row);
+  const { error: insertError } = await admin
+    .from('signup_attribution')
+    // Supabase generated Insert is `never` on this hand-written Database type.
+    .insert(row as never);
 
   if (insertError) {
     console.error('[MarketingAttribution] Signup insert failed:', insertError);

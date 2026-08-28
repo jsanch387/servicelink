@@ -4,13 +4,7 @@ import { Button, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { siteSignupPath } from '@/features/marketing-attribution';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import {
-  Bars3Icon,
-  CurrencyDollarIcon,
-  MagnifyingGlassIcon,
-  Squares2X2Icon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -21,29 +15,27 @@ import {
   ResourcesNavMenuMobile,
 } from './ResourcesNavMenu';
 
-const PRODUCT_LINKS = [
-  {
-    label: 'Features',
-    href: ROUTES.FEATURES_PAGE,
-    description: 'What you get with ServiceLink',
-    icon: Squares2X2Icon,
-  },
-  {
-    label: 'Pricing',
-    href: ROUTES.PRICING_PAGE,
-    description: 'Simple plans for service pros',
-    icon: CurrencyDollarIcon,
-  },
+const PRIMARY_NAV_LINKS = [
+  { label: 'Features', href: ROUTES.FEATURES_PAGE },
+  { label: 'Pricing', href: ROUTES.PRICING_PAGE },
 ] as const;
 
 const FIND_DETAILERS_LINK = {
   label: 'Find detailers',
   href: ROUTES.FIND_DETAILERS,
-  description: 'Browse local detailing near you',
-  icon: MagnifyingGlassIcon,
 } as const;
 
-const MENU_ANIMATION_MS = 300;
+const MENU_ANIMATION_MS = 400;
+
+function isNavPathActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function mobileTabClass(active: boolean) {
+  return `flex w-full items-center rounded-2xl px-3 py-3.5 text-[1.7rem] font-semibold tracking-tight leading-none cursor-pointer transition-colors ${
+    active ? 'text-white' : 'text-white/50 active:text-white'
+  }`;
+}
 
 const navCtaBase =
   'inline-flex items-center justify-center h-9 w-[5.5rem] px-3 text-base font-semibold rounded-lg cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30';
@@ -67,9 +59,9 @@ export const Navigation: React.FC<NavigationProps> = ({
   const { isAuthenticated, isInitialized } = useAuth();
   const pathname = usePathname();
 
-  const productLinks = showFindDetailers
-    ? [FIND_DETAILERS_LINK, ...PRODUCT_LINKS]
-    : PRODUCT_LINKS;
+  const primaryNavLinks = showFindDetailers
+    ? [FIND_DETAILERS_LINK, ...PRIMARY_NAV_LINKS]
+    : PRIMARY_NAV_LINKS;
 
   useEffect(() => {
     setPortalReady(true);
@@ -126,93 +118,97 @@ export const Navigation: React.FC<NavigationProps> = ({
     portalReady && isMobileMenuMounted
       ? createPortal(
           <div
-            className={`md:hidden fixed inset-0 z-[60] flex flex-col bg-[var(--dashboard-bg)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-              isMobileMenuVisible ? 'translate-y-0' : '-translate-y-full'
+            className={`md:hidden fixed inset-0 z-[60] flex flex-col bg-[var(--dashboard-bg)] transition-[opacity,transform] duration-[350ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              isMobileMenuVisible
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 -translate-y-3'
             }`}
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
           >
-            <div className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-[var(--dashboard-border)] px-4">
-              <Logo size="md" logoSize="lg" href="/" />
+            <div className="flex h-16 shrink-0 items-center justify-between gap-4 px-4">
+              <span className="cursor-pointer" onClick={closeMobileMenu}>
+                <Logo size="md" logoSize="lg" href="/" />
+              </span>
               <button
                 type="button"
                 onClick={closeMobileMenu}
-                className="cursor-pointer text-gray-300 hover:text-white p-2 -mr-2 rounded-md focus:outline-none focus-visible:outline-none"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/[0.06] text-white transition-colors active:bg-white/[0.1] focus:outline-none focus-visible:outline-none"
                 aria-label="Close menu"
               >
-                <XMarkIcon className="h-6 w-6" />
+                <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain px-3 pt-5 pb-4 space-y-6">
-              <section>
-                <p className="px-2.5 mb-1.5 text-xs font-semibold text-gray-500">
-                  Product
-                </p>
-                <ul className="space-y-0.5">
-                  {productLinks.map(item => {
-                    const Icon = item.icon;
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className="group flex items-start gap-3 rounded-lg p-2.5 cursor-pointer hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors"
-                          onClick={closeMobileMenu}
-                        >
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-gray-300 group-hover:bg-white/[0.1] group-hover:text-white transition-colors">
-                            <Icon className="h-4 w-4" aria-hidden />
-                          </span>
-                          <span className="min-w-0 pt-0.5">
-                            <span className="block text-sm font-semibold text-white leading-snug">
-                              {item.label}
-                            </span>
-                            <span className="block text-xs text-gray-500 mt-0.5 leading-snug">
-                              {item.description}
-                            </span>
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-
-              <ResourcesNavMenuMobile onNavigate={closeMobileMenu} />
+            <div
+              className={`flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6 transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                isMobileMenuVisible
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-3'
+              }`}
+            >
+              <ul className="space-y-0.5">
+                {primaryNavLinks.map(item => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={mobileTabClass(
+                        isNavPathActive(pathname, item.href)
+                      )}
+                      onClick={closeMobileMenu}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+                <ResourcesNavMenuMobile
+                  onNavigate={closeMobileMenu}
+                  menuOpen={isMobileMenuOpen}
+                />
+              </ul>
             </div>
 
-            <div className="shrink-0 border-t border-[var(--dashboard-border)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div
+              className={`shrink-0 border-t border-white/[0.06] px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] transition-opacity duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                isMobileMenuVisible ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
               {!isInitialized ? (
                 <div
-                  className="h-9 w-full rounded-lg bg-white/5 animate-pulse"
+                  className="h-12 w-full rounded-[10px] bg-white/5 animate-pulse"
                   aria-hidden
                 />
               ) : isAuthenticated ? (
                 <Button
                   href={ROUTES.DASHBOARD.MAIN}
-                  variant="secondary"
-                  size="sm"
+                  variant="primary"
+                  size="md"
                   fullWidth
                   onClick={closeMobileMenu}
                 >
                   Dashboard
                 </Button>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <Link
-                    href={ROUTES.AUTH.LOGIN}
-                    className={`${navLoginClass} w-full`}
-                    onClick={closeMobileMenu}
-                  >
-                    Login
-                  </Link>
-                  <Link
+                <div className="space-y-2.5">
+                  <Button
                     href={siteSignupPath('homepage')}
-                    className={`${navSignupClass} w-full`}
+                    variant="primary"
+                    size="md"
+                    fullWidth
                     onClick={closeMobileMenu}
                   >
                     Sign up
-                  </Link>
+                  </Button>
+                  <Button
+                    href={ROUTES.AUTH.LOGIN}
+                    variant="secondary"
+                    size="md"
+                    fullWidth
+                    onClick={closeMobileMenu}
+                  >
+                    Login
+                  </Button>
                 </div>
               )}
             </div>

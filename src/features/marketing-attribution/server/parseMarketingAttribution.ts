@@ -1,5 +1,9 @@
+import type { Database } from '@/libs/supabase/client';
 import type { MarketingUtmAttribution } from '../types';
 import { deriveSignupAttributionChannel } from '../utils/deriveSignupChannel';
+
+type SignupAttributionInsert =
+  Database['public']['Tables']['signup_attribution']['Insert'];
 
 const MAX_LEN = 512;
 
@@ -27,7 +31,7 @@ export function parseMarketingAttributionFromBody(
 
 export function toSignupAttributionRow(
   attribution?: MarketingUtmAttribution
-): Record<string, string | null> {
+): Omit<SignupAttributionInsert, 'user_id' | 'signed_up_at' | 'first_paid_at'> {
   if (!attribution) {
     return {
       utm_source: null,

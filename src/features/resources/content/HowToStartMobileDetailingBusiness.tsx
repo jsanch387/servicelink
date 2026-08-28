@@ -248,16 +248,17 @@ export function HowToStartMobileDetailingBusinessContent() {
         </p>
         <p className={pClasses}>
           Put those prices on a public page so customers stop asking “how much
-          for my Tahoe?” before they commit.{' '}
+          for my Tahoe?” before they commit. See the full 2026 ranges in{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'best-booking-app-for-mobile-detailers'
+              'how-much-to-charge-for-mobile-detailing-2026'
             )}
             className={linkClasses}
           >
-            A booking app for detailers
-          </Link>{' '}
-          lets you show sedan / SUV / truck pricing on each service.
+            how much to charge for mobile detailing
+          </Link>
+          . A booking app lets you show sedan / SUV / truck pricing on each
+          service.
         </p>
       </section>
 

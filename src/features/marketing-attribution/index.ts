@@ -9,6 +9,8 @@ export {
 
 export type {
   MarketingUtmAttribution,
+  PaidConversionPeriod,
+  PaidConversionReport,
   SaveSignupAttributionResult,
   SignupAttributionRow,
 } from './types';
@@ -42,6 +44,12 @@ export {
   markPendingSignupAttribution,
 } from './utils/pendingSignupAttribution';
 export { tryRecordSignupAttribution } from './utils/attributionApi';
+export { isInternalAnalyticsEmail } from './config/internalAnalyticsAllowlist';
+export {
+  buildPaidConversionReport,
+  isPaidAdChannel,
+  parsePaidConversionPeriod,
+} from './utils/paidConversion';
 export { trackAffonsoSignupOnce } from './utils/affonsoSignupTracking';
 export type { AffonsoSignupDetails } from './utils/affonsoSignupTracking';
 export { getAffonsoReferralId } from './utils/affonsoReferral';

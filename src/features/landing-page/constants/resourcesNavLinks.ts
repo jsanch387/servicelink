@@ -4,7 +4,14 @@ export type ResourcesNavItem = {
   label: string;
   href: string;
   description: string;
-  icon: 'book' | 'calendar' | 'deposit' | 'instagram' | 'start' | 'workshop';
+  icon:
+    | 'book'
+    | 'calendar'
+    | 'compare'
+    | 'deposit'
+    | 'instagram'
+    | 'start'
+    | 'workshop';
 };
 
 export type ResourcesNavColumn = {
@@ -12,17 +19,18 @@ export type ResourcesNavColumn = {
   items: readonly ResourcesNavItem[];
 };
 
-/** Column-based Resources menu — keep items short and scannable. */
+export const RESOURCES_NAV_VIEW_ALL: ResourcesNavItem = {
+  label: 'View all guides',
+  href: ROUTES.RESOURCES,
+  description: 'Free tips to grow your business',
+  icon: 'book',
+};
+
+/** Featured Resources only — full catalog lives on /resources. */
 export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] = [
   {
     heading: 'Guides',
     items: [
-      {
-        label: 'All guides',
-        href: ROUTES.RESOURCES,
-        description: 'Free tips to grow your business',
-        icon: 'book',
-      },
       {
         label: 'Start a business',
         href: ROUTES.RESOURCE_GUIDE(
@@ -32,24 +40,18 @@ export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] = [
         icon: 'start',
       },
       {
-        label: 'Best booking app',
-        href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
-        description: 'What to look for as a detailer',
-        icon: 'calendar',
-      },
-      {
-        label: 'Stop no-shows',
-        href: ROUTES.RESOURCE_GUIDE('stop-no-shows-deposits-mobile-detailing'),
-        description: 'Deposits and cancellation policy',
+        label: 'Detailing prices',
+        href: ROUTES.RESOURCE_GUIDE(
+          'how-much-to-charge-for-mobile-detailing-2026'
+        ),
+        description: 'What to charge in 2026',
         icon: 'deposit',
       },
       {
-        label: 'Instagram clients',
-        href: ROUTES.RESOURCE_GUIDE(
-          'how-mobile-detailers-get-clients-from-instagram-2026'
-        ),
-        description: 'Turn views into bookings',
-        icon: 'instagram',
+        label: 'ServiceLink vs Urable',
+        href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026'),
+        description: 'Lean booking vs heavy ops',
+        icon: 'compare',
       },
     ],
   },

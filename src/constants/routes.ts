@@ -116,6 +116,8 @@ export const ROUTES = {
     SETTINGS: '/dashboard/settings',
     CONTACT: '/dashboard/contact',
     UPGRADE: '/dashboard/upgrade',
+    /** Founder-only ad → paid conversion report. Not in dashboard nav. */
+    INTERNAL_ACQUISITION: '/dashboard/internal/acquisition',
   },
 } as const;
 
@@ -237,6 +239,9 @@ export const API_ROUTES = {
   WORKSHOP_CONVERTED: '/api/workshop/converted',
   /** Authenticated: write-once signup source attribution. */
   MARKETING_ATTRIBUTION_SIGNUP: '/api/attribution/signup',
+  /** Internal: first-touch signup → paid Pro conversion report. */
+  INTERNAL_ATTRIBUTION_PAID_CONVERSIONS:
+    '/api/internal/attribution/paid-conversions',
   /** Vercel Cron: day-before owner appointment reminder. */
   INTERNAL_CRON_BOOKING_REMINDERS: '/api/internal/cron/booking-reminders',
 } as const;

@@ -1235,6 +1235,54 @@ export type Database = {
           updated_at?: string;
         };
       };
+      signup_attribution: {
+        Row: {
+          user_id: string;
+          utm_source: string | null;
+          utm_medium: string | null;
+          utm_campaign: string | null;
+          utm_content: string | null;
+          utm_term: string | null;
+          fbclid: string | null;
+          gclid: string | null;
+          landing_path: string | null;
+          referrer: string | null;
+          channel: string | null;
+          signed_up_at: string;
+          first_paid_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_term?: string | null;
+          fbclid?: string | null;
+          gclid?: string | null;
+          landing_path?: string | null;
+          referrer?: string | null;
+          channel?: string | null;
+          signed_up_at?: string;
+          first_paid_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_term?: string | null;
+          fbclid?: string | null;
+          gclid?: string | null;
+          landing_path?: string | null;
+          referrer?: string | null;
+          channel?: string | null;
+          signed_up_at?: string;
+          first_paid_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
   };
 };

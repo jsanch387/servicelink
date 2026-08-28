@@ -66,6 +66,7 @@ import { hasMultipleActiveSubscriptions } from '@/features/pricing/server/checkA
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
+import { markSignupAttributionFirstPaid } from '@/features/marketing-attribution/server/markSignupAttributionFirstPaid';
 import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
@@ -1192,6 +1193,12 @@ export async function POST(request: NextRequest) {
     void sendProWelcomeIfFirstPaidPro(supabase, { userId }).catch(err => {
       console.error('[stripe:webhook] pro welcome email (checkout)', err);
     });
+    void markSignupAttributionFirstPaid(supabase, { userId }).catch(err => {
+      console.error(
+        '[stripe:webhook] signup attribution first paid (checkout)',
+        err
+      );
+    });
   }
 
   if (event.type === 'checkout.session.expired') {
@@ -1364,6 +1371,14 @@ export async function POST(request: NextRequest) {
     }).catch(err => {
       console.error(
         '[stripe:webhook] pro welcome email (subscription.updated)',
+        err
+      );
+    });
+    void markSignupAttributionFirstPaid(supabase, {
+      stripeSubscriptionId: subId,
+    }).catch(err => {
+      console.error(
+        '[stripe:webhook] signup attribution first paid (subscription.updated)',
         err
       );
     });

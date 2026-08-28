@@ -1,5 +1,6 @@
 'use client';
 
+import { trackMetaSubscribeOnce } from '@/features/analytics/utils/metaSubscribeTracking';
 import { PRO_WELCOME_MODAL_SEEN_KEY } from '@/features/pricing/types';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ export function useSettingsUrlEffects(checkoutSuccessProp = false) {
     const shouldShow = fromUrl || checkoutSuccessProp;
     if (!shouldShow) return;
     try {
+      trackMetaSubscribeOnce();
       const seen = window.localStorage.getItem(PRO_WELCOME_MODAL_SEEN_KEY);
       if (!seen) setShowProWelcomeModal(true);
     } catch {

@@ -149,7 +149,8 @@ export function deriveSignupAttributionChannel(
     source === 'fb' ||
     medium === 'ig' ||
     medium === 'fb' ||
-    Boolean(attribution.fbclid)
+    Boolean(attribution.fbclid) ||
+    ((source === 'instagram' || source === 'ig') && isPaidMedium(medium))
   ) {
     return 'meta_ads';
   }

@@ -9,6 +9,7 @@ import {
   CalendarDaysIcon,
   ChevronDownIcon,
   DevicePhoneMobileIcon,
+  ScaleIcon,
   TruckIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import {
   RESOURCES_NAV_COLUMNS,
+  RESOURCES_NAV_VIEW_ALL,
   type ResourcesNavItem,
 } from '../constants/resourcesNavLinks';
 
@@ -25,6 +27,7 @@ const CLOSE_DELAY_MS = 180;
 const NAV_ICONS = {
   book: BookOpenIcon,
   calendar: CalendarDaysIcon,
+  compare: ScaleIcon,
   deposit: BanknotesIcon,
   instagram: DevicePhoneMobileIcon,
   start: TruckIcon,
@@ -73,9 +76,11 @@ function useResourcesMenuOpen() {
 function ResourcesNavItemLink({
   item,
   onNavigate,
+  trailing,
 }: {
   item: ResourcesNavItem;
   onNavigate: () => void;
+  trailing?: React.ReactNode;
 }) {
   const Icon = NAV_ICONS[item.icon];
 
@@ -89,7 +94,7 @@ function ResourcesNavItemLink({
       <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-gray-300 group-hover:bg-white/[0.1] group-hover:text-white transition-colors">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
-      <span className="min-w-0 pt-0.5">
+      <span className="min-w-0 flex-1 pt-0.5">
         <span className="block text-sm font-semibold text-white leading-snug">
           {item.label}
         </span>
@@ -97,6 +102,7 @@ function ResourcesNavItemLink({
           {item.description}
         </span>
       </span>
+      {trailing}
     </Link>
   );
 }
@@ -198,12 +204,12 @@ export function ResourcesNavMenuDesktop() {
 
             <div className="mt-6 pt-4 border-t border-white/[0.06] flex justify-center">
               <Link
-                href={ROUTES.RESOURCES}
+                href={RESOURCES_NAV_VIEW_ALL.href}
                 role="menuitem"
                 className="group inline-flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white cursor-pointer transition-colors"
                 onClick={closeMenu}
               >
-                View all guides
+                {RESOURCES_NAV_VIEW_ALL.label}
                 <span className="flex h-5 w-5 items-center justify-center rounded-full border border-white/15 group-hover:border-white/30 transition-colors">
                   <ArrowRightIcon className="h-3 w-3" aria-hidden />
                 </span>
@@ -218,28 +224,110 @@ export function ResourcesNavMenuDesktop() {
 
 type ResourcesNavMenuMobileProps = {
   onNavigate: () => void;
+  /** When the hamburger closes, collapse Resources so it starts closed next open. */
+  menuOpen: boolean;
 };
 
-/** Flat, scannable Resources section for the mobile hamburger menu. */
+const featuredGuides =
+  RESOURCES_NAV_COLUMNS.find(column => column.heading === 'Guides')?.items ??
+  [];
+const learnItems =
+  RESOURCES_NAV_COLUMNS.find(column => column.heading === 'Learn')?.items ?? [];
+
+const MOBILE_RESOURCES_LINKS: ResourcesNavItem[] = [
+  ...featuredGuides,
+  ...learnItems,
+  RESOURCES_NAV_VIEW_ALL,
+];
+
+/** Resources tab that expands to featured guides + View all. */
 export function ResourcesNavMenuMobile({
   onNavigate,
+  menuOpen,
 }: ResourcesNavMenuMobileProps) {
+  const pathname = usePathname();
+  const [expanded, setExpanded] = useState(false);
+  const panelId = useId();
+  const isActive =
+    pathname.startsWith(ROUTES.RESOURCES) ||
+    pathname.startsWith(ROUTES.WORKSHOP);
+
+  useEffect(() => {
+    if (!menuOpen) setExpanded(false);
+  }, [menuOpen]);
+
   return (
-    <div className="space-y-5">
-      {RESOURCES_NAV_COLUMNS.map(column => (
-        <div key={column.heading}>
-          <p className="px-2.5 mb-1.5 text-xs font-semibold text-gray-500">
-            {column.heading}
-          </p>
-          <ul className="space-y-0.5">
-            {column.items.map(item => (
-              <li key={item.href}>
-                <ResourcesNavItemLink item={item} onNavigate={onNavigate} />
-              </li>
-            ))}
+    <li>
+      <button
+        type="button"
+        onClick={() => setExpanded(prev => !prev)}
+        className={`flex w-full items-center justify-between rounded-2xl px-3 py-3.5 text-[1.7rem] font-semibold tracking-tight leading-none cursor-pointer transition-colors focus:outline-none focus-visible:outline-none ${
+          isActive ? 'text-white' : 'text-white/50 active:text-white'
+        }`}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+      >
+        Resources
+        <span
+          className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+            expanded
+              ? 'bg-white/15 text-white'
+              : 'bg-white/[0.06] text-white/60'
+          }`}
+        >
+          <ChevronDownIcon
+            className={`h-4 w-4 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              expanded ? 'rotate-180' : ''
+            }`}
+            aria-hidden
+          />
+        </span>
+      </button>
+      <div
+        id={panelId}
+        aria-hidden={!expanded}
+        inert={!expanded ? true : undefined}
+        className={`grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <ul
+            className={`mb-2 mt-1 rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.06] p-1.5 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              expanded
+                ? 'opacity-100 translate-y-0'
+                : 'opacity-0 -translate-y-1.5'
+            }`}
+          >
+            {MOBILE_RESOURCES_LINKS.map(item => {
+              const isViewAll = item.href === RESOURCES_NAV_VIEW_ALL.href;
+              return (
+                <li
+                  key={item.href}
+                  className={
+                    isViewAll
+                      ? 'mt-0.5 border-t border-white/[0.06] pt-0.5'
+                      : ''
+                  }
+                >
+                  <ResourcesNavItemLink
+                    item={item}
+                    onNavigate={onNavigate}
+                    trailing={
+                      isViewAll ? (
+                        <ArrowRightIcon
+                          className="mt-2.5 h-3.5 w-3.5 shrink-0 text-white/45"
+                          aria-hidden
+                        />
+                      ) : null
+                    }
+                  />
+                </li>
+              );
+            })}
           </ul>
         </div>
-      ))}
-    </div>
+      </div>
+    </li>
   );
 }

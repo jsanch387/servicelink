@@ -6,10 +6,10 @@ Scanned from `src/app/api/stripe/webhook/route.ts` (shared handler) and every Co
 
 Two destinations, different scopes:
 
-| Destination                         | URL                          | Stripe scope                    | Env secret                      |
-| ----------------------------------- | ---------------------------- | ------------------------------- | ------------------------------- |
-| Platform (ServiceLink Pro billing)  | `/api/stripe/webhook`        | **Your account**                | `STRIPE_WEBHOOK_SECRET`         |
-| Connect (merchant / customer money) | `/api/stripe/webhook-connect` | **Connected and v2 accounts**   | `STRIPE_CONNECT_WEBHOOK_SECRET` |
+| Destination                         | URL                           | Stripe scope                  | Env secret                      |
+| ----------------------------------- | ----------------------------- | ----------------------------- | ------------------------------- |
+| Platform (ServiceLink Pro billing)  | `/api/stripe/webhook`         | **Your account**              | `STRIPE_WEBHOOK_SECRET`         |
+| Connect (merchant / customer money) | `/api/stripe/webhook-connect` | **Connected and v2 accounts** | `STRIPE_CONNECT_WEBHOOK_SECRET` |
 
 All live customer charges are **direct charges** on the connected account (`stripe.checkout.sessions.create` / PaymentIntents with `{ stripeAccount }`). Those events only arrive on the Connect destination.
 
@@ -19,17 +19,17 @@ All live customer charges are **direct charges** on the connected account (`stri
 
 Select **all** of these on the destination whose URL is `https://myservicelink.app/api/stripe/webhook-connect` (and the same list in test mode).
 
-| Event                              | Required | Why                                                                                                                                      |
-| ---------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `checkout.session.completed`       | **Yes**  | Booking checkout, membership signup, maintenance card enroll, create-payment links                                                       |
-| `checkout.session.expired`         | **Yes**  | Create-payment links: mark `payment_requests` expired after 24h                                                                          |
-| `payment_intent.succeeded`         | **Yes**  | Create-payment Tap to Pay → `payment_requests` paid                                                                                      |
-| `payment_intent.canceled`          | **Yes**  | Create-payment Tap to Pay → canceled                                                                                                     |
-| `payment_intent.payment_failed`    | **Yes**  | Create-payment Tap to Pay → failed                                                                                                       |
-| `invoice.paid`                     | **Yes**  | Membership renewal: ledger + customer receipt. First Checkout invoice is skipped for the receipt (`subscription_create`)                 |
-| `invoice.payment_failed`           | **Yes**  | Membership dunning email + `last_payment_failed_at`                                                                                      |
-| `customer.subscription.updated`    | **Yes**  | Membership period sync + next-visit email/SMS + owner nudge                                                                              |
-| `customer.subscription.deleted`    | **Yes**  | Membership ended → cancel email + status                                                                                                 |
+| Event                           | Required | Why                                                                                                                      |
+| ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `checkout.session.completed`    | **Yes**  | Booking checkout, membership signup, maintenance card enroll, create-payment links                                       |
+| `checkout.session.expired`      | **Yes**  | Create-payment links: mark `payment_requests` expired after 24h                                                          |
+| `payment_intent.succeeded`      | **Yes**  | Create-payment Tap to Pay → `payment_requests` paid                                                                      |
+| `payment_intent.canceled`       | **Yes**  | Create-payment Tap to Pay → canceled                                                                                     |
+| `payment_intent.payment_failed` | **Yes**  | Create-payment Tap to Pay → failed                                                                                       |
+| `invoice.paid`                  | **Yes**  | Membership renewal: ledger + customer receipt. First Checkout invoice is skipped for the receipt (`subscription_create`) |
+| `invoice.payment_failed`        | **Yes**  | Membership dunning email + `last_payment_failed_at`                                                                      |
+| `customer.subscription.updated` | **Yes**  | Membership period sync + next-visit email/SMS + owner nudge                                                              |
+| `customer.subscription.deleted` | **Yes**  | Membership ended → cancel email + status                                                                                 |
 
 If any required event is missing, Stripe still charges the card and our app stays silent (same failure mode as the weekly membership renewal).
 
@@ -106,11 +106,11 @@ Handler is one route. It branches on `event.type`, then on Stripe `metadata.kind
 
 Safe to leave on. The handler returns 200 and does nothing.
 
-| Event                                       | Notes                                                                                          |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `checkout.session.async_payment_succeeded`  | For delayed methods (ACH, etc.). We do not fulfill on this event. Card Checkout does not need it |
-| `checkout.session.async_payment_failed`     | Same. Unused                                                                                   |
-| `account.updated`                           | Planned for `payment_accounts` drift; onboarding still uses return-URL sync                    |
+| Event                                      | Notes                                                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `checkout.session.async_payment_succeeded` | For delayed methods (ACH, etc.). We do not fulfill on this event. Card Checkout does not need it |
+| `checkout.session.async_payment_failed`    | Same. Unused                                                                                     |
+| `account.updated`                          | Planned for `payment_accounts` drift; onboarding still uses return-URL sync                      |
 
 ---
 
@@ -118,16 +118,16 @@ Safe to leave on. The handler returns 200 and does nothing.
 
 These showed up on the Connect destination during the weekly renewal and are easy to confuse with “we got the webhook.”
 
-| Event / Dashboard label | Why we skip it                                                                 |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| `invoice.upcoming` (“invoice incoming”) | Heads-up before the invoice exists. No membership side effects                 |
-| `balance.available`                     | Payout/funds availability. Transactions page reads balance live                |
-| `invoice.created` / `invoice.finalized` | We act on paid / payment_failed only                                           |
-| `invoice.payment_succeeded`             | Prefer `invoice.paid` (handles `$0` and paid invoices)                         |
-| `charge.succeeded`                      | Redundant with Checkout / PaymentIntent / invoice events                       |
-| `charge.refunded`                       | Transactions list is live Stripe                                               |
-| `payout.paid` / `payout.failed`         | Same                                                                           |
-| `customer.subscription.trial_will_end`  | Platform Pro leftover; memberships have no trial                               |
+| Event / Dashboard label                 | Why we skip it                                                  |
+| --------------------------------------- | --------------------------------------------------------------- |
+| `invoice.upcoming` (“invoice incoming”) | Heads-up before the invoice exists. No membership side effects  |
+| `balance.available`                     | Payout/funds availability. Transactions page reads balance live |
+| `invoice.created` / `invoice.finalized` | We act on paid / payment_failed only                            |
+| `invoice.payment_succeeded`             | Prefer `invoice.paid` (handles `$0` and paid invoices)          |
+| `charge.succeeded`                      | Redundant with Checkout / PaymentIntent / invoice events        |
+| `charge.refunded`                       | Transactions list is live Stripe                                |
+| `payout.paid` / `payout.failed`         | Same                                                            |
+| `customer.subscription.trial_will_end`  | Platform Pro leftover; memberships have no trial                |
 
 ---
 
@@ -135,12 +135,12 @@ These showed up on the Connect destination during the weekly renewal and are eas
 
 `/api/stripe/webhook` — **Your account** only. ServiceLink Pro for the business owner.
 
-| Event                           | Required | Why                                      |
-| ------------------------------- | -------- | ---------------------------------------- |
-| `checkout.session.completed`    | Yes      | First paid Pro                           |
-| `customer.subscription.updated` | Yes      | Pro renewal / past_due / cancel-at-end   |
-| `customer.subscription.deleted` | Yes      | Pro ended → Free                         |
-| `invoice.payment_failed`        | Yes      | Owner payment-failed email               |
+| Event                           | Required | Why                                    |
+| ------------------------------- | -------- | -------------------------------------- |
+| `checkout.session.completed`    | Yes      | First paid Pro                         |
+| `customer.subscription.updated` | Yes      | Pro renewal / past_due / cancel-at-end |
+| `customer.subscription.deleted` | Yes      | Pro ended → Free                       |
+| `invoice.payment_failed`        | Yes      | Owner payment-failed email             |
 
 Do **not** put membership / booking / payment-link events only on this destination. They fire on the connected account and will never arrive here.
 

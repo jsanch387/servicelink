@@ -29,6 +29,110 @@ export interface GuideMeta {
 
 export const GUIDES: GuideMeta[] = [
   {
+    slug: 'servicelink-vs-urable-2026',
+    title: 'ServiceLink vs Urable (2026)',
+    subheading:
+      'Compare ServiceLink and Urable for mobile detailing—why detailers pick the leaner, cleaner booking app over a heavier field-service suite.',
+    coverImage: MARKETING_IMAGES.resources.comparisonUrable,
+    coverImageAlt:
+      'Detailer holding a phone with a clean booking dashboard while a luxury SUV is detailed in a driveway',
+    keyTakeaways: [
+      'ServiceLink is a lean booking app; Urable is a broader field-service platform.',
+      'Less bloat means faster setup and a UI you can run between jobs.',
+      'Customers finish a clean guest checkout—no app download.',
+      'Pick Urable if you want a dense ops suite; pick ServiceLink to stay organized and simple.',
+    ],
+    metaDescription:
+      'ServiceLink vs Urable for mobile detailers in 2026. Compare booking links, setup time, UI clutter, and which app stays lean day to day.',
+    keywords: [
+      'ServiceLink vs Urable',
+      'Urable alternative',
+      'Urable vs ServiceLink',
+      'Urable detailing app',
+      'best app for mobile detailers 2026',
+      'detailing booking software comparison',
+      'field service software for detailers',
+      'simple detailing booking app',
+      'ServiceLink',
+    ],
+    datePublished: '2026-08-27',
+    dateModified: '2026-08-27',
+    faqs: [
+      {
+        question: 'Is ServiceLink better than Urable for mobile detailers?',
+        answer:
+          'For solo operators and small teams who want a clean booking link and a simple daily dashboard, ServiceLink is usually the better fit. Urable can appeal to shops that want a heavier field-service toolkit and do not mind more setup.',
+      },
+      {
+        question: 'What is the main difference between ServiceLink and Urable?',
+        answer:
+          'ServiceLink is built around a shareable booking page, vehicle-based prices, availability, and deposits. Urable is a broader field-service platform with more modules. The tradeoff is simplicity versus a denser ops suite.',
+      },
+      {
+        question: 'Does ServiceLink replace a full CRM like Urable?',
+        answer:
+          'ServiceLink covers the jobs most mobile detailers run every day: bookings, services, calendar, quotes, and payments. If you need a large field-service stack, Urable may still fit. Most owner-operators do not need that weight.',
+      },
+      {
+        question: 'How do I try ServiceLink?',
+        answer:
+          'Create a free booking page, add your services and availability, then share your link in Instagram, Google, and texts—often the same day.',
+      },
+    ],
+  },
+  {
+    slug: 'how-much-to-charge-for-mobile-detailing-2026',
+    title: 'How Much to Charge for Mobile Detailing in 2026',
+    subheading:
+      'Typical U.S. prices for washes, interiors, and full details by vehicle size—plus add-ons, trip fees, and how to publish a menu customers can book.',
+    coverImage: MARKETING_IMAGES.resources.pricing,
+    coverImageAlt:
+      'Wash bucket, microfiber towel, and foam cannon on a wet driveway beside a dark SUV',
+    keyTakeaways: [
+      'Publish packages by sedan / SUV / truck instead of quoting every job in DMs.',
+      'Full details often land $200–$380 sedan and $260–$480 SUV in mid-cost markets.',
+      'Charge extra for pet hair, heavy soil, and long drives—do not hide it in the base price.',
+      'If you are booked two weeks out, raise the cheap package first.',
+    ],
+    metaDescription:
+      'How much to charge for mobile detailing in 2026. See typical sedan, SUV, and truck prices, add-ons, and how to put your menu on a booking page.',
+    keywords: [
+      'how much to charge for mobile detailing',
+      'mobile detailing prices 2026',
+      'mobile detailing price list',
+      'how much is a mobile car detail',
+      'car detailing prices sedan SUV',
+      'mobile detailing rates',
+      'how to price mobile detailing',
+      'detailing package prices',
+      'ServiceLink',
+    ],
+    datePublished: '2026-08-27',
+    dateModified: '2026-08-27',
+    faqs: [
+      {
+        question: 'How much should I charge for a mobile full detail?',
+        answer:
+          'In many mid-cost U.S. markets, a solo operator charges about $200–$380 for a sedan full detail and $260–$480 for an SUV. Trucks and neglected interiors sit higher. Price your local market, not the cheapest Facebook post.',
+      },
+      {
+        question: 'How much is a mobile interior detail?',
+        answer:
+          'A thorough interior often runs $150–$260 for a sedan and $180–$320 for an SUV, before pet hair or heavy soil. If the car is packed with hair or trash, add a surcharge instead of eating the time.',
+      },
+      {
+        question: 'Should I charge more for SUVs and trucks?',
+        answer:
+          'Yes. More glass, more carpet, and more time. Publish three sizes on each package so customers stop asking you to quote a Tahoe over text.',
+      },
+      {
+        question: 'How do I show my detailing prices online?',
+        answer:
+          'Put sedan, SUV, and truck prices on a public booking page so people pick a package and a time. ServiceLink lets you do that on a shareable link—no app download for the customer.',
+      },
+    ],
+  },
+  {
     slug: 'how-to-start-a-mobile-detailing-business-2026',
     title: 'How to Start a Mobile Detailing Business in 2026',
     subheading:

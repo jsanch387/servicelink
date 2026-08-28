@@ -35,8 +35,11 @@ export const MARKETING_IMAGES = {
     instagram: '/marketing/resources/guide-instagram-cover.webp',
     comparison2026:
       '/marketing/resources/guide-servicelink-vs-detailermade-cover.webp',
+    comparisonUrable:
+      '/marketing/resources/guide-servicelink-vs-urable-cover.webp',
     startBusiness:
       '/marketing/resources/guide-start-mobile-detailing-cover.webp',
+    pricing: '/marketing/resources/guide-mobile-detailing-pricing-cover.webp',
   },
   store: {
     googlePlay: '/store/google-play.png',
