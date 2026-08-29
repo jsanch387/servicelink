@@ -20,6 +20,13 @@ export const MARKETING_IMAGES = {
     heroMock: '/marketing/landing/landing-page-mock.png',
     display: '/marketing/landing/landing-page-display.png',
   },
+  shops: {
+    blacklabel: '/marketing/shops/blacklabel.png',
+    nanoblue: '/marketing/shops/nanoblue.png',
+    ridefresh: '/marketing/shops/ridefresh.png',
+    apexmobile: '/marketing/shops/apexmobile.png',
+    elev8te: '/marketing/shops/elev8te.png',
+  },
   marketplace: {
     boat: '/marketplace/boat.png',
     ceramic: '/marketplace/ceramic.png',

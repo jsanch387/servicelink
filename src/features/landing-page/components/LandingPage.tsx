@@ -1,16 +1,16 @@
 import { MarketingGalaxyBackground } from '@/components/shared';
 import React from 'react';
-import { DetailerFeaturesSection } from './DetailerFeaturesSection';
 import { FAQSection } from './FAQSection';
 import { HeroSection } from './HeroSection';
-import { HowItWorksSection } from './HowItWorksSection';
+import { LandingCloseCta } from './LandingCloseCta';
+import { LandingFeatureTrio } from './LandingFeatureTrio';
+import { LandingHowItWorksSteps } from './LandingHowItWorksSteps';
 import { LandingPageStructuredData } from './LandingPageStructuredData';
-import { LandingPricingSection } from './LandingPricingSection';
+import { LandingStatsBar } from './LandingStatsBar';
+import { LandingInstagramSection } from './LandingInstagramSection';
 import { MarketingFooter } from './MarketingFooter';
 import { MarketingNavigation } from './MarketingNavigation';
-import { ProblemSolutionSection } from './ProblemSolutionSection';
 import { TestimonialsSection } from './TestimonialsSection';
-import { TrustedByStripSection } from './TrustedByStripSection';
 
 export const LandingPage: React.FC = () => {
   return (
@@ -21,13 +21,13 @@ export const LandingPage: React.FC = () => {
         <MarketingNavigation />
         <main id="main-content" aria-label="Main content">
           <HeroSection />
+          <LandingStatsBar />
           <TestimonialsSection />
-          <TrustedByStripSection />
-          <DetailerFeaturesSection />
-          <HowItWorksSection />
-          <ProblemSolutionSection />
-          <LandingPricingSection />
+          <LandingHowItWorksSteps />
+          <LandingFeatureTrio />
+          <LandingInstagramSection />
           <FAQSection />
+          <LandingCloseCta />
         </main>
         <MarketingFooter />
       </div>

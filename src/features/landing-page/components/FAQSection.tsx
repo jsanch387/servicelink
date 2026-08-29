@@ -8,10 +8,7 @@ export const FAQSection: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section
-      id="faq"
-      className="py-16 sm:py-20 md:py-24 px-4 sm:px-6 border-t border-white/[0.06]"
-    >
+    <section id="faq" className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         <header className="text-center mb-12 sm:mb-14">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">

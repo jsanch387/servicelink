@@ -145,6 +145,11 @@ body {
   will-change: transform;
 }
 
+.animate-marquee-shops {
+  animation: marquee 46s linear infinite;
+  will-change: transform;
+}
+
 @keyframes marquee-ltr {
   0% {
     transform: translateX(-50%);
@@ -194,8 +199,89 @@ body {
   animation: marketing-streak-pulse 8s ease-in-out infinite;
 }
 
+@keyframes how-it-works-step-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(255, 255, 255, 0.08),
+      0 0 18px rgba(255, 255, 255, 0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(255, 255, 255, 0.04),
+      0 0 32px rgba(255, 255, 255, 0.4);
+  }
+}
+
+@keyframes how-it-works-line-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes how-it-works-line-fill-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes how-it-works-spark {
+  from {
+    left: 0;
+    opacity: 0.2;
+  }
+  to {
+    left: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes how-it-works-spark-y {
+  from {
+    top: 0;
+    opacity: 0.2;
+  }
+  to {
+    top: 100%;
+    opacity: 1;
+  }
+}
+
+.animate-how-it-works-step-glow {
+  animation: how-it-works-step-glow 1.15s ease-in-out infinite;
+}
+
+.animate-how-it-works-line-fill {
+  animation: how-it-works-line-fill 700ms ease-out forwards;
+}
+
+.animate-how-it-works-line-fill-y {
+  animation: how-it-works-line-fill-y 700ms ease-out forwards;
+}
+
+.animate-how-it-works-spark {
+  animation: how-it-works-spark 700ms ease-out forwards;
+}
+
+.animate-how-it-works-spark-y {
+  animation: how-it-works-spark-y 700ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marketing-streak-pulse {
+    animation: none;
+  }
+  .animate-how-it-works-step-glow,
+  .animate-how-it-works-line-fill,
+  .animate-how-it-works-line-fill-y,
+  .animate-how-it-works-spark,
+  .animate-how-it-works-spark-y {
     animation: none;
   }
 }

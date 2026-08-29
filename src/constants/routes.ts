@@ -4,6 +4,7 @@ export const ROUTES = {
   // Public routes (smooth scroll sections)
   HOME: '#home',
   FEATURES: '#features',
+  HOW_IT_WORKS: '#how-it-works',
   PRICING: '#pricing',
   ABOUT: '#about',
   CONTACT: '#contact',

@@ -10,7 +10,7 @@ export const LandingPricingSection: React.FC = () => {
   return (
     <section
       id="pricing"
-      className="py-16 sm:py-24 md:py-28 px-4 sm:px-6"
+      className="scroll-mt-24 py-16 sm:py-24 md:py-28 px-4 sm:px-6"
       aria-labelledby="landing-pricing-heading"
     >
       <div className="max-w-6xl mx-auto">

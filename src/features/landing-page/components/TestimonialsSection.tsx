@@ -1,82 +1,40 @@
 'use client';
 
+import { IOS_APP_STORE_URL } from '@/constants/appStore';
 import { GlassCard } from '@/components/shared';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  LANDING_TESTIMONIALS,
+  type LandingTestimonial,
+} from '../data/landingTestimonials';
 
-type Testimonial = {
-  name: string;
-  business: string;
-  initials: string;
-  content: string;
-};
-
-const testimonials: Testimonial[] = [
-  {
-    name: 'Mike A.',
-    business: 'Precision Auto Detailing',
-    initials: 'MA',
-    content:
-      'Just one link in my bio, customers see my services and book. No more back and forth DMs.',
-  },
-  {
-    name: 'Sarah K.',
-    business: 'Gloss Boss Detailing',
-    initials: 'SK',
-    content:
-      'Setup took 2 minutes. My clients love how clean it looks. Bookings went up right away.',
-  },
-  {
-    name: 'David M.',
-    business: 'Diamond Shine Detail',
-    initials: 'DM',
-    content:
-      'Finally looks professional without paying for a full website. Exactly what I needed.',
-  },
-  {
-    name: 'James R.',
-    business: 'Revive Mobile Detail',
-    initials: 'JR',
-    content:
-      'Customers book straight from my link. I spend less time texting and more time detailing.',
-  },
-];
-
-function GoogleReviewBadge() {
+function AppStoreReviewBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-300">
-      <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5">
-        <path
-          fill="#EA4335"
-          d="M12 10.2v3.92h5.45c-.24 1.26-.95 2.33-2.01 3.05l3.24 2.52c1.89-1.74 2.98-4.31 2.98-7.37 0-.72-.06-1.41-.2-2.08H12z"
-        />
-        <path
-          fill="#34A853"
-          d="M12 21.5c2.7 0 4.97-.89 6.63-2.41l-3.24-2.52c-.9.61-2.05.97-3.39.97-2.61 0-4.82-1.76-5.61-4.13H3.04v2.6A9.99 9.99 0 0012 21.5z"
-        />
-        <path
-          fill="#4A90E2"
-          d="M6.39 13.41A5.99 5.99 0 016.08 12c0-.49.11-.97.31-1.41v-2.6H3.04A9.99 9.99 0 002 12c0 1.61.39 3.14 1.04 4.59l3.35-2.6z"
-        />
-        <path
-          fill="#FBBC05"
-          d="M12 6.46c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.96 3.47 14.69 2.5 12 2.5A9.99 9.99 0 003.04 7.99l3.35 2.6C7.18 8.22 9.39 6.46 12 6.46z"
-        />
+    <a
+      href={IOS_APP_STORE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-white/[0.12] bg-white/[0.03] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-300 transition-colors hover:border-white/20 hover:text-white"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden className="h-3 w-3 fill-current">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
       </svg>
-      Google Review
-    </span>
+      App Store
+    </a>
   );
 }
 
 function StarRating() {
   return (
     <div
-      className="flex gap-px text-amber-400 flex-shrink-0"
+      className="flex flex-shrink-0 gap-px text-amber-400"
       aria-label="5 star rating"
     >
       {[...Array(5)].map((_, i) => (
         <svg
           key={i}
-          className="w-4 h-4"
+          className="h-3.5 w-3.5"
           fill="currentColor"
           viewBox="0 0 20 20"
           aria-hidden
@@ -88,41 +46,36 @@ function StarRating() {
   );
 }
 
-function TestimonialCard({
-  testimonial,
-  className = '',
-}: {
-  testimonial: Testimonial;
-  className?: string;
-}) {
+function TestimonialCard({ testimonial }: { testimonial: LandingTestimonial }) {
   return (
     <GlassCard
-      padding="md"
+      padding="none"
       rounded="rounded-2xl"
       showBlur={false}
-      className={`h-full min-h-[200px] md:min-h-[220px] flex flex-col group hover:border-white/15 transition-colors duration-300 !pt-4 !px-5 sm:!px-6 md:!px-7 !pb-5 md:!pb-6 ${className}`}
+      className="flex h-full flex-col !border-white/15 !bg-white/[0.10]"
     >
-      <div className="flex flex-col flex-1 min-h-0">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <GoogleReviewBadge />
+      <div className="flex h-full flex-col px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-3">
+          <AppStoreReviewBadge />
           <StarRating />
         </div>
-        <p className="text-gray-300 text-[15px] sm:text-base leading-[1.6] mb-5 flex-1 min-h-0">
+        <p className="mt-4 line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold leading-snug text-white">
+          {testimonial.title}
+        </p>
+        <p className="mt-2 min-h-[3.9rem] flex-1 line-clamp-3 text-[13px] leading-relaxed text-zinc-300">
           {testimonial.content}
         </p>
-        <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.08] flex-shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center font-semibold text-gray-400 text-sm tracking-tight">
-              {testimonial.initials}
-            </div>
-            <div className="min-w-0">
-              <p className="font-medium text-white text-sm truncate">
-                {testimonial.name}
-              </p>
-              <p className="text-xs text-gray-500 truncate mt-0.5">
-                {testimonial.business}
-              </p>
-            </div>
+        <div className="mt-5 flex shrink-0 items-center gap-3 border-t border-white/10 pt-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-[11px] font-semibold text-zinc-200">
+            {testimonial.initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-medium text-white">
+              {testimonial.name}
+            </p>
+            <p className="mt-0.5 truncate text-[11px] text-zinc-400">
+              App Store · {testimonial.date}
+            </p>
           </div>
         </div>
       </div>
@@ -130,96 +83,111 @@ function TestimonialCard({
   );
 }
 
-function MobileTestimonialsScroller() {
+const ARROW_CLASS =
+  'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.04] text-gray-300 transition-colors hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-30';
+
+function TestimonialsCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const lastIndex = LANDING_TESTIMONIALS.length - 1;
 
-  useEffect(() => {
+  const syncActiveIndex = useCallback(() => {
     const root = scrollRef.current;
     if (!root) return;
-
-    const slides = root.querySelectorAll('[data-testimonial-slide]');
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
-            const index = Number(
-              (entry.target as HTMLElement).dataset.testimonialSlide
-            );
-            if (!Number.isNaN(index)) setActiveIndex(index);
-          }
-        });
-      },
-      { root, threshold: [0.55, 0.75] }
+    const slides = root.querySelectorAll<HTMLElement>(
+      '[data-testimonial-slide]'
     );
-
-    slides.forEach(slide => observer.observe(slide));
-    return () => observer.disconnect();
+    const rootLeft = root.getBoundingClientRect().left;
+    let best = 0;
+    let bestDist = Infinity;
+    slides.forEach((slide, index) => {
+      const dist = Math.abs(slide.getBoundingClientRect().left - rootLeft);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = index;
+      }
+    });
+    setActiveIndex(best);
   }, []);
 
   const scrollToIndex = useCallback((index: number) => {
     const root = scrollRef.current;
-    const slide = root?.querySelector(
+    const slide = root?.querySelector<HTMLElement>(
       `[data-testimonial-slide="${index}"]`
-    ) as HTMLElement | null;
-    slide?.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'center',
-      block: 'nearest',
-    });
+    );
+    if (!root || !slide) return;
+    const left =
+      slide.getBoundingClientRect().left -
+      root.getBoundingClientRect().left +
+      root.scrollLeft;
+    root.scrollTo({ left, behavior: 'smooth' });
     setActiveIndex(index);
   }, []);
 
   return (
-    <div className="md:hidden">
+    <div className="relative">
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide -mx-4 px-3 pb-1 touch-pan-x overscroll-x-contain"
-        aria-label="Customer reviews"
+        onScroll={syncActiveIndex}
+        className="scrollbar-hide flex items-stretch snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [scrollbar-width:none]"
+        aria-label="App Store reviews"
         aria-roledescription="carousel"
       >
-        {testimonials.map((testimonial, index) => (
+        {LANDING_TESTIMONIALS.map((testimonial, index) => (
           <div
-            key={testimonial.name}
+            key={testimonial.id}
             data-testimonial-slide={index}
-            className="w-[calc(100vw-1.5rem)] shrink-0 snap-center"
+            className="flex w-[min(300px,82vw)] shrink-0 snap-start sm:w-[320px]"
             role="group"
             aria-roledescription="slide"
-            aria-label={`Review ${index + 1} of ${testimonials.length}`}
+            aria-label={`Review ${index + 1} of ${LANDING_TESTIMONIALS.length}`}
           >
-            <TestimonialCard
-              testimonial={testimonial}
-              className="min-h-[220px] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-            />
+            <TestimonialCard testimonial={testimonial} />
           </div>
         ))}
       </div>
 
-      <div
-        className="mt-5 flex items-center justify-center gap-2"
-        role="tablist"
-        aria-label="Review navigation"
-      >
-        {testimonials.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            role="tab"
-            aria-selected={activeIndex === index}
-            aria-label={`Go to review ${index + 1}`}
-            onClick={() => scrollToIndex(index)}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              activeIndex === index
-                ? 'w-6 bg-white'
-                : 'w-2 bg-white/25 hover:bg-white/40'
-            }`}
-          />
-        ))}
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          className={ARROW_CLASS}
+          aria-label="Previous review"
+          disabled={activeIndex === 0}
+          onClick={() => scrollToIndex(Math.max(0, activeIndex - 1))}
+        >
+          <ChevronLeftIcon className="h-4 w-4" aria-hidden />
+        </button>
+        <div
+          className="flex items-center gap-1.5"
+          role="tablist"
+          aria-label="Review navigation"
+        >
+          {LANDING_TESTIMONIALS.map((testimonial, index) => (
+            <button
+              key={testimonial.id}
+              type="button"
+              role="tab"
+              aria-selected={activeIndex === index}
+              aria-label={`Go to review ${index + 1}`}
+              onClick={() => scrollToIndex(index)}
+              className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${
+                activeIndex === index
+                  ? 'w-5 bg-white'
+                  : 'w-1.5 bg-white/25 hover:bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          className={ARROW_CLASS}
+          aria-label="Next review"
+          disabled={activeIndex === lastIndex}
+          onClick={() => scrollToIndex(Math.min(lastIndex, activeIndex + 1))}
+        >
+          <ChevronRightIcon className="h-4 w-4" aria-hidden />
+        </button>
       </div>
-
-      <p className="mt-3 text-center text-[11px] uppercase tracking-[0.18em] text-gray-500">
-        Swipe to read more
-      </p>
     </div>
   );
 }
@@ -228,38 +196,16 @@ export const TestimonialsSection: React.FC = () => {
   return (
     <section
       id="testimonials"
-      className="relative py-12 sm:py-8 px-4 sm:px-6 lg:px-8 overflow-hidden border-t border-b border-white/[0.08]"
+      className="relative overflow-hidden px-4 py-10 sm:px-6 sm:py-12"
     >
-      <div
-        className="absolute inset-0 -z-10 opacity-[0.015]"
-        style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-          backgroundSize: '32px 32px',
-        }}
-        aria-hidden
-      />
-      <div
-        className="absolute inset-0 -z-10 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent"
-        aria-hidden
-      />
-
-      <div className="max-w-screen-2xl mx-auto w-full">
-        <header className="text-center mb-8 sm:mb-10">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-2">
-            Testimonials
-          </p>
-          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">
-            Trusted by service pros
+      <div className="mx-auto w-full max-w-6xl">
+        <header className="mb-5 text-center">
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Reviews.
           </h2>
+          <p className="mt-1.5 text-base text-zinc-400">From the App Store.</p>
         </header>
-
-        <MobileTestimonialsScroller />
-
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6 xl:gap-7 items-stretch">
-          {testimonials.map((testimonial, index) => (
-            <TestimonialCard key={index} testimonial={testimonial} />
-          ))}
-        </div>
+        <TestimonialsCarousel />
       </div>
     </section>
   );

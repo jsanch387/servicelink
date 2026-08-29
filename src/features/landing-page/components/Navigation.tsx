@@ -25,7 +25,7 @@ const FIND_DETAILERS_LINK = {
   href: ROUTES.FIND_DETAILERS,
 } as const;
 
-const MENU_ANIMATION_MS = 400;
+const MENU_ANIMATION_MS = 280;
 
 function isNavPathActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -118,36 +118,14 @@ export const Navigation: React.FC<NavigationProps> = ({
     portalReady && isMobileMenuMounted
       ? createPortal(
           <div
-            className={`md:hidden fixed inset-0 z-[60] flex flex-col bg-[var(--dashboard-bg)] transition-[opacity,transform] duration-[350ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-              isMobileMenuVisible
-                ? 'opacity-100 translate-y-0'
-                : 'opacity-0 -translate-y-3'
+            className={`md:hidden fixed inset-x-0 top-16 bottom-0 z-40 flex flex-col bg-[var(--dashboard-bg)] transition-opacity duration-[280ms] ease-out sm:top-20 ${
+              isMobileMenuVisible ? 'opacity-100' : 'opacity-0'
             }`}
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
           >
-            <div className="flex h-16 shrink-0 items-center justify-between gap-4 px-4">
-              <span className="cursor-pointer" onClick={closeMobileMenu}>
-                <Logo size="md" logoSize="lg" href="/" />
-              </span>
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/[0.06] text-white transition-colors active:bg-white/[0.1] focus:outline-none focus-visible:outline-none"
-                aria-label="Close menu"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div
-              className={`flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6 transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                isMobileMenuVisible
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-3'
-              }`}
-            >
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6">
               <ul className="space-y-0.5">
                 {primaryNavLinks.map(item => (
                   <li key={item.href}>
@@ -169,11 +147,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               </ul>
             </div>
 
-            <div
-              className={`shrink-0 border-t border-white/[0.06] px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] transition-opacity duration-[400ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                isMobileMenuVisible ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
+            <div className="shrink-0 border-t border-white/[0.06] px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
               {!isInitialized ? (
                 <div
                   className="h-12 w-full rounded-[10px] bg-white/5 animate-pulse"
@@ -274,10 +248,10 @@ export const Navigation: React.FC<NavigationProps> = ({
               type="button"
               onClick={toggleMobileMenu}
               className="cursor-pointer text-gray-300 hover:text-white p-2 -mr-2 rounded-md focus:outline-none focus-visible:outline-none"
-              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={isMobileMenuMounted ? 'Close menu' : 'Open menu'}
               aria-expanded={isMobileMenuOpen}
             >
-              {isMobileMenuOpen ? (
+              {isMobileMenuMounted ? (
                 <XMarkIcon className="h-6 w-6" />
               ) : (
                 <Bars3Icon className="h-6 w-6" />
