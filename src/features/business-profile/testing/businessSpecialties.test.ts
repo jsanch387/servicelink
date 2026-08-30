@@ -3,6 +3,7 @@ import {
   deriveSpecialtiesFromBusinessType,
   getSpecialtiesForBusinessType,
   hasDetailingMarketplaceListing,
+  publicSpecialtyLabels,
   resolveBusinessSpecialties,
   sanitizeBusinessSpecialties,
   specialtiesAllowedForBusinessType,
@@ -70,5 +71,19 @@ describe('business specialties', () => {
     expect(
       sanitizeBusinessSpecialties(['detailing', 'not-a-real-tag', 'detailing'])
     ).toEqual(['detailing']);
+  });
+
+  it('formats public bio chips and hides other', () => {
+    expect(
+      publicSpecialtyLabels('Vehicle Services', [
+        'detailing',
+        'window_tinting',
+        'other',
+      ])
+    ).toEqual(['Auto detailing', 'Window tinting']);
+    expect(publicSpecialtyLabels('Vehicle Services', null)).toEqual([]);
+    expect(publicSpecialtyLabels('Auto & Detailing', null)).toEqual([
+      'Auto detailing',
+    ]);
   });
 });

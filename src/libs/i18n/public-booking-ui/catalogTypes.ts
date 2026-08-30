@@ -447,6 +447,9 @@ export type PublicBookingUi = {
     bioTab: string;
     reviewsTab: string;
     noBioYet: string;
+    specialtiesAriaLabel: string;
+    bookingPolicyLabel: string;
+    viewBookingPolicy: (businessName: string) => string;
     /** Public profile: free cap — clarify bookings are paused via ServiceLink only. */
     notTakingBookingsRightNow: string;
     reviewCountLabel: (count: number) => string;

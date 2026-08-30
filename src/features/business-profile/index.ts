@@ -32,10 +32,7 @@ export { WorkShowcase } from './components/WorkShowcase';
 export { EditBusinessProfile } from './components/edit/EditBusinessProfile';
 export { EditProfileActionBar } from './components/edit/EditProfileActionBar';
 export { EditProfileTabNav } from './components/edit/EditProfileTabNav';
-export {
-  parseEditProfileTab,
-  tabForSaveErrors,
-} from './utils/editProfileTab';
+export { parseEditProfileTab, tabForSaveErrors } from './utils/editProfileTab';
 export type { EditProfileTabId } from './utils/editProfileTab';
 
 // Dashboard profile edit cards

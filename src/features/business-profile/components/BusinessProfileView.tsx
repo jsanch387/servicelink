@@ -448,7 +448,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       </Modal>
       {/* Main Content */}
       <div
-        className={`bg-[#0f0f0f] min-h-screen ${!isPublic && editMode === 'view' ? 'pb-24 sm:pb-24' : ''}`}
+        className={`flex min-h-screen flex-col bg-[#0f0f0f] ${!isPublic && editMode === 'view' ? 'pb-24 sm:pb-24' : ''}`}
       >
         {editMode === 'view' && publicActiveSale ? (
           <PublicActiveSaleMarqueeBanner
@@ -457,7 +457,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
           />
         ) : null}
 
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col [&>*]:shrink-0">
           {/* Create Link CTA - Only show for authenticated users without a slug */}
           {!isPublic && slugData && !slugData.hasSlug && (
             <div className="px-4 pt-4 pb-3 sm:pt-6 sm:pb-4 w-full min-w-0">
@@ -675,7 +675,13 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
 
               {/* Footer - Only show on public profiles */}
               {isPublic && (
-                <div className="px-4 sm:px-8 py-8 sm:py-10 mt-8">
+                <div
+                  className="mt-auto px-4 pt-10 sm:px-8 sm:pt-12"
+                  style={{
+                    paddingBottom:
+                      'max(2rem, calc(2rem + env(safe-area-inset-bottom)))',
+                  }}
+                >
                   <div className="w-full border-t border-white/[0.06] pt-6">
                     <div className="flex flex-col items-center gap-2 text-center">
                       <Link

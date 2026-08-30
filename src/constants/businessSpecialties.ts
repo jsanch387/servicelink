@@ -118,6 +118,20 @@ export function getSpecialtiesForBusinessType(
   }));
 }
 
+export function getBusinessSpecialtyLabel(slug: BusinessSpecialtySlug): string {
+  return SPECIALTY_LABELS[slug];
+}
+
+/** Public bio chips. Skips catch-all `other`. */
+export function publicSpecialtyLabels(
+  businessType: string | null | undefined,
+  storedSpecialties?: readonly string[] | null
+): string[] {
+  return resolveBusinessSpecialties(businessType, storedSpecialties)
+    .filter(slug => slug !== 'other')
+    .map(slug => SPECIALTY_LABELS[slug]);
+}
+
 /** Keep only niches valid for the new industry; Other defaults to `other`. */
 export function specialtiesAllowedForBusinessType(
   businessType: string,

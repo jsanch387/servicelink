@@ -496,6 +496,9 @@ export const publicBookingUiEn: PublicBookingUi = {
     bioTab: 'Bio',
     reviewsTab: 'Reviews',
     noBioYet: 'No bio added yet.',
+    specialtiesAriaLabel: 'Specialties',
+    bookingPolicyLabel: 'Booking policy',
+    viewBookingPolicy: businessName => `${businessName}'s booking policy`,
     notTakingBookingsRightNow:
       'Not taking bookings through ServiceLink right now.',
     reviewCountLabel: count => (count === 1 ? '1 review' : `${count} reviews`),

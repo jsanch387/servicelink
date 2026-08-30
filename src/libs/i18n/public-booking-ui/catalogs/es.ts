@@ -508,6 +508,10 @@ export const publicBookingUiEs: PublicBookingUi = {
     bioTab: 'Biografía',
     reviewsTab: 'Reseñas',
     noBioYet: 'Aún no hay biografía.',
+    specialtiesAriaLabel: 'Especialidades',
+    bookingPolicyLabel: 'Política de reserva',
+    viewBookingPolicy: businessName =>
+      `Política de reserva de ${businessName}`,
     notTakingBookingsRightNow:
       'No aceptan reservas por ServiceLink en este momento.',
     reviewCountLabel: count => (count === 1 ? '1 reseña' : `${count} reseñas`),

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  parseEditProfileTab,
-  tabForSaveErrors,
-} from '../utils/editProfileTab';
+import { parseEditProfileTab, tabForSaveErrors } from '../utils/editProfileTab';
 
 describe('parseEditProfileTab', () => {
   it('accepts edit tabs and ignores unknown values', () => {
@@ -45,10 +42,7 @@ describe('tabForSaveErrors', () => {
 
   it('prefers booking when shop and location errors are combined', () => {
     expect(
-      tabForSaveErrors([
-        'ZIP is required',
-        'Choose a suggested shop address',
-      ])
+      tabForSaveErrors(['ZIP is required', 'Choose a suggested shop address'])
     ).toBe('booking');
   });
 });

@@ -67,7 +67,8 @@ export function DashboardProfileServiceLocationCard({
 }: DashboardProfileServiceLocationCardProps) {
   const showShopFields = shopAddressIsOffered(value.mode);
   const showMobileCoverageEditor = value.mode === 'mobile_only';
-  const showMobileHint = mobileServiceIsOffered(value.mode) && !showMobileCoverageEditor;
+  const showMobileHint =
+    mobileServiceIsOffered(value.mode) && !showMobileCoverageEditor;
   const coverageError = coverageErrorFromMessages(errors);
   const modeHint = serviceLocationModeHint(value.mode);
   const trimmedCoverage = coverageLabel?.trim() || null;

@@ -10,16 +10,16 @@ A detailer can serve Austin for mobile jobs and have a shop in Pflugerville. Tho
 
 Shop city/state/ZIP columns already exist on `business_profiles` (added from mobile). Do not add another migration.
 
-| Column                  | Type   | Purpose                                                                 |
-| ----------------------- | ------ | ----------------------------------------------------------------------- |
-| `service_area`          | `text` | **Mobile serving city + state** as `"City, ST"`                         |
+| Column                  | Type   | Purpose                                                                  |
+| ----------------------- | ------ | ------------------------------------------------------------------------ |
+| `service_area`          | `text` | **Mobile serving city + state** as `"City, ST"`                          |
 | `business_zip`          | `text` | **Mobile serving ZIP** (optional). Never written from the shop ZIP field |
-| `service_location_mode` | `text` | `mobile_only` \| `shop_only` \| `both`. Default `mobile_only`           |
-| `shop_street_address`   | `text` | Physical shop street                                                    |
-| `shop_unit`             | `text` | Optional suite or unit                                                  |
-| `shop_city`             | `text` | Physical shop city                                                      |
-| `shop_state`            | `text` | Physical shop state                                                     |
-| `shop_zip`              | `text` | Physical shop ZIP (optional; 5 digits when present)                     |
+| `service_location_mode` | `text` | `mobile_only` \| `shop_only` \| `both`. Default `mobile_only`            |
+| `shop_street_address`   | `text` | Physical shop street                                                     |
+| `shop_unit`             | `text` | Optional suite or unit                                                   |
+| `shop_city`             | `text` | Physical shop city                                                       |
+| `shop_state`            | `text` | Physical shop state                                                      |
+| `shop_zip`              | `text` | Physical shop ZIP (optional; 5 digits when present)                      |
 
 **Details → Location** is mobile serving area only (`service_area`, `business_zip`, primary `business_service_areas` row + radius). Example: `Austin, TX · 25 mi`.
 
@@ -68,21 +68,21 @@ Shop or Both profiles that still have the old street-only shop row (`shop_city` 
 
 That lands on the Booking tab and focuses `#profile-shop-address`. Mobile-only profiles do not see this modal — they already get the service-area prompt. The two modals never stack: the shop prompt waits until the service-area prompt is closed or skipped.
 
-| Control                                                 | Maps to                                              |
-| ------------------------------------------------------- | ---------------------------------------------------- |
-| **Details → Location** city/state autocomplete + radius | primary `business_service_areas` row + `service_area` / `business_zip` |
-| Service type: Mobile / Shop / Both                      | `service_location_mode`                              |
+| Control                                                 | Maps to                                                                   |
+| ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Details → Location** city/state autocomplete + radius | primary `business_service_areas` row + `service_area` / `business_zip`    |
+| Service type: Mobile / Shop / Both                      | `service_location_mode`                                                   |
 | Shop → MapTiler street pick + optional Unit             | `shop_street_address`, `shop_unit`, `shop_city`, `shop_state`, `shop_zip` |
 
 **Details → Location** and **Booking → Mobile** share the same coverage editor (MapTiler city/ZIP + travel distance). Both still shows a **Mobile area** summary with Edit → Details. Shop uses a MapTiler **street-address** search. City/state/ZIP come from the selected address. Unit is typed separately and never sent to MapTiler.
 
 ### Validation on save
 
-| Rule                                              | Error (examples)                            |
-| ------------------------------------------------- | ------------------------------------------- |
-| Confirmed MapTiler city/state + radius            | `Choose a suggested location to confirm it` |
-| Shop or Both → confirm a MapTiler street pick     | `Choose a suggested shop address`           |
-| Shop ZIP optional; if present, 5 digits           | `Shop ZIP must be 5 digits`                 |
+| Rule                                          | Error (examples)                            |
+| --------------------------------------------- | ------------------------------------------- |
+| Confirmed MapTiler city/state + radius        | `Choose a suggested location to confirm it` |
+| Shop or Both → confirm a MapTiler street pick | `Choose a suggested shop address`           |
+| Shop ZIP optional; if present, 5 digits       | `Shop ZIP must be 5 digits`                 |
 
 Details city/state/ZIP are **not** required to complete a shop address.
 
@@ -171,12 +171,12 @@ See also: `src/features/availability/docs/FLOWS.md` §2 (public V2 booking).
 
 ## Tests
 
-| File                                    | Covers                                            |
-| --------------------------------------- | ------------------------------------------------- |
-| `testing/businessLocation.test.ts`      | ZIP/city validation, `formatFullShopAddress`      |
+| File                                    | Covers                                                |
+| --------------------------------------- | ----------------------------------------------------- |
+| `testing/businessLocation.test.ts`      | ZIP/city validation, `formatFullShopAddress`          |
 | `testing/serviceLocationMode.test.ts`   | Hydrate, persist, shop validation, legacy shop prompt |
-| `testing/validateEditingForm.test.ts`   | Full form + shop rules                            |
-| `testing/publicServiceLocation.test.ts` | Public booking location builder + mode resolution |
+| `testing/validateEditingForm.test.ts`   | Full form + shop rules                                |
+| `testing/publicServiceLocation.test.ts` | Public booking location builder + mode resolution     |
 
 Run: `npm test -- src/features/business-profile/testing/`
 
