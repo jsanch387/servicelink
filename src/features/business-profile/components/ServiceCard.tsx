@@ -54,6 +54,11 @@ interface ServiceCardProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** When set on public cards, show struck-through base price + sale price. */
   publicActiveSale?: PublicActiveSale | null;
+  /**
+   * When set, Select does not navigate immediately — parent opens the policy
+   * modal (or pushes the same href after they have already agreed).
+   */
+  onSelectNavigate?: (href: string) => void;
 }
 
 export const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -68,6 +73,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   hideBookLink = false,
   bookingFlowLocale = 'en',
   publicActiveSale = null,
+  onSelectNavigate,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -119,6 +125,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   const renderPrice = (price: string | number) => (
     <span className={serviceListingPriceClassName}>{formatPrice(price)}</span>
   );
+
+  const selectHref =
+    isPublic && !hideBookLink && !isEditable && businessSlug && service.id
+      ? getBusinessBookDetailsPath(businessSlug, service.id, {
+          forOwner: manualBookingForCustomer,
+          lang: bookingFlowLocale,
+        })
+      : null;
 
   return (
     <GlassCard
@@ -207,22 +221,23 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <div />
         )}
 
-        {isPublic &&
-          !hideBookLink &&
-          !isEditable &&
-          businessSlug &&
-          service.id && (
-            <Link
-              href={getBusinessBookDetailsPath(businessSlug, service.id, {
-                forOwner: manualBookingForCustomer,
-                lang: bookingFlowLocale,
-              })}
-              className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
-            >
-              {ui.common.select}
-              <ChevronRightIcon className="h-3.5 w-3.5" />
-            </Link>
-          )}
+        {selectHref ? (
+          <Link
+            href={selectHref}
+            onClick={
+              onSelectNavigate
+                ? event => {
+                    event.preventDefault();
+                    onSelectNavigate(selectHref);
+                  }
+                : undefined
+            }
+            className="inline-flex items-center gap-1 text-white text-[15px] font-semibold hover:text-zinc-200 transition-colors cursor-pointer sm:text-sm"
+          >
+            {ui.common.select}
+            <ChevronRightIcon className="h-3.5 w-3.5" />
+          </Link>
+        ) : null}
       </div>
 
       {/* Edit controls */}

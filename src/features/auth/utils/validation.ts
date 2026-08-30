@@ -1,9 +1,54 @@
 /**
+ * TLDs that are almost always a mistype of `.com` (not real public suffixes).
+ */
+const TYPED_COM_TLDS = new Set(['con', 'cpm', 'comm', 'comn', 'coom', 'cmo']);
+
+const TYPED_DOMAINS: Record<string, string> = {
+  'gnail.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'gamil.com': 'gmail.com',
+  'gmal.com': 'gmail.com',
+  'icoud.com': 'icloud.com',
+  'iclod.com': 'icloud.com',
+  'hotmial.com': 'hotmail.com',
+  'hotmal.com': 'hotmail.com',
+  'outlok.com': 'outlook.com',
+};
+
+/**
+ * Hint when the address is formatted like an email but the domain is a common typo.
+ * Example: `name@icloud.con` → "Did you mean name@icloud.com?"
+ */
+export function getEmailTypoHint(email: string): string | null {
+  const normalized = email.trim().toLowerCase();
+  const at = normalized.lastIndexOf('@');
+  if (at < 1) return null;
+
+  const local = normalized.slice(0, at);
+  const domain = normalized.slice(at + 1);
+  if (!local || !domain.includes('.')) return null;
+
+  const suggestedDomain = TYPED_DOMAINS[domain];
+  if (suggestedDomain) {
+    return `Did you mean ${local}@${suggestedDomain}?`;
+  }
+
+  const tld = domain.slice(domain.lastIndexOf('.') + 1);
+  if (TYPED_COM_TLDS.has(tld)) {
+    const corrected = `${local}@${domain.slice(0, domain.lastIndexOf('.'))}.com`;
+    return `Did you mean ${corrected}?`;
+  }
+
+  return null;
+}
+
+/**
  * Email validation utility
  */
 export const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  if (!emailRegex.test(email)) return false;
+  return getEmailTypoHint(email) === null;
 };
 
 /**
@@ -50,7 +95,8 @@ export const validateSignUpForm = (data: {
   if (!data.email) {
     errors.email = 'Email is required';
   } else if (!isValidEmail(data.email)) {
-    errors.email = 'Please enter a valid email address';
+    errors.email =
+      getEmailTypoHint(data.email) ?? 'Please enter a valid email address';
   }
 
   // Password validation
@@ -89,7 +135,8 @@ export const validateSignInForm = (data: {
   if (!data.email) {
     errors.email = 'Email is required';
   } else if (!isValidEmail(data.email)) {
-    errors.email = 'Please enter a valid email address';
+    errors.email =
+      getEmailTypoHint(data.email) ?? 'Please enter a valid email address';
   }
 
   // Password validation

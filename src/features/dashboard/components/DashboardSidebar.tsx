@@ -2,159 +2,93 @@
 
 import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
 import {
-  ArrowPathRoundedSquareIcon,
-  BanknotesIcon,
-  CalendarIcon,
-  ClipboardDocumentListIcon,
-  ClockIcon,
   AdjustmentsHorizontalIcon,
-  LinkIcon,
-  MegaphoneIcon,
-  RectangleStackIcon,
-  Squares2X2Icon,
-  StarIcon,
-  UserGroupIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
 import type { DashboardSidebarProps } from '../types/dashboard';
-
-type DashboardNavItem = {
-  name: string;
-  href: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  requiresOnboarding: boolean;
-  activePathPrefix?: string;
-};
-
-const allNavigationItems: DashboardNavItem[] = [
-  {
-    name: 'Dashboard',
-    href: ROUTES.DASHBOARD.MAIN,
-    icon: Squares2X2Icon,
-    requiresOnboarding: false,
-  },
-  {
-    name: 'Booking link',
-    href: ROUTES.DASHBOARD.BUSINESS_PROFILE,
-    icon: LinkIcon,
-    requiresOnboarding: true,
-  },
-  {
-    name: 'Services',
-    href: ROUTES.DASHBOARD.SERVICES,
-    icon: RectangleStackIcon,
-    requiresOnboarding: true,
-  },
-  {
-    name: 'Bookings',
-    href: ROUTES.DASHBOARD.BOOKINGS,
-    icon: CalendarIcon,
-    requiresOnboarding: true,
-  },
-  {
-    name: 'Reviews',
-    href: ROUTES.DASHBOARD.REVIEWS,
-    icon: StarIcon,
-    requiresOnboarding: true,
-    activePathPrefix: '/dashboard/reviews',
-  },
-  {
-    name: 'Quotes',
-    href: ROUTES.DASHBOARD.QUOTES,
-    icon: ClipboardDocumentListIcon,
-    requiresOnboarding: true,
-    activePathPrefix: '/dashboard/quotes',
-  },
-  {
-    name: 'Customers',
-    href: ROUTES.DASHBOARD.CUSTOMERS,
-    icon: UserGroupIcon,
-    requiresOnboarding: true,
-  },
-  {
-    name: 'Payments',
-    href: ROUTES.DASHBOARD.PAYMENTS,
-    icon: BanknotesIcon,
-    requiresOnboarding: true,
-    activePathPrefix: '/dashboard/payments',
-  },
-  {
-    name: 'Marketing',
-    href: ROUTES.DASHBOARD.MARKETING,
-    icon: MegaphoneIcon,
-    requiresOnboarding: true,
-    activePathPrefix: '/dashboard/marketing',
-  },
-  ...(AVAILABILITY_FEATURE_ENABLED
-    ? [
-        {
-          name: 'Availability',
-          href: ROUTES.DASHBOARD.AVAILABILITY,
-          icon: ClockIcon,
-          requiresOnboarding: true,
-        },
-      ]
-    : []),
-];
+import {
+  getVisibleDashboardNavGroups,
+  isDashboardNavItemActive,
+} from '../utils/dashboardNav';
+import { DashboardSidebarNavItem } from './DashboardSidebarNavItem';
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   open,
   setOpen,
   isOnboardingCompleted = false,
   showMembershipsNav = false,
+  collapsed = false,
+  onToggleCollapsed,
 }) => {
   const pathname = usePathname();
-
-  const membershipsNavItem: DashboardNavItem = {
-    name: 'Subscriptions',
-    href: ROUTES.DASHBOARD.SUBSCRIPTIONS,
-    icon: ArrowPathRoundedSquareIcon,
-    requiresOnboarding: true,
-    activePathPrefix: '/dashboard/subscriptions',
-  };
-
-  const navigationItems = showMembershipsNav
-    ? allNavigationItems.flatMap(item =>
-        item.href === ROUTES.DASHBOARD.SERVICES
-          ? [item, membershipsNavItem]
-          : [item]
-      )
-    : allNavigationItems;
-
-  const navigation = navigationItems.filter(
-    item => !item.requiresOnboarding || isOnboardingCompleted
-  );
+  const groups = getVisibleDashboardNavGroups({
+    isOnboardingCompleted,
+    showMembershipsNav,
+  });
   const showSettings = isOnboardingCompleted;
+  const settingsActive = pathname === ROUTES.DASHBOARD.SETTINGS;
 
   return (
     <>
-      {/* Mobile sidebar overlay */}
-      {open && (
+      {open ? (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="fixed inset-0 bg-neutral-900/80"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
         </div>
-      )}
+      ) : null}
 
-      {/* Sidebar */}
-      <div
-        className={`dashboard-sidebar fixed top-0 left-0 z-50 h-screen w-64 border-r border-[var(--dashboard-border)] bg-[var(--dashboard-bg)] transition-transform duration-300 ease-in-out lg:z-auto lg:translate-x-0 ${
+      <aside
+        className={`dashboard-sidebar fixed top-0 left-0 z-50 h-screen border-r border-white/[0.06] bg-[var(--dashboard-bg)] transition-[transform,width] duration-300 ease-out lg:z-auto lg:translate-x-0 ${
           open
             ? 'translate-x-0 pointer-events-auto'
             : '-translate-x-full pointer-events-none lg:pointer-events-auto'
         }`}
       >
-        <div className="flex h-full flex-col overflow-y-auto pb-24 lg:pb-6">
-          {/* Logo and close button */}
-          <div className="flex h-16 items-center justify-between px-6">
-            <Logo size="md" href="/" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 left-0 h-48 w-48 rounded-full bg-white/[0.04] blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+        />
+
+        <div className="relative flex h-full flex-col pb-[max(5rem,env(safe-area-inset-bottom))] lg:pb-3">
+          <div
+            className={`relative flex h-16 shrink-0 items-center justify-between px-5 ${
+              collapsed ? 'lg:justify-center lg:px-2' : ''
+            }`}
+          >
+            <div className={collapsed ? 'lg:hidden' : undefined}>
+              <Logo size="md" variant="full" href={ROUTES.DASHBOARD.MAIN} />
+            </div>
+            {collapsed ? (
+              <div className="hidden lg:flex">
+                <Logo size="md" variant="logo" href={ROUTES.DASHBOARD.MAIN} />
+              </div>
+            ) : null}
+            {onToggleCollapsed ? (
+              <IconButton
+                icon={collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+                onClick={onToggleCollapsed}
+                variant="ghost"
+                size="sm"
+                className={`hidden lg:inline-flex text-zinc-500 hover:text-white ${
+                  collapsed
+                    ? 'absolute top-1/2 right-0 z-10 -translate-y-1/2 translate-x-1/2 rounded-full border border-white/[0.08] bg-[#161616] shadow-[0_8px_20px_rgba(0,0,0,0.35)]'
+                    : ''
+                }`}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              />
+            ) : null}
             <IconButton
               icon={<XMarkIcon />}
               onClick={() => setOpen(false)}
@@ -164,64 +98,63 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             />
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-4 py-6">
-            {navigation.map(item => {
-              const isActive =
-                'activePathPrefix' in item && item.activePathPrefix
-                  ? pathname === item.href ||
-                    pathname === item.activePathPrefix ||
-                    pathname.startsWith(`${item.activePathPrefix}/`)
-                  : pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setOpen(false)} // Auto-hide sidebar on mobile when link is clicked
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
-                    isActive
-                      ? 'bg-neutral-800 text-white'
-                      : 'text-gray-300 hover:text-white hover:bg-neutral-700'
-                  }`}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
-                      isActive
-                        ? 'text-gray-300'
-                        : 'text-gray-400 group-hover:text-white'
-                    }`}
+          <nav
+            className={`min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-3 scrollbar-dark ${
+              collapsed ? 'lg:px-2' : ''
+            }`}
+          >
+            {groups.map(group => (
+              <div key={group.id} className="space-y-1">
+                {group.label ? (
+                  <>
+                    <p
+                      className={`px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-600 ${
+                        collapsed ? 'lg:hidden' : ''
+                      }`}
+                    >
+                      {group.label}
+                    </p>
+                    {collapsed ? (
+                      <div
+                        className="mx-auto hidden h-px w-6 bg-white/[0.06] lg:block"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+                {group.items.map(item => (
+                  <DashboardSidebarNavItem
+                    key={item.name}
+                    name={item.name}
+                    href={item.href}
+                    icon={item.icon}
+                    isActive={isDashboardNavItemActive(pathname, item)}
+                    collapsed={collapsed}
+                    onNavigate={() => setOpen(false)}
                   />
-                  <span className="flex-1">{item.name}</span>
-                </Link>
-              );
-            })}
+                ))}
+              </div>
+            ))}
           </nav>
 
-          {/* Settings */}
-          <div className="mt-auto p-4 flex-shrink-0">
+          <div
+            className={`flex shrink-0 flex-col gap-1 border-t border-white/[0.06] px-3 pt-2 ${
+              collapsed ? 'lg:px-2' : ''
+            }`}
+          >
             {showSettings ? (
-              <Link
+              <DashboardSidebarNavItem
+                name="Settings"
                 href={ROUTES.DASHBOARD.SETTINGS}
-                onClick={() => setOpen(false)}
-                className={`group flex w-full items-center px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
-                  pathname === ROUTES.DASHBOARD.SETTINGS
-                    ? 'bg-neutral-800 text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-neutral-700'
-                }`}
-              >
-                <AdjustmentsHorizontalIcon
-                  className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
-                    pathname === ROUTES.DASHBOARD.SETTINGS
-                      ? 'text-gray-300'
-                      : 'text-gray-400 group-hover:text-white'
-                  }`}
-                />
-                Settings
-              </Link>
+                icon={AdjustmentsHorizontalIcon}
+                isActive={settingsActive}
+                collapsed={collapsed}
+                onNavigate={() => setOpen(false)}
+              />
             ) : null}
           </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 };

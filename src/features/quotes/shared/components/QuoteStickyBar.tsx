@@ -17,7 +17,7 @@ export const QuoteStickyBar: React.FC<QuoteStickyBarProps> = ({
   return (
     <div
       className={`safe-area-pb fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4 backdrop-blur-sm ${
-        withDesktopSidebarOffset ? 'lg:left-64' : ''
+        withDesktopSidebarOffset ? 'dashboard-sidebar-offset' : ''
       }`}
       style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
     >

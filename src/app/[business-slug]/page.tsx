@@ -10,6 +10,8 @@ import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
+import { loadPrimaryServiceArea } from '@/features/business-profile/server/loadPrimaryServiceArea';
+import { toPublicServiceCoverage } from '@/features/business-profile/utils/primaryServiceArea';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
 import {
@@ -275,6 +277,14 @@ export default async function PublicProfilePage({
     { ownerHasPro: ownerTier === 'pro' }
   );
 
+  const primaryServiceArea = await loadPrimaryServiceArea(
+    adminGate,
+    businessProfile.id
+  );
+  const publicServiceCoverage = primaryServiceArea
+    ? toPublicServiceCoverage(primaryServiceArea)
+    : null;
+
   // Post-Checkout success: render confirmation only (no profile flash).
   if (membershipCheckout === 'success') {
     const successPlan =
@@ -323,6 +333,7 @@ export default async function PublicProfilePage({
         publicSubscriptionPlans={publicSubscriptionPlans}
         initialTab={initialTab}
         membershipCheckoutCanceled={membershipCheckout === 'cancel'}
+        publicServiceCoverage={publicServiceCoverage}
       />
     </div>
   );

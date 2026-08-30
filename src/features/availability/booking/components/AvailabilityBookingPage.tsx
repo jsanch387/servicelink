@@ -24,6 +24,12 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
+import { usePublicBookingPolicyAgreement } from '../hooks/usePublicBookingPolicyAgreement';
+import {
+  hasAgreedToPublicBookingPolicy,
+  markPublicBookingPolicyAgreed,
+} from '../utils/bookingPolicyAgreementStorage';
+import { PublicBookingPolicyAgreeDialog } from './BookingPolicyAgreeModal';
 import type {
   AddOnDisplay,
   AvailabilityBookingPageProps,
@@ -63,6 +69,7 @@ import {
   type AppliedBookingPromo,
 } from './BookingPromoCodeField';
 import { BookingSuccess } from './BookingSuccess';
+import { BookingPolicyConsent } from './BookingPolicyConsent';
 import { BookingSummary } from './BookingSummary';
 import { PublicMultiJobReviewSummary } from './PublicMultiJobReviewSummary';
 import { CustomerForm } from './CustomerForm';
@@ -262,6 +269,7 @@ export function AvailabilityBookingPage({
   serviceLocation = DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION,
   initialCustomerServiceChoice = null,
   activeSale = null,
+  bookingPolicy = null,
   bookingJobs: bookingJobsProp,
   addAnotherJobHref,
   onRemoveBookingJob,
@@ -409,7 +417,32 @@ export function AvailabilityBookingPage({
   /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
   const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
     useState(() => multiJobBoot?.agreedToNotifications ?? true);
+  const [agreedToBookingPolicy, setAgreedToBookingPolicy] = useState(
+    () => multiJobBoot?.agreedToPolicy ?? false
+  );
+  const requiresBookingPolicy =
+    !isOwnerManualBooking && Boolean(bookingPolicy?.text.trim());
+  const policyAgreement = usePublicBookingPolicyAgreement({
+    businessSlug,
+    policyText: bookingPolicy?.text,
+    skip: isOwnerManualBooking,
+    gateOnMount: !isOwnerManualBooking,
+  });
   const router = useRouter();
+
+  useEffect(() => {
+    if (
+      policyAgreement.hasAgreed ||
+      hasAgreedToPublicBookingPolicy(businessSlug)
+    ) {
+      setAgreedToBookingPolicy(true);
+    }
+  }, [businessSlug, policyAgreement.hasAgreed]);
+
+  const handleAgreedToBookingPolicyChange = (agreed: boolean) => {
+    setAgreedToBookingPolicy(agreed);
+    if (agreed) markPublicBookingPolicyAgreed(businessSlug);
+  };
 
   // Restore contact/address/schedule after Cancel or finishing “add another”
   // when boot hydration was skipped (e.g. rare SSR path).
@@ -436,6 +469,7 @@ export function AvailabilityBookingPage({
       setCustomerServiceChoice(resumed.customerServiceChoice);
     }
     setAgreedToPublicNotifications(resumed.agreedToNotifications);
+    setAgreedToBookingPolicy(resumed.agreedToPolicy);
     setScheduleNeedsRetiming(resumed.scheduleNeedsRetiming);
   }, [
     isMultiJobVisit,
@@ -468,6 +502,7 @@ export function AvailabilityBookingPage({
         detailsSubStep: overrides?.detailsSubStep ?? detailsSubStep,
         customerServiceChoice,
         agreedToNotifications: agreedToPublicNotifications,
+        agreedToPolicy: agreedToBookingPolicy,
       })
     );
   };
@@ -976,6 +1011,7 @@ export function AvailabilityBookingPage({
       : ui.common.continue;
   const canContinueFromPayment =
     !isSubmitting &&
+    (!requiresBookingPolicy || agreedToBookingPolicy) &&
     (paymentSettings?.checkoutMode !== 'customer_choice' ||
       customerPaymentChoice !== null);
 
@@ -1218,6 +1254,10 @@ export function AvailabilityBookingPage({
       customerPaymentChoice,
       totalPriceCents,
     });
+    if (requiresBookingPolicy && !agreedToBookingPolicy) {
+      setSubmitError(ui.calendar.policyConsentRequired);
+      return;
+    }
     if (!paymentSettingsEnabled) {
       logBookingCheckoutDev(
         'checkout aborted: payments not enabled for this session'
@@ -1260,7 +1300,10 @@ export function AvailabilityBookingPage({
               paymentMethodSelected: customerPaymentChoice ?? 'none',
               promoCode: appliedPromo?.code,
               ...(!isOwnerManualBooking
-                ? { agreedToNotifications: agreedToPublicNotifications }
+                ? {
+                    agreedToNotifications: agreedToPublicNotifications,
+                    agreedToPolicy: agreedToBookingPolicy,
+                  }
                 : {}),
             }),
             ...publicMultiJobCheckoutTotals(visitJobs),
@@ -1324,7 +1367,10 @@ export function AvailabilityBookingPage({
                 : null,
               ...(appliedPromo?.code ? { promoCode: appliedPromo.code } : {}),
               ...(!isOwnerManualBooking
-                ? { agreedToNotifications: agreedToPublicNotifications }
+                ? {
+                    agreedToNotifications: agreedToPublicNotifications,
+                    agreedToPolicy: agreedToBookingPolicy,
+                  }
                 : {}),
             }
           : null,
@@ -1397,6 +1443,10 @@ export function AvailabilityBookingPage({
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
+    if (requiresBookingPolicy && !agreedToBookingPolicy) {
+      setSubmitError(ui.calendar.policyConsentRequired);
+      return;
+    }
     setSubmitError(null);
     setIsSubmitting(true);
     const scheduledDate = formatServiceDateYmd(selectedDate);
@@ -1419,7 +1469,10 @@ export function AvailabilityBookingPage({
             paymentMethodSelected: paymentMethodForPublicCreate,
             promoCode: appliedPromo?.code,
             ...(!isOwnerManualBooking
-              ? { agreedToNotifications: agreedToPublicNotifications }
+              ? {
+                  agreedToNotifications: agreedToPublicNotifications,
+                  agreedToPolicy: agreedToBookingPolicy,
+                }
               : {}),
           })
         : {
@@ -1455,7 +1508,10 @@ export function AvailabilityBookingPage({
               ? { promoCode: appliedPromo.code }
               : {}),
             ...(!isOwnerManualBooking
-              ? { agreedToNotifications: agreedToPublicNotifications }
+              ? {
+                  agreedToNotifications: agreedToPublicNotifications,
+                  agreedToPolicy: agreedToBookingPolicy,
+                }
               : {}),
           };
 
@@ -1696,6 +1752,7 @@ export function AvailabilityBookingPage({
                 }}
                 bookingFlowLocale={bookingFlowLocale}
                 isOwnerManualBooking={isOwnerManualBooking}
+                coverageLabel={serviceLocation.coverageLabel}
               />
               {customerServiceChoice === 'shop' &&
               !serviceLocation.hasCompleteShopAddress ? (
@@ -2161,6 +2218,14 @@ export function AvailabilityBookingPage({
                   {!shouldShowPaymentStep && !isOwnerManualBooking
                     ? promoCodeField
                     : null}
+                  {requiresBookingPolicy && bookingPolicy ? (
+                    <BookingPolicyConsent
+                      policyText={bookingPolicy.text}
+                      agreed={agreedToBookingPolicy}
+                      onAgreedChange={handleAgreedToBookingPolicyChange}
+                      bookingFlowLocale={bookingFlowLocale}
+                    />
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -2208,6 +2273,14 @@ export function AvailabilityBookingPage({
                   {!shouldShowPaymentStep && !isOwnerManualBooking
                     ? promoCodeField
                     : null}
+                  {requiresBookingPolicy && bookingPolicy ? (
+                    <BookingPolicyConsent
+                      policyText={bookingPolicy.text}
+                      agreed={agreedToBookingPolicy}
+                      onAgreedChange={handleAgreedToBookingPolicyChange}
+                      bookingFlowLocale={bookingFlowLocale}
+                    />
+                  ) : null}
                 </>
               )}
             </div>
@@ -2574,8 +2647,12 @@ export function AvailabilityBookingPage({
                 variant="inverse"
                 fullWidth
                 className="font-semibold"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting ||
+                  (requiresBookingPolicy && !agreedToBookingPolicy)
+                }
                 onClick={() => {
+                  if (requiresBookingPolicy && !agreedToBookingPolicy) return;
                   if (shouldShowPaymentStep) setStep('payment');
                   else void handleConfirmBooking();
                 }}
@@ -2617,6 +2694,14 @@ export function AvailabilityBookingPage({
           </div>
         </div>
       </div>
+      <PublicBookingPolicyAgreeDialog
+        isOpen={policyAgreement.modalOpen}
+        required={policyAgreement.required}
+        policyText={policyAgreement.policyText}
+        onClose={policyAgreement.dismiss}
+        onAgreed={policyAgreement.agree}
+        bookingFlowLocale={bookingFlowLocale}
+      />
     </>
   );
 }

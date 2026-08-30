@@ -61,7 +61,7 @@ describe('mapStripeBalanceTransaction', () => {
       tone: 'in',
       amountLabel: '+$38.54',
       statusLabel: 'Paid',
-      feeLabel: 'Fee $1.46',
+      feeLabel: 'Stripe fee $1.46',
     });
   });
 

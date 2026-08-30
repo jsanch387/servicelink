@@ -20,6 +20,7 @@ export const publicBookingUiEs: PublicBookingUi = {
   common: {
     back: 'Volver',
     continue: 'Continuar',
+    close: 'Cerrar',
     select: 'Seleccionar',
     summary: 'Resumen',
     total: 'Total',
@@ -172,6 +173,10 @@ export const publicBookingUiEs: PublicBookingUi = {
       `De ${businessName}. La frecuencia de mensajes puede variar. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja, HELP para ayuda. Consulta nuestra`,
     notificationsSmsFinePrintLinkLabel: 'Política de Privacidad',
     notificationsSmsTermsLinkLabel: 'Términos de Servicio',
+    policyHeading: 'Política de reserva',
+    policyConsentCheckboxLabel: 'Acepto la política de reserva',
+    policyConsentRequired:
+      'Debes aceptar la política de reserva para continuar.',
     continueToPayment: 'Continuar al pago',
     confirmBooking: 'Confirmar reserva',
     chooseHowToPay: 'Elige cómo pagar',

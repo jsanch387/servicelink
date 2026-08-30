@@ -32,6 +32,11 @@ import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import { LazyPublicReviewsSection } from '../reviews/components/LazyPublicReviewsSection';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import type {
+  PrimaryServiceArea,
+  PublicServiceCoverage,
+} from '../types/primaryServiceArea';
+import { formatServiceCoverageLabel } from '../utils/primaryServiceArea';
 import { ProfileCompletionTracker } from './ProfileCompletionTracker';
 import { ProfileBioSection } from './ProfileBioSection';
 import { ProfileHeader } from './ProfileHeader';
@@ -100,6 +105,10 @@ interface BusinessProfileViewProps {
   initialTab?: TabType;
   /** Stripe membership Checkout returned with cancel — show toast once. */
   membershipCheckoutCanceled?: boolean;
+  /** Owner editor: full primary `business_service_areas` row (includes coords). */
+  primaryServiceArea?: PrimaryServiceArea | null;
+  /** Public booking link: city/state/radius only — no lat/lng. */
+  publicServiceCoverage?: PublicServiceCoverage | null;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -121,6 +130,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicSubscriptionPlans = [],
   initialTab,
   membershipCheckoutCanceled = false,
+  primaryServiceArea: initialPrimaryServiceArea = null,
+  publicServiceCoverage = null,
 }) => {
   const showReviewsTab = Boolean(
     publicReviewSummary &&
@@ -153,8 +164,18 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   const [showProfileChecklistModal, setShowProfileChecklistModal] =
     useState(false);
   const handledMembershipCheckoutCancel = useRef(false);
+  const [primaryServiceArea, setPrimaryServiceArea] =
+    useState<PrimaryServiceArea | null>(initialPrimaryServiceArea);
   const { city, state } = parseCityState(businessProfile.service_area);
   const bookingUi = publicBookingUi(bookingFlowLocale);
+  const coverageLabel =
+    formatServiceCoverageLabel(
+      publicServiceCoverage?.city ?? primaryServiceArea?.city ?? city,
+      publicServiceCoverage?.stateCode ??
+        primaryServiceArea?.stateCode ??
+        state,
+      publicServiceCoverage?.radiusMiles ?? primaryServiceArea?.radiusMiles
+    ) ?? null;
 
   const clearMembershipCheckoutParams = () => {
     if (typeof window === 'undefined') return;
@@ -209,8 +230,12 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       done: Boolean(businessProfile.business_type?.trim()),
     },
     {
-      label: 'City, state + ZIP',
-      done: Boolean(city && state && businessProfile.business_zip?.trim()),
+      label: 'Service area',
+      done: Boolean(
+        (primaryServiceArea?.city && primaryServiceArea?.stateCode) ||
+          (publicServiceCoverage?.city && publicServiceCoverage?.stateCode) ||
+          (city && state)
+      ),
     },
     { label: 'Bio', done: Boolean(businessProfile.bio?.trim()) },
     {
@@ -475,6 +500,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 showRequestQuoteCta={showRequestQuoteCta}
                 bookingFlowLocale={bookingFlowLocale}
                 publicReviewSummary={publicReviewSummary}
+                coverageLabel={coverageLabel}
               />
 
               {/* Tabs Navigation */}
@@ -620,7 +646,7 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
               {/* Sticky Edit Profile button - view mode, authenticated users only */}
               {!isPublic && editMode === 'view' && (
                 <div
-                  className="fixed bottom-0 left-0 right-0 lg:left-64 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm px-4 sm:px-8 py-4"
+                  className="fixed bottom-0 left-0 right-0 dashboard-sidebar-offset z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-sm px-4 sm:px-8 py-4"
                   style={{
                     paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
                   }}
@@ -681,6 +707,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 onCancel={handleCancel}
                 isLoading={isLoading}
                 isFreeTier={isFreeTier}
+                primaryServiceArea={primaryServiceArea}
+                onPrimaryServiceAreaChange={setPrimaryServiceArea}
               />
             </div>
           )}

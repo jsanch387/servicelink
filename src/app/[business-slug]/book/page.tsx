@@ -33,7 +33,8 @@ import {
 } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
-import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { resolvePublicBookingPolicy } from '@/features/business-profile/utils/bookingPolicy';
+import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { loadPublicActiveSale } from '@/features/marketing/server/loadPublicActiveSale';
 import { checkoutModeFromDb } from '@/features/payments/utils/paymentSettingsMaps';
 import { getAddOnsByIdsForBooking } from '@/features/services/api/getAddOnsByIdsForBooking';
@@ -110,6 +111,8 @@ type PublicBusinessProfileForBooking = {
   business_zip: string | null;
   shop_street_address: string | null;
   shop_unit: string | null;
+  booking_policy_enabled?: boolean | null;
+  booking_policy_text?: string | null;
 };
 
 type ServiceRowForPicker = {
@@ -175,7 +178,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, booking_policy_enabled, booking_policy_text'
       )
       .eq('business_slug', slug)
       .single();
@@ -305,6 +308,7 @@ export default async function BookingRequestPage({
   }
 
   const slugForRoutes = businessProfile.business_slug || slug;
+  const bookingPolicy = resolvePublicBookingPolicy(businessProfile);
 
   // Fetch availability with admin client so RLS doesn't block (public page needs to read accept_bookings)
   const availabilityRow = await getAvailabilityForBusiness(
@@ -490,7 +494,11 @@ export default async function BookingRequestPage({
       )
     : null;
 
-  const serviceLocation = buildPublicBookingServiceLocation(businessProfile);
+  const serviceLocation = await loadPublicBookingServiceLocation(
+    adminClient,
+    businessProfile.id,
+    businessProfile
+  );
 
   const activeSale = await loadPublicActiveSale(
     adminClient,
@@ -610,6 +618,7 @@ export default async function BookingRequestPage({
             serviceLocation={serviceLocation}
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
+            bookingPolicy={bookingPolicy}
             stripeCheckoutSessionId={stripeCheckoutSessionId}
             exitCalendarFlowHref={bookPageBackHref}
             exitCalendarFlowLabel={bookPageBackLabel}
@@ -650,6 +659,7 @@ export default async function BookingRequestPage({
             serviceLocation={serviceLocation}
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
+            bookingPolicy={bookingPolicy}
           />
         </div>
       ) : showAvailabilityServicePicker ? (
@@ -662,6 +672,7 @@ export default async function BookingRequestPage({
           initialEntryMode={ownerEntryMode}
           bookingFlowLocale={bookingFlowLocale}
           addingAnotherJob={isAddingAnotherJob}
+          bookingPolicy={bookingPolicy}
         />
       ) : (
         <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 pt-6 sm:pt-8">
@@ -698,6 +709,7 @@ export default async function BookingRequestPage({
             serviceLocation={serviceLocation}
             initialCustomerServiceChoice={serviceLocationTypeForBack ?? null}
             activeSale={activeSale}
+            bookingPolicy={bookingPolicy}
           />
         </div>
       )}

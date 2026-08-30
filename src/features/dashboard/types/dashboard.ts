@@ -48,4 +48,6 @@ export interface DashboardSidebarProps {
   setOpen: (_open: boolean) => void;
   isOnboardingCompleted?: boolean;
   showMembershipsNav?: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }

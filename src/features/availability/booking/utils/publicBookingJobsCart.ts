@@ -35,6 +35,7 @@ export type PublicBookingVisitDraft = {
   detailsSubStep: PublicBookingVisitDetailsSubStep;
   customerServiceChoice: 'mobile' | 'shop' | null;
   agreedToNotifications: boolean;
+  agreedToPolicy?: boolean;
 };
 
 export type PublicBookingJobsCartV1 = {
@@ -181,6 +182,7 @@ function parseCartVisitDraft(
     customerServiceChoice:
       choice === 'mobile' || choice === 'shop' ? choice : null,
     agreedToNotifications: d.agreedToNotifications === true,
+    agreedToPolicy: d.agreedToPolicy === true,
   };
 }
 

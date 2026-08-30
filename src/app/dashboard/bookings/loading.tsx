@@ -10,24 +10,21 @@ export default function BookingsLoading() {
   return (
     <main className="relative flex min-h-screen flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
       <div className="min-h-0 flex-1 overflow-y-auto pb-36">
-        <header className="sticky top-0 z-10 w-full border-b border-white/[0.05] bg-[#0f0f0f]/80 px-3 pt-4 pb-3 backdrop-blur-xl sm:px-4 sm:pt-6 sm:pb-4 md:px-6 md:pt-8 lg:px-8">
-          <div className="flex items-start justify-between gap-3">
+        <div className="mx-auto w-full max-w-xl px-4 py-8 sm:px-6 sm:py-10 md:px-6 lg:max-w-3xl lg:px-8 lg:py-10">
+          <header className="mb-6 flex items-start justify-between gap-3 sm:mb-8">
             <div className="min-w-0 flex-1 text-left">
-              <h1 className="text-xl font-black tracking-tight sm:text-2xl">
+              <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
                 Bookings
               </h1>
-              <p className="mt-0.5 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500">
                 Manage your appointments
               </p>
             </div>
             <div
-              className="mt-0.5 h-5 w-28 shrink-0 rounded bg-white/[0.08] animate-pulse sm:mt-1 sm:h-5 sm:w-32"
+              className="mt-1 h-5 w-28 shrink-0 rounded bg-white/[0.08] animate-pulse sm:h-5 sm:w-32"
               aria-hidden
             />
-          </div>
-        </header>
-
-        <div className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4 sm:py-5 md:px-6 lg:max-w-3xl lg:px-8 lg:py-6">
+          </header>
           <div className="mb-4 flex w-full flex-row items-center justify-between gap-2">
             <div className="h-10 w-44 max-w-full shrink rounded-xl bg-white/[0.06] animate-pulse" />
             <div className="h-10 w-10 shrink-0 rounded-[10px] bg-white/[0.06] animate-pulse md:h-10 md:w-40" />
@@ -37,7 +34,7 @@ export default function BookingsLoading() {
       </div>
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-4 backdrop-blur-md sm:px-4 md:px-6 lg:left-64 lg:px-8 safe-area-pb"
+        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-4 backdrop-blur-md sm:px-4 md:px-6 dashboard-sidebar-offset lg:px-8 safe-area-pb"
         style={{
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
         }}

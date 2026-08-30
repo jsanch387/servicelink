@@ -1,3 +1,7 @@
+import {
+  getSpecialtiesForBusinessType,
+  sanitizeBusinessSpecialties,
+} from '@/constants/businessSpecialties';
 import { getBioLengthValidationError } from '../../constants/businessBio';
 import {
   parseServiceAreaCityState,
@@ -19,6 +23,11 @@ export function validateEditingForm(
   }
   if (!formData.business_type.trim()) {
     errors.push('Business type is required');
+  } else if (
+    getSpecialtiesForBusinessType(formData.business_type).length > 0 &&
+    sanitizeBusinessSpecialties(formData.specialties).length === 0
+  ) {
+    errors.push('Pick at least one thing people hire you for');
   }
 
   const { city, state } = parseServiceAreaCityState(formData.service_area);

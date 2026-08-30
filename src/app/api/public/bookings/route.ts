@@ -61,6 +61,10 @@ import { linkMembershipPeriodVisit } from '@/features/subscriptions/server/linkM
 import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
+  publicBookingPolicyError,
+  resolvePublicBookingPolicy,
+} from '@/features/business-profile/utils/bookingPolicy';
+import {
   buildPublicBookingServiceLocation,
   customerUsesShopAddress,
   resolveEffectiveCustomerServiceLocation,
@@ -228,7 +232,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, business_type'
+        'id, business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, business_type, booking_policy_enabled, booking_policy_text'
       )
       .eq('business_slug', body.businessSlug.trim())
       .single();
@@ -248,6 +252,19 @@ export async function POST(request: NextRequest) {
         requestId,
         { success: false, error: 'Business not found' },
         404
+      );
+    }
+
+    const policyError = publicBookingPolicyError({
+      ownerManualBooking,
+      agreedToPolicy: body.agreedToPolicy === true,
+      policyRequired: resolvePublicBookingPolicy(profile) != null,
+    });
+    if (policyError) {
+      return publicBookingJson(
+        requestId,
+        { success: false, error: policyError },
+        400
       );
     }
 

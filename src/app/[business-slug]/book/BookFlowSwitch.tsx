@@ -59,6 +59,7 @@ interface BookFlowSwitchProps {
   /** Pre-selected mobile/shop from `/book/details` when business offers both. */
   initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   activeSale?: PublicActiveSale | null;
+  bookingPolicy?: { text: string } | null;
 }
 
 /**
@@ -95,6 +96,7 @@ export function BookFlowSwitch({
   serviceLocation,
   initialCustomerServiceChoice = null,
   activeSale = null,
+  bookingPolicy = null,
 }: BookFlowSwitchProps) {
   const ui = publicBookingUi(bookingFlowLocale);
 
@@ -173,6 +175,7 @@ export function BookFlowSwitch({
           serviceLocation={serviceLocation}
           initialCustomerServiceChoice={initialCustomerServiceChoice}
           activeSale={activeSale}
+          bookingPolicy={bookingPolicy}
         />
       </Suspense>
     );

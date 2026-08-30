@@ -18,6 +18,33 @@ describe('publicServiceLocation', () => {
     expect(loc.hasCompleteShopAddress).toBe(true);
     expect(loc.shopAddressLabel).toContain('100 Main St');
     expect(loc.shopAddressLabel).toContain('78701');
+    expect(loc.radiusMiles).toBeNull();
+    expect(loc.coverageLabel).toBe('Austin, TX');
+  });
+
+  it('uses confirmed service coverage for city, state, and radius', () => {
+    const loc = buildPublicBookingServiceLocation(
+      {
+        service_location_mode: 'mobile_only',
+        service_area: 'Legacy City, CA',
+        business_zip: '90001',
+        shop_street_address: '',
+        shop_unit: '',
+      },
+      {
+        city: 'Austin',
+        stateCode: 'TX',
+        postalCode: '78701',
+        radiusMiles: 25,
+        label: 'Austin, Texas, United States',
+      }
+    );
+
+    expect(loc.city).toBe('Austin');
+    expect(loc.state).toBe('TX');
+    expect(loc.zip).toBe('78701');
+    expect(loc.radiusMiles).toBe(25);
+    expect(loc.coverageLabel).toBe('Austin, TX · 25 mi');
   });
 
   it('marks incomplete shop when street missing', () => {

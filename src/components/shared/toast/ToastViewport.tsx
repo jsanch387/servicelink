@@ -73,7 +73,7 @@ export function ToastViewport(): React.ReactElement {
   return (
     <div
       className={`pointer-events-none fixed inset-x-0 top-20 z-[100] flex flex-col items-center gap-2 px-4 sm:top-24 sm:px-6 ${
-        inDashboard ? 'lg:left-64' : ''
+        inDashboard ? 'dashboard-sidebar-offset' : ''
       }`}
       aria-label="Notifications"
     >

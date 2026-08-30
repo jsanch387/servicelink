@@ -1,11 +1,10 @@
 /**
- * Free-tier V2 booking cap: `FREE_BOOKINGS_LIMIT` lifetime public bookings per business on Free.
- * Uses `business_profiles.free_bookings_count` only (`free_bookings_month` is legacy, unused here).
- * Subjects owners to the cap when they are not {@link isExemptFromFreeTierLifetimeBookingCap}
- * (aligned with the public book page gate).
- * - Public booking flow: check + increment before insert.
- * - Quote approval: check before insert; increment only after the quote is linked to the booking
- *   so losing a link race does not consume a slot or leave stray counts.
+ * Free-tier lifetime booking cap: `FREE_BOOKINGS_LIMIT` appointments per business
+ * while the owner is not Pro (`isProAccess` / {@link isExemptFromFreeTierLifetimeBookingCap}).
+ * Cancel, past_due, unpaid, paused, or never-subscribed all count as Free.
+ * Uses `business_profiles.free_bookings_count` only (`free_bookings_month` is unused).
+ * - Public / owner create: check + increment before insert. Increment failure blocks create.
+ * - Quote approval: check before insert; increment only after the quote is linked.
  */
 
 import {
@@ -26,22 +25,39 @@ export type FreeTierBookingCapResult =
   | { ok: true }
   | { ok: false; message: string };
 
-type CapContext =
-  | { applies: false }
-  | {
-      applies: true;
-      atCap: boolean;
-      nextCount: number;
-      businessId: string;
-    };
+export const FREE_TIER_BOOKING_CAP_REACHED_MESSAGE =
+  "This business isn't accepting new bookings right now. They've reached the limit for their current plan.";
+
+const FREE_TIER_BOOKING_CAP_INCREMENT_FAILED_MESSAGE =
+  "Couldn't create this booking. Please try again.";
+
+type CapContext = {
+  applies: true;
+  atCap: boolean;
+  nextCount: number;
+  businessId: string;
+};
+
+function capFromCount(
+  businessId: string,
+  freeBookingsCount: number | null
+): CapContext {
+  const count = freeBookingsCount ?? 0;
+  return {
+    applies: true,
+    atCap: count >= FREE_BOOKINGS_LIMIT,
+    nextCount: count + 1,
+    businessId,
+  };
+}
 
 async function resolveFreeTierCapContext(
   supabase: SupabaseClient<Database>,
   profile: BusinessProfileRowForBookingCap
-): Promise<CapContext> {
+): Promise<CapContext | { applies: false }> {
   const profileId = profile.profile_id ?? null;
   if (!profileId) {
-    return { applies: false };
+    return capFromCount(profile.id, profile.free_bookings_count);
   }
 
   const { data: ownerProfileRaw } = await supabase
@@ -72,28 +88,31 @@ async function resolveFreeTierCapContext(
     return { applies: false };
   }
 
-  const count = profile.free_bookings_count ?? 0;
-
-  return {
-    applies: true,
-    atCap: count >= FREE_BOOKINGS_LIMIT,
-    nextCount: count + 1,
-    businessId: profile.id,
-  };
+  return capFromCount(profile.id, profile.free_bookings_count);
 }
 
 async function persistFreeTierIncrement(
   supabase: SupabaseClient<Database>,
-  ctx: Extract<CapContext, { applies: true }>
-): Promise<void> {
+  ctx: CapContext
+): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
-
+  const { error } = await (supabase as any)
     .from('business_profiles')
     .update({
       free_bookings_count: ctx.nextCount,
     })
     .eq('id', ctx.businessId);
+
+  if (error) {
+    console.error('[free-tier-cap] increment_failed', {
+      businessId: ctx.businessId,
+      nextCount: ctx.nextCount,
+      code: error.code ?? 'unknown',
+      message: String(error.message ?? '').slice(0, 160),
+    });
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -110,8 +129,7 @@ export async function checkFreeTierBookingCapAllowsCreate(
   if (ctx.atCap) {
     return {
       ok: false,
-      message:
-        "This business isn't accepting new bookings right now. They've reached the limit for their current plan.",
+      message: FREE_TIER_BOOKING_CAP_REACHED_MESSAGE,
     };
   }
   return { ok: true };
@@ -158,11 +176,16 @@ export async function enforceFreeTierBookingCapBeforeCreate(
   if (ctx.atCap) {
     return {
       ok: false,
-      message:
-        "This business isn't accepting new bookings right now. They've reached the limit for their current plan.",
+      message: FREE_TIER_BOOKING_CAP_REACHED_MESSAGE,
     };
   }
 
-  await persistFreeTierIncrement(supabase, ctx);
+  const wrote = await persistFreeTierIncrement(supabase, ctx);
+  if (!wrote) {
+    return {
+      ok: false,
+      message: FREE_TIER_BOOKING_CAP_INCREMENT_FAILED_MESSAGE,
+    };
+  }
   return { ok: true };
 }

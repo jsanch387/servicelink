@@ -12,24 +12,20 @@ import {
   serviceLocationModeHint,
   shopAddressIsOffered,
 } from '../utils/serviceLocationMode';
-import { ProfileLocationFields } from './ProfileLocationFields';
+import { sanitizeZipInput } from '../utils/businessLocation';
 
 export interface DashboardProfileServiceLocationCardProps {
   value: ServiceLocationUiState;
   onChange: (next: ServiceLocationUiState) => void;
-  /** City, state, ZIP — shared with profile location (Details tab). */
+  /** City, state, ZIP — shared with Details coverage. */
   profileLocation: {
     city: string;
     state: string;
     zip: string;
   };
-  onProfileLocationChange: (patch: {
-    city?: string;
-    state?: string;
-    zip?: string;
-  }) => void;
-  /** For mobile service area hint. */
-  profileLocationLabel?: string | null;
+  onZipChange: (zip: string) => void;
+  /** e.g. "Austin, TX · 25 mi" from Details. */
+  coverageLabel?: string | null;
   errors?: string[];
 }
 
@@ -54,15 +50,18 @@ export function DashboardProfileServiceLocationCard({
   value,
   onChange,
   profileLocation,
-  onProfileLocationChange,
-  profileLocationLabel,
+  onZipChange,
+  coverageLabel,
   errors = [],
 }: DashboardProfileServiceLocationCardProps) {
   const showShopFields = shopAddressIsOffered(value.mode);
   const showMobileHint = mobileServiceIsOffered(value.mode);
-  const trimmedProfileLocation = profileLocationLabel?.trim() || null;
+  const trimmedCoverage = coverageLabel?.trim() || null;
   const shopStreetError = errors.find(e =>
     e.toLowerCase().includes('shop street')
+  );
+  const shopZipError = errors.some(e =>
+    e.toLowerCase().includes('shop address requires')
   );
 
   return (
@@ -144,39 +143,42 @@ export function DashboardProfileServiceLocationCard({
                   }
                 />
               </div>
+              <div className="sm:col-span-4">
+                <p className="text-xs font-medium text-zinc-400">City, state</p>
+                <p className="mt-2 text-sm text-zinc-300">
+                  {profileLocation.city && profileLocation.state
+                    ? `${profileLocation.city}, ${profileLocation.state}`
+                    : 'Set your area in Details'}
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <Input
+                  label="ZIP"
+                  placeholder="78701"
+                  value={profileLocation.zip}
+                  onChange={zip => onZipChange(sanitizeZipInput(zip))}
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  maxLength={5}
+                  required
+                  error={shopZipError ? 'Required' : undefined}
+                />
+              </div>
             </div>
-
-            <ProfileLocationFields
-              city={profileLocation.city}
-              state={profileLocation.state}
-              zip={profileLocation.zip}
-              onCityChange={city =>
-                onProfileLocationChange({ city, state: profileLocation.state })
-              }
-              onStateChange={state =>
-                onProfileLocationChange({ city: profileLocation.city, state })
-              }
-              onZipChange={zip => onProfileLocationChange({ zip })}
-              errors={errors}
-            />
           </div>
         ) : null}
 
         {showMobileHint ? (
           <p className="mt-4 border-t border-white/[0.06] pt-4 text-xs text-zinc-500">
-            {trimmedProfileLocation ? (
+            {trimmedCoverage ? (
               <>
                 {showShopFields ? 'Mobile jobs use' : 'Your area:'}{' '}
-                <span className="text-zinc-400">{trimmedProfileLocation}</span>
-                {showShopFields ? (
-                  <span className="text-zinc-600"> · same city above</span>
-                ) : (
-                  <span className="text-zinc-600"> · edit in Details</span>
-                )}
+                <span className="text-zinc-400">{trimmedCoverage}</span>
+                <span className="text-zinc-600"> · edit in Details</span>
               </>
             ) : (
               <>
-                Add your city, state, and ZIP in{' '}
+                Add your city, state, and travel distance in{' '}
                 <span className="text-zinc-400">Details</span>.
               </>
             )}

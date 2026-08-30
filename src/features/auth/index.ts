@@ -23,6 +23,7 @@ export type {
 
 // Auth Utils
 export {
+  getEmailTypoHint,
   isValidEmail,
   validatePassword,
   validateSignUpForm,

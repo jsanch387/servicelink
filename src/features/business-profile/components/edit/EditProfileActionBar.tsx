@@ -25,7 +25,7 @@ export function EditProfileActionBar({
       : 'Save changes';
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] lg:left-64">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] dashboard-sidebar-offset">
       <div className="pointer-events-auto mx-auto flex max-w-md gap-2 rounded-2xl border border-white/10 bg-[#141414]/95 p-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl">
         <Button
           onClick={onPreview}

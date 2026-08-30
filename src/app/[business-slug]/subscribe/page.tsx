@@ -6,7 +6,7 @@ import {
 } from '@/features/availability/types/blockTime';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
-import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { isProAccess } from '@/features/pricing';
 import { PublicMembershipSubscribePage } from '@/features/subscriptions/components/PublicMembershipSubscribePage';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '@/features/subscriptions/constants/membershipVisitDuration';
@@ -117,7 +117,9 @@ export default async function PublicMembershipSubscribeRoute({
     cookieValue: cookieStore.get(BOOKING_FLOW_LOCALE_COOKIE_NAME)?.value,
   });
 
-  const serviceLocation = buildPublicBookingServiceLocation(
+  const serviceLocation = await loadPublicBookingServiceLocation(
+    admin,
+    businessId,
     profile as {
       service_location_mode?: string | null;
       service_area?: string | null;

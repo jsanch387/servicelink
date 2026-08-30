@@ -22,7 +22,7 @@ export type StartExpressConnectOnboardingParams = {
   existingStripeAccountId?: string | null;
   /**
    * Stripe Account Link `return_url` / `refresh_url` (e.g. mobile deep links).
-   * Omit to use `{site}/dashboard/payments?connect=return|refresh` (web).
+   * Omit to use `{site}/dashboard/payments/settings?connect=return|refresh` (web).
    */
   accountLinkUrls?: {
     returnUrl: string;
@@ -51,11 +51,11 @@ export async function startExpressConnectOnboarding(
   const returnUrl =
     customReturn && customRefresh
       ? customReturn
-      : `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS}?connect=return`;
+      : `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS_SETTINGS}?connect=return`;
   const refreshUrl =
     customReturn && customRefresh
       ? customRefresh
-      : `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS}?connect=refresh`;
+      : `${baseUrl}${ROUTES.DASHBOARD.PAYMENTS_SETTINGS}?connect=refresh`;
 
   const existingId = params.existingStripeAccountId?.trim() || null;
 

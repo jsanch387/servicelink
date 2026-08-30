@@ -15,6 +15,10 @@ export {
   sanitizeZipInput,
   validateBusinessLocation,
 } from '../businessLocation';
+export {
+  formatServiceCoverageLabel,
+  validateServiceCoverage,
+} from '../primaryServiceArea';
 export type {
   BusinessLocationFields,
   ShopAddressParts,

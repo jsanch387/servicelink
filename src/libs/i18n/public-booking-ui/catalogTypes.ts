@@ -22,6 +22,7 @@ export type PublicBookingUi = {
   common: {
     back: string;
     continue: string;
+    close: string;
     select: string;
     summary: string;
     total: string;
@@ -164,6 +165,9 @@ export type PublicBookingUi = {
     notificationsSmsFinePrintLinkLabel: string;
     /** Inline linked text to `/terms` after the privacy link. */
     notificationsSmsTermsLinkLabel: string;
+    policyHeading: string;
+    policyConsentCheckboxLabel: string;
+    policyConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;
     chooseHowToPay: string;

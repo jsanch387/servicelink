@@ -189,13 +189,22 @@ export async function POST(request: NextRequest) {
   }
 
   // Keep legacy profile fields in sync for existing city/ZIP search.
+  // Only write ZIP when MapTiler provided one so a shop ZIP is not wiped.
+  const profileUpdate: {
+    service_area: string;
+    updated_at: string;
+    business_zip?: string;
+  } = {
+    service_area: formatServiceArea(city, stateCode),
+    updated_at: now,
+  };
+  if (postalCode) {
+    profileUpdate.business_zip = postalCode;
+  }
+
   const { error: profileError } = await client
     .from('business_profiles')
-    .update({
-      service_area: formatServiceArea(city, stateCode),
-      business_zip: postalCode,
-      updated_at: now,
-    })
+    .update(profileUpdate)
     .eq('id', resolved.businessId);
 
   if (profileError) {

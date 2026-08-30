@@ -112,9 +112,7 @@ export function validateBusinessLocation(
     }
   }
 
-  if (!zip) {
-    errors.push('ZIP is required');
-  } else if (!isValidUsZip(zip)) {
+  if (zip && !isValidUsZip(zip)) {
     errors.push('ZIP must be 5 digits');
   }
 

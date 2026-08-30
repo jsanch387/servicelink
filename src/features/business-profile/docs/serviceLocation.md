@@ -13,8 +13,8 @@ Migrations:
 
 | Column                  | Type   | Purpose                                                       |
 | ----------------------- | ------ | ------------------------------------------------------------- |
-| `service_area`          | `text` | **City + state** as `"City, ST"` (existing column)            |
-| `business_zip`          | `text` | **US ZIP** (5 digits). **Required** on profile save           |
+| `service_area`          | `text` | **City + state** as `"City, ST"` (synced from service area)   |
+| `business_zip`          | `text` | **US ZIP** (5 digits). Optional for mobile; required for shop |
 | `service_location_mode` | `text` | `mobile_only` \| `shop_only` \| `both`. Default `mobile_only` |
 | `shop_street_address`   | `text` | Street where customers visit (shop / both)                    |
 | `shop_unit`             | `text` | Optional suite or unit                                        |
@@ -26,50 +26,52 @@ Migrations:
 ## Mental model
 
 ```
-Profile location (always)
-  service_area  →  "Austin, TX"
-  business_zip  →  "78660"
+Coverage (Details → Location, MapTiler)
+  business_service_areas (primary) → city, state, lat/lng, radius
+  business_profiles.service_area   → "Austin, TX" (legacy sync)
+  business_profiles.business_zip   → ZIP when the pick includes one
 
 When mode is shop_only or both
   shop_street_address  →  "123 Main St"
   shop_unit            →  "Suite 4" (optional)
 
 Full shop display  →  formatFullShopAddress({ street, unit, city, state, zip })
-Mobile service area → formatProfileLocationLabel(city, state, zip)
+Mobile / booking link → formatServiceCoverageLabel(city, state, radius)  e.g. "Austin, TX · 25 mi"
 ```
 
-One base location per business. Mobile jobs and shop visits share city/state/ZIP; only street/unit are shop-specific.
+One base location per business. Mobile jobs and shop visits share city/state; only street/unit are shop-specific. Public pages never receive lat/lng.
 
 ---
 
 ## Dashboard edit UI
 
-**Route:** `/dashboard/business-profile?mode=edit` → **Booking** tab.
+**Route:** `/dashboard/business-profile?mode=edit`
 
-| Control                            | Maps to                                                  |
-| ---------------------------------- | -------------------------------------------------------- |
-| Service type: Mobile / Shop / Both | `service_location_mode`                                  |
-| Shop → Street, Unit                | `shop_street_address`, `shop_unit`                       |
-| Shop → City, State, ZIP            | `service_area`, `business_zip` (same as **Details** tab) |
+| Control                                                 | Maps to                                            |
+| ------------------------------------------------------- | -------------------------------------------------- |
+| **Details → Location** city/state autocomplete + radius | primary `business_service_areas` row               |
+| Service type: Mobile / Shop / Both                      | `service_location_mode`                            |
+| Shop → Street, Unit, ZIP                                | `shop_street_address`, `shop_unit`, `business_zip` |
 
-City/state/ZIP also appear under **Details → Location**. Both tabs edit the same fields.
+City, state, and radius are edited only under **Details → Location** (same MapTiler picker as the dashboard “Where do you serve?” modal). Booking tab shows a read-only coverage hint.
 
 ### Validation on save
 
-| Rule                                          | Error (examples)                                 |
-| --------------------------------------------- | ------------------------------------------------ |
-| City, state, ZIP required for every profile   | `City and state are required`, `ZIP is required` |
-| Shop or Both → street required                | `Shop street address is required`                |
-| Shop or Both → full profile location required | `Shop address requires city, state, and ZIP`     |
+| Rule                                         | Error (examples)                             |
+| -------------------------------------------- | -------------------------------------------- |
+| Confirmed MapTiler city/state + radius       | `Choose a suggested location to confirm it`  |
+| Shop or Both → street required               | `Shop street address is required`            |
+| Shop or Both → city, state, and ZIP required | `Shop address requires city, state, and ZIP` |
 
 Save errors route to tabs via `tabForSaveErrors()` in `EditProfileTabNav.tsx` (shop/location → **Booking**, generic location → **Details**).
 
 ### Persist path
 
-1. `EditBusinessProfile` → `saveBusinessProfile()` in `utils/editing/editingHelpers.ts`
-2. `validateEditingForm()` in `utils/editing/editingValidation.ts`
-3. `transformFormDataForAPI()` merges `serviceLocationPersistFromUi()`
-4. `BusinessProfileApi.updateBusinessProfile()`
+1. `EditBusinessProfile` validates coverage, then `savePrimaryServiceArea()` → `POST /api/business-profile/service-area` (upserts `business_service_areas`, syncs `service_area` / ZIP)
+2. `saveBusinessProfile()` in `utils/editing/editingHelpers.ts`
+3. `validateEditingForm()` in `utils/editing/editingValidation.ts`
+4. `transformFormDataForAPI()` merges `serviceLocationPersistFromUi()`
+5. `BusinessProfileApi.updateBusinessProfile()`
 
 When mode is `mobile_only`, shop street/unit are saved as `null`.
 
@@ -85,6 +87,8 @@ When mode is `mobile_only`, shop street/unit are saved as `null`.
 | Shared city/state/ZIP inputs              | `components/ProfileLocationFields.tsx`               |
 | Booking tab card                          | `components/DashboardProfileServiceLocationCard.tsx` |
 | Details tab location                      | `components/edit/sections/BusinessInfoSection.tsx`   |
+| Coverage editor (MapTiler + radius)       | `components/DashboardProfileCoverageCard.tsx`        |
+| Primary service area loader               | `server/loadPrimaryServiceArea.ts`                   |
 | Form types                                | `utils/editing/editingTypes.ts`                      |
 | Form validation (no API deps)             | `utils/editing/editingValidation.ts`                 |
 | Save + transform                          | `utils/editing/editingHelpers.ts`                    |
@@ -155,16 +159,16 @@ Run: `npm test -- src/features/business-profile/testing/`
 
 ## Quick QA checklist (dashboard)
 
-- **Mobile only:** save without shop street; city/state/ZIP still required.
+- **Mobile only:** save without shop street; MapTiler city/state + radius required.
 - **Shop only:** street + city/state/ZIP required; unit optional.
-- **Both:** same shop rules; mobile hint shows shared city/state/ZIP.
-- Edit city in **Details**, open **Booking** → shop city matches.
-- Edit city in **Booking** shop section, open **Details** → location matches.
+- **Both:** same shop rules; mobile hint shows city/state + radius from Details.
+- Edit coverage in **Details**, open **Booking** → hint and shop city match.
 - Switch Shop → Mobile → save → `shop_street_address` and `shop_unit` cleared in DB.
-- Profile completion checklist includes **City, state + ZIP**.
+- Profile completion checklist includes **Service area**.
+- Public booking link header shows `City, ST · 25 mi` (no coordinates).
 
 ---
 
 ## Profile completion tracker
 
-`ProfileCompletionTracker` checks `business_zip` in addition to city/state from `service_area`. Shop street is not a separate checklist item today (mode defaults to mobile).
+`ProfileCompletionTracker` checks city/state from the primary service area (or legacy `service_area`). ZIP is optional for mobile. Shop street is not a separate checklist item today.

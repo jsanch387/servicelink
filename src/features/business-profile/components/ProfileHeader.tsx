@@ -32,6 +32,8 @@ interface ProfileHeaderProps {
   bookingFlowLocale?: PublicBookingFlowLocale;
   /** When null/undefined or empty count, header star rating is hidden. */
   publicReviewSummary?: PublicProfileReviewsSummary | null;
+  /** City/state + radius for the booking link, e.g. "Austin, TX · 25 mi". */
+  coverageLabel?: string | null;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -41,6 +43,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   showRequestQuoteCta = false,
   bookingFlowLocale = 'en',
   publicReviewSummary = null,
+  coverageLabel = null,
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const slugTrimmed = businessProfile.business_slug?.trim();
@@ -49,7 +52,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     !!slugTrimmed &&
     (isPublic || showRequestQuoteCta) &&
     (showRequestQuoteCta || !!phoneTrimmed);
-  const serviceArea = businessProfile.service_area?.trim() || null;
+  const serviceArea =
+    coverageLabel?.trim() || businessProfile.service_area?.trim() || null;
   const socialLinks = socialLinksForDisplay(businessProfile.social_media);
 
   return (

@@ -20,6 +20,7 @@ export const publicBookingUiEn: PublicBookingUi = {
   common: {
     back: 'Back',
     continue: 'Continue',
+    close: 'Close',
     select: 'Select',
     summary: 'Summary',
     total: 'Total',
@@ -170,6 +171,9 @@ export const publicBookingUiEn: PublicBookingUi = {
       'By checking this box, you agree to receive SMS appointment notifications from ServiceLink. Message frequency may vary. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our',
     notificationsSmsFinePrintLinkLabel: 'Privacy Policy',
     notificationsSmsTermsLinkLabel: 'Terms of Service',
+    policyHeading: 'Booking policy',
+    policyConsentCheckboxLabel: 'I agree to the booking policy',
+    policyConsentRequired: 'Agree to the booking policy to continue.',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',
     chooseHowToPay: 'Choose how to pay',

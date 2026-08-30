@@ -28,7 +28,8 @@ export function tabForSaveErrors(errors: string[]): EditProfileTabId {
   if (
     message.includes('shop') ||
     message.includes('service type') ||
-    message.includes('service location')
+    message.includes('service location') ||
+    message.includes('policy')
   ) {
     return 'booking';
   }
@@ -37,7 +38,8 @@ export function tabForSaveErrors(errors: string[]): EditProfileTabId {
     message.includes('location') ||
     message.includes('zip') ||
     message.includes('city') ||
-    message.includes('service area')
+    message.includes('service area') ||
+    message.includes('travel distance')
   ) {
     return 'details';
   }

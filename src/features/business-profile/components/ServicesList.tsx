@@ -1,8 +1,11 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
+import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import { useRouter } from 'next/navigation';
 import {
   buildPublicServiceCategoryOptions,
   shouldShowPublicServiceCategoryFilters,
@@ -10,6 +13,7 @@ import {
 import { filterServicesByCategoryFilter } from '@/features/services/categories/utils/filterServicesByCategoryFilter';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import { resolvePublicBookingPolicy } from '../utils/bookingPolicy';
 import { EmptyState } from './EmptyState';
 import { PublicServiceCategoryFilters } from './PublicServiceCategoryFilters';
 import { ServiceCard } from './ServiceCard';
@@ -48,6 +52,7 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   bookingFlowLocale = 'en',
   publicActiveSale = null,
 }) => {
+  const router = useRouter();
   const bookingUi = publicBookingUi(bookingFlowLocale);
   const services = useMemo(
     () => businessProfile.services || [],
@@ -103,6 +108,14 @@ export const ServicesList: React.FC<ServicesListProps> = ({
     'business_slug' in businessProfile
       ? businessProfile.business_slug || ''
       : '';
+  const publicBookingPolicy = isPublic
+    ? resolvePublicBookingPolicy(businessProfile)
+    : null;
+  const policyAgreement = usePublicBookingPolicyAgreement({
+    businessSlug,
+    policyText: publicBookingPolicy?.text,
+    skip: !isPublic,
+  });
 
   const allowPriceOptionSignals =
     !isPublic || publicOwnerHasProForPriceOptions === true;
@@ -149,6 +162,14 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                   hideBookLink={publicHideBookLinks}
                   bookingFlowLocale={bookingFlowLocale}
                   publicActiveSale={publicActiveSale}
+                  onSelectNavigate={
+                    policyAgreement.required && !policyAgreement.hasAgreed
+                      ? href =>
+                          policyAgreement.runAfterAgreement(() =>
+                            router.push(href)
+                          )
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -161,6 +182,14 @@ export const ServicesList: React.FC<ServicesListProps> = ({
       ) : (
         <EmptyState type="services" showEditButton={false} />
       )}
+      <PublicBookingPolicyAgreeDialog
+        isOpen={policyAgreement.modalOpen}
+        required={policyAgreement.required}
+        policyText={policyAgreement.policyText}
+        onClose={policyAgreement.dismiss}
+        onAgreed={policyAgreement.agree}
+        bookingFlowLocale={bookingFlowLocale}
+      />
     </section>
   );
 };

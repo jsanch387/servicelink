@@ -15,8 +15,8 @@ export function applyPaymentsTransactionDisplay(
     statusLabel: statusLabelFor(item),
     dateLabel: formatShortDate(item.createdAt),
     feeLabel:
-      item.kind === 'payment' && item.feeCents > 0
-        ? `Fee ${formatPaymentCents(item.feeCents)}`
+      item.feeCents > 0
+        ? `Stripe fee ${formatPaymentCents(item.feeCents)}`
         : null,
   };
 }

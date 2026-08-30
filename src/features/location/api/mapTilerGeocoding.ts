@@ -2,6 +2,7 @@ import type {
   LocationAutocompleteMode,
   StructuredLocation,
 } from '../types/location';
+import { isAbortError } from '../utils/isAbortError';
 
 const MAPTILER_GEOCODING_URL = 'https://api.maptiler.com/geocoding';
 const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -227,20 +228,31 @@ async function fetchMapTilerLocations(
   params: URLSearchParams,
   signal?: AbortSignal
 ): Promise<StructuredLocation[]> {
-  const response = await fetch(
-    `${MAPTILER_GEOCODING_URL}/${path}.json?${params.toString()}`,
-    { signal }
-  );
-
-  if (!response.ok) {
-    throw new Error('Location suggestions are unavailable.');
+  if (signal?.aborted) {
+    throw new DOMException('The operation was aborted.', 'AbortError');
   }
 
-  const result = (await response.json()) as MapTilerFeatureCollection;
-  return (result.features ?? []).flatMap(feature => {
-    const location = mapFeature(feature);
-    return location ? [location] : [];
-  });
+  try {
+    const response = await fetch(
+      `${MAPTILER_GEOCODING_URL}/${path}.json?${params.toString()}`,
+      { signal }
+    );
+
+    if (!response.ok) {
+      throw new Error('Location suggestions are unavailable.');
+    }
+
+    const result = (await response.json()) as MapTilerFeatureCollection;
+    return (result.features ?? []).flatMap(feature => {
+      const location = mapFeature(feature);
+      return location ? [location] : [];
+    });
+  } catch (error) {
+    if (isAbortError(error) || signal?.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
+    throw error;
+  }
 }
 
 export async function searchMapTilerLocations(

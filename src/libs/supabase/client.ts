@@ -202,6 +202,9 @@ export type Database = {
           public_booking_locales: string[];
           /** Visitor default when opening the booking link (must be in `public_booking_locales`). */
           public_booking_default_locale: string;
+          /** When true and text is set, customers must agree before booking. */
+          booking_policy_enabled: boolean;
+          booking_policy_text: string | null;
         };
         Insert: {
           id?: string;
@@ -241,6 +244,8 @@ export type Database = {
           accept_quote_req?: boolean;
           public_booking_locales?: string[];
           public_booking_default_locale?: string;
+          booking_policy_enabled?: boolean;
+          booking_policy_text?: string | null;
         };
         Update: {
           id?: string;
@@ -280,6 +285,8 @@ export type Database = {
           accept_quote_req?: boolean;
           public_booking_locales?: string[];
           public_booking_default_locale?: string;
+          booking_policy_enabled?: boolean;
+          booking_policy_text?: string | null;
         };
       };
       service_addons: {

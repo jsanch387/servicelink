@@ -11,11 +11,13 @@ export function BookingServiceLocationChoice({
   onChange,
   bookingFlowLocale = 'en',
   isOwnerManualBooking = false,
+  coverageLabel = null,
 }: {
   value: CustomerServiceChoice;
   onChange: (choice: 'mobile' | 'shop') => void;
   bookingFlowLocale?: PublicBookingFlowLocale;
   isOwnerManualBooking?: boolean;
+  coverageLabel?: string | null;
 }) {
   const sl = publicBookingUi(bookingFlowLocale).serviceLocation;
 
@@ -27,9 +29,12 @@ export function BookingServiceLocationChoice({
     {
       id: 'mobile',
       title: isOwnerManualBooking ? sl.ownerMobileOption : sl.mobileOption,
-      description: isOwnerManualBooking
-        ? sl.ownerMobileOptionDesc
-        : sl.mobileOptionDesc,
+      description: [
+        isOwnerManualBooking ? sl.ownerMobileOptionDesc : sl.mobileOptionDesc,
+        coverageLabel?.trim() ? coverageLabel.trim() : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
     },
     {
       id: 'shop',

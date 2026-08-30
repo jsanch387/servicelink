@@ -20,7 +20,8 @@ import { resolvePublicBookingFreeTierGate } from '@/features/availability/bookin
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
-import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
+import { resolvePublicBookingPolicy } from '@/features/business-profile/utils/bookingPolicy';
 import { getServiceWithAddOnsForBooking } from '@/features/services/api/getServiceWithAddOnsForBooking';
 import { ServiceDetailsScreen } from '@/features/services/booking-flow';
 import { BookFlowClientRedirect } from '@/features/availability/booking/components/BookFlowClientRedirect';
@@ -113,7 +114,7 @@ export default async function ServiceDetailsPage({
   const { data: profileMeta } = await adminClient
     .from('business_profiles')
     .select(
-      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, booking_policy_enabled, booking_policy_text'
     )
     .eq('business_slug', slug)
     .maybeSingle();
@@ -193,8 +194,10 @@ export default async function ServiceDetailsPage({
 
   const { service, addOns, priceOptions } = result;
 
-  const serviceLocation = buildPublicBookingServiceLocation(
-    profileMeta as Parameters<typeof buildPublicBookingServiceLocation>[0]
+  const serviceLocation = await loadPublicBookingServiceLocation(
+    adminClient,
+    (profileMeta as { id: string }).id,
+    profileMeta as Parameters<typeof loadPublicBookingServiceLocation>[2]
   );
   const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
   const needsLocationStep = serviceLocation.mode === 'both';
@@ -262,6 +265,7 @@ export default async function ServiceDetailsPage({
         bookingFlowLocale={bookingFlowLocale}
         addingAnotherJob={addingAnotherJob}
         editingVisitJob={editingVisitJob}
+        bookingPolicy={resolvePublicBookingPolicy(profileMeta)}
       />
     </>
   );

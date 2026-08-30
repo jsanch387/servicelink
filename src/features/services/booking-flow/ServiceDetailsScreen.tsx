@@ -11,7 +11,9 @@ import {
   type BookDetailsStepQuery,
   type BookServiceLocationTypeQuery,
 } from '@/constants/routes';
+import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { BookingServiceLocationChoice } from '@/features/availability/booking/components/BookingServiceLocationSteps';
+import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import { PublicBookingStepTracker } from '@/features/availability/booking/components/PublicBookingStepTracker';
 import {
   isCustomerServiceLocationChoiceValid,
@@ -86,6 +88,7 @@ interface ServiceDetailsScreenProps {
    * (back from calendar → edit this service).
    */
   editingVisitJob?: boolean;
+  bookingPolicy?: { text: string } | null;
 }
 
 function resolveInitialPhase(params: {
@@ -127,12 +130,19 @@ export function ServiceDetailsScreen({
   bookingFlowLocale = 'en',
   addingAnotherJob = false,
   editingVisitJob = false,
+  bookingPolicy = null,
 }: ServiceDetailsScreenProps) {
   const router = useRouter();
   const ui = useMemo(
     () => publicBookingUi(bookingFlowLocale),
     [bookingFlowLocale]
   );
+  const policyAgreement = usePublicBookingPolicyAgreement({
+    businessSlug,
+    policyText: bookingPolicy?.text,
+    skip: isOwnerManualBooking,
+    gateOnMount: !isOwnerManualBooking,
+  });
   const needsPriceStep = service.priceOptionsEnabled && priceOptions.length > 0;
   const showAddOnSection = addOns.length > 0;
   const needsLocationStep = serviceLocation.mode === 'both';
@@ -331,12 +341,14 @@ export function ServiceDetailsScreen({
   ]);
 
   const handleContinueToSchedule = () => {
-    if (isOwnerManualBooking) {
-      setIsNavigatingToCalendar(true);
-      router.push(calendarUrl);
-      return;
-    }
-    commitPublicJobAndGoToVisit();
+    policyAgreement.runAfterAgreement(() => {
+      if (isOwnerManualBooking) {
+        setIsNavigatingToCalendar(true);
+        router.push(calendarUrl);
+        return;
+      }
+      commitPublicJobAndGoToVisit();
+    });
   };
 
   const canContinueFromDetails =
@@ -469,6 +481,7 @@ export function ServiceDetailsScreen({
                 onChange={setCustomerServiceChoice}
                 bookingFlowLocale={bookingFlowLocale}
                 isOwnerManualBooking={isOwnerManualBooking}
+                coverageLabel={serviceLocation.coverageLabel}
               />
               {showShopIncompleteError ? (
                 <p className="mt-3 text-sm text-red-400" role="alert">
@@ -563,6 +576,14 @@ export function ServiceDetailsScreen({
           </div>
         </div>
       </div>
+      <PublicBookingPolicyAgreeDialog
+        isOpen={policyAgreement.modalOpen}
+        required={policyAgreement.required}
+        policyText={policyAgreement.policyText}
+        onClose={policyAgreement.dismiss}
+        onAgreed={policyAgreement.agree}
+        bookingFlowLocale={bookingFlowLocale}
+      />
     </>
   );
 }

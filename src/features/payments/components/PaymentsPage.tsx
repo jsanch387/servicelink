@@ -81,11 +81,11 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
 
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
-      <div className="max-w-6xl mx-auto w-full min-w-0">
-        <PaymentsPageHeader
-          showProUpsellLabel={!hasProAccess}
-          description={pageDescription}
-        />
+      <div className="max-w-3xl mx-auto w-full min-w-0">
+        <PaymentsPageHeader showProUpsellLabel={!hasProAccess} />
+        {pageDescription ? (
+          <p className="mb-5 -mt-2 text-sm text-zinc-500">{pageDescription}</p>
+        ) : null}
         {showProPaymentsDashboard ? (
           <>
             <div className="space-y-4 sm:space-y-6">

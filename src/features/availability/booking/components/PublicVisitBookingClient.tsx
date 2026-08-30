@@ -43,6 +43,7 @@ type PublicVisitBookingClientProps = {
   stripeCheckoutSessionId?: string | null;
   exitCalendarFlowHref: string;
   exitCalendarFlowLabel: string;
+  bookingPolicy?: { text: string } | null;
 };
 
 /**
@@ -66,6 +67,7 @@ export function PublicVisitBookingClient({
   stripeCheckoutSessionId,
   exitCalendarFlowHref,
   exitCalendarFlowLabel,
+  bookingPolicy = null,
 }: PublicVisitBookingClientProps) {
   const router = useRouter();
   const ui = publicBookingUi(bookingFlowLocale);
@@ -186,6 +188,7 @@ export function PublicVisitBookingClient({
       onRemoveBookingJob={handleRemoveJob}
       onBookingJobsChange={setJobs}
       onPublicMultiJobBookingCreated={handleBookingCreated}
+      bookingPolicy={bookingPolicy}
     />
   );
 }

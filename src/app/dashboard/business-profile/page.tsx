@@ -3,6 +3,7 @@ import {
   isOnboardingCompleted,
 } from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { loadPrimaryServiceArea } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { OnboardingCheckoutReturnGate } from '@/features/onboarding-v2/components/OnboardingCheckoutReturnGate';
 import {
   isProAccess,
@@ -185,6 +186,11 @@ export default async function BusinessProfilePage({
     { ownerHasPro: hasProAccess }
   );
 
+  const primaryServiceArea = await loadPrimaryServiceArea(
+    supabase,
+    businessProfileData.id
+  );
+
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       <BusinessProfileView
@@ -200,6 +206,7 @@ export default async function BusinessProfilePage({
         publicReviewSummary={publicReviewSummary}
         publicProfileSlug={publicProfileSlug}
         publicActiveSale={publicActiveSale}
+        primaryServiceArea={primaryServiceArea}
       />
     </div>
   );

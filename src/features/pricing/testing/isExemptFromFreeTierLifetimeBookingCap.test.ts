@@ -25,7 +25,7 @@ describe('isExemptFromFreeTierLifetimeBookingCap', () => {
     ).toBe(true);
   });
 
-  it('exempt when DB tier flipped to free but subscription still open (past_due)', () => {
+  it('not exempt when tier is free even if a Stripe sub is still open (past_due)', () => {
     expect(
       isExemptFromFreeTierLifetimeBookingCap(
         'free',
@@ -34,10 +34,10 @@ describe('isExemptFromFreeTierLifetimeBookingCap', () => {
         BILLED,
         CUS
       )
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  it('exempt for unpaid / incomplete / paused while sub id exists', () => {
+  it('not exempt for unpaid / incomplete / paused while tier is free', () => {
     expect(
       isExemptFromFreeTierLifetimeBookingCap(
         'free',
@@ -46,7 +46,7 @@ describe('isExemptFromFreeTierLifetimeBookingCap', () => {
         BILLED,
         CUS
       )
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isExemptFromFreeTierLifetimeBookingCap(
         'free',
@@ -55,7 +55,7 @@ describe('isExemptFromFreeTierLifetimeBookingCap', () => {
         BILLED,
         CUS
       )
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isExemptFromFreeTierLifetimeBookingCap(
         'free',
@@ -64,7 +64,7 @@ describe('isExemptFromFreeTierLifetimeBookingCap', () => {
         BILLED,
         CUS
       )
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('not exempt for true free (no subscription id)', () => {
@@ -73,7 +73,7 @@ describe('isExemptFromFreeTierLifetimeBookingCap', () => {
     ).toBe(false);
   });
 
-  it('not exempt when subscription ended (canceled / incomplete_expired)', () => {
+  it('not exempt when they paid then canceled', () => {
     expect(
       isExemptFromFreeTierLifetimeBookingCap(
         'free',
@@ -83,6 +83,30 @@ describe('isExemptFromFreeTierLifetimeBookingCap', () => {
         CUS
       )
     ).toBe(false);
+  });
+
+  it('not exempt when billed Pro payment failed (tier flipped to free)', () => {
+    expect(
+      isExemptFromFreeTierLifetimeBookingCap(
+        'pro',
+        futureEnd,
+        'past_due',
+        BILLED,
+        CUS
+      )
+    ).toBe(false);
+    expect(
+      isExemptFromFreeTierLifetimeBookingCap(
+        'free',
+        futureEnd,
+        'past_due',
+        BILLED,
+        CUS
+      )
+    ).toBe(false);
+  });
+
+  it('not exempt when subscription ended (incomplete_expired)', () => {
     expect(
       isExemptFromFreeTierLifetimeBookingCap(
         'free',

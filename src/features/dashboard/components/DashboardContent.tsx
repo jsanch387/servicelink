@@ -15,6 +15,7 @@ import {
 import { BusinessLocationRequiredModal } from '@/features/business-profile/components/BusinessLocationRequiredModal';
 import {
   CreateLinkCard,
+  DashboardRevenueCard,
   LinkSharingCard,
   PendingRequestsCard,
   PerformanceCard,
@@ -105,11 +106,11 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       <div className="max-w-6xl mx-auto w-full min-w-0">
         {/* Header */}
         <div className="mb-5 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white tracking-tight truncate">
+          <h1 className="logo-text text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-white tracking-tight truncate">
             {businessProfile.business_name}
           </h1>
           {!slugData?.hasSlug ? (
-            <p className="text-sm text-zinc-500 mt-0.5">
+            <p className="text-sm text-zinc-500 mt-1">
               Set up your booking link to get started
             </p>
           ) : null}
@@ -192,7 +193,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 min-w-0">
+            <DashboardRevenueCard />
             {slugData?.hasSlug && (
               <PerformanceCard
                 views={dashboardAnalytics?.views ?? 0}

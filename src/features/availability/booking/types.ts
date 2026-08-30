@@ -129,6 +129,8 @@ export interface AvailabilityBookingPageProps {
   initialCustomerServiceChoice?: 'mobile' | 'shop' | null;
   /** Live sale for this business (Pro only); auto-applies when appointment date qualifies. */
   activeSale?: PublicActiveSale | null;
+  /** Owner policy customers must accept. Null when not required. */
+  bookingPolicy?: { text: string } | null;
   /**
    * Public multi-job visit (`/book?visit=1`). When set, price/duration/submit use
    * `jobs[]` instead of the single-service URL fields.
@@ -305,4 +307,9 @@ export interface CreateBookingRequest {
    * Default true when omitted on public create; owner manual should omit.
    */
   agreedToNotifications?: boolean;
+  /**
+   * Public customers only: required when the business has a booking policy.
+   * Owner manual should omit.
+   */
+  agreedToPolicy?: boolean;
 }

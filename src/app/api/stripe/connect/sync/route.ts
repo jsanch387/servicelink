@@ -2,7 +2,7 @@
  * POST /api/stripe/connect/sync
  *
  * Pulls the latest Stripe Connect account state and updates `payment_accounts`.
- * Web runs the same logic on `/dashboard/payments?connect=return|refresh`;
+ * Web runs the same logic on `/dashboard/payments/settings?connect=return|refresh`;
  * mobile should call this after Account Link return/refresh deep links.
  *
  * Auth: cookies (web) or `Authorization: Bearer <access_token>` (mobile).

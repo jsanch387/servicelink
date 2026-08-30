@@ -6,7 +6,8 @@ import { DEFAULT_SERVICE_LOCATION_UI } from '../utils/serviceLocationMode';
 
 const baseFormData: EditingFormData = {
   business_name: 'Test Detailing',
-  business_type: 'auto_detailing',
+  business_type: 'Vehicle Services',
+  specialties: ['detailing'],
   service_area: 'Austin, TX',
   business_zip: '78701',
   bio: '',
@@ -44,7 +45,6 @@ describe('validateEditingForm', () => {
       expect.arrayContaining([
         'Business name is required',
         'City and state are required',
-        'ZIP is required',
       ])
     );
   });
@@ -66,5 +66,17 @@ describe('validateEditingForm', () => {
     });
 
     expect(result.isValid).toBe(true);
+  });
+
+  it('requires a specialty when the industry has niches', () => {
+    const result = validateEditingForm(
+      { ...baseFormData, specialties: [] },
+      DEFAULT_SERVICE_LOCATION_UI
+    );
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContain(
+      'Pick at least one thing people hire you for'
+    );
   });
 });

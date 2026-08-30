@@ -14,6 +14,8 @@ import {
   type PublicBookingFlowLocale,
 } from '@/constants/routes';
 import { BookFlowServiceRow } from '@/features/availability/booking/components/BookFlowServiceRow';
+import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
+import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import { BOOKING_CUSTOMER_NOTES_MAX } from '@/features/availability/booking/utils/bookingCustomerFieldLimits';
 import {
   clearPublicBookingJobsCart,
@@ -65,6 +67,7 @@ export interface BookServicePickerProps {
    * When false, any leftover visit cart is cleared on mount.
    */
   addingAnotherJob?: boolean;
+  bookingPolicy?: { text: string } | null;
 }
 
 function filterPickerServicesByCategory(
@@ -103,9 +106,16 @@ export function BookServicePicker({
   initialEntryMode,
   bookingFlowLocale = 'en',
   addingAnotherJob = false,
+  bookingPolicy = null,
 }: BookServicePickerProps) {
   const router = useRouter();
   const ui = publicBookingUi(bookingFlowLocale);
+  const policyAgreement = usePublicBookingPolicyAgreement({
+    businessSlug,
+    policyText: bookingPolicy?.text,
+    skip: isOwnerManualBooking,
+    gateOnMount: !isOwnerManualBooking,
+  });
   const [entryMode, setEntryMode] = useState<'choice' | 'services' | 'custom'>(
     isOwnerManualBooking ? (initialEntryMode ?? 'choice') : 'services'
   );
@@ -403,191 +413,220 @@ export function BookServicePicker({
       setCartJobs([]);
       setShowUnfinishedResume(false);
     }
-    router.push(
-      getBusinessBookDetailsPath(businessSlug, selectedServiceId, {
-        forOwner: isOwnerManualBooking,
-        lang: bookingFlowLocale,
-        addJob: addingAnotherJob,
-      })
-    );
+    policyAgreement.runAfterAgreement(() => {
+      router.push(
+        getBusinessBookDetailsPath(businessSlug, selectedServiceId, {
+          forOwner: isOwnerManualBooking,
+          lang: bookingFlowLocale,
+          addJob: addingAnotherJob,
+        })
+      );
+    });
   };
 
   return (
-    <div className={`${containerClassName} !pb-28 sm:!pb-32`}>
-      {!isOwnerManualBooking ? (
-        <PublicBookingStepTracker
-          currentStage="service"
-          labels={ui.stepTracker}
-        />
-      ) : null}
-      <header className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-          {isOwnerManualBooking
-            ? ui.bookPicker.createAppointmentTitle
-            : ui.bookPicker.bookWithTitle(businessName)}
-        </h1>
-        <p className="text-sm text-gray-400 mt-1 leading-relaxed">
-          {isOwnerManualBooking
-            ? ui.bookPicker.createAppointmentSubtitle
-            : showAddAnotherCart
-              ? ui.bookPicker.addingToBookingSubtitle(cartJobCount)
-              : ui.bookPicker.bookWithSubtitle}
-        </p>
-      </header>
-
-      {showUnfinishedResume && cartJobCount > 0 ? (
-        <div className="mb-5 rounded-2xl border border-sky-500/25 bg-sky-500/[0.07] p-4">
-          <div className="flex items-start gap-3">
-            <span
-              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-300"
-              aria-hidden
-            >
-              <ShoppingBagIcon className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">
-                {ui.bookPicker.unfinishedBookingTitle}
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-sky-100/80">
-                {ui.bookPicker.unfinishedBookingBody(cartJobCount)}
-              </p>
-              <ul className="mt-2 space-y-1">
-                {cartJobs.map(job => (
-                  <li
-                    key={job.localId}
-                    className="truncate text-xs leading-relaxed text-zinc-400"
-                  >
-                    {jobLineLabel(job)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Button
-              href={getBusinessBookVisitUrl(businessSlug, {
-                lang: bookingFlowLocale,
-              })}
-              variant="inverse"
-              fullWidth
-              className="font-semibold"
-            >
-              {ui.bookPicker.continueUnfinishedBooking}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              fullWidth
-              className="font-semibold"
-              onClick={startOverUnfinishedBooking}
-            >
-              {ui.bookPicker.startOverBooking}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {showAddAnotherCart ? (
-        <div className="mb-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
-          <div className="flex items-start gap-3">
-            <span
-              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300"
-              aria-hidden
-            >
-              <ShoppingBagIcon className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">
-                {ui.bookPicker.yourBookingTitle(cartJobCount)}
-              </p>
-              <ul className="mt-2 space-y-1">
-                {cartJobs.map(job => (
-                  <li
-                    key={job.localId}
-                    className="truncate text-xs leading-relaxed text-emerald-100/80"
-                  >
-                    {jobLineLabel(job)}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-xs text-zinc-400">
-                {ui.bookPicker.addingAnotherHint}
-              </p>
-              {cartJobCount >= PUBLIC_BOOKING_MAX_JOBS ? (
-                <p className="mt-2 text-xs text-amber-400/90">
-                  {ui.multiJob.maxJobsReached}
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <Button
-            href={getBusinessBookVisitUrl(businessSlug, {
-              lang: bookingFlowLocale,
-            })}
-            variant="secondary"
-            fullWidth
-            className="mt-3 font-semibold"
-          >
-            {ui.bookPicker.cancelAddService}
-          </Button>
-        </div>
-      ) : null}
-
-      <div className="space-y-4">
-        {showCategoryFilters ? (
-          <PublicServiceCategoryFilters
-            options={categoryOptions}
-            value={activeCategoryFilter}
-            onChange={setActiveCategoryFilter}
-            ariaLabel={ui.profile.serviceCategoriesAriaLabel}
-            edgeGutter="bookFlow"
+    <>
+      <div className={`${containerClassName} !pb-28 sm:!pb-32`}>
+        {!isOwnerManualBooking ? (
+          <PublicBookingStepTracker
+            currentStage="service"
+            labels={ui.stepTracker}
           />
         ) : null}
-
-        {displayServices.length > 0 ? (
-          <div className="space-y-2" role="list">
-            {displayServices.map(s => (
-              <div key={s.id} role="listitem">
-                <BookFlowServiceRow
-                  service={{
-                    id: s.id,
-                    name: s.name,
-                    priceCents: s.priceCents,
-                    priceOptionsEnabled: s.priceOptionsEnabled,
-                    hours_to_complete: s.hours_to_complete,
-                    duration_minutes: s.duration_minutes,
-                    description: s.description,
-                  }}
-                  businessSlug={businessSlug}
-                  manualBookingForCustomer={isOwnerManualBooking}
-                  bookingFlowLocale={bookingFlowLocale}
-                  isSelected={selectedServiceId === s.id}
-                  onSelect={() => setSelectedServiceId(s.id)}
-                  navigateOnSelect={false}
-                  addJob={addingAnotherJob}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-zinc-500 text-center py-8">
-            {ui.profile.noServicesInCategory}
+        <header className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            {isOwnerManualBooking
+              ? ui.bookPicker.createAppointmentTitle
+              : ui.bookPicker.bookWithTitle(businessName)}
+          </h1>
+          <p className="text-sm text-gray-400 mt-1 leading-relaxed">
+            {isOwnerManualBooking
+              ? ui.bookPicker.createAppointmentSubtitle
+              : showAddAnotherCart
+                ? ui.bookPicker.addingToBookingSubtitle(cartJobCount)
+                : ui.bookPicker.bookWithSubtitle}
           </p>
-        )}
-      </div>
+        </header>
 
-      <BookingPickerFooter>
-        {isOwnerManualBooking ? (
-          <div className="grid grid-cols-2 gap-3">
+        {showUnfinishedResume && cartJobCount > 0 ? (
+          <div className="mb-5 rounded-2xl border border-sky-500/25 bg-sky-500/[0.07] p-4">
+            <div className="flex items-start gap-3">
+              <span
+                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-300"
+                aria-hidden
+              >
+                <ShoppingBagIcon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">
+                  {ui.bookPicker.unfinishedBookingTitle}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-sky-100/80">
+                  {ui.bookPicker.unfinishedBookingBody(cartJobCount)}
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {cartJobs.map(job => (
+                    <li
+                      key={job.localId}
+                      className="truncate text-xs leading-relaxed text-zinc-400"
+                    >
+                      {jobLineLabel(job)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                onClick={() =>
+                  policyAgreement.runAfterAgreement(() => {
+                    router.push(
+                      getBusinessBookVisitUrl(businessSlug, {
+                        lang: bookingFlowLocale,
+                      })
+                    );
+                  })
+                }
+              >
+                {ui.bookPicker.continueUnfinishedBooking}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                className="font-semibold"
+                onClick={startOverUnfinishedBooking}
+              >
+                {ui.bookPicker.startOverBooking}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {showAddAnotherCart ? (
+          <div className="mb-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
+            <div className="flex items-start gap-3">
+              <span
+                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300"
+                aria-hidden
+              >
+                <ShoppingBagIcon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">
+                  {ui.bookPicker.yourBookingTitle(cartJobCount)}
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {cartJobs.map(job => (
+                    <li
+                      key={job.localId}
+                      className="truncate text-xs leading-relaxed text-emerald-100/80"
+                    >
+                      {jobLineLabel(job)}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-zinc-400">
+                  {ui.bookPicker.addingAnotherHint}
+                </p>
+                {cartJobCount >= PUBLIC_BOOKING_MAX_JOBS ? (
+                  <p className="mt-2 text-xs text-amber-400/90">
+                    {ui.multiJob.maxJobsReached}
+                  </p>
+                ) : null}
+              </div>
+            </div>
             <Button
               type="button"
               variant="secondary"
               fullWidth
-              className="font-semibold"
-              onClick={() => setEntryMode('choice')}
+              className="mt-3 font-semibold"
+              onClick={() =>
+                policyAgreement.runAfterAgreement(() => {
+                  router.push(
+                    getBusinessBookVisitUrl(businessSlug, {
+                      lang: bookingFlowLocale,
+                    })
+                  );
+                })
+              }
             >
-              {ui.common.back}
+              {ui.bookPicker.cancelAddService}
             </Button>
+          </div>
+        ) : null}
+
+        <div className="space-y-4">
+          {showCategoryFilters ? (
+            <PublicServiceCategoryFilters
+              options={categoryOptions}
+              value={activeCategoryFilter}
+              onChange={setActiveCategoryFilter}
+              ariaLabel={ui.profile.serviceCategoriesAriaLabel}
+              edgeGutter="bookFlow"
+            />
+          ) : null}
+
+          {displayServices.length > 0 ? (
+            <div className="space-y-2" role="list">
+              {displayServices.map(s => (
+                <div key={s.id} role="listitem">
+                  <BookFlowServiceRow
+                    service={{
+                      id: s.id,
+                      name: s.name,
+                      priceCents: s.priceCents,
+                      priceOptionsEnabled: s.priceOptionsEnabled,
+                      hours_to_complete: s.hours_to_complete,
+                      duration_minutes: s.duration_minutes,
+                      description: s.description,
+                    }}
+                    businessSlug={businessSlug}
+                    manualBookingForCustomer={isOwnerManualBooking}
+                    bookingFlowLocale={bookingFlowLocale}
+                    isSelected={selectedServiceId === s.id}
+                    onSelect={() => setSelectedServiceId(s.id)}
+                    navigateOnSelect={false}
+                    addJob={addingAnotherJob}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500 text-center py-8">
+              {ui.profile.noServicesInCategory}
+            </p>
+          )}
+        </div>
+
+        <BookingPickerFooter>
+          {isOwnerManualBooking ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                className="font-semibold"
+                onClick={() => setEntryMode('choice')}
+              >
+                {ui.common.back}
+              </Button>
+              <Button
+                type="button"
+                variant="inverse"
+                fullWidth
+                className="font-semibold"
+                disabled={!selectedServiceId}
+                onClick={continueToSelectedService}
+              >
+                {ui.common.continue}
+              </Button>
+            </div>
+          ) : (
             <Button
               type="button"
               variant="inverse"
@@ -598,20 +637,17 @@ export function BookServicePicker({
             >
               {ui.common.continue}
             </Button>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="inverse"
-            fullWidth
-            className="font-semibold"
-            disabled={!selectedServiceId}
-            onClick={continueToSelectedService}
-          >
-            {ui.common.continue}
-          </Button>
-        )}
-      </BookingPickerFooter>
-    </div>
+          )}
+        </BookingPickerFooter>
+      </div>
+      <PublicBookingPolicyAgreeDialog
+        isOpen={policyAgreement.modalOpen}
+        required={policyAgreement.required}
+        policyText={policyAgreement.policyText}
+        onClose={policyAgreement.dismiss}
+        onAgreed={policyAgreement.agree}
+        bookingFlowLocale={bookingFlowLocale}
+      />
+    </>
   );
 }

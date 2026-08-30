@@ -4,6 +4,7 @@ import { Button, GlassCard } from '@/components/shared';
 import { API_ROUTES } from '@/constants/routes';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import React, { useCallback, useState } from 'react';
+import { PaymentsStripeFeeNote } from '../components/PaymentsStripeFeeNote';
 import { FreePaymentPreviewLockedDashboard } from '../free-payment-preview';
 import {
   PAYMENTS_SETUP_BENEFITS,
@@ -161,6 +162,9 @@ export const ProPaymentsSetupExperience: React.FC<
             </li>
           ))}
         </ul>
+        <div className="mt-6">
+          <PaymentsStripeFeeNote />
+        </div>
       </GlassCard>
 
       {showLockedPreview ? (

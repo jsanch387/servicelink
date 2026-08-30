@@ -10,6 +10,13 @@
   /* Dashboard: single source for background and divider (change once to update everywhere) */
   --dashboard-bg: #0f0f0f;
   --dashboard-border: #2a2a2a;
+  --dashboard-sidebar-width: 16rem;
+  --dashboard-sidebar-width-collapsed: 4.5rem;
+  --dashboard-sidebar-current: var(--dashboard-sidebar-width);
+}
+
+html[data-sidebar-collapsed] {
+  --dashboard-sidebar-current: var(--dashboard-sidebar-width-collapsed);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -55,8 +62,12 @@ body {
   position: fixed;
   top: 0;
   left: 0;
+  width: var(--dashboard-sidebar-width);
   height: 100vh;
   z-index: 50;
+  transition:
+    transform 300ms ease,
+    width 300ms ease;
 }
 
 /* No need for fixed height on content - let it flow naturally */
@@ -68,6 +79,17 @@ body {
 @media (min-width: 1024px) {
   .dashboard-sidebar {
     position: fixed !important;
+    width: var(--dashboard-sidebar-current);
+  }
+
+  .dashboard-content {
+    margin-left: var(--dashboard-sidebar-current);
+    transition: margin-left 300ms ease;
+  }
+
+  .dashboard-sidebar-offset {
+    left: var(--dashboard-sidebar-current);
+    transition: left 300ms ease;
   }
 }
 
@@ -328,7 +350,7 @@ body {
 @media (min-width: 640px) {
   @keyframes slideUp {
     from {
-      transform: translateY(20px) scale(0.95);
+      transform: translateY(12px) scale(0.98);
       opacity: 0;
     }
     to {

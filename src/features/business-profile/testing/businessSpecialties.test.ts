@@ -5,6 +5,7 @@ import {
   hasDetailingMarketplaceListing,
   resolveBusinessSpecialties,
   sanitizeBusinessSpecialties,
+  specialtiesAllowedForBusinessType,
 } from '@/constants/businessSpecialties';
 
 describe('business specialties', () => {
@@ -51,6 +52,18 @@ describe('business specialties', () => {
     expect(
       hasDetailingMarketplaceListing('Vehicle Services', ['window_tinting'])
     ).toBe(false);
+  });
+
+  it('drops niches that do not belong to the new industry', () => {
+    expect(
+      specialtiesAllowedForBusinessType('Pet Services', [
+        'detailing',
+        'pet_grooming',
+      ])
+    ).toEqual(['pet_grooming']);
+    expect(specialtiesAllowedForBusinessType('Other', ['detailing'])).toEqual([
+      'other',
+    ]);
   });
 
   it('drops unknown specialty slugs', () => {

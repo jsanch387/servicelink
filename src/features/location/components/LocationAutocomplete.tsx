@@ -16,7 +16,16 @@ import {
   MapPinIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import React, { useEffect, useId, useRef, useState } from 'react';
+import { isAbortError } from '../utils/isAbortError';
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 
 const MIN_AUTOCOMPLETE_QUERY_LENGTH = 3;
 const AUTOCOMPLETE_DEBOUNCE_MS = 450;
@@ -49,7 +58,10 @@ export function LocationAutocomplete({
   const listboxId = useId();
   const suppressSearchUntilEditRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const [suggestions, setSuggestions] = useState<StructuredLocation[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
@@ -65,11 +77,44 @@ export function LocationAutocomplete({
       Boolean(providerError) ||
       suggestions.length > 0);
 
+  const updatePanelPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const extraLeft =
+      variant === 'bare' ? (window.innerWidth >= 640 ? 36 : 32) : 0;
+    const left = Math.max(8, rect.left - extraLeft);
+    const width = Math.min(rect.right - left, window.innerWidth - left - 8);
+    setPanelStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left,
+      width,
+      zIndex: 9999,
+    });
+  }, [variant]);
+
+  useLayoutEffect(() => {
+    if (!showSuggestions) return;
+    updatePanelPosition();
+    window.addEventListener('scroll', updatePanelPosition, true);
+    window.addEventListener('resize', updatePanelPosition);
+    return () => {
+      window.removeEventListener('scroll', updatePanelPosition, true);
+      window.removeEventListener('resize', updatePanelPosition);
+    };
+  }, [showSuggestions, suggestions.length, updatePanelPosition]);
+
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setIsFocused(false);
+      const target = event.target as Node;
+      if (
+        containerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
       }
+      setIsFocused(false);
     };
 
     document.addEventListener('mousedown', handlePointerDown);
@@ -99,7 +144,7 @@ export function LocationAutocomplete({
       return;
     }
 
-    const controller = new AbortController();
+    let cancelled = false;
     setSuggestions([]);
     setActiveIndex(-1);
     setHasCompletedSearch(false);
@@ -108,32 +153,24 @@ export function LocationAutocomplete({
       setProviderError('');
 
       try {
-        const locations = await searchMapTilerLocations(
-          trimmedValue,
-          mode,
-          controller.signal
-        );
+        const locations = await searchMapTilerLocations(trimmedValue, mode);
+        if (cancelled) return;
         setSuggestions(locations);
         setActiveIndex(-1);
         setHasCompletedSearch(true);
       } catch (requestError) {
-        if (
-          requestError instanceof DOMException &&
-          requestError.name === 'AbortError'
-        ) {
-          return;
-        }
+        if (cancelled || isAbortError(requestError)) return;
         setSuggestions([]);
         setProviderError('Location suggestions are unavailable.');
         setHasCompletedSearch(false);
       } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }, AUTOCOMPLETE_DEBOUNCE_MS);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(timeout);
-      controller.abort();
     };
   }, [isFocused, mode, trimmedValue]);
 
@@ -174,8 +211,144 @@ export function LocationAutocomplete({
             ? 'border-red-500/50 bg-red-500/5'
             : 'border-white/10 hover:border-white/20'
         }`;
-  const dropdownPositionClasses =
-    variant === 'bare' ? '-left-8 right-0 sm:-left-9' : 'left-0 right-0';
+
+  const suggestionsCard =
+    showSuggestions && typeof document !== 'undefined' ? (
+      <div
+        ref={menuRef}
+        style={panelStyle}
+        className="relative overflow-hidden rounded-xl border border-black/10 bg-[#f4f1ea]/[0.98] shadow-[0_24px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 backdrop-blur-2xl"
+      >
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent"
+          aria-hidden
+        />
+
+        {suggestions.length > 0 && !providerError && (
+          <div className="relative flex items-center justify-between px-5 pb-2 pt-4">
+            <span className="text-xs font-semibold text-zinc-500">
+              Suggested locations
+            </span>
+            <span className="hidden items-center gap-1.5 text-[10px] text-zinc-400 sm:flex">
+              <span>↑↓ Navigate</span>
+              <span className="text-zinc-300">•</span>
+              <span>Enter to select</span>
+            </span>
+          </div>
+        )}
+
+        <div
+          id={listboxId}
+          role="listbox"
+          className="relative max-h-[min(18rem,36dvh)] space-y-1 overflow-y-auto overscroll-contain px-2.5 pb-2.5 sm:max-h-[min(16rem,30dvh)]"
+        >
+          {isLoading && suggestions.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-lg px-3 py-4">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-black/[0.035]">
+                <MagnifyingGlassIcon className="h-4 w-4 animate-pulse text-zinc-500" />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-zinc-900">
+                  Finding locations
+                </span>
+                <span className="mt-0.5 block text-xs text-zinc-500">
+                  Searching near you…
+                </span>
+              </span>
+            </div>
+          ) : providerError ? (
+            <div
+              className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50/80 px-3 py-3.5"
+              role="alert"
+            >
+              <ExclamationCircleIcon className="h-5 w-5 shrink-0 text-red-500" />
+              <span className="text-sm text-red-700">{providerError}</span>
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-lg px-3 py-4">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-black/[0.03]">
+                <MapPinIcon className="h-4 w-4 text-zinc-500" />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-zinc-900">
+                  No locations found
+                </span>
+                <span className="mt-0.5 block text-xs text-zinc-500">
+                  Check the spelling or try a nearby ZIP code.
+                </span>
+              </span>
+            </div>
+          ) : (
+            suggestions.map((location, index) => (
+              <button
+                key={location.providerId}
+                id={`${listboxId}-option-${index}`}
+                type="button"
+                role="option"
+                aria-selected={activeIndex === index}
+                onMouseDown={event => event.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => pickLocation(location)}
+                className={`group/option flex min-h-[58px] w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all duration-150 sm:min-h-[62px] ${
+                  activeIndex === index
+                    ? 'border-zinc-950 bg-zinc-950 shadow-lg shadow-black/20'
+                    : 'border-transparent hover:border-zinc-950 hover:bg-zinc-950 hover:shadow-lg hover:shadow-black/15'
+                }`}
+              >
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                    activeIndex === index
+                      ? 'border-white/15 bg-white/10 text-white'
+                      : 'border-black/[0.08] bg-black/[0.035] text-zinc-500 group-hover/option:border-white/15 group-hover/option:bg-white/10 group-hover/option:text-white'
+                  }`}
+                >
+                  <MapPinIcon className="h-[1.05rem] w-[1.05rem]" />
+                </span>
+
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`truncate text-sm font-semibold tracking-[-0.01em] transition-colors ${
+                        activeIndex === index
+                          ? 'text-white'
+                          : 'text-zinc-950 group-hover/option:text-white'
+                      }`}
+                    >
+                      {location.label}
+                    </span>
+                  </span>
+                  <span
+                    className={`mt-1 block truncate text-xs transition-colors ${
+                      activeIndex === index
+                        ? 'text-zinc-400'
+                        : 'text-zinc-500 group-hover/option:text-zinc-400'
+                    }`}
+                  >
+                    {formatLocationSuggestionKind(location.placeType)}
+                  </span>
+                </span>
+
+                <ArrowTurnDownLeftIcon
+                  className={`hidden h-4 w-4 shrink-0 transition-opacity sm:block ${
+                    activeIndex === index
+                      ? 'text-zinc-400 opacity-100'
+                      : 'text-zinc-500 opacity-0 group-hover/option:text-zinc-400 group-hover/option:opacity-100'
+                  }`}
+                  aria-hidden
+                />
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="relative flex items-center justify-between px-5 pb-3.5 pt-1 text-[10px] text-zinc-500">
+          <span>US locations only</span>
+          <span>
+            Search by <span className="font-bold text-zinc-700">MapTiler</span>
+          </span>
+        </div>
+      </div>
+    ) : null;
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -189,7 +362,7 @@ export function LocationAutocomplete({
         </label>
       )}
 
-      <div className="relative">
+      <div ref={triggerRef} className="relative">
         <input
           ref={inputRef}
           id={id}
@@ -242,141 +415,7 @@ export function LocationAutocomplete({
         )}
       </div>
 
-      {showSuggestions && (
-        <div
-          className={`absolute top-full z-[80] mt-2 overflow-hidden rounded-xl border border-black/10 bg-[#f4f1ea]/[0.98] shadow-[0_24px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/20 backdrop-blur-2xl sm:mt-3 ${dropdownPositionClasses}`}
-        >
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent"
-            aria-hidden
-          />
-
-          {suggestions.length > 0 && !providerError && (
-            <div className="relative flex items-center justify-between px-5 pb-2 pt-4">
-              <span className="text-xs font-semibold text-zinc-500">
-                Suggested locations
-              </span>
-              <span className="hidden items-center gap-1.5 text-[10px] text-zinc-400 sm:flex">
-                <span>↑↓ Navigate</span>
-                <span className="text-zinc-300">•</span>
-                <span>Enter to select</span>
-              </span>
-            </div>
-          )}
-
-          <div
-            id={listboxId}
-            role="listbox"
-            className="relative max-h-[min(18rem,36dvh)] space-y-1 overflow-y-auto overscroll-contain px-2.5 pb-2.5 sm:max-h-[min(16rem,30dvh)]"
-          >
-            {isLoading && suggestions.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-lg px-3 py-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-black/[0.035]">
-                  <MagnifyingGlassIcon className="h-4 w-4 animate-pulse text-zinc-500" />
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold text-zinc-900">
-                    Finding locations
-                  </span>
-                  <span className="mt-0.5 block text-xs text-zinc-500">
-                    Searching near you…
-                  </span>
-                </span>
-              </div>
-            ) : providerError ? (
-              <div
-                className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50/80 px-3 py-3.5"
-                role="alert"
-              >
-                <ExclamationCircleIcon className="h-5 w-5 shrink-0 text-red-500" />
-                <span className="text-sm text-red-700">{providerError}</span>
-              </div>
-            ) : suggestions.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-lg px-3 py-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/[0.08] bg-black/[0.03]">
-                  <MapPinIcon className="h-4 w-4 text-zinc-500" />
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold text-zinc-900">
-                    No locations found
-                  </span>
-                  <span className="mt-0.5 block text-xs text-zinc-500">
-                    Check the spelling or try a nearby ZIP code.
-                  </span>
-                </span>
-              </div>
-            ) : (
-              suggestions.map((location, index) => (
-                <button
-                  key={location.providerId}
-                  id={`${listboxId}-option-${index}`}
-                  type="button"
-                  role="option"
-                  aria-selected={activeIndex === index}
-                  onMouseDown={event => event.preventDefault()}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => pickLocation(location)}
-                  className={`group/option flex min-h-[58px] w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all duration-150 sm:min-h-[62px] ${
-                    activeIndex === index
-                      ? 'border-zinc-950 bg-zinc-950 shadow-lg shadow-black/20'
-                      : 'border-transparent hover:border-zinc-950 hover:bg-zinc-950 hover:shadow-lg hover:shadow-black/15'
-                  }`}
-                >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                      activeIndex === index
-                        ? 'border-white/15 bg-white/10 text-white'
-                        : 'border-black/[0.08] bg-black/[0.035] text-zinc-500 group-hover/option:border-white/15 group-hover/option:bg-white/10 group-hover/option:text-white'
-                    }`}
-                  >
-                    <MapPinIcon className="h-[1.05rem] w-[1.05rem]" />
-                  </span>
-
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={`truncate text-sm font-semibold tracking-[-0.01em] transition-colors ${
-                          activeIndex === index
-                            ? 'text-white'
-                            : 'text-zinc-950 group-hover/option:text-white'
-                        }`}
-                      >
-                        {location.label}
-                      </span>
-                    </span>
-                    <span
-                      className={`mt-1 block truncate text-xs transition-colors ${
-                        activeIndex === index
-                          ? 'text-zinc-400'
-                          : 'text-zinc-500 group-hover/option:text-zinc-400'
-                      }`}
-                    >
-                      {formatLocationSuggestionKind(location.placeType)}
-                    </span>
-                  </span>
-
-                  <ArrowTurnDownLeftIcon
-                    className={`hidden h-4 w-4 shrink-0 transition-opacity sm:block ${
-                      activeIndex === index
-                        ? 'text-zinc-400 opacity-100'
-                        : 'text-zinc-500 opacity-0 group-hover/option:text-zinc-400 group-hover/option:opacity-100'
-                    }`}
-                    aria-hidden
-                  />
-                </button>
-              ))
-            )}
-          </div>
-
-          <div className="relative flex items-center justify-between px-5 pb-3.5 pt-1 text-[10px] text-zinc-500">
-            <span>US locations only</span>
-            <span>
-              Search by{' '}
-              <span className="font-bold text-zinc-700">MapTiler</span>
-            </span>
-          </div>
-        </div>
-      )}
+      {suggestionsCard ? createPortal(suggestionsCard, document.body) : null}
 
       {error && variant === 'default' && (
         <p className="mt-1 text-sm text-red-400" role="alert">

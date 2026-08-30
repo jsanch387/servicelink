@@ -5,6 +5,8 @@
 export interface EditingFormData {
   business_name: string;
   business_type: string;
+  /** Marketplace niches — what customers hire them for. */
+  specialties: string[];
   service_area: string;
   business_zip: string;
   bio: string;

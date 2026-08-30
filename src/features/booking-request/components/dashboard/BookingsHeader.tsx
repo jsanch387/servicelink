@@ -26,13 +26,13 @@ export function BookingsHeader({
   ];
 
   return (
-    <header className="sticky top-0 z-10 bg-[#0f0f0f]/80 backdrop-blur-xl border-b border-white/[0.05] px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-3 sm:pb-4 w-full">
-      <div className="max-w-xl lg:max-w-7xl mx-auto">
+    <header className="w-full px-3 pb-3 pt-8 sm:px-4 sm:pb-4 sm:pt-10 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-xl lg:max-w-7xl">
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight truncate">
+          <h1 className="truncate text-2xl font-black tracking-tight text-white sm:text-3xl">
             Bookings
           </h1>
-          <p className="text-zinc-500 text-xs sm:text-sm font-medium truncate">
+          <p className="mt-1 truncate text-sm text-gray-500">
             Manage your requests
           </p>
         </div>

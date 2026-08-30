@@ -1,7 +1,8 @@
 import { ROUTES } from '@/constants/routes';
 import { CreateAppointmentWizard } from '@/features/availability/booking/create-appointment';
+import { FREE_BOOKINGS_LIMIT, isProAccess } from '@/features/pricing';
 import type { MembershipVisitPrefill } from '@/features/availability/booking/create-appointment/types/membershipVisitPrefill';
-import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { loadOwnerBookingSale } from '@/features/marketing/server/loadOwnerBookingSale';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { loadQuoteServiceCatalog } from '@/features/quotes/server/loadQuoteServiceCatalog';
@@ -162,7 +163,7 @@ export default async function NewAppointmentPage({
   const { data: businessRow, error: businessError } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_name, business_slug, business_type, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+      'id, business_name, business_slug, business_type, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, free_bookings_count'
     )
     .eq('profile_id', user.id)
     .maybeSingle();
@@ -181,7 +182,38 @@ export default async function NewAppointmentPage({
     business_zip?: string | null;
     shop_street_address?: string | null;
     shop_unit?: string | null;
+    free_bookings_count?: number | null;
   };
+
+  const { data: ownerProfileRow } = await supabase
+    .from('profiles')
+    .select(
+      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
+    )
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const ownerProfile = ownerProfileRow as {
+    subscription_tier?: string | null;
+    subscription_current_period_end?: string | null;
+    subscription_status?: string | null;
+    stripe_subscription_id?: string | null;
+    stripe_customer_id?: string | null;
+  } | null;
+
+  const isFreeTier = !isProAccess(
+    ownerProfile?.subscription_tier ?? 'free',
+    ownerProfile?.subscription_current_period_end ?? null,
+    ownerProfile?.subscription_status,
+    ownerProfile?.stripe_subscription_id,
+    ownerProfile?.stripe_customer_id
+  );
+  if (
+    isFreeTier &&
+    (business.free_bookings_count ?? 0) >= FREE_BOOKINGS_LIMIT
+  ) {
+    redirect(ROUTES.DASHBOARD.BOOKINGS);
+  }
 
   const slug = business.business_slug?.trim() ?? '';
   if (!slug) {
@@ -198,7 +230,11 @@ export default async function NewAppointmentPage({
       loadMembershipVisitPrefill(supabase, business.id, params),
     ]);
 
-  const serviceLocation = buildPublicBookingServiceLocation(business);
+  const serviceLocation = await loadPublicBookingServiceLocation(
+    supabase,
+    business.id,
+    business
+  );
 
   return (
     <CreateAppointmentWizard

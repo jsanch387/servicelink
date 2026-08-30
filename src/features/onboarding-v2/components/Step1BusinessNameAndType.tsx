@@ -4,6 +4,7 @@ import { Button, Input, Select } from '@/components/shared';
 import {
   getSpecialtiesForBusinessType,
   sanitizeBusinessSpecialties,
+  specialtiesAllowedForBusinessType,
 } from '@/constants/businessSpecialties';
 import {
   getBusinessTypeSelectOptions,
@@ -55,13 +56,9 @@ export const Step1BusinessNameAndType: React.FC<
     specialties.length > 0;
 
   const handleTypeChange = (value: string) => {
-    const allowed = new Set<string>(
-      getSpecialtiesForBusinessType(value).map(option => option.slug)
-    );
-    const kept = specialties.filter(slug => allowed.has(slug));
     onUpdate({
       businessType: value,
-      specialties: value === 'Other' && kept.length === 0 ? ['other'] : kept,
+      specialties: specialtiesAllowedForBusinessType(value, specialties),
     });
   };
 

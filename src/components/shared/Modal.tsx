@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ModalProps {
@@ -31,6 +32,11 @@ interface ModalProps {
    * `default` — centered dialog from sm breakpoint up.
    */
   presentation?: 'default' | 'sheet';
+  /** Overrides the default panel max-height classes when set. */
+  panelMaxHeightClass?: string;
+  /** Shows an X in the header that calls `onClose`. Hidden while `preventClose`. */
+  showCloseButton?: boolean;
+  closeAriaLabel?: string;
 }
 
 /**
@@ -53,9 +59,13 @@ export const Modal: React.FC<ModalProps> = ({
   uniformHorizontalPadding16 = false,
   preventClose = false,
   presentation = 'default',
+  panelMaxHeightClass,
+  showCloseButton = true,
+  closeAriaLabel = 'Close',
 }) => {
   const isSheet = presentation === 'sheet';
   const [mounted, setMounted] = useState(false);
+  const titleId = useId();
 
   useEffect(() => {
     setMounted(true);
@@ -64,16 +74,13 @@ export const Modal: React.FC<ModalProps> = ({
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      // Save current scroll position
       const scrollY = window.scrollY;
-      // Lock body scroll
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
 
       return () => {
-        // Restore scroll position when modal closes
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.width = '';
@@ -83,21 +90,19 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, [isOpen]);
 
-  /** While `preventClose` (e.g. async submit), block Escape so the sheet cannot dismiss mid-flight. */
   useEffect(() => {
-    if (!isOpen || !preventClose) return;
+    if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-      }
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      if (!preventClose) onClose();
     };
 
     document.addEventListener('keydown', handleKeyDown, true);
     return () => document.removeEventListener('keydown', handleKeyDown, true);
-  }, [isOpen, preventClose]);
+  }, [isOpen, preventClose, onClose]);
 
-  // Prevent scroll on overlay
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (preventClose) return;
     if (e.target === e.currentTarget) {
@@ -105,7 +110,6 @@ export const Modal: React.FC<ModalProps> = ({
     }
   };
 
-  // Prevent scroll propagation
   const handleContentScroll = (e: React.WheelEvent) => {
     e.stopPropagation();
   };
@@ -113,13 +117,12 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen || !mounted) return null;
 
   const headerPaddingClass = uniformHorizontalPadding16
-    ? 'px-4 py-4 sm:px-4 sm:py-4'
-    : 'p-4 sm:p-6';
+    ? 'px-4 py-3.5 sm:px-4 sm:py-3.5'
+    : 'px-4 py-3.5 sm:px-6 sm:py-4';
   const contentHorizontalClass = uniformHorizontalPadding16
     ? 'px-4 sm:px-4 md:px-4'
     : 'px-4 sm:px-6 md:px-8';
 
-  // Full width on mobile; apply max-width from sm breakpoint up (matches edit modal)
   const maxWidthClasses = {
     sm: 'max-w-full sm:max-w-sm',
     md: 'max-w-full sm:max-w-md',
@@ -130,61 +133,73 @@ export const Modal: React.FC<ModalProps> = ({
 
   const overlayAlignClass = isSheet
     ? 'items-end justify-center p-0'
-    : 'items-end sm:items-center justify-center p-0 sm:p-4';
+    : 'items-end sm:items-center justify-center p-0 sm:p-6';
 
   const panelRoundedClass = fullScreenMobile
-    ? 'rounded-none h-full sm:rounded-3xl sm:h-auto'
+    ? 'rounded-none h-full sm:rounded-2xl sm:h-auto'
     : isSheet
-      ? 'rounded-t-3xl'
-      : 'rounded-t-3xl sm:rounded-3xl';
+      ? 'rounded-t-[1.5rem]'
+      : 'rounded-t-[1.5rem] sm:rounded-2xl';
 
-  const panelMaxHeightClass = fullScreenMobile
-    ? 'max-h-screen'
-    : isSheet
-      ? 'max-h-[min(420px,85dvh)] sm:max-h-[min(480px,90dvh)]'
-      : 'max-h-[95vh] sm:max-h-[90vh]';
+  const resolvedPanelMaxHeightClass =
+    panelMaxHeightClass ??
+    (fullScreenMobile
+      ? 'max-h-screen'
+      : isSheet
+        ? 'max-h-[min(420px,85dvh)] sm:max-h-[min(480px,90dvh)]'
+        : 'max-h-[95vh] sm:max-h-[90vh]');
 
   const overlay = (
     <div
-      className={`fixed inset-0 z-[100] flex ${overlayAlignClass} bg-black/85 backdrop-blur-sm overscroll-none transition-opacity duration-300`}
+      className={`fixed inset-0 z-[100] flex ${overlayAlignClass} bg-black/65 backdrop-blur-md overscroll-none`}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
       style={{
-        animation: 'fadeIn 0.3s ease-out',
+        animation: 'fadeIn 0.22s ease-out',
       }}
       onClick={handleOverlayClick}
       onWheel={e => e.stopPropagation()}
       onTouchMove={e => {
-        // Only allow scrolling if it's within the modal content
         if (e.target === e.currentTarget) {
           e.preventDefault();
         }
       }}
     >
       <div
-        className={`bg-[var(--dashboard-bg)] border border-white/10 ${panelRoundedClass} w-full min-w-0 ${maxWidthClasses[maxWidth]} mx-auto ${panelMaxHeightClass} flex flex-col shadow-2xl relative overflow-hidden transform transition-all duration-300 ease-out ${panelClassName}`}
+        className={`relative flex w-full min-w-0 ${maxWidthClasses[maxWidth]} ${resolvedPanelMaxHeightClass} ${panelRoundedClass} mx-auto flex-col overflow-hidden border border-white/[0.08] bg-[#141414] shadow-[0_24px_80px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-white/[0.04] ${panelClassName}`}
         style={{
-          transform: 'translateY(0)',
-          animation: 'slideUp 0.3s ease-out',
+          animation: 'slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Fixed Header: title only (close via Cancel button or overlay) */}
-        {title && (
+        {title ? (
           <div
-            className={`flex min-w-0 items-center border-b border-white/10 flex-shrink-0 ${headerPaddingClass} ${headerClassName}`}
+            className={`flex min-w-0 flex-shrink-0 items-center gap-3 ${headerPaddingClass} ${headerClassName}`}
           >
             <h3
-              className={`text-lg font-semibold text-white min-w-0 ${titleClassName}`}
+              id={titleId}
+              className={`min-w-0 flex-1 text-base font-semibold tracking-tight text-white sm:text-lg ${titleClassName}`}
             >
               {title}
             </h3>
+            {showCloseButton && !preventClose ? (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={closeAriaLabel}
+                className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/[0.06] text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <XMarkIcon className="h-4 w-4" aria-hidden />
+              </button>
+            ) : null}
           </div>
-        )}
+        ) : null}
 
-        {/* Scrollable Content */}
+        {title ? <div className="h-px flex-shrink-0 bg-white/[0.06]" /> : null}
+
         <div
-          className={`min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-dark pt-6 pb-6 sm:pt-8 sm:pb-8 ${contentHorizontalClass} ${contentClassName}`}
+          className={`min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-dark pt-5 pb-6 sm:pt-6 sm:pb-7 ${contentHorizontalClass} ${contentClassName}`}
           onWheel={handleContentScroll}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >

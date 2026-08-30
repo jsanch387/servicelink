@@ -34,14 +34,18 @@ export const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({
         <p className="mt-1 text-xs leading-snug text-zinc-500">{caption}</p>
       ) : null}
       {meta ? (
-        <p className="mt-auto pt-3 text-xs text-zinc-600">{meta}</p>
+        <p
+          className={`${action ? 'mt-1' : 'mt-auto'} pt-3 text-xs text-zinc-600`}
+        >
+          {meta}
+        </p>
       ) : null}
       {action ? (
         <Button
           href={action.href}
           variant="ghost"
           fullWidth
-          className={`mt-3 ${dashboardCardButtonClass}`}
+          className={`mt-auto pt-3 ${dashboardCardButtonClass}`}
         >
           {action.label}
         </Button>

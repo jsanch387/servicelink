@@ -2,7 +2,7 @@
  * Resolve a signed membership visit token for the public schedule page.
  */
 
-import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
+import { loadPublicBookingServiceLocation } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT } from '../constants/membershipVisitDuration';
@@ -88,7 +88,11 @@ export async function loadPublicMembershipVisitContext(
   } | null;
   if (!biz?.id) return { ok: false, error: 'not_found' };
 
-  const serviceLocation = buildPublicBookingServiceLocation(biz);
+  const serviceLocation = await loadPublicBookingServiceLocation(
+    supabase,
+    biz.id,
+    biz
+  );
   const needsAddress = serviceLocation.mode !== 'shop_only';
   const needsVehicle = true;
 

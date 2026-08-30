@@ -1,4 +1,5 @@
 export { PaymentsPage } from './components/PaymentsPage';
+export { PaymentsRevenuePage } from './components/PaymentsRevenuePage';
 export { PaymentsTransactionsPage } from './components/PaymentsTransactionsPage';
 
 export {

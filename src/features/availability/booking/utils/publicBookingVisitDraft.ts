@@ -35,6 +35,7 @@ export type ResumePublicVisitState = {
   detailsSubStep: PublicBookingVisitDetailsSubStep;
   customerServiceChoice: 'mobile' | 'shop' | null;
   agreedToNotifications: boolean;
+  agreedToPolicy: boolean;
   /** New job duration no longer fits the saved start time on that day. */
   scheduleNeedsRetiming: boolean;
 };
@@ -71,6 +72,7 @@ export function buildPublicBookingVisitDraft(args: {
   detailsSubStep: PublicBookingVisitDetailsSubStep;
   customerServiceChoice: 'mobile' | 'shop' | null;
   agreedToNotifications: boolean;
+  agreedToPolicy: boolean;
 }): PublicBookingVisitDraft {
   const selectedDateYmd = args.selectedDate
     ? formatServiceDateYmd(args.selectedDate)
@@ -84,6 +86,7 @@ export function buildPublicBookingVisitDraft(args: {
     detailsSubStep: args.detailsSubStep,
     customerServiceChoice: args.customerServiceChoice,
     agreedToNotifications: args.agreedToNotifications,
+    agreedToPolicy: args.agreedToPolicy,
   };
 }
 
@@ -117,6 +120,7 @@ export function resolveResumePublicVisitState(args: {
       detailsSubStep: 'contact',
       customerServiceChoice: null,
       agreedToNotifications: false,
+      agreedToPolicy: false,
       scheduleNeedsRetiming: false,
     };
   }
@@ -183,6 +187,7 @@ export function resolveResumePublicVisitState(args: {
     detailsSubStep,
     customerServiceChoice: draft.customerServiceChoice,
     agreedToNotifications: draft.agreedToNotifications,
+    agreedToPolicy: draft.agreedToPolicy === true,
     scheduleNeedsRetiming,
   };
 }

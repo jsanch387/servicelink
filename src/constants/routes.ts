@@ -107,6 +107,8 @@ export const ROUTES = {
     CUSTOMERS: '/dashboard/customers',
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
+    PAYMENTS_SETTINGS: '/dashboard/payments/settings',
+    PAYMENTS_FEES: '/dashboard/payments/settings/fees',
     MARKETING: '/dashboard/marketing',
     MARKETING_PROMO_CODES_NEW: '/dashboard/marketing/promo-codes/new',
     MARKETING_PROMO_CODE_EDIT: (promoCodeId: string) =>
@@ -172,6 +174,10 @@ export const API_ROUTES = {
    * Mobile: Payments → Transactions.
    */
   PAYMENTS_TRANSACTIONS: '/api/payments/transactions',
+  /**
+   * Owner: completed-job earnings (same model as mobile Payments → Revenue).
+   */
+  PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',

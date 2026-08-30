@@ -21,6 +21,12 @@ describe('tabForSaveErrors', () => {
     );
   });
 
+  it('routes policy errors to booking', () => {
+    expect(tabForSaveErrors(['Add your customer policy or turn it off.'])).toBe(
+      'booking'
+    );
+  });
+
   it('routes location errors to details when not shop-specific', () => {
     expect(tabForSaveErrors(['City and state are required'])).toBe('details');
   });

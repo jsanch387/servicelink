@@ -1,32 +1,56 @@
 'use client';
 
 import { GlassCard, Input, Select, TextArea } from '@/components/shared';
-import { BUSINESS_BIO_MAX_LENGTH } from '@/features/business-profile/constants/businessBio';
+import { getSpecialtiesForBusinessType } from '@/constants/businessSpecialties';
 import { getBusinessTypeSelectOptions } from '@/constants/businessTypes';
+import { BUSINESS_BIO_MAX_LENGTH } from '@/features/business-profile/constants/businessBio';
 import { EditingFormData } from '@/features/business-profile/utils/editing/editingHelpers';
-import {
-  formatServiceArea,
-  parseServiceAreaCityState,
-} from '@/features/business-profile/utils/businessLocation';
+import type { StructuredLocation } from '@/features/location/types/location';
 import React from 'react';
-import { ProfileLocationFields } from '../../ProfileLocationFields';
+import { DashboardProfileCoverageCard } from '../../DashboardProfileCoverageCard';
+import { SpecialtyChips } from '../../SpecialtyChips';
 
 interface BusinessInfoSectionProps {
   formData: EditingFormData;
   onInputChange: (field: string, value: string) => void;
+  onBusinessTypeChange: (value: string) => void;
+  onSpecialtiesChange: (next: string[]) => void;
   errors: string[];
+  locationQuery: string;
+  onLocationQueryChange: (value: string) => void;
+  selectedLocation: StructuredLocation | null;
+  onSelectLocation: (location: StructuredLocation) => void;
+  radiusMiles: number;
+  onRadiusChange: (miles: number) => void;
 }
 
 export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
   formData,
   onInputChange,
+  onBusinessTypeChange,
+  onSpecialtiesChange,
   errors,
+  locationQuery,
+  onLocationQueryChange,
+  selectedLocation,
+  onSelectLocation,
+  radiusMiles,
+  onRadiusChange,
 }) => {
-  const { city, state } = parseServiceAreaCityState(formData.service_area);
-
-  const updateServiceArea = (nextCity: string, nextState: string) => {
-    onInputChange('service_area', formatServiceArea(nextCity, nextState));
-  };
+  const coverageError =
+    errors.find(
+      message =>
+        message.toLowerCase().includes('suggested location') ||
+        message.toLowerCase().includes('suggested city') ||
+        message.toLowerCase().includes('travel distance') ||
+        message.toLowerCase().includes('service area')
+    ) ?? undefined;
+  const specialtyOptions = formData.business_type
+    ? getSpecialtiesForBusinessType(formData.business_type)
+    : [];
+  const specialtyError = errors.find(message =>
+    message.toLowerCase().includes('hire you')
+  );
 
   return (
     <div className="w-full max-w-full space-y-6 text-left">
@@ -50,10 +74,10 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
             </div>
             <div className="sm:col-span-2">
               <Select
-                label="Type"
-                placeholder="Select type"
+                label="What type of business is this?"
+                placeholder="Pick one"
                 value={formData.business_type}
-                onChange={value => onInputChange('business_type', value)}
+                onChange={onBusinessTypeChange}
                 options={getBusinessTypeSelectOptions(formData.business_type)}
                 required
                 error={
@@ -63,6 +87,16 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
                 }
               />
             </div>
+            {specialtyOptions.length > 0 ? (
+              <div className="sm:col-span-2">
+                <SpecialtyChips
+                  options={specialtyOptions}
+                  value={formData.specialties}
+                  onChange={onSpecialtiesChange}
+                  error={specialtyError}
+                />
+              </div>
+            ) : null}
           </div>
         </GlassCard>
       </div>
@@ -70,34 +104,29 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
       <div>
         <p className="text-sm font-medium text-gray-200">Location</p>
         <GlassCard padding="sm" rounded="rounded-xl" className="mt-2 w-full">
-          <ProfileLocationFields
-            city={city}
-            state={state}
-            zip={formData.business_zip}
-            onCityChange={nextCity => updateServiceArea(nextCity, state)}
-            onStateChange={nextState => updateServiceArea(city, nextState)}
-            onZipChange={zip => onInputChange('business_zip', zip)}
-            errors={errors}
+          <DashboardProfileCoverageCard
+            locationQuery={locationQuery}
+            onLocationQueryChange={onLocationQueryChange}
+            selectedLocation={selectedLocation}
+            onSelectLocation={onSelectLocation}
+            radiusMiles={radiusMiles}
+            onRadiusChange={onRadiusChange}
+            error={coverageError}
           />
         </GlassCard>
       </div>
 
-      <div>
-        <p className="text-sm font-medium text-gray-200">Bio</p>
-        <GlassCard padding="sm" rounded="rounded-xl" className="mt-2 w-full">
-          <TextArea
-            placeholder="A few sentences about your business."
-            value={formData.bio}
-            onChange={value => onInputChange('bio', value)}
-            rows={3}
-            maxLength={BUSINESS_BIO_MAX_LENGTH}
-            hideCharCount={formData.bio.length < BUSINESS_BIO_MAX_LENGTH}
-            error={
-              errors.find(e => e.toLowerCase().includes('bio')) ?? undefined
-            }
-          />
-        </GlassCard>
-      </div>
+      <TextArea
+        label="Bio"
+        placeholder="A few sentences about your business."
+        value={formData.bio}
+        onChange={value => onInputChange('bio', value)}
+        rows={4}
+        maxLength={BUSINESS_BIO_MAX_LENGTH}
+        hideCharCount={formData.bio.length < BUSINESS_BIO_MAX_LENGTH}
+        inputClassName="rounded-xl"
+        error={errors.find(e => e.toLowerCase().includes('bio')) ?? undefined}
+      />
     </div>
   );
 };

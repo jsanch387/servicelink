@@ -118,6 +118,21 @@ export function getSpecialtiesForBusinessType(
   }));
 }
 
+/** Keep only niches valid for the new industry; Other defaults to `other`. */
+export function specialtiesAllowedForBusinessType(
+  businessType: string,
+  current: readonly string[] | null | undefined
+): BusinessSpecialtySlug[] {
+  const allowed = new Set(
+    getSpecialtiesForBusinessType(businessType).map(option => option.slug)
+  );
+  const kept = sanitizeBusinessSpecialties(current).filter(slug =>
+    allowed.has(slug)
+  );
+  if (businessType === 'Other' && kept.length === 0) return ['other'];
+  return kept;
+}
+
 /** Implied tags when `specialties` was never saved (legacy rows). */
 export function deriveSpecialtiesFromBusinessType(
   businessType: string | null | undefined

@@ -4,6 +4,7 @@ import { Button, GlassCard } from '@/components/shared';
 import { API_ROUTES } from '@/constants/routes';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import React, { useCallback, useState } from 'react';
+import { PaymentsStripeFeeNote } from './PaymentsStripeFeeNote';
 
 const STRIPE_MARKETING_FALLBACK = 'https://dashboard.stripe.com';
 
@@ -104,6 +105,9 @@ export const PaymentsBalanceAndStripeSection: React.FC<
             {openError}
           </p>
         ) : null}
+        <div className="mt-5">
+          <PaymentsStripeFeeNote />
+        </div>
       </GlassCard>
     </div>
   );
