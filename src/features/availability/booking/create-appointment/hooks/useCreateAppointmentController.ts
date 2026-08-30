@@ -44,18 +44,20 @@ import { buildOwnerFlexibleWeeklySchedule } from '../utils/ownerFlexibleSchedule
 import { CREATE_APPOINTMENT_SUBMIT_MIN_MS } from '../constants/submitStatus';
 import { normalizeUsPhoneDigits } from '@/lib/formatUsPhone';
 import type { MembershipVisitPrefill } from '../types/membershipVisitPrefill';
+import { shopAddressFieldsFromLocation } from '../../utils/bookingServiceLocationFlow';
 
 export type ServiceStepPhase = 'path' | 'list';
 
 function shopAddressFromLocation(
   loc: PublicBookingServiceLocation
 ): CreateAppointmentAddress {
+  const fields = shopAddressFieldsFromLocation(loc);
   return {
-    street: loc.shopStreet,
-    unit: loc.shopUnit,
-    city: loc.city,
-    state: loc.state,
-    zip: loc.zip,
+    street: fields.streetAddress,
+    unit: fields.unitApt,
+    city: fields.city,
+    state: fields.state,
+    zip: fields.zip,
   };
 }
 

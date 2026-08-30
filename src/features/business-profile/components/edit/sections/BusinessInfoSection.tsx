@@ -9,6 +9,7 @@ import type { StructuredLocation } from '@/features/location/types/location';
 import React from 'react';
 import { DashboardProfileCoverageCard } from '../../DashboardProfileCoverageCard';
 import { SpecialtyChips } from '../../SpecialtyChips';
+import { coverageErrorFromMessages } from '../../../utils/primaryServiceArea';
 
 interface BusinessInfoSectionProps {
   formData: EditingFormData;
@@ -37,14 +38,7 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
   radiusMiles,
   onRadiusChange,
 }) => {
-  const coverageError =
-    errors.find(
-      message =>
-        message.toLowerCase().includes('suggested location') ||
-        message.toLowerCase().includes('suggested city') ||
-        message.toLowerCase().includes('travel distance') ||
-        message.toLowerCase().includes('service area')
-    ) ?? undefined;
+  const coverageError = coverageErrorFromMessages(errors);
   const specialtyOptions = formData.business_type
     ? getSpecialtiesForBusinessType(formData.business_type)
     : [];

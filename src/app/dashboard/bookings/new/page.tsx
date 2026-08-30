@@ -163,7 +163,7 @@ export default async function NewAppointmentPage({
   const { data: businessRow, error: businessError } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_name, business_slug, business_type, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, free_bookings_count'
+      'id, business_name, business_slug, business_type, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, free_bookings_count'
     )
     .eq('profile_id', user.id)
     .maybeSingle();
@@ -182,6 +182,9 @@ export default async function NewAppointmentPage({
     business_zip?: string | null;
     shop_street_address?: string | null;
     shop_unit?: string | null;
+    shop_city?: string | null;
+    shop_state?: string | null;
+    shop_zip?: string | null;
     free_bookings_count?: number | null;
   };
 

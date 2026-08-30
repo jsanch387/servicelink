@@ -10,6 +10,7 @@ import {
   isBookingDetailsSubStepValid,
   isCustomerServiceLocationChoiceValid,
   prefillCustomerWithShopAddress,
+  shopAddressFieldsFromLocation,
 } from '../utils/bookingServiceLocationFlow';
 
 const emptyCustomer: CustomerFormData = {
@@ -55,18 +56,24 @@ const mobileOnly: PublicBookingServiceLocation = {
   city: 'Austin',
   state: 'TX',
   zip: '78701',
+  shopCity: '',
+  shopState: '',
+  shopZip: '',
   hasCompleteShopAddress: false,
 };
 
 const shopOnly: PublicBookingServiceLocation = {
   mode: 'shop_only',
   profileLocationLabel: 'Austin, TX 78701',
-  shopAddressLabel: '100 Main St, Suite 2, Austin, TX 78701',
-  shopStreet: '100 Main St',
+  shopAddressLabel: '410 E Pecan St, Suite 2, Pflugerville, TX 78660',
+  shopStreet: '410 E Pecan St',
   shopUnit: 'Suite 2',
   city: 'Austin',
   state: 'TX',
   zip: '78701',
+  shopCity: 'Pflugerville',
+  shopState: 'TX',
+  shopZip: '78660',
   hasCompleteShopAddress: true,
 };
 
@@ -125,14 +132,25 @@ describe('bookingServiceLocationFlow', () => {
     ).toBe(false);
   });
 
+  it('reads shop city from shop_* not the mobile serving city', () => {
+    expect(shopAddressFieldsFromLocation(shopOnly)).toEqual({
+      streetAddress: '410 E Pecan St',
+      unitApt: 'Suite 2',
+      city: 'Pflugerville',
+      state: 'TX',
+      zip: '78660',
+    });
+  });
+
   it('prefills customer with shop address', () => {
     const filled = prefillCustomerWithShopAddress(
       contactOnlyCustomer,
       shopOnly
     );
-    expect(filled.streetAddress).toBe('100 Main St');
-    expect(filled.city).toBe('Austin');
-    expect(filled.zip).toBe('78701');
+    expect(filled.streetAddress).toBe('410 E Pecan St');
+    expect(filled.city).toBe('Pflugerville');
+    expect(filled.zip).toBe('78660');
+    expect(filled.city).not.toBe('Austin');
   });
 
   it('clears customer address when switching to mobile', () => {

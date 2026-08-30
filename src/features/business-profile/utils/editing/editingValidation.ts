@@ -38,13 +38,7 @@ export function validateEditingForm(
       zip: formData.business_zip,
     })
   );
-  errors.push(
-    ...validateServiceLocation(serviceLocation, {
-      city,
-      state,
-      zip: formData.business_zip,
-    })
-  );
+  errors.push(...validateServiceLocation(serviceLocation));
 
   if (
     formData.phone_number_call &&

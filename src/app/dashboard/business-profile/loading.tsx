@@ -3,7 +3,7 @@
  * Shows skeleton while profile data is fetched server-side
  */
 
-import { BusinessProfileLoadingState } from '@/features/business-profile';
+import { BusinessProfileLoadingState } from '@/features/business-profile/components/BusinessProfileLoadingState';
 
 export default function DashboardBusinessProfileLoading() {
   return <BusinessProfileLoadingState />;

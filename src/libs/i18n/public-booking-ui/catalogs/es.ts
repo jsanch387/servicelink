@@ -175,6 +175,8 @@ export const publicBookingUiEs: PublicBookingUi = {
     notificationsSmsTermsLinkLabel: 'Términos de Servicio',
     policyHeading: 'Política de reserva',
     policyConsentCheckboxLabel: 'Acepto la política de reserva',
+    policyReviewLead: 'Acepto la',
+    policyLinkLabel: 'política de reserva',
     policyConsentRequired:
       'Debes aceptar la política de reserva para continuar.',
     continueToPayment: 'Continuar al pago',

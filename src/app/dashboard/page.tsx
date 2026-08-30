@@ -1,4 +1,5 @@
 import { resolveBusinessSpecialties } from '@/constants/businessSpecialties';
+import { shopAddressNeedsUpdate } from '@/features/business-profile/utils/location';
 import type { PresetKey } from '@/features/availability/components/QuickPresetsSection';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
@@ -22,6 +23,10 @@ type DashboardProfileRow = {
   business_link: string | null;
   legacy_request_booking_enabled: boolean | null;
   free_bookings_count: number | null;
+  service_location_mode: string | null;
+  shop_street_address: string | null;
+  shop_city: string | null;
+  shop_state: string | null;
   services: { count: number }[] | null;
   images: { count: number }[] | null;
 };
@@ -190,6 +195,7 @@ export default async function DashboardPage() {
           id, business_name, business_type, service_area, business_zip, bio, created_at, updated_at,
           business_slug, business_link, legacy_request_booking_enabled,
           free_bookings_count,
+          service_location_mode, shop_street_address, shop_city, shop_state,
           services:business_services(count),
           images:business_images(count)
         `
@@ -278,6 +284,7 @@ export default async function DashboardPage() {
           updated_at: profile.updated_at,
         },
         hasConfirmedServiceArea,
+        needsShopAddressUpdate: shopAddressNeedsUpdate(profile),
         slugData: hasSlug
           ? {
               hasSlug: true,

@@ -5,6 +5,7 @@
  */
 
 import { createBooking } from '@/features/availability/services/bookingService';
+import { buildPublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import {
@@ -238,7 +239,7 @@ export async function ensureMembershipInitialBooking(
   const { data: businessRow, error: bizErr } = await supabase
     .from('business_profiles')
     .select(
-      'business_slug, business_name, profile_id, free_bookings_count, service_location_mode, shop_street_address, shop_unit, business_zip'
+      'business_slug, business_name, profile_id, free_bookings_count, service_location_mode, service_area, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, business_zip'
     )
     .eq('id', membership.business_id)
     .maybeSingle();
@@ -262,8 +263,12 @@ export async function ensureMembershipInitialBooking(
     profile_id?: string | null;
     free_bookings_count?: number | null;
     service_location_mode?: string | null;
+    service_area?: string | null;
     shop_street_address?: string | null;
     shop_unit?: string | null;
+    shop_city?: string | null;
+    shop_state?: string | null;
+    shop_zip?: string | null;
     business_zip?: string | null;
   };
 
@@ -432,10 +437,8 @@ export async function ensureMembershipInitialBooking(
     };
   }
 
-  const shopLabel = [biz.shop_street_address, biz.shop_unit, biz.business_zip]
-    .map(part => (typeof part === 'string' ? part.trim() : ''))
-    .filter(Boolean)
-    .join(', ');
+  const shopLabel =
+    buildPublicBookingServiceLocation(biz).shopAddressLabel ?? '';
   const mode = (biz.service_location_mode ?? '').trim();
   const effectiveType: 'mobile' | 'shop' =
     mode === 'shop_only' || mode === 'shop' ? 'shop' : 'mobile';

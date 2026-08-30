@@ -144,14 +144,20 @@ const mobileOnlyLocation = {
   city: 'Austin',
   state: 'TX',
   zip: '78701',
+  shopCity: '',
+  shopState: '',
+  shopZip: '',
   hasCompleteShopAddress: false,
 };
 
 const bothLocation = {
   ...mobileOnlyLocation,
   mode: 'both' as const,
-  shopAddressLabel: '100 Main St, Austin, TX 78701',
-  shopStreet: '100 Main St',
+  shopAddressLabel: '410 E Pecan St, Pflugerville, TX 78660',
+  shopStreet: '410 E Pecan St',
+  shopCity: 'Pflugerville',
+  shopState: 'TX',
+  shopZip: '78660',
   hasCompleteShopAddress: true,
 };
 

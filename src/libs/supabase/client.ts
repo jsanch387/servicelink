@@ -172,6 +172,9 @@ export type Database = {
           service_location_mode: string;
           shop_street_address: string | null;
           shop_unit: string | null;
+          shop_city: string | null;
+          shop_state: string | null;
+          shop_zip: string | null;
           bio: string | null;
           phone_number_call: string | null;
           phone_number_text: string | null;
@@ -220,6 +223,9 @@ export type Database = {
           service_location_mode?: string;
           shop_street_address?: string | null;
           shop_unit?: string | null;
+          shop_city?: string | null;
+          shop_state?: string | null;
+          shop_zip?: string | null;
           bio?: string | null;
           phone_number_call?: string | null;
           phone_number_text?: string | null;
@@ -259,6 +265,9 @@ export type Database = {
           service_location_mode?: string;
           shop_street_address?: string | null;
           shop_unit?: string | null;
+          shop_city?: string | null;
+          shop_state?: string | null;
+          shop_zip?: string | null;
           bio?: string | null;
           phone_number_call?: string | null;
           phone_number_text?: string | null;

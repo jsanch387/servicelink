@@ -167,6 +167,8 @@ export type PublicBookingUi = {
     notificationsSmsTermsLinkLabel: string;
     policyHeading: string;
     policyConsentCheckboxLabel: string;
+    policyReviewLead: string;
+    policyLinkLabel: string;
     policyConsentRequired: string;
     continueToPayment: string;
     confirmBooking: string;

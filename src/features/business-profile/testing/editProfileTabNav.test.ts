@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { tabForSaveErrors } from '../components/edit/EditProfileTabNav';
+import {
+  parseEditProfileTab,
+  tabForSaveErrors,
+} from '../utils/editProfileTab';
+
+describe('parseEditProfileTab', () => {
+  it('accepts edit tabs and ignores unknown values', () => {
+    expect(parseEditProfileTab('booking')).toBe('booking');
+    expect(parseEditProfileTab('details')).toBe('details');
+    expect(parseEditProfileTab('gallery')).toBeUndefined();
+    expect(parseEditProfileTab(undefined)).toBeUndefined();
+  });
+});
 
 describe('tabForSaveErrors', () => {
   it('routes gallery errors to photos', () => {
@@ -16,7 +28,7 @@ describe('tabForSaveErrors', () => {
   });
 
   it('routes shop errors to booking', () => {
-    expect(tabForSaveErrors(['Shop street address is required'])).toBe(
+    expect(tabForSaveErrors(['Choose a suggested shop address'])).toBe(
       'booking'
     );
   });
@@ -35,7 +47,7 @@ describe('tabForSaveErrors', () => {
     expect(
       tabForSaveErrors([
         'ZIP is required',
-        'Shop address requires city, state, and ZIP',
+        'Choose a suggested shop address',
       ])
     ).toBe('booking');
   });

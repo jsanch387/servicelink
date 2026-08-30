@@ -37,6 +37,7 @@ interface LocationAutocompleteProps {
   onSelect: (location: StructuredLocation) => void;
   mode: LocationAutocompleteMode;
   label?: string;
+  description?: string;
   placeholder?: string;
   required?: boolean;
   error?: string;
@@ -50,6 +51,7 @@ export function LocationAutocomplete({
   onSelect,
   mode,
   label,
+  description,
   placeholder = 'Search for a location',
   required = false,
   error,
@@ -227,7 +229,9 @@ export function LocationAutocomplete({
         {suggestions.length > 0 && !providerError && (
           <div className="relative flex items-center justify-between px-5 pb-2 pt-4">
             <span className="text-xs font-semibold text-zinc-500">
-              Suggested locations
+              {mode === 'street-address'
+                ? 'Suggested addresses'
+                : 'Suggested locations'}
             </span>
             <span className="hidden items-center gap-1.5 text-[10px] text-zinc-400 sm:flex">
               <span>↑↓ Navigate</span>
@@ -249,7 +253,9 @@ export function LocationAutocomplete({
               </span>
               <span>
                 <span className="block text-sm font-semibold text-zinc-900">
-                  Finding locations
+                  {mode === 'street-address'
+                    ? 'Finding addresses'
+                    : 'Finding locations'}
                 </span>
                 <span className="mt-0.5 block text-xs text-zinc-500">
                   Searching near you…
@@ -271,10 +277,14 @@ export function LocationAutocomplete({
               </span>
               <span>
                 <span className="block text-sm font-semibold text-zinc-900">
-                  No locations found
+                  {mode === 'street-address'
+                    ? 'No addresses found'
+                    : 'No locations found'}
                 </span>
                 <span className="mt-0.5 block text-xs text-zinc-500">
-                  Check the spelling or try a nearby ZIP code.
+                  {mode === 'street-address'
+                    ? 'Try a street number and name.'
+                    : 'Check the spelling or try a nearby ZIP code.'}
                 </span>
               </span>
             </div>
@@ -361,6 +371,12 @@ export function LocationAutocomplete({
           {required && <span className="ml-1 text-red-400">*</span>}
         </label>
       )}
+
+      {description ? (
+        <p className="mb-1.5 text-xs leading-relaxed text-zinc-500">
+          {description}
+        </p>
+      ) : null}
 
       <div ref={triggerRef} className="relative">
         <input

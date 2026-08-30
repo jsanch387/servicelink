@@ -111,6 +111,9 @@ type PublicBusinessProfileForBooking = {
   business_zip: string | null;
   shop_street_address: string | null;
   shop_unit: string | null;
+  shop_city: string | null;
+  shop_state: string | null;
+  shop_zip: string | null;
   booking_policy_enabled?: boolean | null;
   booking_policy_text?: string | null;
 };
@@ -178,7 +181,7 @@ async function fetchBusinessProfileBySlug(slug: string) {
     const { data: profileData, error } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, booking_policy_enabled, booking_policy_text'
+        'id, business_name, business_slug, business_type, legacy_request_booking_enabled, profile_id, free_bookings_count, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, booking_policy_enabled, booking_policy_text'
       )
       .eq('business_slug', slug)
       .single();

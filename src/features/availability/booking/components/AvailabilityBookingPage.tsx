@@ -74,7 +74,10 @@ import { BookingSummary } from './BookingSummary';
 import { PublicMultiJobReviewSummary } from './PublicMultiJobReviewSummary';
 import { CustomerForm } from './CustomerForm';
 import { BookingVehicleFields } from './BookingVehicleFields';
-import { BookingServiceLocationChoice } from './BookingServiceLocationSteps';
+import {
+  BookingServiceLocationChoice,
+  BookingShopVisitAddress,
+} from './BookingServiceLocationSteps';
 import { AddAnotherJobCard } from '../create-appointment/components/AddAnotherJobCard';
 import {
   type BookingDetailsSubStep,
@@ -1753,6 +1756,7 @@ export function AvailabilityBookingPage({
                 bookingFlowLocale={bookingFlowLocale}
                 isOwnerManualBooking={isOwnerManualBooking}
                 coverageLabel={serviceLocation.coverageLabel}
+                shopAddressLabel={serviceLocation.shopAddressLabel}
               />
               {customerServiceChoice === 'shop' &&
               !serviceLocation.hasCompleteShopAddress ? (
@@ -1884,30 +1888,45 @@ export function AvailabilityBookingPage({
           {step === 'details' && (
             <div className="space-y-6">
               {detailsSubStep === 'contact' ? (
-                <CustomerForm
-                  id={CUSTOMER_FORM_ID}
-                  step="contact"
-                  showAddressFields={customerAddressEntryRequired(
+                <>
+                  {!isOwnerManualBooking &&
+                  customerBookingUsesShop(
                     serviceLocation,
                     customerServiceChoice
-                  )}
-                  value={customerData}
-                  onChange={setCustomerData}
-                  onSubmit={handleDetailsSubStepSubmit}
-                  showVehicleFields={effectiveShowVehicleFields}
-                  requireVehicleFields={requireVehicleFields}
-                  showPetFields={effectiveShowPetFields}
-                  requirePetFields={requirePetFields}
-                  hideSubmitButton
-                  submitLabel={detailsPrimaryCtaLabel}
-                  bookingFlowLocale={bookingFlowLocale}
-                  emailOptional
-                  isOwnerManualBooking={isOwnerManualBooking}
-                  showNotificationsConsent={!isOwnerManualBooking}
-                  businessName={businessName}
-                  agreedToNotifications={agreedToPublicNotifications}
-                  onAgreedToNotificationsChange={setAgreedToPublicNotifications}
-                />
+                  ) &&
+                  serviceLocation.shopAddressLabel ? (
+                    <BookingShopVisitAddress
+                      label={ui.serviceLocation.shopVisitAddressLabel}
+                      address={serviceLocation.shopAddressLabel}
+                    />
+                  ) : null}
+                  <CustomerForm
+                    id={CUSTOMER_FORM_ID}
+                    step="contact"
+                    showAddressFields={customerAddressEntryRequired(
+                      serviceLocation,
+                      customerServiceChoice
+                    )}
+                    value={customerData}
+                    onChange={setCustomerData}
+                    onSubmit={handleDetailsSubStepSubmit}
+                    showVehicleFields={effectiveShowVehicleFields}
+                    requireVehicleFields={requireVehicleFields}
+                    showPetFields={effectiveShowPetFields}
+                    requirePetFields={requirePetFields}
+                    hideSubmitButton
+                    submitLabel={detailsPrimaryCtaLabel}
+                    bookingFlowLocale={bookingFlowLocale}
+                    emailOptional
+                    isOwnerManualBooking={isOwnerManualBooking}
+                    showNotificationsConsent={!isOwnerManualBooking}
+                    businessName={businessName}
+                    agreedToNotifications={agreedToPublicNotifications}
+                    onAgreedToNotificationsChange={
+                      setAgreedToPublicNotifications
+                    }
+                  />
+                </>
               ) : null}
               {detailsSubStep === 'vehicleNotes' ? (
                 <>

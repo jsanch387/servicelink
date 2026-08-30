@@ -1,31 +1,37 @@
 'use client';
 
 import { GlassCard, Input } from '@/components/shared';
-import React from 'react';
+import { LocationAutocomplete } from '@/features/location/components/LocationAutocomplete';
+import type { StructuredLocation } from '@/features/location/types/location';
+import { DashboardProfileCoverageCard } from './DashboardProfileCoverageCard';
+import React, { useEffect, useState } from 'react';
 import type {
   ServiceLocationMode,
   ServiceLocationUiState,
   ShopAddressUiState,
 } from '../utils/serviceLocationMode';
+import { SHOP_ADDRESS_FIELD_ID } from '../constants/shopAddressPrompt';
+import { coverageErrorFromMessages } from '../utils/primaryServiceArea';
 import {
+  formatShopPickerQuery,
   mobileServiceIsOffered,
   serviceLocationModeHint,
+  shopAddressFromStructuredLocation,
   shopAddressIsOffered,
 } from '../utils/serviceLocationMode';
-import { sanitizeZipInput } from '../utils/businessLocation';
 
 export interface DashboardProfileServiceLocationCardProps {
   value: ServiceLocationUiState;
   onChange: (next: ServiceLocationUiState) => void;
-  /** City, state, ZIP — shared with Details coverage. */
-  profileLocation: {
-    city: string;
-    state: string;
-    zip: string;
-  };
-  onZipChange: (zip: string) => void;
-  /** e.g. "Austin, TX · 25 mi" from Details. */
+  /** e.g. "Austin, TX · 25 mi" from Details. Used on Both. */
   coverageLabel?: string | null;
+  onEditDetails?: () => void;
+  locationQuery: string;
+  onLocationQueryChange: (value: string) => void;
+  selectedLocation: StructuredLocation | null;
+  onSelectLocation: (location: StructuredLocation) => void;
+  radiusMiles: number;
+  onRadiusChange: (miles: number) => void;
   errors?: string[];
 }
 
@@ -49,20 +55,62 @@ function updateShopAddress(
 export function DashboardProfileServiceLocationCard({
   value,
   onChange,
-  profileLocation,
-  onZipChange,
   coverageLabel,
+  onEditDetails,
+  locationQuery,
+  onLocationQueryChange,
+  selectedLocation,
+  onSelectLocation,
+  radiusMiles,
+  onRadiusChange,
   errors = [],
 }: DashboardProfileServiceLocationCardProps) {
   const showShopFields = shopAddressIsOffered(value.mode);
-  const showMobileHint = mobileServiceIsOffered(value.mode);
+  const showMobileCoverageEditor = value.mode === 'mobile_only';
+  const showMobileHint = mobileServiceIsOffered(value.mode) && !showMobileCoverageEditor;
+  const coverageError = coverageErrorFromMessages(errors);
+  const modeHint = serviceLocationModeHint(value.mode);
   const trimmedCoverage = coverageLabel?.trim() || null;
-  const shopStreetError = errors.find(e =>
-    e.toLowerCase().includes('shop street')
+  const confirmedQuery = formatShopPickerQuery(value.shopAddress);
+  const [shopQuery, setShopQuery] = useState(confirmedQuery);
+  const shopAddressError = errors.find(e =>
+    e.toLowerCase().includes('shop address')
   );
-  const shopZipError = errors.some(e =>
-    e.toLowerCase().includes('shop address requires')
+  const shopZipError = errors.find(e => e.toLowerCase().includes('shop zip'));
+  const hasConfirmedShop = Boolean(
+    value.shopAddress.streetAddress.trim() &&
+      value.shopAddress.city.trim() &&
+      value.shopAddress.state.trim()
   );
+
+  useEffect(() => {
+    if (hasConfirmedShop) {
+      setShopQuery(confirmedQuery);
+    }
+  }, [confirmedQuery, hasConfirmedShop]);
+
+  const handleShopQueryChange = (next: string) => {
+    setShopQuery(next);
+    if (hasConfirmedShop && next.trim() !== confirmedQuery) {
+      updateShopAddress(value, onChange, {
+        streetAddress: '',
+        city: '',
+        state: '',
+        zip: '',
+      });
+    }
+  };
+
+  const handleShopSelect = (location: StructuredLocation) => {
+    onChange({
+      ...value,
+      shopAddress: shopAddressFromStructuredLocation(
+        location,
+        value.shopAddress.unitApt
+      ),
+    });
+    setShopQuery(location.label);
+  };
 
   return (
     <div className="w-full max-w-full text-left">
@@ -81,7 +129,7 @@ export function DashboardProfileServiceLocationCard({
           className="flex w-full rounded-lg border border-white/10 bg-black/25 p-1"
           role="radiogroup"
           aria-label="Service type"
-          aria-describedby="service-location-mode-hint"
+          aria-describedby={modeHint ? 'service-location-mode-hint' : undefined}
         >
           {MODE_OPTIONS.map(option => {
             const selected = value.mode === option.value;
@@ -104,85 +152,85 @@ export function DashboardProfileServiceLocationCard({
           })}
         </div>
 
-        <p
-          id="service-location-mode-hint"
-          className="mt-2 text-xs leading-relaxed text-zinc-500"
-        >
-          {serviceLocationModeHint(value.mode)}
-        </p>
+        {modeHint ? (
+          <p
+            id="service-location-mode-hint"
+            className="mt-2 text-xs leading-relaxed text-zinc-500"
+          >
+            {modeHint}
+          </p>
+        ) : null}
 
         {showShopFields ? (
           <div className="mt-4 space-y-4 border-t border-white/[0.06] pt-4">
-            <div>
-              <p className="text-xs font-medium text-zinc-400">Shop address</p>
-              <p className="mt-1 text-xs text-zinc-500">
-                Full address where customers visit you.
-              </p>
-            </div>
+            <LocationAutocomplete
+              id={SHOP_ADDRESS_FIELD_ID}
+              label="Shop address"
+              description="Where customers should visit."
+              value={shopQuery}
+              onChange={handleShopQueryChange}
+              onSelect={handleShopSelect}
+              mode="street-address"
+              placeholder="Search street address"
+              required
+              error={
+                shopAddressError
+                  ? 'Choose a suggested address'
+                  : shopZipError
+                    ? 'ZIP must be 5 digits'
+                    : undefined
+              }
+            />
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
-              <div className="sm:col-span-4">
-                <Input
-                  label="Street"
-                  placeholder="123 Main St"
-                  value={value.shopAddress.streetAddress}
-                  onChange={streetAddress =>
-                    updateShopAddress(value, onChange, { streetAddress })
-                  }
-                  required
-                  error={shopStreetError ? 'Required' : undefined}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <Input
-                  label="Unit"
-                  placeholder="Suite 4B (optional)"
-                  value={value.shopAddress.unitApt}
-                  onChange={unitApt =>
-                    updateShopAddress(value, onChange, { unitApt })
-                  }
-                />
-              </div>
-              <div className="sm:col-span-4">
-                <p className="text-xs font-medium text-zinc-400">City, state</p>
-                <p className="mt-2 text-sm text-zinc-300">
-                  {profileLocation.city && profileLocation.state
-                    ? `${profileLocation.city}, ${profileLocation.state}`
-                    : 'Set your area in Details'}
-                </p>
-              </div>
-              <div className="sm:col-span-2">
-                <Input
-                  label="ZIP"
-                  placeholder="78701"
-                  value={profileLocation.zip}
-                  onChange={zip => onZipChange(sanitizeZipInput(zip))}
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  maxLength={5}
-                  required
-                  error={shopZipError ? 'Required' : undefined}
-                />
-              </div>
-            </div>
+            <Input
+              label="Unit"
+              placeholder="Suite 4B (optional)"
+              value={value.shopAddress.unitApt}
+              onChange={unitApt =>
+                updateShopAddress(value, onChange, { unitApt })
+              }
+            />
+          </div>
+        ) : null}
+
+        {showMobileCoverageEditor ? (
+          <div className="mt-4 border-t border-white/[0.06] pt-4">
+            <DashboardProfileCoverageCard
+              locationQuery={locationQuery}
+              onLocationQueryChange={onLocationQueryChange}
+              selectedLocation={selectedLocation}
+              onSelectLocation={onSelectLocation}
+              radiusMiles={radiusMiles}
+              onRadiusChange={onRadiusChange}
+              error={coverageError}
+            />
           </div>
         ) : null}
 
         {showMobileHint ? (
-          <p className="mt-4 border-t border-white/[0.06] pt-4 text-xs text-zinc-500">
-            {trimmedCoverage ? (
-              <>
-                {showShopFields ? 'Mobile jobs use' : 'Your area:'}{' '}
-                <span className="text-zinc-400">{trimmedCoverage}</span>
-                <span className="text-zinc-600"> · edit in Details</span>
-              </>
-            ) : (
-              <>
-                Add your city, state, and travel distance in{' '}
-                <span className="text-zinc-400">Details</span>.
-              </>
-            )}
-          </p>
+          <div className="mt-4 flex items-start justify-between gap-3 border-t border-white/[0.06] pt-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-zinc-400">
+                {showShopFields ? 'Mobile area' : 'Your service area'}
+              </p>
+              {trimmedCoverage ? (
+                <p className="mt-1 text-sm text-zinc-300">{trimmedCoverage}</p>
+              ) : (
+                <p className="mt-1 text-xs text-zinc-500">
+                  Set city, state, and travel distance in Details.
+                </p>
+              )}
+            </div>
+            {onEditDetails ? (
+              <button
+                type="button"
+                onClick={onEditDetails}
+                className="shrink-0 cursor-pointer text-xs font-medium text-zinc-400 transition-colors hover:text-white"
+              >
+                Edit
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </GlassCard>
     </div>

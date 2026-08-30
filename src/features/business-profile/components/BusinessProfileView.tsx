@@ -43,6 +43,7 @@ import { ProfileHeader } from './ProfileHeader';
 import { ServicesList } from './ServicesList';
 import { WorkShowcase } from './WorkShowcase';
 import { EditBusinessProfile } from './edit/EditBusinessProfile';
+import type { EditProfileTabId } from '../utils/editProfileTab';
 import { ProfileWelcomeModal } from './ProfileWelcomeModal';
 // import { BusinessProfileApi } from '../services/businessProfileApi'; // Will be used later
 
@@ -109,6 +110,10 @@ interface BusinessProfileViewProps {
   primaryServiceArea?: PrimaryServiceArea | null;
   /** Public booking link: city/state/radius only — no lat/lng. */
   publicServiceCoverage?: PublicServiceCoverage | null;
+  /** Owner edit tabs: Photos / Details / Booking / Contact. */
+  initialEditTab?: EditProfileTabId;
+  /** Scroll and focus the shop address field after opening Booking. */
+  focusShopAddress?: boolean;
 }
 
 export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
@@ -129,6 +134,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
   publicActiveSale = null,
   publicSubscriptionPlans = [],
   initialTab,
+  initialEditTab,
+  focusShopAddress = false,
   membershipCheckoutCanceled = false,
   primaryServiceArea: initialPrimaryServiceArea = null,
   publicServiceCoverage = null,
@@ -709,6 +716,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
                 isFreeTier={isFreeTier}
                 primaryServiceArea={primaryServiceArea}
                 onPrimaryServiceAreaChange={setPrimaryServiceArea}
+                initialTab={initialEditTab}
+                focusShopAddress={focusShopAddress}
               />
             </div>
           )}

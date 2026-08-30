@@ -1,4 +1,7 @@
-export type LocationAutocompleteMode = 'customer-search' | 'service-origin';
+export type LocationAutocompleteMode =
+  | 'customer-search'
+  | 'service-origin'
+  | 'street-address';
 
 export interface StructuredLocation {
   providerId: string;
@@ -7,6 +10,8 @@ export interface StructuredLocation {
   city: string;
   state: string;
   zip: string;
+  /** House number + street when the pick is an address. Empty for city/ZIP. */
+  street?: string;
   latitude: number;
   longitude: number;
   placeType: string;

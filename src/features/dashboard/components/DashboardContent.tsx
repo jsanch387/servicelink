@@ -13,6 +13,7 @@ import {
   type DashboardLinkViewsPeriod,
 } from '@/features/analytics';
 import { BusinessLocationRequiredModal } from '@/features/business-profile/components/BusinessLocationRequiredModal';
+import { ShopAddressRequiredModal } from '@/features/business-profile/components/ShopAddressRequiredModal';
 import {
   CreateLinkCard,
   DashboardRevenueCard,
@@ -40,6 +41,8 @@ interface DashboardData {
   };
   /** True when a primary row exists in `business_service_areas`. */
   hasConfirmedServiceArea: boolean;
+  /** Shop or Both still on the old street-only shop address. */
+  needsShopAddressUpdate: boolean;
   slugData: {
     hasSlug: boolean;
     slug?: string;
@@ -76,6 +79,9 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   dashboardData,
 }) => {
   const { businessProfile, slugData } = dashboardData;
+  const [serviceAreaPromptOpen, setServiceAreaPromptOpen] = useState(
+    !dashboardData.hasConfirmedServiceArea
+  );
   const freeBookingsUsed = dashboardData.freeBookingsUsed ?? 0;
   const atFreeBookingCap =
     dashboardData.isFreeTier === true &&
@@ -102,6 +108,12 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       <BusinessLocationRequiredModal
         businessProfileId={businessProfile.id}
         hasConfirmedServiceArea={dashboardData.hasConfirmedServiceArea}
+        onOpenChange={setServiceAreaPromptOpen}
+      />
+      <ShopAddressRequiredModal
+        businessProfileId={businessProfile.id}
+        needsShopAddressUpdate={dashboardData.needsShopAddressUpdate}
+        serviceAreaPromptOpen={serviceAreaPromptOpen}
       />
       <div className="max-w-6xl mx-auto w-full min-w-0">
         {/* Header */}

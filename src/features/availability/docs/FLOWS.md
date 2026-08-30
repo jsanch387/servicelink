@@ -103,7 +103,7 @@ In short: **we always prioritize `duration_minutes` when present**, but graceful
 
 #### Service location on the business profile
 
-Businesses store **`service_location_mode`** (`mobile_only` | `shop_only` | `both`), **`shop_street_address`**, **`shop_unit`**, plus profile **`service_area`** (city/state) and **`business_zip`** on `business_profiles`. Dashboard edit saves these from the **Booking** tab.
+Businesses store **`service_location_mode`** (`mobile_only` | `shop_only` | `both`) and a **physical shop address** (`shop_street_address`, `shop_unit`, `shop_city`, `shop_state`, `shop_zip`) separately from the **mobile serving area** (`service_area`, `business_zip`, primary `business_service_areas`). Details edits coverage; Booking edits shop. Do not reuse serving city/state/ZIP for the shop.
 
 The public book flow branches on mode: **mobile** collects customer address on the **contact** step (same screen as name/phone); **shop** shows the business shop address and prefills it on submit; **both** asks **mobile vs shop on `/book/details`** (after price / add-ons when those exist), then schedule. APIs validate rules server-side. Full schema, validation, and file map: **[serviceLocation.md](../../business-profile/docs/serviceLocation.md)**.
 

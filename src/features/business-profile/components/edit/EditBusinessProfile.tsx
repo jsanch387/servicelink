@@ -15,6 +15,7 @@ import {
   DEFAULT_SERVICE_RADIUS_MILES,
   normalizeServiceRadiusMiles,
 } from '../../constants/serviceRadius';
+import { SHOP_ADDRESS_FIELD_ID } from '../../constants/shopAddressPrompt';
 import { CompleteBusinessProfile } from '../../types/businessProfile';
 import type { PrimaryServiceArea } from '../../types/primaryServiceArea';
 import {
@@ -62,11 +63,11 @@ import { BusinessInfoSection } from './sections/BusinessInfoSection';
 import { ContactSection } from './sections/ContactSection';
 import { PortfolioSection } from './sections/PortfolioSection';
 import { ProfileImageSection } from './sections/ProfileImageSection';
+import { EditProfileTabNav } from './EditProfileTabNav';
 import {
-  EditProfileTabNav,
   tabForSaveErrors,
   type EditProfileTabId,
-} from './EditProfileTabNav';
+} from '../../utils/editProfileTab';
 import { EditProfileActionBar } from './EditProfileActionBar';
 
 /**
@@ -142,6 +143,8 @@ interface EditBusinessProfileProps {
   /** Primary `business_service_areas` row for Details → Location. */
   primaryServiceArea?: PrimaryServiceArea | null;
   onPrimaryServiceAreaChange?: (area: PrimaryServiceArea) => void;
+  initialTab?: EditProfileTabId;
+  focusShopAddress?: boolean;
 }
 
 function initialFormLocation(
@@ -168,6 +171,8 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   isFreeTier = false,
   primaryServiceArea = null,
   onPrimaryServiceAreaChange,
+  initialTab = 'photos',
+  focusShopAddress = false,
 }) => {
   const [savedServiceArea, setSavedServiceArea] =
     useState<PrimaryServiceArea | null>(primaryServiceArea);
@@ -233,7 +238,7 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
     bookingPolicyUiFromProfile(businessProfile)
   );
 
-  const [activeTab, setActiveTab] = useState<EditProfileTabId>('photos');
+  const [activeTab, setActiveTab] = useState<EditProfileTabId>(initialTab);
 
   const [errors, setErrors] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -252,8 +257,17 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
   }, [formData.images]);
 
   useEffect(() => {
+    if (focusShopAddress && activeTab === 'booking') {
+      const timer = window.setTimeout(() => {
+        const field = document.getElementById(SHOP_ADDRESS_FIELD_ID);
+        field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        field?.focus();
+      }, 80);
+      return () => window.clearTimeout(timer);
+    }
+
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, [activeTab]);
+  }, [activeTab, focusShopAddress]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -631,13 +645,14 @@ export const EditBusinessProfile: React.FC<EditBusinessProfileProps> = ({
                 setServiceLocation(next);
                 if (errors.length > 0) setErrors([]);
               }}
-              profileLocation={{
-                city,
-                state,
-                zip: formData.business_zip,
-              }}
-              onZipChange={zip => handleInputChange('business_zip', zip)}
               coverageLabel={coverageLabel}
+              onEditDetails={() => setActiveTab('details')}
+              locationQuery={locationQuery}
+              onLocationQueryChange={handleLocationQueryChange}
+              selectedLocation={selectedLocation}
+              onSelectLocation={applySelectedLocation}
+              radiusMiles={radiusMiles}
+              onRadiusChange={handleRadiusChange}
               errors={errors}
             />
 

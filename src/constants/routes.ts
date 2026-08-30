@@ -69,6 +69,9 @@ export const ROUTES = {
   DASHBOARD: {
     MAIN: '/dashboard',
     BUSINESS_PROFILE: '/dashboard/business-profile',
+    /** Edit booking tab and focus the shop address field. */
+    BUSINESS_PROFILE_EDIT_SHOP_ADDRESS:
+      '/dashboard/business-profile?mode=edit&tab=booking&focus=shop-address',
     SERVICES: '/dashboard/services',
     SERVICE_EDIT: '/dashboard/services/:serviceId',
     /** Owner: customer subscription plans offered on the booking link. */

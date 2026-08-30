@@ -31,11 +31,12 @@ export { WorkShowcase } from './components/WorkShowcase';
 // Edit Components
 export { EditBusinessProfile } from './components/edit/EditBusinessProfile';
 export { EditProfileActionBar } from './components/edit/EditProfileActionBar';
+export { EditProfileTabNav } from './components/edit/EditProfileTabNav';
 export {
-  EditProfileTabNav,
+  parseEditProfileTab,
   tabForSaveErrors,
-} from './components/edit/EditProfileTabNav';
-export type { EditProfileTabId } from './components/edit/EditProfileTabNav';
+} from './utils/editProfileTab';
+export type { EditProfileTabId } from './utils/editProfileTab';
 
 // Dashboard profile edit cards
 export { DashboardProfileBookingLanguageCard } from './components/DashboardProfileBookingLanguageCard';

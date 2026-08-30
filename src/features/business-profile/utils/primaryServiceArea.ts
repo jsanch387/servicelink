@@ -94,6 +94,20 @@ export function isServiceCoverageDirty(
   );
 }
 
+export function coverageErrorFromMessages(
+  errors: string[]
+): string | undefined {
+  return (
+    errors.find(
+      message =>
+        message.toLowerCase().includes('suggested location') ||
+        message.toLowerCase().includes('suggested city') ||
+        message.toLowerCase().includes('travel distance') ||
+        message.toLowerCase().includes('service area')
+    ) ?? undefined
+  );
+}
+
 export function validateServiceCoverage(
   location: StructuredLocation | null,
   radiusMiles: number

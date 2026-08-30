@@ -126,6 +126,9 @@ function renderBookingFlow(options?: { bookingFlowLocale?: 'en' | 'es' }) {
         city: '',
         state: '',
         zip: '',
+        shopCity: '',
+        shopState: '',
+        shopZip: '',
         hasCompleteShopAddress: false,
       }}
     />

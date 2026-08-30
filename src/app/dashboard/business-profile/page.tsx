@@ -1,8 +1,8 @@
-import {
-  BusinessProfileApi,
-  isOnboardingCompleted,
-} from '@/features/business-profile';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
+import { SHOP_ADDRESS_FOCUS_QUERY } from '@/features/business-profile/constants/shopAddressPrompt';
+import { BusinessProfileApi } from '@/features/business-profile/services/businessProfileApi';
+import { isOnboardingCompleted } from '@/features/business-profile/utils/businessProfileHelpers';
+import { parseEditProfileTab } from '@/features/business-profile/utils/editProfileTab';
 import { loadPrimaryServiceArea } from '@/features/business-profile/server/loadPrimaryServiceArea';
 import { OnboardingCheckoutReturnGate } from '@/features/onboarding-v2/components/OnboardingCheckoutReturnGate';
 import {
@@ -35,11 +35,18 @@ export const dynamic = 'force-dynamic';
  *
  * URL Parameters:
  * - mode: 'view' | 'edit' - determines initial edit mode
+ * - tab: photos | details | booking | contact
+ * - focus: shop-address — scroll/focus the shop address field
  */
 export default async function BusinessProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string; onboarding?: string }>;
+  searchParams: Promise<{
+    mode?: string;
+    onboarding?: string;
+    tab?: string;
+    focus?: string;
+  }>;
 }) {
   // Await searchParams since it's now a Promise in Next.js 15
   const params = await searchParams;
@@ -207,6 +214,8 @@ export default async function BusinessProfilePage({
         publicProfileSlug={publicProfileSlug}
         publicActiveSale={publicActiveSale}
         primaryServiceArea={primaryServiceArea}
+        initialEditTab={parseEditProfileTab(params.tab)}
+        focusShopAddress={params.focus === SHOP_ADDRESS_FOCUS_QUERY}
       />
     </div>
   );

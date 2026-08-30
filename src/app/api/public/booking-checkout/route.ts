@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('business_profiles')
       .select(
-        'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, business_type, booking_policy_enabled, booking_policy_text'
+        'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, business_type, booking_policy_enabled, booking_policy_text'
       )
       .eq('business_slug', businessSlug)
       .single();

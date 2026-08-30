@@ -236,6 +236,8 @@ export function CreateAppointmentWizard({
         value={visit.locationType}
         onChange={setLocationType}
         shopAddressMissing={shopAddressMissing}
+        shopAddressLabel={serviceLocation.shopAddressLabel}
+        coverageLabel={serviceLocation.coverageLabel}
       />
     );
   } else if (step === CREATE_APPOINTMENT_STEP.ADDRESS) {

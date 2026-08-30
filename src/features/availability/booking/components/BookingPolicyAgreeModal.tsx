@@ -11,12 +11,14 @@ export function BookingPolicyAgreeModal({
   policyText,
   onClose,
   onAgreed,
+  viewOnly = false,
   bookingFlowLocale = 'en',
 }: {
   isOpen: boolean;
   policyText: string;
   onClose: () => void;
   onAgreed: () => void;
+  viewOnly?: boolean;
   bookingFlowLocale?: PublicBookingFlowLocale;
 }) {
   const ui = publicBookingUi(bookingFlowLocale);
@@ -42,29 +44,43 @@ export function BookingPolicyAgreeModal({
           {policyText}
         </p>
       </div>
-      <div className="mt-4 shrink-0 space-y-3 border-t border-white/[0.06] pt-4">
-        <label className="flex cursor-pointer items-start gap-2.5">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={event => setAgreed(event.target.checked)}
-            className={`mt-0.5 cursor-pointer ${nativeCheckboxSmClassName}`}
-          />
-          <span className="text-sm text-gray-200">
-            {ui.calendar.policyConsentCheckboxLabel}
-          </span>
-        </label>
-        <Button
-          type="button"
-          variant="inverse"
-          fullWidth
-          className="font-semibold"
-          disabled={!agreed}
-          onClick={onAgreed}
-        >
-          {ui.common.continue}
-        </Button>
-      </div>
+      {viewOnly ? (
+        <div className="mt-4 shrink-0 border-t border-white/[0.06] pt-4">
+          <Button
+            type="button"
+            variant="inverse"
+            fullWidth
+            className="font-semibold"
+            onClick={onClose}
+          >
+            {ui.common.close}
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-4 shrink-0 space-y-3 border-t border-white/[0.06] pt-4">
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={event => setAgreed(event.target.checked)}
+              className={`mt-0.5 cursor-pointer ${nativeCheckboxSmClassName}`}
+            />
+            <span className="text-sm text-gray-200">
+              {ui.calendar.policyConsentCheckboxLabel}
+            </span>
+          </label>
+          <Button
+            type="button"
+            variant="inverse"
+            fullWidth
+            className="font-semibold"
+            disabled={!agreed}
+            onClick={onAgreed}
+          >
+            {ui.common.continue}
+          </Button>
+        </div>
+      )}
     </Modal>
   );
 }

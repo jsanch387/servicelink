@@ -15,9 +15,14 @@ export interface PublicBookingServiceLocation {
   shopAddressLabel: string | null;
   shopStreet: string;
   shopUnit: string;
+  /** Mobile serving city from service_area / coverage. */
   city: string;
   state: string;
   zip: string;
+  /** Physical shop only. Empty when unset — do not treat serving city as shop. */
+  shopCity: string;
+  shopState: string;
+  shopZip: string;
   hasCompleteShopAddress: boolean;
   /** Confirmed travel radius. Never includes lat/lng. */
   radiusMiles?: number | null;
@@ -35,6 +40,9 @@ export const DEFAULT_PUBLIC_BOOKING_SERVICE_LOCATION: PublicBookingServiceLocati
     city: '',
     state: '',
     zip: '',
+    shopCity: '',
+    shopState: '',
+    shopZip: '',
     hasCompleteShopAddress: false,
     radiusMiles: null,
     coverageLabel: null,
@@ -47,6 +55,9 @@ export function buildPublicBookingServiceLocation(
     business_zip?: string | null;
     shop_street_address?: string | null;
     shop_unit?: string | null;
+    shop_city?: string | null;
+    shop_state?: string | null;
+    shop_zip?: string | null;
   },
   coverage?: PublicServiceCoverage | null
 ): PublicBookingServiceLocation {
@@ -58,10 +69,18 @@ export function buildPublicBookingServiceLocation(
     coverage?.postalCode?.trim() || profile.business_zip?.trim() || '';
   const shopStreet = profile.shop_street_address?.trim() ?? '';
   const shopUnit = profile.shop_unit?.trim() ?? '';
+  const shopCity = profile.shop_city?.trim() ?? '';
+  const shopState = profile.shop_state?.trim() ?? '';
+  const shopZip = profile.shop_zip?.trim() ?? '';
   const radiusMiles =
     coverage && Number.isFinite(coverage.radiusMiles)
       ? coverage.radiusMiles
       : null;
+
+  // Legacy street-only rows: display may use serving city. Never write this back.
+  const displayCity = shopCity || city;
+  const displayState = shopState || state;
+  const displayZip = shopZip || (shopCity ? '' : zip);
 
   const profileLocationLabel = formatProfileLocationLabel(city, state, zip);
   const coverageLabel =
@@ -71,9 +90,9 @@ export function buildPublicBookingServiceLocation(
     ? formatFullShopAddress({
         street: shopStreet,
         unit: shopUnit || null,
-        city,
-        state,
-        zip,
+        city: displayCity,
+        state: displayState,
+        zip: displayZip,
       })
     : null;
 
@@ -86,9 +105,10 @@ export function buildPublicBookingServiceLocation(
     city,
     state,
     zip,
-    hasCompleteShopAddress: Boolean(
-      shopStreet && city && state && zip.length === 5
-    ),
+    shopCity,
+    shopState,
+    shopZip,
+    hasCompleteShopAddress: Boolean(shopStreet && displayCity && displayState),
     radiusMiles,
     coverageLabel,
   };

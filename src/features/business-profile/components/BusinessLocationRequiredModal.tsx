@@ -22,11 +22,13 @@ interface BusinessLocationRequiredModalProps {
   businessProfileId: string;
   /** When true, owner already confirmed a primary service area in the DB. */
   hasConfirmedServiceArea: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export function BusinessLocationRequiredModal({
   businessProfileId,
   hasConfirmedServiceArea,
+  onOpenChange,
 }: BusinessLocationRequiredModalProps) {
   const skipKey = serviceAreaSessionSkipKey(businessProfileId);
 
@@ -44,22 +46,26 @@ export function BusinessLocationRequiredModal({
   useEffect(() => {
     if (hasConfirmedServiceArea) {
       setIsOpen(false);
+      onOpenChange?.(false);
       return;
     }
 
     if (SERVICE_AREA_PROMPT_DISMISSIBLE) {
       const skippedThisSession = window.sessionStorage.getItem(skipKey) === '1';
       setIsOpen(!skippedThisSession);
+      onOpenChange?.(!skippedThisSession);
       return;
     }
 
     setIsOpen(true);
-  }, [hasConfirmedServiceArea, skipKey]);
+    onOpenChange?.(true);
+  }, [hasConfirmedServiceArea, onOpenChange, skipKey]);
 
   const handleSkip = () => {
     if (!SERVICE_AREA_PROMPT_DISMISSIBLE) return;
     window.sessionStorage.setItem(skipKey, '1');
     setIsOpen(false);
+    onOpenChange?.(false);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -87,6 +93,7 @@ export function BusinessLocationRequiredModal({
 
       window.sessionStorage.removeItem(skipKey);
       setIsOpen(false);
+      onOpenChange?.(false);
     } finally {
       setIsSubmitting(false);
     }

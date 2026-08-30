@@ -173,6 +173,8 @@ export const publicBookingUiEn: PublicBookingUi = {
     notificationsSmsTermsLinkLabel: 'Terms of Service',
     policyHeading: 'Booking policy',
     policyConsentCheckboxLabel: 'I agree to the booking policy',
+    policyReviewLead: 'I agree to the',
+    policyLinkLabel: 'booking policy',
     policyConsentRequired: 'Agree to the booking policy to continue.',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',

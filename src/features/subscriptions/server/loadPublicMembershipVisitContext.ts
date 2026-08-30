@@ -71,7 +71,7 @@ export async function loadPublicMembershipVisitContext(
   const { data: business } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+      'id, business_slug, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip'
     )
     .eq('business_slug', slug)
     .maybeSingle();
@@ -85,6 +85,9 @@ export async function loadPublicMembershipVisitContext(
     business_zip?: string | null;
     shop_street_address?: string | null;
     shop_unit?: string | null;
+    shop_city?: string | null;
+    shop_state?: string | null;
+    shop_zip?: string | null;
   } | null;
   if (!biz?.id) return { ok: false, error: 'not_found' };
 

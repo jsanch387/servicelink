@@ -52,17 +52,45 @@ describe('validateEditingForm', () => {
   it('requires full shop address when shop is offered', () => {
     const result = validateEditingForm(baseFormData, {
       mode: 'shop_only',
-      shopAddress: { streetAddress: '', unitApt: '' },
+      shopAddress: {
+        streetAddress: '',
+        unitApt: '',
+        city: '',
+        state: '',
+        zip: '',
+      },
     });
 
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('Shop street address is required');
+    expect(result.errors).toContain('Choose a suggested shop address');
   });
 
-  it('accepts shop_only with street and profile location', () => {
+  it('does not treat Details Austin as the shop city', () => {
     const result = validateEditingForm(baseFormData, {
       mode: 'shop_only',
-      shopAddress: { streetAddress: '123 Main St', unitApt: 'Suite 4' },
+      shopAddress: {
+        streetAddress: '410 E Pecan St',
+        unitApt: '',
+        city: '',
+        state: '',
+        zip: '',
+      },
+    });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContain('Choose a suggested shop address');
+  });
+
+  it('accepts shop_only with Pflugerville shop fields while serving Austin', () => {
+    const result = validateEditingForm(baseFormData, {
+      mode: 'shop_only',
+      shopAddress: {
+        streetAddress: '410 E Pecan St',
+        unitApt: '',
+        city: 'Pflugerville',
+        state: 'TX',
+        zip: '78660',
+      },
     });
 
     expect(result.isValid).toBe(true);

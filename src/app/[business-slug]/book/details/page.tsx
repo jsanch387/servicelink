@@ -114,7 +114,7 @@ export default async function ServiceDetailsPage({
   const { data: profileMeta } = await adminClient
     .from('business_profiles')
     .select(
-      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, booking_policy_enabled, booking_policy_text'
+      'id, legacy_request_booking_enabled, public_booking_locales, public_booking_default_locale, profile_id, free_bookings_count, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip, booking_policy_enabled, booking_policy_text'
     )
     .eq('business_slug', slug)
     .maybeSingle();

@@ -4,7 +4,7 @@ Documentation for dashboard profile edit, public profile display, and booking-li
 
 | Doc                                                      | Topic                                                                                      |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [serviceLocation.md](./serviceLocation.md)               | Mobile / shop / both, profile ZIP, shop street address, validation, DB columns             |
+| [serviceLocation.md](./serviceLocation.md)               | Mobile serving area vs physical shop address (`shop_*`), validation, DB columns            |
 | [industryAndSpecialties.md](./industryAndSpecialties.md) | Industry (`business_type`) + niches (`specialties`) — store, prune, booking vs marketplace |
 | [publicBookingLocales.md](./publicBookingLocales.md)     | English / Spanish on the public booking link                                               |
 

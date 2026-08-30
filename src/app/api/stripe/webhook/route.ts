@@ -535,7 +535,7 @@ export async function POST(request: NextRequest) {
       const { data: capProfileRow, error: capProfileError } = await supabase
         .from('business_profiles')
         .select(
-          'id, profile_id, free_bookings_month, free_bookings_count, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+          'id, profile_id, free_bookings_month, free_bookings_count, business_name, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip'
         )
         .eq('id', bookingPayload.businessId.trim())
         .maybeSingle();
@@ -570,6 +570,9 @@ export async function POST(request: NextRequest) {
         business_zip: string | null;
         shop_street_address: string | null;
         shop_unit: string | null;
+        shop_city: string | null;
+        shop_state: string | null;
+        shop_zip: string | null;
       };
 
       const freeTierCap = await enforceFreeTierBookingCapBeforeCreate(

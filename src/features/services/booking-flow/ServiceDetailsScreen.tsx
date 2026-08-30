@@ -482,6 +482,7 @@ export function ServiceDetailsScreen({
                 bookingFlowLocale={bookingFlowLocale}
                 isOwnerManualBooking={isOwnerManualBooking}
                 coverageLabel={serviceLocation.coverageLabel}
+                shopAddressLabel={serviceLocation.shopAddressLabel}
               />
               {showShopIncompleteError ? (
                 <p className="mt-3 text-sm text-red-400" role="alert">

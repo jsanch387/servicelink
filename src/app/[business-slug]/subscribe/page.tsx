@@ -54,7 +54,7 @@ export default async function PublicMembershipSubscribeRoute({
   const { data: profile } = await supabase
     .from('business_profiles')
     .select(
-      'id, business_name, profile_id, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit'
+      'id, business_name, profile_id, public_booking_locales, public_booking_default_locale, service_location_mode, service_area, business_zip, shop_street_address, shop_unit, shop_city, shop_state, shop_zip'
     )
     .eq('business_slug', slug)
     .maybeSingle();
@@ -126,6 +126,9 @@ export default async function PublicMembershipSubscribeRoute({
       business_zip?: string | null;
       shop_street_address?: string | null;
       shop_unit?: string | null;
+      shop_city?: string | null;
+      shop_state?: string | null;
+      shop_zip?: string | null;
     }
   );
 
