@@ -2,6 +2,7 @@ import {
   sendQuoteSentToCustomerEmail,
   type QuoteSentToCustomerPayload,
 } from '@/features/email';
+import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
 import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
 import {
   getQuoteSendRequestId,
@@ -192,9 +193,7 @@ export async function POST(request: NextRequest) {
       .createHash('sha256')
       .update(rawToken)
       .digest('hex');
-    const expiresAt = new Date(
-      Date.now() + 1000 * 60 * 60 * 24 * 14
-    ).toISOString(); // 14 days
+    const expiresAt = quotePublicLinkExpiresAt();
 
     const { error: linkError } = await db.from('quote_public_links').insert({
       quote_id: quoteId,
@@ -240,6 +239,7 @@ export async function POST(request: NextRequest) {
         customerRequestMessage: null,
         vehicleLine,
         publicQuoteUrl: publicUrl,
+        expiresAt,
         addonDetails: body.addonDetails,
       };
       const emailResult = await sendQuoteSentToCustomerEmail(

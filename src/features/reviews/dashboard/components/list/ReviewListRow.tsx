@@ -3,6 +3,7 @@
 import { Button, GlassCard } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import {
+  hasVisibleReviewBody,
   reviewBodyTextClass,
   ReviewCardHeader,
   ReviewExpandableText,
@@ -53,15 +54,17 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           authorAs="h3"
         />
 
-        <div className="mt-3 sm:mt-4">
-          <ReviewExpandableText
-            text={review.body}
-            variant="reviewBody"
-            className={reviewBodyTextClass}
-            seeMoreLabel={expandLabels.seeMore}
-            seeLessLabel={expandLabels.seeLess}
-          />
-        </div>
+        {hasVisibleReviewBody(review.body) ? (
+          <div className="mt-3 sm:mt-4">
+            <ReviewExpandableText
+              text={review.body}
+              variant="reviewBody"
+              className={reviewBodyTextClass}
+              seeMoreLabel={expandLabels.seeMore}
+              seeLessLabel={expandLabels.seeLess}
+            />
+          </div>
+        ) : null}
 
         {hasReply && review.ownerReply ? (
           <ReviewOwnerReplyDisplay

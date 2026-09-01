@@ -6,6 +6,15 @@ export const REVIEW_REPLY_COLLAPSED_MAX_DESKTOP = 240;
 
 export type ReviewExpandableTextVariant = 'reviewBody' | 'ownerReply';
 
+/** DB stores an em dash when the customer rated without a comment. */
+const REVIEW_BODY_EMPTY_PLACEHOLDER = '—';
+
+/** True when the review has a real comment (not blank or the empty-body placeholder). */
+export function hasVisibleReviewBody(text: string): boolean {
+  const trimmed = text.trim();
+  return trimmed.length > 0 && trimmed !== REVIEW_BODY_EMPTY_PLACEHOLDER;
+}
+
 export function reviewCollapsedMaxChars(
   variant: ReviewExpandableTextVariant,
   isDesktop: boolean

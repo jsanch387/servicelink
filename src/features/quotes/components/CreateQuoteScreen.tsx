@@ -139,6 +139,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [preferredTimingHint, setPreferredTimingHint] = useState<string | null>(
     null
   );
+  const [secondVehicleHint, setSecondVehicleHint] = useState<string | null>(
+    null
+  );
   const [customerRequestDetails, setCustomerRequestDetails] = useState('');
 
   const [step, setStep] = useState<Step>('customer');
@@ -209,6 +212,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     editHydratedRef.current = false;
     prevDurationRef.current = null;
     setPreferredTimingHint(null);
+    setSecondVehicleHint(null);
     setCustomerRequestDetails('');
   }, [editId]);
 
@@ -240,12 +244,14 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setCatalogAddonDetails([]);
     setCatalogServicePriceCents(null);
     setPreferredTimingHint(null);
+    setSecondVehicleHint(null);
     setCustomerRequestDetails('');
     if (quote.source === 'customer_requested') {
       const raw = resolveCustomerRequestRawText(quote);
       const parsed = parsePublicQuoteRequestNote(raw);
       setCustomerRequestDetails(parsed.detailsOnly);
       setPreferredTimingHint(parsed.preferredTiming);
+      setSecondVehicleHint(parsed.secondVehicleLine);
       const legacyIntake =
         !quote.requestMessage?.trim() &&
         (quote.status === 'requested' || quote.status === 'draft');
@@ -763,6 +769,14 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   required={false}
                 />
               </div>
+              {secondVehicleHint?.trim() ? (
+                <p className="mt-3 text-sm text-gray-400">
+                  Second vehicle:{' '}
+                  <span className="text-gray-200">
+                    {secondVehicleHint.trim()}
+                  </span>
+                </p>
+              ) : null}
             </GlassCard>
           </div>
         )}

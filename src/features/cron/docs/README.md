@@ -1,8 +1,8 @@
 # Cron feature
 
-A **cron job** is a task the server runs on a clock — not because a user tapped something. You pick a schedule (“every day at 2pm UTC”), and the host calls a URL at that time.
+A **cron job** is a task the server runs on a clock — not because a user tapped something.
 
-This feature owns the **shared plumbing**. Each job’s work stays in the domain feature that owns the data (availability, SMS, etc.).
+This feature owns the **shared plumbing**. Each job’s work stays in the domain feature that owns the data.
 
 | Piece           | Path                                                      |
 | --------------- | --------------------------------------------------------- |
@@ -44,24 +44,29 @@ sequenceDiagram
 
 ## Jobs
 
-Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift.
+Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift. Both jobs share `0 14 * * *` (14:00 UTC daily).
 
-| id                  | Schedule                       | What it does                                                                                                                                                         |
-| ------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `booking-reminders` | `0 14 * * *` (14:00 UTC daily) | Confirmed bookings **tomorrow** (`America/Chicago`): one owner push (“You have an appointment coming up.”) plus customer email and/or SMS when we have that contact. |
+| id                         | Work                                                            | Docs                                                                                  |
+| -------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `booking-reminders`        | Tomorrow’s confirmed bookings: owner push + customer email/SMS  | [`availability/.../reminders`](../../availability/booking/server/reminders/README.md) |
+| `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 
 ### booking-reminders
 
 - **Route:** `GET /api/internal/cron/booking-reminders`
-- **Duration:** `maxDuration = 300` (Vercel Pro). Owner + customer already run in parallel; each side sends up to 5 at a time. Per customer, email and SMS run together.
-- **Work:** `src/features/availability/booking/server/reminders/`
-  - Owner: `runOwnerBookingReminders` — Expo push + in-app bell
-  - Customer: `runCustomerBookingReminders` — email via Resend, SMS via `sendAndRecordSms` (shows in the owner message inbox)
-- **Owner idempotency:** `notifications.dedupe_key` = `booking_reminder:{ownerProfileId}:{targetDate}`
-- **Customer SMS idempotency:** `sms_messages.dedupe_key` = `{bookingId}:booking_reminder:{scheduledDate}`
-- **SMS type:** `booking_reminder` (same table as confirmation / on-the-way)
-- **SMS gates:** same as other customer texts (opt-in, Telnyx, business eligible). Telnyx STOP (`carrier_opt_out`) is skipped, not failed.
-- **Mobile tap (owner):** [`docs/contracts/mobile-push-notifications.md`](../../../../docs/contracts/mobile-push-notifications.md) — `screen` → `bookings`
+- **Duration:** `maxDuration = 300`
+- **Entry:** `runBookingReminders`
+- **Owner idempotency:** `booking_reminder:{ownerProfileId}:{targetDate}`
+- **Customer SMS idempotency:** `{bookingId}:booking_reminder:{scheduledDate}`
+- **Mobile tap:** `screen` → `bookings`
+
+### quote-request-follow-ups
+
+- **Route:** `GET /api/internal/cron/quote-request-follow-ups`
+- **Duration:** `maxDuration = 60`
+- **Entry:** `runQuoteRequestFollowUps`
+- **Owner idempotency:** `quote_request_followup:{ownerProfileId}:{localDate}`
+- **Mobile tap:** `screen` → `quotes`
 
 ---
 
@@ -80,6 +85,9 @@ If **neither** secret is set → `503`. Wrong secret → `401`.
 
 ```bash
 curl -i https://<your-domain>/api/internal/cron/booking-reminders \
+  -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
+
+curl -i https://<your-domain>/api/internal/cron/quote-request-follow-ups \
   -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
 ```
 
@@ -104,6 +112,6 @@ export const GET = handleCronGet(async ({ request }) => {
 });
 ```
 
-6. Document the job in the table above.
+6. Document the job in the table above, plus a short README next to the work.
 
 Hobby Vercel plans only allow **daily** schedules. Hourly needs Pro or another scheduler.

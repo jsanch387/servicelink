@@ -6,17 +6,31 @@ const validBase = {
   customerName: 'Alex',
   customerEmail: 'alex@example.com',
   customerPhone: '4155550100',
-  serviceRequested: 'Full detail',
-  details: 'Interior needs shampoo.',
+  details: 'I spilled coffee on the seat and want it cleaned.',
 };
 
 describe('validatePublicQuoteRequestBody', () => {
-  it('accepts minimal valid body without vehicle', () => {
+  it('accepts a single ask field without a service title', () => {
     const r = validatePublicQuoteRequestBody(validBase);
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.data.vehicleYear).toBeNull();
+      expect(r.data.serviceName).toBe(validBase.details);
       expect(r.data.customerPhoneDigits).toBe('4155550100');
+    }
+  });
+
+  it('accepts legacy serviceRequested when details is omitted', () => {
+    const r = validatePublicQuoteRequestBody({
+      businessSlug: 'acme-detail',
+      customerName: 'Alex',
+      customerEmail: 'alex@example.com',
+      customerPhone: '4155550100',
+      serviceRequested: 'Full detail',
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.details).toBe('Full detail');
     }
   });
 
@@ -28,6 +42,22 @@ describe('validatePublicQuoteRequestBody', () => {
       vehicleModel: 'Camry',
     });
     expect(r.ok).toBe(false);
+  });
+
+  it('accepts a complete second vehicle', () => {
+    const r = validatePublicQuoteRequestBody({
+      ...validBase,
+      vehicleYear: '2017',
+      vehicleMake: 'Toyota',
+      vehicleModel: 'Tacoma',
+      vehicle2Year: '2018',
+      vehicle2Make: 'Honda',
+      vehicle2Model: 'Civic',
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.vehicle2Make).toBe('Honda');
+    }
   });
 
   it('rejects details over max length', () => {

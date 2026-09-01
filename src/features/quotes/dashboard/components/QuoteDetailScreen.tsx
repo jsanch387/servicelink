@@ -29,6 +29,8 @@ import {
 } from '../utils/customerContactDisplay';
 import { isDashboardQuoteEditableByOwner } from '../utils/isDashboardQuoteEditableByOwner';
 import { parseDeleteQuoteApiResponse } from '../utils/parseDeleteQuoteApiResponse';
+import { quotePublicLinkExpiryCopy } from '../utils/formatQuotePublicLinkExpiry';
+import { formatQuoteRequestWaitingLabel } from '../utils/formatQuoteRequestWaitingLabel';
 import { parsePublicQuoteRequestNote } from '../utils/parsePublicQuoteRequestNote';
 import {
   getPublicQuoteAbsoluteUrl,
@@ -243,6 +245,8 @@ export function QuoteDetailContent({
 
   const customerRequestRaw = resolveCustomerRequestRawText(quote);
   const parsedCustomerRequest = parsePublicQuoteRequestNote(customerRequestRaw);
+  const secondVehicleLine =
+    parsedCustomerRequest.secondVehicleLine?.trim() || null;
   const isCustomerRequestSource = quote.source === 'customer_requested';
   const hasScheduledDate = Boolean(quote.scheduledDate?.trim());
   const timingFromRequest = parsedCustomerRequest.preferredTiming?.trim() ?? '';
@@ -289,12 +293,14 @@ export function QuoteDetailContent({
               className="border-white/[0.08] bg-white/[0.03]"
             >
               <div className="space-y-4">
-                <QuoteServiceSummaryCard
-                  serviceName={quote.serviceName}
-                  durationMinutes={quote.durationMinutes}
-                  totalCents={quote.totalCents}
-                  addOns={quote.addonDetails}
-                />
+                {!isPendingRequest ? (
+                  <QuoteServiceSummaryCard
+                    serviceName={quote.serviceName}
+                    durationMinutes={quote.durationMinutes}
+                    totalCents={quote.totalCents}
+                    addOns={quote.addonDetails}
+                  />
+                ) : null}
 
                 {hasScheduledDate && !showActivityCard ? (
                   <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
@@ -314,6 +320,21 @@ export function QuoteDetailContent({
                   </div>
                 ) : null}
 
+                {isPendingRequest ? (
+                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+                    <p className="mb-1 text-xs font-medium text-gray-500">
+                      Waiting
+                    </p>
+                    <p className="text-sm font-medium text-gray-200">
+                      {formatQuoteRequestWaitingLabel(quote.createdAt)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      They asked {formatQuoteDetailDateLong(quote.createdAt)}.
+                      Requests stay open until you send a quote.
+                    </p>
+                  </div>
+                ) : null}
+
                 {preferredTimingTrimmed ? (
                   <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
                     <p className="mb-1 text-xs font-medium text-gray-500">
@@ -328,7 +349,7 @@ export function QuoteDetailContent({
                 {customerDetailsTrimmed ? (
                   <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
                     <p className="mb-1.5 text-xs font-medium text-gray-500">
-                      Customer note
+                      Request
                     </p>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
                       {customerDetailsTrimmed}
@@ -430,6 +451,14 @@ export function QuoteDetailContent({
                 className="border-white/[0.08] bg-white/[0.03]"
               >
                 <p className="text-sm text-gray-300">{vehicleLine}</p>
+                {secondVehicleLine ? (
+                  <div className="mt-3 border-t border-white/[0.07] pt-3">
+                    <p className="mb-1 text-xs font-medium text-gray-500">
+                      Second vehicle
+                    </p>
+                    <p className="text-sm text-gray-300">{secondVehicleLine}</p>
+                  </div>
+                ) : null}
               </GlassCard>
             </section>
           ) : null}
@@ -464,6 +493,11 @@ export function QuoteDetailContent({
                     ? 'Send this to your customer so they can review the quote and accept or decline.'
                     : 'A shareable link appears here after you send the quote.'}
                 </p>
+                {hasPublicLink && quote.publicLinkExpiresAt ? (
+                  <p className="mt-2 text-sm text-gray-400">
+                    {quotePublicLinkExpiryCopy(quote.publicLinkExpiresAt)}
+                  </p>
+                ) : null}
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
                     type="button"
@@ -521,6 +555,14 @@ export function QuoteDetailContent({
                       {formatQuoteDetailDateLong(quote.createdAt)}
                     </dd>
                   </div>
+                  {isPendingRequest ? (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-gray-500">Waiting</dt>
+                      <dd className="text-right text-gray-300">
+                        {formatQuoteRequestWaitingLabel(quote.createdAt)}
+                      </dd>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between gap-4">
                     <dt className="text-gray-500">Last activity</dt>
                     <dd className="text-right text-gray-300">

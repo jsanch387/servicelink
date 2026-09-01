@@ -9,6 +9,7 @@ export type NotificationType =
   | 'availability_booking'
   | 'booking_reminder'
   | 'quote_request'
+  | 'quote_request_followup'
   | 'review_submitted'
   | 'membership_subscriber'
   | 'membership_visit_needed';

@@ -7,6 +7,8 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React from 'react';
 import type { DashboardQuote } from '../types';
+import { formatQuoteRequestWaitingLabel } from '../utils/formatQuoteRequestWaitingLabel';
+import { isPendingCustomerQuoteRequest } from '../utils/pendingCustomerQuoteRequests';
 import {
   formatQuoteCurrency,
   formatQuoteListCreatedAt,
@@ -36,7 +38,12 @@ export const QuoteListRow: React.FC<QuoteListRowProps> = ({
   const priceLine =
     quote.totalCents > 0 ? formatQuoteCurrency(quote.totalCents) : 'Price TBD';
 
-  const createdLabel = formatQuoteListCreatedAt(quote.createdAt);
+  const createdAtLabel = formatQuoteListCreatedAt(quote.createdAt);
+  const createdLabel = isPendingCustomerQuoteRequest(quote)
+    ? formatQuoteRequestWaitingLabel(quote.createdAt)
+    : createdAtLabel
+      ? `Created ${createdAtLabel}`
+      : '';
 
   const inner = (
     <GlassCard
@@ -77,7 +84,7 @@ export const QuoteListRow: React.FC<QuoteListRowProps> = ({
             </p>
           ) : null}
           <p className="mt-1.5 text-xs font-medium text-zinc-500 sm:text-sm">
-            {createdLabel ? <span>Created {createdLabel}</span> : null}
+            {createdLabel ? <span>{createdLabel}</span> : null}
             {createdLabel ? (
               <span className="mx-1.5 text-zinc-600">·</span>
             ) : null}

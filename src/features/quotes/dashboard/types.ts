@@ -57,4 +57,6 @@ export interface DashboardQuote {
   addonDetails: QuoteAddonDetail[] | null;
   /** Raw token for public URL `/q/[token]` (mock only). */
   publicToken: string;
+  /** Active public link expiry, when one exists. */
+  publicLinkExpiresAt?: string | null;
 }

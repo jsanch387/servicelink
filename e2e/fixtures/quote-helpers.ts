@@ -271,28 +271,31 @@ export async function submitPublicQuoteRequest(
   await page.getByPlaceholder('(555) 123-4567').fill(fixture.customerPhone);
   await page.getByRole('button', { name: 'Continue' }).last().click();
 
-  const serviceInput = page.getByPlaceholder('e.g. Standard service');
-  if (!(await serviceInput.isVisible().catch(() => false))) {
-    await page.getByPlaceholder('2018').fill('2020');
-    await page.getByPlaceholder('Toyota').fill('Toyota');
-    await page.getByPlaceholder('Camry').fill('Camry');
+  const askInput = page.getByPlaceholder(
+    'Coffee on the seats — not too bad, just want them shampooed.'
+  );
+  if (!(await askInput.isVisible().catch(() => false))) {
+    await page.getByPlaceholder('2018').first().fill('2020');
+    await page.getByPlaceholder('Toyota').first().fill('Toyota');
+    await page.getByPlaceholder('Camry').first().fill('Camry');
     await page.getByRole('button', { name: 'Continue' }).last().click();
   }
 
-  await serviceInput.fill(fixture.requestServiceName);
-  await page
-    .getByPlaceholder('Share a few details so we can quote accurately.')
-    .fill(fixture.details);
+  await askInput.fill(fixture.details);
+  await page.getByRole('button', { name: 'Review request' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Review your request' })
+  ).toBeVisible();
 
   const responsePromise = page.waitForResponse(
     response =>
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname === API_ROUTES.PUBLIC_QUOTE_REQUEST
   );
-  await page.getByRole('button', { name: 'Submit request' }).click();
+  await page.getByRole('button', { name: 'Send request' }).click();
   const response = await responsePromise;
   expect(response.status()).toBe(201);
   await expect(
-    page.getByRole('heading', { name: 'Quote request sent' })
+    page.getByRole('heading', { name: 'Request sent' })
   ).toBeVisible();
 }

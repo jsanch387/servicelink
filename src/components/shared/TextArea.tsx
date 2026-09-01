@@ -13,6 +13,7 @@ export interface TextAreaProps {
   className?: string;
   inputClassName?: string;
   name?: string;
+  'aria-label'?: string;
   rows?: number;
   maxLength?: number;
   /** When true, `maxLength` is enforced but the x/y counter is hidden. */
@@ -33,6 +34,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
       className = '',
       inputClassName = '',
       name,
+      'aria-label': ariaLabel,
       rows = 4,
       maxLength,
       hideCharCount = false,
@@ -58,6 +60,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           required={required}
           disabled={disabled}
           name={name}
+          aria-label={ariaLabel}
           rows={rows}
           maxLength={maxLength}
           className={`

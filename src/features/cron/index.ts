@@ -4,7 +4,7 @@
  * route helper, and the job catalog.
  */
 
-export { CRON_JOBS } from './jobs';
+export { CRON_DAILY_14_UTC, CRON_JOBS } from './jobs';
 export type { CronJob, CronJobId } from './jobs';
 export { handleCronGet } from './server/handleCronGet';
 export type { CronJobRunner } from './server/handleCronGet';

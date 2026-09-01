@@ -10,6 +10,7 @@ import {
   toTimeOffIntervalFields,
 } from '@/features/availability/types/blockTime';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { quotePublicLinkValidUntilCopy } from '@/features/quotes/dashboard/utils/formatQuotePublicLinkExpiry';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
@@ -207,6 +208,11 @@ export default async function PublicQuoteViewPage({
   const ownerNoteText = displayQuote.note?.trim() ?? '';
   const showYourRequestBlock = yourRequestText.length > 0;
   const showOwnerNoteBlock = ownerNoteText.length > 0;
+  const canRespond =
+    displayQuote.status === 'sent' || displayQuote.status === 'viewed';
+  const validUntilCopy = canRespond
+    ? quotePublicLinkValidUntilCopy(link.expires_at)
+    : '';
 
   return (
     <main className="min-h-screen bg-[var(--dashboard-bg)] px-4 py-8 sm:px-6 sm:py-10">
@@ -255,6 +261,9 @@ export default async function PublicQuoteViewPage({
               ? 'What was offered on this link.'
               : 'Review the details below before choosing to accept or decline.'}
         </p>
+        {validUntilCopy ? (
+          <p className="mt-1.5 text-sm text-gray-400">{validUntilCopy}</p>
+        ) : null}
         <div className="mt-4 h-px w-full bg-white/10" aria-hidden />
 
         <GlassCard
@@ -331,6 +340,16 @@ export default async function PublicQuoteViewPage({
                       .filter(Boolean)
                       .join(' ')}
                   </p>
+                  {parsedRequest.secondVehicleLine ? (
+                    <>
+                      <p className="mt-3 mb-1 text-xs tracking-wider text-gray-500">
+                        Second vehicle
+                      </p>
+                      <p className="font-medium text-white">
+                        {parsedRequest.secondVehicleLine}
+                      </p>
+                    </>
+                  ) : null}
                 </div>
               </>
             ) : null}

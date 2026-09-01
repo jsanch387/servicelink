@@ -42,6 +42,7 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 | `shared/validateQuotePayloadFields.ts`                   | **Shared** field rules for send + patch (customer, service, catalog snapshot, optional schedule, phone).                                             |
 | `shared/quoteServiceSnapshot.ts`                         | `addonDetails` shape + `splitQuoteServiceDisplayName` for catalog display.                                                                           |
 | `server/loadQuoteServiceCatalog.ts`                      | Server-only catalog loader for create/edit UI (mobile loads same tables via Supabase).                                                               |
+| `server/reminders/`                                      | Owner quote-request follow-up cron (`runQuoteRequestFollowUps`). See [`server/reminders/README.md`](../server/reminders/README.md).                  |
 | `shared/utils/resolveQuoteTokenHash.ts`                  | Raw URL token → SHA-256 hex; 64-char hex passthrough (dashboard uses stored hash).                                                                   |
 | `public-view/validateQuoteRespondRequest.ts`             | POST respond: `token`, `decision`, `serviceAddress` required when approving.                                                                         |
 | `server/createBookingFromApprovedQuote.ts`               | Map approved quote → `createBooking` (V2 bookings + customer upsert).                                                                                |
@@ -119,6 +120,8 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 **Body:** Validated by `validatePublicQuoteRequestBody` (`public-request/validatePublicQuoteRequestBody.ts`).
 
 **Success:** `201` — `{ success: true, data: { quoteId } }`.
+
+**Owner follow-up:** Daily cron `GET /api/internal/cron/quote-request-follow-ups` → `runQuoteRequestFollowUps`. Rules live in [`server/reminders/README.md`](../server/reminders/README.md). After the owner sends, the customer `/q/` link lasts **14 days** and shows **Valid until …**.
 
 **Code:** `src/app/api/public/quote-request/route.ts` → `insertCustomerQuoteRequest`
 

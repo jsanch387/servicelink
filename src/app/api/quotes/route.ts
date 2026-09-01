@@ -79,6 +79,7 @@ export async function GET(request: Request) {
     const quoteIds = rows.map(row => row.id);
 
     const tokenByQuoteId = new Map<string, string>();
+    const expiresByQuoteId = new Map<string, string>();
     if (quoteIds.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: linksData, error: linksError } = await (supabase as any)
@@ -100,13 +101,18 @@ export async function GET(request: Request) {
           // Keep newest active link per quote (query is already newest first).
           if (!tokenByQuoteId.has(link.quote_id)) {
             tokenByQuoteId.set(link.quote_id, link.token_hash);
+            expiresByQuoteId.set(link.quote_id, link.expires_at);
           }
         }
       }
     }
 
     const quotes = rows.map(row =>
-      mapQuoteRowToDashboardQuote(row, tokenByQuoteId.get(row.id) ?? '')
+      mapQuoteRowToDashboardQuote(
+        row,
+        tokenByQuoteId.get(row.id) ?? '',
+        expiresByQuoteId.get(row.id) ?? null
+      )
     );
 
     return NextResponse.json({ success: true, quotes });

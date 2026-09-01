@@ -3,6 +3,7 @@
  * `buildAvailabilityBookingEmailHtml` (customer): wrapper, cards, full-width CTA.
  */
 
+import { quotePublicLinkValidUntilCopy } from '@/features/quotes/dashboard/utils/formatQuotePublicLinkExpiry';
 import { escapeHtml } from '../utils/escapeHtml';
 import type { QuoteSentToCustomerPayload } from './types';
 
@@ -197,6 +198,11 @@ export function buildQuoteSentToCustomerHtml(
           <p style="font-size: 16px; color: #64748b; margin-top: 8px; line-height: 1.5;">
             ${businessName} sent you a quote. Tap the button below to review the full details and accept or decline.
           </p>
+          ${
+            payload.expiresAt?.trim()
+              ? `<p style="font-size: 14px; color: #94a3b8; margin-top: 8px; line-height: 1.5;">${escapeHtml(quotePublicLinkValidUntilCopy(payload.expiresAt.trim()))}</p>`
+              : ''
+          }
         </td>
       </tr>
       <tr>

@@ -5,6 +5,12 @@ import Link from 'next/link';
 import type { NotificationDisplay } from '../types/notification';
 
 function notificationHref(notification: NotificationDisplay): string {
+  if (notification.type === 'quote_request_followup') {
+    return ROUTES.DASHBOARD.QUOTES_REQUESTS;
+  }
+  if (notification.type === 'quote_request') {
+    return ROUTES.DASHBOARD.QUOTE_REQUEST_DETAIL(notification.referenceId);
+  }
   if (notification.type === 'review_submitted') {
     return ROUTES.DASHBOARD.REVIEWS;
   }

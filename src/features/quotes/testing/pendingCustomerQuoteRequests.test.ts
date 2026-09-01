@@ -38,6 +38,7 @@ function q(partial: Partial<DashboardQuote>): DashboardQuote {
     servicePriceCents: partial.servicePriceCents ?? null,
     addonDetails: partial.addonDetails ?? null,
     publicToken: partial.publicToken ?? '',
+    publicLinkExpiresAt: partial.publicLinkExpiresAt ?? null,
   };
 }
 

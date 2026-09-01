@@ -59,18 +59,18 @@ sequenceDiagram
 
 ### 3.2 Server
 
-| Step             | File / function                                       | Responsibility                                                                             |
-| ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Validate body    | `public-request/validatePublicQuoteRequestBody.ts`    | `businessSlug`, contact, `serviceRequested`, optional vehicle, `timeline`, `details`, etc. |
-| Resolve business | `src/app/api/public/quote-request/route.ts`           | `business_profiles` by `business_slug` → `businessId`                                      |
-| Insert row       | `public-request/server/insertCustomerQuoteRequest.ts` | Admin client insert into `quotes`                                                          |
+| Step             | File / function                                       | Responsibility                                                                                                                     |
+| ---------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Validate body    | `public-request/validatePublicQuoteRequestBody.ts`    | `businessSlug`, contact, `details` (ask), optional vehicle / second vehicle, `timeline`. Legacy `serviceRequested` still accepted. |
+| Resolve business | `src/app/api/public/quote-request/route.ts`           | `business_profiles` by `business_slug` → `businessId`                                                                              |
+| Insert row       | `public-request/server/insertCustomerQuoteRequest.ts` | Admin client insert into `quotes`                                                                                                  |
 
 ### 3.3 What gets stored on insert
 
 - **`source`:** `customer_requested`
 - **`status`:** `requested`
 - **`requested_at`:** required for this source (DB constraint)
-- **`request_message`:** built by `public-request/buildQuoteRequestNote.ts` from **timeline + details** (structured text: `Preferred timing: …` + blank lines + body). This is the **customer’s** message.
+- **`request_message`:** built by `public-request/buildQuoteRequestNote.ts` from **timeline + optional second vehicle + ask** (`Preferred timing: …` / `Second vehicle: …` + blank line + body). This is the **customer’s** message.
 - **`note`:** `null` at intake — reserved for **owner** copy on the sent quote (`quotes.note`).
 - **Defaults:** e.g. `price_cents`, `duration_minutes` placeholders until owner completes the quote.
 - **No `quote_public_links` row** until the owner sends the quote.
@@ -101,6 +101,7 @@ Subsequent edits to an already-sent quote use **`PATCH /api/quotes/[id]`** (owne
 - **Lookup:** `quote_public_links.token_hash` via `resolveQuoteTokenHash(token)`.
 - **Lifecycle:** May transition `sent` → `viewed` on load (atomic update when still `sent`).
 - **Labels (customer-facing):** **Customer note** (from request text / parsed), **Notes from the business** (from `quotes.note`) — avoids “Your notes” sounding like the customer wrote it.
+- **Validity:** Open `sent` / `viewed` quotes show **Valid until {date}** from `quote_public_links.expires_at` (14 days). Expired links `notFound()`.
 - **Actions:** `PublicQuoteRespondActions` → `POST /api/quotes/respond`.
 
 ---
@@ -125,7 +126,7 @@ Booking **notes** can combine labeled **Customer note** + **Your notes** from th
 
 - **Trigger:** After `POST /api/quotes/send` (new row) or after `sendExistingQuoteAsSent` (first send from request).
 - **Module:** `src/features/email/quote-sent-to-customer/`
-- **Payload:** Includes optional **`customerRequestMessage`** (reference) and owner **`note`**; template sections **Customer note** / **Notes from the business** (aligned with public page wording).
+- **Payload:** Includes optional **`customerRequestMessage`** (reference), owner **`note`**, and **`expiresAt`** (shown as **Valid until …**); template sections **Customer note** / **Notes from the business** (aligned with public page wording).
 
 ---
 

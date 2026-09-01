@@ -90,6 +90,9 @@ export async function POST(request: NextRequest) {
         vehicleYear: parsed.data.vehicleYear,
         vehicleMake: parsed.data.vehicleMake,
         vehicleModel: parsed.data.vehicleModel,
+        vehicle2Year: parsed.data.vehicle2Year,
+        vehicle2Make: parsed.data.vehicle2Make,
+        vehicle2Model: parsed.data.vehicle2Model,
         timeline: parsed.data.timeline,
         details: parsed.data.details,
       });

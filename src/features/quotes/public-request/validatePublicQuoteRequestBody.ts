@@ -2,15 +2,21 @@
  * Validation for POST /api/public/quote-request (public, unauthenticated).
  */
 
+import { quoteRequestServiceNameFromAsk } from './buildQuoteRequestNote';
+
 export interface PublicQuoteRequestBodyInput {
   businessSlug?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  /** @deprecated Use `details`. Still accepted so older clients do not 400. */
   serviceRequested?: string;
   vehicleYear?: string;
   vehicleMake?: string;
   vehicleModel?: string;
+  vehicle2Year?: string;
+  vehicle2Make?: string;
+  vehicle2Model?: string;
   timeline?: string;
   details?: string;
 }
@@ -24,6 +30,9 @@ export interface ValidatedPublicQuoteRequestBody {
   vehicleYear: string | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
+  vehicle2Year: string | null;
+  vehicle2Make: string | null;
+  vehicle2Model: string | null;
   timeline: string | null;
   details: string;
 }
@@ -43,6 +52,36 @@ function isValidEmail(value: string): boolean {
 
 function isValidVehicleYear(value: string): boolean {
   return /^(19|20)\d{2}$/.test(value.trim());
+}
+
+function parseOptionalVehicle(
+  year: string,
+  make: string,
+  model: string,
+  label: string
+):
+  | { ok: true; year: string | null; make: string | null; model: string | null }
+  | { ok: false; error: string } {
+  const vy = year.trim();
+  const vmk = make.trim();
+  const vmd = model.trim();
+  const anyVehicle = vy.length > 0 || vmk.length > 0 || vmd.length > 0;
+
+  if (!anyVehicle) {
+    return { ok: true, year: null, make: null, model: null };
+  }
+
+  if (!isValidVehicleYear(vy)) {
+    return { ok: false, error: `Enter a valid 4-digit ${label} year` };
+  }
+  if (!vmk) {
+    return { ok: false, error: `${label} make is required` };
+  }
+  if (!vmd) {
+    return { ok: false, error: `${label} model is required` };
+  }
+
+  return { ok: true, year: vy, make: vmk, model: vmd };
 }
 
 export function validatePublicQuoteRequestBody(
@@ -75,15 +114,11 @@ export function validatePublicQuoteRequestBody(
     };
   }
 
-  if (!body.serviceRequested?.trim()) {
-    return { ok: false, error: 'Service is required', status: 400 };
-  }
-
-  const details = (body.details ?? '').trim();
+  const details = (body.details ?? body.serviceRequested ?? '').trim();
   if (!details) {
     return {
       ok: false,
-      error: 'Project details are required',
+      error: 'Tell us what you need done',
       status: 400,
     };
   }
@@ -95,25 +130,24 @@ export function validatePublicQuoteRequestBody(
     };
   }
 
-  const vy = (body.vehicleYear ?? '').trim();
-  const vmk = (body.vehicleMake ?? '').trim();
-  const vmd = (body.vehicleModel ?? '').trim();
-  const anyVehicle = vy.length > 0 || vmk.length > 0 || vmd.length > 0;
+  const vehicle1 = parseOptionalVehicle(
+    body.vehicleYear ?? '',
+    body.vehicleMake ?? '',
+    body.vehicleModel ?? '',
+    'Vehicle'
+  );
+  if (!vehicle1.ok) {
+    return { ok: false, error: vehicle1.error, status: 400 };
+  }
 
-  if (anyVehicle) {
-    if (!isValidVehicleYear(vy)) {
-      return {
-        ok: false,
-        error: 'Enter a valid 4-digit vehicle year',
-        status: 400,
-      };
-    }
-    if (!vmk) {
-      return { ok: false, error: 'Vehicle make is required', status: 400 };
-    }
-    if (!vmd) {
-      return { ok: false, error: 'Vehicle model is required', status: 400 };
-    }
+  const vehicle2 = parseOptionalVehicle(
+    body.vehicle2Year ?? '',
+    body.vehicle2Make ?? '',
+    body.vehicle2Model ?? '',
+    'Second vehicle'
+  );
+  if (!vehicle2.ok) {
+    return { ok: false, error: vehicle2.error, status: 400 };
   }
 
   const timeline: string | null = (body.timeline ?? '').trim() || null;
@@ -132,10 +166,13 @@ export function validatePublicQuoteRequestBody(
       customerName: body.customerName.trim(),
       customerEmail: body.customerEmail!.trim(),
       customerPhoneDigits: phoneDigits,
-      serviceName: body.serviceRequested.trim(),
-      vehicleYear: anyVehicle ? vy : null,
-      vehicleMake: anyVehicle ? vmk : null,
-      vehicleModel: anyVehicle ? vmd : null,
+      serviceName: quoteRequestServiceNameFromAsk(details),
+      vehicleYear: vehicle1.year,
+      vehicleMake: vehicle1.make,
+      vehicleModel: vehicle1.model,
+      vehicle2Year: vehicle2.year,
+      vehicle2Make: vehicle2.make,
+      vehicle2Model: vehicle2.model,
       timeline,
       details,
     },

@@ -1,4 +1,7 @@
-import { buildQuoteRequestNote } from '@/features/quotes/public-request/buildQuoteRequestNote';
+import {
+  buildQuoteRequestNote,
+  formatQuoteRequestVehicleLine,
+} from '@/features/quotes/public-request/buildQuoteRequestNote';
 import type { ValidatedPublicQuoteRequestBody } from '@/features/quotes/public-request/validatePublicQuoteRequestBody';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -15,7 +18,15 @@ export async function insertCustomerQuoteRequest(
   businessId: string,
   data: ValidatedPublicQuoteRequestBody
 ): Promise<InsertCustomerQuoteRequestResult> {
-  const requestMessage = buildQuoteRequestNote(data.details, data.timeline);
+  const requestMessage = buildQuoteRequestNote(
+    data.details,
+    data.timeline,
+    formatQuoteRequestVehicleLine(
+      data.vehicle2Year,
+      data.vehicle2Make,
+      data.vehicle2Model
+    )
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = admin as any;

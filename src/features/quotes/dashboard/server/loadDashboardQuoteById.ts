@@ -96,7 +96,8 @@ export async function loadDashboardQuoteById(
   const link = (linkData as QuotePublicLinkRow | null) ?? null;
   const quote = mapQuoteRowToDashboardQuote(
     data as QuoteDbRow,
-    link?.token_hash ?? ''
+    link?.token_hash ?? '',
+    link?.expires_at ?? null
   );
 
   return { ok: true, quote };

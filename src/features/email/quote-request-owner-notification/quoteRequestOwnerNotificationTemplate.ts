@@ -38,17 +38,14 @@ export function buildQuoteRequestOwnerNotificationHtml(
   payload: QuoteRequestOwnerNotificationPayload,
   dashboardQuoteRequestUrl: string
 ): string {
-  const rows: string[] = [
-    detailRow('Customer', payload.customerName),
-    detailRow('Service', payload.serviceName),
-  ];
+  const rows: string[] = [detailRow('Customer', payload.customerName)];
   if (payload.vehicleSummary?.trim()) {
     rows.push(detailRow('Vehicle', payload.vehicleSummary.trim()));
   }
   if (payload.timeline?.trim()) {
     rows.push(detailRow('Preferred timing', payload.timeline.trim()));
   }
-  rows.push(detailBlockRow('Details', payload.detailsPreview));
+  rows.push(detailBlockRow('Message', payload.detailsPreview));
 
   const requestCardRows = rows.join('');
 

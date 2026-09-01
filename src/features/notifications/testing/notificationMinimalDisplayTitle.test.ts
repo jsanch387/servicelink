@@ -16,6 +16,9 @@ describe('notificationMinimalDisplayTitle', () => {
       'New quote request'
     );
     expect(
+      notificationMinimalDisplayTitle('quote_request_followup', 'quote', '')
+    ).toBe('Quote request waiting');
+    expect(
       notificationMinimalDisplayTitle('review_submitted', 'review', '')
     ).toBe('New review');
     expect(

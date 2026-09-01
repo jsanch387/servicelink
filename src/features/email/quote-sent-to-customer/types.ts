@@ -14,6 +14,8 @@ export interface QuoteSentToCustomerPayload {
   customerRequestMessage: string | null;
   vehicleLine: string | null;
   publicQuoteUrl: string;
+  /** Public `/q/` link expiry (ISO). Shown as “Valid until …”. */
+  expiresAt?: string | null;
   /** Optional catalog add-ons for a clearer email breakdown. */
   addonDetails?: Array<{
     name: string;

@@ -46,7 +46,8 @@ function buildVehicleLine(row: QuoteDbRow): string | null {
 
 export function mapQuoteRowToDashboardQuote(
   row: QuoteDbRow,
-  publicToken: string
+  publicToken: string,
+  publicLinkExpiresAt: string | null = null
 ): DashboardQuote {
   const duration =
     row.duration_minutes != null && row.duration_minutes > 0
@@ -92,5 +93,6 @@ export function mapQuoteRowToDashboardQuote(
      * We support token hash format too (see `resolveQuoteTokenHash`).
      */
     publicToken: publicToken.trim(),
+    publicLinkExpiresAt: publicLinkExpiresAt?.trim() || null,
   };
 }

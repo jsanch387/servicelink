@@ -254,6 +254,9 @@ export const API_ROUTES = {
     '/api/internal/attribution/paid-conversions',
   /** Vercel Cron: day-before owner appointment reminder. */
   INTERNAL_CRON_BOOKING_REMINDERS: '/api/internal/cron/booking-reminders',
+  /** Vercel Cron: unanswered quote requests in the 3-day follow-up window. */
+  INTERNAL_CRON_QUOTE_REQUEST_FOLLOW_UPS:
+    '/api/internal/cron/quote-request-follow-ups',
 } as const;
 
 export const PUBLIC_ROUTES = [

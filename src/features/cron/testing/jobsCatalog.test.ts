@@ -1,5 +1,5 @@
 import { API_ROUTES } from '@/constants/routes';
-import { CRON_JOBS } from '@/features/cron/jobs';
+import { CRON_DAILY_14_UTC, CRON_JOBS } from '@/features/cron/jobs';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, expect, it } from 'vitest';
@@ -27,5 +27,18 @@ describe('CRON_JOBS catalog', () => {
 
   it('uses the centralized booking-reminders route', () => {
     expect(CRON_JOBS[0]?.path).toBe(API_ROUTES.INTERNAL_CRON_BOOKING_REMINDERS);
+  });
+
+  it('registers quote-request follow-ups', () => {
+    expect(CRON_JOBS.map(job => job.id)).toContain('quote-request-follow-ups');
+    expect(
+      CRON_JOBS.find(job => job.id === 'quote-request-follow-ups')?.path
+    ).toBe(API_ROUTES.INTERNAL_CRON_QUOTE_REQUEST_FOLLOW_UPS);
+  });
+
+  it('runs both jobs on the same daily slot', () => {
+    expect(new Set(CRON_JOBS.map(job => job.schedule))).toEqual(
+      new Set([CRON_DAILY_14_UTC])
+    );
   });
 });

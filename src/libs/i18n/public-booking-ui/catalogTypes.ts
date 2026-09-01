@@ -444,6 +444,15 @@ export type PublicBookingUi = {
     galleryTab: string;
     galleryEmptyTitle: string;
     galleryEmptyDescription: string;
+    workPhotoAlt: (
+      businessName: string,
+      index: number,
+      total: number
+    ) => string;
+    lightboxClose: string;
+    lightboxPrevious: string;
+    lightboxNext: string;
+    lightboxPhotoPosition: (current: number, total: number) => string;
     bioTab: string;
     reviewsTab: string;
     noBioYet: string;
@@ -490,13 +499,25 @@ export type PublicBookingUi = {
   };
   quoteForm: {
     quoteDetails: string;
-    serviceRequested: string;
-    serviceRequestedPlaceholder: string;
     whenOptional: string;
+    whenLabel: string;
     whenPlaceholder: string;
     detailsLabel: string;
+    successDetailsLabel: string;
     detailsPlaceholder: string;
+    addAnotherVehicle: string;
+    secondVehicle: string;
+    removeVehicle: string;
+    reviewTitle: string;
+    reviewSubtitle: string;
+    reviewRequest: string;
+    backToRequest: string;
+    edit: string;
     submitRequest: string;
+    successTitle: string;
+    successSubtitle: (businessName: string) => string;
+    successCardHeader: string;
+    successBack: string;
     timelineAsap: string;
     timelineThisWeek: string;
     timelineNextTwoWeeks: string;
@@ -505,7 +526,6 @@ export type PublicBookingUi = {
     errName: string;
     errEmail: string;
     errPhone: string;
-    errService: string;
     errDetails: string;
     errVehicleYear: string;
     errVehicleMake: string;

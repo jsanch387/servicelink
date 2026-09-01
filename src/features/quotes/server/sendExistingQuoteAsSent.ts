@@ -2,6 +2,7 @@ import {
   sendQuoteSentToCustomerEmail,
   type QuoteSentToCustomerPayload,
 } from '@/features/email';
+import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
 import type { ValidatedSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -129,9 +130,7 @@ export async function sendExistingQuoteAsSent(params: {
 
   const rawToken = crypto.randomBytes(32).toString('base64url');
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-  const expiresAt = new Date(
-    Date.now() + 1000 * 60 * 60 * 24 * 14
-  ).toISOString();
+  const expiresAt = quotePublicLinkExpiresAt();
 
   const { error: linkError } = await db.from('quote_public_links').insert({
     quote_id: quoteId,
@@ -171,6 +170,7 @@ export async function sendExistingQuoteAsSent(params: {
       customerRequestMessage: customerRequestForEmail,
       vehicleLine,
       publicQuoteUrl: publicUrl,
+      expiresAt,
       addonDetails: p.addonDetails,
     };
     const emailResult = await sendQuoteSentToCustomerEmail(

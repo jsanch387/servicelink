@@ -42,6 +42,11 @@ export function notificationMinimalDisplayTitle(
     return 'New payment';
   }
 
+  // Follow-up must run before `quote_request` (substring).
+  if (blob.includes('quote_request_followup')) {
+    return 'Quote request waiting';
+  }
+
   // Public “request a quote” flow (`notifications.type`); must run before
   // `blob.includes('quote')` because `quote_request` contains substring `quote`.
   if (blob.includes('quote_request')) {
