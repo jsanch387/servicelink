@@ -254,6 +254,12 @@ export interface CreateBookingRequest {
   durationMinutes?: number;
   scheduledDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm — visit arrival / first job start
+  /**
+   * IANA timezone of the person booking (browser). Used so lead-time / "too
+   * soon" checks match the wall-clock slots they picked. Server falls back
+   * to America/Los_Angeles when omitted.
+   */
+  timeZone?: string;
   customer: CustomerFormData;
   /**
    * When checkout mode is `customer_choice` and the customer confirms without

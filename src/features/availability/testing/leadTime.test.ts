@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { generateTimeSlots } from '../booking/utils/slotGeneration';
 import { DEFAULT_SCHEDULE } from '../types/availability';
 import {
+  DEFAULT_PUBLIC_BOOKING_TIMEZONE,
   isSlotAllowedByLeadTime,
   localDateTimeFromYmdAndHHmm,
   minimumNoticeToMinutes,
+  resolvePublicBookingLeadTimeZone,
   toLocalYYYYMMDD,
 } from '../utils/minimumNotice';
 
@@ -66,6 +68,51 @@ describe('lead time (minimum_notice)', () => {
     );
     expect(isSlotAllowedByLeadTime('2026-07-24', '10:00', 'none', now)).toBe(
       true
+    );
+  });
+
+  it('treats a Pacific afternoon slot as future when the server clock is UTC', () => {
+    // 2026-09-02 17:40 UTC = 10:40 AM PDT. 12:00 PDT is still 1h20m away.
+    const now = new Date('2026-09-02T17:40:00.000Z');
+    expect(
+      isSlotAllowedByLeadTime('2026-09-02', '12:00', 'none', {
+        now,
+        timeZone: 'America/Los_Angeles',
+      })
+    ).toBe(true);
+    expect(
+      isSlotAllowedByLeadTime('2026-09-02', '09:00', 'none', {
+        now,
+        timeZone: 'America/Los_Angeles',
+      })
+    ).toBe(false);
+  });
+
+  it('applies lead time in the named timezone, not UTC wall clock', () => {
+    const now = new Date('2026-09-02T17:40:00.000Z'); // 10:40 AM PDT
+    expect(
+      isSlotAllowedByLeadTime('2026-09-02', '14:00', '4h', {
+        now,
+        timeZone: 'America/Los_Angeles',
+      })
+    ).toBe(false);
+    expect(
+      isSlotAllowedByLeadTime('2026-09-02', '15:00', '4h', {
+        now,
+        timeZone: 'America/Los_Angeles',
+      })
+    ).toBe(true);
+  });
+
+  it('resolves a valid client timezone and falls back to Pacific', () => {
+    expect(resolvePublicBookingLeadTimeZone('America/New_York')).toBe(
+      'America/New_York'
+    );
+    expect(resolvePublicBookingLeadTimeZone('not-a-zone')).toBe(
+      DEFAULT_PUBLIC_BOOKING_TIMEZONE
+    );
+    expect(resolvePublicBookingLeadTimeZone(undefined)).toBe(
+      DEFAULT_PUBLIC_BOOKING_TIMEZONE
     );
   });
 
