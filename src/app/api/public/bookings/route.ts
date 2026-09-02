@@ -50,7 +50,10 @@ import {
   insertBookingPaymentsRowForNoCheckoutPublicBooking,
 } from '@/features/availability/services/bookingService';
 import { enforceFreeTierBookingCapBeforeCreate } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
-import { isSlotAllowedByLeadTime } from '@/features/availability/utils/minimumNotice';
+import {
+  isSlotAllowedByLeadTime,
+  resolvePublicBookingLeadTimeZone,
+} from '@/features/availability/utils/minimumNotice';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import { loadCustomerSmsOptIn } from '@/features/customer-management/server/loadCustomerSmsOptIn';
 import {
@@ -517,7 +520,8 @@ export async function POST(request: NextRequest) {
         !isSlotAllowedByLeadTime(
           body.scheduledDate,
           body.startTime.trim(),
-          availabilityRow?.minimum_notice
+          availabilityRow?.minimum_notice,
+          { timeZone: resolvePublicBookingLeadTimeZone(body.timeZone) }
         )
       ) {
         return publicBookingJson(

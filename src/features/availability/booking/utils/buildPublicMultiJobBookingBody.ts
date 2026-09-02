@@ -69,6 +69,7 @@ export interface BuildPublicMultiJobBookingBodyArgs {
   jobs: PublicBookingJobDraft[];
   scheduledDate: string;
   startTime: string;
+  timeZone?: string;
   customer: CustomerFormData;
   customerServiceLocation?: 'mobile' | 'shop';
   paymentMethodSelected?: 'pay_now' | 'pay_in_person' | 'none';
@@ -90,6 +91,7 @@ export function buildPublicMultiJobBookingBody(
     businessSlug: args.businessSlug,
     scheduledDate: args.scheduledDate.trim(),
     startTime: args.startTime.trim(),
+    ...(args.timeZone ? { timeZone: args.timeZone } : {}),
     paymentMethodSelected: args.paymentMethodSelected ?? 'none',
     customer: {
       ...args.customer,

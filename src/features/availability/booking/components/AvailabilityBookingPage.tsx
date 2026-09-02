@@ -45,6 +45,7 @@ import {
   buildPublicMultiJobBookingBody,
   publicMultiJobCheckoutTotals,
 } from '../utils/buildPublicMultiJobBookingBody';
+import { clientBookingTimeZone } from '../utils/clientBookingTimeZone';
 import {
   loadPublicBookingJobsCart,
   persistPublicBookingJobsCartJobs,
@@ -1297,6 +1298,7 @@ export function AvailabilityBookingPage({
               jobs: visitJobs,
               scheduledDate: scheduledDateStr,
               startTime: selectedTime ?? '',
+              timeZone: clientBookingTimeZone(),
               customer: customerForSubmit,
               customerServiceLocation:
                 customerServiceLocationPayload ?? undefined,
@@ -1350,6 +1352,7 @@ export function AvailabilityBookingPage({
               durationMinutes: totalBookingDurationMinutes,
               scheduledDate: scheduledDateStr,
               startTime: selectedTime ?? '',
+              timeZone: clientBookingTimeZone(),
               customer: {
                 ...customerForSubmit,
               },
@@ -1466,6 +1469,7 @@ export function AvailabilityBookingPage({
             jobs: visitJobs,
             scheduledDate,
             startTime: selectedTime,
+            timeZone: clientBookingTimeZone(),
             customer: customerForSubmit,
             customerServiceLocation:
               customerServiceLocationPayload ?? undefined,
@@ -1498,6 +1502,7 @@ export function AvailabilityBookingPage({
             durationMinutes: totalBookingDurationMinutes,
             scheduledDate,
             startTime: selectedTime,
+            timeZone: clientBookingTimeZone(),
             customer: customerForSubmit,
             ...(customerServiceLocationPayload
               ? {
