@@ -183,16 +183,23 @@ export const WorkPhotoLightbox: React.FC<WorkPhotoLightboxProps> = ({
               key={photo.id}
               className="flex h-full w-full min-w-full shrink-0 snap-center items-center justify-center px-3 sm:px-16"
             >
-              <ImageWithFallback
-                src={photo.src}
-                alt={ui.profile.workPhotoAlt(altName, index + 1, photos.length)}
-                width={1200}
-                height={1200}
-                className="max-h-[min(80dvh,720px)] w-auto max-w-full object-contain"
-                fallbackLabel="WORK"
-                fallbackSize={{ w: 1200, h: 1200 }}
-                sizes="100vw"
-              />
+              {Math.abs(index - activeIndex) <= 1 ? (
+                <ImageWithFallback
+                  src={photo.src}
+                  alt={ui.profile.workPhotoAlt(
+                    altName,
+                    index + 1,
+                    photos.length
+                  )}
+                  width={1200}
+                  height={1200}
+                  className="max-h-[min(80dvh,720px)] w-auto max-w-full object-contain"
+                  fallbackLabel="WORK"
+                  fallbackSize={{ w: 1200, h: 1200 }}
+                  sizes="100vw"
+                  priority={index === activeIndex}
+                />
+              ) : null}
             </div>
           ))}
         </div>

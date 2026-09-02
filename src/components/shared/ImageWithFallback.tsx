@@ -29,6 +29,11 @@ interface ImageWithFallbackProps {
   /** Responsive size hint for layout; e.g. "(max-width: 768px) 100vw, 1200px". */
   sizes?: string;
   onLoad?: () => void;
+  /**
+   * Called when the current `src` fails. If provided, the SVG fallback is
+   * skipped so the parent can swap in another URL.
+   */
+  onError?: () => void;
 }
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
@@ -42,18 +47,25 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   priority = false,
   sizes,
   onLoad,
+  onError,
 }) => {
-  // Handle empty string or null/undefined src by using fallback immediately
-  const fallbackSrc = DATA_SVG(
-    fallbackSize.w,
-    fallbackSize.h,
-    fallbackLabel || alt || 'Image'
+  const fallbackSrc = React.useMemo(
+    () =>
+      DATA_SVG(fallbackSize.w, fallbackSize.h, fallbackLabel || alt || 'Image'),
+    [fallbackSize.w, fallbackSize.h, fallbackLabel, alt]
   );
-  const [imageSrc, setImageSrc] = React.useState(
-    src && src.trim() !== '' ? src : fallbackSrc
-  );
+  const resolvedSrc = src && src.trim() !== '' ? src : fallbackSrc;
+  const [imageSrc, setImageSrc] = React.useState(resolvedSrc);
+
+  React.useEffect(() => {
+    setImageSrc(resolvedSrc);
+  }, [resolvedSrc]);
 
   const handleError = () => {
+    if (onError) {
+      onError();
+      return;
+    }
     setImageSrc(fallbackSrc);
   };
 

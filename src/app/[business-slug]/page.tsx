@@ -131,16 +131,17 @@ async function fetchBusinessProfileBySlug(
         created_at: string;
       }),
       preview_url: MediaService.getPublicUrl(
-        (img as { storage_path: string }).storage_path
+        (img as { storage_path: string }).storage_path,
+        false
       ),
     }));
 
     // Add logo and banner URLs if they exist
     const logoUrl = profile.logo_path
-      ? MediaService.getPublicUrl(profile.logo_path)
+      ? MediaService.getPublicUrl(profile.logo_path, false)
       : null;
     const bannerUrl = profile.banner_path
-      ? MediaService.getPublicUrl(profile.banner_path)
+      ? MediaService.getPublicUrl(profile.banner_path, false)
       : null;
 
     // Construct complete business profile
@@ -384,10 +385,10 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
       service_area: profile.service_area,
       bio: profile.bio,
       logo_url: profile.logo_path
-        ? MediaService.getPublicUrl(profile.logo_path)
+        ? MediaService.getPublicUrl(profile.logo_path, false)
         : null,
       cover_image_url: profile.banner_path
-        ? MediaService.getPublicUrl(profile.banner_path)
+        ? MediaService.getPublicUrl(profile.banner_path, false)
         : null,
       phone_number_call: profile.phone_number_call,
     };

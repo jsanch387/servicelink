@@ -1,12 +1,13 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import { ImageWithFallback } from '@/components/shared/ImageWithFallback';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React, { useMemo, useState } from 'react';
+import { useProgressiveVisibleCount } from '../hooks/useProgressiveVisibleCount';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
-import { toWorkPhotos } from '../utils/workPhotoSrc';
+import { GALLERY_PRIORITY_COUNT, toWorkPhotos } from '../utils/workPhotoSrc';
 import { EmptyState } from './EmptyState';
+import { WorkGalleryTile } from './work/WorkGalleryTile';
 import { WorkPhotoLightbox } from './work/WorkPhotoLightbox';
 
 interface WorkShowcaseProps {
@@ -31,12 +32,10 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
     () => toWorkPhotos(businessProfile.images),
     [businessProfile.images]
   );
-  const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
+  const { visibleCount, sentinelRef } = useProgressiveVisibleCount(
+    photos.length
+  );
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const handleImageLoad = React.useCallback((id: string) => {
-    setLoadedIds(prev => new Set(prev).add(id));
-  }, []);
 
   return (
     <section
@@ -47,43 +46,29 @@ export const WorkShowcase: React.FC<WorkShowcaseProps> = ({
         <>
           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2">
             {photos.map((photo, index) => {
-              const loaded = loadedIds.has(photo.id);
+              const alt = ui.profile.workPhotoAlt(
+                businessProfile.business_name,
+                index + 1,
+                photos.length
+              );
               return (
-                <button
+                <WorkGalleryTile
                   key={photo.id}
-                  type="button"
-                  onClick={() => setOpenIndex(index)}
-                  className="group relative aspect-square overflow-hidden rounded-xl bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-                  aria-label={ui.profile.workPhotoAlt(
-                    businessProfile.business_name,
-                    index + 1,
-                    photos.length
-                  )}
-                >
-                  {!loaded ? (
-                    <div
-                      className="absolute inset-0 skeleton-image rounded-xl"
-                      aria-hidden
-                    />
-                  ) : null}
-                  <ImageWithFallback
-                    className="relative z-10 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                    src={photo.src}
-                    alt={ui.profile.workPhotoAlt(
-                      businessProfile.business_name,
-                      index + 1,
-                      photos.length
-                    )}
-                    width={600}
-                    height={600}
-                    fallbackLabel="WORK"
-                    fallbackSize={{ w: 600, h: 600 }}
-                    sizes="(max-width: 640px) 50vw, 33vw"
-                    onLoad={() => handleImageLoad(photo.id)}
-                  />
-                </button>
+                  photo={photo}
+                  alt={alt}
+                  shouldLoad={index < visibleCount}
+                  priority={index < GALLERY_PRIORITY_COUNT}
+                  onOpen={() => setOpenIndex(index)}
+                />
               );
             })}
+            {visibleCount < photos.length ? (
+              <div
+                ref={sentinelRef}
+                className="col-span-full h-px"
+                aria-hidden
+              />
+            ) : null}
           </div>
           <WorkPhotoLightbox
             photos={photos}

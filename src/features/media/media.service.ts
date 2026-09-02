@@ -249,8 +249,8 @@ export class MediaService {
   /**
    * Gets public URL for a storage path
    */
-  static getPublicUrl(storagePath: string): string {
-    return MediaStorage.getPublicUrl(storagePath);
+  static getPublicUrl(storagePath: string, useCacheBuster = true): string {
+    return MediaStorage.getPublicUrl(storagePath, useCacheBuster);
   }
 
   /**

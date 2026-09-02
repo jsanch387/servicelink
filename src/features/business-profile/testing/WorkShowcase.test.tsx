@@ -1,8 +1,9 @@
 import type { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkShowcase } from '../components/WorkShowcase';
+import { GALLERY_INITIAL_VISIBLE } from '../utils/workPhotoSrc';
 
 const noop = async () => {};
 
@@ -57,5 +58,49 @@ describe('WorkShowcase', () => {
     );
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(screen.getByText('2 of 3')).toBeTruthy();
+  });
+
+  it('loads the first gallery batch before the rest', () => {
+    const observers: Array<{
+      callback: IntersectionObserverCallback;
+    }> = [];
+    class MockIntersectionObserver {
+      callback: IntersectionObserverCallback;
+      constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+        observers.push(this);
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+
+    render(
+      <WorkShowcase
+        businessProfile={profileWithImages(8)}
+        editMode="view"
+        onSave={noop}
+        onCancel={() => {}}
+        isPublic
+      />
+    );
+
+    expect(document.querySelectorAll('img')).toHaveLength(
+      GALLERY_INITIAL_VISIBLE
+    );
+
+    act(() => {
+      observers[0]?.callback(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        observers[0] as unknown as IntersectionObserver
+      );
+    });
+
+    expect(document.querySelectorAll('img')).toHaveLength(8);
+    vi.unstubAllGlobals();
   });
 });
