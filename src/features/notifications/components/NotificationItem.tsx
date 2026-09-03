@@ -1,45 +1,40 @@
 'use client';
 
-import { ROUTES } from '@/constants/routes';
+import {
+  BellIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  RectangleStackIcon,
+  StarIcon,
+} from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import type { NotificationDisplay } from '../types/notification';
+import type { ComponentType, SVGProps } from 'react';
+import type {
+  NotificationDisplay,
+  NotificationType,
+} from '../types/notification';
+import { formatNotificationTime } from '../utils/formatNotificationTime';
+import { notificationHref } from '../utils/notificationHref';
 
-function notificationHref(notification: NotificationDisplay): string {
-  if (notification.type === 'quote_request_followup') {
-    return ROUTES.DASHBOARD.QUOTES_REQUESTS;
-  }
-  if (notification.type === 'quote_request') {
-    return ROUTES.DASHBOARD.QUOTE_REQUEST_DETAIL(notification.referenceId);
-  }
-  if (notification.type === 'review_submitted') {
-    return ROUTES.DASHBOARD.REVIEWS;
-  }
-  if (
-    notification.type === 'membership_subscriber' ||
-    notification.type === 'membership_visit_needed'
-  ) {
-    return ROUTES.DASHBOARD.SUBSCRIPTIONS_SUBSCRIBER(notification.referenceId);
-  }
-  return ROUTES.DASHBOARD.BOOKINGS;
-}
+const TYPE_ICONS: Record<
+  NotificationType,
+  ComponentType<SVGProps<SVGSVGElement>>
+> = {
+  booking_request: CalendarDaysIcon,
+  availability_booking: CalendarDaysIcon,
+  booking_reminder: ClockIcon,
+  quote_request: DocumentTextIcon,
+  quote_request_followup: DocumentTextIcon,
+  review_submitted: StarIcon,
+  membership_subscriber: RectangleStackIcon,
+  membership_visit_needed: RectangleStackIcon,
+};
 
 interface NotificationItemProps {
   notification: NotificationDisplay;
-
   onMarkAsRead: (id: string) => void;
   onClose: () => void;
-}
-
-function formatRelativeTime(iso: string): string {
-  const date = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return date.toLocaleDateString();
 }
 
 export function NotificationItem({
@@ -48,9 +43,14 @@ export function NotificationItem({
   onClose,
 }: NotificationItemProps) {
   const isUnread = !notification.readAt;
+  const Icon = TYPE_ICONS[notification.type] ?? BellIcon;
+  const timeLabel = formatNotificationTime(notification.createdAt);
+  const body = notification.body?.trim() ?? '';
 
   const handleClick = () => {
-    onMarkAsRead(notification.id);
+    if (isUnread) {
+      onMarkAsRead(notification.id);
+    }
     onClose();
   };
 
@@ -58,25 +58,41 @@ export function NotificationItem({
     <Link
       href={notificationHref(notification)}
       onClick={handleClick}
-      className={`block px-4 py-3 text-left transition-colors hover:bg-neutral-700/50 ${
-        isUnread ? 'bg-neutral-800/80' : ''
+      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3.5 text-left transition-colors ${
+        isUnread
+          ? 'border-white/12 bg-white/[0.07] hover:bg-white/[0.11]'
+          : 'border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]'
       }`}
     >
-      <div className="flex items-start gap-3">
-        {isUnread && (
-          <span
-            className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-white"
-            aria-hidden
-          />
-        )}
-        <div className={`min-w-0 flex-1 ${!isUnread ? 'pl-5' : ''}`}>
-          <p className="text-sm font-medium text-white">{notification.title}</p>
-          <p className="mt-0.5 text-xs text-neutral-400 line-clamp-2">
-            {notification.body?.trim()
-              ? `${notification.body.trim()} · ${formatRelativeTime(notification.createdAt)}`
-              : formatRelativeTime(notification.createdAt)}
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+          isUnread ? 'bg-white/15 text-white' : 'bg-white/[0.08] text-zinc-400'
+        }`}
+        aria-hidden
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={`text-sm leading-snug ${
+              isUnread
+                ? 'font-semibold text-white'
+                : 'font-medium text-zinc-300'
+            }`}
+          >
+            {notification.title}
           </p>
+          {isUnread ? (
+            <span
+              className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange-500"
+              aria-hidden
+            />
+          ) : null}
         </div>
+        <p className="mt-0.5 text-xs leading-snug text-zinc-500">
+          {body && timeLabel ? `${body} · ${timeLabel}` : body || timeLabel}
+        </p>
       </div>
     </Link>
   );

@@ -1,22 +1,15 @@
 /**
- * Persists optional timeline, optional second vehicle, and the customer ask
- * into `quotes.request_message`.
+ * Persists optional timeline and the customer ask into `quotes.request_message`.
+ * Assets live on `quotes.assets` (first vehicle also on vehicle_year/make/model).
  */
 
+import { formatQuoteVehicleLine } from '@/features/quotes/shared/quoteAssets';
+
 export const QUOTE_REQUEST_TIMING_PREFIX = 'Preferred timing:';
+/** @deprecated Old rows only. New requests store extra items on `quotes.assets`. */
 export const QUOTE_REQUEST_SECOND_VEHICLE_PREFIX = 'Second vehicle:';
 
-export function formatQuoteRequestVehicleLine(
-  year: string | null | undefined,
-  make: string | null | undefined,
-  model: string | null | undefined
-): string | null {
-  const text = [year, make, model]
-    .map(part => (part ?? '').trim())
-    .filter(Boolean)
-    .join(' ');
-  return text || null;
-}
+export const formatQuoteRequestVehicleLine = formatQuoteVehicleLine;
 
 /** Inbox / `service_name` until the owner picks a catalog package. */
 export function quoteRequestServiceNameFromAsk(details: string): string {
@@ -28,19 +21,10 @@ export function quoteRequestServiceNameFromAsk(details: string): string {
 
 export function buildQuoteRequestNote(
   details: string,
-  timelineTrimmed: string | null,
-  secondVehicleLine: string | null = null
+  timelineTrimmed: string | null
 ): string {
   const body = details.trim();
-  const headers: string[] = [];
   const t = timelineTrimmed?.trim() ?? '';
-  if (t.length > 0) {
-    headers.push(`${QUOTE_REQUEST_TIMING_PREFIX} ${t}`);
-  }
-  const second = secondVehicleLine?.trim() ?? '';
-  if (second.length > 0) {
-    headers.push(`${QUOTE_REQUEST_SECOND_VEHICLE_PREFIX} ${second}`);
-  }
-  if (headers.length === 0) return body;
-  return `${headers.join('\n')}\n\n${body}`;
+  if (!t) return body;
+  return `${QUOTE_REQUEST_TIMING_PREFIX} ${t}\n\n${body}`;
 }

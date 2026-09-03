@@ -5,15 +5,9 @@ import {
 } from '@/features/quotes/public-request/buildQuoteRequestNote';
 
 describe('buildQuoteRequestNote', () => {
-  it('writes timing and second vehicle as headers', () => {
-    expect(
-      buildQuoteRequestNote(
-        'Coffee on the seats.',
-        'This week',
-        '2018 Honda Civic'
-      )
-    ).toBe(
-      'Preferred timing: This week\nSecond vehicle: 2018 Honda Civic\n\nCoffee on the seats.'
+  it('writes timing as a header and leaves vehicles out of the note', () => {
+    expect(buildQuoteRequestNote('Coffee on the seats.', 'This week')).toBe(
+      'Preferred timing: This week\n\nCoffee on the seats.'
     );
   });
 

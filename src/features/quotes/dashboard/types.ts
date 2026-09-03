@@ -1,8 +1,9 @@
 /** Mirrors `public.quote_status` — used for dashboard UI until wired to API. */
 import type { QuoteCommunication } from '@/features/quotes/shared/quoteOutboundEvents';
 import type { QuoteAddonDetail } from '@/features/quotes/shared/quoteServiceSnapshot';
+import type { QuoteAsset } from '@/features/quotes/shared/quoteAssets';
 
-export type { QuoteCommunication };
+export type { QuoteCommunication, QuoteAsset };
 
 export type DashboardQuoteStatus =
   | 'requested'
@@ -16,7 +17,10 @@ export type DashboardQuoteStatus =
 
 export type DashboardQuoteSource = 'owner_created' | 'customer_requested';
 
-export type QuotesDashboardFilterId = 'all' | 'open' | 'closed';
+export type QuotesDashboardFilterId =
+  | 'requested'
+  | 'awaiting_reply'
+  | 'approved';
 
 export interface DashboardQuote {
   id: string;
@@ -42,6 +46,8 @@ export interface DashboardQuote {
   vehicleYear: string | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
+  /** What the quote is about: vehicles, pets, etc. */
+  assets: QuoteAsset[] | null;
   /** Where the service happens (optional at send; customer may add on approve). */
   serviceStreet: string | null;
   serviceUnit: string | null;

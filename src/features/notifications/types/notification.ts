@@ -4,6 +4,9 @@ import type { Json } from '@/libs/supabase/client';
  * Notification types aligned with public.notifications table.
  */
 
+/** Inbox tabs in the browser notifications drawer. */
+export type NotificationInboxFilter = 'new' | 'recent';
+
 export type NotificationType =
   | 'booking_request'
   | 'availability_booking'

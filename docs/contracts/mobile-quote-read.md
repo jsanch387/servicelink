@@ -1,10 +1,109 @@
 # Contract: Mobile — Owner quote inbox and detail
 
-Use this contract after sending a quote when the native app needs to show the
-owner's quote inbox and quote detail.
+Use this after the native app sends a quote, or to show the owner's inbox and
+quote detail.
 
-The API returns a normalized camelCase `DashboardQuote`; mobile does **not**
-need to query the `quotes` table directly.
+The API returns a normalized camelCase `DashboardQuote`. Mobile does **not**
+query the `quotes` table, `quote_outbound_events`, or public-link rows.
+
+Web and mobile share this payload. New fields below (`assets`, `viewedAt`,
+`customerReminderSentAt`, `communications`) are already on `GET /api/quotes`
+and `GET /api/quotes/[id]`.
+
+---
+
+## How quotes work (server-owned)
+
+Mobile creates or first-sends through the send contract. After that, this
+server owns the customer path.
+
+| Step                 | Who                                                              | What happens                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner sends          | Mobile → `POST /api/quotes/send` or `POST /api/quotes/[id]/send` | Quote is `sent`. Public `/q/` link is minted. Customer gets **email only** (best-effort). No SMS. `communications` stays `[]`.                       |
+| Customer opens `/q/` | Public web                                                       | First open sets `status: viewed` and `viewedAt` (write-once).                                                                                        |
+| 2–3 days, still open | Cron, not mobile                                                 | One customer **email + SMS** reminder. SMS includes the same `/q/` link. Claimed on `customerReminderSentAt`. Actual sends land in `communications`. |
+| Customer approves    | Public `/q/`                                                     | Quote `approved`. Booking created with `booking_source = quote`. Address + final slot are collected here, not on send.                               |
+| Customer declines    | Public `/q/`                                                     | Quote `declined`. No reminder after that.                                                                                                            |
+
+Skip reminder if the quote is approved, declined, expired, or cancelled, or
+if there is no live `/q/` link / no contact.
+
+**Do not** send quote email or SMS from the app. **Do not** write `assets`,
+`viewedAt`, or `communications` from the app.
+
+---
+
+## Assets (what the quote is about)
+
+`quotes.assets` is quotes-only. Same idea as `customer_assets`, but it is a
+snapshot on the quote, not a CRM row.
+
+```ts
+type QuoteAsset = {
+  type: string;
+  label: string;
+  attributes: Record<string, unknown>;
+};
+```
+
+| `type`          | When                                                                                     | `attributes` today                        |
+| --------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `vehicle`       | Detailers / vehicle businesses (what we write now)                                       | `{ year, make, model }` (strings or null) |
+| `pet`           | Reserved for groomers. Server can store it; public quote form does not collect pets yet. | `{ name, species, breed, size }`          |
+| other / missing | Ignore the item or show `label` only                                                     | unknown                                   |
+
+Rules for mobile:
+
+- **Render `label`.** That is the display line (`2018 Honda Civic`).
+- Prefer `assets` over `vehicleYear` / `vehicleMake` / `vehicleModel` /
+  `vehicleLine` when `assets` is non-empty.
+- Those four vehicle fields are **car 1 only**, kept for older clients and
+  booking approve. They stay in sync with the first `vehicle` asset.
+- `assets` is `null` or `[]` when the customer did not add a vehicle (or the
+  business is a cleaner / lawn shop — the job is the address).
+- Extra cars are more `vehicle` items. There is no `vehicle2Year` on this
+  payload.
+- Owner send still posts `vehicleYear` / `vehicleMake` / `vehicleModel` only.
+  The server builds `assets`. Do **not** POST an `assets` array.
+- Unknown `type` values must not crash the app. Show `label` and move on.
+
+```ts
+function quoteAssetLines(quote: DashboardQuote): string[] {
+  if (quote.assets?.length) {
+    return quote.assets.map(a => a.label.trim()).filter(Boolean);
+  }
+  return quote.vehicleLine?.trim() ? [quote.vehicleLine.trim()] : [];
+}
+
+/** Request / inbox card: first vehicle, then +N if there are more. */
+function quoteAssetsCardLine(quote: DashboardQuote): string | null {
+  const lines = quoteAssetLines(quote);
+  if (lines.length === 0) return null;
+  const extra = lines.length - 1;
+  return extra > 0 ? `${lines[0]} +${extra}` : lines[0];
+}
+```
+
+Inbox card example: `2018 Toyota Tacoma +1`. Detail lists every asset.
+
+---
+
+## Activity (owner timeline)
+
+Build from the quote. Do not invent a local timeline.
+
+| Event                  | Source                                                        |
+| ---------------------- | ------------------------------------------------------------- |
+| Created                | `createdAt`                                                   |
+| Viewed                 | `viewedAt` (null until the customer opened `/q/`)             |
+| Email sent / Text sent | each `communications` row (`channel` + `status`)              |
+| Reminder claimed       | `customerReminderSentAt` — cron claim, not a per-channel send |
+
+`communications` today is reminder traffic only (`type: "quote_reminder"`).
+The original “your quote is ready” email is **not** in this list.
+
+Right after send: `viewedAt: null`, `customerReminderSentAt: null`,
+`communications: []`.
 
 **Implementation**
 
@@ -69,6 +168,20 @@ Recommended inbox fields:
 - `scheduledTime`
 - `serviceId`
 - `addonDetails`
+- `assets` (or `vehicleLine` for a single-line subtitle)
+- `viewedAt`
+
+Inbox filters (web and mobile should match):
+
+| Filter         | Statuses             |
+| -------------- | -------------------- |
+| Requested      | `draft`, `requested` |
+| Awaiting reply | `sent`, `viewed`     |
+| Approved       | `approved`           |
+
+Customer quote requests (`source === "customer_requested"` and
+`status === "requested"`) belong in **Requested** on the main inbox. Declined,
+expired, and cancelled quotes are not in these three filters.
 
 Use the detail endpoint after the owner opens a row.
 
@@ -146,10 +259,17 @@ type DashboardQuote = {
   note: string | null;
   requestMessage: string | null;
 
+  /** Car 1 only. Prefer `assets` when present. */
   vehicleYear: string | null;
   vehicleMake: string | null;
   vehicleModel: string | null;
   vehicleLine: string | null;
+  /** Snapshot of vehicles (now) / pets (later). Null if none. */
+  assets: Array<{
+    type: string;
+    label: string;
+    attributes: Record<string, unknown>;
+  }> | null;
 
   serviceStreet: string | null;
   serviceUnit: string | null;
@@ -262,7 +382,10 @@ customer and `status === "approved"`.
 
 For inbox items with `source === "customer_requested"`:
 
-- `requestMessage` contains the customer's intake/request text.
+- `requestMessage` is the customer's ask, plus optional `Preferred timing: …`.
+- Extra vehicles live on `assets`, not in that note. Older rows may still have
+  a `Second vehicle: …` header in `requestMessage`; the API also folds that
+  into `assets` when needed. Prefer `assets`.
 - Initial status is normally `requested`.
 - Owner first-send uses `POST /api/quotes/[id]/send`.
 
@@ -313,10 +436,22 @@ URL. An empty `publicToken` means the API found no active, unexpired link.
     "scheduledTime": null,
     "note": "Includes clay bar",
     "requestMessage": null,
-    "vehicleYear": null,
-    "vehicleMake": null,
-    "vehicleModel": null,
-    "vehicleLine": null,
+    "vehicleYear": "2021",
+    "vehicleMake": "Tesla",
+    "vehicleModel": "Model 3",
+    "vehicleLine": "2021 Tesla Model 3",
+    "assets": [
+      {
+        "type": "vehicle",
+        "label": "2021 Tesla Model 3",
+        "attributes": { "year": "2021", "make": "Tesla", "model": "Model 3" }
+      },
+      {
+        "type": "vehicle",
+        "label": "2018 Honda Civic",
+        "attributes": { "year": "2018", "make": "Honda", "model": "Civic" }
+      }
+    ],
     "serviceStreet": null,
     "serviceUnit": null,
     "serviceCity": null,

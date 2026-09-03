@@ -7,6 +7,7 @@ export { useNotifications } from './hooks/useNotifications';
 export type {
   Notification,
   NotificationDisplay,
+  NotificationInboxFilter,
   NotificationType,
 } from './types/notification';
 export { notificationToDisplay } from './types/notification';

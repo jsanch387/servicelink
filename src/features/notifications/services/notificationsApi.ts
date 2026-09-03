@@ -3,8 +3,12 @@
  * Calls the app's API routes; auth is via session cookie.
  */
 
+import { NOTIFICATIONS_PAGE_SIZE } from '../constants';
 import type { Json } from '@/libs/supabase/client';
-import type { NotificationDisplay } from '../types/notification';
+import type {
+  NotificationDisplay,
+  NotificationInboxFilter,
+} from '../types/notification';
 import { notificationToDisplay } from '../types/notification';
 
 const API_BASE = '/api/notifications';
@@ -25,15 +29,34 @@ export interface NotificationsListResponse {
     metadata: Json | null;
     dedupe_key: string | null;
   }>;
+  unreadCount?: number;
+  hasMore?: boolean;
   error?: string;
 }
 
-export async function fetchNotifications(): Promise<{
+export async function fetchNotifications(options?: {
+  limit?: number;
+  offset?: number;
+  filter?: NotificationInboxFilter;
+}): Promise<{
   success: boolean;
   data?: NotificationDisplay[];
+  unreadCount?: number;
+  hasMore?: boolean;
   error?: string;
 }> {
-  const res = await fetch(API_BASE, { credentials: 'include' });
+  const limit = options?.limit ?? NOTIFICATIONS_PAGE_SIZE;
+  const offset = options?.offset ?? 0;
+  const filter = options?.filter ?? 'new';
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+    filter,
+  });
+
+  const res = await fetch(`${API_BASE}?${params.toString()}`, {
+    credentials: 'include',
+  });
   const json: NotificationsListResponse = await res.json();
 
   if (!res.ok) {
@@ -49,7 +72,12 @@ export async function fetchNotifications(): Promise<{
 
   const data = json.data.map(row => notificationToDisplay(row));
 
-  return { success: true, data };
+  return {
+    success: true,
+    data,
+    unreadCount: json.unreadCount ?? data.filter(n => !n.readAt).length,
+    hasMore: json.hasMore ?? false,
+  };
 }
 
 export async function markNotificationAsRead(

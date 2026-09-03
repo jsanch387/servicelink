@@ -22,6 +22,7 @@ function row(partial: Partial<QuoteDbRow> = {}): QuoteDbRow {
     vehicle_year: null,
     vehicle_make: null,
     vehicle_model: null,
+    assets: null,
     customer_street_address: null,
     customer_unit_apt: null,
     customer_city: null,
@@ -72,6 +73,83 @@ describe('mapQuoteRowToDashboardQuote reminder + viewed timestamps', () => {
     expect(quote.communications).toHaveLength(2);
     expect(quote.communications[0]?.channel).toBe('email');
     expect(quote.communications[1]?.channel).toBe('sms');
+  });
+
+  it('maps assets jsonb and keeps car 1 columns', () => {
+    const quote = mapQuoteRowToDashboardQuote(
+      row({
+        vehicle_year: '2017',
+        vehicle_make: 'Toyota',
+        vehicle_model: 'Tacoma',
+        assets: [
+          {
+            type: 'vehicle',
+            label: '2017 Toyota Tacoma',
+            attributes: { year: '2017', make: 'Toyota', model: 'Tacoma' },
+          },
+          {
+            type: 'vehicle',
+            label: '2018 Honda Civic',
+            attributes: { year: '2018', make: 'Honda', model: 'Civic' },
+          },
+        ],
+      }),
+      'token'
+    );
+    expect(quote.vehicleLine).toBe('2017 Toyota Tacoma');
+    expect(quote.assets).toEqual([
+      {
+        type: 'vehicle',
+        label: '2017 Toyota Tacoma',
+        attributes: { year: '2017', make: 'Toyota', model: 'Tacoma' },
+      },
+      {
+        type: 'vehicle',
+        label: '2018 Honda Civic',
+        attributes: { year: '2018', make: 'Honda', model: 'Civic' },
+      },
+    ]);
+  });
+
+  it('adds a Second vehicle header when assets only has car 1', () => {
+    const quote = mapQuoteRowToDashboardQuote(
+      row({
+        vehicle_year: '2017',
+        vehicle_make: 'Toyota',
+        vehicle_model: 'Tacoma',
+        assets: [
+          {
+            type: 'vehicle',
+            label: '2017 Toyota Tacoma',
+            attributes: { year: '2017', make: 'Toyota', model: 'Tacoma' },
+          },
+        ],
+        request_message:
+          'Preferred timing: This week\nSecond vehicle: 2018 Honda Civic\n\nCoffee on the seats.',
+      }),
+      'token'
+    );
+    expect(quote.assets?.[1]).toMatchObject({
+      type: 'vehicle',
+      label: '2018 Honda Civic',
+    });
+  });
+
+  it('falls back to a Second vehicle header in request_message', () => {
+    const quote = mapQuoteRowToDashboardQuote(
+      row({
+        vehicle_year: '2017',
+        vehicle_make: 'Toyota',
+        vehicle_model: 'Tacoma',
+        request_message:
+          'Preferred timing: This week\nSecond vehicle: 2018 Honda Civic\n\nCoffee on the seats.',
+      }),
+      'token'
+    );
+    expect(quote.assets?.[1]).toMatchObject({
+      type: 'vehicle',
+      label: '2018 Honda Civic',
+    });
   });
 
   it('uses null when the customer has not viewed or been reminded', () => {

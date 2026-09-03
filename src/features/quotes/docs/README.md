@@ -116,7 +116,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Auth:** None (public). Uses **admin** Supabase client.
 
-**Purpose:** Customer submits **Request quote** from the business profile (`/[businessSlug]/quote`). Inserts a `quotes` row with `source: customer_requested`, `status: requested`, `request_message` (timeline + details), `note: null`. **No** `quote_public_links` row until the owner sends the quote.
+**Purpose:** Customer submits **Request quote** from the business profile (`/[businessSlug]/quote`). Inserts a `quotes` row with `source: customer_requested`, `status: requested`, `request_message` (timeline + details), `assets` (vehicles/pets/etc; first vehicle also on `vehicle_*`), `note: null`. **No** `quote_public_links` row until the owner sends the quote.
 
 **Body:** Validated by `validatePublicQuoteRequestBody` (`public-request/validatePublicQuoteRequestBody.ts`).
 
@@ -179,7 +179,7 @@ read/send contract.
 
 **Body:** Same fields as send **except** `businessSlug` (validated by `validateUpdateQuoteBody` / `validateQuotePayloadFields`).
 
-**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `service_id`, `service_price_option_id`, `service_price_cents`, `addon_details`, `updated_at`. **`request_message` is not updated** by PATCH (customer intake text). (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
+**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `assets` (first vehicle from the form; extra assets kept), `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `service_id`, `service_price_option_id`, `service_price_cents`, `addon_details`, `updated_at`. **`request_message` is not updated** by PATCH (customer intake text). (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
 
 **Success:** `{ success: true, quote: DashboardQuote }` (reloaded after update).
 

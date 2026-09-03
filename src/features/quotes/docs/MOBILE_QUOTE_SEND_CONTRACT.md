@@ -4,6 +4,9 @@ Defines how the **native app** calls this Next.js server to **create or first-se
 
 **Canonical copy (mobile contracts folder):** [`docs/contracts/mobile-quote-send.md`](../../../../docs/contracts/mobile-quote-send.md)
 
+Read inbox/detail, `assets`, viewed, and reminder email/SMS:
+[`docs/contracts/mobile-quote-read.md`](../../../../docs/contracts/mobile-quote-read.md)
+
 **Implementation files**
 
 | Piece                                   | Path                                                       |
@@ -69,16 +72,16 @@ Validated by `validateSendQuoteBody` → `validateQuotePayloadFields` (`src/feat
 
 ### Customer + vehicle
 
-| Field           | Type   | Required | Notes                                                                      |
-| --------------- | ------ | -------- | -------------------------------------------------------------------------- |
-| `businessSlug`  | string | yes      | Must match a business owned by the caller.                                 |
-| `customerName`  | string | yes      | Trimmed.                                                                   |
-| `customerEmail` | string | yes      | Valid email format.                                                        |
-| `customerPhone` | string | no       | If present, **10 digits** after stripping non-digits, or validation fails. |
-| `vehicleYear`   | string | no       | Optional.                                                                  |
-| `vehicleMake`   | string | no       | Optional.                                                                  |
-| `vehicleModel`  | string | no       | Optional.                                                                  |
-| `note`          | string | no       | Owner note; omit or empty → stored as null.                                |
+| Field           | Type   | Required | Notes                                                                                  |
+| --------------- | ------ | -------- | -------------------------------------------------------------------------------------- |
+| `businessSlug`  | string | yes      | Must match a business owned by the caller.                                             |
+| `customerName`  | string | yes      | Trimmed.                                                                               |
+| `customerEmail` | string | yes      | Valid email format.                                                                    |
+| `customerPhone` | string | no       | If present, **10 digits** after stripping non-digits, or validation fails.             |
+| `vehicleYear`   | string | no       | Optional car 1. Server writes `quotes.assets` (`type: vehicle`). Do not POST `assets`. |
+| `vehicleMake`   | string | no       | Optional.                                                                              |
+| `vehicleModel`  | string | no       | Optional.                                                                              |
+| `note`          | string | no       | Owner note; omit or empty → stored as null. Max 2000 characters.                       |
 
 **Not** collected here: service street address (customer may supply when accepting the quote).
 

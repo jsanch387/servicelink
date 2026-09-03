@@ -18,6 +18,7 @@ export const DASHBOARD_QUOTE_SELECT = `
           vehicle_year,
           vehicle_make,
           vehicle_model,
+          assets,
           customer_street_address,
           customer_unit_apt,
           customer_city,

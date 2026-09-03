@@ -31,6 +31,7 @@ export interface QuoteDbRow {
   vehicle_year: string | null;
   vehicle_make: string | null;
   vehicle_model: string | null;
+  assets?: unknown;
   customer_street_address: string | null;
   customer_unit_apt: string | null;
   customer_city: string | null;

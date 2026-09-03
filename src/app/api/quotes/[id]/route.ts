@@ -1,5 +1,6 @@
 import { loadDashboardQuoteById } from '@/features/quotes/dashboard/server/loadDashboardQuoteById';
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
+import { mergeQuoteAssetsPreservingExtra } from '@/features/quotes/shared/quoteAssets';
 import { validateUpdateQuoteBody } from '@/features/quotes/edit/validateUpdateQuoteBody';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -124,6 +125,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         vehicle_year: p.vehicleYear,
         vehicle_make: p.vehicleMake,
         vehicle_model: p.vehicleModel,
+        assets: mergeQuoteAssetsPreservingExtra(existing.quote.assets, {
+          year: p.vehicleYear,
+          make: p.vehicleMake,
+          model: p.vehicleModel,
+        }),
         service_name: p.serviceName,
         price_cents: p.priceCents,
         duration_minutes: p.durationMinutes,

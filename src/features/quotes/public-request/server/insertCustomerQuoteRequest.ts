@@ -1,8 +1,6 @@
 import type { BookingReferralSource } from '@/features/booking-attribution/constants';
-import {
-  buildQuoteRequestNote,
-  formatQuoteRequestVehicleLine,
-} from '@/features/quotes/public-request/buildQuoteRequestNote';
+import { buildQuoteRequestNote } from '@/features/quotes/public-request/buildQuoteRequestNote';
+import { buildQuoteAssets } from '@/features/quotes/shared/quoteAssets';
 import type { ValidatedPublicQuoteRequestBody } from '@/features/quotes/public-request/validatePublicQuoteRequestBody';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -20,14 +18,18 @@ export async function insertCustomerQuoteRequest(
   data: ValidatedPublicQuoteRequestBody,
   referralSource: BookingReferralSource | null = null
 ): Promise<InsertCustomerQuoteRequestResult> {
-  const requestMessage = buildQuoteRequestNote(
-    data.details,
-    data.timeline,
-    formatQuoteRequestVehicleLine(
-      data.vehicle2Year,
-      data.vehicle2Make,
-      data.vehicle2Model
-    )
+  const requestMessage = buildQuoteRequestNote(data.details, data.timeline);
+  const assets = buildQuoteAssets(
+    {
+      year: data.vehicleYear,
+      make: data.vehicleMake,
+      model: data.vehicleModel,
+    },
+    {
+      year: data.vehicle2Year,
+      make: data.vehicle2Make,
+      model: data.vehicle2Model,
+    }
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,6 +50,7 @@ export async function insertCustomerQuoteRequest(
       vehicle_year: data.vehicleYear,
       vehicle_make: data.vehicleMake,
       vehicle_model: data.vehicleModel,
+      assets,
       service_name: data.serviceName,
       price_cents: 0,
       duration_minutes: 60,

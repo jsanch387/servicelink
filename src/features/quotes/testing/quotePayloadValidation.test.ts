@@ -1,5 +1,8 @@
 import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
-import { validateQuotePayloadFields } from '@/features/quotes/shared/validateQuotePayloadFields';
+import {
+  OWNER_QUOTE_NOTE_MAX_LENGTH,
+  validateQuotePayloadFields,
+} from '@/features/quotes/shared/validateQuotePayloadFields';
 import { describe, expect, it } from 'vitest';
 
 function validPayload() {
@@ -42,6 +45,18 @@ describe('validateQuotePayloadFields', () => {
     if (!r.ok) return;
     expect(r.data.scheduledDate).toBeNull();
     expect(r.data.scheduledStartTimeForDb).toBeNull();
+  });
+
+  it('rejects a note over the max length', () => {
+    const r = validateQuotePayloadFields({
+      ...validPayload(),
+      note: 'x'.repeat(OWNER_QUOTE_NOTE_MAX_LENGTH + 1),
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.error).toBe(
+      `Note must be at most ${OWNER_QUOTE_NOTE_MAX_LENGTH} characters`
+    );
   });
 
   it('rejects providing only scheduled date', () => {

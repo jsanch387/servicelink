@@ -42,7 +42,7 @@ function NoteBubble({
 
 /**
  * Customer request + owner reply as a short chat thread.
- * Used on public `/q/[token]`, owner quote review, and quote detail.
+ * One-sided notes render as a normal text box.
  */
 export function QuoteNotesConversation({
   customerNote,
@@ -56,26 +56,32 @@ export function QuoteNotesConversation({
   const business = businessNote?.trim() ?? '';
   if (!customer && !business) return null;
 
-  return (
-    <div
-      className={`space-y-3.5 ${className}`.trim()}
-      role="list"
-      aria-label="Quote notes"
-    >
-      {customer ? (
+  if (customer && business) {
+    return (
+      <div
+        className={`space-y-3.5 ${className}`.trim()}
+        role="list"
+        aria-label="Quote notes"
+      >
         <NoteBubble
           align={viewer === 'customer' ? 'right' : 'left'}
           label={customerLabel}
           text={customer}
         />
-      ) : null}
-      {business ? (
         <NoteBubble
           align={viewer === 'owner' ? 'right' : 'left'}
           label={businessLabel}
           text={business}
         />
-      ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className={className} aria-label="Quote notes">
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-200">
+        {customer || business}
+      </p>
     </div>
   );
 }

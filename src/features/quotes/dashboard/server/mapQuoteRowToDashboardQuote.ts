@@ -6,6 +6,15 @@ import type {
   DashboardQuoteStatus,
 } from '../types';
 import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
+import {
+  formatQuoteAssetLine,
+  formatQuoteVehicleLine,
+  normalizeQuoteAssets,
+  quoteAssetFromDisplayLine,
+  quoteAssetFromVehicleParts,
+  type QuoteAsset,
+} from '@/features/quotes/shared/quoteAssets';
+import { parsePublicQuoteRequestNote } from '../utils/parsePublicQuoteRequestNote';
 
 const VALID_STATUSES: DashboardQuoteStatus[] = [
   'requested',
@@ -41,12 +50,24 @@ function asIsoOrNull(value: string | null | undefined): string | null {
   return value?.trim() || null;
 }
 
-function buildVehicleLine(row: QuoteDbRow): string | null {
-  const text = [row.vehicle_year, row.vehicle_make, row.vehicle_model]
-    .map(part => (part ?? '').trim())
-    .filter(Boolean)
-    .join(' ');
-  return text || null;
+function resolveQuoteAssets(row: QuoteDbRow): QuoteAsset[] | null {
+  const stored = normalizeQuoteAssets(row.assets);
+  const first =
+    stored?.[0] ??
+    quoteAssetFromVehicleParts(
+      row.vehicle_year,
+      row.vehicle_make,
+      row.vehicle_model
+    );
+  const extra = stored && stored.length > 1 ? stored.slice(1) : [];
+  const fromNote = quoteAssetFromDisplayLine(
+    parsePublicQuoteRequestNote(row.request_message).secondVehicleLine
+  );
+  const second = extra[0] ?? fromNote;
+  const assets = [first, second, ...extra.slice(1)].filter(
+    (asset): asset is QuoteAsset => asset != null
+  );
+  return assets.length > 0 ? assets : null;
 }
 
 export function mapQuoteRowToDashboardQuote(
@@ -59,6 +80,13 @@ export function mapQuoteRowToDashboardQuote(
     row.duration_minutes != null && row.duration_minutes > 0
       ? row.duration_minutes
       : 60;
+  const assets = resolveQuoteAssets(row);
+  const firstAssetLine =
+    formatQuoteVehicleLine(
+      row.vehicle_year,
+      row.vehicle_make,
+      row.vehicle_model
+    ) ?? formatQuoteAssetLine(assets?.[0]);
 
   return {
     id: row.id,
@@ -79,13 +107,14 @@ export function mapQuoteRowToDashboardQuote(
     vehicleYear: row.vehicle_year,
     vehicleMake: row.vehicle_make,
     vehicleModel: row.vehicle_model,
+    assets,
+    vehicleLine: firstAssetLine,
     serviceStreet: row.customer_street_address,
     serviceUnit: row.customer_unit_apt,
     serviceCity: row.customer_city,
     serviceState: row.customer_state,
     serviceZip: row.customer_zip,
     serviceAddressLine: row.service_address,
-    vehicleLine: buildVehicleLine(row),
     serviceId: row.service_id?.trim() || null,
     servicePriceOptionId: row.service_price_option_id?.trim() || null,
     servicePriceCents:

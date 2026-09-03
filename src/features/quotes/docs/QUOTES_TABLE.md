@@ -80,9 +80,10 @@ Table: `public.quotes`
 | `customer_name`             | text                  |       no | Snapshot                                                                                                                         |
 | `customer_email`            | text                  |       no | Snapshot, format check                                                                                                           |
 | `customer_phone`            | text                  |      yes | Snapshot                                                                                                                         |
-| `vehicle_year`              | text                  |      yes | Optional snapshot                                                                                                                |
-| `vehicle_make`              | text                  |      yes | Optional snapshot                                                                                                                |
-| `vehicle_model`             | text                  |      yes | Optional snapshot                                                                                                                |
+| `vehicle_year`              | text                  |      yes | Optional snapshot of car 1. Mirrors `vehicles[0]`.                                                                               |
+| `vehicle_make`              | text                  |      yes | Optional snapshot of car 1. Mirrors `vehicles[0]`.                                                                               |
+| `vehicle_model`             | text                  |      yes | Optional snapshot of car 1. Mirrors `vehicles[0]`.                                                                               |
+| `assets`                    | jsonb                 |      yes | Snapshot array `{ type, label, attributes }` (vehicle, pet, later others). First vehicle also mirrors `vehicle_*`.               |
 | `service_name`              | text                  |      yes | Nullable during request-stage; required once quote is sent/later. Catalog: `Name` or `Name — Option` (add-ons stored separately) |
 | `price_cents`               | integer               |      yes | Total price (service + add-ons); required once quote is sent/later                                                               |
 | `duration_minutes`          | integer               |      yes | Nullable during request-stage; required once quote is sent/later                                                                 |

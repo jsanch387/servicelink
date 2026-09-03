@@ -4,6 +4,10 @@ import {
 } from '@/features/email';
 import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
 import type { ValidatedSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
+import {
+  mergeQuoteAssetsPreservingExtra,
+  normalizeQuoteAssets,
+} from '@/features/quotes/shared/quoteAssets';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
@@ -43,7 +47,7 @@ export async function sendExistingQuoteAsSent(params: {
 
   const { data: row, error: loadErr } = await db
     .from('quotes')
-    .select('id, status, business_id, request_message')
+    .select('id, status, business_id, request_message, assets')
     .eq('id', quoteId)
     .eq('business_id', businessId)
     .maybeSingle();
@@ -55,6 +59,7 @@ export async function sendExistingQuoteAsSent(params: {
   const rowTyped = row as {
     status: string;
     request_message: string | null;
+    assets?: unknown;
   };
   const status = rowTyped.status;
   const customerRequestForEmail = rowTyped.request_message?.trim() || null;
@@ -80,6 +85,14 @@ export async function sendExistingQuoteAsSent(params: {
       vehicle_year: p.vehicleYear,
       vehicle_make: p.vehicleMake,
       vehicle_model: p.vehicleModel,
+      assets: mergeQuoteAssetsPreservingExtra(
+        normalizeQuoteAssets(rowTyped.assets),
+        {
+          year: p.vehicleYear,
+          make: p.vehicleMake,
+          model: p.vehicleModel,
+        }
+      ),
       service_name: p.serviceName,
       price_cents: p.priceCents,
       duration_minutes: p.durationMinutes,

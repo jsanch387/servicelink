@@ -2,42 +2,31 @@
 
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { ProFeatureLabel } from '@/features/dashboard';
-import { InboxIcon, PlusIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import React, { useMemo, useState } from 'react';
 import { useDashboardQuotes } from '../hooks/useDashboardQuotes';
 import type { QuotesDashboardFilterId } from '../types';
-import {
-  countPendingCustomerQuoteRequests,
-  isPendingCustomerQuoteRequest,
-} from '../utils/pendingCustomerQuoteRequests';
 import { quoteMatchesFilter } from '../utils/quoteStatusUi';
 import { QuoteListRow } from './QuoteListRow';
+import { QuotesAcceptRequestsUpgradeCta } from './QuotesAcceptRequestsUpgradeCta';
 import { QuotesDashboardSkeleton } from './QuotesDashboardSkeleton';
 import { QuotesFilterPills } from './QuotesFilterPills';
 import { QuotesListEmptyState } from './QuotesListEmptyState';
 
 export interface QuotesDashboardPageProps {
-  /** When true, show Pro label on the quote-requests row (upgrade nudge). */
+  /** Free-tier owners see an upgrade CTA to accept quote requests. */
   isFreeTier?: boolean;
 }
 
 export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
   isFreeTier = false,
 }) => {
-  const [filter, setFilter] = useState<QuotesDashboardFilterId>('all');
+  const [filter, setFilter] = useState<QuotesDashboardFilterId>('requested');
   const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
 
-  /** Open public “request quote” rows — those live under Quote requests only. */
-  const quotesForMainList = useMemo(
-    () => quotes.filter(q => !isPendingCustomerQuoteRequest(q)),
-    [quotes]
-  );
-
   const filtered = useMemo(
-    () => quotesForMainList.filter(q => quoteMatchesFilter(q.status, filter)),
-    [quotesForMainList, filter]
+    () => quotes.filter(q => quoteMatchesFilter(q.status, filter)),
+    [quotes, filter]
   );
 
   const sorted = useMemo(
@@ -49,12 +38,7 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
     [filtered]
   );
 
-  const hasAnyQuotes = quotesForMainList.length > 0;
-
-  const requestCount = useMemo(
-    () => countPendingCustomerQuoteRequests(quotes),
-    [quotes]
-  );
+  const hasAnyQuotes = quotes.length > 0;
 
   const mainContent = (() => {
     if (loadStatus === 'loading') {
@@ -117,39 +101,15 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
           </Button>
         </header>
 
-        <Link
-          href={ROUTES.DASHBOARD.QUOTES_REQUESTS}
-          className="mb-6 flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-colors hover:border-white/[0.12] hover:bg-white/[0.03]"
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
-              <InboxIcon className="h-5 w-5 text-zinc-400" aria-hidden />
-            </span>
-            <span className="flex min-w-0 flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-white">
-                Quote requests
-              </span>
-              {isFreeTier ? <ProFeatureLabel /> : null}
-            </span>
+        {isFreeTier ? (
+          <div className="mb-6">
+            <QuotesAcceptRequestsUpgradeCta />
           </div>
-          <span
-            className="rounded-full bg-white/[0.06] px-2.5 py-1 text-xs font-semibold text-gray-300 ring-1 ring-inset ring-white/10"
-            aria-label={
-              loadStatus === 'loading'
-                ? 'Request count loading'
-                : `${requestCount} open requests`
-            }
-          >
-            {loadStatus === 'loading' ? '–' : requestCount}
-          </span>
-        </Link>
+        ) : null}
 
-        {loadStatus === 'ready' && hasAnyQuotes ? (
+        {loadStatus === 'ready' ? (
           <div className="mb-4">
             <QuotesFilterPills value={filter} onChange={setFilter} />
-            <p className="mt-3 text-xs text-gray-500">
-              Showing {sorted.length} of {quotesForMainList.length} quotes
-            </p>
           </div>
         ) : null}
 

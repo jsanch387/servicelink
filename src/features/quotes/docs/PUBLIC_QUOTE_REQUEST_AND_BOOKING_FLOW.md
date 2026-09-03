@@ -70,14 +70,15 @@ sequenceDiagram
 - **`source`:** `customer_requested`
 - **`status`:** `requested`
 - **`requested_at`:** required for this source (DB constraint)
-- **`request_message`:** built by `public-request/buildQuoteRequestNote.ts` from **timeline + optional second vehicle + ask** (`Preferred timing: …` / `Second vehicle: …` + blank line + body). This is the **customer’s** message.
+- **`request_message`:** built by `public-request/buildQuoteRequestNote.ts` from **timeline + ask** (`Preferred timing: …` + blank line + body). This is the **customer’s** message. Older rows may still have a `Second vehicle:` header.
+- **`assets`:** jsonb snapshot of what the quote is about (`type` + `label` + `attributes`). Detailers store vehicles, groomers will store pets, cleaners usually store none (the property is the address). Car 1 still also writes `vehicle_year` / `vehicle_make` / `vehicle_model` for booking.
 - **`note`:** `null` at intake — reserved for **owner** copy on the sent quote (`quotes.note`).
 - **Defaults:** e.g. `price_cents`, `duration_minutes` placeholders until owner completes the quote.
 - **No `quote_public_links` row** until the owner sends the quote.
 
 ### 3.4 Parsing customer text later
 
-- **`parsePublicQuoteRequestNote`** (`dashboard/utils/parsePublicQuoteRequestNote.ts`): splits `request_message` (same format) into `preferredTiming` + `detailsOnly` for UI.
+- **`parsePublicQuoteRequestNote`** (`dashboard/utils/parsePublicQuoteRequestNote.ts`): splits `request_message` into `preferredTiming` + `detailsOnly`. Still reads a legacy `Second vehicle:` header when `vehicles` is empty.
 - **`resolveCustomerRequestRawText`** (`shared/resolveCustomerRequestRawText.ts`): reads `request_message`, or legacy fallback to `note` when old rows stored everything in `note`.
 
 ---

@@ -5,9 +5,9 @@ import type { QuotesDashboardFilterId } from '../types';
 import React from 'react';
 
 const FILTERS: FilterPillOption<QuotesDashboardFilterId>[] = [
-  { id: 'all', label: 'All' },
-  { id: 'open', label: 'Open' },
-  { id: 'closed', label: 'Closed' },
+  { id: 'requested', label: 'Requested' },
+  { id: 'awaiting_reply', label: 'Awaiting reply' },
+  { id: 'approved', label: 'Approved' },
 ];
 
 interface QuotesFilterPillsProps {

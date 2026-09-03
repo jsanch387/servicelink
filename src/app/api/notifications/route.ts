@@ -1,14 +1,18 @@
 /**
  * API Route: Notifications
  *
- * GET  /api/notifications – list notifications for the authenticated user
+ * GET  /api/notifications – paginated inbox (`filter=new` unread, `filter=recent` read)
  * PATCH /api/notifications – mark notification(s) as read
  */
 
+import { parseNotificationListParams } from '@/features/notifications/utils/parseNotificationListParams';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+const NOTIFICATION_COLUMNS =
+  'id, type, reference_type, reference_id, title, body, read, read_at, created_at, metadata, dedupe_key';
+
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
 
@@ -24,28 +28,54 @@ export async function GET() {
       );
     }
 
-    // Only return unread – keeps the bell list short; once user clicks through, we mark read and they drop off
-    const { data, error } = await supabase
-      .from('notifications')
-      .select(
-        'id, type, reference_type, reference_id, title, body, read, read_at, created_at, metadata, dedupe_key'
-      )
-      .eq('user_id', user.id)
-      .eq('read', false)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    const { limit, offset, filter } = parseNotificationListParams(
+      request.nextUrl.searchParams
+    );
 
-    if (error) {
-      console.error('Error fetching notifications:', error);
+    const listQuery = supabase
+      .from('notifications')
+      .select(NOTIFICATION_COLUMNS)
+      .eq('user_id', user.id)
+      .eq('read', filter === 'recent')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit);
+
+    const unreadCountQuery = supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('read', false);
+
+    const [listResult, unreadResult] = await Promise.all([
+      listQuery,
+      unreadCountQuery,
+    ]);
+
+    if (listResult.error) {
+      console.error('Error fetching notifications:', listResult.error);
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: listResult.error.message },
         { status: 500 }
       );
     }
 
+    if (unreadResult.error) {
+      console.error('Error counting unread notifications:', unreadResult.error);
+      return NextResponse.json(
+        { success: false, error: unreadResult.error.message },
+        { status: 500 }
+      );
+    }
+
+    const rows = listResult.data || [];
+    const hasMore = rows.length > limit;
+    const data = hasMore ? rows.slice(0, limit) : rows;
+
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data,
+      unreadCount: unreadResult.count ?? 0,
+      hasMore,
     });
   } catch (err) {
     console.error('Error in notifications GET:', err);

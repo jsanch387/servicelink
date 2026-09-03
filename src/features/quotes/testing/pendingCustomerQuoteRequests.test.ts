@@ -27,6 +27,7 @@ function q(partial: Partial<DashboardQuote>): DashboardQuote {
     vehicleYear: partial.vehicleYear ?? null,
     vehicleMake: partial.vehicleMake ?? null,
     vehicleModel: partial.vehicleModel ?? null,
+    assets: partial.assets ?? null,
     serviceStreet: partial.serviceStreet ?? null,
     serviceUnit: partial.serviceUnit ?? null,
     serviceCity: partial.serviceCity ?? null,

@@ -17,6 +17,13 @@ import { useDashboardQuoteDetail } from '@/features/quotes/dashboard/hooks/useDa
 import { isDashboardQuoteEditableByOwner } from '@/features/quotes/dashboard/utils/isDashboardQuoteEditableByOwner';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import {
+  extraQuoteAssetHeading,
+  extraQuoteAssetsFromQuote,
+  formatQuoteAssetLine,
+  primaryVehicleFieldsFromQuote,
+  type QuoteAsset,
+} from '@/features/quotes/shared/quoteAssets';
+import {
   centsToWholeDollarDigits,
   durationPickerValueFromQuote,
   parseLocalDateFromYmd,
@@ -105,6 +112,56 @@ function formatTime12(hhmm: string): string {
 }
 
 /** Minimal RFC-style check for sending quote links. */
+function OwnerQuoteAssetsSummary({
+  year,
+  make,
+  model,
+  extraAssets,
+  labelClassName,
+}: {
+  year: string;
+  make: string;
+  model: string;
+  extraAssets: readonly QuoteAsset[];
+  labelClassName: string;
+}) {
+  const primary = [year.trim(), make.trim(), model.trim()]
+    .filter(Boolean)
+    .join(' ');
+  const extras = extraAssets
+    .map(asset => ({
+      asset,
+      line: formatQuoteAssetLine(asset),
+    }))
+    .filter((row): row is { asset: QuoteAsset; line: string } =>
+      Boolean(row.line)
+    );
+  if (!primary && extras.length === 0) return null;
+
+  return (
+    <>
+      <div className="h-px bg-white/10" />
+      <div>
+        <p className={labelClassName}>
+          {extras.length > 0 ? 'Vehicles' : 'Vehicle'}
+        </p>
+        {primary ? <p className="font-medium text-white">{primary}</p> : null}
+        {extras.map((row, index) => (
+          <p
+            key={`${row.line}-${index}`}
+            className="mt-2 text-sm text-gray-300"
+          >
+            <span className="text-gray-500">
+              {extraQuoteAssetHeading(row.asset, index)}:{' '}
+            </span>
+            {row.line}
+          </p>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function isValidEmail(value: string): boolean {
   const v = value.trim();
   if (!v) return false;
@@ -140,9 +197,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [preferredTimingHint, setPreferredTimingHint] = useState<string | null>(
     null
   );
-  const [secondVehicleHint, setSecondVehicleHint] = useState<string | null>(
-    null
-  );
+  const [extraAssets, setExtraAssets] = useState<QuoteAsset[]>([]);
   const [customerRequestDetails, setCustomerRequestDetails] = useState('');
 
   const [step, setStep] = useState<Step>('customer');
@@ -213,7 +268,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     editHydratedRef.current = false;
     prevDurationRef.current = null;
     setPreferredTimingHint(null);
-    setSecondVehicleHint(null);
+    setExtraAssets([]);
     setCustomerRequestDetails('');
   }, [editId]);
 
@@ -228,9 +283,10 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setCustomerPhone(
       (quote.customerPhone ?? '').replace(/\D/g, '').slice(0, 10)
     );
-    setVehicleYear(quote.vehicleYear ?? '');
-    setVehicleMake(quote.vehicleMake ?? '');
-    setVehicleModel(quote.vehicleModel ?? '');
+    const primaryVehicle = primaryVehicleFieldsFromQuote(quote);
+    setVehicleYear(primaryVehicle.year);
+    setVehicleMake(primaryVehicle.make);
+    setVehicleModel(primaryVehicle.model);
     setServiceName(quote.serviceName);
     setPriceDigits(centsToWholeDollarDigits(quote.totalCents));
     const durPick = durationPickerValueFromQuote(quote);
@@ -245,20 +301,23 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     setCatalogAddonDetails([]);
     setCatalogServicePriceCents(null);
     setPreferredTimingHint(null);
-    setSecondVehicleHint(null);
+    setExtraAssets([]);
     setCustomerRequestDetails('');
     if (quote.source === 'customer_requested') {
       const raw = resolveCustomerRequestRawText(quote);
       const parsed = parsePublicQuoteRequestNote(raw);
       setCustomerRequestDetails(parsed.detailsOnly);
       setPreferredTimingHint(parsed.preferredTiming);
-      setSecondVehicleHint(parsed.secondVehicleLine);
+      setExtraAssets(
+        extraQuoteAssetsFromQuote(quote.assets, parsed.secondVehicleLine)
+      );
       const legacyIntake =
         !quote.requestMessage?.trim() &&
         (quote.status === 'requested' || quote.status === 'draft');
       setNote(legacyIntake ? '' : (quote.note?.trim() ?? ''));
     } else {
       setNote(quote.note ?? '');
+      setExtraAssets(extraQuoteAssetsFromQuote(quote.assets));
     }
     setSelectedDate(parseLocalDateFromYmd(quote.scheduledDate));
     setSelectedTime(pickStartTimeHHmm(quote.scheduledTime));
@@ -770,14 +829,19 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   required={false}
                 />
               </div>
-              {secondVehicleHint?.trim() ? (
-                <p className="mt-3 text-sm text-gray-400">
-                  Second vehicle:{' '}
-                  <span className="text-gray-200">
-                    {secondVehicleHint.trim()}
-                  </span>
-                </p>
-              ) : null}
+              {extraAssets.map((asset, index) => {
+                const line = formatQuoteAssetLine(asset);
+                if (!line) return null;
+                return (
+                  <p
+                    key={`${asset.type}-${line}-${index}`}
+                    className="mt-3 text-sm text-gray-400"
+                  >
+                    {extraQuoteAssetHeading(asset, index)}:{' '}
+                    <span className="text-gray-200">{line}</span>
+                  </p>
+                );
+              })}
             </GlassCard>
           </div>
         )}
@@ -1016,38 +1080,29 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     </p>
                   ) : null}
                 </div>
-                {vehicleYear.trim() ||
-                vehicleMake.trim() ||
-                vehicleModel.trim() ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-gray-500">
-                        Vehicle
-                      </p>
-                      <p className="font-medium text-white">
-                        {[
-                          vehicleYear.trim(),
-                          vehicleMake.trim(),
-                          vehicleModel.trim(),
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      </p>
-                    </div>
-                  </>
-                ) : null}
+                <OwnerQuoteAssetsSummary
+                  year={vehicleYear}
+                  make={vehicleMake}
+                  model={vehicleModel}
+                  extraAssets={extraAssets}
+                  labelClassName="mb-1 text-sm font-medium text-gray-500"
+                />
 
                 {customerRequestDetails.trim() || note.trim() ? (
                   <>
                     <div className="h-px bg-white/10" />
-                    <QuoteNotesConversation
-                      customerNote={customerRequestDetails.trim()}
-                      businessNote={note.trim()}
-                      customerLabel={customerName.trim() || 'Customer'}
-                      businessLabel="You"
-                      viewer="owner"
-                    />
+                    <div>
+                      <p className="mb-1 text-sm font-medium text-gray-500">
+                        Notes
+                      </p>
+                      <QuoteNotesConversation
+                        customerNote={customerRequestDetails.trim()}
+                        businessNote={note.trim()}
+                        customerLabel={customerName.trim() || 'Customer'}
+                        businessLabel="You"
+                        viewer="owner"
+                      />
+                    </div>
                   </>
                 ) : null}
                 <div className="h-px bg-white/10" />
@@ -1123,27 +1178,13 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     </p>
                   ) : null}
                 </div>
-                {vehicleYear.trim() ||
-                vehicleMake.trim() ||
-                vehicleModel.trim() ? (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-sm font-medium text-gray-500">
-                        Vehicle
-                      </p>
-                      <p className="font-medium text-white">
-                        {[
-                          vehicleYear.trim(),
-                          vehicleMake.trim(),
-                          vehicleModel.trim(),
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      </p>
-                    </div>
-                  </>
-                ) : null}
+                <OwnerQuoteAssetsSummary
+                  year={vehicleYear}
+                  make={vehicleMake}
+                  model={vehicleModel}
+                  extraAssets={extraAssets}
+                  labelClassName="mb-0.5 text-sm font-medium text-gray-500"
+                />
                 <div className="h-px bg-white/10" />
                 <div>
                   <p className="mb-0.5 text-sm font-medium text-gray-500">
@@ -1167,13 +1208,18 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                 {customerRequestDetails.trim() || note.trim() ? (
                   <>
                     <div className="h-px bg-white/10" />
-                    <QuoteNotesConversation
-                      customerNote={customerRequestDetails.trim()}
-                      businessNote={note.trim()}
-                      customerLabel={customerName.trim() || 'Customer'}
-                      businessLabel="You"
-                      viewer="owner"
-                    />
+                    <div>
+                      <p className="mb-0.5 text-sm font-medium text-gray-500">
+                        Notes
+                      </p>
+                      <QuoteNotesConversation
+                        customerNote={customerRequestDetails.trim()}
+                        businessNote={note.trim()}
+                        customerLabel={customerName.trim() || 'Customer'}
+                        businessLabel="You"
+                        viewer="owner"
+                      />
+                    </div>
                   </>
                 ) : null}
                 <div className="h-px bg-white/10" />

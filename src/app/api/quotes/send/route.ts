@@ -3,6 +3,7 @@ import {
   type QuoteSentToCustomerPayload,
 } from '@/features/email';
 import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
+import { buildQuoteAssets } from '@/features/quotes/shared/quoteAssets';
 import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
 import {
   getQuoteSendRequestId,
@@ -157,6 +158,11 @@ export async function POST(request: NextRequest) {
         customer_phone: body.customerPhoneDigits,
         vehicle_year: body.vehicleYear,
         vehicle_make: body.vehicleMake,
+        assets: buildQuoteAssets({
+          year: body.vehicleYear,
+          make: body.vehicleMake,
+          model: body.vehicleModel,
+        }),
         vehicle_model: body.vehicleModel,
         service_name: body.serviceName,
         price_cents: body.priceCents,

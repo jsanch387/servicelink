@@ -7,7 +7,9 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React from 'react';
 import type { DashboardQuote } from '../types';
+import { formatQuoteAssetsCardLine } from '@/features/quotes/shared/quoteAssets';
 import { formatQuoteRequestWaitingLabel } from '../utils/formatQuoteRequestWaitingLabel';
+import { parsePublicQuoteRequestNote } from '../utils/parsePublicQuoteRequestNote';
 import { isPendingCustomerQuoteRequest } from '../utils/pendingCustomerQuoteRequests';
 import {
   formatQuoteCurrency,
@@ -32,15 +34,26 @@ export const QuoteListRow: React.FC<QuoteListRowProps> = ({
 }) => {
   const blur = getQuoteStatusBlurClass(quote.status);
   const outcomeDot = getQuoteOutcomeDotClass(quote.status);
+  const isRequest = isPendingCustomerQuoteRequest(quote);
   const service = splitQuoteServiceDisplayName(quote.serviceName).title;
   const showService = service.length > 0 && service !== 'Untitled service';
+  const vehicleCard = formatQuoteAssetsCardLine(
+    quote.assets,
+    quote.vehicleLine
+  );
+  const requestTiming =
+    parsePublicQuoteRequestNote(quote.requestMessage).preferredTiming?.trim() ||
+    '';
+  const requestSubtitle = vehicleCard?.line || (showService ? service : null);
+  const subtitle = isRequest ? requestSubtitle : showService ? service : null;
+  const extraVehicleCount = isRequest ? (vehicleCard?.extraCount ?? 0) : 0;
 
   const priceLine =
     quote.totalCents > 0 ? formatQuoteCurrency(quote.totalCents) : 'Price TBD';
 
   const createdAtLabel = formatQuoteListCreatedAt(quote.createdAt);
-  const createdLabel = isPendingCustomerQuoteRequest(quote)
-    ? formatQuoteRequestWaitingLabel(quote.createdAt)
+  const createdLabel = isRequest
+    ? requestTiming || formatQuoteRequestWaitingLabel(quote.createdAt)
     : createdAtLabel
       ? `Created ${createdAtLabel}`
       : '';
@@ -75,20 +88,33 @@ export const QuoteListRow: React.FC<QuoteListRowProps> = ({
           </span>
         </div>
         <div className="mt-1 min-w-0 pr-8">
-          {showService ? (
+          {subtitle ? (
             <p
-              className="truncate text-sm font-medium text-zinc-300"
-              title={service}
+              className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-zinc-300"
+              title={
+                extraVehicleCount > 0
+                  ? `${subtitle} +${extraVehicleCount}`
+                  : subtitle
+              }
             >
-              {service}
+              <span className="truncate">{subtitle}</span>
+              {extraVehicleCount > 0 ? (
+                <span className="shrink-0 text-zinc-500">
+                  +{extraVehicleCount}
+                </span>
+              ) : null}
             </p>
           ) : null}
           <p className="mt-1.5 text-xs font-medium text-zinc-500 sm:text-sm">
             {createdLabel ? <span>{createdLabel}</span> : null}
-            {createdLabel ? (
-              <span className="mx-1.5 text-zinc-600">·</span>
-            ) : null}
-            <span>{priceLine}</span>
+            {isRequest ? null : (
+              <>
+                {createdLabel ? (
+                  <span className="mx-1.5 text-zinc-600">·</span>
+                ) : null}
+                <span>{priceLine}</span>
+              </>
+            )}
           </p>
         </div>
         <ChevronRightIcon className="absolute bottom-4 right-4 h-5 w-5 text-zinc-600 sm:bottom-5 sm:right-5" />
@@ -96,7 +122,11 @@ export const QuoteListRow: React.FC<QuoteListRowProps> = ({
     </GlassCard>
   );
 
-  const href = detailHref ?? ROUTES.DASHBOARD.QUOTE_DETAIL(quote.id);
+  const href =
+    detailHref ??
+    (isRequest
+      ? ROUTES.DASHBOARD.QUOTE_REQUEST_DETAIL(quote.id)
+      : ROUTES.DASHBOARD.QUOTE_DETAIL(quote.id));
 
   return (
     <Link href={href} className="block touch-manipulation">

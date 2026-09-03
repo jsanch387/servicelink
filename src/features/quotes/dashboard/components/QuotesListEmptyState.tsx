@@ -20,17 +20,19 @@ export const QuotesListEmptyState: React.FC<QuotesListEmptyStateProps> = ({
 }) => {
   const title = !hasAnyQuotes
     ? 'No quotes yet'
-    : filter === 'open'
-      ? 'No open quotes'
-      : filter === 'closed'
-        ? 'No closed quotes'
-        : 'No quotes';
+    : filter === 'requested'
+      ? 'No quote requests'
+      : filter === 'awaiting_reply'
+        ? 'No quotes awaiting a reply'
+        : 'No approved quotes';
 
   const description = !hasAnyQuotes
     ? 'Send your first quote in a few taps — your customer gets a link to review and respond.'
-    : filter === 'all'
-      ? 'Try another filter or create a new quote.'
-      : 'Nothing in this filter right now. Try All or create a new quote.';
+    : filter === 'requested'
+      ? 'When a customer asks for a price, it will show up here.'
+      : filter === 'awaiting_reply'
+        ? 'Sent quotes waiting on the customer will show up here.'
+        : 'Approved quotes will show up here.';
 
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center">

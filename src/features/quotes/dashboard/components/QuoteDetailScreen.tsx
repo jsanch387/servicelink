@@ -7,6 +7,12 @@ import { QuoteNotesConversation } from '@/features/quotes/shared/components/Quot
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import {
+  extraQuoteAssetHeading,
+  formatQuoteAssetLine,
+  formatQuoteAssetsCardLine,
+  quoteAssetsSectionHeading,
+} from '@/features/quotes/shared/quoteAssets';
+import {
   copyTextToClipboard,
   copyTextToClipboardSync,
 } from '@/lib/copyTextToClipboard';
@@ -235,7 +241,12 @@ export function QuoteDetailContent({
   const hasCustomerDetails = Boolean(
     customerNameDisplay || emailDisplay || phoneLink
   );
-  const vehicleLine = quote.vehicleLine?.trim() || null;
+  const assetLines = (quote.assets ?? [])
+    .map(asset => formatQuoteAssetLine(asset))
+    .filter((line): line is string => Boolean(line));
+  const vehicleLine = assetLines[0] ?? quote.vehicleLine?.trim() ?? null;
+  const storedExtraCount =
+    formatQuoteAssetsCardLine(quote.assets, quote.vehicleLine)?.extraCount ?? 0;
   const hasPublicLink = Boolean(quote.publicToken.trim());
   const publicPath = getPublicQuotePath(quote.publicToken);
   const canEdit = isDashboardQuoteEditableByOwner(quote.status);
@@ -248,8 +259,18 @@ export function QuoteDetailContent({
 
   const customerRequestRaw = resolveCustomerRequestRawText(quote);
   const parsedCustomerRequest = parsePublicQuoteRequestNote(customerRequestRaw);
-  const secondVehicleLine =
-    parsedCustomerRequest.secondVehicleLine?.trim() || null;
+  const extraAssets =
+    (quote.assets ?? []).length > 1
+      ? (quote.assets ?? []).slice(1)
+      : parsedCustomerRequest.secondVehicleLine?.trim()
+        ? [
+            {
+              type: 'vehicle',
+              label: parsedCustomerRequest.secondVehicleLine.trim(),
+              attributes: {},
+            },
+          ]
+        : [];
   const isCustomerRequestSource = quote.source === 'customer_requested';
   const hasScheduledDate = Boolean(quote.scheduledDate?.trim());
   const timingFromRequest = parsedCustomerRequest.preferredTiming?.trim() ?? '';
@@ -433,21 +454,37 @@ export function QuoteDetailContent({
 
           {vehicleLine ? (
             <section className="space-y-2">
-              <h2 className="text-sm font-semibold text-gray-200">Vehicle</h2>
+              <h2 className="text-sm font-semibold text-gray-200">
+                {quoteAssetsSectionHeading(quote.assets)}
+              </h2>
               <GlassCard
                 blurColor="bg-zinc-600"
                 rounded="rounded-2xl"
                 className="border-white/[0.08] bg-white/[0.03]"
               >
-                <p className="text-sm text-gray-300">{vehicleLine}</p>
-                {secondVehicleLine ? (
-                  <div className="mt-3 border-t border-white/[0.07] pt-3">
-                    <p className="mb-1 text-xs font-medium text-gray-500">
-                      Second vehicle
-                    </p>
-                    <p className="text-sm text-gray-300">{secondVehicleLine}</p>
-                  </div>
-                ) : null}
+                <p className="flex flex-wrap items-baseline gap-x-2 text-sm text-gray-300">
+                  <span>{vehicleLine}</span>
+                  {Math.max(storedExtraCount, extraAssets.length) > 0 ? (
+                    <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-medium text-gray-400 ring-1 ring-inset ring-white/10">
+                      +{Math.max(storedExtraCount, extraAssets.length)}
+                    </span>
+                  ) : null}
+                </p>
+                {extraAssets.map((asset, index) => {
+                  const line = formatQuoteAssetLine(asset);
+                  if (!line) return null;
+                  return (
+                    <div
+                      key={`${asset.type}-${line}-${index}`}
+                      className="mt-3 border-t border-white/[0.07] pt-3"
+                    >
+                      <p className="mb-1 text-xs font-medium text-gray-500">
+                        {extraQuoteAssetHeading(asset, index)}
+                      </p>
+                      <p className="text-sm text-gray-300">{line}</p>
+                    </div>
+                  );
+                })}
               </GlassCard>
             </section>
           ) : null}
