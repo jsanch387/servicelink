@@ -161,6 +161,19 @@ type DashboardQuote = {
   createdAt: string;
   activityAt: string;
   publicToken: string;
+  publicLinkExpiresAt?: string | null;
+  /** First customer open of `/q/`. Null until viewed. */
+  viewedAt: string | null;
+  /** One-shot customer reminder claim. Null until the cron claimed it. */
+  customerReminderSentAt: string | null;
+  /** Customer email/SMS we actually sent, oldest first. Empty until a send. */
+  communications: Array<{
+    channel: 'email' | 'sms';
+    type: 'quote_reminder';
+    status: 'sent' | 'failed';
+    sentAt: string;
+    toAddress: string | null;
+  }>;
 };
 ```
 
@@ -312,7 +325,10 @@ URL. An empty `publicToken` means the API found no active, unexpired link.
     "serviceAddressLine": null,
     "createdAt": "2026-07-15T01:00:00.000Z",
     "activityAt": "2026-07-15T01:00:00.000Z",
-    "publicToken": "<sensitive-active-link-token>"
+    "publicToken": "<sensitive-active-link-token>",
+    "viewedAt": null,
+    "customerReminderSentAt": null,
+    "communications": []
   }
 }
 ```

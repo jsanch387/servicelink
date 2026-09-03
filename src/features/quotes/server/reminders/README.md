@@ -1,18 +1,10 @@
-# Quote request follow-ups
+# Quote reminders
 
-One cron job, owner only. Schedule and auth live in [`src/features/cron`](../../../cron/docs/README.md).
+Two cron jobs. Schedule and auth live in [`src/features/cron`](../../../cron/docs/README.md).
+
+## Owner — unanswered requests
 
 `runQuoteRequestFollowUps` is what `/api/internal/cron/quote-request-follow-ups` calls.
-
-```
-reminders/
-  runQuoteRequestFollowUps.ts           cron entry
-  notifyOwnerForQuoteRequestFollowUp.ts insert-first inbox + push
-  loadStaleCustomerQuoteRequests.ts     window query + group by owner
-  quoteRequestFollowUpCopy.ts           title / body / dedupe key
-  quoteRequestFollowUpDate.ts           Chicago day + 3-day window
-  constants.ts
-```
 
 | Rule         | Detail                                                                        |
 | ------------ | ----------------------------------------------------------------------------- |
@@ -21,4 +13,21 @@ reminders/
 | Skip         | Already got a `quote_request` ping in the last 24h                            |
 | Idempotency  | `notifications.dedupe_key` = `quote_request_followup:{profileId}:{localDate}` |
 | Tap          | `screen` → `quotes`                                                           |
-| Not this job | New request ping, owner email, customer `/q/` 14-day expiry                   |
+| Not this job | Customer `/q/` reminder, new request ping, owner email                        |
+
+## Customer — unanswered sent quotes
+
+`runQuoteCustomerReminders` is what `/api/internal/cron/quote-customer-reminders` calls.
+
+Email and SMS go out together. If we text, the body includes the same `/q/` URL as the email (`token_hash` works on `/q/[token]` via `resolveQuoteTokenHash`).
+
+| Rule         | Detail                                                                    |
+| ------------ | ------------------------------------------------------------------------- |
+| Who          | Status `sent` or `viewed`, 2–4 days after `sent_at`                       |
+| Cadence      | Once ever                                                                 |
+| Skip         | Approved, declined, expired, cancelled, no contact, dead `/q/` link       |
+| SMS skip     | No phone, SMS opt-out, business not eligible, outbound paused             |
+| Idempotency  | `quotes.customer_reminder_sent_at` claim, plus `{quoteId}:quote_reminder` |
+| SMS link     | `sms_messages.quote_id` + `type = quote_reminder`                         |
+| Timeline     | `quote_outbound_events` (email + SMS). Exposed as `communications`        |
+| Not this job | Owner follow-up for unsent customer requests                              |

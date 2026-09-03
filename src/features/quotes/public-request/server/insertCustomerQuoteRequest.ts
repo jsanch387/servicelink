@@ -1,3 +1,4 @@
+import type { BookingReferralSource } from '@/features/booking-attribution/constants';
 import {
   buildQuoteRequestNote,
   formatQuoteRequestVehicleLine,
@@ -16,7 +17,8 @@ export type InsertCustomerQuoteRequestResult =
 export async function insertCustomerQuoteRequest(
   admin: SupabaseClient,
   businessId: string,
-  data: ValidatedPublicQuoteRequestBody
+  data: ValidatedPublicQuoteRequestBody,
+  referralSource: BookingReferralSource | null = null
 ): Promise<InsertCustomerQuoteRequestResult> {
   const requestMessage = buildQuoteRequestNote(
     data.details,
@@ -55,6 +57,7 @@ export async function insertCustomerQuoteRequest(
       scheduled_start_time: null,
       status: 'requested',
       source: 'customer_requested',
+      referral_source: referralSource,
     })
     .select('id');
 

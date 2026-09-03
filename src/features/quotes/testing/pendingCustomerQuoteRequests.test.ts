@@ -39,6 +39,9 @@ function q(partial: Partial<DashboardQuote>): DashboardQuote {
     addonDetails: partial.addonDetails ?? null,
     publicToken: partial.publicToken ?? '',
     publicLinkExpiresAt: partial.publicLinkExpiresAt ?? null,
+    viewedAt: partial.viewedAt ?? null,
+    customerReminderSentAt: partial.customerReminderSentAt ?? null,
+    communications: partial.communications ?? [],
   };
 }
 

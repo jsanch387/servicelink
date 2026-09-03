@@ -44,12 +44,13 @@ sequenceDiagram
 
 ## Jobs
 
-Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift. Both jobs share `0 14 * * *` (14:00 UTC daily).
+Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit test fails if the catalog and `vercel.json` drift. All jobs share `0 14 * * *` (14:00 UTC daily).
 
 | id                         | Work                                                            | Docs                                                                                  |
 | -------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `booking-reminders`        | Tomorrow’s confirmed bookings: owner push + customer email/SMS  | [`availability/.../reminders`](../../availability/booking/server/reminders/README.md) |
 | `quote-request-follow-ups` | Unanswered quote requests in a 3-day window: one owner push/day | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
+| `quote-customer-reminders` | Sent quotes still open 2–3 days later: one customer email + SMS | [`quotes/.../reminders`](../../quotes/server/reminders/README.md)                     |
 
 ### booking-reminders
 
@@ -67,6 +68,14 @@ Keep this table, `CRON_JOBS` in `jobs.ts`, and `vercel.json` in sync. A unit tes
 - **Entry:** `runQuoteRequestFollowUps`
 - **Owner idempotency:** `quote_request_followup:{ownerProfileId}:{localDate}`
 - **Mobile tap:** `screen` → `quotes`
+
+### quote-customer-reminders
+
+- **Route:** `GET /api/internal/cron/quote-customer-reminders`
+- **Duration:** `maxDuration = 300`
+- **Entry:** `runQuoteCustomerReminders`
+- **Customer idempotency:** `quotes.customer_reminder_sent_at` + `{quoteId}:quote_reminder`
+- **Channels:** email + SMS together; SMS includes the same `/q/` URL as the email
 
 ---
 
@@ -88,6 +97,9 @@ curl -i https://<your-domain>/api/internal/cron/booking-reminders \
   -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
 
 curl -i https://<your-domain>/api/internal/cron/quote-request-follow-ups \
+  -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
+
+curl -i https://<your-domain>/api/internal/cron/quote-customer-reminders \
   -H "x-internal-push-secret: $INTERNAL_PUSH_API_SECRET"
 ```
 

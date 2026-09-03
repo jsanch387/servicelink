@@ -25,6 +25,7 @@ import {
 import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
+import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import type { QuoteAddonDetail } from '@/features/quotes/shared/quoteServiceSnapshot';
@@ -1037,33 +1038,18 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   </>
                 ) : null}
 
-                {customerRequestDetails.trim() ? (
+                {customerRequestDetails.trim() || note.trim() ? (
                   <>
                     <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-gray-500">
-                        Customer note
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {customerRequestDetails.trim()}
-                      </p>
-                    </div>
+                    <QuoteNotesConversation
+                      customerNote={customerRequestDetails.trim()}
+                      businessNote={note.trim()}
+                      customerLabel={customerName.trim() || 'Customer'}
+                      businessLabel="You"
+                      viewer="owner"
+                    />
                   </>
                 ) : null}
-
-                {note.trim().length > 0 && (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-1 text-sm font-medium text-gray-500">
-                        Your notes
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {note.trim()}
-                      </p>
-                    </div>
-                  </>
-                )}
                 <div className="h-px bg-white/10" />
                 <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
                   <p className="text-sm font-medium text-gray-300">Total</p>
@@ -1178,32 +1164,18 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                     </p>
                   )}
                 </div>
-                {customerRequestDetails.trim() ? (
+                {customerRequestDetails.trim() || note.trim() ? (
                   <>
                     <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-sm font-medium text-gray-500">
-                        Customer note
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {customerRequestDetails.trim()}
-                      </p>
-                    </div>
+                    <QuoteNotesConversation
+                      customerNote={customerRequestDetails.trim()}
+                      businessNote={note.trim()}
+                      customerLabel={customerName.trim() || 'Customer'}
+                      businessLabel="You"
+                      viewer="owner"
+                    />
                   </>
                 ) : null}
-                {note.trim().length > 0 && (
-                  <>
-                    <div className="h-px bg-white/10" />
-                    <div>
-                      <p className="mb-0.5 text-sm font-medium text-gray-500">
-                        Your notes
-                      </p>
-                      <p className="whitespace-pre-wrap text-sm text-gray-400">
-                        {note.trim()}
-                      </p>
-                    </div>
-                  </>
-                )}
                 <div className="h-px bg-white/10" />
                 <div className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
                   <p className="text-sm font-medium text-gray-300">Total</p>

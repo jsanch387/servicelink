@@ -37,6 +37,12 @@ export type {
   SendQuoteSentToCustomerResult,
 } from './quote-sent-to-customer/types';
 
+export { sendQuoteCustomerReminderEmail } from './quote-customer-reminder/sendQuoteCustomerReminderEmail';
+export type {
+  QuoteCustomerReminderPayload,
+  SendQuoteCustomerReminderResult,
+} from './quote-customer-reminder/types';
+
 export { sendQuoteRequestOwnerNotificationEmail } from './quote-request-owner-notification/sendQuoteRequestOwnerNotificationEmail';
 export type {
   QuoteRequestOwnerNotificationPayload,

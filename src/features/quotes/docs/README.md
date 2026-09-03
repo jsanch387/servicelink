@@ -6,14 +6,15 @@ Single place to see **where code lives**, **which HTTP APIs exist**, and **how c
 
 ## Schema (database)
 
-| Doc                                                                                      | Contents                                                                                        |
-| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [MOBILE_QUOTE_SEND_CONTRACT.md](./MOBILE_QUOTE_SEND_CONTRACT.md)                         | **Mobile ↔ Next.js**: Bearer auth, JSON body, tracing headers, send / send-existing responses  |
-| [`docs/contracts/mobile-quote-read.md`](../../../../docs/contracts/mobile-quote-read.md) | **Mobile ↔ Next.js**: Bearer-auth quote inbox/detail fields and rendering rules                |
-| [QUOTES_TABLE.md](./QUOTES_TABLE.md)                                                     | `quotes` columns, statuses, owner vs customer request                                           |
-| [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md)                             | `quote_public_links`, token hash, expiry, RLS notes                                             |
-| [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md)   | **Public quote request** intake vs **availability booking**, data flow, approve → V2 `bookings` |
-| [BOOKINGS_CUSTOMER_ID.md](./BOOKINGS_CUSTOMER_ID.md)                                     | Why `bookings.customer_id` must exist when creating bookings from quotes                        |
+| Doc                                                                                                              | Contents                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [MOBILE_QUOTE_SEND_CONTRACT.md](./MOBILE_QUOTE_SEND_CONTRACT.md)                                                 | **Mobile ↔ Next.js**: Bearer auth, JSON body, tracing headers, send / send-existing responses  |
+| [`docs/contracts/mobile-quote-read.md`](../../../../docs/contracts/mobile-quote-read.md)                         | **Mobile ↔ Next.js**: Bearer-auth quote inbox/detail fields and rendering rules                |
+| [QUOTES_TABLE.md](./QUOTES_TABLE.md)                                                                             | `quotes` columns, statuses, owner vs customer request                                           |
+| [QUOTE_PUBLIC_LINKS_TABLE.md](./QUOTE_PUBLIC_LINKS_TABLE.md)                                                     | `quote_public_links`, token hash, expiry, RLS notes                                             |
+| [migrations/003_quote_reminder_communication_links.sql](./migrations/003_quote_reminder_communication_links.sql) | `sms_messages.quote_id` + `quote_outbound_events` (email/SMS timeline)                          |
+| [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md)                           | **Public quote request** intake vs **availability booking**, data flow, approve → V2 `bookings` |
+| [BOOKINGS_CUSTOMER_ID.md](./BOOKINGS_CUSTOMER_ID.md)                                                             | Why `bookings.customer_id` must exist when creating bookings from quotes                        |
 
 Business scope: quotes belong to `business_profiles` via `quotes.business_id`. Owner APIs resolve the current business with `src/server/resolveCurrentBusinessId.ts`.
 
@@ -121,7 +122,7 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Success:** `201` — `{ success: true, data: { quoteId } }`.
 
-**Owner follow-up:** Daily cron `GET /api/internal/cron/quote-request-follow-ups` → `runQuoteRequestFollowUps`. Rules live in [`server/reminders/README.md`](../server/reminders/README.md). After the owner sends, the customer `/q/` link lasts **14 days** and shows **Valid until …**.
+**Owner follow-up:** Daily cron `GET /api/internal/cron/quote-request-follow-ups` → `runQuoteRequestFollowUps`. After the owner sends, the customer `/q/` link lasts **14 days** and shows **Valid until …**. If that sent quote is still open 2–3 days later, `GET /api/internal/cron/quote-customer-reminders` emails and texts the customer once (SMS includes the same `/q/` link). Rules live in [`server/reminders/README.md`](../server/reminders/README.md).
 
 **Code:** `src/app/api/public/quote-request/route.ts` → `insertCustomerQuoteRequest`
 

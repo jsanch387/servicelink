@@ -41,6 +41,10 @@ export interface QuoteDbRow {
   service_price_option_id: string | null;
   service_price_cents: number | null;
   addon_details: unknown;
+  /** First customer open of `/q/`. */
+  viewed_at: string | null;
+  /** One-shot customer reminder email/SMS. */
+  customer_reminder_sent_at: string | null;
 }
 
 export interface QuotePublicLinkRow {

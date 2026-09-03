@@ -196,6 +196,7 @@ export async function ensureMaintenanceEnrollmentInitialBooking(
       businessId: enrollment.business_id,
       businessSlug: businessSlug || 'business',
       customerId: enrollment.customer_id,
+      bookingSource: 'public',
       serviceName,
       servicePriceCents: priceCents,
       durationMinutes,

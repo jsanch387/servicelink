@@ -21,6 +21,7 @@ import {
   RESOURCES_NAV_VIEW_ALL,
   type ResourcesNavItem,
 } from '../constants/resourcesNavLinks';
+import { desktopNavItemClass } from './navStyles';
 
 const CLOSE_DELAY_MS = 180;
 
@@ -88,10 +89,10 @@ function ResourcesNavItemLink({
     <Link
       href={item.href}
       role="menuitem"
-      className="group flex items-start gap-3 rounded-lg p-2.5 cursor-pointer hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors"
+      className="group flex items-start gap-3 rounded-xl p-2.5 cursor-pointer hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors"
       onClick={onNavigate}
     >
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/[0.06] text-gray-300 group-hover:bg-white/[0.1] group-hover:text-white transition-colors">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-gray-300 group-hover:bg-white/[0.1] group-hover:text-white transition-colors">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1 pt-0.5">
@@ -113,6 +114,10 @@ export function ResourcesNavMenuDesktop() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { open, openMenu, scheduleClose, closeMenu, toggleMenu } =
     useResourcesMenuOpen();
+  const isActive =
+    open ||
+    pathname.startsWith(ROUTES.RESOURCES) ||
+    pathname.startsWith(ROUTES.WORKSHOP);
 
   useEffect(() => {
     closeMenu();
@@ -149,14 +154,14 @@ export function ResourcesNavMenuDesktop() {
       <button
         type="button"
         onClick={toggleMenu}
-        className="inline-flex items-center gap-1 cursor-pointer text-white hover:text-white/80 transition-colors focus:outline-none focus-visible:outline-none"
+        className={desktopNavItemClass(isActive)}
         aria-expanded={open}
         aria-haspopup="true"
         aria-controls={menuId}
       >
         Resources
         <ChevronDownIcon
-          className={`h-3.5 w-3.5 transition-transform duration-200 ${
+          className={`h-3.5 w-3.5 transition-transform duration-200 md:h-4 md:w-4 ${
             open ? 'rotate-180' : ''
           }`}
           aria-hidden
@@ -164,28 +169,30 @@ export function ResourcesNavMenuDesktop() {
       </button>
 
       <div
-        className={`fixed inset-x-0 top-16 sm:top-20 z-40 ${
+        className={`absolute left-1/2 top-full z-40 w-[min(36rem,calc(100vw-1.5rem))] -translate-x-1/2 ${
           open ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
         onMouseEnter={openMenu}
         onMouseLeave={scheduleClose}
+        aria-hidden={!open}
+        inert={!open ? true : undefined}
       >
-        <div className="h-3 -mt-3" aria-hidden />
+        <div className="h-3" aria-hidden />
         <div
           id={menuId}
           role="menu"
           aria-label="Resources"
-          className={`border-b border-[var(--dashboard-border)] bg-[var(--dashboard-bg)] transition-all duration-200 ease-out ${
+          className={`overflow-hidden rounded-2xl border border-white/10 bg-[#141414]/92 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl transition-all duration-200 ease-out ${
             open
               ? 'opacity-100 translate-y-0'
               : 'opacity-0 -translate-y-1 pointer-events-none'
           }`}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-5 sm:pt-7 sm:pb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-10 lg:gap-16 max-w-3xl">
+          <div className="px-4 pt-5 pb-4 sm:px-5 sm:pt-5 sm:pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
               {RESOURCES_NAV_COLUMNS.map(column => (
                 <div key={column.heading}>
-                  <p className="text-sm font-semibold text-white mb-3">
+                  <p className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
                     {column.heading}
                   </p>
                   <ul className="space-y-0.5">
@@ -202,7 +209,7 @@ export function ResourcesNavMenuDesktop() {
               ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/[0.06] flex justify-center">
+            <div className="mt-4 pt-3 border-t border-white/[0.06] flex justify-center">
               <Link
                 href={RESOURCES_NAV_VIEW_ALL.href}
                 role="menuitem"
@@ -261,7 +268,7 @@ export function ResourcesNavMenuMobile({
       <button
         type="button"
         onClick={() => setExpanded(prev => !prev)}
-        className={`flex w-full items-center justify-between rounded-2xl px-3 py-3.5 text-[1.7rem] font-semibold tracking-tight leading-none cursor-pointer transition-colors focus:outline-none focus-visible:outline-none ${
+        className={`flex w-full items-center justify-between rounded-2xl px-4 py-4 text-[1.5rem] font-semibold tracking-tight leading-none cursor-pointer transition-colors focus:outline-none focus-visible:outline-none ${
           isActive ? 'text-white' : 'text-white/50 active:text-white'
         }`}
         aria-expanded={expanded}
@@ -293,7 +300,7 @@ export function ResourcesNavMenuMobile({
       >
         <div className="overflow-hidden">
           <ul
-            className={`mb-2 mt-1 rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.06] p-1.5 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+            className={`mb-1 mt-2 rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.06] p-2 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
               expanded
                 ? 'opacity-100 translate-y-0'
                 : 'opacity-0 -translate-y-1.5'

@@ -4,6 +4,7 @@
  */
 
 import { normalizeWallClockHm } from '@/features/availability/types/blockTime';
+import { isBookingSource } from '@/features/booking-attribution/constants';
 import type {
   AvailabilityBookingDisplay,
   AvailabilityBookingJobDisplay,
@@ -145,10 +146,9 @@ export function mapBookingRowToDisplay(
 
   return {
     id: row.id,
-    bookingSource:
-      row.booking_source === 'public' || row.booking_source === 'owner'
-        ? row.booking_source
-        : null,
+    bookingSource: isBookingSource(row.booking_source)
+      ? row.booking_source
+      : null,
     customerName: row.customer_name,
     customerPhone: row.customer_phone ?? '',
     customerEmail: row.customer_email ?? '',

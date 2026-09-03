@@ -7,7 +7,10 @@ import {
   ownerBookingSlotValidationMessage,
   validateOwnerBookingSlot,
 } from '@/features/availability/booking/server/validateOwnerBookingSlot';
-import type { BookingReferralSource } from '@/features/booking-attribution/constants';
+import type {
+  BookingReferralSource,
+  BookingSource,
+} from '@/features/booking-attribution/constants';
 import { upsertCustomerForBooking } from '@/features/customer-management/server/upsertCustomerForBooking';
 import {
   upsertCustomerPetsFromBooking,
@@ -35,7 +38,7 @@ import type { BookingJobDetailsItem } from '../booking/utils/ownerManualBookingJ
 
 const TABLE = 'bookings';
 
-export type BookingSource = 'public' | 'owner';
+export type { BookingSource } from '@/features/booking-attribution/constants';
 
 /** How the customer committed to pay when no Stripe checkout row is involved. */
 export type PublicBookingNoCheckoutPaymentMethod =
@@ -147,8 +150,8 @@ export async function createBooking(
   payload: {
     businessId: string;
     businessSlug: string;
-    /** Server-derived origin. Omit for legacy/system flows with no direct source. */
-    bookingSource?: BookingSource | null;
+    /** Server-derived origin. Required on every new appointment. */
+    bookingSource: BookingSource;
     /** Channel that sent the customer here (cookie-based); null for direct visits. */
     referralSource?: BookingReferralSource | null;
     serviceId?: string | null;
@@ -229,7 +232,7 @@ export async function createBooking(
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
-    booking_source: payload.bookingSource ?? null,
+    booking_source: payload.bookingSource,
     referral_source: payload.referralSource ?? null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),
@@ -399,6 +402,8 @@ export async function createBookingForExistingCustomer(
     startTime: string;
     /** Stored on `bookings.customer_notes` only (not merged into `customers.notes`). */
     bookingCustomerNotes?: string | null;
+    /** Server-derived origin. Required on every new appointment. */
+    bookingSource: BookingSource;
   }
 ): Promise<{ id: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -461,7 +466,7 @@ export async function createBookingForExistingCustomer(
   const row: CreateBookingPayload = {
     business_id: payload.businessId,
     business_slug: payload.businessSlug || null,
-    booking_source: null,
+    booking_source: payload.bookingSource,
     referral_source: null,
     service_id: payload.serviceId ?? null,
     service_name: payload.serviceName.trim(),

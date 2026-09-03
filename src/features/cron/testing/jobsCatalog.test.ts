@@ -36,7 +36,14 @@ describe('CRON_JOBS catalog', () => {
     ).toBe(API_ROUTES.INTERNAL_CRON_QUOTE_REQUEST_FOLLOW_UPS);
   });
 
-  it('runs both jobs on the same daily slot', () => {
+  it('registers quote customer reminders', () => {
+    expect(CRON_JOBS.map(job => job.id)).toContain('quote-customer-reminders');
+    expect(
+      CRON_JOBS.find(job => job.id === 'quote-customer-reminders')?.path
+    ).toBe(API_ROUTES.INTERNAL_CRON_QUOTE_CUSTOMER_REMINDERS);
+  });
+
+  it('runs all jobs on the same daily slot', () => {
     expect(new Set(CRON_JOBS.map(job => job.schedule))).toEqual(
       new Set([CRON_DAILY_14_UTC])
     );

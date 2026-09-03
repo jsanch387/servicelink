@@ -4,6 +4,7 @@
  * Public quote request from business profile (`/[slug]/quote`). No auth.
  */
 
+import { bookingReferralSourceForBusiness } from '@/features/booking-attribution/server/bookingReferralCookie';
 import { insertCustomerQuoteRequest } from '@/features/quotes/public-request/server/insertCustomerQuoteRequest';
 import { notifyOwnerForPublicQuoteRequest } from '@/features/quotes/public-request/server/notifyOwnerForPublicQuoteRequest';
 import { publicQuoteRequestAllowedForSlug } from '@/features/quotes/public-request/server/publicQuoteRequestPageAllowed';
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest) {
     const inserted = await insertCustomerQuoteRequest(
       admin,
       businessId,
-      parsed.data
+      parsed.data,
+      bookingReferralSourceForBusiness(request, parsed.data.businessSlug)
     );
 
     if (!inserted.ok) {

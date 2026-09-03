@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { ROUTES } from '../../src/constants/routes';
+import type { BookingSource } from '../../src/features/booking-attribution/constants';
 import {
   defaultPublicCustomer,
   fillCustomerDetailsThroughReview,
@@ -12,7 +13,7 @@ const OWNER_BOOKINGS_PATH = '/api/availability/bookings';
 
 export type OwnerBookingApiRow = {
   id: string;
-  bookingSource?: 'public' | 'owner' | null;
+  bookingSource?: BookingSource | null;
   customerName: string;
   customerEmail: string;
   customerPhone: string;

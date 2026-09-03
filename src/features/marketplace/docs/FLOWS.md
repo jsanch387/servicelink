@@ -73,7 +73,7 @@ All listing paths go through **`server/searchMarketplaceBusinesses.ts`** (see [S
 
 ## Booking attribution
 
-Result cards link to `/{slug}?ref=marketplace`. Middleware swaps that param for a cookie and redirects to the clean URL, and whichever booking API the customer reaches stores `referral_source = 'marketplace'` on the booking. That is how we tell marketplace-driven bookings apart from direct ones — see [`features/booking-attribution/README.md`](../../booking-attribution/README.md).
+Result cards link to `/{slug}?ref=marketplace`. Middleware swaps that param for a cookie and redirects to the clean URL. Instant bookings store `referral_source = 'marketplace'` on the booking; quote requests store it on the quote and copy it when the customer accepts. That is how we tell marketplace-driven appointments apart from direct ones — see [`features/booking-attribution/README.md`](../../booking-attribution/README.md).
 
 The `sr-only` crawlable links on city pages stay untagged so search engines index the canonical profile URL rather than a redirect.
 

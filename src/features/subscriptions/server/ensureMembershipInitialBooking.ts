@@ -342,7 +342,7 @@ export async function ensureMembershipInitialBooking(
     const out = await createBooking(supabase, {
       businessId: membership.business_id,
       businessSlug,
-      bookingSource: 'public',
+      bookingSource: 'subscription',
       serviceName,
       servicePriceCents: 0,
       durationMinutes,

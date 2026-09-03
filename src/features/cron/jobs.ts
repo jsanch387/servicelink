@@ -1,6 +1,6 @@
 import { API_ROUTES } from '@/constants/routes';
 
-/** Both jobs share this slot so Vercel fires them together. */
+/** Jobs share this slot so Vercel fires them together. */
 export const CRON_DAILY_14_UTC = '0 14 * * *';
 
 /**
@@ -27,6 +27,15 @@ export const CRON_JOBS = [
     work: 'src/features/quotes/server/reminders',
     description:
       'Unanswered quote requests 1–4 days old: one owner push per day for 3 days.',
+  },
+  {
+    id: 'quote-customer-reminders',
+    path: API_ROUTES.INTERNAL_CRON_QUOTE_CUSTOMER_REMINDERS,
+    schedule: CRON_DAILY_14_UTC,
+    maxDurationSeconds: 300,
+    work: 'src/features/quotes/server/reminders',
+    description:
+      'Sent quotes still open 2–3 days later: one customer email + SMS with the /q/ link.',
   },
 ] as const;
 

@@ -2,6 +2,8 @@ import type {
   QuoteDbRow,
   QuotePublicLinkRow,
 } from '@/features/quotes/dashboard/api/types';
+import { DASHBOARD_QUOTE_SELECT } from '@/features/quotes/dashboard/server/dashboardQuoteSelect';
+import { loadQuoteOutboundEventsByQuoteIds } from '@/features/quotes/dashboard/server/loadQuoteOutboundEvents';
 import { mapQuoteRowToDashboardQuote } from '@/features/quotes/dashboard/server/mapQuoteRowToDashboardQuote';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
@@ -32,38 +34,7 @@ export async function GET(request: Request) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('quotes')
-      .select(
-        `
-          id,
-          status,
-          source,
-          customer_name,
-          customer_email,
-          customer_phone,
-          service_name,
-          price_cents,
-          duration_minutes,
-          created_at,
-          updated_at,
-          scheduled_date,
-          scheduled_start_time,
-          note,
-          request_message,
-          vehicle_year,
-          vehicle_make,
-          vehicle_model,
-          customer_street_address,
-          customer_unit_apt,
-          customer_city,
-          customer_state,
-          customer_zip,
-          service_address,
-          service_id,
-          service_price_option_id,
-          service_price_cents,
-          addon_details
-        `
-      )
+      .select(DASHBOARD_QUOTE_SELECT)
       .eq('business_id', businessId)
       .order('updated_at', { ascending: false });
 
@@ -107,11 +78,17 @@ export async function GET(request: Request) {
       }
     }
 
+    const communicationsByQuoteId = await loadQuoteOutboundEventsByQuoteIds(
+      supabase,
+      quoteIds
+    );
+
     const quotes = rows.map(row =>
       mapQuoteRowToDashboardQuote(
         row,
         tokenByQuoteId.get(row.id) ?? '',
-        expiresByQuoteId.get(row.id) ?? null
+        expiresByQuoteId.get(row.id) ?? null,
+        communicationsByQuoteId.get(row.id) ?? []
       )
     );
 

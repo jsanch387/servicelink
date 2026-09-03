@@ -3,6 +3,7 @@
 import { Button, GlassCard, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
 import { resolveCustomerRequestRawText } from '@/features/quotes/shared/resolveCustomerRequestRawText';
 import {
@@ -23,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDashboardQuoteDetail } from '../hooks/useDashboardQuoteDetail';
 import type { DashboardQuote } from '../types';
+import { buildQuoteActivityTimeline } from '../utils/buildQuoteActivityTimeline';
 import {
   getCustomerEmailDisplay,
   getCustomerPhoneLink,
@@ -47,6 +49,7 @@ import {
   getQuoteStatusLabel,
 } from '../utils/quoteStatusUi';
 import { DeleteQuoteModalBody } from './DeleteQuoteModalBody';
+import { QuoteActivityTimeline } from './QuoteActivityTimeline';
 import { QuoteDetailLoadingSkeleton } from './QuoteDetailLoadingSkeleton';
 
 interface QuoteDetailScreenProps {
@@ -259,8 +262,8 @@ export function QuoteDetailContent({
     ? parsedCustomerRequest.detailsOnly.trim()
     : '';
   const ownerNoteTrimmed = quote.note?.trim() ?? '';
-  const showOwnerNotesOnlyBlock =
-    !isCustomerRequestSource && ownerNoteTrimmed.length > 0;
+  const showNotesConversation =
+    customerDetailsTrimmed.length > 0 || ownerNoteTrimmed.length > 0;
 
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
@@ -346,39 +349,6 @@ export function QuoteDetailContent({
                   </div>
                 ) : null}
 
-                {customerDetailsTrimmed ? (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
-                    <p className="mb-1.5 text-xs font-medium text-gray-500">
-                      Request
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                      {customerDetailsTrimmed}
-                    </p>
-                  </div>
-                ) : null}
-
-                {isCustomerRequestSource && ownerNoteTrimmed ? (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
-                    <p className="mb-1.5 text-xs font-medium text-gray-500">
-                      Your notes
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                      {ownerNoteTrimmed}
-                    </p>
-                  </div>
-                ) : null}
-
-                {showOwnerNotesOnlyBlock ? (
-                  <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
-                    <p className="mb-1.5 text-xs font-medium text-gray-500">
-                      Notes
-                    </p>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                      {ownerNoteTrimmed}
-                    </p>
-                  </div>
-                ) : null}
-
                 <div className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.07] bg-white/[0.04] px-4 py-3.5">
                   <p className="text-sm font-medium text-gray-300">Total</p>
                   <p className="text-right text-2xl font-bold tabular-nums text-white sm:text-3xl">
@@ -390,6 +360,25 @@ export function QuoteDetailContent({
               </div>
             </GlassCard>
           </section>
+
+          {showNotesConversation ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold text-gray-200">Notes</h2>
+              <GlassCard
+                blurColor="bg-zinc-600"
+                rounded="rounded-2xl"
+                className="border-white/[0.08] bg-white/[0.03]"
+              >
+                <QuoteNotesConversation
+                  customerNote={customerDetailsTrimmed}
+                  businessNote={ownerNoteTrimmed}
+                  customerLabel={customerNameDisplay || 'Customer'}
+                  businessLabel="You"
+                  viewer="owner"
+                />
+              </GlassCard>
+            </section>
+          ) : null}
 
           {hasCustomerDetails ? (
             <section className="space-y-2">
@@ -548,27 +537,14 @@ export function QuoteDetailContent({
                 rounded="rounded-2xl"
                 className="border-white/[0.08] bg-white/[0.03]"
               >
-                <dl className="space-y-3 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-gray-500">Created</dt>
-                    <dd className="text-right text-gray-300">
-                      {formatQuoteDetailDateLong(quote.createdAt)}
-                    </dd>
-                  </div>
-                  {isPendingRequest ? (
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-gray-500">Waiting</dt>
-                      <dd className="text-right text-gray-300">
-                        {formatQuoteRequestWaitingLabel(quote.createdAt)}
-                      </dd>
-                    </div>
-                  ) : null}
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-gray-500">Last activity</dt>
-                    <dd className="text-right text-gray-300">
-                      {formatQuoteDetailDateLong(quote.activityAt)}
-                    </dd>
-                  </div>
+                <QuoteActivityTimeline
+                  items={buildQuoteActivityTimeline({
+                    createdAt: quote.createdAt,
+                    viewedAt: quote.viewedAt,
+                    communications: quote.communications,
+                  })}
+                />
+                <dl className="mt-4 space-y-3 border-t border-white/[0.07] pt-4 text-sm">
                   {quote.scheduledDate ? (
                     <div className="flex justify-between gap-4">
                       <dt className="text-gray-500">Scheduled</dt>

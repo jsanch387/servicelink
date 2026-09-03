@@ -1,12 +1,30 @@
 /** Long date labels for owner quote detail (Activity, etc.). */
 export function formatQuoteDetailDateLong(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('en-US', {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
       year: 'numeric',
     });
+  } catch {
+    return iso;
+  }
+}
+
+/** Date + time for sent/viewed timestamps on the Activity timeline. */
+export function formatQuoteDetailDateTime(iso: string): string {
+  try {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    const day = formatQuoteDetailDateLong(iso);
+    const time = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return `${day} · ${time}`;
   } catch {
     return iso;
   }

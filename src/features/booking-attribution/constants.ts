@@ -1,3 +1,26 @@
+/**
+ * How the appointment row was created. Server-set only — never from a
+ * client body. Marketplace is not a source; it is a `referral_source` that
+ * can sit on a public booking or a quote-converted booking.
+ */
+export const BOOKING_SOURCES = [
+  'owner',
+  'public',
+  'quote',
+  'subscription',
+] as const;
+
+export type BookingSource = (typeof BOOKING_SOURCES)[number];
+
+export function isBookingSource(
+  value: string | null | undefined
+): value is BookingSource {
+  return (
+    typeof value === 'string' &&
+    (BOOKING_SOURCES as readonly string[]).includes(value)
+  );
+}
+
 /** Channels that can send a customer to a public business profile. */
 export const BOOKING_REFERRAL_SOURCES = ['marketplace'] as const;
 

@@ -11,6 +11,7 @@ import {
   checkFreeTierBookingCapAllowsCreate,
   persistFreeTierBookingIncrementAfterBooking,
 } from '@/features/availability/services/enforceFreeTierBookingCapBeforeCreate';
+import { parseBookingReferralSource } from '@/features/booking-attribution/utils/bookingReferralCookieValue';
 import { notifyOwnerForAvailabilityBookingCreated } from '@/features/availability/services/notifyOwnerForAvailabilityBookingCreated';
 import { normalizePhoneForLookup } from '@/features/customer-management/server/normalizeCustomerContact';
 import type { AvailabilityBookingNotificationPayload } from '@/features/email';
@@ -69,6 +70,7 @@ function rowToQuotePayload(
     service_id: (row.service_id as string | null) ?? null,
     service_price_cents: (row.service_price_cents as number | null) ?? null,
     addon_details: row.addon_details ?? null,
+    referralSource: parseBookingReferralSource(row.referral_source),
   };
 }
 

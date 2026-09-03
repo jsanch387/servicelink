@@ -29,6 +29,7 @@ email/
 │   ├── types.ts
 │   ├── quoteSentToCustomerTemplate.ts
 │   └── sendQuoteSentToCustomerEmail.ts
+├── quote-customer-reminder/  (unanswered sent quote → customer email + same /q/ link as SMS)
 └── pro-welcome/              (first paid Pro upgrade → owner email, links to ads workshop)
     ├── types.ts
     ├── proWelcomeTemplate.ts

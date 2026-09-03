@@ -6,6 +6,7 @@ import {
   buildJobCompletedSms,
   buildJobStartedSms,
   buildOnMyWaySms,
+  buildQuoteReminderSms,
   buildReviewRequestSms,
   buildWorkFinishedSms,
   buildMembershipScheduleLinkSms,
@@ -98,6 +99,20 @@ describe('booking SMS templates (ServiceLink)', () => {
       expectOptOutBlock(
         msg,
         'Enjoyed your service? Leave a quick review: https://servicelink.app/review/abc123'
+      );
+    });
+  });
+
+  describe('buildQuoteReminderSms', () => {
+    it('includes the same /q/ link as the email and the opt-out', () => {
+      const url = 'https://myservicelink.app/q/abc123';
+      const msg = buildQuoteReminderSms({
+        lead: 'Hey Jane, Acme Detail still has your quote open if you want to take a look.',
+        publicQuoteUrl: url,
+      });
+      expectOptOutBlock(
+        msg,
+        `Hey Jane, Acme Detail still has your quote open if you want to take a look. ${url}`
       );
     });
   });

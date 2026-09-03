@@ -14,6 +14,7 @@ import {
   ResourcesNavMenuDesktop,
   ResourcesNavMenuMobile,
 } from './ResourcesNavMenu';
+import { desktopNavItemClass, isNavPathActive } from './navStyles';
 
 const PRIMARY_NAV_LINKS = [
   { label: 'Features', href: ROUTES.FEATURES_PAGE },
@@ -27,22 +28,20 @@ const FIND_DETAILERS_LINK = {
 
 const MENU_ANIMATION_MS = 280;
 
-function isNavPathActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 function mobileTabClass(active: boolean) {
-  return `flex w-full items-center rounded-2xl px-3 py-3.5 text-[1.7rem] font-semibold tracking-tight leading-none cursor-pointer transition-colors ${
-    active ? 'text-white' : 'text-white/50 active:text-white'
+  return `flex w-full items-center rounded-2xl px-4 py-4 text-[1.5rem] font-semibold tracking-tight leading-none cursor-pointer transition-colors ${
+    active
+      ? 'bg-white/[0.07] text-white'
+      : 'text-white/45 active:bg-white/[0.05] active:text-white'
   }`;
 }
 
 const navCtaBase =
-  'inline-flex items-center justify-center h-9 w-[5.5rem] px-3 text-base font-semibold rounded-lg cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30';
+  'inline-flex items-center justify-center h-8 px-3.5 text-[13px] font-semibold tracking-[-0.01em] rounded-full cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-9 md:px-4 md:text-sm';
 
-const navLoginClass = `${navCtaBase} bg-white/10 text-white hover:bg-white/15`;
+const navLoginClass = `${navCtaBase} text-white/70 hover:text-white hover:bg-white/[0.08]`;
 
-const navSignupClass = `${navCtaBase} bg-white text-black hover:bg-gray-100`;
+const navSignupClass = `${navCtaBase} bg-white text-neutral-950 shadow-[0_1px_2px_rgba(0,0,0,0.2),0_8px_20px_rgba(255,255,255,0.1)] hover:bg-neutral-100`;
 
 interface NavigationProps {
   /** When true, show a link to the public marketplace hub. */
@@ -56,6 +55,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   const [isMobileMenuMounted, setIsMobileMenuMounted] = useState(false);
   const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { isAuthenticated, isInitialized } = useAuth();
   const pathname = usePathname();
 
@@ -65,6 +65,13 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   useEffect(() => {
     setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -111,80 +118,100 @@ export const Navigation: React.FC<NavigationProps> = ({
     setIsMobileMenuOpen(false);
   };
 
-  const navLinkClass =
-    'cursor-pointer text-white hover:text-white/80 transition-colors focus:outline-none focus-visible:outline-none';
+  const barElevated = isScrolled || isMobileMenuMounted;
 
   const mobileMenu =
     portalReady && isMobileMenuMounted
       ? createPortal(
           <div
-            className={`md:hidden fixed inset-x-0 top-16 bottom-0 z-40 flex flex-col bg-[var(--dashboard-bg)] transition-opacity duration-[280ms] ease-out sm:top-20 ${
+            className={`md:hidden fixed inset-0 z-40 transition-opacity duration-[280ms] ease-out ${
               isMobileMenuVisible ? 'opacity-100' : 'opacity-0'
             }`}
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
           >
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-6">
-              <ul className="space-y-0.5">
-                {primaryNavLinks.map(item => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={mobileTabClass(
-                        isNavPathActive(pathname, item.href)
-                      )}
-                      onClick={closeMobileMenu}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-                <ResourcesNavMenuMobile
-                  onNavigate={closeMobileMenu}
-                  menuOpen={isMobileMenuOpen}
-                />
-              </ul>
-            </div>
-
-            <div className="shrink-0 border-t border-white/[0.06] px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-              {!isInitialized ? (
-                <div
-                  className="h-12 w-full rounded-[10px] bg-white/5 animate-pulse"
-                  aria-hidden
-                />
-              ) : isAuthenticated ? (
-                <Button
-                  href={ROUTES.DASHBOARD.MAIN}
-                  variant="primary"
-                  size="md"
-                  fullWidth
+            <button
+              type="button"
+              className="absolute inset-0 cursor-pointer bg-black/55 backdrop-blur-sm"
+              aria-label="Close menu"
+              onClick={closeMobileMenu}
+            />
+            <div className="absolute inset-x-4 top-[4.75rem] bottom-4 flex flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#141414]/92 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+              <div className="flex shrink-0 justify-end px-4 pt-4 pb-1">
+                <button
+                  type="button"
                   onClick={closeMobileMenu}
+                  className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-neutral-950 transition-colors hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                  aria-label="Close menu"
                 >
-                  Dashboard
-                </Button>
-              ) : (
-                <div className="space-y-2.5">
+                  <XMarkIcon className="h-5 w-5" aria-hidden />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-3 pb-6">
+                <ul className="space-y-1.5">
+                  {primaryNavLinks.map(item => (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={mobileTabClass(
+                          isNavPathActive(pathname, item.href)
+                        )}
+                        onClick={closeMobileMenu}
+                      >
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                  <ResourcesNavMenuMobile
+                    onNavigate={closeMobileMenu}
+                    menuOpen={isMobileMenuOpen}
+                  />
+                </ul>
+              </div>
+
+              <div className="shrink-0 border-t border-white/[0.06] px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                {!isInitialized ? (
+                  <div
+                    className="h-12 w-full rounded-full bg-white/5 animate-pulse"
+                    aria-hidden
+                  />
+                ) : isAuthenticated ? (
                   <Button
-                    href={siteSignupPath('homepage')}
+                    href={ROUTES.DASHBOARD.MAIN}
                     variant="primary"
                     size="md"
                     fullWidth
+                    className="rounded-full"
                     onClick={closeMobileMenu}
                   >
-                    Sign up
+                    Dashboard
                   </Button>
-                  <Button
-                    href={ROUTES.AUTH.LOGIN}
-                    variant="secondary"
-                    size="md"
-                    fullWidth
-                    onClick={closeMobileMenu}
-                  >
-                    Login
-                  </Button>
-                </div>
-              )}
+                ) : (
+                  <div className="space-y-2.5">
+                    <Button
+                      href={siteSignupPath('homepage')}
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      className="rounded-full"
+                      onClick={closeMobileMenu}
+                    >
+                      Sign up
+                    </Button>
+                    <Button
+                      href={ROUTES.AUTH.LOGIN}
+                      variant="secondary"
+                      size="md"
+                      fullWidth
+                      className="rounded-full"
+                      onClick={closeMobileMenu}
+                    >
+                      Login
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>,
           document.body
@@ -193,70 +220,72 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 bg-[var(--dashboard-bg)]/95 backdrop-blur-md border-b border-[var(--dashboard-border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center min-w-0">
-            <Logo size="md" logoSize="lg" href="/" className="sm:scale-110" />
-          </div>
-
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-            {showFindDetailers ? (
-              <Link href={ROUTES.FIND_DETAILERS} className={navLinkClass}>
-                Find detailers
-              </Link>
-            ) : null}
-            <Link href={ROUTES.FEATURES_PAGE} className={navLinkClass}>
-              Features
-            </Link>
-            <Link href={ROUTES.PRICING_PAGE} className={navLinkClass}>
-              Pricing
-            </Link>
-            <ResourcesNavMenuDesktop />
-          </div>
-
-          <div className="hidden md:flex items-center gap-2 min-w-[7.5rem] justify-end">
-            {!isInitialized ? (
-              <span
-                className="h-9 w-[11.5rem] rounded-lg bg-white/5 animate-pulse"
-                aria-hidden
-              />
-            ) : isAuthenticated ? (
-              <Button
-                href={ROUTES.DASHBOARD.MAIN}
-                variant="secondary"
-                size="sm"
-              >
-                Dashboard
-              </Button>
-            ) : (
-              <>
-                <Link href={ROUTES.AUTH.LOGIN} className={navLoginClass}>
-                  Login
-                </Link>
-                <Link
-                  href={siteSignupPath('homepage')}
-                  className={navSignupClass}
-                >
-                  Sign up
-                </Link>
-              </>
-            )}
-          </div>
-
-          <div className="md:hidden flex items-center">
-            <button
-              type="button"
-              onClick={toggleMobileMenu}
-              className="cursor-pointer text-gray-300 hover:text-white p-2 -mr-2 rounded-md focus:outline-none focus-visible:outline-none"
-              aria-label={isMobileMenuMounted ? 'Close menu' : 'Open menu'}
-              aria-expanded={isMobileMenuOpen}
+      <nav className="fixed top-0 inset-x-0 z-50">
+        <div className="px-3 pt-3 sm:px-4 sm:pt-3.5 md:pt-4">
+          <div className="mx-auto max-w-6xl md:max-w-7xl">
+            <div
+              className={`relative flex h-14 items-center justify-between gap-3 rounded-full px-2.5 sm:px-3 transition-all duration-300 md:h-16 md:px-3.5 ${
+                barElevated
+                  ? 'border border-white/10 bg-[#0f0f0f]/80 shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl'
+                  : 'border border-white/[0.08] bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-md'
+              }`}
             >
-              {isMobileMenuMounted ? (
-                <XMarkIcon className="h-6 w-6" />
-              ) : (
-                <Bars3Icon className="h-6 w-6" />
-              )}
-            </button>
+              <div className="flex min-w-0 items-center pl-1 md:scale-105">
+                <Logo size="md" href="/" />
+              </div>
+
+              <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 md:flex">
+                {primaryNavLinks.map(item => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={desktopNavItemClass(
+                      isNavPathActive(pathname, item.href)
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                <ResourcesNavMenuDesktop />
+              </div>
+
+              <div className="hidden items-center justify-end gap-1 md:flex">
+                {!isInitialized ? (
+                  <span
+                    className="h-8 w-[9.5rem] rounded-full bg-white/5 animate-pulse md:h-9"
+                    aria-hidden
+                  />
+                ) : isAuthenticated ? (
+                  <Link href={ROUTES.DASHBOARD.MAIN} className={navSignupClass}>
+                    Dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link href={ROUTES.AUTH.LOGIN} className={navLoginClass}>
+                      Login
+                    </Link>
+                    <Link
+                      href={siteSignupPath('homepage')}
+                      className={navSignupClass}
+                    >
+                      Sign up
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center md:hidden">
+                <button
+                  type="button"
+                  onClick={toggleMobileMenu}
+                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                  aria-label={isMobileMenuMounted ? 'Close menu' : 'Open menu'}
+                  aria-expanded={isMobileMenuOpen}
+                >
+                  <Bars3Icon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </nav>

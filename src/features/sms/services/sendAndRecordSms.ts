@@ -30,6 +30,7 @@ export interface SendAndRecordSmsParams {
   admin: SupabaseClient<Database>;
   businessId: string;
   bookingId?: string | null;
+  quoteId?: string | null;
   customerId?: string | null;
   /** Logical message type, e.g. `booking_confirmation`, `on_the_way`. */
   type: string;
@@ -121,6 +122,7 @@ export async function sendAndRecordSms(
     .insert({
       business_id: params.businessId,
       booking_id: params.bookingId ?? null,
+      quote_id: params.quoteId?.trim() || null,
       customer_id: params.customerId ?? null,
       type,
       channel: 'sms',

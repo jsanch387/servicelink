@@ -2,6 +2,8 @@ import type {
   QuoteDbRow,
   QuotePublicLinkRow,
 } from '@/features/quotes/dashboard/api/types';
+import { DASHBOARD_QUOTE_SELECT } from '@/features/quotes/dashboard/server/dashboardQuoteSelect';
+import { loadQuoteOutboundEvents } from '@/features/quotes/dashboard/server/loadQuoteOutboundEvents';
 import { mapQuoteRowToDashboardQuote } from '@/features/quotes/dashboard/server/mapQuoteRowToDashboardQuote';
 import type { DashboardQuote } from '@/features/quotes/dashboard/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -26,38 +28,7 @@ export async function loadDashboardQuoteById(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('quotes')
-    .select(
-      `
-          id,
-          status,
-          source,
-          customer_name,
-          customer_email,
-          customer_phone,
-          service_name,
-          price_cents,
-          duration_minutes,
-          created_at,
-          updated_at,
-          scheduled_date,
-          scheduled_start_time,
-          note,
-          request_message,
-          vehicle_year,
-          vehicle_make,
-          vehicle_model,
-          customer_street_address,
-          customer_unit_apt,
-          customer_city,
-          customer_state,
-          customer_zip,
-          service_address,
-          service_id,
-          service_price_option_id,
-          service_price_cents,
-          addon_details
-        `
-    )
+    .select(DASHBOARD_QUOTE_SELECT)
     .eq('business_id', businessId)
     .eq('id', id)
     .maybeSingle();
@@ -94,10 +65,12 @@ export async function loadDashboardQuoteById(
   }
 
   const link = (linkData as QuotePublicLinkRow | null) ?? null;
+  const communications = await loadQuoteOutboundEvents(supabase, id);
   const quote = mapQuoteRowToDashboardQuote(
     data as QuoteDbRow,
     link?.token_hash ?? '',
-    link?.expires_at ?? null
+    link?.expires_at ?? null,
+    communications
   );
 
   return { ok: true, quote };

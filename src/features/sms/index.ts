@@ -22,6 +22,7 @@ export {
   buildMembershipVisitReminderSms,
   buildMembershipScheduleLinkSms,
   buildOnMyWaySms,
+  buildQuoteReminderSms,
   buildReviewRequestSms,
   buildWorkFinishedSms,
 } from './messages/bookingSms';

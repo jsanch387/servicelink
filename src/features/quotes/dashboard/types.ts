@@ -1,5 +1,8 @@
 /** Mirrors `public.quote_status` — used for dashboard UI until wired to API. */
+import type { QuoteCommunication } from '@/features/quotes/shared/quoteOutboundEvents';
 import type { QuoteAddonDetail } from '@/features/quotes/shared/quoteServiceSnapshot';
+
+export type { QuoteCommunication };
 
 export type DashboardQuoteStatus =
   | 'requested'
@@ -59,4 +62,13 @@ export interface DashboardQuote {
   publicToken: string;
   /** Active public link expiry, when one exists. */
   publicLinkExpiresAt?: string | null;
+  /** First time the customer opened `/q/`. Null if not viewed yet. */
+  viewedAt: string | null;
+  /** When we sent the one-shot customer reminder. Null if not sent. */
+  customerReminderSentAt: string | null;
+  /**
+   * Customer email/SMS we actually sent (ordered by time).
+   * Use for an owner timeline: “Email sent”, “Text sent”.
+   */
+  communications: QuoteCommunication[];
 }

@@ -3,6 +3,8 @@
  * UI / mock only. Kept separate from request booking.
  */
 
+import type { BookingSource } from '@/features/booking-attribution/constants';
+
 export type AvailabilityBookingStatus = 'confirmed' | 'completed' | 'cancelled';
 
 export interface AvailabilityBookingAddress {
@@ -43,7 +45,7 @@ export interface BookingPaymentSummaryDisplay {
 export interface AvailabilityBookingDisplay {
   id: string;
   /** Server-derived origin of this booking; null for legacy/system rows. */
-  bookingSource?: 'public' | 'owner' | null;
+  bookingSource?: BookingSource | null;
   customerName: string;
   customerPhone: string;
   customerEmail: string;

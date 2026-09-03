@@ -1,3 +1,4 @@
+import type { QuoteCommunication } from '@/features/quotes/shared/quoteOutboundEvents';
 import type { QuoteDbRow } from '../api/types';
 import type {
   DashboardQuote,
@@ -36,6 +37,10 @@ function asDashboardSource(value: string): DashboardQuoteSource {
   return 'owner_created';
 }
 
+function asIsoOrNull(value: string | null | undefined): string | null {
+  return value?.trim() || null;
+}
+
 function buildVehicleLine(row: QuoteDbRow): string | null {
   const text = [row.vehicle_year, row.vehicle_make, row.vehicle_model]
     .map(part => (part ?? '').trim())
@@ -47,7 +52,8 @@ function buildVehicleLine(row: QuoteDbRow): string | null {
 export function mapQuoteRowToDashboardQuote(
   row: QuoteDbRow,
   publicToken: string,
-  publicLinkExpiresAt: string | null = null
+  publicLinkExpiresAt: string | null = null,
+  communications: readonly QuoteCommunication[] = []
 ): DashboardQuote {
   const duration =
     row.duration_minutes != null && row.duration_minutes > 0
@@ -94,5 +100,8 @@ export function mapQuoteRowToDashboardQuote(
      */
     publicToken: publicToken.trim(),
     publicLinkExpiresAt: publicLinkExpiresAt?.trim() || null,
+    viewedAt: asIsoOrNull(row.viewed_at),
+    customerReminderSentAt: asIsoOrNull(row.customer_reminder_sent_at),
+    communications: [...communications],
   };
 }

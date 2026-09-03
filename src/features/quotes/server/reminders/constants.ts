@@ -19,3 +19,18 @@ export const QUOTE_REQUEST_FOLLOW_UP_DAYS = 3;
 
 /** Same clock as booking reminders so “today” is stable across cron runs. */
 export const QUOTE_REQUEST_FOLLOW_UP_TIMEZONE = 'America/Chicago';
+
+/** Wait at least 2 days after `quotes.sent_at` before nudging the customer. */
+export const QUOTE_CUSTOMER_REMINDER_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
+
+/**
+ * Stop considering the quote 4 days after send. Daily cron therefore hits
+ * once in the 2–3 day window the product asked for.
+ */
+export const QUOTE_CUSTOMER_REMINDER_UNTIL_MS = 4 * 24 * 60 * 60 * 1000;
+
+export const QUOTE_CUSTOMER_REMINDER_STATUSES = ['sent', 'viewed'] as const;
+
+export const QUOTE_CUSTOMER_REMINDER_SMS_TYPE = 'quote_reminder';
+
+export const QUOTE_CUSTOMER_REMINDER_SEND_CONCURRENCY = 5;

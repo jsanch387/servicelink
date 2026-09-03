@@ -135,3 +135,16 @@ export function buildReviewRequestSms(ctx: { reviewUrl: string }): string {
     `Enjoyed your service? Leave a quick review: ${ctx.reviewUrl}`
   );
 }
+
+/**
+ * Unanswered sent-quote nudge. Always include the same `/q/` URL as the email.
+ * `lead` is the shared sentence from quote reminder copy.
+ */
+export function buildQuoteReminderSms(ctx: {
+  lead: string;
+  publicQuoteUrl: string;
+}): string {
+  const url = ctx.publicQuoteUrl.trim();
+  const lead = ctx.lead.trim();
+  return withOptOut(url ? `${lead} ${url}` : lead);
+}

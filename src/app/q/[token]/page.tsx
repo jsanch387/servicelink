@@ -13,6 +13,7 @@ import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvai
 import { quotePublicLinkValidUntilCopy } from '@/features/quotes/dashboard/utils/formatQuotePublicLinkExpiry';
 import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/parsePublicQuoteRequestNote';
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
+import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
 import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
@@ -151,6 +152,13 @@ export default async function PublicQuoteViewPage({
     .eq('id', quote.id)
     .eq('status', 'sent');
 
+  // Write-once first-view timestamp if the quote was already past `sent`.
+  await db
+    .from('quotes')
+    .update({ viewed_at: nowIso })
+    .eq('id', quote.id)
+    .is('viewed_at', null);
+
   const { data: quoteFresh } = await db
     .from('quotes')
     .select(
@@ -178,13 +186,15 @@ export default async function PublicQuoteViewPage({
 
   const { data: profileRow } = await db
     .from('business_profiles')
-    .select('business_slug')
+    .select('business_slug, business_name')
     .eq('id', displayQuote.business_id)
     .maybeSingle();
-  const businessSlug =
-    (
-      profileRow as { business_slug?: string | null } | null
-    )?.business_slug?.trim() || null;
+  const profile = profileRow as {
+    business_slug?: string | null;
+    business_name?: string | null;
+  } | null;
+  const businessSlug = profile?.business_slug?.trim() || null;
+  const businessDisplayName = profile?.business_name?.trim() || 'Business';
 
   const availabilityRow = await getAvailabilityForBusiness(
     supabase,
@@ -353,30 +363,18 @@ export default async function PublicQuoteViewPage({
                 </div>
               </>
             ) : null}
-            {showYourRequestBlock ? (
+            {showYourRequestBlock || showOwnerNoteBlock ? (
               <>
                 <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-1 text-xs tracking-wider text-gray-500">
-                    Customer note
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm text-gray-400">
-                    {yourRequestText}
-                  </p>
-                </div>
-              </>
-            ) : null}
-            {showOwnerNoteBlock ? (
-              <>
-                <div className="h-px bg-white/10" />
-                <div>
-                  <p className="mb-1 text-xs tracking-wider text-gray-500">
-                    Notes from the business
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm text-gray-400">
-                    {ownerNoteText}
-                  </p>
-                </div>
+                <QuoteNotesConversation
+                  customerNote={yourRequestText}
+                  businessNote={ownerNoteText}
+                  customerLabel={
+                    displayQuote.customer_name.trim() || 'Customer'
+                  }
+                  businessLabel={businessDisplayName}
+                  viewer="customer"
+                />
               </>
             ) : null}
             <div className="h-px bg-white/10" />

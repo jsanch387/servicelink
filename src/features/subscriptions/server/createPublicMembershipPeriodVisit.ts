@@ -361,7 +361,7 @@ export async function createPublicMembershipPeriodVisit(
     const out = await createBooking(supabase, {
       businessId: biz.id,
       businessSlug,
-      bookingSource: 'public',
+      bookingSource: 'subscription',
       serviceName: planName,
       servicePriceCents: 0,
       durationMinutes,

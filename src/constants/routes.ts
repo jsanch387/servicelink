@@ -257,6 +257,9 @@ export const API_ROUTES = {
   /** Vercel Cron: unanswered quote requests in the 3-day follow-up window. */
   INTERNAL_CRON_QUOTE_REQUEST_FOLLOW_UPS:
     '/api/internal/cron/quote-request-follow-ups',
+  /** Vercel Cron: unanswered sent quotes — one customer email + SMS after 2–3 days. */
+  INTERNAL_CRON_QUOTE_CUSTOMER_REMINDERS:
+    '/api/internal/cron/quote-customer-reminders',
 } as const;
 
 export const PUBLIC_ROUTES = [
