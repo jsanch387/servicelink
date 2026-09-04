@@ -11,7 +11,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
       <MarketingNavigation />
-      <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+      <div className="h-16 sm:h-20 lg:h-24 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 pb-8 sm:pb-12">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight text-center mb-4 sm:mb-6">

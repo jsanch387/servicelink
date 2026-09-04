@@ -13,17 +13,18 @@ export const RESOURCES_PAGE_SEO_TITLE =
 
 /** Meta description — keep under ~160 characters. */
 export const RESOURCES_META_DESCRIPTION =
-  'Free guides for mobile detailers: how much to charge, ServiceLink vs Urable, booking apps, deposits, and how to start a detailing business.';
+  'Free guides for mobile detailers: Jobber alternative, how much to charge, ServiceLink vs Urable, booking apps, deposits, and starting a business.';
 
 /** Visible page header — keyword-rich but scannable. */
 export const RESOURCES_HERO = {
   title: 'ServiceLink guides for mobile detailers',
   subtitle:
-    'Articles on mobile detailing prices, booking apps, ServiceLink vs Urable, deposits, Instagram marketing, and starting a business—written for owner-operators who want more confirmed jobs.',
+    'Articles on Jobber alternatives, mobile detailing prices, booking apps, ServiceLink vs Urable, deposits, Instagram marketing, and starting a business—written for owner-operators who want more confirmed jobs.',
 } as const;
 
 const RESOURCES_KEYWORDS = [
   'mobile detailer marketing resources',
+  'Jobber alternative for mobile detailers',
   'how to start a mobile detailing business',
   'ServiceLink vs Urable',
   'how much to charge for mobile detailing',

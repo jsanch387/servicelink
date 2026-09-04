@@ -30,7 +30,7 @@ export function AffiliateProgramPage() {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
       <MarketingNavigation />
-      <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+      <div className="h-16 sm:h-20 lg:h-24 shrink-0" aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
 
       <main

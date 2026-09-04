@@ -2,6 +2,7 @@ import { siteSignupPath } from '@/features/marketing-attribution';
 import React from 'react';
 import { HeroAppStoreBadges } from './HeroAppStoreBadges';
 import { HeroCtaButton } from './HeroCtaButton';
+import { HeroTrustPill } from './HeroTrustPill';
 import { HeroVisualGlow } from './HeroVisualGlow';
 import { LandingLiveShopsMarquee } from './LandingLiveShopsSection';
 
@@ -9,11 +10,12 @@ export const HeroSection: React.FC = () => {
   return (
     <section
       id="home"
-      className="relative overflow-visible px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32"
+      className="relative overflow-visible px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32 lg:pt-36"
       aria-labelledby="hero-heading"
     >
       <HeroVisualGlow />
       <div className="mx-auto flex max-w-7xl flex-col items-center text-center">
+        <HeroTrustPill />
         <h1
           id="hero-heading"
           className="logo-text max-w-3xl text-3xl font-extrabold leading-[1.12] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.5rem]"
@@ -33,7 +35,7 @@ export const HeroSection: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative mt-14 sm:mt-16">
+      <div className="relative mt-14 -mx-4 sm:mx-0 sm:mt-16">
         <LandingLiveShopsMarquee />
       </div>
 

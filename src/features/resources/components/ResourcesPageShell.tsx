@@ -10,7 +10,7 @@ export function ResourcesPageShell() {
       <MarketingGalaxyBackground showStreaks={false} />
       <div className="relative z-10 flex min-h-screen flex-col">
         <MarketingNavigation />
-        <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+        <div className="h-16 sm:h-20 lg:h-24 shrink-0" aria-hidden />
         <div className="h-4 sm:h-6 shrink-0" aria-hidden />
         <div className="flex-1">
           <ResourcesIndexScreen />

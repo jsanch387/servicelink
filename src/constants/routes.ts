@@ -5,6 +5,7 @@ export const ROUTES = {
   HOME: '#home',
   FEATURES: '#features',
   HOW_IT_WORKS: '#how-it-works',
+  TESTIMONIALS: '#testimonials',
   PRICING: '#pricing',
   ABOUT: '#about',
   CONTACT: '#contact',

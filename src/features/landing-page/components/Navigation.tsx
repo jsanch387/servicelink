@@ -14,7 +14,11 @@ import {
   ResourcesNavMenuDesktop,
   ResourcesNavMenuMobile,
 } from './ResourcesNavMenu';
-import { desktopNavItemClass, isNavPathActive } from './navStyles';
+import {
+  MARKETING_RESOURCES_MEGA_SLOT_ID,
+  desktopNavItemClass,
+  isNavPathActive,
+} from './navStyles';
 
 const PRIMARY_NAV_LINKS = [
   { label: 'Features', href: ROUTES.FEATURES_PAGE },
@@ -26,7 +30,7 @@ const FIND_DETAILERS_LINK = {
   href: ROUTES.FIND_DETAILERS,
 } as const;
 
-const MENU_ANIMATION_MS = 280;
+const MENU_ANIMATION_MS = 320;
 
 function mobileTabClass(active: boolean) {
   return `flex w-full items-center rounded-2xl px-4 py-4 text-[1.5rem] font-semibold tracking-tight leading-none cursor-pointer transition-colors ${
@@ -37,7 +41,7 @@ function mobileTabClass(active: boolean) {
 }
 
 const navCtaBase =
-  'inline-flex items-center justify-center h-8 px-3.5 text-[13px] font-semibold tracking-[-0.01em] rounded-full cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-9 md:px-4 md:text-sm';
+  'inline-flex items-center justify-center h-8 px-3.5 text-[13px] font-semibold tracking-[-0.01em] rounded-full cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-10 md:px-5 md:text-[15px] lg:h-11 lg:px-6 lg:text-base';
 
 const navLoginClass = `${navCtaBase} text-white/70 hover:text-white hover:bg-white/[0.08]`;
 
@@ -110,46 +114,39 @@ export const Navigation: React.FC<NavigationProps> = ({
     };
   }, [isMobileMenuMounted]);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(prev => !prev);
+  const openMobileMenu = () => {
+    setIsMobileMenuOpen(true);
   };
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const barElevated = isScrolled || isMobileMenuMounted;
-
   const mobileMenu =
     portalReady && isMobileMenuMounted
       ? createPortal(
           <div
-            className={`md:hidden fixed inset-0 z-40 transition-opacity duration-[280ms] ease-out ${
-              isMobileMenuVisible ? 'opacity-100' : 'opacity-0'
+            className={`md:hidden fixed inset-0 z-[60] bg-[#111111] transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              isMobileMenuVisible ? 'translate-x-0' : 'translate-x-full'
             }`}
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
           >
-            <button
-              type="button"
-              className="absolute inset-0 cursor-pointer bg-black/55 backdrop-blur-sm"
-              aria-label="Close menu"
-              onClick={closeMobileMenu}
-            />
-            <div className="absolute inset-x-4 top-[4.75rem] bottom-4 flex flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#141414]/92 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-              <div className="flex shrink-0 justify-end px-4 pt-4 pb-1">
+            <div className="flex h-full flex-col">
+              <div className="flex shrink-0 items-center justify-end px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
                 <button
                   type="button"
                   onClick={closeMobileMenu}
-                  className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-neutral-950 transition-colors hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                  className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white text-neutral-950 transition-colors [touch-action:manipulation] active:bg-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
                   aria-label="Close menu"
                 >
-                  <XMarkIcon className="h-5 w-5" aria-hidden />
+                  <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-3 pb-6">
-                <ul className="space-y-1.5">
+
+              <div className="flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-6">
+                <ul className="space-y-0.5">
                   {primaryNavLinks.map(item => (
                     <li key={item.href}>
                       <Link
@@ -170,7 +167,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 </ul>
               </div>
 
-              <div className="shrink-0 border-t border-white/[0.06] px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <div className="shrink-0 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 {!isInitialized ? (
                   <div
                     className="h-12 w-full rounded-full bg-white/5 animate-pulse"
@@ -221,20 +218,24 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <>
       <nav className="fixed top-0 inset-x-0 z-50">
-        <div className="px-3 pt-3 sm:px-4 sm:pt-3.5 md:pt-4">
-          <div className="mx-auto max-w-6xl md:max-w-7xl">
+        <div className="px-3 pt-3 sm:px-4 sm:pt-3.5 md:pt-5">
+          <div className="relative mx-auto max-w-6xl md:max-w-7xl">
             <div
-              className={`relative flex h-14 items-center justify-between gap-3 rounded-full px-2.5 sm:px-3 transition-all duration-300 md:h-16 md:px-3.5 ${
-                barElevated
+              className={`relative overflow-visible flex h-14 items-center justify-between gap-3 rounded-full px-2.5 sm:px-3 transition-all duration-300 md:h-[4.5rem] md:px-4 lg:h-20 lg:px-5 ${
+                isScrolled
                   ? 'border border-white/10 bg-[#0f0f0f]/80 shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl'
                   : 'border border-white/[0.08] bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-md'
               }`}
             >
-              <div className="flex min-w-0 items-center pl-1 md:scale-105">
-                <Logo size="md" href="/" />
+              <div className="flex min-w-0 items-center pl-1">
+                <Logo
+                  size="md"
+                  href="/"
+                  className="[&_img]:h-11 [&_img]:w-11 [&_span]:-ml-1 [&_span]:text-base [&_span]:!font-semibold md:[&_img]:h-11 md:[&_img]:w-11 md:[&_span]:text-lg lg:[&_img]:h-12 lg:[&_img]:w-12"
+                />
               </div>
 
-              <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 md:flex">
+              <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex lg:gap-1.5">
                 {primaryNavLinks.map(item => (
                   <Link
                     key={item.href}
@@ -249,10 +250,10 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <ResourcesNavMenuDesktop />
               </div>
 
-              <div className="hidden items-center justify-end gap-1 md:flex">
+              <div className="hidden items-center justify-end gap-1.5 md:flex lg:gap-2">
                 {!isInitialized ? (
                   <span
-                    className="h-8 w-[9.5rem] rounded-full bg-white/5 animate-pulse md:h-9"
+                    className="h-8 w-[9.5rem] rounded-full bg-white/5 animate-pulse md:h-10 lg:h-11 lg:w-[11rem]"
                     aria-hidden
                   />
                 ) : isAuthenticated ? (
@@ -277,15 +278,16 @@ export const Navigation: React.FC<NavigationProps> = ({
               <div className="flex items-center md:hidden">
                 <button
                   type="button"
-                  onClick={toggleMobileMenu}
-                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
-                  aria-label={isMobileMenuMounted ? 'Close menu' : 'Open menu'}
+                  onClick={openMobileMenu}
+                  className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors [touch-action:manipulation] hover:bg-white/[0.08] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                  aria-label="Open menu"
                   aria-expanded={isMobileMenuOpen}
                 >
-                  <Bars3Icon className="h-5 w-5" />
+                  <Bars3Icon className="h-6 w-6" />
                 </button>
               </div>
             </div>
+            <div id={MARKETING_RESOURCES_MEGA_SLOT_ID} />
           </div>
         </div>
       </nav>
