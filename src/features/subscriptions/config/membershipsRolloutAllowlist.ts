@@ -23,6 +23,7 @@ export const MEMBERSHIPS_ROLLOUT_OWNER_EMAILS: readonly string[] = [
   'elev8tedetailing@icloud.com', // Elev8te
   'dav414@icloud.com', // Omega Auto Detailing
   'archivedetail@gmail.com', // Archive Detailing
+  'erickjavier1355@icloud.com',
 ];
 
 /** Set true to open memberships to all eligible owners (ignores the email list). */
