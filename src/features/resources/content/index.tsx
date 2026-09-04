@@ -3,6 +3,7 @@ import { BestBookingAppForMobileDetailersContent } from './BestBookingAppForMobi
 import { HowMobileDetailersGetClientsInstagramContent } from './HowMobileDetailersGetClientsInstagram';
 import { HowMuchToChargeForMobileDetailingContent } from './HowMuchToChargeForMobileDetailing';
 import { HowToStartMobileDetailingBusinessContent } from './HowToStartMobileDetailingBusiness';
+import { JobberAlternativeMobileDetailersContent } from './JobberAlternativeMobileDetailers';
 import { ServiceLinkVsDetailConnectVsDetailerMadeContent } from './ServiceLinkVsDetailConnectVsDetailerMade';
 import { ServiceLinkVsUrableContent } from './ServiceLinkVsUrable';
 import { StopNoShowsDepositsMobileDetailingContent } from './StopNoShowsDepositsMobileDetailing';
@@ -10,6 +11,8 @@ import { StopNoShowsDepositsMobileDetailingContent } from './StopNoShowsDeposits
 /** Map of guide slug to content component. Add new guides here. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export const GUIDE_CONTENT: Record<string, React.ComponentType<{}>> = {
+  'jobber-alternative-mobile-detailers':
+    JobberAlternativeMobileDetailersContent,
   'servicelink-vs-urable-2026': ServiceLinkVsUrableContent,
   'how-much-to-charge-for-mobile-detailing-2026':
     HowMuchToChargeForMobileDetailingContent,

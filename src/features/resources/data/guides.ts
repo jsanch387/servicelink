@@ -29,6 +29,57 @@ export interface GuideMeta {
 
 export const GUIDES: GuideMeta[] = [
   {
+    slug: 'jobber-alternative-mobile-detailers',
+    title: 'Jobber Alternative for Mobile Detailers (2026)',
+    subheading:
+      'Jobber is built for field-service crews. Solo Instagram detailers usually need a bio link, sedan / SUV / truck prices, and deposits—not a $49 ops suite.',
+    coverImage: MARKETING_IMAGES.resources.bookingApp,
+    coverImageAlt:
+      'Mobile detailer checking a booking app on their phone next to a freshly detailed car',
+    keyTakeaways: [
+      'Jobber is fine for multi-trade crews; a one-truck shop usually needs a bio link, not field-service bloat.',
+      'You need four things: a booking link, sedan / SUV / truck prices, deposits on Pro, and a client list.',
+      'Stay on Jobber if you have a crew, need dispatch, or already live in its invoicing.',
+      'Switch if you book from Instagram DMs and want a cheaper booking app for mobile detailers.',
+    ],
+    metaDescription:
+      'Jobber alternative for mobile detailers in 2026. Compare a bio booking link vs field-service software—and when ServiceLink is cheaper than Jobber.',
+    keywords: [
+      'Jobber alternative for detailers',
+      'Jobber alternative for mobile detailers',
+      'booking app for mobile detailers',
+      'cheaper than Jobber for detailers',
+      'Jobber vs ServiceLink',
+      'Jobber for detailing',
+      'mobile detailing booking software',
+      'ServiceLink',
+    ],
+    datePublished: '2026-09-04',
+    dateModified: '2026-09-04',
+    faqs: [
+      {
+        question: 'Is ServiceLink a Jobber alternative?',
+        answer:
+          'For solo and small mobile detailing businesses, yes. You get online booking, a client list, and Pro features like deposits without paying full field-service prices.',
+      },
+      {
+        question: 'Do my customers need an account?',
+        answer:
+          'No. They open the link, pick a service, and book. There is no customer app to download.',
+      },
+      {
+        question: 'Can I keep Jobber and try ServiceLink?',
+        answer:
+          'Yes. Run ServiceLink as the bio link and keep Jobber until you do not need it.',
+      },
+      {
+        question: 'What does it cost?',
+        answer:
+          'Free for 5 online bookings. Pro is $20/month or $200/year. Deposits and Tap to Pay on iPhone are Pro features.',
+      },
+    ],
+  },
+  {
     slug: 'servicelink-vs-urable-2026',
     title: 'ServiceLink vs Urable (2026)',
     subheading:
