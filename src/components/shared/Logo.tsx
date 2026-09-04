@@ -65,8 +65,10 @@ export const Logo: React.FC<BrandingProps> = ({
         <Image
           src={MARKETING_IMAGES.brand.logo}
           alt="ServiceLink Logo"
-          width={logoConfig.imageSize}
-          height={logoConfig.imageSize}
+          width={192}
+          height={192}
+          sizes="48px"
+          quality={90}
           className={`${logoConfig.imageClass} object-contain flex-shrink-0`}
           priority
         />

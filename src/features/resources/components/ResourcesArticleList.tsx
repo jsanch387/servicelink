@@ -41,7 +41,7 @@ export function ResourcesArticleList() {
         </p>
       </div>
 
-      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+      <ul className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {guides.map(guide => {
           const href = ROUTES.RESOURCE_GUIDE(guide.slug);
           const publishedLabel = formatGuideDate(guide.datePublished);
@@ -56,7 +56,7 @@ export function ResourcesArticleList() {
                   <GlassCard
                     padding="none"
                     rounded="rounded-2xl"
-                    className="flex flex-col border-white/[0.08] bg-white/[0.03] transition-[border-color,background-color,transform] duration-300 ease-out group-hover:border-white/[0.14] group-hover:bg-white/[0.045] group-hover:-translate-y-0.5"
+                    className="flex h-full flex-col border-white/[0.08] bg-white/[0.03] transition-[border-color,background-color,transform] duration-300 ease-out group-hover:border-white/[0.14] group-hover:bg-white/[0.045] group-hover:-translate-y-0.5"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden border-b border-white/[0.06] bg-white/[0.04]">
                       <Image
@@ -64,22 +64,22 @@ export function ResourcesArticleList() {
                         alt={guide.coverImageAlt}
                         fill
                         unoptimized
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
                         className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                       />
                     </div>
 
-                    <div className="flex flex-1 flex-col gap-2 px-4 py-4 sm:px-5 sm:py-5">
+                    <div className="flex flex-1 flex-col gap-1.5 px-3 py-3 sm:gap-2 sm:px-5 sm:py-5">
                       {publishedLabel ? (
                         <time
                           dateTime={guide.datePublished}
-                          className="text-xs font-medium uppercase tracking-wide text-gray-500"
+                          className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-gray-500"
                         >
                           {publishedLabel}
                         </time>
                       ) : null}
 
-                      <h3 className="text-base sm:text-lg font-semibold text-white leading-snug tracking-tight transition-colors group-hover:text-white/95">
+                      <h3 className="text-[13px] sm:text-lg font-semibold text-white leading-snug tracking-tight transition-colors group-hover:text-white/95">
                         {guide.title}
                       </h3>
                     </div>

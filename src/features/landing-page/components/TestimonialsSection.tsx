@@ -3,7 +3,7 @@
 import { IOS_APP_STORE_URL } from '@/constants/appStore';
 import { GlassCard } from '@/components/shared';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   LANDING_TESTIMONIALS,
   type LandingTestimonial,
@@ -46,7 +46,26 @@ function StarRating() {
   );
 }
 
-function TestimonialCard({ testimonial }: { testimonial: LandingTestimonial }) {
+const COLLAPSED_CARD_HEIGHT_CLASS = 'h-[263px]';
+
+function TestimonialCard({
+  testimonial,
+  expanded,
+  onToggle,
+}: {
+  testimonial: LandingTestimonial;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const [canExpand, setCanExpand] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el || expanded) return;
+    setCanExpand(el.scrollHeight > el.clientHeight + 1);
+  }, [expanded, testimonial.content]);
+
   return (
     <GlassCard
       padding="none"
@@ -62,10 +81,27 @@ function TestimonialCard({ testimonial }: { testimonial: LandingTestimonial }) {
         <p className="mt-4 line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold leading-snug text-white">
           {testimonial.title}
         </p>
-        <p className="mt-2 min-h-[3.9rem] flex-1 line-clamp-3 text-[13px] leading-relaxed text-zinc-300">
+        <p
+          ref={textRef}
+          className={`mt-2 text-[13px] leading-relaxed text-zinc-300 ${
+            expanded ? '' : 'line-clamp-3 min-h-[3.9rem] flex-1'
+          }`}
+        >
           {testimonial.content}
         </p>
-        <div className="mt-5 flex shrink-0 items-center gap-3 border-t border-white/10 pt-4">
+        <div className="mt-1.5 flex min-h-5 shrink-0 items-center">
+          {canExpand ? (
+            <button
+              type="button"
+              onClick={onToggle}
+              className="cursor-pointer text-[12px] font-medium text-white/70 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+              aria-expanded={expanded}
+            >
+              {expanded ? 'Show less' : 'See more'}
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-auto flex shrink-0 items-center gap-3 border-t border-white/10 pt-4">
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-[11px] font-semibold text-zinc-200">
             {testimonial.initials}
           </div>
@@ -89,6 +125,7 @@ const ARROW_CLASS =
 function TestimonialsCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const lastIndex = LANDING_TESTIMONIALS.length - 1;
 
   const syncActiveIndex = useCallback(() => {
@@ -129,22 +166,35 @@ function TestimonialsCarousel() {
       <div
         ref={scrollRef}
         onScroll={syncActiveIndex}
-        className="scrollbar-hide flex items-stretch snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [scrollbar-width:none]"
+        className="scrollbar-hide flex items-start snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [scrollbar-width:none]"
         aria-label="App Store reviews"
         aria-roledescription="carousel"
       >
-        {LANDING_TESTIMONIALS.map((testimonial, index) => (
-          <div
-            key={testimonial.id}
-            data-testimonial-slide={index}
-            className="flex w-[min(300px,82vw)] shrink-0 snap-start sm:w-[320px]"
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`Review ${index + 1} of ${LANDING_TESTIMONIALS.length}`}
-          >
-            <TestimonialCard testimonial={testimonial} />
-          </div>
-        ))}
+        {LANDING_TESTIMONIALS.map((testimonial, index) => {
+          const expanded = expandedId === testimonial.id;
+          return (
+            <div
+              key={testimonial.id}
+              data-testimonial-slide={index}
+              className={`flex w-[min(300px,82vw)] shrink-0 snap-start sm:w-[320px] ${
+                expanded ? '' : COLLAPSED_CARD_HEIGHT_CLASS
+              }`}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`Review ${index + 1} of ${LANDING_TESTIMONIALS.length}`}
+            >
+              <TestimonialCard
+                testimonial={testimonial}
+                expanded={expanded}
+                onToggle={() =>
+                  setExpandedId(current =>
+                    current === testimonial.id ? null : testimonial.id
+                  )
+                }
+              />
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-4 flex items-center justify-center gap-3">

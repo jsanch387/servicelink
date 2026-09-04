@@ -1,3 +1,4 @@
+import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ROUTES } from '@/constants/routes';
 
 export type ResourcesNavItem = {
@@ -6,6 +7,7 @@ export type ResourcesNavItem = {
   description: string;
   icon:
     | 'book'
+    | 'briefcase'
     | 'calendar'
     | 'compare'
     | 'deposit'
@@ -19,6 +21,25 @@ export type ResourcesNavColumn = {
   items: readonly ResourcesNavItem[];
 };
 
+export type ResourcesMegaFeatured = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  href: string;
+  image: string;
+  imageAlt: string;
+  cta: string;
+};
+
+export type ResourcesMegaSection = {
+  id: 'guides' | 'learn';
+  label: string;
+  href: string;
+  icon: 'book' | 'workshop';
+  links: readonly ResourcesNavItem[];
+  featured: ResourcesMegaFeatured;
+};
+
 export const RESOURCES_NAV_VIEW_ALL: ResourcesNavItem = {
   label: 'View all guides',
   href: ROUTES.RESOURCES,
@@ -26,65 +47,94 @@ export const RESOURCES_NAV_VIEW_ALL: ResourcesNavItem = {
   icon: 'book',
 };
 
-/** Featured Resources only — full catalog lives on /resources. */
-export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] = [
+const GUIDE_LINKS = [
   {
-    heading: 'Guides',
-    items: [
-      {
-        label: 'Start a business',
-        href: ROUTES.RESOURCE_GUIDE(
-          'how-to-start-a-mobile-detailing-business-2026'
-        ),
-        description: 'Costs, gear, and first clients',
-        icon: 'start',
-      },
-      {
-        label: 'Detailing prices',
-        href: ROUTES.RESOURCE_GUIDE(
-          'how-much-to-charge-for-mobile-detailing-2026'
-        ),
-        description: 'What to charge in 2026',
-        icon: 'deposit',
-      },
-      {
-        label: 'Jobber alternative',
-        href: ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers'),
-        description: 'Bio link vs field-service software',
-        icon: 'compare',
-      },
-      {
-        label: 'ServiceLink vs Urable',
-        href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026'),
-        description: 'Lean booking vs heavy ops',
-        icon: 'compare',
-      },
-      {
-        label: 'Booking app for detailers',
-        href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
-        description: 'What to look for, then go live',
-        icon: 'calendar',
-      },
-      {
-        label: 'Stop no-shows',
-        href: ROUTES.RESOURCE_GUIDE('stop-no-shows-deposits-mobile-detailing'),
-        description: 'Deposits that protect your Saturday',
-        icon: 'deposit',
-      },
-    ],
+    label: 'Best Booking App for Mobile Detailers',
+    href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
+    description: 'What to look for and how options stack up',
+    icon: 'book',
   },
   {
-    heading: 'Learn',
-    items: [
-      {
-        label: 'Free ads workshop',
-        href: ROUTES.WORKSHOP,
-        description: 'Local Meta ads that book jobs',
-        icon: 'workshop',
-      },
-    ],
+    label: 'How to Stop No-Shows and Take Deposits',
+    href: ROUTES.RESOURCE_GUIDE('stop-no-shows-deposits-mobile-detailing'),
+    description: 'Protect your day with deposits',
+    icon: 'calendar',
+  },
+  {
+    label: 'ServiceLink vs Detail Connect vs DetailerMade',
+    href: ROUTES.RESOURCE_GUIDE(
+      'servicelink-vs-detail-connect-vs-detailermade-2026'
+    ),
+    description: 'Which booking app stays simple day to day',
+    icon: 'compare',
+  },
+  {
+    label: 'ServiceLink vs Urable',
+    href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026'),
+    description: 'Lean booking vs a heavier ops suite',
+    icon: 'briefcase',
+  },
+  {
+    label: 'How Much to Charge for Mobile Detailing',
+    href: ROUTES.RESOURCE_GUIDE('how-much-to-charge-for-mobile-detailing-2026'),
+    description: 'Typical sedan, SUV, and truck prices',
+    icon: 'deposit',
+  },
+] as const satisfies readonly ResourcesNavItem[];
+
+const LEARN_LINKS = [
+  {
+    label: 'Free ads workshop',
+    href: ROUTES.WORKSHOP,
+    description: 'Local Meta ads that book jobs',
+    icon: 'workshop',
+  },
+  RESOURCES_NAV_VIEW_ALL,
+] as const satisfies readonly ResourcesNavItem[];
+
+export const RESOURCES_MEGA_SECTIONS: readonly ResourcesMegaSection[] = [
+  {
+    id: 'guides',
+    label: 'Guides',
+    href: ROUTES.RESOURCES,
+    icon: 'book',
+    links: GUIDE_LINKS,
+    featured: {
+      eyebrow: 'Featured guide',
+      title: 'Best Booking App for Mobile Detailers',
+      description: 'What to look for and how to turn your link into more jobs.',
+      href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
+      image: MARKETING_IMAGES.resources.bookingApp,
+      imageAlt:
+        'Detailer checking a booking app on their phone next to a freshly detailed car',
+      cta: 'Read guide',
+    },
+  },
+  {
+    id: 'learn',
+    label: 'Learn',
+    href: ROUTES.WORKSHOP,
+    icon: 'workshop',
+    links: LEARN_LINKS,
+    featured: {
+      eyebrow: 'Free workshop',
+      title: 'Local Meta ads that book jobs',
+      description: 'The $10/day framework detailers use to fill the calendar.',
+      href: ROUTES.WORKSHOP,
+      image: MARKETING_IMAGES.resources.instagram,
+      imageAlt:
+        'Phone filming a foam-covered car during a mobile detailing job for social content',
+      cta: 'Watch free',
+    },
   },
 ];
+
+/** Featured Resources only — full catalog lives on /resources. */
+export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] =
+  RESOURCES_MEGA_SECTIONS.map(section => ({
+    heading: section.label,
+    items: section.links,
+  }));
 
 /** Flat list for mobile / shared consumers. */
 export const RESOURCES_NAV_LINKS: ResourcesNavItem[] =
