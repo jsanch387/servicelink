@@ -5,6 +5,7 @@ import { GUIDES, getGuideBySlug } from '@/features/resources';
 import { getGuideContentComponent } from '@/features/resources/content';
 import { MarketingFooter } from '@/features/landing-page/components/MarketingFooter';
 import { MarketingNavigation } from '@/features/landing-page/components/MarketingNavigation';
+import { MARKETING_NAV_SPACER_CLASS } from '@/features/landing-page/components/navStyles';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -210,7 +211,7 @@ export default async function ResourceGuidePage({
         />
       ))}
       <MarketingNavigation />
-      <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+      <div className={MARKETING_NAV_SPACER_CLASS} aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-14 pb-14 sm:pb-20">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">

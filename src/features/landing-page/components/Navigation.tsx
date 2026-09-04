@@ -37,7 +37,7 @@ function mobileTabClass(active: boolean) {
 }
 
 const navCtaBase =
-  'inline-flex items-center justify-center h-8 px-3.5 text-[13px] font-semibold tracking-[-0.01em] rounded-full cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-9 md:px-4 md:text-sm';
+  'inline-flex items-center justify-center h-8 px-3.5 text-[13px] font-semibold tracking-[-0.01em] rounded-full cursor-pointer transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:h-10 md:px-5 md:text-[15px]';
 
 const navLoginClass = `${navCtaBase} text-white/70 hover:text-white hover:bg-white/[0.08]`;
 
@@ -224,17 +224,17 @@ export const Navigation: React.FC<NavigationProps> = ({
         <div className="px-3 pt-3 sm:px-4 sm:pt-3.5 md:pt-4">
           <div className="mx-auto max-w-6xl md:max-w-7xl">
             <div
-              className={`relative flex h-14 items-center justify-between gap-3 rounded-full px-2.5 sm:px-3 transition-all duration-300 md:h-16 md:px-3.5 ${
+              className={`relative flex h-14 items-center justify-between gap-3 rounded-full px-2.5 sm:px-3 transition-all duration-300 md:h-[4.5rem] md:px-5 ${
                 barElevated
                   ? 'border border-white/10 bg-[#0f0f0f]/80 shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl'
                   : 'border border-white/[0.08] bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-md'
               }`}
             >
-              <div className="flex min-w-0 items-center pl-1 md:scale-105">
+              <div className="flex min-w-0 items-center pl-1 md:scale-110 md:origin-left">
                 <Logo size="md" href="/" />
               </div>
 
-              <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 md:flex">
+              <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 md:flex">
                 {primaryNavLinks.map(item => (
                   <Link
                     key={item.href}
@@ -252,7 +252,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <div className="hidden items-center justify-end gap-1 md:flex">
                 {!isInitialized ? (
                   <span
-                    className="h-8 w-[9.5rem] rounded-full bg-white/5 animate-pulse md:h-9"
+                    className="h-8 w-[9.5rem] rounded-full bg-white/5 animate-pulse md:h-10 md:w-[11rem]"
                     aria-hidden
                   />
                 ) : isAuthenticated ? (

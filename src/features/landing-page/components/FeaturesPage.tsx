@@ -6,12 +6,13 @@ import { FeaturesPageHero } from './FeaturesPageHero';
 import { FeaturesPageSeoContent } from './FeaturesPageSeoContent';
 import { Footer } from './Footer';
 import { MarketingNavigation } from './MarketingNavigation';
+import { MARKETING_NAV_SPACER_CLASS } from './navStyles';
 
 export const FeaturesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
       <MarketingNavigation />
-      <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+      <div className={MARKETING_NAV_SPACER_CLASS} aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
 
       <main

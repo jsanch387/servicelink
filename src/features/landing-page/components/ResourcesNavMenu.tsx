@@ -89,17 +89,17 @@ function ResourcesNavItemLink({
     <Link
       href={item.href}
       role="menuitem"
-      className="group flex items-start gap-3 rounded-xl p-2.5 cursor-pointer hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors"
+      className="group flex items-start gap-3 rounded-xl p-2.5 cursor-pointer hover:bg-white/[0.06] active:bg-white/[0.08] transition-colors md:gap-3.5 md:p-3"
       onClick={onNavigate}
     >
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-gray-300 group-hover:bg-white/[0.1] group-hover:text-white transition-colors">
-        <Icon className="h-4 w-4" aria-hidden />
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-gray-300 group-hover:bg-white/[0.1] group-hover:text-white transition-colors md:h-10 md:w-10">
+        <Icon className="h-4 w-4 md:h-[1.125rem] md:w-[1.125rem]" aria-hidden />
       </span>
       <span className="min-w-0 flex-1 pt-0.5">
-        <span className="block text-sm font-semibold text-white leading-snug">
+        <span className="block text-sm font-semibold text-white leading-snug md:text-[15px]">
           {item.label}
         </span>
-        <span className="block text-xs text-gray-500 mt-0.5 leading-snug">
+        <span className="block text-xs text-gray-500 mt-0.5 leading-snug md:text-[13px]">
           {item.description}
         </span>
       </span>
@@ -169,7 +169,7 @@ export function ResourcesNavMenuDesktop() {
       </button>
 
       <div
-        className={`absolute left-1/2 top-full z-40 w-[min(36rem,calc(100vw-1.5rem))] -translate-x-1/2 ${
+        className={`absolute left-1/2 top-full z-40 w-[min(22.5rem,calc(100vw-1.5rem))] -translate-x-1/2 ${
           open ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
         onMouseEnter={openMenu}
@@ -182,17 +182,17 @@ export function ResourcesNavMenuDesktop() {
           id={menuId}
           role="menu"
           aria-label="Resources"
-          className={`overflow-hidden rounded-2xl border border-white/10 bg-[#141414]/92 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl transition-all duration-200 ease-out ${
+          className={`max-h-[min(36rem,calc(100vh-6.5rem))] overflow-y-auto rounded-2xl border border-white/10 bg-[#141414]/92 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl transition-all duration-200 ease-out ${
             open
               ? 'opacity-100 translate-y-0'
               : 'opacity-0 -translate-y-1 pointer-events-none'
           }`}
         >
-          <div className="px-4 pt-5 pb-4 sm:px-5 sm:pt-5 sm:pb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+          <div className="px-3.5 py-4 sm:px-4 sm:py-5">
+            <div className="flex flex-col gap-5">
               {RESOURCES_NAV_COLUMNS.map(column => (
                 <div key={column.heading}>
-                  <p className="mb-2 px-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                  <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
                     {column.heading}
                   </p>
                   <ul className="space-y-0.5">
@@ -209,11 +209,11 @@ export function ResourcesNavMenuDesktop() {
               ))}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-white/[0.06] flex justify-center">
+            <div className="mt-4 pt-3.5 border-t border-white/[0.06] flex justify-center">
               <Link
                 href={RESOURCES_NAV_VIEW_ALL.href}
                 role="menuitem"
-                className="group inline-flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white cursor-pointer transition-colors"
+                className="group inline-flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white cursor-pointer transition-colors md:text-[15px]"
                 onClick={closeMenu}
               >
                 {RESOURCES_NAV_VIEW_ALL.label}

@@ -9,7 +9,7 @@ export const HeroSection: React.FC = () => {
   return (
     <section
       id="home"
-      className="relative overflow-visible px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32"
+      className="relative overflow-visible px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32 md:pt-36"
       aria-labelledby="hero-heading"
     >
       <HeroVisualGlow />

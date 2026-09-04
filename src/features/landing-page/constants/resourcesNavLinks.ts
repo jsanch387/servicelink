@@ -48,10 +48,28 @@ export const RESOURCES_NAV_COLUMNS: readonly ResourcesNavColumn[] = [
         icon: 'deposit',
       },
       {
+        label: 'Jobber alternative',
+        href: ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers'),
+        description: 'Bio link vs field-service software',
+        icon: 'compare',
+      },
+      {
         label: 'ServiceLink vs Urable',
         href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026'),
         description: 'Lean booking vs heavy ops',
         icon: 'compare',
+      },
+      {
+        label: 'Booking app for detailers',
+        href: ROUTES.RESOURCE_GUIDE('best-booking-app-for-mobile-detailers'),
+        description: 'What to look for, then go live',
+        icon: 'calendar',
+      },
+      {
+        label: 'Stop no-shows',
+        href: ROUTES.RESOURCE_GUIDE('stop-no-shows-deposits-mobile-detailing'),
+        description: 'Deposits that protect your Saturday',
+        icon: 'deposit',
       },
     ],
   },

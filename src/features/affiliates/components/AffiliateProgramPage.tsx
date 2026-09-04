@@ -1,6 +1,7 @@
 import { FramedCtaButton } from '@/components/shared';
 import { Footer } from '@/features/landing-page/components/Footer';
 import { MarketingNavigation } from '@/features/landing-page/components/MarketingNavigation';
+import { MARKETING_NAV_SPACER_CLASS } from '@/features/landing-page/components/navStyles';
 import {
   AFFILIATE_COMMISSION,
   AFFILIATE_EARNING_EXAMPLES,
@@ -30,7 +31,7 @@ export function AffiliateProgramPage() {
   return (
     <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
       <MarketingNavigation />
-      <div className="h-16 sm:h-20 shrink-0" aria-hidden />
+      <div className={MARKETING_NAV_SPACER_CLASS} aria-hidden />
       <div className="h-4 sm:h-6 shrink-0" aria-hidden />
 
       <main
