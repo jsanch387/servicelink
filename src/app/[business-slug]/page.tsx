@@ -6,11 +6,17 @@
  */
 
 import { StructuredData } from '@/components/shared';
+import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
 import { BusinessProfileView } from '@/features/business-profile/components/BusinessProfileView';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import { loadPrimaryServiceArea } from '@/features/business-profile/server/loadPrimaryServiceArea';
+import {
+  generatePublicProfileShareDescription,
+  generatePublicProfileShareTitle,
+  resolvePublicProfileTradeLine,
+} from '@/features/business-profile/utils/publicProfileShareCopy';
 import { toPublicServiceCoverage } from '@/features/business-profile/utils/primaryServiceArea';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { resolvePublicBookingFreeTierGate } from '@/features/availability/booking/server/publicBookingFreeTierCap';
@@ -65,6 +71,7 @@ type PublicBusinessProfileRow = {
   id: string;
   business_name: string;
   business_type: string | null;
+  specialties?: string[] | null;
   service_area: string | null;
   bio: string | null;
   logo_path: string | null;
@@ -364,7 +371,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
     const { data: profileData } = await supabase
       .from('business_profiles')
       .select(
-        'business_name, business_type, service_area, bio, logo_path, banner_path, phone_number_call'
+        'business_name, business_type, specialties, service_area, bio, logo_path, banner_path, phone_number_call'
       )
       .eq('business_slug', slug)
       .single();
@@ -382,6 +389,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
     const businessProfile = {
       business_name: profile.business_name,
       business_type: profile.business_type,
+      specialties: profile.specialties,
       service_area: profile.service_area,
       bio: profile.bio,
       logo_url: profile.logo_path
@@ -393,43 +401,44 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
       phone_number_call: profile.phone_number_call,
     };
 
-    // Generate dynamic content for SEO
     const businessName = businessProfile.business_name;
-    const businessType =
-      businessProfile.business_type || 'Professional Services';
     const serviceArea = businessProfile.service_area || '';
-    const bio =
-      businessProfile.bio ||
-      `Professional ${businessType.toLowerCase()} services`;
-    // Services and images count for metadata generation (for future use)
-    // const _servicesCount = businessProfile.services?.length || 0;
-    // const _imagesCount = businessProfile.images?.length || 0;
+    const tradeLine = resolvePublicProfileTradeLine({
+      businessType: businessProfile.business_type,
+      specialties: businessProfile.specialties,
+    });
+    const title = generatePublicProfileShareTitle({
+      businessName,
+      tradeLine,
+      serviceArea,
+    });
+    const description = generatePublicProfileShareDescription({
+      bio: businessProfile.bio,
+      businessName,
+      tradeLine,
+      serviceArea,
+    });
+    const specialtyLabels = publicSpecialtyLabels(
+      businessProfile.business_type,
+      businessProfile.specialties
+    );
 
-    // Create dynamic title and description
-    const title = serviceArea
-      ? `${businessName} - ${businessType} in ${serviceArea} | ServiceLink`
-      : `${businessName} - ${businessType} | ServiceLink`;
-
-    const description = bio.length > 160 ? `${bio.substring(0, 157)}...` : bio;
-
-    // Generate keywords based on business data
     const keywords = [
       businessName,
-      businessType,
+      ...specialtyLabels,
       serviceArea,
       'professional services',
-      'business profile',
-      'contact directly',
-      'ServiceLink',
     ]
       .filter(Boolean)
       .join(', ');
 
-    // Generate canonical URL
     const canonicalUrl = `${siteUrl}/${slug}`;
+    const imageAlt = tradeLine
+      ? `${businessName} · ${tradeLine}`
+      : businessName;
 
     return {
-      title,
+      title: { absolute: title },
       description,
       keywords,
       canonical: canonicalUrl,
@@ -438,7 +447,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
         title,
         description,
         url: canonicalUrl,
-        siteName: 'ServiceLink',
+        siteName: businessName,
         locale: 'en_US',
         type: 'website',
         images: [
@@ -449,7 +458,7 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
               MARKETING_IMAGES.brand.logo,
             width: 1200,
             height: 630,
-            alt: `${businessName} - ${businessType}`,
+            alt: imageAlt,
           },
         ],
       },
@@ -462,8 +471,6 @@ export async function generateMetadata({ params }: PublicProfilePageProps) {
             businessProfile.logo_url ||
             MARKETING_IMAGES.brand.logo,
         ],
-        site: '@servicelink',
-        creator: '@servicelink',
       },
       alternates: {
         canonical: canonicalUrl,

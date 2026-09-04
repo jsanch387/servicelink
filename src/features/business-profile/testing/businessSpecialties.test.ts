@@ -4,6 +4,7 @@ import {
   getSpecialtiesForBusinessType,
   hasDetailingMarketplaceListing,
   publicSpecialtyLabels,
+  publicTradeLine,
   resolveBusinessSpecialties,
   sanitizeBusinessSpecialties,
   specialtiesAllowedForBusinessType,
@@ -85,5 +86,24 @@ describe('business specialties', () => {
     expect(publicSpecialtyLabels('Auto & Detailing', null)).toEqual([
       'Auto detailing',
     ]);
+  });
+
+  it('builds a customer-facing trade line from specialties', () => {
+    expect(publicTradeLine('Vehicle Services', ['detailing'])).toBe(
+      'Auto detailing'
+    );
+    expect(
+      publicTradeLine('Vehicle Services', ['detailing', 'window_tinting'])
+    ).toBe('Auto detailing and window tinting');
+    expect(
+      publicTradeLine('Vehicle Services', [
+        'detailing',
+        'window_tinting',
+        'auto_glass',
+      ])
+    ).toBe('Auto detailing and more');
+    expect(publicTradeLine('Vehicle Services', ['other'])).toBe('');
+    expect(publicTradeLine('Vehicle Services', null)).toBe('');
+    expect(publicTradeLine('Auto & Detailing', null)).toBe('Auto detailing');
   });
 });

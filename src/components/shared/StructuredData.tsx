@@ -5,7 +5,12 @@
  * Helps search engines understand the business information and improves search results.
  */
 
+import {
+  publicSpecialtyLabels,
+  publicTradeLine,
+} from '@/constants/businessSpecialties';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
+import { generatePublicProfileShareDescription } from '@/features/business-profile/utils/publicProfileShareCopy';
 import React from 'react';
 
 interface StructuredDataProps {
@@ -21,13 +26,26 @@ export const StructuredData: React.FC<StructuredDataProps> = ({
     process.env.NEXT_PUBLIC_SITE_URL || 'https://myservicelink.app'
   ).replace(/\/$/, '');
 
+  const tradeLine = publicTradeLine(
+    businessProfile.business_type,
+    businessProfile.specialties
+  );
+  const specialtyLabels = publicSpecialtyLabels(
+    businessProfile.business_type,
+    businessProfile.specialties
+  );
+
   // Generate structured data for Local Business
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: businessProfile.business_name,
-    description:
-      businessProfile.bio || `${businessProfile.business_type} services`,
+    description: generatePublicProfileShareDescription({
+      bio: businessProfile.bio,
+      businessName: businessProfile.business_name,
+      tradeLine,
+      serviceArea: businessProfile.service_area,
+    }),
     url: `${siteUrl}/${slug}`,
     image: businessProfile.cover_image_url || businessProfile.logo_url,
     logo: businessProfile.logo_url,
@@ -47,7 +65,12 @@ export const StructuredData: React.FC<StructuredDataProps> = ({
           name: businessProfile.service_area.split(',')[0]?.trim(),
         }
       : undefined,
-    serviceType: businessProfile.business_type,
+    serviceType:
+      specialtyLabels.length === 1
+        ? specialtyLabels[0]
+        : specialtyLabels.length > 1
+          ? specialtyLabels
+          : undefined,
     hasOfferCatalog: businessProfile.services?.length
       ? {
           '@type': 'OfferCatalog',

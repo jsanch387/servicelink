@@ -132,6 +132,28 @@ export function publicSpecialtyLabels(
     .map(slug => SPECIALTY_LABELS[slug]);
 }
 
+function lowerFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toLowerCase() + value.slice(1);
+}
+
+/**
+ * Customer-facing trade line for share cards and the public profile.
+ * Industry buckets like "Vehicle Services" stay internal.
+ */
+export function publicTradeLine(
+  businessType: string | null | undefined,
+  storedSpecialties?: readonly string[] | null
+): string {
+  const labels = publicSpecialtyLabels(businessType, storedSpecialties);
+  if (labels.length === 0) return '';
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) {
+    return `${labels[0]} and ${lowerFirst(labels[1])}`;
+  }
+  return `${labels[0]} and more`;
+}
+
 /** Keep only niches valid for the new industry; Other defaults to `other`. */
 export function specialtiesAllowedForBusinessType(
   businessType: string,

@@ -15,6 +15,14 @@ export const MEMBERSHIPS_ROLLOUT_OWNER_EMAILS: readonly string[] = [
   // Existing test accounts
   'ask.mento@gmail.com',
   'urbanink.help@gmail.com',
+  // Beta owners
+  'josesdetailingbusiness@gmail.com', // Ride Fresh Detailing
+  'bermejojoshua183@gmail.com', // J & DD'S Auto Detailing
+  'amluxedetailing@gmail.com', // AMLuxe Detailing LLC
+  'mobilecardetailinggr@gmail.com', // G&R Mobile Detailing
+  'elev8tedetailing@icloud.com', // Elev8te
+  'dav414@icloud.com', // Omega Auto Detailing
+  'archivedetail@gmail.com', // Archive Detailing
 ];
 
 /** Set true to open memberships to all eligible owners (ignores the email list). */

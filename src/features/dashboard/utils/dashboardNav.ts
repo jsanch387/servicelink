@@ -26,6 +26,7 @@ export type DashboardNavItem = {
   requiresMemberships?: boolean;
   requiresAvailability?: boolean;
   activePathPrefix?: string;
+  badge?: 'beta';
 };
 
 export const DASHBOARD_NAV_GROUP_LABEL: Record<
@@ -65,6 +66,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     group: 'workspace',
     requiresOnboarding: true,
     requiresMemberships: true,
+    badge: 'beta',
     activePathPrefix: '/dashboard/subscriptions',
   },
   {

@@ -1,7 +1,10 @@
 'use client';
 
 import { BookingPolicyAgreeModal } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
-import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
+import {
+  publicSpecialtyLabels,
+  publicTradeLine,
+} from '@/constants/businessSpecialties';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React, { useState } from 'react';
@@ -19,14 +22,17 @@ export const ProfileBioSection: React.FC<ProfileBioSectionProps> = ({
 }) => {
   const ui = publicBookingUi(bookingFlowLocale);
   const [policyOpen, setPolicyOpen] = useState(false);
-  const businessType = businessProfile.business_type?.trim() || null;
   const bio = businessProfile.bio?.trim() || null;
   const specialties = publicSpecialtyLabels(
     businessProfile.business_type,
     businessProfile.specialties
   );
+  const tradeLine = publicTradeLine(
+    businessProfile.business_type,
+    businessProfile.specialties
+  );
   const policy = resolvePublicBookingPolicy(businessProfile);
-  const hasIntro = Boolean(businessType || specialties.length > 0);
+  const hasIntro = Boolean(tradeLine || specialties.length > 0);
 
   if (!hasIntro && !bio && !policy) {
     return <p className="text-sm text-zinc-500">{ui.profile.noBioYet}</p>;
@@ -36,8 +42,8 @@ export const ProfileBioSection: React.FC<ProfileBioSectionProps> = ({
     <div className="space-y-6">
       {hasIntro ? (
         <div className="space-y-2">
-          {businessType ? (
-            <p className="text-xs font-medium text-zinc-500">{businessType}</p>
+          {tradeLine ? (
+            <p className="text-xs font-medium text-zinc-500">{tradeLine}</p>
           ) : null}
           {specialties.length > 0 ? (
             <ul

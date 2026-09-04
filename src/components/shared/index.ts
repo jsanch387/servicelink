@@ -25,6 +25,7 @@ export { TextArea } from './TextArea';
 export { TimeSelect } from './TimeSelect';
 
 // Shared Components
+export { BetaBadge } from './BetaBadge';
 export { Button } from './Button';
 export { Calendar } from './Calendar';
 export { Card } from './Card';

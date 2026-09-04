@@ -1,5 +1,6 @@
 'use client';
 
+import { BetaBadge } from '@/components/shared';
 import Link from 'next/link';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -10,6 +11,7 @@ interface DashboardSidebarNavItemProps {
   isActive: boolean;
   collapsed: boolean;
   onNavigate: () => void;
+  badge?: 'beta';
 }
 
 export function DashboardSidebarNavItem({
@@ -19,14 +21,17 @@ export function DashboardSidebarNavItem({
   isActive,
   collapsed,
   onNavigate,
+  badge,
 }: DashboardSidebarNavItemProps) {
+  const label = badge === 'beta' ? `${name} (Beta)` : name;
+
   return (
     <Link
       href={href}
       onClick={onNavigate}
-      title={collapsed ? name : undefined}
+      title={collapsed ? label : undefined}
       aria-current={isActive ? 'page' : undefined}
-      aria-label={name}
+      aria-label={label}
       className={`group flex items-center rounded-xl text-sm font-medium tracking-tight transition-colors cursor-pointer ${
         collapsed
           ? 'gap-3 px-3 py-2 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
@@ -42,8 +47,11 @@ export function DashboardSidebarNavItem({
           isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-200'
         }`}
       />
-      <span className={`min-w-0 truncate ${collapsed ? 'lg:sr-only' : ''}`}>
-        {name}
+      <span
+        className={`flex min-w-0 items-center gap-1.5 ${collapsed ? 'lg:sr-only' : ''}`}
+      >
+        <span className="truncate">{name}</span>
+        {badge === 'beta' ? <BetaBadge /> : null}
       </span>
     </Link>
   );

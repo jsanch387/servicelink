@@ -41,12 +41,15 @@ describe('getVisibleDashboardNavItems', () => {
   });
 
   it('inserts subscriptions after services when allowlisted', () => {
-    const names = getVisibleDashboardNavItems({
+    const items = getVisibleDashboardNavItems({
       isOnboardingCompleted: true,
       showMembershipsNav: true,
-    }).map(item => item.name);
+    });
+    const names = items.map(item => item.name);
+    const subscriptions = items.find(item => item.name === 'Subscriptions');
 
     expect(names.indexOf('Subscriptions')).toBe(names.indexOf('Services') + 1);
+    expect(subscriptions?.badge).toBe('beta');
   });
 
   it('omits subscriptions when not allowlisted', () => {
