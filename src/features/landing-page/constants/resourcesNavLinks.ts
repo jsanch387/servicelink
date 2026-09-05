@@ -75,10 +75,10 @@ const GUIDE_LINKS = [
     icon: 'briefcase',
   },
   {
-    label: 'How Much to Charge for Mobile Detailing',
-    href: ROUTES.RESOURCE_GUIDE('how-much-to-charge-for-mobile-detailing-2026'),
-    description: 'Typical sedan, SUV, and truck prices',
-    icon: 'deposit',
+    label: 'Jobber Alternative for Mobile Detailers',
+    href: ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers'),
+    description: 'When a bio link beats a $49 ops suite',
+    icon: 'compare',
   },
 ] as const satisfies readonly ResourcesNavItem[];
 

@@ -45,6 +45,13 @@ export function BestBookingAppForMobileDetailersContent() {
         >
           ServiceLink vs Detail Connect vs DetailerMade
         </Link>
+        . Coming from Jobber? Read our{' '}
+        <Link
+          href={ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers')}
+          className={linkClasses}
+        >
+          Jobber alternative for mobile detailers
+        </Link>
         .
       </p>
 

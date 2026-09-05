@@ -106,13 +106,24 @@ export const Navigation: React.FC<NavigationProps> = ({
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
-    if (!isMobileMenuMounted) return;
-    const previousOverflow = document.body.style.overflow;
+    if (!isMobileMenuOpen) return;
+    const html = document.documentElement;
+    const scrollY = window.scrollY;
+    const prevHtmlOverflow = html.style.overflow;
+    html.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = previousOverflow;
+      html.style.overflow = prevHtmlOverflow;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
     };
-  }, [isMobileMenuMounted]);
+  }, [isMobileMenuOpen]);
 
   const openMobileMenu = () => {
     setIsMobileMenuOpen(true);
@@ -127,10 +138,13 @@ export const Navigation: React.FC<NavigationProps> = ({
       ? createPortal(
           <div
             className={`md:hidden fixed inset-0 z-[60] bg-[#111111] transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-              isMobileMenuVisible ? 'translate-x-0' : 'translate-x-full'
+              isMobileMenuVisible
+                ? 'translate-x-0'
+                : 'pointer-events-none translate-x-full'
             }`}
             role="dialog"
             aria-modal="true"
+            aria-hidden={!isMobileMenuVisible}
             aria-label="Menu"
           >
             <div className="flex h-full flex-col">
