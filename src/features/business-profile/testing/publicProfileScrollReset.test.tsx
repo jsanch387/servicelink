@@ -77,9 +77,7 @@ describe('public profile landing scroll', () => {
       />
     );
 
-    expect(
-      document.querySelector('[class*="overflow-anchor"]')
-    ).not.toBeNull();
+    expect(document.querySelector('[class*="overflow-anchor"]')).not.toBeNull();
     expect(window.history.scrollRestoration).toBe('manual');
   });
 });

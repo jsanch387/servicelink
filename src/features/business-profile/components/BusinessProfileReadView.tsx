@@ -75,8 +75,8 @@ export const BusinessProfileReadView: React.FC<
 }) => {
   const showReviewsTab = Boolean(
     publicReviewSummary &&
-    publicReviewSummary.reviewCount > 0 &&
-    publicProfileSlug
+      publicReviewSummary.reviewCount > 0 &&
+      publicProfileSlug
   );
   const showSubscriptionsTab = publicSubscriptionPlans.length > 0;
   const [activeTab, setActiveTab] = useState<TabType>(() => {

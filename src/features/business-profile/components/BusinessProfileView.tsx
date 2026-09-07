@@ -174,8 +174,8 @@ export const BusinessProfileView: React.FC<BusinessProfileViewProps> = ({
       label: 'Service area',
       done: Boolean(
         (primaryServiceArea?.city && primaryServiceArea?.stateCode) ||
-        (publicServiceCoverage?.city && publicServiceCoverage?.stateCode) ||
-        (city && state)
+          (publicServiceCoverage?.city && publicServiceCoverage?.stateCode) ||
+          (city && state)
       ),
     },
     { label: 'Bio', done: Boolean(businessProfile.bio?.trim()) },
