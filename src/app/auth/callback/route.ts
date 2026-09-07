@@ -110,8 +110,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
   }
 
-  // If this user signed in with Google but an account with this email already
-  // exists from email/password signup, block and ask them to use password.
+  // If this user signed in with Google/Apple but an account with this email
+  // already exists from email/password signup, block and ask them to use password.
   // Skip for email-change confirmations — the user already owns this session.
   if (!emailChangeFlow) {
     const admin = createSupabaseAdminClient();

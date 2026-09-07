@@ -43,6 +43,7 @@ export { SmsNotificationsConsent } from './SmsNotificationsConsent';
 export { horizontalScrollStripClassName } from './horizontalScrollStrip';
 export { FramedCtaButton } from './FramedCtaButton';
 export { GlassCard } from './GlassCard';
+export { AppleIcon } from './AppleIcon';
 export { GoogleIcon } from './GoogleIcon';
 export { IconButton } from './IconButton';
 export { IosAppStoreButton } from './IosAppStoreButton';

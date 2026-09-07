@@ -26,6 +26,7 @@ export interface AuthActions {
     email?: string;
   }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
+  signInWithApple: () => Promise<{ error?: string }>;
   requestPasswordReset: (_email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<{ success?: boolean; error?: string }>;
 

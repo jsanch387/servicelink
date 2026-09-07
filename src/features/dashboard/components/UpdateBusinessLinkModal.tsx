@@ -79,7 +79,7 @@ export const UpdateBusinessLinkModal: React.FC<
       <div className="space-y-6 -mt-2">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Change your link
+            Edit your link
           </h2>
           <p className="text-gray-400 text-sm sm:text-base mt-2 leading-relaxed">
             Your old URL will stop working. Pick a new ending, then save.

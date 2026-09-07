@@ -38,7 +38,7 @@ export function DashboardSidebarNavItem({
           : 'gap-3 px-3 py-2'
       } ${
         isActive
-          ? 'bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+          ? 'bg-white/[0.08] text-white'
           : 'text-zinc-400 hover:bg-white/[0.045] hover:text-white'
       }`}
     >

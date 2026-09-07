@@ -4,6 +4,7 @@ import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import {
   AdjustmentsHorizontalIcon,
+  ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
@@ -12,7 +13,7 @@ import { usePathname } from 'next/navigation';
 import React from 'react';
 import type { DashboardSidebarProps } from '../types/dashboard';
 import {
-  getVisibleDashboardNavGroups,
+  getVisibleDashboardNavItems,
   isDashboardNavItemActive,
 } from '../utils/dashboardNav';
 import { DashboardSidebarNavItem } from './DashboardSidebarNavItem';
@@ -26,12 +27,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onToggleCollapsed,
 }) => {
   const pathname = usePathname();
-  const groups = getVisibleDashboardNavGroups({
+  const items = getVisibleDashboardNavItems({
     isOnboardingCompleted,
     showMembershipsNav,
   });
   const showSettings = isOnboardingCompleted;
   const settingsActive = pathname === ROUTES.DASHBOARD.SETTINGS;
+  const helpActive = pathname === ROUTES.DASHBOARD.CONTACT;
 
   return (
     <>
@@ -99,42 +101,21 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </div>
 
           <nav
-            className={`min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-3 scrollbar-dark ${
+            className={`min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 scrollbar-dark ${
               collapsed ? 'lg:px-2' : ''
             }`}
           >
-            {groups.map(group => (
-              <div key={group.id} className="space-y-1">
-                {group.label ? (
-                  <>
-                    <p
-                      className={`px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-600 ${
-                        collapsed ? 'lg:hidden' : ''
-                      }`}
-                    >
-                      {group.label}
-                    </p>
-                    {collapsed ? (
-                      <div
-                        className="mx-auto hidden h-px w-6 bg-white/[0.06] lg:block"
-                        aria-hidden
-                      />
-                    ) : null}
-                  </>
-                ) : null}
-                {group.items.map(item => (
-                  <DashboardSidebarNavItem
-                    key={item.name}
-                    name={item.name}
-                    href={item.href}
-                    icon={item.icon}
-                    isActive={isDashboardNavItemActive(pathname, item)}
-                    collapsed={collapsed}
-                    onNavigate={() => setOpen(false)}
-                    badge={item.badge}
-                  />
-                ))}
-              </div>
+            {items.map(item => (
+              <DashboardSidebarNavItem
+                key={item.name}
+                name={item.name}
+                href={item.href}
+                icon={item.icon}
+                isActive={isDashboardNavItemActive(pathname, item)}
+                collapsed={collapsed}
+                onNavigate={() => setOpen(false)}
+                badge={item.badge}
+              />
             ))}
           </nav>
 
@@ -144,14 +125,24 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             }`}
           >
             {showSettings ? (
-              <DashboardSidebarNavItem
-                name="Settings"
-                href={ROUTES.DASHBOARD.SETTINGS}
-                icon={AdjustmentsHorizontalIcon}
-                isActive={settingsActive}
-                collapsed={collapsed}
-                onNavigate={() => setOpen(false)}
-              />
+              <>
+                <DashboardSidebarNavItem
+                  name="Help"
+                  href={ROUTES.DASHBOARD.CONTACT}
+                  icon={ChatBubbleLeftRightIcon}
+                  isActive={helpActive}
+                  collapsed={collapsed}
+                  onNavigate={() => setOpen(false)}
+                />
+                <DashboardSidebarNavItem
+                  name="Settings"
+                  href={ROUTES.DASHBOARD.SETTINGS}
+                  icon={AdjustmentsHorizontalIcon}
+                  isActive={settingsActive}
+                  collapsed={collapsed}
+                  onNavigate={() => setOpen(false)}
+                />
+              </>
             ) : null}
           </div>
         </div>

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 
 import { IconButton } from '@/components/shared';
+import { DashboardSupportWidget } from '@/features/contact/components/DashboardSupportWidget';
 import { useDashboardSidebarCollapsed } from '../hooks/useDashboardSidebarCollapsed';
 import type { DashboardProps } from '../types/dashboard';
 import { DashboardHeader } from './DashboardHeader';
@@ -14,6 +15,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   children,
   isOnboardingCompleted = false,
   showMembershipsNav = false,
+  accountEmail = null,
 }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const { collapsed, setCollapsed } = useDashboardSidebarCollapsed();
@@ -72,6 +74,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
       </div>
+      {accountEmail ? (
+        <DashboardSupportWidget accountEmail={accountEmail} />
+      ) : null}
     </div>
   );
 };

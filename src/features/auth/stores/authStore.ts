@@ -14,9 +14,11 @@ const initialState = {
   isInitialized: false,
 };
 
-async function startGoogleOAuthSignIn(
+async function startOAuthSignIn(
+  provider: 'google' | 'apple',
   setLoading: (loading: boolean) => void
 ): Promise<{ error?: string }> {
+  const label = provider === 'apple' ? 'Apple' : 'Google';
   const supabase = createClient();
   setLoading(true);
 
@@ -27,7 +29,7 @@ async function startGoogleOAuthSignIn(
     ).replace(/\/$/, '');
     const redirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}`;
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider,
       options: { redirectTo },
     });
 
@@ -42,7 +44,7 @@ async function startGoogleOAuthSignIn(
     }
 
     setLoading(false);
-    return { error: 'Could not start Google sign-in' };
+    return { error: `Could not start ${label} sign-in` };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     setLoading(false);
@@ -253,7 +255,10 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       signInWithGoogle: async () =>
-        startGoogleOAuthSignIn(loading => set({ isLoading: loading })),
+        startOAuthSignIn('google', loading => set({ isLoading: loading })),
+
+      signInWithApple: async () =>
+        startOAuthSignIn('apple', loading => set({ isLoading: loading })),
 
       // Request password reset email (must use prod URL in prod so email link goes to app, not localhost)
       requestPasswordReset: async (email: string) => {

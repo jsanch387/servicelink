@@ -26,8 +26,10 @@ export interface DashboardStats {
 export interface DashboardProps {
   children?: React.ReactNode;
   isOnboardingCompleted?: boolean;
-  /** Memberships / Subscriptions nav — email rollout allowlist. */
+  /** Memberships / Subscriptions nav — rollout gate (open to all when enabled). */
   showMembershipsNav?: boolean;
+  /** Signed-in account email for the dashboard help widget. */
+  accountEmail?: string | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

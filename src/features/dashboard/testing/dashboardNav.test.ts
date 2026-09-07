@@ -71,6 +71,10 @@ describe('getDashboardPageTitle', () => {
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.SETTINGS)).toBe('Settings');
   });
 
+  it('returns Help for the contact route', () => {
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.CONTACT)).toBe('Help');
+  });
+
   it('names payments sub-screens', () => {
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.PAYMENTS)).toBe('Revenue');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.PAYMENTS_TRANSACTIONS)).toBe(

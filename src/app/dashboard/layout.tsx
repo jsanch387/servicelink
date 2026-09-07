@@ -50,6 +50,7 @@ export default async function DashboardLayout({
     <DashboardWrapper
       isOnboardingCompleted={isOnboardingCompleted}
       showMembershipsNav={showMembershipsNav}
+      accountEmail={user?.email?.trim() || null}
     >
       {children}
     </DashboardWrapper>

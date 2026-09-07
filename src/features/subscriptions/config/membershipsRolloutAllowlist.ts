@@ -1,13 +1,12 @@
 /**
  * Temporary memberships / Subscriptions rollout allowlist (owner auth emails).
  *
+ * - OPEN_TO_ALL true: skip the email list (all eligible Pro owners).
  * - Non-empty + OPEN_TO_ALL false: only listed owners see dashboard Subscriptions
  *   and published plans on their public booking link.
- * - OPEN_TO_ALL true: skip the email list (all eligible Pro owners).
  * - Empty list + OPEN_TO_ALL false: feature hidden for everyone.
  *
- * Add lowercase emails as you expand the beta.
- * Keep this tight until live BA testing looks good.
+ * Eligibility (Pro, Stripe Connect, payments on) is unchanged.
  */
 export const MEMBERSHIPS_ROLLOUT_OWNER_EMAILS: readonly string[] = [
   // Primary (prod soft-launch testing)
@@ -26,8 +25,8 @@ export const MEMBERSHIPS_ROLLOUT_OWNER_EMAILS: readonly string[] = [
   'erickjavier1355@icloud.com',
 ];
 
-/** Set true to open memberships to all eligible owners (ignores the email list). */
-export const MEMBERSHIPS_ROLLOUT_OPEN_TO_ALL = false;
+/** Open memberships to all eligible owners (ignores the email list). */
+export const MEMBERSHIPS_ROLLOUT_OPEN_TO_ALL = true;
 
 export function isMembershipsRolloutAllowlistActive(): boolean {
   return (

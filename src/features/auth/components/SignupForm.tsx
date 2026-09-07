@@ -21,7 +21,7 @@ import {
   AuthOrDivider,
   AuthScreenLayout,
 } from './AuthScreenLayout';
-import { AuthGoogleButton } from './AuthSocialButtons';
+import { AuthSocialButtons } from './AuthSocialButtons';
 
 const authFooterLinkClass =
   'font-semibold text-white hover:text-gray-200 transition-colors';
@@ -29,7 +29,7 @@ const authFooterLinkClass =
 export const SignupForm: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signUp, signInWithGoogle, isLoading } = useAuth();
+  const { signUp, signInWithGoogle, signInWithApple, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -38,6 +38,7 @@ export const SignupForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [authError, setAuthError] = useState<string>('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   useEffect(() => {
     captureWorkshopAttributionFromUrl(searchParams);
@@ -52,6 +53,18 @@ export const SignupForm: React.FC = () => {
       if (result?.error) setAuthError(result.error);
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setAuthError('');
+    setAppleLoading(true);
+    markPendingSignupAttribution();
+    try {
+      const result = await signInWithApple();
+      if (result?.error) setAuthError(result.error);
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -165,7 +178,7 @@ export const SignupForm: React.FC = () => {
             fullWidth
             size="lg"
             loading={isLoading}
-            disabled={isLoading || googleLoading}
+            disabled={isLoading || googleLoading || appleLoading}
             className="sm:min-h-[56px] sm:text-base"
           >
             {isLoading ? 'Creating account' : 'Sign up'}
@@ -193,9 +206,11 @@ export const SignupForm: React.FC = () => {
 
       <AuthOrDivider />
 
-      <AuthGoogleButton
+      <AuthSocialButtons
         onGoogle={handleGoogleSignIn}
+        onApple={handleAppleSignIn}
         googleLoading={googleLoading}
+        appleLoading={appleLoading}
         disabled={isLoading}
       />
     </AuthScreenLayout>

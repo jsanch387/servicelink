@@ -18,11 +18,11 @@ export const DashboardContactContent: React.FC<
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
       <div className="max-w-lg mx-auto w-full min-w-0">
         <Link
-          href={ROUTES.DASHBOARD.SETTINGS}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
+          href={ROUTES.DASHBOARD.MAIN}
+          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white cursor-pointer"
         >
           <ArrowLeftIcon className="h-4 w-4" aria-hidden />
-          Settings
+          Dashboard
         </Link>
 
         <header className="mb-6 sm:mb-8">

@@ -15,7 +15,7 @@ import {
   AuthOrDivider,
   AuthScreenLayout,
 } from './AuthScreenLayout';
-import { AuthGoogleButton } from './AuthSocialButtons';
+import { AuthSocialButtons } from './AuthSocialButtons';
 
 const REDIRECT_ERROR_MESSAGES: Record<string, string> = {
   email_exists_use_password:
@@ -31,7 +31,7 @@ export const LoginForm: React.FC<{
   loginNotice?: string;
 }> = ({ redirectError, resetSuccess, loginNotice }) => {
   const router = useRouter();
-  const { signIn, signInWithGoogle, isLoading } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -39,6 +39,7 @@ export const LoginForm: React.FC<{
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [authError, setAuthError] = useState<string>('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   useEffect(() => {
     if (redirectError && REDIRECT_ERROR_MESSAGES[redirectError]) {
@@ -61,6 +62,17 @@ export const LoginForm: React.FC<{
       if (result?.error) setAuthError(result.error);
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setAuthError('');
+    setAppleLoading(true);
+    try {
+      const result = await signInWithApple();
+      if (result?.error) setAuthError(result.error);
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -184,7 +196,7 @@ export const LoginForm: React.FC<{
             fullWidth
             size="lg"
             loading={isLoading}
-            disabled={isLoading || googleLoading}
+            disabled={isLoading || googleLoading || appleLoading}
             className="sm:min-h-[56px] sm:text-base"
           >
             {isLoading ? 'Signing in' : 'Login'}
@@ -194,9 +206,11 @@ export const LoginForm: React.FC<{
 
       <AuthOrDivider />
 
-      <AuthGoogleButton
+      <AuthSocialButtons
         onGoogle={handleGoogleSignIn}
+        onApple={handleAppleSignIn}
         googleLoading={googleLoading}
+        appleLoading={appleLoading}
         disabled={isLoading}
       />
     </AuthScreenLayout>

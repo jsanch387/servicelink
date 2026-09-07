@@ -3,6 +3,8 @@ export type { ContactFormProps } from './components/ContactForm';
 export { ContactFormSuccess } from './components/ContactFormSuccess';
 export type { ContactFormSuccessProps } from './components/ContactFormSuccess';
 export { DashboardContactContent } from './components/DashboardContactContent';
+export { DashboardSupportWidget } from './components/DashboardSupportWidget';
+export type { DashboardSupportWidgetProps } from './components/DashboardSupportWidget';
 export { CONTACT_TOPIC_LABEL, CONTACT_TOPIC_OPTIONS } from './constants';
 export { handleContactFormPost } from './server/handleContactFormPost';
 export type {

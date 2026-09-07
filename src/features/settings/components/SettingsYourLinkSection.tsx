@@ -156,8 +156,8 @@ export const SettingsYourLinkSection: React.FC<
 
         <p className="text-sm text-gray-400 mb-4 leading-relaxed">
           {linkGenerated
-            ? 'Share this URL with customers. QR code coming soon.'
-            : 'The link you share with customers. Create one below.'}
+            ? 'This is the link you share with customers so they can book you.'
+            : 'Create the link you share with customers so they can book you.'}
         </p>
 
         {!linkGenerated ? (
@@ -223,7 +223,7 @@ export const SettingsYourLinkSection: React.FC<
                 onClick={() => setShowUpdateLinkModal(true)}
                 className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center py-2 text-sm text-gray-400 transition-colors hover:text-white"
               >
-                Change link
+                Edit link
               </button>
             </div>
           </div>
