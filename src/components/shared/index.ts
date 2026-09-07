@@ -10,6 +10,7 @@ export {
   publicFlowStickyBackHeaderClassName,
   publicFlowStickyBackHeaderInnerClassName,
 } from './publicFlowBackNav';
+export { useResetWindowScrollOnMount } from './useResetWindowScrollOnMount';
 export { useScrollWindowToTopOnChange } from './useScrollWindowToTopOnChange';
 export {
   PhoneInput,

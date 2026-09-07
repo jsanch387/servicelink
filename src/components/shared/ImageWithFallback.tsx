@@ -97,11 +97,16 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       className={className}
       priority={priority}
       loading={priority ? 'eager' : 'lazy'}
-      decoding={priority ? 'auto' : 'async'}
+      decoding="async"
       sizes={sizes}
       unoptimized={isExternal}
       onError={handleError}
       onLoad={onLoad}
+      ref={node => {
+        if (node && node.complete && node.naturalWidth > 0) {
+          onLoad?.();
+        }
+      }}
     />
   );
 };
