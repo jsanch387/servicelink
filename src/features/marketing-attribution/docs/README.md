@@ -2,7 +2,7 @@
 
 First-party measurement for **where a business owner came from** and **whether they became a paying Pro subscriber**.
 
-No extra analytics product is required. Meta Pixel still gets `PageView`, `Lead`, `CompleteRegistration`, and `Subscribe` for Ads Manager. **This table is the source of truth** for “how many ad signups paid.”
+No extra analytics product is required. Meta Pixel gets `PageView` on load, `CompleteRegistration` once per **new account**, and `Subscribe` when Stripe Pro activates. **This table is the source of truth** for “how many ad signups paid.” `Lead` is not a signup event.
 
 Copy-paste queries: [`queries.sql`](./queries.sql).
 
@@ -13,11 +13,12 @@ Copy-paste queries: [`queries.sql`](./queries.sql).
 ```
 Ad / bio / blog click
   → URL has ?utm_source=&utm_medium=&utm_campaign= (and often fbclid)
-  → Browser stores first-touch UTMs (localStorage)
-  → User signs up
+  → First-touch stored in cookie + localStorage (and on OAuth/email redirectTo)
+  → User creates an account (auth confirms the user)
   → We write one row to public.signup_attribution (write-once)
+  → CompleteRegistration fires once with eventID (browser + CAPI if token set)
   → User later pays for Pro
-  → Stripe webhook stamps first_paid_at (write-once)
+  → Stripe webhook stamps first_paid_at (write-once) and fires Subscribe
 ```
 
 **First-touch:** the first real campaign that brought them wins. A later ad does not overwrite it. A weak landing (bare `/login` with no UTMs) can be upgraded when a real campaign arrives.
@@ -134,12 +135,37 @@ Writes use the **service role**. Users cannot edit their own attribution.
 
 ## Code map
 
-| Piece                       | Path                                                               |
-| --------------------------- | ------------------------------------------------------------------ |
-| Capture UTMs in the browser | `utils/utmCapture.ts`                                              |
-| Channel rules               | `utils/deriveSignupChannel.ts`                                     |
-| Save on signup              | `POST /api/attribution/signup` → `server/saveSignupAttribution.ts` |
-| Stamp first paid            | Stripe webhook → `server/markSignupAttributionFirstPaid.ts`        |
-| Report                      | `server/loadPaidConversionReport.ts`                               |
-| Founder page                | `/dashboard/internal/acquisition`                                  |
-| Schema                      | `docs/migrations/001_signup_attribution_first_paid_at.sql`         |
+| Piece                       | Path                                                                        |
+| --------------------------- | --------------------------------------------------------------------------- |
+| Capture UTMs in the browser | `utils/utmCapture.ts` + first-party cookie                                  |
+| First-touch merge           | `utils/firstTouchAttribution.ts`                                            |
+| Cookie on first landing     | `server/applyMarketingAttributionCookie.ts` (middleware)                    |
+| OAuth / magic-link carry    | `utils/authRedirectAttribution.ts` (`sl_attr` on redirectTo)                |
+| Channel rules               | `utils/deriveSignupChannel.ts`                                              |
+| Save on signup              | `POST /api/attribution/signup` → `server/saveSignupAttribution.ts`          |
+| CompleteRegistration        | After `recorded: true` — browser + optional CAPI (`META_CAPI_ACCESS_TOKEN`) |
+| Stamp first paid            | Stripe webhook → `server/markSignupAttributionFirstPaid.ts`                 |
+| Subscribe                   | Distinct from CompleteRegistration; maps to `first_paid_at`                 |
+| Report                      | `server/loadPaidConversionReport.ts`                                        |
+| Founder page                | `/dashboard/internal/acquisition`                                           |
+| Schema                      | `docs/migrations/001_signup_attribution_first_paid_at.sql`                  |
+
+### Meta pixel rules
+
+| Event                  | When                                     | Not when                                            |
+| ---------------------- | ---------------------------------------- | --------------------------------------------------- |
+| `PageView`             | Normal page loads                        | —                                                   |
+| `CompleteRegistration` | New auth user + `signup_attribution` row | Homepage CTA, `/signup` view, Lead, returning login |
+| `Subscribe`            | First paid Pro (`first_paid_at`)         | Signup / onboarding                                 |
+| `Lead`                 | Not used as a signup                     | —                                                   |
+
+`CompleteRegistration` uses `eventID = sl_cr_<userId>` on browser and CAPI so Events Manager can dedupe.
+
+### Test checklist (Meta ads)
+
+1. Open `https://myservicelink.app/?utm_source=meta&utm_medium=paid&utm_campaign=TEST&utm_content=hook-a&fbclid=test123`
+2. Sign up (email, Google, or Apple — including Instagram in-app).
+3. In Supabase, `signup_attribution` has `channel = meta_ads` and matching `utm_content`.
+4. Events Manager: 1 `CompleteRegistration` with `eventID` `sl_cr_<userId>`.
+5. Bare homepage visit does **not** fire `CompleteRegistration`.
+6. Second login does **not** fire again.

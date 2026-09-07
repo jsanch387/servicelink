@@ -1,4 +1,11 @@
+import {
+  clientIpFromRequest,
+  metaClickCookiesFromRequest,
+  sendMetaCapiEvent,
+} from '@/features/analytics/server/sendMetaCapiEvent';
+import { completeRegistrationEventId } from '@/features/analytics/utils/metaPixel';
 import { saveSignupAttribution } from '@/features/marketing-attribution/server/saveSignupAttribution';
+import { parseMarketingAttributionFromBody } from '@/features/marketing-attribution/server/parseMarketingAttribution';
 import { assertSignupAttributionRateLimits } from '@/server/rateLimit/publicApiRateLimit';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
@@ -38,9 +45,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let eventId: string | undefined;
+    if (result.recorded) {
+      eventId = completeRegistrationEventId(user.id);
+      const attribution = parseMarketingAttributionFromBody(body);
+      const clickCookies = metaClickCookiesFromRequest(request.headers);
+      void sendMetaCapiEvent({
+        eventName: 'CompleteRegistration',
+        eventId,
+        eventSourceUrl: 'https://myservicelink.app/',
+        email: user.email,
+        userId: user.id,
+        clientIp: clientIpFromRequest(request.headers),
+        userAgent: request.headers.get('user-agent'),
+        fbp: clickCookies.fbp,
+        fbc: clickCookies.fbc,
+        fbclid: attribution.fbclid,
+      }).catch(error => {
+        console.error(
+          '[MarketingAttribution] CAPI CompleteRegistration',
+          error
+        );
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      data: { recorded: result.recorded },
+      data: { recorded: result.recorded, eventId },
     });
   } catch {
     return NextResponse.json(

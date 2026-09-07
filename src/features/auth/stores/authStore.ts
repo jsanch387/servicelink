@@ -1,6 +1,8 @@
 'use client';
 
 import { ROUTES } from '@/constants/routes';
+import { appendAttributionToAuthRedirect } from '@/features/marketing-attribution/utils/authRedirectAttribution';
+import { getStoredMarketingUtms } from '@/features/marketing-attribution/utils/utmCapture';
 import { ProfileService } from '@/features/profiles';
 import { createClient } from '@/libs/supabase';
 import { create } from 'zustand';
@@ -27,7 +29,10 @@ async function startOAuthSignIn(
       process.env.NEXT_PUBLIC_SITE_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '')
     ).replace(/\/$/, '');
-    const redirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}`;
+    const redirectTo = appendAttributionToAuthRedirect(
+      `${baseUrl}${ROUTES.AUTH.CALLBACK}`,
+      getStoredMarketingUtms()
+    );
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo },
@@ -180,9 +185,12 @@ export const useAuthStore = create<AuthStore>()(
             process.env.NEXT_PUBLIC_SITE_URL ||
             (typeof window !== 'undefined' ? window.location.origin : '')
           ).replace(/\/$/, '');
-          const emailRedirectTo = `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
-            ROUTES.AUTH.EMAIL_CONFIRMED
-          )}`;
+          const emailRedirectTo = appendAttributionToAuthRedirect(
+            `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
+              ROUTES.AUTH.EMAIL_CONFIRMED
+            )}`,
+            getStoredMarketingUtms()
+          );
 
           const { data, error } = await supabase.auth.signUp({
             email,

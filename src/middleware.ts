@@ -1,4 +1,5 @@
 import { AUTH_REQUIRED_PATH_PREFIXES, ROUTES } from '@/constants/routes';
+import { applyMarketingAttributionCookie } from '@/features/marketing-attribution/server/applyMarketingAttributionCookie';
 import { bookingReferralCaptureRedirect } from '@/features/booking-attribution/server/bookingReferralCookie';
 import {
   paymentLinkResumeCookie,
@@ -36,6 +37,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const resumeCode = paymentLinkShortCodeFromPathname(pathname);
   const withStaleExpiry = (res: NextResponse) => {
+    applyMarketingAttributionCookie(request, res);
     const out = expireStaleAuthCookies(res, staleAuthCookieNames);
     if (resumeCode) {
       out.cookies.set(paymentLinkResumeCookie(resumeCode));

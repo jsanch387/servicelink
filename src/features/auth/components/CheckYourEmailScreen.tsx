@@ -1,8 +1,10 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { flushSignupLeadIfPending } from '@/features/analytics/utils/signupLeadTracking';
 import { ROUTES } from '@/constants/routes';
+import { flushGoogleAdsSignupIfPending } from '@/features/analytics/utils/googleAdsTracking';
+import { appendAttributionToAuthRedirect } from '@/features/marketing-attribution/utils/authRedirectAttribution';
+import { getStoredMarketingUtms } from '@/features/marketing-attribution/utils/utmCapture';
 import { createClient } from '@/libs/supabase/client';
 import { EnvelopeIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -13,9 +15,12 @@ function authEmailRedirectTo(): string {
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== 'undefined' ? window.location.origin : '')
   ).replace(/\/$/, '');
-  return `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
-    ROUTES.AUTH.EMAIL_CONFIRMED
-  )}`;
+  return appendAttributionToAuthRedirect(
+    `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
+      ROUTES.AUTH.EMAIL_CONFIRMED
+    )}`,
+    getStoredMarketingUtms()
+  );
 }
 
 export interface CheckYourEmailScreenProps {
@@ -38,8 +43,8 @@ export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
   const [resendOk, setResendOk] = useState(false);
 
   useEffect(() => {
-    flushSignupLeadIfPending({ email: trimmed || undefined });
-  }, [trimmed]);
+    flushGoogleAdsSignupIfPending();
+  }, []);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;

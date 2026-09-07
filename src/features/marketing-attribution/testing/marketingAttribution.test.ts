@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { MARKETING_UTM_STORAGE_KEY } from '../constants';
+import {
+  MARKETING_UTM_COOKIE_NAME,
+  MARKETING_UTM_STORAGE_KEY,
+} from '../constants';
+import { clearMarketingAttributionCookie } from '../utils/attributionCookie';
 import {
   captureMarketingUtmsFromSearchParams,
   getStoredMarketingUtms,
@@ -82,6 +86,7 @@ describe('persistMarketingUtms', () => {
   beforeEach(() => {
     window.localStorage.clear();
     window.sessionStorage.clear();
+    clearMarketingAttributionCookie();
     Object.defineProperty(document, 'referrer', {
       configurable: true,
       get: () => '',
@@ -91,6 +96,7 @@ describe('persistMarketingUtms', () => {
   afterEach(() => {
     window.localStorage.clear();
     window.sessionStorage.clear();
+    clearMarketingAttributionCookie();
   });
 
   it('does not lock first-touch on bare /login', () => {
@@ -240,5 +246,39 @@ describe('persistMarketingUtms', () => {
     expect(
       window.sessionStorage.getItem(MARKETING_UTM_STORAGE_KEY)
     ).toBeTruthy();
+  });
+
+  it('writes a first-party cookie and does not let bare / overwrite Meta', () => {
+    persistMarketingUtms({
+      landingPath: '/',
+      utmSource: 'meta',
+      utmMedium: 'paid',
+      utmCampaign: 'sep-test',
+      utmContent: 'hook-a',
+      fbclid: 'abc123',
+    });
+
+    expect(document.cookie).toContain(MARKETING_UTM_COOKIE_NAME);
+
+    persistMarketingUtms({ landingPath: '/' });
+
+    const stored = getStoredMarketingUtms();
+    expect(stored?.utmSource).toBe('meta');
+    expect(stored?.utmContent).toBe('hook-a');
+    expect(stored?.fbclid).toBe('abc123');
+  });
+
+  it('hydrates web storage from the first-party cookie', () => {
+    persistMarketingUtms({
+      landingPath: '/',
+      utmSource: 'meta',
+      fbclid: 'from-cookie',
+    });
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+
+    const stored = getStoredMarketingUtms();
+    expect(stored?.fbclid).toBe('from-cookie');
+    expect(window.localStorage.getItem(MARKETING_UTM_STORAGE_KEY)).toBeTruthy();
   });
 });

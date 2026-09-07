@@ -6,6 +6,8 @@
  * subscription id (trials stay unstamped until they convert).
  */
 
+import { sendMetaCapiEvent } from '@/features/analytics/server/sendMetaCapiEvent';
+import { subscribeEventId } from '@/features/analytics/utils/metaPixel';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type MarkSignupAttributionFirstPaidParams = {
@@ -88,6 +90,15 @@ export async function markSignupAttributionFirstPaid(
   if (!claimed?.length) {
     return { stamped: false, skippedReason: 'already_stamped_or_no_row' };
   }
+
+  void sendMetaCapiEvent({
+    eventName: 'Subscribe',
+    eventId: subscribeEventId(userId),
+    eventSourceUrl: 'https://myservicelink.app/dashboard/settings',
+    userId,
+  }).catch(error => {
+    console.error('[MarketingAttribution] CAPI Subscribe', error);
+  });
 
   return { stamped: true };
 }

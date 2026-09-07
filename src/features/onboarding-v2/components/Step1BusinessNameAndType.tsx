@@ -10,8 +10,7 @@ import {
   getBusinessTypeSelectOptions,
   getIndustryOnboardingCopy,
 } from '@/constants/businessTypes';
-import { trackSignupLeadOnce } from '@/features/analytics/utils/signupLeadTracking';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { SpecialtyChips } from './SpecialtyChips';
 
@@ -41,10 +40,6 @@ export const Step1BusinessNameAndType: React.FC<
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
-
-  useEffect(() => {
-    trackSignupLeadOnce();
-  }, []);
 
   const onboardingCopy = getIndustryOnboardingCopy(businessType);
   const specialtyOptions = businessType
