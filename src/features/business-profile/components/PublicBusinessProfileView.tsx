@@ -1,6 +1,6 @@
 'use client';
 
-import { useResetWindowScrollOnMount } from '@/components/shared';
+import { useResetWindowScrollOnMount } from '@/components/shared/useResetWindowScrollOnMount';
 import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
 import React from 'react';
 import {
