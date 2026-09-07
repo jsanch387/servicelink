@@ -1,5 +1,6 @@
 'use client';
 
+import { useResetWindowScrollOnMount } from '@/components/shared';
 import { PublicActiveSaleMarqueeBanner } from '@/features/marketing/components/PublicActiveSaleMarqueeBanner';
 import React from 'react';
 import {
@@ -19,9 +20,11 @@ type PublicBusinessProfileViewProps = Omit<
 export const PublicBusinessProfileView: React.FC<
   PublicBusinessProfileViewProps
 > = props => {
+  useResetWindowScrollOnMount();
+
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
-      <div className="flex min-h-screen flex-col bg-[#0f0f0f]">
+    <div className="min-h-screen bg-[#0f0f0f] [overflow-anchor:none]">
+      <div className="flex min-h-screen flex-col bg-[#0f0f0f] [overflow-anchor:none]">
         {props.publicActiveSale ? (
           <PublicActiveSaleMarqueeBanner
             sale={props.publicActiveSale}

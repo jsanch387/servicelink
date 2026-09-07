@@ -10,6 +10,7 @@ import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
 import { MARKETING_IMAGES } from '@/constants/marketingImages';
 import { ViewTracker } from '@/features/analytics';
 import { PublicBusinessProfileView } from '@/features/business-profile/components/PublicBusinessProfileView';
+import { PublicProfileLandingScrollReset } from '@/features/business-profile/components/PublicProfileLandingScrollReset';
 import { isPublicBusinessSlugVisible } from '@/features/business-profile/server/publicBusinessSlugVisibility';
 import {
   getProfileCoverDisplaySrc,
@@ -320,7 +321,8 @@ export default async function PublicProfilePage({
   }
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-neutral-900 [overflow-anchor:none]">
+      <PublicProfileLandingScrollReset />
       {/* View Tracking */}
       <ViewTracker businessSlug={slug} />
 
