@@ -5,6 +5,7 @@ import {
   EMAIL_CHANGE_NOTICE_PARAM,
   EMAIL_CHANGE_NOTICE_UPDATED,
 } from '@/features/account/server/resolveAccountEmailChangeRedirectTo';
+import { applyMarketingAttributionCookieFromUrl } from '@/features/marketing-attribution/server/applyMarketingAttributionCookie';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
@@ -32,6 +33,15 @@ function isEmailChangeFlow(
   );
 }
 
+function redirectWithAttribution(request: Request, target: URL | string) {
+  const dest =
+    typeof target === 'string' ? new URL(target, request.url) : target;
+  return applyMarketingAttributionCookieFromUrl(
+    request,
+    NextResponse.redirect(dest)
+  );
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const { searchParams } = url;
@@ -49,7 +59,8 @@ export async function GET(request: Request) {
           err,
           errCode,
         });
-        return NextResponse.redirect(
+        return redirectWithAttribution(
+          request,
           buildSettingsEmailNoticeUrl(request.url, EMAIL_CHANGE_NOTICE_ERROR)
         );
       }
@@ -61,7 +72,7 @@ export async function GET(request: Request) {
           const v = searchParams.get(key);
           if (v) target.searchParams.set(key, v);
         }
-        return NextResponse.redirect(target);
+        return redirectWithAttribution(request, target);
       }
     }
     console.warn('[auth/callback] missing code — redirecting to login', {
@@ -69,11 +80,13 @@ export async function GET(request: Request) {
       queryKeys: [...searchParams.keys()],
     });
     if (emailChangeFlow) {
-      return NextResponse.redirect(
+      return redirectWithAttribution(
+        request,
         buildSettingsEmailNoticeUrl(request.url, EMAIL_CHANGE_NOTICE_ERROR)
       );
     }
-    return NextResponse.redirect(
+    return redirectWithAttribution(
+      request,
       new URL(
         `${ROUTES.AUTH.LOGIN}?notice=email_confirm_open_login`,
         request.url
@@ -87,12 +100,14 @@ export async function GET(request: Request) {
   if (error) {
     console.error('Auth callback error:', error);
     if (emailChangeFlow) {
-      return NextResponse.redirect(
+      return redirectWithAttribution(
+        request,
         buildSettingsEmailNoticeUrl(request.url, EMAIL_CHANGE_NOTICE_ERROR)
       );
     }
     // Often: different browser/app than signup (missing PKCE cookie). Email may still be confirmed.
-    return NextResponse.redirect(
+    return redirectWithAttribution(
+      request,
       new URL(
         `${ROUTES.AUTH.LOGIN}?notice=email_confirm_open_login`,
         request.url
@@ -103,11 +118,15 @@ export async function GET(request: Request) {
   const user = data.user;
   if (!user?.email) {
     if (emailChangeFlow) {
-      return NextResponse.redirect(
+      return redirectWithAttribution(
+        request,
         buildSettingsEmailNoticeUrl(request.url, EMAIL_CHANGE_NOTICE_ERROR)
       );
     }
-    return NextResponse.redirect(new URL(ROUTES.AUTH.LOGIN, request.url));
+    return redirectWithAttribution(
+      request,
+      new URL(ROUTES.AUTH.LOGIN, request.url)
+    );
   }
 
   // If this user signed in with Google/Apple but an account with this email
@@ -130,7 +149,7 @@ export async function GET(request: Request) {
       await admin.auth.admin.deleteUser(user.id);
       const loginUrl = new URL(ROUTES.AUTH.LOGIN, request.url);
       loginUrl.searchParams.set('error', EMAIL_EXISTS_ERROR);
-      return NextResponse.redirect(loginUrl);
+      return redirectWithAttribution(request, loginUrl);
     }
   }
 
@@ -166,10 +185,11 @@ export async function GET(request: Request) {
   }
 
   if (emailChangeFlow) {
-    return NextResponse.redirect(
+    return redirectWithAttribution(
+      request,
       buildSettingsEmailNoticeUrl(request.url, EMAIL_CHANGE_NOTICE_UPDATED)
     );
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  return redirectWithAttribution(request, new URL(next, request.url));
 }

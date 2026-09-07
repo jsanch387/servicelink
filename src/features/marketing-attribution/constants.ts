@@ -7,6 +7,19 @@ export const AFFONSO_COOKIE_DURATION_DAYS = 30;
 /** First-touch UTM payload from marketing landing URLs. */
 export const MARKETING_UTM_STORAGE_KEY = 'sl_marketing_utm_attribution';
 
+/** First-party cookie (same payload). Survives OAuth redirects in the same browser. */
+export const MARKETING_UTM_COOKIE_NAME = 'sl_marketing_utm_attribution';
+
+/** 90 days — covers typical Meta click-through windows. */
+export const MARKETING_UTM_COOKIE_MAX_AGE_SECONDS = 90 * 24 * 60 * 60;
+
+/**
+ * Compact first-touch payload on Google/Apple/email `redirectTo`.
+ * Instagram in-app → Apple often opens a different browser; the cookie is lost,
+ * but this query param comes back on `/auth/callback`.
+ */
+export const AUTH_REDIRECT_ATTRIBUTION_PARAM = 'sl_attr';
+
 /** Set when user completes signup — triggers attribution sync after session exists. */
 export const PENDING_SIGNUP_ATTRIBUTION_KEY = 'sl_pending_signup_attribution';
 

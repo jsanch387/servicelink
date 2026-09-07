@@ -1,11 +1,12 @@
 'use client';
 
 import { Button, Input } from '@/components/shared';
-import {
-  markSignupLeadPending,
-  trackSignupLeadOnce,
-} from '@/features/analytics/utils/signupLeadTracking';
 import { completeWorkshopSignupTracking } from '@/features/ads-workshop/utils/completeWorkshopSignupTracking';
+import {
+  markGoogleAdsSignupPending,
+  trackGoogleAdsSignupOnce,
+} from '@/features/analytics/utils/googleAdsTracking';
+import { trackAffonsoSignupOnce } from '@/features/marketing-attribution/utils/affonsoSignupTracking';
 import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
 import { markPendingSignupAttribution } from '@/features/marketing-attribution';
 import { ROUTES } from '@/constants/routes';
@@ -89,7 +90,7 @@ export const SignupForm: React.FC = () => {
 
       if (result.needsEmailVerification) {
         markPendingSignupAttribution();
-        markSignupLeadPending();
+        markGoogleAdsSignupPending();
         const q = result.email
           ? `?email=${encodeURIComponent(result.email)}`
           : '';
@@ -97,7 +98,8 @@ export const SignupForm: React.FC = () => {
         return;
       }
 
-      trackSignupLeadOnce({ email: formData.email });
+      trackGoogleAdsSignupOnce();
+      void trackAffonsoSignupOnce({ email: formData.email });
       markPendingSignupAttribution();
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));
