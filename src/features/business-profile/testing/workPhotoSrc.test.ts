@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getProfileCoverDisplaySrc,
+  getProfileLogoDisplaySrc,
+  getSupabaseRenderedImageUrl,
   getWorkPhotoSrc,
   getWorkPhotoThumbSrc,
   stripWorkPhotoCacheBuster,
@@ -49,6 +52,43 @@ describe('getWorkPhotoThumbSrc', () => {
   it('leaves non-storage URLs unchanged', () => {
     expect(getWorkPhotoThumbSrc('https://cdn.example/a.jpg')).toBe(
       'https://cdn.example/a.jpg'
+    );
+  });
+});
+
+describe('getSupabaseRenderedImageUrl', () => {
+  const original =
+    'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/biz/cover.jpg?v=99';
+
+  it('resizes by width only when height is omitted', () => {
+    expect(
+      getSupabaseRenderedImageUrl(original, { width: 1080, quality: 70 })
+    ).toBe(
+      'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/biz/cover.jpg?width=1080&quality=70'
+    );
+  });
+});
+
+describe('getProfileCoverDisplaySrc', () => {
+  it('requests a mobile-sized cover without cropping the original aspect', () => {
+    expect(
+      getProfileCoverDisplaySrc(
+        'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/biz/cover.jpg'
+      )
+    ).toBe(
+      'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/biz/cover.jpg?width=1080&quality=70'
+    );
+  });
+});
+
+describe('getProfileLogoDisplaySrc', () => {
+  it('requests a square logo thumb', () => {
+    expect(
+      getProfileLogoDisplaySrc(
+        'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/biz/logo.jpg'
+      )
+    ).toBe(
+      'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/biz/logo.jpg?width=256&height=256&resize=cover&quality=70'
     );
   });
 });

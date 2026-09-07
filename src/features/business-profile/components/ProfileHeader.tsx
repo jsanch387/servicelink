@@ -12,13 +12,17 @@ import { ProfileRatingSummary } from '../reviews';
 import type { PublicProfileReviewsSummary } from '@/features/reviews';
 import { PublicBookingLanguageToggle } from './PublicBookingLanguageToggle';
 import React from 'react';
-import { ImageWithFallback } from '../../../components';
 import {
   CoverPhotoPlaceholder,
   LogoPlaceholder,
 } from '../../../components/shared';
 import { CompleteBusinessProfile, EditMode } from '../types/businessProfile';
+import {
+  getProfileCoverDisplaySrc,
+  getProfileLogoDisplaySrc,
+} from '../utils/workPhotoSrc';
 import { socialLinksForDisplay } from '../utils/socialMedia';
+import { ProfileMediaImage } from './ProfileMediaImage';
 
 interface ProfileHeaderProps {
   businessProfile: CompleteBusinessProfile;
@@ -55,20 +59,25 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const serviceArea =
     coverageLabel?.trim() || businessProfile.service_area?.trim() || null;
   const socialLinks = socialLinksForDisplay(businessProfile.social_media);
+  const coverSrc = businessProfile.cover_image_url?.trim() || '';
+  const logoSrc = businessProfile.logo_url?.trim() || '';
+  const coverIsLcp = Boolean(coverSrc);
+  const logoIsLcp = !coverIsLcp && Boolean(logoSrc);
 
   return (
     <>
       <div className="relative h-44 sm:h-56 md:h-60 w-full overflow-hidden bg-[#0f0f0f]">
-        {businessProfile.cover_image_url ? (
-          <ImageWithFallback
-            src={businessProfile.cover_image_url}
+        {coverSrc ? (
+          <ProfileMediaImage
+            src={coverSrc}
+            displaySrc={getProfileCoverDisplaySrc(coverSrc)}
             alt="Business Cover Photo"
-            width={1200}
+            width={1080}
             height={400}
             className="w-full h-full object-cover object-center"
             fallbackLabel="Cover photo"
-            fallbackSize={{ w: 1200, h: 400 }}
-            priority
+            fallbackSize={{ w: 1080, h: 400 }}
+            priority={coverIsLcp}
             sizes="(max-width: 640px) 100vw, 896px"
           />
         ) : (
@@ -94,16 +103,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <div className="relative z-10 flex flex-col items-center px-4 sm:px-8 -mt-14 text-center">
         <div className="relative mb-5">
           <div className="rounded-[2rem] bg-zinc-800/80 p-1 shadow-xl ring-1 ring-white/10">
-            {businessProfile.logo_url ? (
-              <ImageWithFallback
+            {logoSrc ? (
+              <ProfileMediaImage
                 className="h-28 w-28 rounded-[1.75rem] border-2 border-[#0f0f0f] object-cover bg-zinc-900 sm:h-32 sm:w-32"
-                src={businessProfile.logo_url}
+                src={logoSrc}
+                displaySrc={getProfileLogoDisplaySrc(logoSrc)}
                 alt={`${businessProfile.business_name} logo`}
                 width={256}
                 height={256}
                 fallbackLabel="Logo"
                 fallbackSize={{ w: 256, h: 256 }}
-                priority
+                priority={logoIsLcp}
                 sizes="128px"
               />
             ) : (
