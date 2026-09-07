@@ -10,7 +10,7 @@ describe('RevealOnImageLoad', () => {
   it('shows the skeleton until the image is ready, then hides it', () => {
     const { rerender } = render(
       <RevealOnImageLoad isLoaded={false}>
-        <img alt="cover" src="https://cdn.example/cover.jpg" />
+        <span>cover</span>
       </RevealOnImageLoad>
     );
 
@@ -19,7 +19,7 @@ describe('RevealOnImageLoad', () => {
 
     rerender(
       <RevealOnImageLoad isLoaded>
-        <img alt="cover" src="https://cdn.example/cover.jpg" />
+        <span>cover</span>
       </RevealOnImageLoad>
     );
 
