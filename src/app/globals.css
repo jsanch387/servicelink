@@ -306,6 +306,9 @@ body {
   .animate-how-it-works-spark-y {
     animation: none;
   }
+  .skeleton-image {
+    animation: none;
+  }
 }
 
 /* ServiceLink Logo Text Font - Plus Jakarta Sans (Modern, Clean SaaS Font) */
@@ -405,23 +408,29 @@ body {
   display: none;
 }
 
-/* Image loading skeleton – shimmer (e.g. Our Work / portfolio) */
+/* Image loading skeleton – soft shimmer until the photo is fully decoded */
 @keyframes skeleton-shimmer {
   0% {
-    background-position: -200% 0;
+    background-position: 100% 0;
   }
   100% {
-    background-position: 200% 0;
+    background-position: -100% 0;
   }
 }
 
 .skeleton-image {
-  background: linear-gradient(
-    90deg,
-    rgb(38 38 38) 0%,
-    rgb(64 64 64) 50%,
-    rgb(38 38 38) 100%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  background:
+    linear-gradient(
+      110deg,
+      rgb(24 24 27) 0%,
+      rgb(24 24 27) 35%,
+      rgb(63 63 70) 50%,
+      rgb(24 24 27) 65%,
+      rgb(24 24 27) 100%
+    ),
+    rgb(24 24 27);
+  background-size:
+    220% 100%,
+    auto;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
 }

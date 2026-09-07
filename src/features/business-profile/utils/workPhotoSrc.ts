@@ -8,6 +8,7 @@ export type WorkPhoto = {
   id: string;
   src: string;
   thumbSrc: string;
+  lightboxSrc: string;
 };
 
 export const GALLERY_INITIAL_VISIBLE = 4;
@@ -22,6 +23,8 @@ export const PROFILE_COVER_WIDTH = 1080;
 export const PROFILE_COVER_QUALITY = 70;
 export const PROFILE_LOGO_SIZE = 256;
 export const PROFILE_LOGO_QUALITY = 70;
+export const LIGHTBOX_WIDTH = 1200;
+export const LIGHTBOX_QUALITY = 70;
 
 const PUBLIC_BUSINESS_IMAGES_PREFIX =
   'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/';
@@ -111,6 +114,13 @@ export function getProfileLogoDisplaySrc(src: string): string {
   });
 }
 
+export function getWorkPhotoLightboxSrc(src: string): string {
+  return getSupabaseRenderedImageUrl(src, {
+    width: LIGHTBOX_WIDTH,
+    quality: LIGHTBOX_QUALITY,
+  });
+}
+
 export function toWorkPhotos(
   images: WorkPhotoSource[] | null | undefined
 ): WorkPhoto[] {
@@ -124,6 +134,7 @@ export function toWorkPhotos(
       id: image.id?.trim() || `work-${index}`,
       src,
       thumbSrc: getWorkPhotoThumbSrc(src),
+      lightboxSrc: getWorkPhotoLightboxSrc(src),
     });
   }
   return photos;

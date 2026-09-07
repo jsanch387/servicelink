@@ -68,4 +68,20 @@ describe('ProfileHeader', () => {
     expect(logo?.getAttribute('src')).toContain('width=256');
     expect(logo?.getAttribute('loading')).toBe('eager');
   });
+
+  it('keeps the cover behind a skeleton until it finishes loading', () => {
+    render(
+      <ProfileHeader
+        businessProfile={profile()}
+        editMode="view"
+        onSave={noopSave}
+        onCancel={() => {}}
+        isPublic
+      />
+    );
+
+    const cover = document.querySelector('img[src*="cover.jpg"]');
+    expect(cover?.className).toContain('opacity-0');
+    expect(document.querySelector('.skeleton-image')).toBeTruthy();
+  });
 });

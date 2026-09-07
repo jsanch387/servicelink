@@ -3,6 +3,7 @@ import {
   getProfileCoverDisplaySrc,
   getProfileLogoDisplaySrc,
   getSupabaseRenderedImageUrl,
+  getWorkPhotoLightboxSrc,
   getWorkPhotoSrc,
   getWorkPhotoThumbSrc,
   stripWorkPhotoCacheBuster,
@@ -81,6 +82,18 @@ describe('getProfileCoverDisplaySrc', () => {
   });
 });
 
+describe('getWorkPhotoLightboxSrc', () => {
+  it('requests a viewport-sized render URL without cropping', () => {
+    expect(
+      getWorkPhotoLightboxSrc(
+        'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/biz/1.jpg'
+      )
+    ).toBe(
+      'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/biz/1.jpg?width=1200&quality=70'
+    );
+  });
+});
+
 describe('getProfileLogoDisplaySrc', () => {
   it('requests a square logo thumb', () => {
     expect(
@@ -114,12 +127,15 @@ describe('toWorkPhotos', () => {
         id: 'a',
         src: 'https://cdn.example/a.jpg',
         thumbSrc: 'https://cdn.example/a.jpg',
+        lightboxSrc: 'https://cdn.example/a.jpg',
       },
       {
         id: 'work-2',
         src: 'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/object/public/business_images/c.jpg',
         thumbSrc:
           'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/c.jpg?width=640&height=640&resize=cover&quality=70',
+        lightboxSrc:
+          'https://qailotbnrtwyzhbwufvk.supabase.co/storage/v1/render/image/public/business_images/c.jpg?width=1200&quality=70',
       },
     ]);
   });

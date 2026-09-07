@@ -4,8 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkPhotoLightbox } from '../components/work/WorkPhotoLightbox';
 
 const photos = [
-  { id: '1', src: 'https://cdn.example/1.jpg' },
-  { id: '2', src: 'https://cdn.example/2.jpg' },
+  {
+    id: '1',
+    src: 'https://cdn.example/1.jpg',
+    thumbSrc: 'https://cdn.example/1.jpg',
+    lightboxSrc: 'https://cdn.example/1.jpg',
+  },
+  {
+    id: '2',
+    src: 'https://cdn.example/2.jpg',
+    thumbSrc: 'https://cdn.example/2.jpg',
+    lightboxSrc: 'https://cdn.example/2.jpg',
+  },
 ];
 
 afterEach(() => {

@@ -74,7 +74,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             alt="Business Cover Photo"
             width={1080}
             height={400}
-            className="w-full h-full object-cover object-center"
+            wrapperClassName="h-full w-full"
+            className="h-full w-full object-cover object-center"
             fallbackLabel="Cover photo"
             fallbackSize={{ w: 1080, h: 400 }}
             priority={coverIsLcp}
@@ -105,6 +106,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <div className="rounded-[2rem] bg-zinc-800/80 p-1 shadow-xl ring-1 ring-white/10">
             {logoSrc ? (
               <ProfileMediaImage
+                wrapperClassName="h-28 w-28 rounded-[1.75rem] bg-zinc-900 sm:h-32 sm:w-32"
+                skeletonClassName="rounded-[1.75rem]"
                 className="h-28 w-28 rounded-[1.75rem] border-2 border-[#0f0f0f] object-cover bg-zinc-900 sm:h-32 sm:w-32"
                 src={logoSrc}
                 displaySrc={getProfileLogoDisplaySrc(logoSrc)}
