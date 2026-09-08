@@ -46,7 +46,7 @@ Review invite email lives in `src/features/email/review-invite/`.
 | Receipt on complete                     | Not built                                     |
 | Dashboard hide-review UI                | Not built                                     |
 | Google Business connect (OAuth)         | Wired                                         |
-| Google review pull + public display     | Wired — live pull waits on Google API quota   |
+| Google review pull + public display     | Wired — parked; live pull waits on GBP API allowlist (see [docs/GOOGLE_REVIEWS.md](./docs/GOOGLE_REVIEWS.md) “Parked”) |
 
 ## Product policy (short)
 

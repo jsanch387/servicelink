@@ -6,6 +6,29 @@ Owners can show **all** of their Google Business Profile reviews on their Servic
 
 ---
 
+## Parked — read this next time (Sep 8, 2026)
+
+v1 **app code is done** on branch `google-reviews-integration`. Live pull is blocked on Google, not on us.
+
+**Why quota is 0:** we did **not** fail a quota-increase request. New Cloud projects start at **Requests per minute = 0** until Google **allowlists** the project. Enabling the API in the console does nothing. **Edit Quotas** on that row also does nothing. You have to apply for **Business Profile API access** first.
+
+**Current case:** `6-3847000041545`  
+Submitted **Sep 8, 2026** via [GBP API contact form](https://support.google.com/business/contact/api_default) → **Application for Basic API Access**. Google said **7–10 business days**. That case will **not** appear in Cloud Console support — only in the confirmation email. An earlier case (`3-0566000041119`, Aug 22) disappeared; treat it as gone.
+
+**When you come back**
+
+1. Cloud Console → ServiceLink → **APIs & Services → Enabled APIs → My Business Account Management API → Quotas**.
+2. **Requests per minute**
+   - still **0** → not approved yet. Do not click Pull. Do not Edit Quotas.
+   - **300** (or anything > 0) → approved. Continue below.
+3. Restore the missing SQL files if they are still absent (`docs/migrations/` is empty; tables already exist in production).
+4. Reviews → **Connect to Google** → **Pull Google reviews**. `google_business_connections` and `google_reviews` are **0 rows** — reconnect is required.
+5. Confirm inbox (Google label) + public Reviews tab.
+
+ServiceLink listing was verified **Aug 22, 2026**. Google’s form wants 60+ days; if this case is rejected for age, reapply around **Oct 21** with the Cloud **project number** (digits), listing owner/manager email.
+
+---
+
 ## Product
 
 | In v1 | Out of v1 |
@@ -163,11 +186,11 @@ Restart `next dev` after changing `.env.local`.
 2. My Business Business Information API
 3. Google My Business API (v4 reviews) — may stay hidden until Google approves the project
 
-**Quota gate:** new projects start at **Requests per minute = 0**. Connect can still store tokens. Pull and listing lookup return **429** until Google grants quota (typically **300**). Check **APIs & Services → My Business Account Management API → Quotas**, not the traffic graph.
+**Quota gate:** this is **API allowlist access**, not a quota-increase ticket. New projects start at **Requests per minute = 0**. Connect can still store tokens. Pull and listing lookup return **429** until Google approves Basic API Access (typically **300**). Check **APIs & Services → My Business Account Management API → Quotas**, not the traffic graph, and not **IAM → Quotas** (that list is every API in the project).
 
-Google’s Basic API Access form wants a **verified listing live 60+ days** and the Cloud **project number** (digits), not the project id string.
+Do **not** use **Edit Quotas** on that row. Apply at the [GBP API contact form](https://support.google.com/business/contact/api_default) → **Application for Basic API Access**. The form wants a **verified listing live 60+ days** and the Cloud **project number** (digits), not the project id string (`servicelink-488502`).
 
-When quota is live: Reviews → **Pull Google reviews**. Confirm rows in the inbox (Google label) and the public Reviews tab.
+When quota is live: Reviews → **Pull Google reviews**. Confirm rows in the inbox (Google label) and the public Reviews tab. See **Parked — read this next time** at the top for the current case id.
 
 ---
 
