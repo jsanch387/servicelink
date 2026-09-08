@@ -128,7 +128,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </div>
           {showVerifiedBadge ? (
             <span
-              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f0f0f] ring-2 ring-zinc-700"
+              className="absolute -bottom-0.5 -right-0.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f0f0f] ring-2 ring-zinc-700"
               aria-label="Verified business"
             >
               <CheckBadgeIcon className="h-4 w-4 text-blue-400" />

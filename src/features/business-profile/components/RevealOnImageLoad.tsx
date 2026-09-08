@@ -20,7 +20,7 @@ export const RevealOnImageLoad: React.FC<RevealOnImageLoadProps> = ({
   skeletonClassName = '',
 }) => {
   return (
-    <div className={`relative overflow-hidden ${className}`.trim()}>
+    <div className={`relative isolate overflow-hidden ${className}`.trim()}>
       <div
         className={`pointer-events-none absolute inset-0 z-[1] skeleton-image transition-opacity duration-300 ease-out ${
           isLoaded ? 'opacity-0' : 'opacity-100'

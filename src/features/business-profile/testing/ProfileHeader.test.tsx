@@ -69,6 +69,23 @@ describe('ProfileHeader', () => {
     expect(logo?.getAttribute('loading')).toBe('eager');
   });
 
+  it('keeps the verified badge above the logo loading skeleton', () => {
+    render(
+      <ProfileHeader
+        businessProfile={profile()}
+        editMode="view"
+        onSave={noopSave}
+        onCancel={() => {}}
+        isPublic
+        showVerifiedBadge
+      />
+    );
+
+    const badge = document.querySelector('[aria-label="Verified business"]');
+    expect(badge?.className).toContain('z-10');
+    expect(document.querySelector('.skeleton-image')).toBeTruthy();
+  });
+
   it('keeps the cover behind a skeleton until it finishes loading', () => {
     render(
       <ProfileHeader

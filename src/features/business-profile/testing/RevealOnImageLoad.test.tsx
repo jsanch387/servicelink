@@ -16,6 +16,7 @@ describe('RevealOnImageLoad', () => {
 
     const skeleton = document.querySelector('.skeleton-image');
     expect(skeleton?.className).toContain('opacity-100');
+    expect(skeleton?.parentElement?.className).toContain('isolate');
 
     rerender(
       <RevealOnImageLoad isLoaded>
