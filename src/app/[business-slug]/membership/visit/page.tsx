@@ -65,6 +65,7 @@ export default async function PublicMembershipVisitRoute({
     availabilityRow?.time_off_blocks
   ).map(toTimeOffIntervalFields);
   const minimumNotice = availabilityRow?.minimum_notice ?? 'none';
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const schedulingReady = availabilityRow?.accept_bookings === true;
 
   const cookieStore = await cookies();
@@ -94,6 +95,7 @@ export default async function PublicMembershipVisitRoute({
       weeklySchedule={weeklySchedule}
       timeOffBlocks={timeOffBlocks}
       minimumNotice={minimumNotice}
+      bufferTime={bufferTime}
       schedulingReady={schedulingReady}
       visitDurationMinutes={ctx.visitDurationMinutes}
       needsAddress={ctx.needsAddress}

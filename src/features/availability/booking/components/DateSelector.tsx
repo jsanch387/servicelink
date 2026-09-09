@@ -29,6 +29,8 @@ interface DateSelectorProps {
   timeOffBlocks: TimeOffInterval[];
   /** Lead time (`minimum_notice`); defaults to none. */
   minimumNotice?: string;
+  /** Gap between appointments (`buffer_time`); defaults to none. */
+  bufferTime?: string;
   selectedDate: Date | null;
 
   onSelectDate: (date: Date) => void;
@@ -63,6 +65,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   existingBookings,
   timeOffBlocks,
   minimumNotice = 'none',
+  bufferTime = 'none',
   selectedDate,
   onSelectDate,
   onUserSelectDate,
@@ -91,7 +94,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         30,
         timeOffBlocks,
         minimumNotice,
-        { requireDurationWithinHours }
+        { requireDurationWithinHours, bufferTime }
       );
       return slots.length === 0;
     },
@@ -103,6 +106,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       existingBookings,
       timeOffBlocks,
       minimumNotice,
+      bufferTime,
     ]
   );
 

@@ -33,6 +33,7 @@ export interface ScheduleStepProps {
   startTime: string | null;
   weeklySchedule: WeeklySchedule;
   existingBookings: ExistingBooking[];
+  bufferTime?: string;
   scheduleLoading?: boolean;
   onChange: (next: { scheduledDate: string; startTime: string | null }) => void;
   /** Reports whether the selected start matches an existing booking. */
@@ -45,6 +46,7 @@ export function ScheduleStep({
   startTime,
   weeklySchedule,
   existingBookings,
+  bufferTime = 'none',
   scheduleLoading = false,
   onChange,
   onExactStartConflictChange,
@@ -111,6 +113,7 @@ export function ScheduleStep({
           existingBookings={existingBookings}
           timeOffBlocks={[]}
           minimumNotice="none"
+          bufferTime={bufferTime}
           requireAvailableSlots
           requireDurationWithinHours={false}
           selectedDate={selectedDate}
@@ -131,6 +134,7 @@ export function ScheduleStep({
         existingBookings={existingBookings}
         timeOffBlocks={[]}
         minimumNotice="none"
+        bufferTime={bufferTime}
         requireDurationWithinHours={false}
         selectedTime={startTime}
         onSelectTime={handleSelectTime}

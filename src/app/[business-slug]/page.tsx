@@ -41,11 +41,9 @@ import {
 import { sortServicesForDisplay } from '@/features/services/categories/utils/sortServicesForDisplay';
 import type { ServiceCategoryRow } from '@/features/services/categories/types/serviceCategories';
 import type { ServiceRow } from '@/features/services/types/services';
-import {
-  maxPortfolioImagesForSubscription,
-  type OwnerSubscriptionFieldsForPortfolio,
-} from '@/features/pricing/utils/maxPortfolioImagesForSubscription';
+import type { OwnerSubscriptionFieldsForPortfolio } from '@/features/pricing/utils/maxPortfolioImagesForSubscription';
 import { PublicMembershipSubscribeSuccessReturn } from '@/features/subscriptions/components/PublicMembershipSubscribeSuccessReturn';
+import { hasPublicMembershipPlans } from '@/features/subscriptions/server/hasPublicMembershipPlans';
 import { loadPublicMembershipPlans } from '@/features/subscriptions/server/loadPublicMembershipPlans';
 import {
   BOOKING_FLOW_LOCALE_COOKIE_NAME,
@@ -108,8 +106,8 @@ async function fetchBusinessProfileBySlug(
 
     const profile = profileData as PublicBusinessProfileRow;
 
-    // Fetch services, categories, and images in parallel
-    const [servicesResult, categoriesResult, imagesResult] = await Promise.all([
+    // Services on first paint; gallery images load when the Gallery tab opens.
+    const [servicesResult, categoriesResult] = await Promise.all([
       supabase
         .from('business_services')
         .select('*')
@@ -122,11 +120,6 @@ async function fetchBusinessProfileBySlug(
         .eq('business_id', profile.id)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true }),
-      supabase
-        .from('business_images')
-        .select('*')
-        .eq('business_id', profile.id)
-        .order('position', { ascending: true }),
     ]);
 
     const services = sortServicesForDisplay(
@@ -135,22 +128,6 @@ async function fetchBusinessProfileBySlug(
     );
     const serviceCategories = (categoriesResult.data ??
       []) as ServiceCategoryRow[];
-    const images = imagesResult.data || [];
-
-    // Add preview URLs to images
-    const imagesWithUrls = images.map(img => ({
-      ...(img as {
-        id: string;
-        business_id: string;
-        storage_path: string;
-        position: number;
-        created_at: string;
-      }),
-      preview_url: MediaService.getPublicUrl(
-        (img as { storage_path: string }).storage_path,
-        false
-      ),
-    }));
 
     // Add logo and banner URLs if they exist
     const logoUrl = profile.logo_path
@@ -165,7 +142,7 @@ async function fetchBusinessProfileBySlug(
       ...profile,
       services,
       serviceCategories,
-      images: imagesWithUrls,
+      images: [],
       logo_url: logoUrl,
       cover_image_url: bannerUrl,
     } as unknown as CompleteBusinessProfile;
@@ -254,21 +231,16 @@ export default async function PublicProfilePage({
   const showVerifiedBadge = hasPro;
   const { reachedFreeCap: publicFreeBookingsCapReached } = freeTierGate;
 
-  const [publicActiveSale, publicSubscriptionPlans] = await Promise.all([
+  const [publicActiveSale, hasPublicSubscriptionPlans] = await Promise.all([
     loadPublicActiveSale(adminGate, businessProfile.id, {
       ownerHasPro: ownerTier === 'pro',
     }),
-    loadPublicMembershipPlans(adminGate, businessProfile.id, {
+    hasPublicMembershipPlans(adminGate, businessProfile.id, {
       ownerHasPro: ownerTier === 'pro',
     }),
   ]);
 
-  const maxGalleryImages =
-    maxPortfolioImagesForSubscription(ownerSubscriptionRow);
-  const displayProfile: CompleteBusinessProfile = {
-    ...businessProfile,
-    images: businessProfile.images.slice(0, maxGalleryImages),
-  };
+  const displayProfile: CompleteBusinessProfile = businessProfile;
 
   const showRequestQuoteCta =
     isProAccessForPublicQuoteRequests(
@@ -288,6 +260,11 @@ export default async function PublicProfilePage({
 
   // Post-Checkout success: render confirmation only (no profile flash).
   if (membershipCheckout === 'success') {
+    const publicSubscriptionPlans = await loadPublicMembershipPlans(
+      adminGate,
+      businessProfile.id,
+      { ownerHasPro: ownerTier === 'pro' }
+    );
     const successPlan =
       (membershipPlanId
         ? publicSubscriptionPlans.find(p => p.id === membershipPlanId)
@@ -339,7 +316,7 @@ export default async function PublicProfilePage({
         publicReviewSummary={publicReviewSummary}
         publicProfileSlug={slug}
         publicActiveSale={publicActiveSale}
-        publicSubscriptionPlans={publicSubscriptionPlans}
+        hasPublicSubscriptionPlans={hasPublicSubscriptionPlans}
         initialTab={initialTab}
         membershipCheckoutCanceled={membershipCheckout === 'cancel'}
         coverageLabel={

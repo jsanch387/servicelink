@@ -46,6 +46,7 @@ interface AvailabilityBookingDetailPanelProps {
   updateError?: string | null;
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
+  bufferTime?: string;
   /** Confirmed/completed bookings except the one being rescheduled (for slot blocking). */
   existingBookingsForSlotGrid: ExistingBooking[];
 }
@@ -91,6 +92,7 @@ export function AvailabilityBookingDetailPanel({
   updateError = null,
   weeklySchedule,
   timeOffBlocks,
+  bufferTime = 'none',
   existingBookingsForSlotGrid,
 }: AvailabilityBookingDetailPanelProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -547,6 +549,7 @@ export function AvailabilityBookingDetailPanel({
         booking={booking}
         weeklySchedule={weeklySchedule}
         timeOffBlocks={timeOffBlocks}
+        bufferTime={bufferTime}
         existingBookingsForSlotGrid={existingBookingsForSlotGrid}
         isRescheduling={isRescheduling}
         onClose={closeRescheduleModal}

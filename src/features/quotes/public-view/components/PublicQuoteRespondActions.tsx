@@ -22,6 +22,7 @@ interface PublicQuoteRespondActionsProps {
   durationMinutes: number;
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
+  bufferTime?: string;
 }
 
 type FinalizeStep = 'schedule' | 'address';
@@ -49,6 +50,7 @@ export const PublicQuoteRespondActions: React.FC<
   durationMinutes,
   weeklySchedule,
   timeOffBlocks,
+  bufferTime = 'none',
 }) => {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
@@ -328,6 +330,7 @@ export const PublicQuoteRespondActions: React.FC<
                         serviceDurationMinutes={durationMinutes}
                         existingBookings={blockedSlots}
                         timeOffBlocks={timeOffBlocks}
+                        bufferTime={bufferTime}
                         selectedDate={selectedDate}
                         onSelectDate={d => {
                           setSelectedDate(d);
@@ -341,6 +344,7 @@ export const PublicQuoteRespondActions: React.FC<
                         weeklySchedule={schedule}
                         existingBookings={blockedSlots}
                         timeOffBlocks={timeOffBlocks}
+                        bufferTime={bufferTime}
                         selectedTime={selectedTime}
                         onSelectTime={setSelectedTime}
                       />

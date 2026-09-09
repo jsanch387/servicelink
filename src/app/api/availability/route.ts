@@ -7,7 +7,10 @@ import {
   getAvailabilityForBusiness,
   upsertAvailabilityForBusiness,
 } from '@/features/availability/services/availabilityService';
-import { isMinimumNoticeValue } from '@/features/availability/types/availability';
+import {
+  isBufferTimeValue,
+  isMinimumNoticeValue,
+} from '@/features/availability/types/availability';
 import { normalizeAvailabilityRow } from '@/features/availability/utils/normalizeAvailabilityRow';
 import { parseTimeOffBlocksFromRequestBody } from '@/features/availability/utils/timeOffBlocksPayload';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -94,6 +97,10 @@ export async function POST(request: NextRequest) {
       isMinimumNoticeValue(body.minimumNotice)
         ? body.minimumNotice
         : 'none';
+    const bufferTime =
+      typeof body.bufferTime === 'string' && isBufferTimeValue(body.bufferTime)
+        ? body.bufferTime
+        : 'none';
     const selectedPreset =
       typeof body.selectedPreset === 'string' &&
       SELECTED_PRESET_VALUES.includes(
@@ -123,6 +130,7 @@ export async function POST(request: NextRequest) {
       {
         accept_bookings: acceptBookings,
         minimum_notice: minimumNotice,
+        buffer_time: bufferTime,
         weekly_schedule: schedule,
         selected_preset: selectedPreset,
         time_off_blocks: timeOffParsed.value,

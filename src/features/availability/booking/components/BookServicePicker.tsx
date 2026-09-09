@@ -13,6 +13,7 @@ import {
   getBusinessBookVisitUrl,
   type PublicBookingFlowLocale,
 } from '@/constants/routes';
+import { BookFlowAdvancingOverlay } from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
 import { BookFlowServiceRow } from '@/features/availability/booking/components/BookFlowServiceRow';
 import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
@@ -413,16 +414,20 @@ export function BookServicePicker({
       setCartJobs([]);
       setShowUnfinishedResume(false);
     }
+    const href = getBusinessBookDetailsPath(businessSlug, selectedServiceId, {
+      forOwner: isOwnerManualBooking,
+      lang: bookingFlowLocale,
+      addJob: addingAnotherJob,
+    });
+    void router.prefetch(href);
     policyAgreement.runAfterAgreement(() => {
-      router.push(
-        getBusinessBookDetailsPath(businessSlug, selectedServiceId, {
-          forOwner: isOwnerManualBooking,
-          lang: bookingFlowLocale,
-          addJob: addingAnotherJob,
-        })
-      );
+      router.push(href);
     });
   };
+
+  if (policyAgreement.isAdvancing) {
+    return <BookFlowAdvancingOverlay />;
+  }
 
   return (
     <>
@@ -482,15 +487,15 @@ export function BookServicePicker({
                 variant="inverse"
                 fullWidth
                 className="font-semibold"
-                onClick={() =>
+                onClick={() => {
+                  const href = getBusinessBookVisitUrl(businessSlug, {
+                    lang: bookingFlowLocale,
+                  });
+                  void router.prefetch(href);
                   policyAgreement.runAfterAgreement(() => {
-                    router.push(
-                      getBusinessBookVisitUrl(businessSlug, {
-                        lang: bookingFlowLocale,
-                      })
-                    );
-                  })
-                }
+                    router.push(href);
+                  });
+                }}
               >
                 {ui.bookPicker.continueUnfinishedBooking}
               </Button>
@@ -545,15 +550,15 @@ export function BookServicePicker({
               variant="secondary"
               fullWidth
               className="mt-3 font-semibold"
-              onClick={() =>
+              onClick={() => {
+                const href = getBusinessBookVisitUrl(businessSlug, {
+                  lang: bookingFlowLocale,
+                });
+                void router.prefetch(href);
                 policyAgreement.runAfterAgreement(() => {
-                  router.push(
-                    getBusinessBookVisitUrl(businessSlug, {
-                      lang: bookingFlowLocale,
-                    })
-                  );
-                })
-              }
+                  router.push(href);
+                });
+              }}
             >
               {ui.bookPicker.cancelAddService}
             </Button>

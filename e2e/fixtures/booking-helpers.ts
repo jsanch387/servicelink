@@ -82,14 +82,50 @@ export async function withDepositsDisabled(
   }
 }
 
+function publicBookingPolicyDialog(page: Page) {
+  return page.getByRole('dialog', { name: /Booking policy/i });
+}
+
+function publicBookFlowReady(page: Page) {
+  return page
+    .getByRole('heading', { name: /^Book with /i })
+    .or(page.getByRole('radiogroup', { name: 'Choose a price option' }))
+    .or(page.getByRole('link', { name: 'Date & time' }))
+    .or(page.getByRole('button', { name: 'Date & time' }))
+    .or(page.getByText('Next available'))
+    .or(page.getByRole('heading', { name: /Choose time/i }))
+    .or(page.getByRole('button', { name: 'Choose a different time' }));
+}
+
+/** Dismisses the public booking-policy modal when the business requires it. */
+export async function acceptPublicBookingPolicyIfShown(
+  page: Page
+): Promise<void> {
+  const dialog = publicBookingPolicyDialog(page);
+  if (!(await dialog.isVisible().catch(() => false))) return;
+
+  await dialog
+    .getByRole('checkbox', { name: /I agree to the booking policy/i })
+    .click();
+  const continueBtn = dialog.getByRole('button', { name: 'Continue' });
+  await expect(continueBtn).toBeEnabled({ timeout: 10_000 });
+  await continueBtn.click();
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+}
+
 export async function openPublicBookFlow(
   page: Page,
   slug: string
 ): Promise<void> {
   await page.goto(getBusinessBookPath(slug));
-  await expect(page.getByRole('heading', { name: /^Book with /i })).toBeVisible(
-    { timeout: 20_000 }
-  );
+  const dialog = publicBookingPolicyDialog(page);
+  const ready = publicBookFlowReady(page);
+  await expect(dialog.or(ready).first()).toBeVisible({ timeout: 20_000 });
+  await dialog
+    .waitFor({ state: 'visible', timeout: 2_000 })
+    .catch(() => undefined);
+  await acceptPublicBookingPolicyIfShown(page);
+  await expect(ready.first()).toBeVisible({ timeout: 20_000 });
 }
 
 /** Picks the first listed service (or a name match when provided). */
@@ -97,6 +133,10 @@ export async function selectFirstBookableService(
   page: Page,
   serviceName?: string
 ): Promise<void> {
+  await acceptPublicBookingPolicyIfShown(page);
+  // Single-service businesses redirect straight to details or the calendar.
+  if (await isPastServicePicker(page)) return;
+
   // Category tabs may land on an empty group — switch until services appear.
   const emptyCategory = page.getByText('No services in this category.');
   if (await emptyCategory.isVisible().catch(() => false)) {
@@ -143,6 +183,26 @@ function isOnScheduleCalendar(page: Page): boolean {
   } catch {
     return false;
   }
+}
+
+async function isOnCalendarUi(page: Page): Promise<boolean> {
+  const calendarUi = page
+    .getByRole('button', { name: 'Choose a different time' })
+    .or(page.getByRole('button', { name: 'Book this time' }))
+    .or(page.getByText('Next available'))
+    .first();
+  return calendarUi.isVisible().catch(() => false);
+}
+
+async function isPastServicePicker(page: Page): Promise<boolean> {
+  if (isOnScheduleCalendar(page)) return true;
+  try {
+    const path = new URL(page.url()).pathname;
+    if (path.includes('/book/details')) return true;
+  } catch {
+    // ignore invalid url
+  }
+  return isOnCalendarUi(page);
 }
 
 async function waitForScheduleCalendarReady(page: Page): Promise<void> {
@@ -198,6 +258,8 @@ export async function continueFromServiceDetails(
   const locationChoice = options?.location ?? 'shop';
   let shouldToggleFirstAddOn = options?.toggleFirstAddOn === true;
 
+  await acceptPublicBookingPolicyIfShown(page);
+
   if (!isOnScheduleCalendar(page)) {
     await Promise.race([
       page.waitForURL(
@@ -221,7 +283,7 @@ export async function continueFromServiceDetails(
   }
 
   for (let guard = 0; guard < 8; guard++) {
-    if (isOnScheduleCalendar(page)) {
+    if (isOnScheduleCalendar(page) || (await isOnCalendarUi(page))) {
       // Pre-schedule location for custom jobs / deep links without a prior choice.
       if (await selectServiceLocationIfShown(page, locationChoice)) {
         const cta = stickyPrimaryButton(page, 'Continue');

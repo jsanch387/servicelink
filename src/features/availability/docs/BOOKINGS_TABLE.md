@@ -156,7 +156,7 @@ All customer fields except name/email can be nullable if we later make address o
 ### Slot blocking (avoiding double-booking)
 
 - **Source of blocked slots:** **GET /api/public/bookings/blocked/[slug]** returns, for that business, all rows in `bookings` with `status` in `('confirmed', 'completed')`, with fields `scheduled_date`, `start_time`, `duration_minutes`.
-- **Overlap rule:** Each existing booking blocks the range **`[start_time, start_time + duration_minutes]`**. When generating available slots for a date, we treat any candidate slot as **blocked** if it overlaps that range (i.e. candidate start &lt; booking end and candidate end &gt; booking start). Implemented in `booking/utils/slotGeneration.ts`. So we block for the **full stored appointment length** (service + add-ons at time of booking), not just the base service length.
+- **Overlap rule:** Each existing booking blocks the range **`[start_time, start_time + duration_minutes]`**. When generating available slots for a date, we treat any candidate slot as **blocked** if it overlaps that range (i.e. candidate start &lt; booking end and candidate end &gt; booking start). If the business set **`buffer_time`** on `business_availability` (text token such as `'30m'` / `'1h'`, not raw minutes), that gap is required on **both sides** of every existing booking after converting the token with `bufferTimeToMinutes`. Implemented in `booking/utils/slotGeneration.ts`. So we block for the **full stored appointment length** (service + add-ons at time of booking), not just the base service length. Same buffer rule is re-checked on **POST /api/public/bookings** and owner reschedule.
 
 ### APIs and who writes/reads
 

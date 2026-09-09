@@ -39,6 +39,7 @@ export async function getAvailabilityForBusiness(
 export interface SaveAvailabilityPayload {
   accept_bookings: boolean;
   minimum_notice: string;
+  buffer_time?: string;
   weekly_schedule: BusinessAvailabilityRow['weekly_schedule'];
   selected_preset: string;
   /**
@@ -64,6 +65,9 @@ export async function upsertAvailabilityForBusiness(
     weekly_schedule: payload.weekly_schedule,
     selected_preset: payload.selected_preset,
   };
+  if (payload.buffer_time !== undefined) {
+    row.buffer_time = payload.buffer_time;
+  }
   if (payload.time_off_blocks !== undefined) {
     row.time_off_blocks = payload.time_off_blocks;
   }

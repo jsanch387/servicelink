@@ -53,6 +53,7 @@ interface PublicMembershipVisitPageProps {
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
   minimumNotice: string;
+  bufferTime?: string;
   schedulingReady: boolean;
   visitDurationMinutes?: number;
   needsAddress?: boolean;
@@ -106,6 +107,7 @@ export const PublicMembershipVisitPage: React.FC<
   weeklySchedule,
   timeOffBlocks,
   minimumNotice,
+  bufferTime = 'none',
   schedulingReady,
   visitDurationMinutes = MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT,
   needsAddress = true,
@@ -401,6 +403,7 @@ export const PublicMembershipVisitPage: React.FC<
                 existingBookings={blockedSlots}
                 timeOffBlocks={timeOffBlocks}
                 minimumNotice={minimumNotice}
+                bufferTime={bufferTime}
                 selectedDate={visitDate}
                 onSelectDate={setVisitDate}
                 minDate={calendarMinDate}
@@ -427,6 +430,7 @@ export const PublicMembershipVisitPage: React.FC<
                 existingBookings={blockedSlots}
                 timeOffBlocks={timeOffBlocks}
                 minimumNotice={minimumNotice}
+                bufferTime={bufferTime}
                 selectedTime={visitTime}
                 onSelectTime={setVisitTime}
                 compact={!isLargeScreen}

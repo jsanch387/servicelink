@@ -15,6 +15,7 @@ export function useMaintenanceAnchorSlots(params: {
   durationMinutes: number;
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
+  bufferTime?: string;
   schedulingReady: boolean;
 }) {
   const {
@@ -23,6 +24,7 @@ export function useMaintenanceAnchorSlots(params: {
     durationMinutes,
     weeklySchedule,
     timeOffBlocks,
+    bufferTime = 'none',
     schedulingReady,
   } = params;
 
@@ -39,8 +41,9 @@ export function useMaintenanceAnchorSlots(params: {
         durationMinutes,
         existingBookings: blockedSlots,
         timeOffBlocks,
+        bufferTime,
       }),
-    [weeklySchedule, durationMinutes, blockedSlots, timeOffBlocks]
+    [weeklySchedule, durationMinutes, blockedSlots, timeOffBlocks, bufferTime]
   );
 
   const availableSlots = useMemo(() => {
@@ -50,7 +53,8 @@ export function useMaintenanceAnchorSlots(params: {
       weeklySchedule,
       durationMinutes,
       blockedSlots,
-      timeOffBlocks
+      timeOffBlocks,
+      bufferTime
     );
   }, [
     schedulingReady,
@@ -59,6 +63,7 @@ export function useMaintenanceAnchorSlots(params: {
     durationMinutes,
     blockedSlots,
     timeOffBlocks,
+    bufferTime,
   ]);
 
   const pickDefaultTime = useCallback(

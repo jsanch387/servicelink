@@ -379,6 +379,9 @@ export type PublicBookingUi = {
     alreadySubscribed: string;
     checkoutReturnSuccess: string;
     checkoutReturnCancel: string;
+    plansLoadError: string;
+    plansRetry: string;
+    plansLoadingAriaLabel: string;
     successTitle: string;
     successSubtitle: string;
     successSubtitleWithBusiness: (businessName: string) => string;
@@ -468,6 +471,9 @@ export type PublicBookingUi = {
     reviewsLoadError: string;
     reviewsRetry: string;
     reviewsLoadingAriaLabel: string;
+    galleryLoadError: string;
+    galleryRetry: string;
+    galleryLoadingAriaLabel: string;
     /** Public profile: uncategorized services tab label. */
     serviceCategoryOther: string;
     /** Public profile: category filter tablist label. */

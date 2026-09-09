@@ -425,6 +425,9 @@ export const publicBookingUiEs: PublicBookingUi = {
     checkoutReturnSuccess: 'Pago recibido — gracias por suscribirte.',
     checkoutReturnCancel:
       'Pago cancelado. Puedes intentarlo de nuevo cuando quieras.',
+    plansLoadError: 'No se pudieron cargar los planes. Vuelve a intentarlo.',
+    plansRetry: 'Reintentar',
+    plansLoadingAriaLabel: 'Cargando suscripciones',
     successTitle: 'Ya estás suscrito',
     successSubtitle:
       'Todo listo. Enviaremos el recibo al correo que usaste al pagar.',
@@ -526,6 +529,9 @@ export const publicBookingUiEs: PublicBookingUi = {
     reviewsLoadError: 'No se pudieron cargar las reseñas. Vuelve a intentarlo.',
     reviewsRetry: 'Reintentar',
     reviewsLoadingAriaLabel: 'Cargando reseñas',
+    galleryLoadError: 'No se pudieron cargar las fotos. Vuelve a intentarlo.',
+    galleryRetry: 'Reintentar',
+    galleryLoadingAriaLabel: 'Cargando galería',
     serviceCategoryOther: 'Otros servicios',
     serviceCategoriesAriaLabel: 'Ver servicios por categoría',
     noServicesInCategory: 'No hay servicios en esta categoría.',

@@ -30,9 +30,16 @@ function ServiceCardSkeleton() {
 
 export const BusinessProfileLoadingState: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div
+      className="min-h-screen bg-[#0f0f0f]"
+      aria-busy
+      aria-live="polite"
+      aria-label="Loading profile"
+    >
       <div className="max-w-4xl mx-auto">
-        <div className={`relative h-44 sm:h-56 md:h-60 w-full ${bar}`} />
+        <div className={`relative h-44 sm:h-56 md:h-60 w-full ${bar}`}>
+          <div className="absolute right-3 top-3 h-8 w-16 rounded-full bg-white/[0.08] sm:right-4 sm:top-4" />
+        </div>
 
         <div className="relative z-10 -mt-14 flex flex-col items-center px-4 sm:px-8 text-center">
           <div
@@ -40,6 +47,7 @@ export const BusinessProfileLoadingState: React.FC = () => {
           />
           <div className={`mb-2 h-7 w-48 max-w-[80%] ${bar}`} />
           <div className={`h-4 w-32 ${bar}`} />
+          <div className={`mt-5 h-10 w-28 rounded-xl ${bar}`} />
         </div>
 
         <div className="mt-8 border-b border-white/[0.06] px-4 sm:px-8">

@@ -1,10 +1,7 @@
 'use client';
 
 import { BookingPolicyAgreeModal } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
-import {
-  publicSpecialtyLabels,
-  publicTradeLine,
-} from '@/constants/businessSpecialties';
+import { publicSpecialtyLabels } from '@/constants/businessSpecialties';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
 import React, { useState } from 'react';
@@ -27,40 +24,28 @@ export const ProfileBioSection: React.FC<ProfileBioSectionProps> = ({
     businessProfile.business_type,
     businessProfile.specialties
   );
-  const tradeLine = publicTradeLine(
-    businessProfile.business_type,
-    businessProfile.specialties
-  );
   const policy = resolvePublicBookingPolicy(businessProfile);
-  const hasIntro = Boolean(tradeLine || specialties.length > 0);
 
-  if (!hasIntro && !bio && !policy) {
+  if (!bio && !policy && specialties.length === 0) {
     return <p className="text-sm text-zinc-500">{ui.profile.noBioYet}</p>;
   }
 
   return (
     <div className="space-y-6">
-      {hasIntro ? (
-        <div className="space-y-2">
-          {tradeLine ? (
-            <p className="text-xs font-medium text-zinc-500">{tradeLine}</p>
-          ) : null}
-          {specialties.length > 0 ? (
-            <ul
-              className="flex flex-wrap gap-2"
-              aria-label={ui.profile.specialtiesAriaLabel}
+      {specialties.length > 0 ? (
+        <ul
+          className="flex flex-wrap gap-2"
+          aria-label={ui.profile.specialtiesAriaLabel}
+        >
+          {specialties.map(label => (
+            <li
+              key={label}
+              className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-zinc-300"
             >
-              {specialties.map(label => (
-                <li
-                  key={label}
-                  className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-zinc-300"
-                >
-                  {label}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+              {label}
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {bio ? (

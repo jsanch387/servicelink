@@ -207,6 +207,7 @@ export default async function PublicQuoteViewPage({
   const timeOffBlocks: TimeOffInterval[] = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
   ).map(toTimeOffIntervalFields);
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
 
   const isCustomerRequested = displayQuote.source === 'customer_requested';
   const requestRaw = customerRequestRawFromRow(displayQuote);
@@ -396,6 +397,7 @@ export default async function PublicQuoteViewPage({
           durationMinutes={Math.max(1, displayQuote.duration_minutes ?? 60)}
           weeklySchedule={weeklySchedule}
           timeOffBlocks={timeOffBlocks}
+          bufferTime={bufferTime}
         />
       </div>
     </main>

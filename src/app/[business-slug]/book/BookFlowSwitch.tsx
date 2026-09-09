@@ -47,6 +47,8 @@ interface BookFlowSwitchProps {
   timeOffBlocks?: TimeOffInterval[];
   /** Lead time from `minimum_notice`; skipped for owner manual bookings. */
   minimumNotice?: string;
+  /** Gap between appointments; applied for customers and owners. */
+  bufferTime?: string;
   isOwnerManualBooking?: boolean;
   paymentSettings?: PublicBookingPaymentSettings | null;
   /** Leave calendar flow (step: schedule) — service details, profile, or dashboard. */
@@ -87,6 +89,7 @@ export function BookFlowSwitch({
   weeklySchedule,
   timeOffBlocks = [],
   minimumNotice = 'none',
+  bufferTime = 'none',
   isOwnerManualBooking = false,
   paymentSettings = null,
   exitCalendarFlowHref,
@@ -166,6 +169,7 @@ export function BookFlowSwitch({
           weeklySchedule={schedule}
           timeOffBlocks={timeOffBlocks}
           minimumNotice={isOwnerManualBooking ? 'none' : minimumNotice}
+          bufferTime={bufferTime}
           isOwnerManualBooking={isOwnerManualBooking}
           paymentSettings={paymentSettings}
           exitCalendarFlowHref={exitCalendarFlowHref}

@@ -26,6 +26,7 @@ export interface RescheduleAppointmentModalProps {
   booking: AvailabilityBookingDisplay;
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
+  bufferTime?: string;
   existingBookingsForSlotGrid: ExistingBooking[];
   isRescheduling?: boolean;
   onClose: () => void;
@@ -56,6 +57,7 @@ export function RescheduleAppointmentModal({
   booking,
   weeklySchedule,
   timeOffBlocks,
+  bufferTime = 'none',
   existingBookingsForSlotGrid,
   isRescheduling = false,
   onClose,
@@ -205,6 +207,7 @@ export function RescheduleAppointmentModal({
                     serviceDurationMinutes={booking.serviceDurationMinutes}
                     existingBookings={existingBookingsForSlotGrid}
                     timeOffBlocks={timeOffBlocks}
+                    bufferTime={bufferTime}
                     selectedDate={selectedDate}
                     plainCalendar
                     compactCalendar
@@ -257,6 +260,7 @@ export function RescheduleAppointmentModal({
                 weeklySchedule={weeklySchedule}
                 existingBookings={existingBookingsForSlotGrid}
                 timeOffBlocks={timeOffBlocks}
+                bufferTime={bufferTime}
                 selectedTime={selectedTime}
                 onSelectTime={time => {
                   setSelectedTime(time);

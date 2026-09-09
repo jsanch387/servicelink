@@ -106,6 +106,7 @@ export function CreateAppointmentWizard({
     setApplySale,
     visitDuration,
     flexibleWeeklySchedule,
+    bufferTime,
     blockedSlots,
     scheduleDataLoading,
     reviewJobs,
@@ -262,6 +263,7 @@ export function CreateAppointmentWizard({
         startTime={visit.startTime}
         weeklySchedule={flexibleWeeklySchedule}
         existingBookings={blockedSlots}
+        bufferTime={bufferTime}
         scheduleLoading={scheduleDataLoading}
         onChange={setSchedule}
         onExactStartConflictChange={setExactStartConflict}

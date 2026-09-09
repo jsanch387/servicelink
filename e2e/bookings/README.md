@@ -6,6 +6,7 @@
 - Public booking **flow smoke** for `blacklabelauto` (through review / payment entry — no Stripe submit).
 - Authenticated owner appointment creation for **custom jobs** and **catalog services**, including optional customer fields, notes, pricing options, add-ons, persistence, and `booking_source`.
 - **Lead time:** owner sets lead time on Availability → public calendar hides days/slots that are too soon.
+- **Buffer time:** owner sets buffer on Availability, seeds a morning booking, public calendar hides slots inside the gap; server rejects a too-close create.
 - **Time off:** owner time-off blocks (all-day, timed, multi-day ranges) hide days/slots on the public booking calendar.
 
 **Out of scope:** Stripe Checkout redirect, redemption Uses count at job completion, stacking edge cases, and delivery assertions against third-party email providers.
@@ -51,16 +52,17 @@ Product rules: `src/features/marketing/docs/FLOWS.md`
 
 ## Automated specs
 
-| File                                 | Test                      | Covers                                                                                                              |
-| ------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `public-booking-flow.spec.ts`        | Flow to review            | Adaptive price / add-ons / location → schedule → details → review (no submit)                                       |
-| `public-booking-flow.spec.ts`        | Sale on review            | Public book → assert existing active sale notice on review → stop                                                   |
-| `public-booking-discounts.spec.ts`   | Active sale auto-applies  | Marketing create → public book → assert sale notice → confirm                                                       |
-| `public-booking-discounts.spec.ts`   | Promo at checkout         | Marketing create → public book → apply promo → confirm                                                              |
-| `owner-appointment-creation.spec.ts` | Custom owner job          | Owner choice → custom name/price/duration/notes → optional email/vehicle → submit payload → persisted owner booking |
-| `owner-appointment-creation.spec.ts` | Catalog owner appointment | Service → pricing option/add-on when configured → customer/vehicle/notes → persisted snapshots                      |
-| `lead-time.spec.ts`                  | Lead time on public book  | Owner sets 1-day lead on Availability → public calendar disables today; restores prior `minimum_notice`             |
-| `time-off.spec.ts`                   | Time off on public book   | All-day / timed / multi-day ranges via API → public calendar hides days or morning slots; restores prior blocks     |
+| File                                 | Test                       | Covers                                                                                                                                           |
+| ------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `public-booking-flow.spec.ts`        | Flow to review             | Adaptive price / add-ons / location → schedule → details → review (no submit)                                                                    |
+| `public-booking-flow.spec.ts`        | Sale on review             | Public book → assert existing active sale notice on review → stop                                                                                |
+| `public-booking-discounts.spec.ts`   | Active sale auto-applies   | Marketing create → public book → assert sale notice → confirm                                                                                    |
+| `public-booking-discounts.spec.ts`   | Promo at checkout          | Marketing create → public book → apply promo → confirm                                                                                           |
+| `owner-appointment-creation.spec.ts` | Custom owner job           | Owner choice → custom name/price/duration/notes → optional email/vehicle → submit payload → persisted owner booking                              |
+| `owner-appointment-creation.spec.ts` | Catalog owner appointment  | Service → pricing option/add-on when configured → customer/vehicle/notes → persisted snapshots                                                   |
+| `lead-time.spec.ts`                  | Lead time on public book   | Owner sets 1-day lead on Availability → public calendar disables today; restores prior `minimum_notice`                                          |
+| `buffer-time.spec.ts`                | Buffer time on public book | Owner seeds a 9:00 (or open) 60-min booking → sets none / 30m / 1h in Availability UI → public slots skip the gap; 1h also 409s a too-close POST |
+| `time-off.spec.ts`                   | Time off on public book    | All-day / timed / multi-day ranges via API → public calendar hides days or morning slots; restores prior blocks                                  |
 
 Helpers: `e2e/fixtures/booking-helpers.ts`, `e2e/fixtures/marketing-helpers.ts`, `e2e/fixtures/availability-helpers.ts`
 
@@ -71,5 +73,6 @@ npm run test:e2e -- e2e/bookings/public-booking-flow.spec.ts
 npm run test:e2e -- e2e/bookings/public-booking-discounts.spec.ts
 npm run test:e2e -- e2e/bookings/owner-appointment-creation.spec.ts
 npm run test:e2e -- e2e/bookings/lead-time.spec.ts
+npm run test:e2e -- e2e/bookings/buffer-time.spec.ts
 npm run test:e2e -- e2e/bookings/time-off.spec.ts
 ```

@@ -336,14 +336,14 @@ Body shape is generally:
 | `401` | Missing/invalid Bearer token or no session (owner mode).                                                                         |
 | `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`). |
 | `404` | Unknown slug or business not publicly visible.                                                                                   |
-| `409` | Slot overlaps owner **time off** for that business.                                                                              |
+| `409` | Slot overlaps another booking (including **buffer time**) or — for **customer** creates only — owner **time off** / **lead time**. Owner manual create skips time-off and lead time. |
 | `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back).                                         |
 
 ### Scheduling and retry behavior
 
-- The POST rejects overlap with configured owner **time off**.
-- The mobile availability UI should use the existing blocked-slots/availability data before submit.
-- The POST currently does **not** re-check overlap against other bookings. Mobile must refresh availability before final confirmation, but this is not a transactional guarantee against simultaneous submissions.
+- The POST re-checks overlap against **other bookings** and **`buffer_time`** (HTTP 409). Buffer is a text token on `business_availability` (`none`, `15m`, `30m`, `45m`, `1h`, `90m`, `2h`); the server converts it to minutes.
+- **Owner** create skips **time off** and **lead time**; **customers** are still rejected for those (409).
+- The mobile availability UI should use the existing blocked-slots/availability data before submit. Concurrent submits can still race.
 - There is currently no idempotency key. Disable the submit button while the request is running and do not automatically retry a request after an ambiguous timeout; first refresh bookings to avoid duplicates.
 - Date/time validation currently checks request shape (`YYYY-MM-DD`, `H:mm`/`HH:mm`) and the database performs final date/time validation.
 - Free-tier owners are subject to the current lifetime booking cap. An owner-created mobile appointment counts toward that cap.

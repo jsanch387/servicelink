@@ -2,6 +2,7 @@
 
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { DEFAULT_SCHEDULE } from '@/features/availability/types/availability';
+import { resolveBufferTimeValue } from '@/features/availability/utils/bufferTime';
 import {
   parseStoredTimeOffBlocks,
   toTimeOffIntervalFields,
@@ -12,6 +13,7 @@ import { useEffect, useState } from 'react';
 type UseOwnerQuoteSchedulingResult = {
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
+  bufferTime: string;
   loading: boolean;
   /** True when a `business_availability` row returned a weekly schedule. */
   hasSavedAvailability: boolean;
@@ -24,6 +26,7 @@ export function useOwnerQuoteScheduling(): UseOwnerQuoteSchedulingResult {
   const [weeklySchedule, setWeeklySchedule] =
     useState<WeeklySchedule>(DEFAULT_SCHEDULE);
   const [timeOffBlocks, setTimeOffBlocks] = useState<TimeOffInterval[]>([]);
+  const [bufferTime, setBufferTime] = useState('none');
   const [loading, setLoading] = useState(true);
   const [hasSavedAvailability, setHasSavedAvailability] = useState(false);
 
@@ -46,16 +49,19 @@ export function useOwnerQuoteScheduling(): UseOwnerQuoteSchedulingResult {
           }
           const parsed = parseStoredTimeOffBlocks(json.data.time_off_blocks);
           setTimeOffBlocks(parsed.map(toTimeOffIntervalFields));
+          setBufferTime(resolveBufferTimeValue(json.data.buffer_time));
         } else {
           setWeeklySchedule(DEFAULT_SCHEDULE);
           setHasSavedAvailability(false);
           setTimeOffBlocks([]);
+          setBufferTime('none');
         }
       } catch {
         if (!cancelled) {
           setWeeklySchedule(DEFAULT_SCHEDULE);
           setHasSavedAvailability(false);
           setTimeOffBlocks([]);
+          setBufferTime('none');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -70,6 +76,7 @@ export function useOwnerQuoteScheduling(): UseOwnerQuoteSchedulingResult {
   return {
     weeklySchedule,
     timeOffBlocks,
+    bufferTime,
     loading,
     hasSavedAvailability,
   };

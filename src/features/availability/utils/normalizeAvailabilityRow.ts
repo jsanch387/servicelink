@@ -9,6 +9,7 @@ import {
   isMinimumNoticeValue,
   type BusinessAvailabilityRow,
 } from '../types/availability';
+import { resolveBufferTimeValue } from './bufferTime';
 import {
   parseStoredTimeOffBlocks,
   toStoredTimeOffBlock,
@@ -27,6 +28,7 @@ export function normalizeAvailabilityRow(
     minimum_notice: isMinimumNoticeValue(row.minimum_notice)
       ? row.minimum_notice
       : 'none',
+    buffer_time: resolveBufferTimeValue(row.buffer_time),
     time_off_blocks,
   };
 }

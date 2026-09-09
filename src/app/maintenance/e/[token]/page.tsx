@@ -219,6 +219,7 @@ export default async function PublicMaintenanceEnrollmentPage({
   const timeOffBlocks = parseStoredTimeOffBlocks(
     availabilityRow?.time_off_blocks
   ).map(toTimeOffIntervalFields);
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const maintenanceDurationMinutes = Math.max(
     1,
     Math.round(Number(enrollment.duration_minutes ?? 60))
@@ -339,6 +340,7 @@ export default async function PublicMaintenanceEnrollmentPage({
                   durationMinutes={maintenanceDurationMinutes}
                   weeklySchedule={weeklySchedule}
                   timeOffBlocks={timeOffBlocks}
+                  bufferTime={bufferTime}
                   schedulingReady={schedulingReady && Boolean(businessSlug)}
                 />
               ) : null}

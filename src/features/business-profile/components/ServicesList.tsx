@@ -1,6 +1,7 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
+import { BookFlowAdvancingOverlay } from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
 import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
@@ -123,6 +124,10 @@ export const ServicesList: React.FC<ServicesListProps> = ({
   const sectionY =
     compactTopPadding === true ? 'pt-2 pb-6 sm:pt-3 sm:pb-8' : 'py-4 sm:py-5';
 
+  if (policyAgreement.isAdvancing) {
+    return <BookFlowAdvancingOverlay />;
+  }
+
   return (
     <section className={`px-4 sm:px-8 ${sectionY}`}>
       {hasServices ? (
@@ -164,10 +169,12 @@ export const ServicesList: React.FC<ServicesListProps> = ({
                   publicActiveSale={publicActiveSale}
                   onSelectNavigate={
                     policyAgreement.required && !policyAgreement.hasAgreed
-                      ? href =>
+                      ? href => {
+                          void router.prefetch(href);
                           policyAgreement.runAfterAgreement(() =>
                             router.push(href)
-                          )
+                          );
+                        }
                       : undefined
                   }
                 />

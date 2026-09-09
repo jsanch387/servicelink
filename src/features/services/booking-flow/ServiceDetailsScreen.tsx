@@ -42,7 +42,10 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-import { BookCalendarLoadingSkeleton } from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
+import {
+  BookCalendarLoadingSkeleton,
+  BookFlowAdvancingOverlay,
+} from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
 import { AddOnSelector } from './AddOnSelector';
 import { PriceOptionSelector } from './PriceOptionSelector';
 import { ServiceDetailsBookingSummary } from './ServiceDetailsBookingSummary';
@@ -342,8 +345,8 @@ export function ServiceDetailsScreen({
 
   const handleContinueToSchedule = () => {
     policyAgreement.runAfterAgreement(() => {
+      setIsNavigatingToCalendar(true);
       if (isOwnerManualBooking) {
-        setIsNavigatingToCalendar(true);
         router.push(calendarUrl);
         return;
       }
@@ -404,6 +407,9 @@ export function ServiceDetailsScreen({
   const stickyBackLabel =
     phase === 'location' ? ui.serviceDetails.backToOptions : exitDetailsLabel;
 
+  if (policyAgreement.isAdvancing) {
+    return <BookFlowAdvancingOverlay />;
+  }
   if (isNavigatingToCalendar) {
     return <BookCalendarLoadingSkeleton />;
   }

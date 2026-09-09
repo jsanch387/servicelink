@@ -16,6 +16,7 @@ interface MaintenanceEnrollmentAnchorFormProps {
   durationMinutes: number;
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
+  bufferTime?: string;
   /** Owner has saved weekly hours (server anchor save requires this). */
   schedulingReady: boolean;
 }
@@ -27,6 +28,7 @@ export function MaintenanceEnrollmentAnchorForm({
   durationMinutes,
   weeklySchedule,
   timeOffBlocks,
+  bufferTime = 'none',
   schedulingReady,
 }: MaintenanceEnrollmentAnchorFormProps) {
   const router = useRouter();
@@ -49,6 +51,7 @@ export function MaintenanceEnrollmentAnchorForm({
     durationMinutes,
     weeklySchedule,
     timeOffBlocks,
+    bufferTime,
     schedulingReady,
   });
 

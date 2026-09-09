@@ -100,6 +100,11 @@ export interface AvailabilityBookingPageProps {
    * Ignored for owner manual bookings (treated as `'none'`).
    */
   minimumNotice?: string;
+  /**
+   * Gap between appointments from `business_availability.buffer_time`.
+   * Applied for customers and owner manual bookings.
+   */
+  bufferTime?: string;
   /** Fetched from API when businessSlug is set; omit to use [] or fetch internally. */
   existingBookings?: ExistingBooking[];
   /** Dashboard owner flow (`for=owner`); changes confirmation copy and CTA. */

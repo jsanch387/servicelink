@@ -34,6 +34,8 @@ export interface BookingsPageSwitchProps {
   timeOffBlocks?: BlockTimeEntry[];
   /** Weekly hours for V2 reschedule slot picker. */
   weeklySchedule: WeeklySchedule;
+  /** Gap between appointments for reschedule slot picker. */
+  bufferTime?: string;
 }
 
 /**
@@ -49,6 +51,7 @@ export function BookingsPageSwitch({
   showFreeBookingsTracker = true,
   timeOffBlocks = [],
   weeklySchedule,
+  bufferTime = 'none',
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
     s => s.setAcceptBookings
@@ -67,6 +70,7 @@ export function BookingsPageSwitch({
         showFreeBookingsTracker={showFreeBookingsTracker}
         timeOffBlocks={timeOffBlocks}
         weeklySchedule={weeklySchedule}
+        bufferTime={bufferTime}
       />
     );
   }

@@ -324,6 +324,7 @@ export default async function BookingRequestPage({
     availabilityRow?.time_off_blocks
   ).map(toTimeOffIntervalFields);
   const minimumNotice = availabilityRow?.minimum_notice ?? 'none';
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
   const legacyRequestBookingEnabled =
     businessProfile.legacy_request_booking_enabled === true;
   const availabilityConfigured = hasAvailabilityConfigured(availabilityRow);
@@ -616,6 +617,7 @@ export default async function BookingRequestPage({
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             minimumNotice={minimumNotice}
+            bufferTime={bufferTime}
             paymentSettings={paymentSettings}
             bookingFlowLocale={bookingFlowLocale}
             serviceLocation={serviceLocation}
@@ -653,6 +655,7 @@ export default async function BookingRequestPage({
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             minimumNotice={minimumNotice}
+            bufferTime={bufferTime}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}
@@ -703,6 +706,7 @@ export default async function BookingRequestPage({
             weeklySchedule={weeklySchedule}
             timeOffBlocks={timeOffBlocks}
             minimumNotice={minimumNotice}
+            bufferTime={bufferTime}
             paymentSettings={paymentSettings}
             isOwnerManualBooking={isOwnerManualBooking}
             exitCalendarFlowHref={bookPageBackHref}

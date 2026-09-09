@@ -94,8 +94,8 @@ interface BusinessProfileViewProps {
   /** Live sale to announce on the public booking link (Pro owners only). */
   publicActiveSale?: PublicActiveSale | null;
   /**
-   * Customer subscription plans for the public booking link.
-   * Tab only renders when this list is non-empty.
+   * Customer subscription plans (dashboard / preview already has them in memory).
+   * Public landing uses `hasPublicSubscriptionPlans` and fetches on tab click.
    */
   publicSubscriptionPlans?: CustomerSubscriptionPlan[];
   /** Open this tab on first paint (e.g. after membership Checkout Done). */

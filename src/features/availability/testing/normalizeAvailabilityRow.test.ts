@@ -33,6 +33,18 @@ describe('normalizeAvailabilityRow', () => {
     expect(row.minimum_notice).toBe('none');
   });
 
+  it('keeps valid buffer time and falls back for unknown values', () => {
+    expect(
+      normalizeAvailabilityRow(baseRow({ buffer_time: '30m' })).buffer_time
+    ).toBe('30m');
+    expect(
+      normalizeAvailabilityRow(baseRow({ buffer_time: 'nope' })).buffer_time
+    ).toBe('none');
+    expect(
+      normalizeAvailabilityRow(baseRow({ buffer_time: null })).buffer_time
+    ).toBe('none');
+  });
+
   it('rewrites legacy single-day time off to canonical range fields', () => {
     const row = normalizeAvailabilityRow(
       baseRow({

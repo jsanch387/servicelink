@@ -1,12 +1,12 @@
 'use client';
 
 import { Select } from '@/components/shared';
-import { ForwardIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import {
   MINIMUM_NOTICE_OPTIONS,
   type MinimumNoticeValue,
 } from '../types/availability';
+import { AvailabilitySettingInfo } from './AvailabilitySettingInfo';
 
 interface LeadTimeSectionProps {
   value: MinimumNoticeValue;
@@ -22,15 +22,24 @@ export const LeadTimeSection: React.FC<LeadTimeSectionProps> = ({
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
       <section className="p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-1">
-          <ForwardIcon className="h-5 w-5 text-gray-400 shrink-0" aria-hidden />
+        <div className="flex items-start justify-between gap-3 mb-1">
           <h2 className="font-semibold text-lg text-white">Lead time</h2>
+          <AvailabilitySettingInfo title="What is lead time?">
+            <p>Lead time is how far ahead a customer has to book.</p>
+            <p>
+              If you set 2 hours, they can’t grab a slot that starts in 20
+              minutes. They have to pick a time that’s at least 2 hours from
+              now.
+            </p>
+            <p>
+              That’s it — it stops last-minute bookings from surprising you.
+            </p>
+          </AvailabilitySettingInfo>
         </div>
         <p className="text-sm text-gray-400 mb-4 sm:mb-5">
-          Stop last-minute bookings. Customers have to book at least this far
-          ahead.
+          How far ahead customers have to book.
         </p>
-        <div className="w-full max-w-xs">
+        <div className="w-full sm:max-w-xs">
           <Select
             value={value}
             onChange={v => onChange(v as MinimumNoticeValue)}

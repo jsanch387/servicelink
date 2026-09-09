@@ -73,6 +73,7 @@ export default async function BookingsPage() {
   const weeklySchedule =
     (availabilityRow?.weekly_schedule as WeeklySchedule | null) ??
     DEFAULT_SCHEDULE;
+  const bufferTime = availabilityRow?.buffer_time ?? 'none';
   // Legacy request booking only when legacy user has NOT set availability; once set, no fallback
   const showRequestBookingFallback =
     legacyRequestBookingEnabled && !availabilityConfigured;
@@ -116,6 +117,7 @@ export default async function BookingsPage() {
       showRequestBookingFallback={showRequestBookingFallback}
       useAvailabilityBooking={useAvailabilityBooking}
       weeklySchedule={weeklySchedule}
+      bufferTime={bufferTime}
       timeOffBlocks={timeOffBlocks}
       freeBookingsUsed={freeBookingsUsed}
       showFreeBookingsTracker={isFreeTier}

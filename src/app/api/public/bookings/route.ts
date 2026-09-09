@@ -39,7 +39,12 @@ import {
   type OwnerManualBookingJobInput,
 } from '@/features/availability/booking/utils/ownerManualBookingJobs';
 import { appointmentMoneyFieldsFromJobs } from '@/features/availability/booking/utils/resolveBookingLineSubtotalCents';
-import { bookingOverlapsTimeOff } from '@/features/availability/booking/utils/slotGeneration';
+import type { ExistingBooking } from '@/features/availability/booking/types';
+import {
+  bookingOverlapsExistingBookings,
+  bookingOverlapsTimeOff,
+} from '@/features/availability/booking/utils/slotGeneration';
+import { bufferTimeToMinutes } from '@/features/availability/utils/bufferTime';
 import {
   getPublicBookingRequestId,
   logBookingTransaction,
@@ -487,17 +492,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const availabilityRow = await getAvailabilityForBusiness(
+      supabase,
+      businessId
+    );
+    const durationMinutes = parsedJobs
+      ? sumJobDurationMinutes(parsedJobs)
+      : body.durationMinutes!;
+
     if (!ownerManualBooking) {
-      const availabilityRow = await getAvailabilityForBusiness(
-        supabase,
-        businessId
-      );
       const timeOffIntervals = parseStoredTimeOffBlocks(
         availabilityRow?.time_off_blocks
       ).map(toTimeOffIntervalFields);
-      const durationMinutes = parsedJobs
-        ? sumJobDurationMinutes(parsedJobs)
-        : body.durationMinutes!;
       if (
         bookingOverlapsTimeOff(
           body.scheduledDate,
@@ -533,6 +539,65 @@ export async function POST(request: NextRequest) {
           409
         );
       }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: dayBookings, error: dayBookErr } = await (supabase as any)
+      .from('bookings')
+      .select('scheduled_date, start_time, duration_minutes')
+      .eq('business_id', businessId)
+      .eq('scheduled_date', body.scheduledDate)
+      .in('status', ['confirmed', 'completed']);
+
+    if (dayBookErr) {
+      logBookingTransaction(requestId, 'warn', 'load_day_bookings', {
+        code: dayBookErr.code ?? 'unknown',
+      });
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error:
+            'We could not verify availability. Please try again in a moment.',
+        },
+        503
+      );
+    }
+
+    const existingForOverlap: ExistingBooking[] = (dayBookings ?? []).map(
+      (r: {
+        scheduled_date?: string;
+        start_time?: string;
+        duration_minutes?: number;
+      }) => ({
+        date: String(r.scheduled_date ?? '').trim(),
+        startTime: String(r.start_time ?? '')
+          .trim()
+          .slice(0, 5),
+        durationMinutes: Math.max(
+          1,
+          Math.round(Number(r.duration_minutes ?? 60))
+        ),
+      })
+    );
+
+    if (
+      bookingOverlapsExistingBookings(
+        body.scheduledDate,
+        body.startTime.trim(),
+        durationMinutes,
+        existingForOverlap,
+        bufferTimeToMinutes(availabilityRow?.buffer_time)
+      )
+    ) {
+      return publicBookingJson(
+        requestId,
+        {
+          success: false,
+          error: 'That time was just booked. Please pick another slot.',
+        },
+        409
+      );
     }
 
     const { ownerHasPro } = await resolvePublicBookingFreeTierGate(supabase, {

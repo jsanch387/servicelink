@@ -11,6 +11,7 @@ export { PublicMembershipSubscribeSuccess } from './components/PublicMembershipS
 export { PublicMembershipSubscribeSuccessReturn } from './components/PublicMembershipSubscribeSuccessReturn';
 export { PublicMembershipVisitPage } from './components/PublicMembershipVisitPage';
 export { ManageMembershipModal } from './components/ManageMembershipModal';
+export { LazyPublicSubscriptionsSection } from './components/LazyPublicSubscriptionsSection';
 export { PublicSubscriptionsSection } from './components/PublicSubscriptionsSection';
 export { SubscriptionPlanCard } from './components/SubscriptionPlanCard';
 export {
@@ -36,6 +37,7 @@ export type {
   OwnerSubscriptionsSetupPhase,
 } from './types/ownerSubscriptionPlan';
 export { OWNER_CADENCE_PRESETS } from './types/ownerSubscriptionPlan';
+export { getPublicProfileMembershipsApiPath } from './utils/getPublicProfileMembershipsApiPath';
 export {
   formatBillingIntervalLabel,
   formatCadenceOptionLabel,

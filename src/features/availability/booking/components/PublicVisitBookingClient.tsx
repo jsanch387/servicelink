@@ -35,6 +35,7 @@ type PublicVisitBookingClientProps = {
   weeklySchedule?: WeeklySchedule | null;
   timeOffBlocks?: TimeOffInterval[];
   minimumNotice?: string;
+  bufferTime?: string;
   paymentSettings?: PublicBookingPaymentSettings | null;
   bookingFlowLocale?: PublicBookingFlowLocale;
   serviceLocation: PublicBookingServiceLocation;
@@ -59,6 +60,7 @@ export function PublicVisitBookingClient({
   weeklySchedule,
   timeOffBlocks,
   minimumNotice,
+  bufferTime,
   paymentSettings,
   bookingFlowLocale = 'en',
   serviceLocation,
@@ -175,6 +177,7 @@ export function PublicVisitBookingClient({
       weeklySchedule={weeklySchedule ?? DEFAULT_SCHEDULE}
       timeOffBlocks={timeOffBlocks}
       minimumNotice={minimumNotice}
+      bufferTime={bufferTime}
       paymentSettings={paymentSettings}
       bookingFlowLocale={bookingFlowLocale}
       exitCalendarFlowHref={resolvedExit.href}

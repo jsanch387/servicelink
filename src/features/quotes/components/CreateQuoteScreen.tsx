@@ -255,6 +255,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const {
     weeklySchedule,
     timeOffBlocks,
+    bufferTime,
     loading: scheduleDataLoading,
     hasSavedAvailability,
   } = useOwnerQuoteScheduling();
@@ -983,6 +984,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   serviceDurationMinutes={durationMinutes}
                   existingBookings={blockedSlots}
                   timeOffBlocks={timeOffBlocks}
+                  bufferTime={bufferTime}
                   selectedDate={selectedDate}
                   onSelectDate={handleSelectDate}
                   minDate={getTodayAtMidnight()}
@@ -993,6 +995,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                   weeklySchedule={weeklySchedule}
                   existingBookings={blockedSlots}
                   timeOffBlocks={timeOffBlocks}
+                  bufferTime={bufferTime}
                   selectedTime={selectedTime}
                   onSelectTime={setSelectedTime}
                 />

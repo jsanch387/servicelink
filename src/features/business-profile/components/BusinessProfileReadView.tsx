@@ -7,29 +7,20 @@ import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSa
 import type { CustomerSubscriptionPlan } from '@/features/subscriptions/types/customerSubscriptionPlan';
 import { toast } from '@/components/shared';
 import { publicBookingUi } from '@/libs/i18n/publicBookingUi';
+import { LazyPublicSubscriptionsSection } from '@/features/subscriptions/components/LazyPublicSubscriptionsSection';
+import { PublicSubscriptionsSection } from '@/features/subscriptions/components/PublicSubscriptionsSection';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { CompleteBusinessProfile } from '../types/businessProfile';
+import { LazyPublicReviewsSection } from '../reviews/components/LazyPublicReviewsSection';
+import { LazyPublicGallerySection } from './LazyPublicGallerySection';
 import { ProfileBioSection } from './ProfileBioSection';
 import { ProfileHeader } from './ProfileHeader';
+import { PublicProfileTabPanelSkeleton } from './PublicProfileTabPanelSkeleton';
 import { ServicesList } from './ServicesList';
-
-const WorkShowcase = dynamic(() =>
-  import('./WorkShowcase').then(mod => mod.WorkShowcase)
-);
-const PublicSubscriptionsSection = dynamic(() =>
-  import('@/features/subscriptions/components/PublicSubscriptionsSection').then(
-    mod => mod.PublicSubscriptionsSection
-  )
-);
-const LazyPublicReviewsSection = dynamic(() =>
-  import('../reviews/components/LazyPublicReviewsSection').then(
-    mod => mod.LazyPublicReviewsSection
-  )
-);
+import { WorkShowcase } from './WorkShowcase';
 
 type TabType = 'services' | 'subscriptions' | 'gallery' | 'bio' | 'reviews';
 
@@ -47,7 +38,10 @@ export interface BusinessProfileReadViewProps {
   publicReviewSummary?: PublicProfileReviewsSummary | null;
   publicProfileSlug?: string;
   publicActiveSale?: PublicActiveSale | null;
+  /** Eager plans (dashboard preview). Public landing uses the flag + lazy fetch. */
   publicSubscriptionPlans?: CustomerSubscriptionPlan[];
+  /** Show Subscriptions tab without loading plan bodies on first paint. */
+  hasPublicSubscriptionPlans?: boolean;
   initialTab?: TabType;
   coverageLabel?: string | null;
   showPublicFooter?: boolean;
@@ -68,6 +62,7 @@ export const BusinessProfileReadView: React.FC<
   publicProfileSlug,
   publicActiveSale = null,
   publicSubscriptionPlans = [],
+  hasPublicSubscriptionPlans = false,
   initialTab,
   coverageLabel = null,
   showPublicFooter = false,
@@ -78,9 +73,16 @@ export const BusinessProfileReadView: React.FC<
       publicReviewSummary.reviewCount > 0 &&
       publicProfileSlug
   );
-  const showSubscriptionsTab = publicSubscriptionPlans.length > 0;
+  const showSubscriptionsTab =
+    publicSubscriptionPlans.length > 0 ||
+    Boolean(hasPublicSubscriptionPlans && publicProfileSlug);
+  const deferSubscriptions =
+    isPublic &&
+    Boolean(publicProfileSlug) &&
+    publicSubscriptionPlans.length === 0;
+  const deferGallery = isPublic && Boolean(publicProfileSlug);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    if (initialTab === 'subscriptions' && publicSubscriptionPlans.length > 0) {
+    if (initialTab === 'subscriptions' && showSubscriptionsTab) {
       return 'subscriptions';
     }
     if (initialTab === 'reviews' && publicReviewSummary?.reviewCount) {
@@ -225,65 +227,92 @@ export const BusinessProfileReadView: React.FC<
         </div>
       </div>
 
-      {activeTab === 'services' ? (
-        <>
-          {isPublic && publicFreeBookingsCapReached ? (
-            <div
-              className="px-4 sm:px-8 mt-5 mb-1 flex items-center gap-2 text-sm text-zinc-500"
-              role="status"
-            >
-              <InformationCircleIcon
-                className="h-4 w-4 shrink-0 text-zinc-500/80"
-                aria-hidden
-              />
-              <span className="leading-snug">
-                {bookingUi.profile.notTakingBookingsRightNow}
-              </span>
-            </div>
-          ) : null}
-          <ServicesList
-            businessProfile={businessProfile}
-            editMode="view"
-            onSave={noopSave}
-            onCancel={noopCancel}
-            isPublic={isPublic}
-            publicOwnerHasProForPriceOptions={publicOwnerHasProForPriceOptions}
-            publicHideBookLinks={isPublic && publicFreeBookingsCapReached}
-            compactTopPadding={isPublic && publicFreeBookingsCapReached}
-            bookingFlowLocale={bookingFlowLocale}
-            publicActiveSale={publicActiveSale}
+      <Suspense
+        fallback={
+          <PublicProfileTabPanelSkeleton
+            variant={activeTab === 'gallery' ? 'gallery' : 'generic'}
           />
-        </>
-      ) : activeTab === 'subscriptions' && showSubscriptionsTab ? (
-        <PublicSubscriptionsSection
-          plans={publicSubscriptionPlans}
-          bookingFlowLocale={bookingFlowLocale}
-          businessSlug={publicProfileSlug}
-        />
-      ) : activeTab === 'gallery' ? (
-        <WorkShowcase
-          businessProfile={businessProfile}
-          editMode="view"
-          onSave={noopSave}
-          onCancel={noopCancel}
-          isPublic={isPublic}
-          bookingFlowLocale={bookingFlowLocale}
-        />
-      ) : activeTab === 'bio' ? (
-        <section className="px-4 py-6 sm:px-8 sm:py-8">
-          <ProfileBioSection
-            businessProfile={businessProfile}
+        }
+      >
+        {activeTab === 'services' ? (
+          <>
+            {isPublic && publicFreeBookingsCapReached ? (
+              <div
+                className="px-4 sm:px-8 mt-5 mb-1 flex items-center gap-2 text-sm text-zinc-500"
+                role="status"
+              >
+                <InformationCircleIcon
+                  className="h-4 w-4 shrink-0 text-zinc-500/80"
+                  aria-hidden
+                />
+                <span className="leading-snug">
+                  {bookingUi.profile.notTakingBookingsRightNow}
+                </span>
+              </div>
+            ) : null}
+            <ServicesList
+              businessProfile={businessProfile}
+              editMode="view"
+              onSave={noopSave}
+              onCancel={noopCancel}
+              isPublic={isPublic}
+              publicOwnerHasProForPriceOptions={
+                publicOwnerHasProForPriceOptions
+              }
+              publicHideBookLinks={isPublic && publicFreeBookingsCapReached}
+              compactTopPadding={isPublic && publicFreeBookingsCapReached}
+              bookingFlowLocale={bookingFlowLocale}
+              publicActiveSale={publicActiveSale}
+            />
+          </>
+        ) : activeTab === 'subscriptions' && showSubscriptionsTab ? (
+          deferSubscriptions && publicProfileSlug ? (
+            <LazyPublicSubscriptionsSection
+              businessSlug={publicProfileSlug}
+              bookingFlowLocale={bookingFlowLocale}
+              isActive
+            />
+          ) : (
+            <PublicSubscriptionsSection
+              plans={publicSubscriptionPlans}
+              bookingFlowLocale={bookingFlowLocale}
+              businessSlug={publicProfileSlug}
+            />
+          )
+        ) : activeTab === 'gallery' ? (
+          deferGallery && publicProfileSlug ? (
+            <LazyPublicGallerySection
+              businessSlug={publicProfileSlug}
+              businessProfile={businessProfile}
+              bookingFlowLocale={bookingFlowLocale}
+              isActive
+            />
+          ) : (
+            <WorkShowcase
+              businessProfile={businessProfile}
+              editMode="view"
+              onSave={noopSave}
+              onCancel={noopCancel}
+              isPublic={isPublic}
+              bookingFlowLocale={bookingFlowLocale}
+            />
+          )
+        ) : activeTab === 'bio' ? (
+          <section className="px-4 py-6 sm:px-8 sm:py-8">
+            <ProfileBioSection
+              businessProfile={businessProfile}
+              bookingFlowLocale={bookingFlowLocale}
+            />
+          </section>
+        ) : showReviewsTab && publicReviewSummary && publicProfileSlug ? (
+          <LazyPublicReviewsSection
+            businessSlug={publicProfileSlug}
+            summary={publicReviewSummary}
             bookingFlowLocale={bookingFlowLocale}
+            isActive={activeTab === 'reviews'}
           />
-        </section>
-      ) : showReviewsTab && publicReviewSummary && publicProfileSlug ? (
-        <LazyPublicReviewsSection
-          businessSlug={publicProfileSlug}
-          summary={publicReviewSummary}
-          bookingFlowLocale={bookingFlowLocale}
-          isActive={activeTab === 'reviews'}
-        />
-      ) : null}
+        ) : null}
+      </Suspense>
 
       {showPublicFooter ? (
         <div

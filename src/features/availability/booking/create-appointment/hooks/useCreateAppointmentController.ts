@@ -272,8 +272,11 @@ export function useCreateAppointmentController(
 
   // Prefetch once for the whole create session — ScheduleStep remounts on
   // back/continue must not re-hit availability / blocked-slots APIs.
-  const { weeklySchedule, loading: scheduleLoading } =
-    useOwnerQuoteScheduling();
+  const {
+    weeklySchedule,
+    bufferTime,
+    loading: scheduleLoading,
+  } = useOwnerQuoteScheduling();
   const { blockedSlots, loading: blockedSlotsLoading } = usePublicBlockedSlots(
     businessSlug.trim() || undefined
   );
@@ -906,6 +909,7 @@ export function useCreateAppointmentController(
     visitDuration,
     reviewJobs,
     flexibleWeeklySchedule,
+    bufferTime,
     blockedSlots,
     scheduleDataLoading,
     newLocalId,

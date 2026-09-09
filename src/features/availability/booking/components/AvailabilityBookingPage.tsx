@@ -263,6 +263,7 @@ export function AvailabilityBookingPage({
   weeklySchedule,
   timeOffBlocks: timeOffBlocksProp = [],
   minimumNotice = 'none',
+  bufferTime = 'none',
   existingBookings: existingBookingsProp,
   isOwnerManualBooking = false,
   paymentSettings = null,
@@ -571,7 +572,7 @@ export function AvailabilityBookingPage({
       30,
       isOwnerManualBooking ? [] : timeOffBlocksProp,
       effectiveMinimumNotice,
-      { requireDurationWithinHours: true }
+      { requireDurationWithinHours: true, bufferTime }
     );
     if (!slots.includes(selectedTime)) {
       setSelectedTime(null);
@@ -589,6 +590,7 @@ export function AvailabilityBookingPage({
     isOwnerManualBooking,
     timeOffBlocksProp,
     effectiveMinimumNotice,
+    bufferTime,
     step,
   ]);
 
@@ -601,6 +603,7 @@ export function AvailabilityBookingPage({
         existingBookings,
         timeOffBlocks: isOwnerManualBooking ? [] : timeOffBlocksProp,
         minimumNotice: effectiveMinimumNotice,
+        bufferTime,
       }),
     [
       weeklySchedule,
@@ -609,6 +612,7 @@ export function AvailabilityBookingPage({
       isOwnerManualBooking,
       timeOffBlocksProp,
       effectiveMinimumNotice,
+      bufferTime,
     ]
   );
 
@@ -1848,6 +1852,7 @@ export function AvailabilityBookingPage({
                       isOwnerManualBooking ? [] : timeOffBlocksProp
                     }
                     minimumNotice={effectiveMinimumNotice}
+                    bufferTime={bufferTime}
                     selectedDate={selectedDate}
                     onSelectDate={date => {
                       setSelectedDate(date);
@@ -1873,6 +1878,7 @@ export function AvailabilityBookingPage({
                         isOwnerManualBooking ? [] : timeOffBlocksProp
                       }
                       minimumNotice={effectiveMinimumNotice}
+                      bufferTime={bufferTime}
                       selectedTime={selectedTime}
                       onSelectTime={time => {
                         setSelectedTime(time);

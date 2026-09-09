@@ -17,6 +17,7 @@ export function usePublicBookingPolicyAgreement(args: {
   const required = args.skip !== true && policyText.length > 0;
   const [hasAgreed, setHasAgreed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const pendingActionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -47,10 +48,16 @@ export function usePublicBookingPolicyAgreement(args: {
   const agree = useCallback(() => {
     markPublicBookingPolicyAgreed(args.businessSlug);
     setHasAgreed(true);
-    setModalOpen(false);
     const action = pendingActionRef.current;
     pendingActionRef.current = null;
-    action?.();
+    // Keep the modal up and flip to the destination loader immediately.
+    // Closing first flashes the previous screen while router.push loads.
+    if (action) {
+      setIsAdvancing(true);
+      action();
+      return;
+    }
+    setModalOpen(false);
   }, [args.businessSlug]);
 
   const dismiss = useCallback(() => {
@@ -62,6 +69,7 @@ export function usePublicBookingPolicyAgreement(args: {
     required,
     policyText,
     hasAgreed,
+    isAdvancing,
     modalOpen,
     runAfterAgreement,
     agree,

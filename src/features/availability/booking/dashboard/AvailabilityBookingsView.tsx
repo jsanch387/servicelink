@@ -121,6 +121,7 @@ export interface AvailabilityBookingsViewProps {
   timeOffBlocks?: BlockTimeEntry[];
   /** Weekly hours for reschedule slot picker (same rules as public booking). */
   weeklySchedule: WeeklySchedule;
+  bufferTime?: string;
 }
 
 export function AvailabilityBookingsView({
@@ -129,6 +130,7 @@ export function AvailabilityBookingsView({
   showFreeBookingsTracker = true,
   timeOffBlocks = [],
   weeklySchedule,
+  bufferTime = 'none',
 }: AvailabilityBookingsViewProps) {
   const {
     bookings,
@@ -492,6 +494,7 @@ export function AvailabilityBookingsView({
           updateError={updateError}
           weeklySchedule={weeklySchedule}
           timeOffBlocks={timeOffIntervalsForSlots}
+          bufferTime={bufferTime}
           existingBookingsForSlotGrid={existingBookingsForReschedule}
         />
       )}

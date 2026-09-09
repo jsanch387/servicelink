@@ -9,6 +9,7 @@ import {
   bookingOverlapsTimeOff,
   isSlotWithinWeeklyHours,
 } from '@/features/availability/booking/utils/slotGeneration';
+import { bufferTimeToMinutes } from '@/features/availability/utils/bufferTime';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import {
   DEFAULT_SCHEDULE,
@@ -177,7 +178,8 @@ export async function validateOwnerBookingSlot(
         scheduledDate,
         startTimeHHmm,
         durationMinutes,
-        existingForOverlap
+        existingForOverlap,
+        bufferTimeToMinutes(availabilityRow?.buffer_time)
       )
     ) {
       return { ok: false, code: 'existing_booking_conflict' };

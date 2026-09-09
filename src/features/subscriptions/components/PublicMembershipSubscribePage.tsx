@@ -58,6 +58,7 @@ interface PublicMembershipSubscribePageProps {
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
   minimumNotice: string;
+  bufferTime?: string;
   schedulingReady: boolean;
   visitDurationMinutes?: number;
   serviceLocationMode?: ServiceLocationMode;
@@ -101,6 +102,7 @@ export const PublicMembershipSubscribePage: React.FC<
   weeklySchedule,
   timeOffBlocks,
   minimumNotice,
+  bufferTime = 'none',
   schedulingReady,
   visitDurationMinutes = MEMBERSHIP_VISIT_DURATION_MINUTES_DEFAULT,
   serviceLocationMode = 'mobile_only',
@@ -475,6 +477,7 @@ export const PublicMembershipSubscribePage: React.FC<
                 existingBookings={blockedSlots}
                 timeOffBlocks={timeOffBlocks}
                 minimumNotice={minimumNotice}
+                bufferTime={bufferTime}
                 selectedDate={firstVisitDate}
                 onSelectDate={setFirstVisitDate}
                 plainCalendar
@@ -492,6 +495,7 @@ export const PublicMembershipSubscribePage: React.FC<
                 existingBookings={blockedSlots}
                 timeOffBlocks={timeOffBlocks}
                 minimumNotice={minimumNotice}
+                bufferTime={bufferTime}
                 selectedTime={firstVisitTime}
                 onSelectTime={setFirstVisitTime}
                 compact={!isLargeScreen}

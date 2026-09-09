@@ -261,6 +261,67 @@ export async function waitForOwnerBooking(
   return found!;
 }
 
+/**
+ * Creates a confirmed owner booking via API (no calendar UI) so public
+ * slot tests can seed a known occupied window, then cancel it later.
+ */
+export async function createOwnerSeedBookingViaApi(
+  page: Page,
+  input: {
+    businessId: string;
+    businessSlug: string;
+    scheduledDate: string;
+    startTime: string;
+    durationMinutes?: number;
+    serviceName?: string;
+  }
+): Promise<string> {
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const durationMinutes = input.durationMinutes ?? 60;
+  const response = await page.request.post(CREATE_BOOKING_PATH, {
+    data: {
+      businessSlug: input.businessSlug,
+      businessId: input.businessId,
+      serviceName: input.serviceName ?? `E2E buffer seed ${stamp}`,
+      scheduledDate: input.scheduledDate,
+      startTime: input.startTime,
+      durationMinutes,
+      ownerManualBooking: true,
+      serviceLocationType: 'shop',
+      customerServiceLocation: 'shop',
+      customer: {
+        fullName: `E2E Buffer Seed ${stamp}`,
+        email: `e2e.buffer.seed.${stamp}@example.com`,
+        phone: '5551234567',
+        streetAddress: '123 Test St',
+        unitApt: '',
+        city: 'Austin',
+        state: 'TX',
+        zip: '78701',
+        vehicleYear: '',
+        vehicleMake: '',
+        vehicleModel: '',
+        petName: '',
+        petSpecies: '',
+        petBreed: '',
+        petSize: '',
+        notes: 'E2E buffer-time seed — safe to cancel',
+      },
+    },
+  });
+  const body = (await response.json()) as {
+    success?: boolean;
+    data?: { id?: string };
+    error?: string;
+  };
+  if (!response.ok() || !body.data?.id) {
+    throw new Error(
+      `Failed to seed owner booking (${response.status()}): ${JSON.stringify(body)}`
+    );
+  }
+  return body.data.id;
+}
+
 export async function cancelOwnerBooking(
   page: Page,
   bookingId: string | null

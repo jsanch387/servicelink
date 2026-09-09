@@ -13,6 +13,8 @@ interface TimeSlotGridProps {
   timeOffBlocks: TimeOffInterval[];
   /** Lead time (`minimum_notice`); defaults to none. */
   minimumNotice?: string;
+  /** Gap between appointments (`buffer_time`); defaults to none. */
+  bufferTime?: string;
   selectedTime: string | null;
   onSelectTime: (time: string) => void;
   /** When false, omit the heading (parent supplies section title). */
@@ -46,6 +48,7 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   existingBookings,
   timeOffBlocks,
   minimumNotice = 'none',
+  bufferTime = 'none',
   selectedTime,
   onSelectTime,
   showHeading = true,
@@ -68,10 +71,11 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
             30,
             timeOffBlocks,
             minimumNotice,
-            { requireDurationWithinHours }
+            { requireDurationWithinHours, bufferTime }
           )
         : [],
     [
+      bufferTime,
       existingBookings,
       minimumNotice,
       requireDurationWithinHours,

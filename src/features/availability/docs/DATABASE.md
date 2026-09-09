@@ -12,13 +12,14 @@ The feature uses dedicated tables so it stays separate from the existing **booki
 
 ## Table: `business_availability`
 
-**Purpose:** One row per business. Stores whether the business accepts bookings, minimum notice, weekly working hours, optional **time-off blocks** (specific dates/times when the owner is unavailable), and UI preset metadata.
+**Purpose:** One row per business. Stores whether the business accepts bookings, minimum notice, **buffer time** (gap between appointments), weekly working hours, optional **time-off blocks** (specific dates/times when the owner is unavailable), and UI preset metadata.
 
 **Used by:**
 
-- Dashboard **Availability** page (load and save: schedule + time off)
-- Public profile booking flow (read-only: schedule, time off, and `accept_bookings` for slot generation)
+- Dashboard **Availability** page (load and save: schedule, time off, lead time, buffer time)
+- Public profile booking flow (read-only: schedule, time off, lead time, buffer time, and `accept_bookings` for slot generation)
 - Dashboard **Bookings** planner (read-only: time off overlaid on the day timeline)
+- Owner create / reschedule (buffer still applies; lead time and time off do not)
 
 ### Columns
 
@@ -28,6 +29,7 @@ The feature uses dedicated tables so it stays separate from the existing **booki
 | `business_id`     | uuid        | FK → `business_profiles(id)`, ON DELETE CASCADE. **Unique** (one row per business).                                                                                                                                                                         |
 | `accept_bookings` | boolean     | Master toggle. When `true`, public profile can show “Book” and use this schedule. Default `false`.                                                                                                                                                          |
 | `minimum_notice`  | text        | Lead time — how far ahead a customer must book. One of: `'none'`, `'30m'`, `'1h'`, `'2h'`, `'3h'`, `'4h'`, `'8h'`, `'12h'`, `'24h'`, `'48h'`, `'72h'`, `'1w'`. Default `'none'`. Enforced by check constraint `business_availability_minimum_notice_check`. |
+| `buffer_time`     | text        | Gap **between appointments** (not lead time). **Text token**, not minutes: `'none'`, `'15m'`, `'30m'`, `'45m'`, `'1h'`, `'90m'`, `'2h'`. Default `'none'`. Check: `business_availability_buffer_time_check`. SQL: [`migrations/001_business_availability_buffer_time.sql`](./migrations/001_business_availability_buffer_time.sql). Ignored when the day has no existing bookings. Slot math: `bufferTimeToMinutes` (`none`=0, `15m`=15, `30m`=30, `45m`=45, `1h`=60, `90m`=90, `2h`=120). |
 | `weekly_schedule` | jsonb       | Weekly hours. See shape below. Default matches Mon–Fri 9:00–17:00.                                                                                                                                                                                          |
 | `selected_preset` | text        | Which working-hours preset is selected in the UI. One of: `'mon_fri_9_5'`, `'mon_sat_8_6'`, `'weekends_only'`, `'custom'`. Default `'mon_fri_9_5'`. When the user edits any day/time manually, the app sets this to `'custom'`.                             |
 | `time_off_blocks` | jsonb       | Array of one-off unavailable windows (see **`time_off_blocks` JSONB shape** below). Default `'[]'`. Legacy DBs add via migration.                                                                                                                           |
@@ -57,6 +59,18 @@ Example:
 
 - **Constraints:** None at DB level; validate in app (e.g. `start` &lt; `end`, valid `HH:mm`).
 - **Presets:** The dashboard stores which preset is selected in `selected_preset` so the correct pill (Mon–Fri 9–5, etc.) is shown when loading. When the user changes any time or day manually, the app sets this column to `'custom'`.
+
+### `buffer_time` vs `minimum_notice`
+
+Both are **text tokens** on this row (same style). They are **independent**:
+
+| | Lead (`minimum_notice`) | Buffer (`buffer_time`) |
+| --- | --- | --- |
+| Meaning | How far ahead a customer must book | Gap between two appointments |
+| When it applies | Even with no other bookings that day | Only if an existing appointment exists |
+| Customers | Yes | Yes |
+| Owners (create / reschedule) | No | Yes |
+| API save field | `minimumNotice` → column `minimum_notice` | `bufferTime` → column `buffer_time` |
 
 ### `time_off_blocks` JSONB shape
 
@@ -121,6 +135,7 @@ The **availability booking (V2)** flow also uses the `bookings` table: one row p
 
 ## Changelog
 
+- **Buffer time:** Added `buffer_time` (text, default `'none'`) — required gap between appointments on public and owner calendars. SQL: [`migrations/001_business_availability_buffer_time.sql`](./migrations/001_business_availability_buffer_time.sql).
 - **Lead time options:** Expanded allowed `minimum_notice` values to include `30m`, `3h`, `8h`, `12h`, `48h` (2 days), `72h` (3 days), and `1w` (1 week), in addition to the original set. DB check constraint `business_availability_minimum_notice_check` updated to match (see `supabase/migrations/20260724152558_expand_minimum_notice_check.sql`).
 - **Time off ranges:** `time_off_blocks` supports inclusive `start_date`/`end_date`, `all_day`, and optional `title`; legacy single-`date` blocks still read. Slot generation and booking create validate against the full range.
 - **Time off:** Added `time_off_blocks` (JSONB, default `[]`) for per-date unavailable windows; saved with the same POST `/api/availability` payload as working hours; used in slot generation, booking create validation, and dashboard planner.

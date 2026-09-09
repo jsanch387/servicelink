@@ -84,3 +84,16 @@ export function BookCalendarLoadingSkeleton() {
     </div>
   );
 }
+
+/** Covers the current screen the instant policy Continue starts navigation. */
+export function BookFlowAdvancingOverlay() {
+  return (
+    <div
+      className="fixed inset-0 z-[200] overflow-y-auto"
+      aria-busy
+      aria-live="polite"
+    >
+      <BookCalendarLoadingSkeleton />
+    </div>
+  );
+}
