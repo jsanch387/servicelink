@@ -2,6 +2,11 @@ import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isBusinessInMembershipsRollout } from './isBusinessInMembershipsRollout';
 
+type PlanIdRow = Pick<
+  Database['public']['Tables']['membership_plans']['Row'],
+  'id'
+>;
+
 /**
  * Cheap tab-visibility check: Pro + rollout + at least one published plan
  * with a price. Does not load plan bodies or price rows.
@@ -35,7 +40,7 @@ export async function hasPublicMembershipPlans(
       return false;
     }
 
-    const planIds = (planRows ?? []).map(row => row.id);
+    const planIds = ((planRows ?? []) as PlanIdRow[]).map(row => row.id);
     if (planIds.length === 0) return false;
 
     const { count, error: pricesError } = await admin
