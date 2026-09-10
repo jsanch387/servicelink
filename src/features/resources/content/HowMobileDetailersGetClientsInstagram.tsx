@@ -160,12 +160,11 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           <li>an easy way to book</li>
         </ul>
         <p className={pClasses}>
-          This is why many detailers use a booking link in their bio. Instead of
-          answering many DMs, customers can simply click the link and book your
-          service.{' '}
+          This is why detailers put a ServiceLink booking link in their bio.
+          Instead of answering many DMs, customers click the link and book.{' '}
           <Link
             href={blogGuideSignupPath(
-              'how-mobile-detailers-get-clients-from-instagram-2026'
+              'how-mobile-detailers-get-clients-from-instagram'
             )}
             className={linkClasses}
           >
@@ -197,7 +196,7 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           Tools like{' '}
           <Link
             href={blogGuideSignupPath(
-              'how-mobile-detailers-get-clients-from-instagram-2026'
+              'how-mobile-detailers-get-clients-from-instagram'
             )}
             className={linkClasses}
           >
@@ -215,7 +214,7 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           No long conversations in DMs. Just simple booking.{' '}
           <Link
             href={blogGuideSignupPath(
-              'how-mobile-detailers-get-clients-from-instagram-2026'
+              'how-mobile-detailers-get-clients-from-instagram'
             )}
             className={linkClasses}
           >
@@ -224,7 +223,7 @@ export function HowMobileDetailersGetClientsInstagramContent() {
           . Comparing apps? See{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'servicelink-vs-detail-connect-vs-detailermade-2026'
+              'servicelink-vs-detail-connect-vs-detailermade'
             )}
             className={linkClasses}
           >
@@ -298,7 +297,7 @@ export function HowMobileDetailersGetClientsInstagramContent() {
             make booking simple (
             <Link
               href={blogGuideSignupPath(
-                'how-mobile-detailers-get-clients-from-instagram-2026'
+                'how-mobile-detailers-get-clients-from-instagram'
               )}
               className={linkClasses}
             >

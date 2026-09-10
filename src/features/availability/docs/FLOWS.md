@@ -141,25 +141,25 @@ See **[`src/features/cron/docs/README.md`](../../../cron/docs/README.md)** for w
 
 ## 4. Summary: key files and tables
 
-| What                                              | Where                                                                                                                  |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Owner availability table                          | `business_availability` (see [DATABASE.md](./DATABASE.md)) — includes `time_off_blocks`, `minimum_notice`, `buffer_time` |
-| V2 bookings table                                 | `bookings` (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md))                                                              |
-| Owner availability API                            | GET/POST `/api/availability` (body: `timeOffBlocks`, `minimumNotice`, `bufferTime`)                                   |
-| Buffer time tokens → minutes                      | `utils/bufferTime.ts` (`bufferTimeToMinutes`, `resolveBufferTimeValue`)                                               |
-| Lead time tokens → minutes                        | `utils/minimumNotice.ts`                                                                                              |
-| Time-off parse/validate                           | `types/blockTime.ts`, `utils/timeOffBlocksPayload.ts`                                                                  |
-| Public blocked slots (bookings only)              | GET `/api/public/bookings/blocked/[slug]`                                                                              |
-| Public create booking                             | POST `/api/public/bookings` (validates vs `time_off_blocks`, lead time, existing bookings + buffer)                    |
-| Dashboard list/update bookings                    | GET `/api/availability/bookings`, PATCH `/api/availability/bookings/[id]`                                              |
-| Slot generation (schedule + bookings + time off + lead + buffer) | `features/availability/booking/utils/slotGeneration.ts`                                                       |
-| Owner slot re-check (reschedule)                  | `features/availability/booking/server/validateOwnerBookingSlot.ts`                                                 |
-| Price/duration breakdown (calendar + review step) | `features/availability/booking/components/BookingPriceBreakdown.tsx`                                                   |
-| Service + add-ons for booking (server)            | `features/services/api/getServiceWithAddOnsForBooking.ts`, `getAddOnsByIdsForBooking.ts`                               |
-| Blocked slots hook                                | `features/availability/booking/hooks/usePublicBlockedSlots.ts`                                                         |
-| Planner time-off overlay                          | `features/availability/booking/dashboard/DayPlannerView.tsx`                                                           |
-| Create booking (server)                           | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`) |
-| Day-before reminders                              | `booking/server/reminders` + cron feature                                                                              |
-| Business service location (mobile/shop/both)      | `business_profiles` columns + [serviceLocation.md](../../business-profile/docs/serviceLocation.md)                     |
+| What                                                             | Where                                                                                                                    |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Owner availability table                                         | `business_availability` (see [DATABASE.md](./DATABASE.md)) — includes `time_off_blocks`, `minimum_notice`, `buffer_time` |
+| V2 bookings table                                                | `bookings` (see [BOOKINGS_TABLE.md](./BOOKINGS_TABLE.md))                                                                |
+| Owner availability API                                           | GET/POST `/api/availability` (body: `timeOffBlocks`, `minimumNotice`, `bufferTime`)                                      |
+| Buffer time tokens → minutes                                     | `utils/bufferTime.ts` (`bufferTimeToMinutes`, `resolveBufferTimeValue`)                                                  |
+| Lead time tokens → minutes                                       | `utils/minimumNotice.ts`                                                                                                 |
+| Time-off parse/validate                                          | `types/blockTime.ts`, `utils/timeOffBlocksPayload.ts`                                                                    |
+| Public blocked slots (bookings only)                             | GET `/api/public/bookings/blocked/[slug]`                                                                                |
+| Public create booking                                            | POST `/api/public/bookings` (validates vs `time_off_blocks`, lead time, existing bookings + buffer)                      |
+| Dashboard list/update bookings                                   | GET `/api/availability/bookings`, PATCH `/api/availability/bookings/[id]`                                                |
+| Slot generation (schedule + bookings + time off + lead + buffer) | `features/availability/booking/utils/slotGeneration.ts`                                                                  |
+| Owner slot re-check (reschedule)                                 | `features/availability/booking/server/validateOwnerBookingSlot.ts`                                                       |
+| Price/duration breakdown (calendar + review step)                | `features/availability/booking/components/BookingPriceBreakdown.tsx`                                                     |
+| Service + add-ons for booking (server)                           | `features/services/api/getServiceWithAddOnsForBooking.ts`, `getAddOnsByIdsForBooking.ts`                                 |
+| Blocked slots hook                                               | `features/availability/booking/hooks/usePublicBlockedSlots.ts`                                                           |
+| Planner time-off overlay                                         | `features/availability/booking/dashboard/DayPlannerView.tsx`                                                             |
+| Create booking (server)                                          | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`)   |
+| Day-before reminders                                             | `booking/server/reminders` + cron feature                                                                                |
+| Business service location (mobile/shop/both)                     | `business_profiles` columns + [serviceLocation.md](../../business-profile/docs/serviceLocation.md)                       |
 
 Keeping **appointment length in minutes** (DB `duration_minutes`, slot overlap) and converting to human-readable duration only in the UI (`formatDurationMinutes`, etc.) keeps the data model simple. **Booked slot length** is always the **total** minutes (service + selected add-on time). **`buffer_time` and `minimum_notice` stay as text tokens** on `business_availability`; they become minutes only inside slot generation and create/reschedule validation.

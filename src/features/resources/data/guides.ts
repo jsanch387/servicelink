@@ -29,38 +29,85 @@ export interface GuideMeta {
 
 export const GUIDES: GuideMeta[] = [
   {
-    slug: 'jobber-alternative-mobile-detailers',
-    title: 'Jobber Alternative for Mobile Detailers (2026)',
+    slug: 'servicelink-vs-detaildeck',
+    title: 'DetailDeck Alternative for Mobile Detailers',
     subheading:
-      'Jobber is built for field-service crews. Solo Instagram detailers usually need a bio link, sedan / SUV / truck prices, and deposits—not a $49 ops suite.',
+      'Both give you a bio booking link. ServiceLink is the simpler one to use and adjust — and that is what detailers keep saying when they compare it to other apps.',
+    coverImage: MARKETING_IMAGES.resources.comparisonDetailDeck,
+    coverImageAlt:
+      'Gloved hands holding a booking calendar on a phone in front of a foam-covered pickup truck',
+    keyTakeaways: [
+      'ServiceLink and DetailDeck are both booking links for solo mobile detailers — no customer app.',
+      'ServiceLink is much simpler to use and adjust — change prices, hours, and services without fighting the app.',
+      'Reviews and feedback keep coming back to the same thing: it is easier than the other options.',
+      'Stay on DetailDeck if you already like their flow. Most solos will have an easier week on ServiceLink.',
+    ],
+    metaDescription:
+      'Looking for a DetailDeck alternative? ServiceLink is the simpler booking app to use and adjust — that is what detailers say when they compare options.',
+    keywords: [
+      'ServiceLink vs DetailDeck',
+      'DetailDeck alternative for mobile detailers',
+      'DetailDeck vs ServiceLink',
+      'best CRM for solo detailers',
+      'booking app for mobile detailers',
+      'ServiceLink',
+    ],
+    datePublished: '2026-09-09',
+    dateModified: '2026-09-09',
+    faqs: [
+      {
+        question: 'Is ServiceLink a DetailDeck alternative?',
+        answer:
+          'Yes. Both give solo detailers a shareable booking link. ServiceLink is the better everyday app because it is simpler to use and adjust — that is what detailers say when they compare it to other tools.',
+      },
+      {
+        question: 'Do customers need an app?',
+        answer: 'No. They book in the browser.',
+      },
+      {
+        question: 'Can I take deposits?',
+        answer:
+          'Yes. You can require a deposit at checkout so the slot is real before you drive.',
+      },
+      {
+        question: 'Can I try ServiceLink while on DetailDeck?',
+        answer:
+          'Yes. Put ServiceLink in the bio, keep DetailDeck until you’re sure.',
+      },
+    ],
+  },
+  {
+    slug: 'jobber-alternative-mobile-detailers',
+    title: 'Jobber Alternative for Mobile Detailers',
+    subheading:
+      'Jobber is built for field-service crews. Solo Instagram detailers need a bio link, sedan / SUV / truck prices, and deposits—not a full ops suite.',
     coverImage: MARKETING_IMAGES.resources.bookingApp,
     coverImageAlt:
       'Mobile detailer checking a booking app on their phone next to a freshly detailed car',
     keyTakeaways: [
-      'Jobber is fine for multi-trade crews; a one-truck shop usually needs a bio link, not field-service bloat.',
-      'You need four things: a booking link, sedan / SUV / truck prices, deposits on Pro, and a client list.',
+      'Jobber is fine for multi-trade crews; a one-truck shop needs a bio link, not field-service bloat.',
+      'You need four things: a booking link, sedan / SUV / truck prices, deposits, and a client list.',
       'Stay on Jobber if you have a crew, need dispatch, or already live in its invoicing.',
-      'Switch if you book from Instagram DMs and want a cheaper booking app for mobile detailers.',
+      'Switch if you book from Instagram DMs and want a booking app built for mobile detailers.',
     ],
     metaDescription:
-      'Jobber alternative for mobile detailers in 2026. Compare a bio booking link vs field-service software—and when ServiceLink is cheaper than Jobber.',
+      'Jobber alternative for mobile detailers. Compare a bio booking link vs field-service software—and why ServiceLink is the simpler everyday pick.',
     keywords: [
       'Jobber alternative for detailers',
       'Jobber alternative for mobile detailers',
       'booking app for mobile detailers',
-      'cheaper than Jobber for detailers',
       'Jobber vs ServiceLink',
       'Jobber for detailing',
       'mobile detailing booking software',
       'ServiceLink',
     ],
     datePublished: '2026-09-04',
-    dateModified: '2026-09-04',
+    dateModified: '2026-09-09',
     faqs: [
       {
         question: 'Is ServiceLink a Jobber alternative?',
         answer:
-          'For solo and small mobile detailing businesses, yes. You get online booking, a client list, and Pro features like deposits without paying full field-service prices.',
+          'For solo and small mobile detailing businesses, yes. ServiceLink is the booking app to use: one bio link, a service menu with vehicle prices, deposits, and a client list—without a field-service suite.',
       },
       {
         question: 'Do my customers need an account?',
@@ -73,56 +120,56 @@ export const GUIDES: GuideMeta[] = [
           'Yes. Run ServiceLink as the bio link and keep Jobber until you do not need it.',
       },
       {
-        question: 'What does it cost?',
+        question: 'How do I try ServiceLink?',
         answer:
-          'Free for 5 online bookings. Pro is $20/month or $200/year. Deposits and Tap to Pay on iPhone are Pro features.',
+          'Create a booking page, add your services and availability, then share your link in Instagram, Google, and texts—often the same day.',
       },
     ],
   },
   {
-    slug: 'servicelink-vs-urable-2026',
-    title: 'ServiceLink vs Urable (2026)',
+    slug: 'servicelink-vs-urable',
+    title: 'ServiceLink vs Urable',
     subheading:
       'Compare ServiceLink and Urable for mobile detailing—why detailers pick the leaner, cleaner booking app over a heavier field-service suite.',
     coverImage: MARKETING_IMAGES.resources.comparisonUrable,
     coverImageAlt:
       'Detailer holding a phone with a clean booking dashboard while a luxury SUV is detailed in a driveway',
     keyTakeaways: [
-      'ServiceLink is a lean booking app; Urable is a broader field-service platform.',
+      'ServiceLink is the everyday booking app for mobile detailers; Urable is a broader field-service platform.',
       'Less bloat means faster setup and a UI you can run between jobs.',
       'Customers finish a clean guest checkout—no app download.',
-      'Pick Urable if you want a dense ops suite; pick ServiceLink to stay organized and simple.',
+      'Stay on Urable if you already run a dense ops suite. Everyone else will have an easier week on ServiceLink.',
     ],
     metaDescription:
-      'ServiceLink vs Urable for mobile detailers in 2026. Compare booking links, setup time, UI clutter, and which app stays lean day to day.',
+      'ServiceLink vs Urable for mobile detailers. Compare booking links, setup time, UI clutter, and which app stays lean day to day.',
     keywords: [
       'ServiceLink vs Urable',
       'Urable alternative',
       'Urable vs ServiceLink',
       'Urable detailing app',
-      'best app for mobile detailers 2026',
+      'best app for mobile detailers',
       'detailing booking software comparison',
       'field service software for detailers',
       'simple detailing booking app',
       'ServiceLink',
     ],
     datePublished: '2026-08-27',
-    dateModified: '2026-08-27',
+    dateModified: '2026-09-09',
     faqs: [
       {
         question: 'Is ServiceLink better than Urable for mobile detailers?',
         answer:
-          'For solo operators and small teams who want a clean booking link and a simple daily dashboard, ServiceLink is usually the better fit. Urable can appeal to shops that want a heavier field-service toolkit and do not mind more setup.',
+          'Yes. ServiceLink is the better fit for solo operators and small teams who want a clean booking link and a simple daily dashboard. Stay on Urable if you already run a heavier field-service toolkit and do not want to move.',
       },
       {
         question: 'What is the main difference between ServiceLink and Urable?',
         answer:
-          'ServiceLink is built around a shareable booking page, vehicle-based prices, availability, and deposits. Urable is a broader field-service platform with more modules. The tradeoff is simplicity versus a denser ops suite.',
+          'ServiceLink is built around a shareable booking page, vehicle-based prices, availability, and deposits. Urable is a broader field-service platform with more modules. The tradeoff is a lean daily app versus a denser ops suite.',
       },
       {
         question: 'Does ServiceLink replace a full CRM like Urable?',
         answer:
-          'ServiceLink covers the jobs most mobile detailers run every day: bookings, services, calendar, quotes, and payments. If you need a large field-service stack, Urable may still fit. Most owner-operators do not need that weight.',
+          'ServiceLink covers the jobs most mobile detailers run every day: bookings, services, calendar, quotes, and payments. Most owner-operators do not need a large field-service stack. Stay on Urable if that density is already how you run the shop.',
       },
       {
         question: 'How do I try ServiceLink?',
@@ -132,8 +179,8 @@ export const GUIDES: GuideMeta[] = [
     ],
   },
   {
-    slug: 'how-much-to-charge-for-mobile-detailing-2026',
-    title: 'How Much to Charge for Mobile Detailing in 2026',
+    slug: 'how-much-to-charge-for-mobile-detailing',
+    title: 'How Much to Charge for Mobile Detailing',
     subheading:
       'Typical U.S. prices for washes, interiors, and full details by vehicle size—plus add-ons, trip fees, and how to publish a menu customers can book.',
     coverImage: MARKETING_IMAGES.resources.pricing,
@@ -144,12 +191,13 @@ export const GUIDES: GuideMeta[] = [
       'Full details often land $200–$380 sedan and $260–$480 SUV in mid-cost markets.',
       'Charge extra for pet hair, heavy soil, and long drives—do not hide it in the base price.',
       'If you are booked two weeks out, raise the cheap package first.',
+      'Put the menu on a ServiceLink booking page so people book without DMing.',
     ],
     metaDescription:
-      'How much to charge for mobile detailing in 2026. See typical sedan, SUV, and truck prices, add-ons, and how to put your menu on a booking page.',
+      'How much to charge for mobile detailing. See typical sedan, SUV, and truck prices, add-ons, and how to put your menu on a booking page.',
     keywords: [
       'how much to charge for mobile detailing',
-      'mobile detailing prices 2026',
+      'mobile detailing prices',
       'mobile detailing price list',
       'how much is a mobile car detail',
       'car detailing prices sedan SUV',
@@ -159,7 +207,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-08-27',
-    dateModified: '2026-08-27',
+    dateModified: '2026-09-09',
     faqs: [
       {
         question: 'How much should I charge for a mobile full detail?',
@@ -184,8 +232,8 @@ export const GUIDES: GuideMeta[] = [
     ],
   },
   {
-    slug: 'how-to-start-a-mobile-detailing-business-2026',
-    title: 'How to Start a Mobile Detailing Business in 2026',
+    slug: 'how-to-start-a-mobile-detailing-business',
+    title: 'How to Start a Mobile Detailing Business',
     subheading:
       'A practical playbook for solo operators—startup costs, equipment, insurance, pricing, and how to get your first bookings without a shop.',
     coverImage: MARKETING_IMAGES.resources.startBusiness,
@@ -195,11 +243,11 @@ export const GUIDES: GuideMeta[] = [
       'Most solo operators launch with $2,500–$8,000—not a shop lease or a custom van.',
       'Insurance, a simple LLC, and a clear service menu matter more than extra machines.',
       'Price packages by vehicle size on day one so you stop quoting every job over text.',
-      'Get a Google Business Profile and one booking link live before you buy more gear.',
+      'Get a Google Business Profile and a ServiceLink booking link live before you buy more gear.',
       'Your first 10 jobs come from neighbors, referrals, and local search—not a huge following.',
     ],
     metaDescription:
-      'Start a mobile detailing business in 2026: startup costs, equipment, licenses, pricing, and how to get your first clients with a booking page.',
+      'Start a mobile detailing business: startup costs, equipment, licenses, pricing, and how to get your first clients with a booking page.',
     keywords: [
       'how to start a mobile detailing business',
       'start a mobile detailing business',
@@ -208,11 +256,11 @@ export const GUIDES: GuideMeta[] = [
       'mobile car detailing business',
       'mobile detailing startup costs',
       'mobile detailing equipment list',
-      'start detailing business 2026',
+      'start detailing business',
       'ServiceLink',
     ],
     datePublished: '2026-08-21',
-    dateModified: '2026-08-21',
+    dateModified: '2026-09-09',
     faqs: [
       {
         question: 'How much does it cost to start a mobile detailing business?',
@@ -237,7 +285,7 @@ export const GUIDES: GuideMeta[] = [
       {
         question: 'How do I get my first detailing customers?',
         answer:
-          'Detail cars for friends and neighbors in exchange for Google reviews, set up a Google Business Profile as a service-area business, and put one booking link in your bio, texts, and profile. Local posts, door hangers, and Nextdoor beat a big following when you are just starting.',
+          'Detail cars for friends and neighbors in exchange for Google reviews, set up a Google Business Profile as a service-area business, and put a ServiceLink booking link in your bio, texts, and profile. Local posts, door hangers, and Nextdoor beat a big following when you are just starting.',
       },
       {
         question: 'How long does it take to start a mobile detailing business?',
@@ -247,21 +295,21 @@ export const GUIDES: GuideMeta[] = [
     ],
   },
   {
-    slug: 'servicelink-vs-detail-connect-vs-detailermade-2026',
-    title: 'ServiceLink vs Detail Connect vs DetailerMade (2026)',
+    slug: 'servicelink-vs-detail-connect-vs-detailermade',
+    title: 'ServiceLink vs Detail Connect vs DetailerMade',
     subheading:
       'Compare ServiceLink, Detail Connect, and DetailerMade for mobile detailing—and see why detailers pick the simple, organized, sleek booking app.',
     coverImage: MARKETING_IMAGES.resources.comparison2026,
     coverImageAlt:
       'ServiceLink vs Detail Connect vs DetailerMade — mobile detailing booking app comparison on a phone',
     keyTakeaways: [
-      'ServiceLink wins when you want simple setup and a sleek customer booking page.',
-      'Detail Connect and DetailerMade can fit teams that want denser, ops-heavy toolkits.',
+      'ServiceLink is the pick when you want simple setup and a sleek customer booking page.',
+      'Stay on Detail Connect or DetailerMade if you already live in a denser, ops-heavy toolkit.',
       'Mobile detailers care about organization and UI as much as feature lists.',
       'Put one clean booking link in your bio so customers book without DMing.',
     ],
     metaDescription:
-      'ServiceLink vs Detail Connect vs DetailerMade for mobile detailers in 2026. Compare booking links, UI, ease of use, and which app stays simple day to day.',
+      'ServiceLink vs Detail Connect vs DetailerMade for mobile detailers. Compare booking links, UI, ease of use, and which app stays simple day to day.',
     keywords: [
       'ServiceLink vs Detail Connect vs DetailerMade',
       'ServiceLink vs Detail Connect',
@@ -269,34 +317,34 @@ export const GUIDES: GuideMeta[] = [
       'Detail Connect vs DetailerMade',
       'Detail Connect alternative',
       'DetailerMade alternative',
-      'best app for mobile detailers 2026',
+      'best app for mobile detailers',
       'best booking app for detailers',
       'detailing booking software comparison',
       'mobile detailing booking app',
       'ServiceLink',
     ],
     datePublished: '2026-08-19',
-    dateModified: '2026-08-19',
+    dateModified: '2026-09-09',
     faqs: [
       {
-        question: 'What is the best app for mobile detailers in 2026?',
+        question: 'What is the best app for mobile detailers?',
         answer:
-          'It depends on your workflow, but most mobile detailers want a shareable booking link, clear service pricing, controlled availability, and deposits—without a cluttered UI. ServiceLink is built around that simple, organized flow.',
+          'ServiceLink. Mobile detailers want a shareable booking link, clear service pricing, controlled availability, and deposits—without a cluttered UI. ServiceLink is built around that simple, organized flow.',
       },
       {
         question: 'Is ServiceLink better than Detail Connect?',
         answer:
-          'For solo detailers and small teams who want fast setup and a clean daily UI, ServiceLink is usually the better fit. Detail Connect can appeal to teams that want more operational depth and do not mind a denser interface.',
+          'Yes for solo detailers and small teams who want fast setup and a clean daily UI. Stay on Detail Connect if you already want more operational depth and do not mind a denser interface.',
       },
       {
         question: 'How does ServiceLink compare to Detail Connect?',
         answer:
-          'Both help detailers take online bookings. ServiceLink is usually chosen for faster setup and a cleaner daily experience. Detail Connect can appeal to teams that want more operational depth and do not mind a denser interface.',
+          'Both help detailers take online bookings. ServiceLink wins on faster setup and a cleaner daily experience. Detail Connect is denser if you already run ops-heavy workflows.',
       },
       {
         question: 'How does ServiceLink compare to DetailerMade?',
         answer:
-          'DetailerMade may fit shops that want a broader module set. ServiceLink focuses on a sleek booking page and an organized dashboard that solo detailers and small teams can run between jobs.',
+          'ServiceLink is the better everyday app: a sleek booking page and an organized dashboard you can run between jobs. Stay on DetailerMade if you already use a broader module set and do not want to move.',
       },
       {
         question: 'How do I try ServiceLink?',
@@ -317,7 +365,7 @@ export const GUIDES: GuideMeta[] = [
       'A shareable booking link beats texts and DMs once you’re busy.',
       'Look for service menus, vehicle pricing, availability control, and deposits.',
       'Put your link everywhere customers already find you—bio, Google, texts.',
-      'ServiceLink can get you live the same day with a free booking page.',
+      'ServiceLink is the booking app that checks those boxes—and gets you live the same day.',
     ],
     metaDescription:
       'Looking for the best booking app for detailers? Compare scheduling software, must-have features, and how ServiceLink helps mobile detailers get more bookings.',
@@ -331,12 +379,12 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-06-21',
-    dateModified: '2026-07-19',
+    dateModified: '2026-09-09',
     faqs: [
       {
         question: 'What is the best booking app for mobile detailers?',
         answer:
-          'The best app depends on your workflow, but most detailers need a shareable booking link, service menu with clear pricing, controlled availability, and optional deposits—not just a basic calendar. ServiceLink is built around that flow for mobile service businesses.',
+          'ServiceLink. Mobile detailers need a shareable booking link, a service menu with clear pricing, controlled availability, and deposits—not just a basic calendar. ServiceLink is built around that flow.',
       },
       {
         question: 'Do my customers need to download an app to book?',
@@ -383,12 +431,12 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-07-19',
-    dateModified: '2026-07-19',
+    dateModified: '2026-09-09',
     faqs: [
       {
         question: 'Should mobile detailers require deposits?',
         answer:
-          'Yes. Detailers who don’t require deposits typically see much higher no-show and last-minute cancellation rates. A deposit filters out unserious bookings and protects your time and fuel costs. An app like ServiceLink lets you require that deposit right on your booking link so you don’t have to ask for it over text.',
+          'Yes. Detailers who don’t require deposits typically see much higher no-show and last-minute cancellation rates. A deposit filters out unserious bookings and protects your time and fuel costs. ServiceLink lets you require that deposit right on your booking link so you don’t have to ask for it over text.',
       },
       {
         question: 'How much deposit should I charge for car detailing?',
@@ -413,7 +461,7 @@ export const GUIDES: GuideMeta[] = [
     ],
   },
   {
-    slug: 'how-mobile-detailers-get-clients-from-instagram-2026',
+    slug: 'how-mobile-detailers-get-clients-from-instagram',
     title: 'How Mobile Detailers Get Clients From Instagram',
     subheading:
       'Learn how to get new bookings from Instagram and TikTok with the right videos and a simple booking link—no big following required.',
@@ -423,7 +471,7 @@ export const GUIDES: GuideMeta[] = [
     keyTakeaways: [
       'You don’t need a huge following—local before/after content wins.',
       'Post process clips and clear offers that make booking obvious.',
-      'Put one booking link in your bio so viewers can book without DMing.',
+      'Put a ServiceLink booking link in your bio so viewers can book without DMing.',
       'Consistency beats perfection when you’re building local demand.',
     ],
     metaDescription:
@@ -438,7 +486,7 @@ export const GUIDES: GuideMeta[] = [
       'ServiceLink',
     ],
     datePublished: '2026-01-15',
-    dateModified: '2026-01-15',
+    dateModified: '2026-09-09',
   },
 ];
 

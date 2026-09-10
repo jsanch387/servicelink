@@ -10,19 +10,31 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import { ContactForm } from './ContactForm';
 
-const PANEL_ID = 'dashboard-support-panel';
+const HIDDEN_PATHS = new Set<string>([
+  ROUTES.CONTACT_PAGE,
+  ROUTES.DASHBOARD.CONTACT,
+]);
 
-export type DashboardSupportWidgetProps = {
-  accountEmail: string;
+type SupportWidgetBaseProps = {
+  instanceId?: string;
 };
 
-export function DashboardSupportWidget({
-  accountEmail,
-}: DashboardSupportWidgetProps) {
+export type SupportWidgetProps =
+  | ({ variant?: 'public' } & SupportWidgetBaseProps)
+  | ({ variant: 'inApp'; accountEmail: string } & SupportWidgetBaseProps);
+
+export function SupportWidget(props: SupportWidgetProps) {
+  const variant = props.variant ?? 'public';
+  const isInApp = variant === 'inApp';
+  const accountEmail =
+    props.variant === 'inApp' ? props.accountEmail : undefined;
+  const instanceId =
+    props.instanceId ?? (isInApp ? 'dashboard-support' : 'marketing-support');
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const panelId = `${instanceId}-panel`;
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +51,7 @@ export function DashboardSupportWidget({
     panelRef.current?.focus();
   }, [open]);
 
-  if (pathname === ROUTES.DASHBOARD.CONTACT) return null;
+  if (HIDDEN_PATHS.has(pathname)) return null;
 
   return (
     <>
@@ -55,7 +67,7 @@ export function DashboardSupportWidget({
       {open ? (
         <div
           ref={panelRef}
-          id={PANEL_ID}
+          id={panelId}
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
@@ -68,8 +80,16 @@ export function DashboardSupportWidget({
                 How can we help?
               </h2>
               <p className="mt-0.5 text-xs leading-snug text-zinc-500">
-                We&apos;ll reply to{' '}
-                <span className="break-all text-zinc-400">{accountEmail}</span>
+                {accountEmail ? (
+                  <>
+                    We&apos;ll reply to{' '}
+                    <span className="break-all text-zinc-400">
+                      {accountEmail}
+                    </span>
+                  </>
+                ) : (
+                  'We typically reply within 24 hours.'
+                )}
               </p>
             </div>
             <button
@@ -81,14 +101,23 @@ export function DashboardSupportWidget({
               <XMarkIcon className="h-5 w-5" aria-hidden />
             </button>
           </div>
-          <div className="min-h-0 overflow-y-auto px-4 py-4">
-            <ContactForm
-              variant="inApp"
-              accountEmail={accountEmail}
-              compact
-              instanceId="dashboard-support"
-              onDone={() => setOpen(false)}
-            />
+          <div className="min-h-0 overflow-y-auto px-4 py-4 pb-20 sm:pb-4">
+            {isInApp && accountEmail ? (
+              <ContactForm
+                variant="inApp"
+                accountEmail={accountEmail}
+                compact
+                instanceId={instanceId}
+                onDone={() => setOpen(false)}
+              />
+            ) : (
+              <ContactForm
+                variant="public"
+                compact
+                instanceId={instanceId}
+                onDone={() => setOpen(false)}
+              />
+            )}
           </div>
         </div>
       ) : null}
@@ -98,7 +127,7 @@ export function DashboardSupportWidget({
         className="fixed bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+1rem))] right-[max(1rem,env(safe-area-inset-right))] z-[70] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-white text-neutral-950 shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-transform hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f] active:scale-[0.98]"
         aria-label={open ? 'Close help' : 'Contact support'}
         aria-expanded={open}
-        aria-controls={PANEL_ID}
+        aria-controls={panelId}
         onClick={() => setOpen(current => !current)}
       >
         {open ? (

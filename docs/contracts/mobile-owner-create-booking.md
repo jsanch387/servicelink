@@ -330,14 +330,14 @@ Body shape is generally:
 }
 ```
 
-| HTTP  | Typical `error` / cause                                                                                                          |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch, invalid `serviceLocationType`). |
-| `401` | Missing/invalid Bearer token or no session (owner mode).                                                                         |
-| `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`). |
-| `404` | Unknown slug or business not publicly visible.                                                                                   |
+| HTTP  | Typical `error` / cause                                                                                                                                                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400` | Missing/invalid fields (date, time, duration, customer validation, `businessId` / slug mismatch, invalid `serviceLocationType`).                                                     |
+| `401` | Missing/invalid Bearer token or no session (owner mode).                                                                                                                             |
+| `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`).                                                     |
+| `404` | Unknown slug or business not publicly visible.                                                                                                                                       |
 | `409` | Slot overlaps another booking (including **buffer time**) or — for **customer** creates only — owner **time off** / **lead time**. Owner manual create skips time-off and lead time. |
-| `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back).                                         |
+| `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back).                                                                                             |
 
 ### Scheduling and retry behavior
 

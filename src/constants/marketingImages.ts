@@ -44,6 +44,8 @@ export const MARKETING_IMAGES = {
       '/marketing/resources/guide-servicelink-vs-detailermade-cover.webp',
     comparisonUrable:
       '/marketing/resources/guide-servicelink-vs-urable-cover.webp',
+    comparisonDetailDeck:
+      '/marketing/resources/guide-servicelink-vs-detaildeck-cover.webp',
     startBusiness:
       '/marketing/resources/guide-start-mobile-detailing-cover.webp',
     pricing: '/marketing/resources/guide-mobile-detailing-pricing-cover.webp',

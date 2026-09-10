@@ -14,7 +14,7 @@ import {
   sectionClasses,
 } from './guideContentStyles';
 
-const SLUG = 'how-to-start-a-mobile-detailing-business-2026';
+const SLUG = 'how-to-start-a-mobile-detailing-business';
 const GUIDE_FAQS = getGuideBySlug(SLUG)?.faqs ?? [];
 
 const comparisonRowClasses =
@@ -32,9 +32,9 @@ export function HowToStartMobileDetailingBusinessContent() {
         people to book you without a 20-message text thread.
       </p>
       <p className={pClasses}>
-        This 2026 playbook is for solo operators. It covers startup costs,
-        equipment, licenses, pricing, and how to get your first clients—then
-        turn those jobs into a calendar you can actually run.
+        This playbook is for solo operators. It covers startup costs, equipment,
+        licenses, pricing, and how to get your first clients—then turn those
+        jobs into a calendar you can actually run.
       </p>
 
       <section className={sectionClasses}>
@@ -64,7 +64,7 @@ export function HowToStartMobileDetailingBusinessContent() {
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>
-          Is a Mobile Detailing Business Profitable in 2026?
+          Is a Mobile Detailing Business Profitable?
         </h2>
         <p className={pClasses}>
           It can be—especially compared with a leased bay. You skip shop rent,
@@ -229,7 +229,7 @@ export function HowToStartMobileDetailingBusinessContent() {
           packages by vehicle size, then add for condition.
         </p>
         <p className={pClasses}>
-          A simple 2026 starter menu many solo operators can defend:
+          A simple starter menu many solo operators can defend:
         </p>
         <ul className={listClasses}>
           <li>Exterior wash: $60–$120 sedan, more for SUVs and trucks</li>
@@ -248,10 +248,10 @@ export function HowToStartMobileDetailingBusinessContent() {
         </p>
         <p className={pClasses}>
           Put those prices on a public page so customers stop asking “how much
-          for my Tahoe?” before they commit. See the full 2026 ranges in{' '}
+          for my Tahoe?” before they commit. See the full ranges in{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'how-much-to-charge-for-mobile-detailing-2026'
+              'how-much-to-charge-for-mobile-detailing'
             )}
             className={linkClasses}
           >
@@ -348,7 +348,7 @@ export function HowToStartMobileDetailingBusinessContent() {
           content. Our guide on{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'how-mobile-detailers-get-clients-from-instagram-2026'
+              'how-mobile-detailers-get-clients-from-instagram'
             )}
             className={linkClasses}
           >
@@ -391,7 +391,7 @@ export function HowToStartMobileDetailingBusinessContent() {
           read{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'servicelink-vs-detail-connect-vs-detailermade-2026'
+              'servicelink-vs-detail-connect-vs-detailermade'
             )}
             className={linkClasses}
           >
@@ -432,10 +432,10 @@ export function HowToStartMobileDetailingBusinessContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Start This Week</h2>
         <p className={pClasses}>
-          You do not need a perfect brand to start a mobile detailing business
-          in 2026. You need a kit that works, coverage if something goes wrong,
-          prices you can say out loud, and a link customers can book while you
-          are mid-job.
+          You do not need a perfect brand to start a mobile detailing business.
+          You need a kit that works, coverage if something goes wrong, prices
+          you can say out loud, and a link customers can book while you are
+          mid-job.
         </p>
         <p className={pClasses}>
           Get the legal basics done, put your packages on a page, and share that

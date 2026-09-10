@@ -13,7 +13,7 @@ import {
   sectionClasses,
 } from './guideContentStyles';
 
-const SLUG = 'how-much-to-charge-for-mobile-detailing-2026';
+const SLUG = 'how-much-to-charge-for-mobile-detailing';
 const GUIDE_FAQS = getGuideBySlug(SLUG)?.faqs ?? [];
 
 const priceHeaderClasses =
@@ -34,7 +34,7 @@ export function HowMuchToChargeForMobileDetailingContent() {
       </p>
       <p className={pClasses}>
         Publish packages by vehicle size, price the condition separately, and
-        put those numbers on a booking page. This 2026 guide gives typical U.S.
+        put those numbers on a booking page. This guide gives typical U.S.
         ranges, not a promise for your zip code. Your market, water, drive time,
         and finish quality still decide the final menu.
       </p>
@@ -58,7 +58,7 @@ export function HowMuchToChargeForMobileDetailingContent() {
           If you are still quoting every job from scratch, read{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'how-to-start-a-mobile-detailing-business-2026'
+              'how-to-start-a-mobile-detailing-business'
             )}
             className={linkClasses}
           >
@@ -69,7 +69,7 @@ export function HowMuchToChargeForMobileDetailingContent() {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>Typical Mobile Detailing Prices in 2026</h2>
+        <h2 className={h2Classes}>Typical Mobile Detailing Prices</h2>
         <p className={pClasses}>
           These are common ranges for a solo mobile operator in a mid-cost U.S.
           market. Coastal cities and luxury suburbs sit higher. Small towns sit
@@ -226,7 +226,7 @@ export function HowMuchToChargeForMobileDetailingContent() {
         <p className={pClasses}>
           Comparing software while you build the menu? Read{' '}
           <Link
-            href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026')}
+            href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable')}
             className={linkClasses}
           >
             ServiceLink vs Urable
@@ -234,7 +234,7 @@ export function HowMuchToChargeForMobileDetailingContent() {
           or the{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'servicelink-vs-detail-connect-vs-detailermade-2026'
+              'servicelink-vs-detail-connect-vs-detailermade'
             )}
             className={linkClasses}
           >

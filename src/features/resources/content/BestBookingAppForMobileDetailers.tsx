@@ -31,7 +31,7 @@ export function BestBookingAppForMobileDetailersContent() {
         simple way for customers to see your services, pick a time, and confirm
         without playing phone tag. Comparing options? Read{' '}
         <Link
-          href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026')}
+          href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable')}
           className={linkClasses}
         >
           ServiceLink vs Urable
@@ -39,7 +39,7 @@ export function BestBookingAppForMobileDetailersContent() {
         or{' '}
         <Link
           href={ROUTES.RESOURCE_GUIDE(
-            'servicelink-vs-detail-connect-vs-detailermade-2026'
+            'servicelink-vs-detail-connect-vs-detailermade'
           )}
           className={linkClasses}
         >
@@ -51,6 +51,13 @@ export function BestBookingAppForMobileDetailersContent() {
           className={linkClasses}
         >
           Jobber alternative for mobile detailers
+        </Link>
+        . Comparing DetailDeck? Read{' '}
+        <Link
+          href={ROUTES.RESOURCE_GUIDE('servicelink-vs-detaildeck')}
+          className={linkClasses}
+        >
+          ServiceLink vs DetailDeck
         </Link>
         .
       </p>
@@ -85,7 +92,7 @@ export function BestBookingAppForMobileDetailersContent() {
         </h2>
         <p className={pClasses}>
           Before you pick mobile detailing booking software, use this checklist.
-          The best booking app for mobile detailers checks most of these boxes:
+          ServiceLink is built to check these boxes:
         </p>
 
         <h3 className={h3Classes}>1. A shareable booking link</h3>
@@ -153,8 +160,8 @@ export function BestBookingAppForMobileDetailersContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>How Common Booking Options Compare</h2>
         <p className={pClasses}>
-          There is no single “best app for detailers” for every business—but
-          most detailers outgrow these approaches quickly:
+          ServiceLink is the booking app that checks those boxes for mobile
+          detailers. The other common approaches fall short fast:
         </p>
 
         <div className="rounded-xl border border-white/10 overflow-hidden mb-6">
@@ -189,8 +196,8 @@ export function BestBookingAppForMobileDetailersContent() {
 
         <p className={pClasses}>
           If you want a car detailing scheduling app that is simple to set up
-          and easy for customers to use, look for tools designed around a
-          shareable booking link—not just a calendar widget.
+          and easy for customers to use, ServiceLink is that tool: a shareable
+          booking link, not just a calendar widget.
         </p>
       </section>
 
@@ -269,7 +276,7 @@ export function BestBookingAppForMobileDetailersContent() {
           Pair your link with local content. Our guide on{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'how-mobile-detailers-get-clients-from-instagram-2026'
+              'how-mobile-detailers-get-clients-from-instagram'
             )}
             className={linkClasses}
           >
@@ -285,7 +292,7 @@ export function BestBookingAppForMobileDetailersContent() {
           {
             question: 'What is the best booking app for mobile detailers?',
             answer:
-              'The best app depends on your workflow, but most detailers need a shareable booking link, service menu with clear pricing, controlled availability, and optional deposits—not just a basic calendar. ServiceLink is built around that flow for mobile service businesses.',
+              'ServiceLink. Mobile detailers need a shareable booking link, a service menu with clear pricing, controlled availability, and deposits—not just a basic calendar. ServiceLink is built around that flow.',
           },
           {
             question: 'Do my customers need to download an app to book?',
@@ -322,10 +329,9 @@ export function BestBookingAppForMobileDetailersContent() {
         <h2 className={h2Classes}>Final Thoughts</h2>
         <p className={pClasses}>
           If you are still running your detailing business through scattered
-          messages, upgrading to a booking app for detailers is one of the
-          highest-leverage changes you can make. You look more professional,
-          miss fewer leads, and spend less time coordinating and more time
-          detailing.
+          messages, ServiceLink is the highest-leverage change you can make. You
+          look more professional, miss fewer leads, and spend less time
+          coordinating and more time detailing.
         </p>
         <p className={pClasses}>
           Start with a simple booking link, share it everywhere customers find

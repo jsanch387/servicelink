@@ -16,7 +16,7 @@ import {
   sectionClasses,
 } from './guideContentStyles';
 
-const SLUG = 'servicelink-vs-detail-connect-vs-detailermade-2026';
+const SLUG = 'servicelink-vs-detail-connect-vs-detailermade';
 const GUIDE_FAQS = getGuideBySlug(SLUG)?.faqs ?? [];
 
 const comparisonHeaderClasses =
@@ -59,9 +59,7 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
     <>
       <p className={pClasses}>
         If you are looking for the{' '}
-        <strong className="text-gray-300">
-          best app for mobile detailers in 2026
-        </strong>
+        <strong className="text-gray-300">best app for mobile detailers</strong>
         , you have probably seen ServiceLink, Detail Connect, and DetailerMade
         in the same search results. All three help detailers take bookings
         online. The difference is how simple they feel day to day—and how fast
@@ -102,7 +100,7 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
 
       <section className={sectionClasses}>
         <h2 className={h2Classes}>
-          ServiceLink vs Detail Connect vs DetailerMade (2026 Snapshot)
+          ServiceLink vs Detail Connect vs DetailerMade Snapshot
         </h2>
         <p className={pClasses}>
           Use this side-by-side as a starting point. Exact plans change over
@@ -163,12 +161,10 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
               <span className="text-gray-400">Shops needing many modules</span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
-              <span className="font-medium text-gray-300">Free to start</span>
-              <span className="text-gray-200">
-                Yes—bookings without friction
-              </span>
-              <span className="text-gray-400">Varies by plan</span>
-              <span className="text-gray-400">Varies by plan</span>
+              <span className="font-medium text-gray-300">Deposits</span>
+              <span className="text-gray-200">Yes—at checkout</span>
+              <span className="text-gray-400">Available</span>
+              <span className="text-gray-400">Available</span>
             </div>
           </div>
         </div>
@@ -176,7 +172,7 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
         <GuideProTip>
           Feature lists look similar on paper. In real life, detailers stick
           with the app they open every day—because it stays organized and does
-          not feel cluttered. That is where ServiceLink usually wins.
+          not feel cluttered. That is where ServiceLink wins.
         </GuideProTip>
       </section>
 
@@ -275,7 +271,7 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
           <em className="text-gray-300 not-italic">
             look professional, book faster, stay organized
           </em>
-          , ServiceLink is usually the better everyday app.
+          , ServiceLink is the better everyday app.
         </p>
       </section>
 
@@ -311,7 +307,7 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
           </Link>
           . Comparing a heavier field-service suite? See{' '}
           <Link
-            href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026')}
+            href={ROUTES.RESOURCE_GUIDE('servicelink-vs-urable')}
             className={linkClasses}
           >
             ServiceLink vs Urable
@@ -339,15 +335,13 @@ export function ServiceLinkVsDetailConnectVsDetailerMadeContent() {
       />
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>
-          Final Verdict: Best App for Detailers 2026
-        </h2>
+        <h2 className={h2Classes}>Final Verdict: Best App for Detailers</h2>
         <p className={pClasses}>
           Detail Connect and DetailerMade are real options in the detailing
           software space. For mobile detailers who care about a simple workflow,
           an organized calendar, and a sleek customer-facing page,{' '}
           <strong className="text-gray-300">ServiceLink</strong> is the best fit
-          in 2026.
+          today.
         </p>
         <p className={pClasses}>
           Get your booking link live today, put it in your bio, and let

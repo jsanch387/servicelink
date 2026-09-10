@@ -31,8 +31,8 @@ export function JobberAlternativeMobileDetailersContent() {
       </p>
       <p className={pClasses}>
         If you are still answering “you free Saturday?” in DMs, then chasing a
-        Venmo, Jobber is usually more software than you need and more money than
-        you want. Here is the simpler path—a{' '}
+        Venmo, Jobber is more software than a one-truck shop needs. Here is the
+        simpler path—a{' '}
         <strong className="text-gray-300">
           Jobber alternative for mobile detailers
         </strong>{' '}
@@ -47,9 +47,7 @@ export function JobberAlternativeMobileDetailersContent() {
         <ol className={orderedListClasses}>
           <li>A link you can drop in your Instagram bio</li>
           <li>A service menu with sedan / SUV / truck prices</li>
-          <li>
-            Deposits so no-shows stop eating your Saturday (Pro on ServiceLink)
-          </li>
+          <li>Deposits so no-shows stop eating your Saturday</li>
           <li>
             A list of who booked, with their phone number, so you can rebook
             them later
@@ -74,71 +72,64 @@ export function JobberAlternativeMobileDetailersContent() {
         <h2 className={h2Classes}>Jobber vs a detailing booking link</h2>
         <p className={pClasses}>
           <strong className="text-gray-300">Jobber</strong> is built for
-          plumbers, cleaners, and lawn guys. Scheduling and invoicing are
-          strong. For a solo mobile detailer it is usually $49 and up, plus
-          add-ons if you want the extras people actually use. Customers often
-          still have to create an account. There is no “one link in the bio”
-          feel.
+          plumbers, cleaners, and lawn crews. Scheduling and invoicing are
+          strong. For a solo mobile detailer it is extra screens, extra setup,
+          and customers often still have to create an account. There is no “one
+          link in the bio” feel.
         </p>
         <p className={pClasses}>
           <Link href="/" className={linkClasses}>
             ServiceLink
           </Link>{' '}
-          is a booking app for mobile detailers. Customers open
+          is the booking app built for mobile detailers. Customers open
           myservicelink.app/yourname, pick a service, pick a time, and book. No
           app download for them. You run the day from the web or your phone
-          (iOS/Android). Free for the first 5 online bookings, then Pro is
-          $20/month or $200/year.
+          (iOS/Android)—including deposits and Tap to Pay on iPhone.
         </p>
 
         <div className="mb-6 overflow-x-auto rounded-xl border border-white/10">
           <div className="min-w-[28rem]">
             <div className={comparisonHeaderClasses}>
               <span>Category</span>
-              <span>Jobber</span>
               <span className="text-white">ServiceLink</span>
+              <span>Jobber</span>
             </div>
             <div className={comparisonRowClasses}>
               <span className="font-medium text-gray-300">Built for</span>
-              <span className="text-gray-400">Field service teams</span>
               <span className="text-gray-200">Mobile detailers</span>
+              <span className="text-gray-400">Field service teams</span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">
                 Customer books from
               </span>
-              <span className="text-gray-400">Client hub / requests</span>
               <span className="text-gray-200">One bio link</span>
+              <span className="text-gray-400">Client hub / requests</span>
             </div>
             <div className={comparisonRowClasses}>
               <span className="font-medium text-gray-300">Deposits</span>
-              <span className="text-gray-400">Yes, on higher plans</span>
-              <span className="text-gray-200">Yes, on Pro</span>
+              <span className="text-gray-200">Yes</span>
+              <span className="text-gray-400">Available</span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">
                 Tap to Pay on iPhone
               </span>
+              <span className="text-gray-200">Yes</span>
               <span className="text-gray-400">No</span>
-              <span className="text-gray-200">Yes (Pro)</span>
             </div>
             <div className={comparisonRowClasses}>
-              <span className="font-medium text-gray-300">Starting price</span>
-              <span className="text-gray-400">About $49/mo</span>
-              <span className="text-gray-200">Free, then $20/mo</span>
-            </div>
-            <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
               <span className="font-medium text-gray-300">
                 Sedan vs SUV pricing
               </span>
-              <span className="text-gray-400">Manual workarounds</span>
               <span className="text-gray-200">Built in</span>
+              <span className="text-gray-400">Manual workarounds</span>
             </div>
           </div>
         </div>
         <GuideProTip>
-          Deposits and Tap to Pay are Pro—not Free. Start on the free booking
-          link, then turn those on when you upgrade.
+          Turn on deposits for anything over an hour. The calendar fills with
+          people who show up—not people who were just asking.
         </GuideProTip>
       </section>
 
@@ -177,7 +168,7 @@ export function JobberAlternativeMobileDetailersContent() {
             Make your ServiceLink and add your top 4 services with vehicle
             prices
           </li>
-          <li>Turn on deposits for anything over an hour (Pro)</li>
+          <li>Turn on deposits for anything over an hour</li>
           <li>
             Put the link in your Instagram bio. Leave the old Jobber link up for
             a week if you want
@@ -201,7 +192,7 @@ export function JobberAlternativeMobileDetailersContent() {
           items={GUIDE_FAQS.map(faq => ({
             question: faq.question,
             answer:
-              faq.question === 'What does it cost?' ? (
+              faq.question === 'How do I try ServiceLink?' ? (
                 <>
                   {faq.answer}{' '}
                   <Link

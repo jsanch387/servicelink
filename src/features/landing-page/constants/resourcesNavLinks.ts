@@ -61,24 +61,22 @@ const GUIDE_LINKS = [
     icon: 'calendar',
   },
   {
-    label: 'ServiceLink vs Detail Connect vs DetailerMade',
-    href: ROUTES.RESOURCE_GUIDE(
-      'servicelink-vs-detail-connect-vs-detailermade-2026'
-    ),
-    description: 'Which booking app stays simple day to day',
+    label: 'Jobber Alternative for Mobile Detailers',
+    href: ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers'),
+    description: 'When a bio link beats a field-service suite',
+    icon: 'compare',
+  },
+  {
+    label: 'DetailDeck Alternative for Mobile Detailers',
+    href: ROUTES.RESOURCE_GUIDE('servicelink-vs-detaildeck'),
+    description: 'Which bio-link booking app fits a one-truck shop',
     icon: 'compare',
   },
   {
     label: 'ServiceLink vs Urable',
-    href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable-2026'),
+    href: ROUTES.RESOURCE_GUIDE('servicelink-vs-urable'),
     description: 'Lean booking vs a heavier ops suite',
     icon: 'briefcase',
-  },
-  {
-    label: 'Jobber Alternative for Mobile Detailers',
-    href: ROUTES.RESOURCE_GUIDE('jobber-alternative-mobile-detailers'),
-    description: 'When a bio link beats a $49 ops suite',
-    icon: 'compare',
   },
 ] as const satisfies readonly ResourcesNavItem[];
 

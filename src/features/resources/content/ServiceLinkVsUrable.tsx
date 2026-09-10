@@ -16,7 +16,7 @@ import {
   sectionClasses,
 } from './guideContentStyles';
 
-const SLUG = 'servicelink-vs-urable-2026';
+const SLUG = 'servicelink-vs-urable';
 const GUIDE_FAQS = getGuideBySlug(SLUG)?.faqs ?? [];
 
 const comparisonHeaderClasses =
@@ -57,9 +57,9 @@ export function ServiceLinkVsUrableContent() {
       <p className={pClasses}>
         If you searched{' '}
         <strong className="text-gray-300">ServiceLink vs Urable</strong>, you
-        are probably choosing between a lean booking app and a heavier field
-        service platform. Both can take jobs. The difference is how much
-        software you have to manage between those jobs.
+        are choosing between a lean booking app and a heavier field-service
+        platform. Both take bookings. ServiceLink is the one built for a
+        one-truck week—less software between you and the driveway.
       </p>
       <p className={pClasses}>
         Urable is built like a full operations suite—lots of modules, lots of
@@ -96,7 +96,7 @@ export function ServiceLinkVsUrableContent() {
       </section>
 
       <section className={sectionClasses}>
-        <h2 className={h2Classes}>ServiceLink vs Urable (2026 Snapshot)</h2>
+        <h2 className={h2Classes}>ServiceLink vs Urable Snapshot</h2>
         <p className={pClasses}>
           Plans and feature lists change. What stays true is how each product
           feels for a solo or small mobile detailing business.
@@ -153,16 +153,16 @@ export function ServiceLinkVsUrableContent() {
               <span className="text-gray-400">Online booking supported</span>
             </div>
             <div className={`${comparisonRowClasses} bg-white/[0.02]`}>
-              <span className="font-medium text-gray-300">Free to start</span>
-              <span className="text-gray-200">Yes—share a booking link</span>
-              <span className="text-gray-400">Varies by plan</span>
+              <span className="font-medium text-gray-300">Deposits</span>
+              <span className="text-gray-200">Yes—at checkout</span>
+              <span className="text-gray-400">Available</span>
             </div>
           </div>
         </div>
 
         <GuideProTip>
-          If you open the app ten times a day, the lighter product usually wins.
-          Feature lists look impressive. Clutter is what you feel on a job.
+          If you open the app ten times a day, the lighter product wins. Feature
+          lists look impressive. Clutter is what you feel on a job.
         </GuideProTip>
       </section>
 
@@ -253,11 +253,11 @@ export function ServiceLinkVsUrableContent() {
           <em className="text-gray-300 not-italic">
             look professional, book faster, stay organized
           </em>
-          , ServiceLink is usually the better everyday app. For a three-way look
-          at other detailing tools, read{' '}
+          , ServiceLink is the better everyday app. For a three-way look at
+          other detailing tools, read{' '}
           <Link
             href={ROUTES.RESOURCE_GUIDE(
-              'servicelink-vs-detail-connect-vs-detailermade-2026'
+              'servicelink-vs-detail-connect-vs-detailermade'
             )}
             className={linkClasses}
           >
@@ -318,10 +318,10 @@ export function ServiceLinkVsUrableContent() {
       <section className={sectionClasses}>
         <h2 className={h2Classes}>Final Verdict</h2>
         <p className={pClasses}>
-          Urable is a real option if you want a heavier field-service stack. For
+          Stay on Urable if you already want a heavier field-service stack. For
           mobile detailers who want something leaner, cleaner, and easier to run
           from a phone, <strong className="text-gray-300">ServiceLink</strong>{' '}
-          is the better fit in 2026.
+          is the app to use.
         </p>
         <p className={pClasses}>
           Put one booking link in your bio and let people book while you are on
