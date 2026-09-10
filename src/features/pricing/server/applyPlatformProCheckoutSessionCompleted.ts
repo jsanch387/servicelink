@@ -9,6 +9,7 @@ import {
   resolveBillingIntervalFromStripeSubscription,
 } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
 import { updateProfileFromCheckout } from '@/features/pricing/server/updateProfileFromCheckout';
+import { reconcileExtraPlatformProSubscriptions } from '@/features/pricing/server/openPlatformSubscriptions';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
@@ -155,6 +156,31 @@ export async function applyPlatformProCheckoutSessionCompleted(
       }
     );
     return { success: false, error: result.error };
+  }
+
+  if (stripeCustomerId && stripeSubscriptionId) {
+    try {
+      const reconciled = await reconcileExtraPlatformProSubscriptions(
+        stripe,
+        stripeCustomerId,
+        stripeSubscriptionId
+      );
+      if (reconciled.canceledIds.length) {
+        console.warn(
+          '[applyPlatformProCheckoutSessionCompleted] canceled extra platform Pro subscriptions',
+          {
+            userId: userId.trim(),
+            keeperIdSuffix: stripeSubscriptionId.slice(-8),
+            canceledSuffixes: reconciled.canceledIds.map(id => id.slice(-8)),
+          }
+        );
+      }
+    } catch (reconcileErr) {
+      console.warn(
+        '[applyPlatformProCheckoutSessionCompleted] extra-subscription reconcile failed',
+        reconcileErr
+      );
+    }
   }
 
   onboardingStripeDebug('apply-checkout', 'done', {

@@ -62,7 +62,7 @@ import { MAINTENANCE_ENROLLMENT_PAYMENT_PAID_CARD } from '@/features/maintenance
 import { sendMaintenanceEnrollmentConfirmedIfApplicable } from '@/features/maintenance/server/sendMaintenanceEnrollmentConfirmedIfApplicable';
 import { resolveBookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingDiscountSnapshot';
 import { normalizeEnteredPromoCode } from '@/features/marketing/server/resolveBookingPromoDiscountSnapshot';
-import { hasMultipleActiveSubscriptions } from '@/features/pricing/server/checkActiveSubscriptions';
+import { reconcileExtraPlatformProSubscriptions } from '@/features/pricing/server/openPlatformSubscriptions';
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
@@ -1161,35 +1161,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // MONITORING: Detect if customer has multiple active subscriptions (edge case alert)
-    const customerId =
-      typeof session.customer === 'string' ? session.customer : null;
-    if (customerId) {
-      try {
-        const hasMultiple = await hasMultipleActiveSubscriptions(
-          stripe,
-          customerId
-        );
-        if (hasMultiple) {
-          console.error(
-            '[stripe:webhook] ⚠️ ALERT: Customer has multiple active subscriptions after checkout',
-            {
-              eventId: event.id,
-              sessionId: session.id,
-              customerId: customerId.slice(-8),
-              userId,
-            }
-          );
-          // This should not happen with the duplicate prevention checks in place
-          // If this log appears, investigate immediately - customer is being double-charged
-        }
-      } catch (multiCheckErr) {
-        console.warn(
-          '[stripe:webhook] multi-subscription check failed (non-blocking)',
-          multiCheckErr
-        );
-      }
-    }
+    // Extra open Pro subs on this customer (e.g. leftover past_due) are
+    // canceled inside applyPlatformProCheckoutSessionCompleted.
 
     // First paid Pro upgrade only (direct paid checkout — no trial). Best-effort;
     // the atomic claim inside guarantees once-only across retries/resubscribes.
@@ -1349,14 +1322,7 @@ export async function POST(request: NextRequest) {
       cancelAtPeriodEnd,
       subscriptionBillingInterval: billingInterval,
     });
-    if (!result.success) {
-      if (result.noMatchingProfile) {
-        console.warn(
-          '[Stripe webhook] customer.subscription.updated: no profile row for subscription (skip)',
-          { eventId: event.id, stripeSubscriptionId: subId }
-        );
-        return NextResponse.json({ received: true }, { status: 200 });
-      }
+    if (!result.success && !result.noMatchingProfile) {
       console.error(
         'Stripe webhook: syncProfileFromSubscriptionUpdated failed',
         result.error
@@ -1365,6 +1331,75 @@ export async function POST(request: NextRequest) {
         { error: 'Profile sync failed' },
         { status: 500 }
       );
+    }
+    if (result.noMatchingProfile) {
+      console.warn(
+        '[Stripe webhook] customer.subscription.updated: no profile row for subscription (skip sync)',
+        { eventId: event.id, stripeSubscriptionId: subId }
+      );
+    }
+
+    const stripeCustomerId =
+      typeof subscription.customer === 'string'
+        ? subscription.customer
+        : subscription.customer &&
+            typeof subscription.customer === 'object' &&
+            'id' in subscription.customer
+          ? String((subscription.customer as { id?: string }).id ?? '').trim()
+          : '';
+    if (stripeCustomerId) {
+      try {
+        const stripeClient = getStripePlatform();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profileRow } = await (supabase as any)
+          .from('profiles')
+          .select('user_id, stripe_subscription_id')
+          .eq('stripe_customer_id', stripeCustomerId)
+          .maybeSingle();
+        const preferred =
+          typeof profileRow?.stripe_subscription_id === 'string'
+            ? profileRow.stripe_subscription_id.trim()
+            : null;
+        const reconciled = await reconcileExtraPlatformProSubscriptions(
+          stripeClient,
+          stripeCustomerId,
+          preferred
+        );
+        if (
+          profileRow?.user_id &&
+          reconciled.keeperId &&
+          reconciled.keeperId !== preferred
+        ) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('profiles')
+            .update({
+              stripe_subscription_id: reconciled.keeperId,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', profileRow.user_id);
+        }
+        if (reconciled.canceledIds.length) {
+          console.warn(
+            '[stripe:webhook] canceled extra platform Pro subscriptions',
+            {
+              eventId: event.id,
+              customerId: stripeCustomerId.slice(-8),
+              keeperIdSuffix: reconciled.keeperId?.slice(-8),
+              canceledSuffixes: reconciled.canceledIds.map(id => id.slice(-8)),
+            }
+          );
+        }
+      } catch (reconcileErr) {
+        console.warn(
+          '[stripe:webhook] extra-subscription reconcile failed (non-blocking)',
+          reconcileErr
+        );
+      }
+    }
+
+    if (result.noMatchingProfile) {
+      return NextResponse.json({ received: true }, { status: 200 });
     }
 
     // Covers trial -> paid conversion (status becomes `active`). First-time only:
