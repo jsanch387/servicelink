@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Phone testing on the LAN (http://192.168.x.x:3000) needs this so
+  // /_next assets hydrate instead of mismatching the server HTML.
+  allowedDevOrigins: ['192.168.1.226'],
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
