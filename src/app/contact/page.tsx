@@ -9,28 +9,28 @@ import Link from 'next/link';
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-[var(--dashboard-bg)] flex flex-col">
+    <div className="flex min-h-screen flex-col bg-[var(--dashboard-bg)]">
       <MarketingNavigation />
-      <div className="h-16 sm:h-20 lg:h-24 shrink-0" aria-hidden />
-      <div className="h-4 sm:h-6 shrink-0" aria-hidden />
-      <main className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16 pb-8 sm:pb-12">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight text-center mb-4 sm:mb-6">
+      <div className="h-16 shrink-0 sm:h-20 lg:h-24" aria-hidden />
+      <div className="h-4 shrink-0 sm:h-6" aria-hidden />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-12 md:py-16">
+        <h1 className="mb-4 text-center text-3xl font-extrabold tracking-tight text-white sm:mb-6 sm:text-4xl md:text-5xl">
           Contact Us
         </h1>
-        <p className="text-gray-400 text-center mb-12 sm:mb-16 max-w-2xl mx-auto text-sm sm:text-base">
+        <p className="mx-auto mb-12 max-w-2xl text-center text-sm text-gray-400 sm:mb-16 sm:text-base">
           Request a feature, report a bug, or ask us anything. We typically
           reply within 24 hours.
         </p>
 
-        <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
+        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col">
           <ContactForm />
 
-          <div className="mt-auto pt-10 sm:pt-16 space-y-4 text-center">
+          <div className="mt-auto space-y-4 pt-10 text-center sm:pt-16">
             <p className="text-sm text-gray-500">
               Prefer email?{' '}
               <a
                 href={SERVICELINK_SUPPORT_MAILTO}
-                className="text-white/80 hover:text-white underline transition-colors"
+                className="cursor-pointer text-white/80 underline transition-colors hover:text-white"
               >
                 {SERVICELINK_SUPPORT_EMAIL}
               </a>
@@ -40,14 +40,14 @@ export default function ContactPage() {
               See also{' '}
               <Link
                 href={ROUTES.PRIVACY}
-                className="text-white/80 hover:text-white underline transition-colors"
+                className="cursor-pointer text-white/80 underline transition-colors hover:text-white"
               >
                 Privacy Policy
               </Link>{' '}
               and{' '}
               <Link
                 href={ROUTES.TERMS}
-                className="text-white/80 hover:text-white underline transition-colors"
+                className="cursor-pointer text-white/80 underline transition-colors hover:text-white"
               >
                 Terms of Service
               </Link>

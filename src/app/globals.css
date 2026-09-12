@@ -172,6 +172,16 @@ body {
   will-change: transform;
 }
 
+html.support-chat-open [class*='animate-'] {
+  animation-play-state: paused !important;
+}
+
+html.support-chat-open .animate-marquee-shops,
+html.support-chat-open .animate-marquee-premium,
+html.support-chat-open .animate-marquee-premium-ltr {
+  will-change: auto;
+}
+
 @keyframes marquee-ltr {
   0% {
     transform: translateX(-50%);
