@@ -240,6 +240,12 @@ export const API_ROUTES = {
    * `Authorization: Bearer <supabase access token>` (mobile).
    */
   ACCOUNT: '/api/account',
+  /**
+   * Owner: AI-assisted scheduling voice turn (multipart `audio` + `draft`).
+   * Transcribes the clip (Listen) and returns Speak audio for the reply.
+   * Auth: Bearer (mobile) or cookies (web). Same as owner-manual booking.
+   */
+  VOICE_TURN: '/api/voice/turn',
   /** Public contact form (landing /contact page). */
   CONTACT: '/api/contact',
   /** Public: capture email for `/workshop` gate access. */

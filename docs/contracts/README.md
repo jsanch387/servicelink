@@ -49,6 +49,7 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push                                                            |
 | [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder)                   |
 | [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form                                                  |
+| [mobile-voice-turn.md](./mobile-voice-turn.md)                               | **Scratch** — owner voice turn + parse (`POST /api/voice/turn`)      |
 | [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area                                                         |
 | [service-categories-data.md](./service-categories-data.md)                   | Service categories                                                   |
 
