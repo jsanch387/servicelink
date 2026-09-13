@@ -68,7 +68,7 @@ export const BusinessInfoSection: React.FC<BusinessInfoSectionProps> = ({
             </div>
             <div className="sm:col-span-2">
               <Select
-                label="What type of business is this?"
+                label="Business type"
                 placeholder="Pick one"
                 value={formData.business_type}
                 onChange={onBusinessTypeChange}

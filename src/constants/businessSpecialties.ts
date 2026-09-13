@@ -15,6 +15,7 @@ import {
 export const BUSINESS_SPECIALTY_SLUGS = [
   'detailing',
   'window_tinting',
+  'ppf',
   'auto_glass',
   'mobile_repair',
   'pet_grooming',
@@ -35,6 +36,7 @@ export interface BusinessSpecialtyOption {
 const SPECIALTY_LABELS: Record<BusinessSpecialtySlug, string> = {
   detailing: 'Auto detailing',
   window_tinting: 'Window tinting',
+  ppf: 'PPF',
   auto_glass: 'Auto glass',
   mobile_repair: 'Mobile mechanic',
   pet_grooming: 'Pet grooming',
@@ -52,6 +54,7 @@ const SPECIALTIES_BY_TEMPLATE: Record<
   vehicle: [
     'detailing',
     'window_tinting',
+    'ppf',
     'auto_glass',
     'mobile_repair',
     'other',

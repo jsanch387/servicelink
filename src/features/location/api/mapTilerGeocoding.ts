@@ -66,6 +66,7 @@ const US_STATE_ABBREVIATIONS: Record<string, string> = {
   'West Virginia': 'WV',
   Wisconsin: 'WI',
   Wyoming: 'WY',
+  'Puerto Rico': 'PR',
 };
 
 interface MapTilerHierarchyItem {
@@ -166,7 +167,9 @@ export function formatLocationSuggestionKind(placeType: string): string {
   }
 }
 
-function mapFeature(feature: MapTilerFeature): StructuredLocation | null {
+export function mapGeocodingFeature(
+  feature: MapTilerFeature
+): StructuredLocation | null {
   // Prefer locality/municipality over broader "place" (e.g. Pflugerville vs Austin metro).
   const cityItem = findHierarchyItem(feature, [
     'locality',
@@ -271,7 +274,7 @@ async function fetchMapTilerLocations(
 
     const result = (await response.json()) as MapTilerFeatureCollection;
     return (result.features ?? []).flatMap(feature => {
-      const location = mapFeature(feature);
+      const location = mapGeocodingFeature(feature);
       return location ? [location] : [];
     });
   } catch (error) {

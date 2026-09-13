@@ -111,7 +111,7 @@ export const Step1BusinessNameAndType: React.FC<
             required
           />
           <Select
-            label="What type of business is this?"
+            label="Business type"
             placeholder="Pick one"
             value={businessType}
             onChange={handleTypeChange}

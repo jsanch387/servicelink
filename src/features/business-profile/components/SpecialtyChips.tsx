@@ -28,7 +28,7 @@ export function SpecialtyChips({
   return (
     <div>
       <p className="mb-2 text-sm font-medium text-gray-200">
-        What do people hire you for?
+        Hired for
         <span className="ml-1 text-red-400">*</span>
       </p>
       <div className="flex flex-wrap gap-2">
@@ -55,11 +55,7 @@ export function SpecialtyChips({
         <p className="mt-2 text-sm text-red-400" role="alert">
           {error}
         </p>
-      ) : (
-        <p className="mt-2 text-xs text-gray-500">
-          Pick all that apply. This is the job customers find you for.
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }

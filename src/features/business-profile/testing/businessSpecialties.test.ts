@@ -17,10 +17,19 @@ describe('business specialties', () => {
     ).toEqual([
       'detailing',
       'window_tinting',
+      'ppf',
       'auto_glass',
       'mobile_repair',
       'other',
     ]);
+    expect(
+      getSpecialtiesForBusinessType('Vehicle Services').find(
+        item => item.slug === 'ppf'
+      )
+    ).toEqual({ slug: 'ppf', label: 'PPF' });
+    expect(
+      getSpecialtiesForBusinessType('Pet Services').map(item => item.slug)
+    ).not.toContain('ppf');
   });
 
   it('derives detailing for legacy auto shops', () => {
