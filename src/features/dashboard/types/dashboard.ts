@@ -1,3 +1,5 @@
+import type { DashboardAccessValue } from '../context/DashboardAccessContext';
+
 export interface DashboardUser {
   id: string;
   email: string;
@@ -26,6 +28,9 @@ export interface DashboardStats {
 export interface DashboardProps {
   children?: React.ReactNode;
   isOnboardingCompleted?: boolean;
+  /** Owner finished setup, or an active teammate on that shop. */
+  hasShopAccess?: boolean;
+  dashboardAccess?: DashboardAccessValue;
   /** Memberships / Subscriptions nav — rollout gate (open to all when enabled). */
   showMembershipsNav?: boolean;
   /** Signed-in account email for the dashboard help widget. */
@@ -48,7 +53,7 @@ export interface DashboardSidebarProps {
   open: boolean;
 
   setOpen: (_open: boolean) => void;
-  isOnboardingCompleted?: boolean;
+  hasShopAccess?: boolean;
   showMembershipsNav?: boolean;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;

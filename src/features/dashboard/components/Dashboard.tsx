@@ -6,14 +6,27 @@ import React, { useEffect } from 'react';
 
 import { IconButton } from '@/components/shared';
 import { SupportWidget } from '@/features/contact/components/SupportWidget';
+import {
+  DashboardAccessProvider,
+  type DashboardAccessValue,
+} from '../context/DashboardAccessContext';
+import { permissionsForRole } from '@/features/team/constants/teamPermissions';
 import { useDashboardSidebarCollapsed } from '../hooks/useDashboardSidebarCollapsed';
 import type { DashboardProps } from '../types/dashboard';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSidebar } from './DashboardSidebar';
 
+const OWNER_ACCESS: DashboardAccessValue = {
+  isOwner: true,
+  role: 'owner',
+  permissions: permissionsForRole('owner'),
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({
   children,
   isOnboardingCompleted = false,
+  hasShopAccess = false,
+  dashboardAccess = OWNER_ACCESS,
   showMembershipsNav = false,
   accountEmail = null,
 }) => {
@@ -42,11 +55,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [setCollapsed]);
 
   return (
+    <DashboardAccessProvider value={dashboardAccess}>
     <div className="dashboard-container min-h-screen flex bg-[var(--dashboard-bg)]">
       <DashboardSidebar
         open={sidebarOpen}
         setOpen={setSidebarOpen}
-        isOnboardingCompleted={isOnboardingCompleted}
+        hasShopAccess={hasShopAccess}
         showMembershipsNav={showMembershipsNav}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed(current => !current)}
@@ -57,7 +71,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <DashboardHeader
               onMenuClick={() => setSidebarOpen(open => !open)}
               sidebarOpen={sidebarOpen}
-              showNotifications={isOnboardingCompleted}
+              showNotifications={hasShopAccess || isOnboardingCompleted}
             />
           ) : (
             <div className="lg:hidden bg-[var(--dashboard-bg)] border-b border-white/[0.06]">
@@ -78,5 +92,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <SupportWidget variant="inApp" accountEmail={accountEmail} />
       ) : null}
     </div>
+    </DashboardAccessProvider>
   );
 };

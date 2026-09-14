@@ -6,6 +6,7 @@ export { SignupForm } from './components/SignupForm';
 
 // Auth Hooks
 export { useAuth } from './hooks/useAuth';
+export { useSignOutAndRedirect } from './hooks/useSignOutAndRedirect';
 
 // Auth Store
 export { useAuthStore } from './stores/authStore';

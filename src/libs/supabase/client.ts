@@ -327,6 +327,44 @@ export type Database = {
           updated_at?: string;
         };
       };
+      team_invites: {
+        Row: {
+          id: string;
+          business_id: string;
+          email: string;
+          link_token_hash: string;
+          status: string;
+          invited_by: string;
+          accepted_user_id: string | null;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          email: string;
+          link_token_hash: string;
+          status?: string;
+          invited_by: string;
+          accepted_user_id?: string | null;
+          expires_at: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          email?: string;
+          link_token_hash?: string;
+          status?: string;
+          invited_by?: string;
+          accepted_user_id?: string | null;
+          expires_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       service_addons: {
         Row: {
           id: string;

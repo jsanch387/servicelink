@@ -109,6 +109,8 @@ export const ROUTES = {
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
+    /** Owner: add and manage teammates. */
+    TEAM: '/dashboard/team',
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
     PAYMENTS_SETTINGS: '/dashboard/payments/settings',
@@ -183,6 +185,14 @@ export const API_ROUTES = {
    */
   PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  /** Owner: list teammates + pending invites. */
+  TEAM_MEMBERS: '/api/team/members',
+  /** Owner: send or resend a team invite email. */
+  TEAM_INVITES: '/api/team/invites',
+  /** Signed-in invitee: accept a team invite token. */
+  TEAM_INVITE_ACCEPT: '/api/team/invites/accept',
+  /** Owner: revoke a pending invite or remove an active member. */
+  TEAM_REMOVE: '/api/team/remove',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',
   /** Owner: create a membership plan. */
@@ -686,6 +696,18 @@ export function getPublicReviewPath(token: string): string {
   const t = token.trim();
   if (!t) return '/review';
   return `/review/${encodeURIComponent(t)}`;
+}
+
+/** Team invite accept page (raw URL-safe token in path). */
+export function getTeamInvitePath(token: string): string {
+  const t = token.trim();
+  if (!t) return '/team/invite';
+  return `/team/invite/${encodeURIComponent(t)}`;
+}
+
+export function isTeamInvitePath(path: string): boolean {
+  const pathname = path.split('?')[0] ?? '';
+  return /^\/team\/invite\/[A-Za-z0-9_-]+$/.test(pathname);
 }
 
 /** Customer-facing booking invoice / receipt page (opaque public_token in path). */

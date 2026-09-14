@@ -38,6 +38,7 @@ import {
   type JobStatus,
 } from '@/features/availability/booking/jobStatus';
 import { sendAndRecordSms } from '@/features/sms';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertOwnerSmsSendRateLimits } from '@/server/rateLimit/ownerSmsSendRateLimit';
@@ -82,14 +83,23 @@ export async function POST(
       );
     }
 
-    // 3. Resolve the owner's business.
+    const resolved = await requireBusinessPermission(
+      auth.supabase,
+      'bookings.write'
+    );
+    if (!resolved.ok) {
+      return NextResponse.json(
+        { success: false, error: resolved.error },
+        { status: resolved.status }
+      );
+    }
 
     const { data: businessData, error: businessError } =
       await // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (auth.supabase as any)
         .from('business_profiles')
         .select('id, business_name')
-        .eq('profile_id', auth.user.id)
+        .eq('id', resolved.businessId)
         .single();
 
     const business = businessData as {

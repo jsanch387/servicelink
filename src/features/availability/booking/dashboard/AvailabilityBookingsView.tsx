@@ -16,6 +16,7 @@ import {
   SyncBookingsConfirmModal,
   SyncBookingsCtaCard,
 } from '@/features/calendar-sync';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
@@ -132,6 +133,7 @@ export function AvailabilityBookingsView({
   weeklySchedule,
   bufferTime = 'none',
 }: AvailabilityBookingsViewProps) {
+  const canWriteBookings = useDashboardAccess().can('bookings.write');
   const {
     bookings,
     isLoading,
@@ -339,7 +341,7 @@ export function AvailabilityBookingsView({
   return (
     <main className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
       <div
-        className={`min-h-0 flex-1 pb-36 ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
+        className={`min-h-0 flex-1 ${canWriteBookings ? 'pb-36' : 'pb-8'} ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
       >
         <div className="mx-auto w-full max-w-xl px-4 py-8 sm:px-6 sm:py-10 md:px-6 lg:max-w-3xl lg:px-8 lg:py-10">
           <header className="mb-6 flex items-start justify-between gap-3 sm:mb-8">
@@ -351,10 +353,12 @@ export function AvailabilityBookingsView({
                 Manage your appointments
               </p>
             </div>
-            <SyncBookingsCtaCard
-              variant="header"
-              onSyncClick={() => setSyncCalendarModalOpen(true)}
-            />
+            {canWriteBookings ? (
+              <SyncBookingsCtaCard
+                variant="header"
+                onSyncClick={() => setSyncCalendarModalOpen(true)}
+              />
+            ) : null}
           </header>
           {(error || updateError) && (
             <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
@@ -440,6 +444,7 @@ export function AvailabilityBookingsView({
         </div>
       </div>
 
+      {canWriteBookings ? (
       <div
         className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 dashboard-sidebar-offset lg:px-8 safe-area-pb"
         style={{
@@ -480,15 +485,17 @@ export function AvailabilityBookingsView({
           </Button>
         </div>
       </div>
+      ) : null}
 
       {selectedBooking && (
         <AvailabilityBookingDetailPanel
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+          readOnly={!canWriteBookings}
           onMarkCompleted={handleMarkCompleted}
           onCancel={handleCancel}
           onDelete={handleDelete}
-          onReschedule={handleReschedule}
+          onReschedule={canWriteBookings ? handleReschedule : undefined}
           isUpdating={updatingId === selectedBooking.id}
           isRescheduling={reschedulingId === selectedBooking.id}
           updateError={updateError}

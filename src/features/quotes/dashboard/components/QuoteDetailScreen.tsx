@@ -28,6 +28,7 @@ import {
 import { CheckIcon as CheckIconSolid } from '@heroicons/react/24/solid';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { useDashboardQuoteDetail } from '../hooks/useDashboardQuoteDetail';
 import type { DashboardQuote } from '../types';
 import { buildQuoteActivityTimeline } from '../utils/buildQuoteActivityTimeline';
@@ -68,6 +69,7 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
   const router = useRouter();
   const { quote, loadStatus, loadError, reloadQuote } =
     useDashboardQuoteDetail(quoteId);
+  const canWriteQuotes = useDashboardAccess().can('quotes.write');
   const [copied, setCopied] = useState(false);
   const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -185,6 +187,9 @@ export const QuoteDetailScreen: React.FC<QuoteDetailScreenProps> = ({
       deleting={deleting}
       deleteError={deleteError}
       onConfirmDelete={() => void handleDelete()}
+      showDeleteButton={canWriteQuotes}
+      showQuoteLinkCard={canWriteQuotes}
+      showWriteActions={canWriteQuotes}
     />
   );
 };
@@ -206,6 +211,7 @@ export interface QuoteDetailContentProps {
   /** When set and the row is editable, used instead of the edit URL (e.g. new quote with prefill for demos). */
   primaryHrefOverride?: string;
   showDeleteButton?: boolean;
+  showWriteActions?: boolean;
   /** Hide until a public link exists; off for mock rows with fake tokens. */
   showQuoteLinkCard?: boolean;
   /** When set, shows a “Service location” card. */
@@ -229,6 +235,7 @@ export function QuoteDetailContent({
   infoBanner,
   primaryHrefOverride,
   showDeleteButton = true,
+  showWriteActions = true,
   showQuoteLinkCard = true,
   serviceLocationLine,
   showActivityCard = true,
@@ -605,6 +612,7 @@ export function QuoteDetailContent({
             </section>
           ) : null}
 
+          {showWriteActions ? (
           <div
             className={
               showDeleteButton
@@ -640,6 +648,7 @@ export function QuoteDetailContent({
               </Button>
             ) : null}
           </div>
+          ) : null}
         </div>
 
         {showDeleteButton ? (

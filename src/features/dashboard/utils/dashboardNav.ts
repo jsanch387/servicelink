@@ -1,5 +1,6 @@
 import { ROUTES } from '@/constants/routes';
 import { AVAILABILITY_FEATURE_ENABLED } from '@/features/availability/constants';
+import type { TeamPermission } from '@/features/team/constants/teamPermissions';
 import {
   ArrowPathRoundedSquareIcon,
   BanknotesIcon,
@@ -22,6 +23,7 @@ export type DashboardNavItem = {
   requiresOnboarding: boolean;
   requiresMemberships?: boolean;
   requiresAvailability?: boolean;
+  requiredPermission?: TeamPermission;
   activePathPrefix?: string;
   badge?: 'beta';
 };
@@ -32,18 +34,21 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     href: ROUTES.DASHBOARD.MAIN,
     icon: Squares2X2Icon,
     requiresOnboarding: false,
+    requiredPermission: 'dashboard.read',
   },
   {
     name: 'Booking link',
     href: ROUTES.DASHBOARD.BUSINESS_PROFILE,
     icon: LinkIcon,
     requiresOnboarding: true,
+    requiredPermission: 'profile.write',
   },
   {
     name: 'Services',
     href: ROUTES.DASHBOARD.SERVICES,
     icon: RectangleStackIcon,
     requiresOnboarding: true,
+    requiredPermission: 'services.write',
   },
   {
     name: 'Subscriptions',
@@ -51,6 +56,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: ArrowPathRoundedSquareIcon,
     requiresOnboarding: true,
     requiresMemberships: true,
+    requiredPermission: 'billing.manage',
     badge: 'beta',
     activePathPrefix: '/dashboard/subscriptions',
   },
@@ -59,12 +65,14 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     href: ROUTES.DASHBOARD.BOOKINGS,
     icon: CalendarIcon,
     requiresOnboarding: true,
+    requiredPermission: 'bookings.read',
   },
   {
     name: 'Reviews',
     href: ROUTES.DASHBOARD.REVIEWS,
     icon: StarIcon,
     requiresOnboarding: true,
+    requiredPermission: 'reviews.read',
     activePathPrefix: '/dashboard/reviews',
   },
   {
@@ -72,6 +80,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     href: ROUTES.DASHBOARD.QUOTES,
     icon: ClipboardDocumentListIcon,
     requiresOnboarding: true,
+    requiredPermission: 'quotes.read',
     activePathPrefix: '/dashboard/quotes',
   },
   {
@@ -79,6 +88,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     href: ROUTES.DASHBOARD.CUSTOMERS,
     icon: UserGroupIcon,
     requiresOnboarding: true,
+    requiredPermission: 'customers.read',
   },
   {
     name: 'Availability',
@@ -86,12 +96,14 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: ClockIcon,
     requiresOnboarding: true,
     requiresAvailability: true,
+    requiredPermission: 'availability.write',
   },
   {
     name: 'Payments',
     href: ROUTES.DASHBOARD.PAYMENTS,
     icon: BanknotesIcon,
     requiresOnboarding: true,
+    requiredPermission: 'payments.manage',
     activePathPrefix: '/dashboard/payments',
   },
   {
@@ -99,6 +111,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     href: ROUTES.DASHBOARD.MARKETING,
     icon: MegaphoneIcon,
     requiresOnboarding: true,
+    requiredPermission: 'marketing.write',
     activePathPrefix: '/dashboard/marketing',
   },
 ];
@@ -118,17 +131,20 @@ export function isDashboardNavItemActive(
 }
 
 export function getVisibleDashboardNavItems({
-  isOnboardingCompleted,
+  hasShopAccess,
   showMembershipsNav,
+  can,
 }: {
-  isOnboardingCompleted: boolean;
+  hasShopAccess: boolean;
   showMembershipsNav: boolean;
+  can: (permission: TeamPermission) => boolean;
 }): DashboardNavItem[] {
   return DASHBOARD_NAV_ITEMS.filter(item => {
-    if (item.requiresOnboarding && !isOnboardingCompleted) return false;
+    if (item.requiresOnboarding && !hasShopAccess) return false;
     if (item.requiresMemberships && !showMembershipsNav) return false;
     if (item.requiresAvailability && !AVAILABILITY_FEATURE_ENABLED)
       return false;
+    if (item.requiredPermission && !can(item.requiredPermission)) return false;
     return true;
   });
 }

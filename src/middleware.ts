@@ -226,6 +226,16 @@ export async function middleware(request: NextRequest) {
     );
 
     if (!onboardingComplete) {
+      const { data: memberRow } = await supabase
+        .from('business_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+      if (memberRow?.id) {
+        return response;
+      }
       const allowOnboardingBusinessProfileReturn =
         isBusinessProfileRoute && onboardingCompleteReturn;
       if (allowOnboardingBusinessProfileReturn) {

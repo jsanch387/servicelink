@@ -4,7 +4,7 @@ import { mergeQuoteAssetsPreservingExtra } from '@/features/quotes/shared/quoteA
 import { validateUpdateQuoteBody } from '@/features/quotes/edit/validateUpdateQuoteBody';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -31,7 +31,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     }
 
     const { supabase } = auth;
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.read');
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -74,7 +74,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.write');
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -187,7 +187,7 @@ export async function DELETE(_req: Request, { params }: RouteContext) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.write');
 
     if (!resolved.ok) {
       return NextResponse.json(

@@ -7,45 +7,23 @@
  * Requires authentication.
  */
 
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get authenticated user
     const supabase = await createSupabaseServerClient();
+    const resolved = await requireBusinessPermission(supabase, 'bookings.read');
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    if (!resolved.ok) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: resolved.error },
+        { status: resolved.status }
       );
     }
 
-    // Get the user's business profile
-    const {
-      data: businessProfile,
-      error: businessError,
-    }: {
-      data: { id: string } | null;
-      error: unknown;
-    } = await supabase
-      .from('business_profiles')
-      .select('id')
-      .eq('profile_id', user.id)
-      .single();
-
-    if (businessError || !businessProfile) {
-      return NextResponse.json(
-        { success: false, error: 'Business profile not found' },
-        { status: 404 }
-      );
-    }
+    const businessProfile = { id: resolved.businessId };
 
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);

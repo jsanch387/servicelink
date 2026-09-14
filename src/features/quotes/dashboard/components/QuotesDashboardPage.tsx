@@ -4,6 +4,7 @@ import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import React, { useMemo, useState } from 'react';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { useDashboardQuotes } from '../hooks/useDashboardQuotes';
 import type { QuotesDashboardFilterId } from '../types';
 import { quoteMatchesFilter } from '../utils/quoteStatusUi';
@@ -23,6 +24,7 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
 }) => {
   const [filter, setFilter] = useState<QuotesDashboardFilterId>('requested');
   const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
+  const canWriteQuotes = useDashboardAccess().can('quotes.write');
 
   const filtered = useMemo(
     () => quotes.filter(q => quoteMatchesFilter(q.status, filter)),
@@ -62,10 +64,22 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
       );
     }
     if (!hasAnyQuotes) {
-      return <QuotesListEmptyState filter={filter} hasAnyQuotes={false} />;
+      return (
+        <QuotesListEmptyState
+          filter={filter}
+          hasAnyQuotes={false}
+          canCreate={canWriteQuotes}
+        />
+      );
     }
     if (sorted.length === 0) {
-      return <QuotesListEmptyState filter={filter} hasAnyQuotes />;
+      return (
+        <QuotesListEmptyState
+          filter={filter}
+          hasAnyQuotes
+          canCreate={canWriteQuotes}
+        />
+      );
     }
     return (
       <ul className="flex list-none flex-col gap-2 pb-8 sm:gap-3 sm:pb-10">
@@ -90,15 +104,17 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
               Sent quotes, statuses, and customer links in one place.
             </p>
           </div>
-          <Button
-            href={ROUTES.DASHBOARD.QUOTES_NEW}
-            variant="inverse"
-            size="md"
-            icon={<PlusIcon className="h-4 w-4" />}
-            className="w-full shrink-0 sm:w-auto"
-          >
-            New quote
-          </Button>
+          {canWriteQuotes ? (
+            <Button
+              href={ROUTES.DASHBOARD.QUOTES_NEW}
+              variant="inverse"
+              size="md"
+              icon={<PlusIcon className="h-4 w-4" />}
+              className="w-full shrink-0 sm:w-auto"
+            >
+              New quote
+            </Button>
+          ) : null}
         </header>
 
         {isFreeTier ? (

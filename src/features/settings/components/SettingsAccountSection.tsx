@@ -1,13 +1,10 @@
 'use client';
 
-import { Button, GlassCard } from '@/components/shared';
+import { GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { ChangeAccountEmailModal } from '@/features/account';
 import { useAuth } from '@/features/auth';
-import {
-  ArrowRightStartOnRectangleIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -29,8 +26,7 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
   emailNotice = null,
 }) => {
   const router = useRouter();
-  const { signOut, updateUser } = useAuth();
-  const [logoutLoading, setLogoutLoading] = useState(false);
+  const { updateUser } = useAuth();
   const [changeOpen, setChangeOpen] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(
     pendingEmailProp
@@ -57,18 +53,6 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
     }
   }, [emailNotice, accountEmail, updateUser, router]);
 
-  const handleLogout = useCallback(async () => {
-    setLogoutLoading(true);
-    try {
-      const result = await signOut();
-      if (result.success) router.push('/');
-    } catch {
-      // ignore
-    } finally {
-      setLogoutLoading(false);
-    }
-  }, [signOut, router]);
-
   const handleEmailRequested = useCallback((nextPending: string) => {
     setPendingEmail(nextPending);
     setNotice(null);
@@ -77,7 +61,7 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
   if (!accountEmail) return null;
 
   return (
-    <section id="settings-account" className="w-full min-w-0 space-y-3">
+    <section id="settings-account" className="w-full min-w-0 space-y-4">
       <ChangeAccountEmailModal
         isOpen={changeOpen}
         onClose={() => setChangeOpen(false)}
@@ -93,14 +77,8 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
         rounded="rounded-2xl"
         blurColor="bg-zinc-500"
         showBlur
-        className="w-full min-w-0 p-4 text-left"
+        className="!h-auto w-full min-w-0 p-4 text-left"
       >
-        <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-          {signedInWithGoogle
-            ? 'You signed in with Google. You can still update the email used for account notices.'
-            : 'The email you use to sign in and receive account updates.'}
-        </p>
-
         {notice === 'updated' ? (
           <div
             className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-3 text-sm text-emerald-200"
@@ -145,31 +123,14 @@ export const SettingsAccountSection: React.FC<SettingsAccountSectionProps> = ({
           </div>
         ) : null}
 
-        <Button
+        <button
           type="button"
-          variant="secondary"
-          size="sm"
           onClick={() => setChangeOpen(true)}
-          className="mt-3 w-full sm:w-auto"
+          className="mt-3 ml-auto block text-right cursor-pointer text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
         >
           Update email
-        </Button>
+        </button>
       </GlassCard>
-
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={handleLogout}
-        loading={logoutLoading}
-        disabled={logoutLoading}
-        icon={
-          <ArrowRightStartOnRectangleIcon className="h-4 w-4" aria-hidden />
-        }
-        className="w-full sm:w-auto"
-      >
-        Log out
-      </Button>
     </section>
   );
 };

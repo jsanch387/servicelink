@@ -19,7 +19,7 @@ import { sendExistingQuoteAsSent } from '@/features/quotes/server/sendExistingQu
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { assertOwnerQuoteSendRateLimits } from '@/server/rateLimit/ownerQuoteSendRateLimit';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextRequest } from 'next/server';
 
 const ROUTE_LABEL = 'POST /api/quotes/[id]/send';
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.write');
     if (!resolved.ok) {
       logQuoteSend(requestId, ROUTE_LABEL, 'warn', 'business_resolve_failed', {
         authMethod,

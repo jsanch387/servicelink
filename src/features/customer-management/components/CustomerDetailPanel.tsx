@@ -13,14 +13,11 @@ import {
 import {
   customerMaintenanceEnrollmentCardSubtitle,
   customerMaintenancePlanChipVariant,
-  maintenanceEnrollmentBlocksNewOwnerInvite,
 } from '@/features/customer-management/utils/customerMaintenanceEnrollmentLabels';
 import { formatLastBookedDate } from '@/features/customer-management/utils/formatLastBookedDate';
 import { formatNextAppointmentRelativeDay } from '@/features/customer-management/utils/formatNextInDays';
-import { EnrollMaintenanceModalBody } from '@/features/maintenance/components/EnrollMaintenanceModalBody';
 import {
   ArrowLeftIcon,
-  ArrowPathRoundedSquareIcon,
   CalendarDaysIcon,
   ClipboardDocumentIcon,
   ClockIcon,
@@ -88,8 +85,8 @@ interface CustomerDetailPanelProps {
   hasProCheckInAccess: boolean;
   onClose: () => void;
   onMessageCustomer: (_mode: 'message' | 'win_back') => void;
-  onDeleteCustomer: () => void;
-  onSaveNote: (
+  onDeleteCustomer?: () => void;
+  onSaveNote?: (
     _note: string
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
   isSavingNote: boolean;
@@ -112,7 +109,6 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
 }) => {
   const [emailCopied, setEmailCopied] = useState(false);
   const [checkInTeaserOpen, setCheckInTeaserOpen] = useState(false);
-  const [enrollMaintenanceOpen, setEnrollMaintenanceOpen] = useState(false);
   const [maintenanceDetailsOpen, setMaintenanceDetailsOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(customer.note);
   const [noteSaved, setNoteSaved] = useState(false);
@@ -179,6 +175,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   };
 
   const handleSaveNote = async () => {
+    if (!onSaveNote) return;
     const result = await onSaveNote(noteDraft);
     if (!result.ok) return;
     setNoteSaved(true);
@@ -190,6 +187,8 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
   const needsAttention = isCustomerNeedsAttention(customer);
   const actionLabel = 'Check-in';
   const isSampleCustomer = customer.id.startsWith(DEMO_CUSTOMER_ID_PREFIX);
+  const showDeleteAction = !isSampleCustomer && Boolean(onDeleteCustomer);
+  const showActions = needsAttention || showDeleteAction;
 
   return (
     <>
@@ -431,7 +430,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                 <UserCircleIcon className="h-4 w-4" />
                 Notes
               </h3>
-              {!isEditingNote && !isSampleCustomer ? (
+              {!isEditingNote && !isSampleCustomer && onSaveNote ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -515,36 +514,12 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
             </div>
           </section>
 
+          {showActions ? (
           <section className="pt-1">
             <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
               Actions
             </h3>
             <div className="space-y-2.5">
-              {!isSampleCustomer ? (
-                <Button
-                  variant="inverse"
-                  size="sm"
-                  onClick={() => setEnrollMaintenanceOpen(true)}
-                  disabled={maintenanceEnrollmentBlocksNewOwnerInvite(
-                    customer.maintenanceEnrollment
-                  )}
-                  icon={
-                    <ArrowPathRoundedSquareIcon className="h-4 w-4 text-sky-700" />
-                  }
-                  fullWidth={true}
-                  className="text-sm font-semibold"
-                  aria-label="Send maintenance detail invite to customer"
-                  title={
-                    maintenanceEnrollmentBlocksNewOwnerInvite(
-                      customer.maintenanceEnrollment
-                    )
-                      ? 'Open invite is still pending—use View details to copy the link, or wait until they finish.'
-                      : undefined
-                  }
-                >
-                  Send maintenance invite
-                </Button>
-              ) : null}
               {needsAttention ? (
                 <Button
                   variant="secondary"
@@ -577,7 +552,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
                   {actionLabel}
                 </Button>
               ) : null}
-              {!isSampleCustomer ? (
+              {showDeleteAction ? (
                 <Button
                   variant="danger"
                   size="sm"
@@ -591,6 +566,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
               ) : null}
             </div>
           </section>
+          ) : null}
         </div>
       </div>
 
@@ -619,23 +595,6 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
         ) : null}
       </Modal>
 
-      <Modal
-        isOpen={enrollMaintenanceOpen}
-        onClose={() => setEnrollMaintenanceOpen(false)}
-        title="Maintenance detail invite"
-        maxWidth="2xl"
-        panelClassName="sm:ring-1 sm:ring-inset sm:ring-white/10 sm:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.55)]"
-        headerClassName="lg:px-10 lg:py-6 lg:border-white/[0.08]"
-        titleClassName="lg:text-xl lg:tracking-tight"
-        contentClassName="lg:px-10 lg:pb-10 lg:pt-8"
-      >
-        <EnrollMaintenanceModalBody
-          key={`${customer.id}-${enrollMaintenanceOpen}`}
-          customerId={customer.id}
-          customerName={customer.name}
-          onClose={() => setEnrollMaintenanceOpen(false)}
-        />
-      </Modal>
     </>
   );
 };

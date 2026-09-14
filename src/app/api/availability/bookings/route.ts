@@ -6,39 +6,19 @@
  */
 
 import { listBookingsForBusiness } from '@/features/availability/services/bookingService';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-async function getAuthAndBusinessId(supabase: SupabaseClient) {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: 'Authentication required', status: 401 as const };
-  }
-
-  const { data: businessProfile, error: businessError } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('profile_id', user.id)
-    .single();
-
-  if (businessError || !businessProfile) {
-    return { error: 'Business profile not found', status: 404 as const };
-  }
-
-  return { businessId: businessProfile.id as string };
-}
 
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
 
-    const authResult = await getAuthAndBusinessId(supabase);
-    if ('status' in authResult) {
+    const authResult = await requireBusinessPermission(
+      supabase,
+      'bookings.read'
+    );
+    if (!authResult.ok) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }

@@ -48,9 +48,40 @@ One **active** membership per user (v1: a teammate belongs to one shop).
 
 ---
 
+## `team_invites`
+
+Pending email invites. A `business_members` row is created only after they accept.
+
+**SQL:** [`migrations/002_team_invites.sql`](./migrations/002_team_invites.sql)
+
+| Column             | Type        | Notes                                       |
+| ------------------ | ----------- | ------------------------------------------- |
+| `id`               | uuid PK     | `gen_random_uuid()`                         |
+| `business_id`      | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE |
+| `email`            | text        | Normalized lowercase                        |
+| `link_token_hash`  | text unique | SHA-256 of the raw URL token                |
+| `status`           | text        | `pending` \| `accepted` \| `revoked` \| `expired` |
+| `invited_by`       | uuid FK     | Owner `auth.users` id                       |
+| `accepted_user_id` | uuid FK     | Set on accept                               |
+| `expires_at`       | timestamptz | 14 days from send                           |
+
+**Writes:** service role. Authenticated owners can SELECT their shop’s rows.
+
+---
+
+## Member SELECT (work tables)
+
+**SQL:** [`migrations/003_member_work_select.sql`](./migrations/003_member_work_select.sql)
+
+`auth_is_active_business_member(business_id)` is true when the signed-in user
+has an **active** `business_members` row. SELECT-only policies use that helper
+on bookings, booking requests, customers, quotes, reviews, and the shop rows
+needed to render those pages. Writes stay owner-only.
+
+---
+
 ## Not in this migration
 
-- Invite tokens / email
 - Job assignees
 - Team plan / seat count
-- Member access to bookings and other tables (still owner RLS)
+- Member writes (status updates, send quote, etc.)

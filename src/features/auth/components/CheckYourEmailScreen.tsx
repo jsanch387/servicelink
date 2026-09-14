@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
+import { ROUTES, isTeamInvitePath } from '@/constants/routes';
 import { flushGoogleAdsSignupIfPending } from '@/features/analytics/utils/googleAdsTracking';
 import { appendAttributionToAuthRedirect } from '@/features/marketing-attribution/utils/authRedirectAttribution';
 import { getStoredMarketingUtms } from '@/features/marketing-attribution/utils/utmCapture';
@@ -10,15 +10,15 @@ import { EnvelopeIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useCallback, useEffect, useState } from 'react';
 
-function authEmailRedirectTo(): string {
+function authEmailRedirectTo(next?: string): string {
   const baseUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== 'undefined' ? window.location.origin : '')
   ).replace(/\/$/, '');
+  const nextPath =
+    next && isTeamInvitePath(next) ? next : ROUTES.AUTH.EMAIL_CONFIRMED;
   return appendAttributionToAuthRedirect(
-    `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
-      ROUTES.AUTH.EMAIL_CONFIRMED
-    )}`,
+    `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(nextPath)}`,
     getStoredMarketingUtms()
   );
 }
@@ -26,6 +26,8 @@ function authEmailRedirectTo(): string {
 export interface CheckYourEmailScreenProps {
   /** Email from query after sign-up (may be empty if opened directly). */
   email?: string;
+  /** Safe in-app path after they confirm (team invite). */
+  next?: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export interface CheckYourEmailScreenProps {
  */
 export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
   email,
+  next,
 }) => {
   const trimmed = email?.trim() ?? '';
   const hasEmail = trimmed.length > 0;
@@ -65,7 +68,7 @@ export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: trimmed,
-        options: { emailRedirectTo: authEmailRedirectTo() },
+        options: { emailRedirectTo: authEmailRedirectTo(next) },
       });
       if (error) {
         setResendError(error.message);
@@ -76,7 +79,7 @@ export const CheckYourEmailScreen: React.FC<CheckYourEmailScreenProps> = ({
     } finally {
       setResendLoading(false);
     }
-  }, [trimmed, resendLoading, resendCooldown]);
+  }, [trimmed, resendLoading, resendCooldown, next]);
 
   return (
     <div className="min-h-[100dvh] bg-neutral-900 flex items-center justify-center py-6 px-4 pb-[env(safe-area-inset-bottom)] sm:py-8 sm:px-6">

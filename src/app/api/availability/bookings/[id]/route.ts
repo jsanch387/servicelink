@@ -21,6 +21,7 @@ import {
 } from '@/features/availability/services/bookingService';
 import { completeBookingWithSideEffects } from '@/features/availability/services/completeBookingWithSideEffects';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { Database } from '@/libs/supabase/client';
@@ -52,21 +53,12 @@ async function loadPaymentRowForBooking(
   } | null;
 }
 
-async function getBusinessIdForOwner(
-  supabase: SupabaseClient,
-  profileId: string
-) {
-  const { data: businessProfile, error: businessError } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('profile_id', profileId)
-    .single();
-
-  if (businessError || !businessProfile) {
-    return { error: 'Business profile not found', status: 404 as const };
+async function getWritableBusinessId(supabase: SupabaseClient<Database>) {
+  const resolved = await requireBusinessPermission(supabase, 'bookings.write');
+  if (!resolved.ok) {
+    return { error: resolved.error, status: resolved.status };
   }
-
-  return { businessId: businessProfile.id as string };
+  return { businessId: resolved.businessId };
 }
 
 export async function PATCH(
@@ -126,8 +118,8 @@ export async function PATCH(
       );
     }
 
-    const { supabase, user } = auth;
-    const authResult = await getBusinessIdForOwner(supabase, user.id);
+    const { supabase } = auth;
+    const authResult = await getWritableBusinessId(supabase);
     if ('status' in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },
@@ -253,7 +245,7 @@ export async function DELETE(
       );
     }
 
-    const authResult = await getBusinessIdForOwner(auth.supabase, auth.user.id);
+    const authResult = await getWritableBusinessId(auth.supabase);
     if ('status' in authResult) {
       return NextResponse.json(
         { success: false, error: authResult.error },

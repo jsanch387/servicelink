@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 const CUSTOMER_NOTE_MAX_LENGTH = 280;
@@ -10,7 +10,10 @@ export async function PATCH(
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'customers.write'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -79,7 +82,10 @@ export async function DELETE(
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'customers.write'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(

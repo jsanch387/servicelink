@@ -11,7 +11,7 @@ import {
 } from '@/features/customer-management/utils/parseCreateCustomerBody';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 function withHttps(url: string): string {
@@ -26,7 +26,10 @@ type CustomerIdRow = { id: string };
 export async function POST(req: Request) {
   try {
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'customers.write'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(
@@ -131,7 +134,7 @@ export async function GET(request: Request) {
     }
 
     const { supabase } = auth;
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'customers.read');
 
     if (!resolved.ok) {
       return NextResponse.json(

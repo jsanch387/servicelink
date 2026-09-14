@@ -1,0 +1,151 @@
+import { getEmailTypoHint, isValidEmail } from '@/features/auth';
+import { sendTeamInviteEmail } from '@/features/email/team-invite/sendTeamInviteEmail';
+import { getAppBaseUrl } from '@/features/email/services/resendClient';
+import { getTeamInvitePath } from '@/constants/routes';
+import type { Database } from '@/libs/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { adminDb } from './adminDb';
+import {
+  PENDING_TEAM_INVITE_STATUS,
+  TEAM_INVITE_EXPIRY_DAYS,
+} from '../constants/teamInvite';
+import { ACTIVE_TEAM_MEMBER_STATUS } from '../constants/teamRoles';
+import { normalizeTeamInviteEmail } from '../utils/normalizeTeamInviteEmail';
+import { createTeamInviteToken } from '../utils/hashTeamInviteToken';
+import type { TeamMemberUi } from '../types/teamMemberUi';
+
+export type CreateTeamInviteResult =
+  | { ok: true; member: TeamMemberUi }
+  | { ok: false; error: string; status: number };
+
+function expiresAtFromNow(): string {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + TEAM_INVITE_EXPIRY_DAYS);
+  return expires.toISOString();
+}
+
+async function activeMemberHasEmail(
+  admin: SupabaseClient<Database>,
+  businessId: string,
+  email: string
+): Promise<boolean> {
+  const { data: members, error } = await adminDb(admin)
+    .from('business_members')
+    .select('user_id')
+    .eq('business_id', businessId)
+    .eq('status', ACTIVE_TEAM_MEMBER_STATUS);
+
+  if (error || !members?.length) return false;
+
+  for (const member of members) {
+    const { data } = await admin.auth.admin.getUserById(member.user_id);
+    const memberEmail = data.user?.email?.trim().toLowerCase();
+    if (memberEmail === email) return true;
+  }
+
+  return false;
+}
+
+export async function createTeamInvite(
+  admin: SupabaseClient<Database>,
+  params: {
+    businessId: string;
+    invitedBy: string;
+    ownerEmail: string | null;
+    businessName: string;
+    rawEmail: string;
+    inviteBaseUrl?: string;
+  }
+): Promise<CreateTeamInviteResult> {
+  const email = normalizeTeamInviteEmail(params.rawEmail);
+  if (!email) {
+    return { ok: false, error: 'Email is required', status: 400 };
+  }
+
+  const typo = getEmailTypoHint(email);
+  if (typo || !isValidEmail(email)) {
+    return { ok: false, error: typo ?? 'Enter a valid email', status: 400 };
+  }
+
+  const ownerEmail = params.ownerEmail?.trim().toLowerCase() ?? '';
+  if (ownerEmail && ownerEmail === email) {
+    return {
+      ok: false,
+      error: 'You are already the owner of this shop',
+      status: 400,
+    };
+  }
+
+  if (await activeMemberHasEmail(admin, params.businessId, email)) {
+    return { ok: false, error: 'Already on the team', status: 409 };
+  }
+
+  const { rawToken, tokenHash } = createTeamInviteToken();
+  const expiresAt = expiresAtFromNow();
+
+  const { data: existingPending } = await adminDb(admin)
+    .from('team_invites')
+    .select('id')
+    .eq('business_id', params.businessId)
+    .eq('email', email)
+    .eq('status', PENDING_TEAM_INVITE_STATUS)
+    .maybeSingle();
+
+  let inviteId = existingPending?.id ?? '';
+
+  if (existingPending?.id) {
+    const { error: updateError } = await adminDb(admin)
+      .from('team_invites')
+      .update({
+        link_token_hash: tokenHash,
+        expires_at: expiresAt,
+      })
+      .eq('id', existingPending.id);
+
+    if (updateError) {
+      return { ok: false, error: 'Could not update invite', status: 500 };
+    }
+  } else {
+    const { data: inserted, error: insertError } = await adminDb(admin)
+      .from('team_invites')
+      .insert({
+        business_id: params.businessId,
+        email,
+        link_token_hash: tokenHash,
+        status: PENDING_TEAM_INVITE_STATUS,
+        invited_by: params.invitedBy,
+        expires_at: expiresAt,
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !inserted?.id) {
+      return { ok: false, error: 'Could not create invite', status: 500 };
+    }
+    inviteId = inserted.id;
+  }
+
+  const inviteUrl = `${params.inviteBaseUrl || getAppBaseUrl()}${getTeamInvitePath(rawToken)}`;
+  const emailed = await sendTeamInviteEmail(email, {
+    businessName: params.businessName,
+    inviteUrl,
+  });
+
+  if (!emailed.sent) {
+    return {
+      ok: false,
+      error: emailed.error || 'Could not send invite email',
+      status: 502,
+    };
+  }
+
+  return {
+    ok: true,
+    member: {
+      id: inviteId,
+      email,
+      status: 'invited',
+      source: 'invite',
+    },
+  };
+}

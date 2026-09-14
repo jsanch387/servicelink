@@ -19,8 +19,8 @@ interface ReviewListRowProps {
   locale: string;
   bookingFlowLocale?: PublicBookingFlowLocale;
   isReplyOpen: boolean;
-  onToggleReply: () => void;
-  onSendReply: (reviewId: string, body: string) => void;
+  onToggleReply?: () => void;
+  onSendReply?: (reviewId: string, body: string) => void;
 }
 
 export const ReviewListRow: React.FC<ReviewListRowProps> = ({
@@ -75,7 +75,7 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           />
         ) : null}
 
-        {!hasReply && !isReplyOpen ? (
+        {!hasReply && !isReplyOpen && onToggleReply ? (
           <Button
             type="button"
             variant="secondary"
@@ -87,7 +87,7 @@ export const ReviewListRow: React.FC<ReviewListRowProps> = ({
           </Button>
         ) : null}
 
-        {!hasReply && isReplyOpen ? (
+        {!hasReply && isReplyOpen && onSendReply && onToggleReply ? (
           <ReviewReplyForm
             onSend={body => onSendReply(review.id, body)}
             onCancel={onToggleReply}

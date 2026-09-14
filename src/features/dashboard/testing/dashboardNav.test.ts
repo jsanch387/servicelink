@@ -1,10 +1,17 @@
 import { ROUTES } from '@/constants/routes';
+import { can, permissionsForRole } from '@/features/team/constants/teamPermissions';
 import { describe, expect, it } from 'vitest';
 import {
   getDashboardPageTitle,
   getVisibleDashboardNavItems,
   isDashboardNavItemActive,
 } from '../utils/dashboardNav';
+
+const ownerCan = (permission: Parameters<typeof can>[1]) =>
+  can({ isOwner: true, permissions: permissionsForRole('owner') }, permission);
+
+const memberCan = (permission: Parameters<typeof can>[1]) =>
+  can({ isOwner: false, permissions: permissionsForRole('member') }, permission);
 
 describe('isDashboardNavItemActive', () => {
   it('matches an exact href', () => {
@@ -34,16 +41,34 @@ describe('isDashboardNavItemActive', () => {
 describe('getVisibleDashboardNavItems', () => {
   it('hides onboarding-only items before setup is done', () => {
     const items = getVisibleDashboardNavItems({
-      isOnboardingCompleted: false,
+      hasShopAccess: false,
       showMembershipsNav: false,
+      can: ownerCan,
     });
     expect(items.map(item => item.name)).toEqual(['Dashboard']);
   });
 
+  it('shows work pages only for an active member', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      can: memberCan,
+    }).map(item => item.name);
+
+    expect(names).toEqual([
+      'Dashboard',
+      'Bookings',
+      'Reviews',
+      'Quotes',
+      'Customers',
+    ]);
+  });
+
   it('inserts subscriptions after services when allowlisted', () => {
     const items = getVisibleDashboardNavItems({
-      isOnboardingCompleted: true,
+      hasShopAccess: true,
       showMembershipsNav: true,
+      can: ownerCan,
     });
     const names = items.map(item => item.name);
     const subscriptions = items.find(item => item.name === 'Subscriptions');
@@ -54,11 +79,23 @@ describe('getVisibleDashboardNavItems', () => {
 
   it('omits subscriptions when not allowlisted', () => {
     const names = getVisibleDashboardNavItems({
-      isOnboardingCompleted: true,
+      hasShopAccess: true,
       showMembershipsNav: false,
+      can: ownerCan,
     }).map(item => item.name);
 
     expect(names).not.toContain('Subscriptions');
+  });
+
+  it('does not put Team in the main nav', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: false,
+      can: ownerCan,
+    }).map(item => item.name);
+
+    expect(names).not.toContain('Team');
+    expect(names).toContain('Customers');
   });
 });
 

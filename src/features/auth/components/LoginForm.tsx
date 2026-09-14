@@ -4,7 +4,8 @@ import { Button, GlassCard, Input } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { getTeamInvitePath, isTeamInvitePath } from '@/constants/routes';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateSignInForm } from '../utils/validation';
@@ -31,6 +32,9 @@ export const LoginForm: React.FC<{
   loginNotice?: string;
 }> = ({ redirectError, resetSuccess, loginNotice }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite')?.trim() ?? '';
+  const inviteNext = inviteToken ? getTeamInvitePath(inviteToken) : '';
   const { signIn, signInWithGoogle, signInWithApple, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -58,7 +62,9 @@ export const LoginForm: React.FC<{
     setAuthError('');
     setGoogleLoading(true);
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(
+        inviteNext ? { next: inviteNext } : undefined
+      );
       if (result?.error) setAuthError(result.error);
     } finally {
       setGoogleLoading(false);
@@ -69,7 +75,9 @@ export const LoginForm: React.FC<{
     setAuthError('');
     setAppleLoading(true);
     try {
-      const result = await signInWithApple();
+      const result = await signInWithApple(
+        inviteNext ? { next: inviteNext } : undefined
+      );
       if (result?.error) setAuthError(result.error);
     } finally {
       setAppleLoading(false);
@@ -95,7 +103,11 @@ export const LoginForm: React.FC<{
       }
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));
-      router.push(ROUTES.DASHBOARD.MAIN);
+      router.push(
+        inviteNext && isTeamInvitePath(inviteNext)
+          ? inviteNext
+          : ROUTES.DASHBOARD.MAIN
+      );
     } catch {
       setAuthError('An unexpected error occurred. Please try again.');
     }

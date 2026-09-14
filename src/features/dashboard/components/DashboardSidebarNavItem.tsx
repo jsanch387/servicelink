@@ -6,11 +6,13 @@ import type { ComponentType, SVGProps } from 'react';
 
 interface DashboardSidebarNavItemProps {
   name: string;
-  href: string;
+  href?: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
-  isActive: boolean;
+  isActive?: boolean;
   collapsed: boolean;
-  onNavigate: () => void;
+  onNavigate?: () => void;
+  onClick?: () => void;
+  disabled?: boolean;
   badge?: 'beta';
 }
 
@@ -18,30 +20,26 @@ export function DashboardSidebarNavItem({
   name,
   href,
   icon: Icon,
-  isActive,
+  isActive = false,
   collapsed,
   onNavigate,
+  onClick,
+  disabled = false,
   badge,
 }: DashboardSidebarNavItemProps) {
   const label = badge === 'beta' ? `${name} (Beta)` : name;
+  const className = `group flex w-full items-center rounded-xl text-sm font-medium tracking-tight transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+    collapsed
+      ? 'gap-3 px-3 py-2 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
+      : 'gap-3 px-3 py-2'
+  } ${
+    isActive
+      ? 'bg-white/[0.08] text-white'
+      : 'text-zinc-400 hover:bg-white/[0.045] hover:text-white'
+  }`;
 
-  return (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      title={collapsed ? label : undefined}
-      aria-current={isActive ? 'page' : undefined}
-      aria-label={label}
-      className={`group flex items-center rounded-xl text-sm font-medium tracking-tight transition-colors cursor-pointer ${
-        collapsed
-          ? 'gap-3 px-3 py-2 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
-          : 'gap-3 px-3 py-2'
-      } ${
-        isActive
-          ? 'bg-white/[0.08] text-white'
-          : 'text-zinc-400 hover:bg-white/[0.045] hover:text-white'
-      }`}
-    >
+  const content = (
+    <>
       <Icon
         className={`h-5 w-5 shrink-0 transition-colors ${
           isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-200'
@@ -53,6 +51,34 @@ export function DashboardSidebarNavItem({
         <span className="truncate">{name}</span>
         {badge === 'beta' ? <BetaBadge /> : null}
       </span>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        title={collapsed ? label : undefined}
+        aria-label={label}
+        className={className}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={href ?? '#'}
+      onClick={onNavigate}
+      title={collapsed ? label : undefined}
+      aria-current={isActive ? 'page' : undefined}
+      aria-label={label}
+      className={className}
+    >
+      {content}
     </Link>
   );
 }

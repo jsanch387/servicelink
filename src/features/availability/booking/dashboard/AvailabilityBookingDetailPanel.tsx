@@ -28,6 +28,7 @@ import type { AvailabilityBookingDisplay } from './types';
 interface AvailabilityBookingDetailPanelProps {
   booking: AvailabilityBookingDisplay;
   onClose: () => void;
+  readOnly?: boolean;
   onMarkCompleted: (
     id: string,
     args?: CompleteAppointmentConfirmArgs
@@ -83,6 +84,7 @@ function formatCurrencyAmount(cents: number, currency: string): string {
 export function AvailabilityBookingDetailPanel({
   booking,
   onClose,
+  readOnly = false,
   onMarkCompleted,
   onCancel,
   onDelete,
@@ -108,7 +110,7 @@ export function AvailabilityBookingDetailPanel({
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
-  const showPaymentSection = Boolean(payment);
+  const showPaymentSection = !readOnly && Boolean(payment);
   const jobs = booking.jobs ?? [];
   const topLevelVehicle = formatVehicle(booking);
   // Per-job vehicles live on job_details; only fall back to booking-level columns
@@ -457,6 +459,7 @@ export function AvailabilityBookingDetailPanel({
           )}
 
           {/* Actions – confirmed: full set; completed/cancelled: delete only */}
+          {!readOnly ? (
           <section className="pt-2">
             <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-2">
               Actions
@@ -541,6 +544,7 @@ export function AvailabilityBookingDetailPanel({
               </button>
             </div>
           </section>
+          ) : null}
         </div>
       </div>
 

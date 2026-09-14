@@ -11,6 +11,7 @@ import {
   canonicalizeBusinessType,
   isAllowedBusinessTypeValue,
 } from '@/constants/businessTypes';
+import { lookupActiveMemberBusinessId } from '@/features/team/server/lookupActiveMemberBusinessId';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface SaveStep1Params {
@@ -35,6 +36,16 @@ export async function saveStep1(
   const specialtiesToStore = sanitizeBusinessSpecialties(params.specialties);
 
   try {
+    const memberBusinessId = await lookupActiveMemberBusinessId(
+      supabase,
+      profileId
+    );
+    if (memberBusinessId) {
+      return {
+        success: false,
+        error: "You're on a team and can't create a shop.",
+      };
+    }
     const typeTrimmed = businessType.trim();
     if (!typeTrimmed) {
       return {

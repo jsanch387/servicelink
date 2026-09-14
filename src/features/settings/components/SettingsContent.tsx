@@ -4,20 +4,21 @@ import { AffiliateReferralWidget } from '@/features/affiliates/components/Affili
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ProWelcomeModal } from '@/features/pricing';
 import React from 'react';
+import { useSettingsTab } from '../hooks/useSettingsTab';
+import { useSettingsUrlEffects } from '../hooks/useSettingsUrlEffects';
+import type { SettingsPageData } from '../types/settingsPageData';
 import { SettingsAccountSection } from './SettingsAccountSection';
 import { SettingsBillingSection } from './SettingsBillingSection';
 import { SettingsDangerZone } from './SettingsDangerZone';
+import { SettingsLogoutButton } from './SettingsLogoutButton';
 import { SettingsPageShell } from './SettingsPageShell';
+import { SettingsTeamSection } from './SettingsTeamSection';
 import { SettingsYourLinkSection } from './SettingsYourLinkSection';
-import { useSettingsUrlEffects } from '../hooks/useSettingsUrlEffects';
-import type { SettingsPageData } from '../types/settingsPageData';
 
 export interface SettingsContentProps {
   businessProfile: CompleteBusinessProfile;
   settingsData: SettingsPageData;
-  /** True when redirected from Stripe with ?checkout=success (show Pro welcome once). */
   checkoutSuccess?: boolean;
-  /** From auth callback after email change confirm (`?email_notice=`). */
   emailNotice?: 'updated' | 'error' | null;
 }
 
@@ -29,54 +30,65 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
 }) => {
   const planId = settingsData.planId ?? 'free';
   const hasSlug = settingsData.slugData?.hasSlug || false;
+  const { tab, setTab } = useSettingsTab();
 
   const { showProWelcomeModal, setShowProWelcomeModal } =
     useSettingsUrlEffects(checkoutSuccessProp);
 
   return (
-    <SettingsPageShell>
+    <SettingsPageShell tab={tab} onTabChange={setTab}>
       <ProWelcomeModal
         isOpen={showProWelcomeModal}
         onClose={() => setShowProWelcomeModal(false)}
       />
 
-      <SettingsYourLinkSection
-        businessProfileId={businessProfile.id}
-        hasSlug={hasSlug}
-        existingSlug={settingsData.slugData?.slug}
-        existingFullLink={settingsData.slugData?.fullLink}
-      />
+      {tab === 'team' ? (
+        <SettingsTeamSection />
+      ) : (
+        <>
+          <SettingsAccountSection
+            accountEmail={settingsData.accountEmail}
+            signedInWithGoogle={settingsData.signedInWithGoogle ?? false}
+            pendingEmail={settingsData.pendingEmail ?? null}
+            emailNotice={emailNotice}
+          />
 
-      <SettingsBillingSection
-        planId={planId}
-        subscriptionStatus={settingsData.subscriptionStatus ?? null}
-        subscriptionCurrentPeriodEnd={
-          settingsData.subscriptionCurrentPeriodEnd ?? null
-        }
-        subscriptionCancelAtPeriodEnd={
-          settingsData.subscriptionCancelAtPeriodEnd === true
-        }
-        subscriptionMonthlyPrice={settingsData.subscriptionMonthlyPrice ?? null}
-        subscriptionBillingInterval={
-          settingsData.subscriptionBillingInterval ?? null
-        }
-      />
+          <SettingsYourLinkSection
+            businessProfileId={businessProfile.id}
+            hasSlug={hasSlug}
+            existingSlug={settingsData.slugData?.slug}
+            existingFullLink={settingsData.slugData?.fullLink}
+          />
 
-      <AffiliateReferralWidget />
+          <SettingsBillingSection
+            planId={planId}
+            subscriptionStatus={settingsData.subscriptionStatus ?? null}
+            subscriptionCurrentPeriodEnd={
+              settingsData.subscriptionCurrentPeriodEnd ?? null
+            }
+            subscriptionCancelAtPeriodEnd={
+              settingsData.subscriptionCancelAtPeriodEnd === true
+            }
+            subscriptionMonthlyPrice={
+              settingsData.subscriptionMonthlyPrice ?? null
+            }
+            subscriptionBillingInterval={
+              settingsData.subscriptionBillingInterval ?? null
+            }
+          />
 
-      <SettingsAccountSection
-        accountEmail={settingsData.accountEmail}
-        signedInWithGoogle={settingsData.signedInWithGoogle ?? false}
-        pendingEmail={settingsData.pendingEmail ?? null}
-        emailNotice={emailNotice}
-      />
+          <AffiliateReferralWidget />
 
-      {settingsData.accountEmail ? (
-        <SettingsDangerZone
-          accountEmail={settingsData.accountEmail}
-          key={settingsData.accountEmail}
-        />
-      ) : null}
+          <SettingsLogoutButton />
+
+          {settingsData.accountEmail ? (
+            <SettingsDangerZone
+              accountEmail={settingsData.accountEmail}
+              key={settingsData.accountEmail}
+            />
+          ) : null}
+        </>
+      )}
     </SettingsPageShell>
   );
 };

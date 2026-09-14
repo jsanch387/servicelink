@@ -1,5 +1,8 @@
 import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapper';
+import type { DashboardAccessValue } from '@/features/dashboard/context/DashboardAccessContext';
 import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptions/config/membershipsRolloutAllowlist';
+import { permissionsForRole } from '@/features/team/constants/teamPermissions';
+import { resolveDashboardContext } from '@/features/team/server/resolveDashboardContext';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { Metadata } from 'next';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -42,6 +45,22 @@ export default async function DashboardLayout({
         ?.onboarding_status === 'completed';
   }
 
+  const access = user?.id ? await resolveDashboardContext(supabase) : null;
+  const dashboardAccess: DashboardAccessValue = access?.ok
+    ? {
+        isOwner: access.context.isOwner,
+        role: access.context.role,
+        permissions: access.context.permissions,
+      }
+    : {
+        isOwner: true,
+        role: 'owner',
+        permissions: permissionsForRole('owner'),
+      };
+  const hasShopAccess =
+    isOnboardingCompleted ||
+    (access?.ok === true && access.context.isOwner === false);
+
   const showMembershipsNav = isOwnerEmailAllowedForMembershipsRollout(
     user?.email
   );
@@ -49,6 +68,8 @@ export default async function DashboardLayout({
   return (
     <DashboardWrapper
       isOnboardingCompleted={isOnboardingCompleted}
+      hasShopAccess={hasShopAccess}
+      dashboardAccess={dashboardAccess}
       showMembershipsNav={showMembershipsNav}
       accountEmail={user?.email?.trim() || null}
     >
