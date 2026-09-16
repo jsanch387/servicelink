@@ -226,14 +226,16 @@ export async function middleware(request: NextRequest) {
     );
 
     if (!onboardingComplete) {
-      const { data: memberRow } = await supabase
+      type MemberAccessRow = { id?: string | null };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: memberRow } = await (supabase as any)
         .from('business_members')
         .select('id')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .limit(1)
         .maybeSingle();
-      if (memberRow?.id) {
+      if ((memberRow as MemberAccessRow | null)?.id) {
         return response;
       }
       const allowOnboardingBusinessProfileReturn =
