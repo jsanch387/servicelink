@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       ownerEmail: user?.email ?? null,
       businessName: shopName,
       rawEmail,
-      inviteBaseUrl: getAppBaseUrl(request),
+      inviteBaseUrl: getAppBaseUrl(),
     });
 
     if (!result.ok) {

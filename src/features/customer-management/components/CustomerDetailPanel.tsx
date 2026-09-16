@@ -158,7 +158,6 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
 
   useEffect(() => {
     setCheckInTeaserOpen(false);
-    setEnrollMaintenanceOpen(false);
     setMaintenanceDetailsOpen(false);
     setEmailCopied(false);
   }, [customer.id]);
