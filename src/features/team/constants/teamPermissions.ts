@@ -2,6 +2,7 @@
 export const TEAM_PERMISSIONS = [
   'dashboard.read',
   'bookings.read',
+  'bookings.run',
   'bookings.write',
   'customers.read',
   'customers.write',
@@ -33,6 +34,8 @@ const WORK_READ: TeamPermission[] = [
   'reviews.read',
 ];
 
+const JOB_RUN: TeamPermission[] = ['bookings.run'];
+
 const WORK_WRITE: TeamPermission[] = [
   'bookings.write',
   'customers.write',
@@ -49,8 +52,8 @@ const SHOP_SETUP: TeamPermission[] = [
 
 export const ROLE_PERMISSIONS: Record<DashboardAccessRole, TeamPermission[]> = {
   owner: [...TEAM_PERMISSIONS],
-  member: [...WORK_READ],
-  manager: [...WORK_READ, ...WORK_WRITE, ...SHOP_SETUP],
+  member: [...WORK_READ, ...JOB_RUN],
+  manager: [...WORK_READ, ...JOB_RUN, ...WORK_WRITE, ...SHOP_SETUP],
 };
 
 export function isTeamPermission(value: string): value is TeamPermission {

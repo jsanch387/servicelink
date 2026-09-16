@@ -22,6 +22,7 @@ describe('teamPermissions', () => {
     const permissions = permissionsForRole('member');
 
     expect(can({ isOwner: false, permissions }, 'bookings.read')).toBe(true);
+    expect(can({ isOwner: false, permissions }, 'bookings.run')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'quotes.read')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'bookings.write')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'payments.manage')).toBe(

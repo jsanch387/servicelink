@@ -2,11 +2,11 @@
 
 import { GlassCard } from '@/components/shared';
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import React, { useCallback } from 'react';
+import { eventChipClass } from './calendar/eventStyles';
 import type { AvailabilityBookingDisplay } from './types';
 import { bookingListServiceTitle } from './utils/bookingCardServiceTitle';
-import { formatListCardTimeForBooking } from './utils/formatListCardTime';
+import { listCardTimeParts } from './utils/formatListCardTime';
 
 interface AvailabilityBookingCardProps {
   booking: AvailabilityBookingDisplay;
@@ -23,29 +23,22 @@ function formatVehicleLine(booking: AvailabilityBookingDisplay): string | null {
   return parts.join(' ');
 }
 
+function statusLabel(status: AvailabilityBookingDisplay['status']): string {
+  if (status === 'completed') return 'Completed';
+  if (status === 'cancelled') return 'Cancelled';
+  return 'Confirmed';
+}
+
 function StatusPill({
   status,
 }: {
   status: AvailabilityBookingDisplay['status'];
 }) {
-  if (status === 'confirmed') {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 tracking-wide">
-        <CheckCircleIcon className="h-3 w-3" />
-        Confirmed
-      </span>
-    );
-  }
-  if (status === 'completed') {
-    return (
-      <span className="inline-flex rounded-full bg-zinc-500/15 px-2 py-0.5 text-[10px] font-semibold text-zinc-400 tracking-wide">
-        Completed
-      </span>
-    );
-  }
   return (
-    <span className="inline-flex rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-400 tracking-wide">
-      Cancelled
+    <span
+      className={`inline-flex shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold ${eventChipClass(status)}`}
+    >
+      {statusLabel(status)}
     </span>
   );
 }
@@ -56,7 +49,7 @@ export function AvailabilityBookingCard({
 }: AvailabilityBookingCardProps) {
   const vehicleLine = formatVehicleLine(booking);
   const servicesText = bookingListServiceTitle(booking);
-  const timeLabel = formatListCardTimeForBooking(booking);
+  const { clock, period } = listCardTimeParts(booking);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -85,10 +78,15 @@ export function AvailabilityBookingCard({
         <div className="flex w-full items-stretch gap-3 sm:gap-4">
           {/* Time + divider: narrow column + rule hugging the time */}
           <div className="flex shrink-0 items-stretch gap-1 sm:gap-1.5">
-            <div className="flex w-[4.25rem] shrink-0 flex-col justify-center text-center sm:w-[4.5rem]">
-              <span className="whitespace-nowrap text-[11px] font-bold leading-none tracking-tight text-white tabular-nums sm:text-xs sm:leading-none">
-                {timeLabel}
+            <div className="flex w-[4.5rem] shrink-0 flex-col items-center justify-center text-center sm:w-[5rem]">
+              <span className="whitespace-nowrap text-base font-bold leading-none tracking-tight text-white tabular-nums sm:text-lg">
+                {clock}
               </span>
+              {period ? (
+                <span className="mt-1 text-[10px] font-bold uppercase leading-none tracking-wide text-white/65 sm:text-xs">
+                  {period}
+                </span>
+              ) : null}
             </div>
             <div
               className="w-px flex-shrink-0 self-stretch bg-white/10"

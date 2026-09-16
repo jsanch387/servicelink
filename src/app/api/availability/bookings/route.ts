@@ -1,17 +1,26 @@
 /**
  * GET /api/availability/bookings
  *
- * Returns V2 (availability) bookings for the authenticated user's business.
- * Used by the dashboard Bookings page when "Accept Bookings" is on.
+ * Returns a page of V2 bookings (newest first) or the bookings in a date
+ * range for the calendar. Used by the dashboard Bookings page.
  */
 
-import { listBookingsForBusiness } from '@/features/availability/services/bookingService';
+import { listBookingsForOwner } from '@/features/availability/booking/server/listBookingsForOwner';
+import { parseListBookingsQuery } from '@/features/availability/booking/server/parseListBookingsQuery';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const parsed = parseListBookingsQuery(request.nextUrl.searchParams);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { success: false, error: parsed.error },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createSupabaseServerClient();
 
     const authResult = await requireBusinessPermission(
@@ -25,12 +34,18 @@ export async function GET() {
       );
     }
 
-    const bookings = await listBookingsForBusiness(
+    const page = await listBookingsForOwner(
       supabase,
-      authResult.businessId
+      authResult.businessId,
+      parsed.query
     );
 
-    return NextResponse.json({ success: true, data: bookings });
+    return NextResponse.json({
+      success: true,
+      data: page.bookings,
+      hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
+    });
   } catch (err) {
     console.error('[API] GET /api/availability/bookings:', err);
     return NextResponse.json(

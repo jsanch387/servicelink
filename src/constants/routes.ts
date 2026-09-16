@@ -185,6 +185,13 @@ export const API_ROUTES = {
    */
   PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  /** Shop bookings list (owner or active member). */
+  AVAILABILITY_BOOKINGS: '/api/availability/bookings',
+  /** Owner + active teammates who can be assigned to a booking. */
+  AVAILABILITY_BOOKING_ASSIGNEES: '/api/availability/bookings/assignees',
+  /** Set or clear the worker on a booking. */
+  availabilityBookingAssignee: (bookingId: string) =>
+    `/api/availability/bookings/${encodeURIComponent(bookingId.trim())}/assignee`,
   /** Owner: list teammates + pending invites. */
   TEAM_MEMBERS: '/api/team/members',
   /** Owner: send or resend a team invite email. */

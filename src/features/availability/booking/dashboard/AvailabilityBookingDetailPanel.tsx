@@ -2,13 +2,12 @@
 
 import { Button } from '@/components/shared';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
+import type { BookingAssigneeOption } from '@/features/team/types/bookingAssignee';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
-  CalendarIcon,
   CheckCircleIcon,
-  MapPinIcon,
   TrashIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -16,6 +15,7 @@ import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/sol
 import { useState } from 'react';
 import type { ExistingBooking, TimeOffInterval } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
+import { BookingAssigneeField } from './BookingAssigneeField';
 import { BookingDetailCustomerSection } from './BookingDetailCustomerSection';
 import { BookingDetailServiceSection } from './BookingDetailServiceSection';
 import {
@@ -29,6 +29,8 @@ interface AvailabilityBookingDetailPanelProps {
   booking: AvailabilityBookingDisplay;
   onClose: () => void;
   readOnly?: boolean;
+  /** Complete + collect pay. Defaults to the inverse of `readOnly`. */
+  canRunActions?: boolean;
   onMarkCompleted: (
     id: string,
     args?: CompleteAppointmentConfirmArgs
@@ -50,6 +52,11 @@ interface AvailabilityBookingDetailPanelProps {
   bufferTime?: string;
   /** Confirmed/completed bookings except the one being rescheduled (for slot blocking). */
   existingBookingsForSlotGrid: ExistingBooking[];
+  assigneeOptions?: BookingAssigneeOption[];
+  onAssign?: (
+    userId: string | null
+  ) => Promise<{ success: boolean; error?: string }>;
+  isAssigning?: boolean;
 }
 
 function formatFullAddress(
@@ -85,6 +92,7 @@ export function AvailabilityBookingDetailPanel({
   booking,
   onClose,
   readOnly = false,
+  canRunActions,
   onMarkCompleted,
   onCancel,
   onDelete,
@@ -96,6 +104,9 @@ export function AvailabilityBookingDetailPanel({
   timeOffBlocks,
   bufferTime = 'none',
   existingBookingsForSlotGrid,
+  assigneeOptions = [],
+  onAssign,
+  isAssigning = false,
 }: AvailabilityBookingDetailPanelProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -110,7 +121,14 @@ export function AvailabilityBookingDetailPanel({
   const isConfirmed = booking.status === 'confirmed';
   const isCancelled = booking.status === 'cancelled';
   const payment = booking.payment ?? null;
-  const showPaymentSection = !readOnly && Boolean(payment);
+  const canComplete = canRunActions ?? !readOnly;
+  const canManageBooking = !readOnly;
+  const showPaymentSection = canComplete && Boolean(payment);
+  const showCompleteTile = isConfirmed && canComplete;
+  const showManageTiles = isConfirmed && canManageBooking;
+  const showDeleteTile = canManageBooking;
+  const showActionsSection =
+    showCompleteTile || showManageTiles || showDeleteTile;
   const jobs = booking.jobs ?? [];
   const topLevelVehicle = formatVehicle(booking);
   // Per-job vehicles live on job_details; only fall back to booking-level columns
@@ -270,8 +288,7 @@ export function AvailabilityBookingDetailPanel({
 
           {/* Schedule — when only */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3 flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
+            <h3 className="mb-3 text-xs font-semibold tracking-wider text-gray-500">
               Schedule
             </h3>
             <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
@@ -296,6 +313,16 @@ export function AvailabilityBookingDetailPanel({
                   {formatDurationMinutes(booking.serviceDurationMinutes)}
                 </span>
               </p>
+              {onAssign ? (
+                <div className="mt-4 border-t border-white/[0.06] pt-4">
+                  <BookingAssigneeField
+                    assignedUserId={booking.assignedUserId ?? null}
+                    options={assigneeOptions}
+                    onAssign={onAssign}
+                    disabled={isAssigning}
+                  />
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -408,8 +435,7 @@ export function AvailabilityBookingDetailPanel({
           {/* Location */}
           <section>
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h3 className="text-xs font-semibold text-gray-500 tracking-wider flex items-center gap-2">
-                <MapPinIcon className="h-4 w-4" />
+              <h3 className="text-xs font-semibold tracking-wider text-gray-500">
                 Location
               </h3>
 
@@ -458,8 +484,8 @@ export function AvailabilityBookingDetailPanel({
             </section>
           )}
 
-          {/* Actions – confirmed: full set; completed/cancelled: delete only */}
-          {!readOnly ? (
+          {/* Actions – teammates can complete; owner also reschedules / cancels / deletes */}
+          {showActionsSection ? (
           <section className="pt-2">
             <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-2">
               Actions
@@ -471,7 +497,7 @@ export function AvailabilityBookingDetailPanel({
             )}
             <div
               className={
-                isConfirmed
+                showManageTiles
                   ? 'grid w-full grid-cols-2 gap-1.5 sm:gap-2'
                   : 'grid w-full grid-cols-1 gap-1.5 sm:gap-2'
               }
@@ -479,7 +505,7 @@ export function AvailabilityBookingDetailPanel({
               aria-label="Booking actions"
               aria-busy={isUpdating}
             >
-              {isConfirmed ? (
+              {showManageTiles ? (
                 <>
                   <button
                     type="button"
@@ -510,6 +536,9 @@ export function AvailabilityBookingDetailPanel({
                       Cancel
                     </span>
                   </button>
+                </>
+              ) : null}
+              {showCompleteTile ? (
                   <button
                     type="button"
                     disabled={isUpdating || isRescheduling}
@@ -525,8 +554,8 @@ export function AvailabilityBookingDetailPanel({
                       Complete
                     </span>
                   </button>
-                </>
               ) : null}
+              {showDeleteTile ? (
               <button
                 type="button"
                 disabled={isUpdating || isRescheduling}
@@ -542,6 +571,7 @@ export function AvailabilityBookingDetailPanel({
                   Delete
                 </span>
               </button>
+              ) : null}
             </div>
           </section>
           ) : null}

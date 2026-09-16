@@ -17,22 +17,14 @@ import {
   upsertCustomerVehiclesFromBooking,
 } from '@/features/customer-management/server/upsertCustomerAssets';
 import { buildPetAssetDraft } from '@/features/customer-management/utils/customerAssetTypes';
-import {
-  customerAlreadyReviewedForBooking,
-  loadReviewInviteEligibilityContext,
-  willSendReviewInviteOnBookingComplete,
-} from '@/features/reviews/server/reviewInviteEligibility';
+import { hydrateBookingRowsForDisplay } from '@/features/availability/booking/server/hydrateBookingRowsForDisplay';
 import type { BookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { bookingDiscountColumnsFromSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { resolveDiscountColumnsForReschedule } from '@/features/marketing/server/resolveDiscountColumnsForReschedule';
 import { ownerHasProAccessForBusiness } from '@/features/pricing/server/ownerHasProAccessForBusiness';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import {
-  mapBookingRowToDisplay,
-  type BookingRow,
-} from '../booking/dashboard/utils/mapBookingRowToDisplay';
-import { attachPaymentSummaryToDisplay } from '../booking/dashboard/utils/attachPaymentSummaryToDisplay';
+import type { BookingRow } from '../booking/dashboard/utils/mapBookingRowToDisplay';
 import type { AddOnAtBooking, CustomerFormData } from '../booking/types';
 import type { BookingJobDetailsItem } from '../booking/utils/ownerManualBookingJobs';
 
@@ -574,13 +566,13 @@ export async function insertBookingPaymentsRowForNoCheckoutPublicBooking(
 }
 
 /**
- * Lists all bookings for a business (owner view). Use with authenticated
- * client so RLS allows SELECT for their business_id.
+ * Lists all bookings for a business (owner view). Prefer
+ * `listBookingsForOwner` on the dashboard API so the query stays bounded.
  */
 export async function listBookingsForBusiness(
   supabase: SupabaseClient<Database>,
   businessId: string
-): Promise<ReturnType<typeof mapBookingRowToDisplay>[]> {
+): Promise<Awaited<ReturnType<typeof hydrateBookingRowsForDisplay>>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from(TABLE)
@@ -593,68 +585,11 @@ export async function listBookingsForBusiness(
     throw error;
   }
 
-  const rows = (data ?? []) as BookingRow[];
-  const bookingIds = rows.map(r => r.id);
-  const reviewInviteEligibilityContext =
-    rows.length > 0
-      ? await loadReviewInviteEligibilityContext(supabase, businessId, rows)
-      : null;
-  const paymentByBookingId = new Map<
-    string,
-    {
-      payment_status: string | null;
-      payment_method_selected: string | null;
-      currency: string | null;
-      total_amount_cents: number | null;
-      paid_online_amount_cents: number | null;
-      remaining_amount_cents: number | null;
-    }
-  >();
-
-  if (bookingIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: paymentRows } = await (supabase as any)
-      .from('booking_payments')
-      .select(
-        'booking_id, payment_status, payment_method_selected, currency, total_amount_cents, paid_online_amount_cents, remaining_amount_cents'
-      )
-      .in('booking_id', bookingIds);
-
-    const normalized = (paymentRows ?? []) as Array<{
-      booking_id: string;
-      payment_status: string | null;
-      payment_method_selected: string | null;
-      currency: string | null;
-      total_amount_cents: number | null;
-      paid_online_amount_cents: number | null;
-      remaining_amount_cents: number | null;
-    }>;
-
-    for (const p of normalized) {
-      if (!p.booking_id) continue;
-      paymentByBookingId.set(p.booking_id, p);
-    }
-  }
-
-  return rows.map(row => {
-    const display = mapBookingRowToDisplay(row);
-    const payment = paymentByBookingId.get(row.id);
-    const willSendReviewInviteOnComplete = reviewInviteEligibilityContext
-      ? willSendReviewInviteOnBookingComplete(
-          row,
-          reviewInviteEligibilityContext
-        )
-      : false;
-    const customerAlreadyReviewed = reviewInviteEligibilityContext
-      ? customerAlreadyReviewedForBooking(row, reviewInviteEligibilityContext)
-      : false;
-    const withReviewFlag = {
-      ...display,
-      customerAlreadyReviewed,
-      willSendReviewInviteOnComplete,
-    };
-    return attachPaymentSummaryToDisplay(withReviewFlag, row, payment);
-  });
+  return hydrateBookingRowsForDisplay(
+    supabase,
+    businessId,
+    (data ?? []) as BookingRow[]
+  );
 }
 
 export type BookingStatusUpdate = 'completed' | 'cancelled';

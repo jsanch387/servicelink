@@ -80,8 +80,25 @@ needed to render those pages. Writes stay owner-only.
 
 ---
 
+## Booking assignee
+
+**SQL:** [`migrations/004_booking_assignee.sql`](./migrations/004_booking_assignee.sql)
+
+Optional worker on `bookings`. Null = unassigned. New public bookings stay null.
+
+| Column             | Type        | Notes                                                                 |
+| ------------------ | ----------- | --------------------------------------------------------------------- |
+| `assigned_user_id` | uuid FK     | → `auth.users(id)` ON DELETE SET NULL. Owner or an **active** member. |
+
+Not a `business_members` id — the owner is not in that table and can still be assigned.
+
+Trigger rejects anyone who is not the shop `profile_id` or an active member of that `business_id`. Removing a member clears their assignments on that shop.
+
+No RLS change. Column is readable on existing booking SELECT. Writes stay owner-only until the UI/API slice.
+
+---
+
 ## Not in this migration
 
-- Job assignees
 - Team plan / seat count
-- Member writes (status updates, send quote, etc.)
+- Member writes (job run, assign from a teammate, etc.)

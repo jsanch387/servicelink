@@ -26,7 +26,7 @@ This doc describes how the **owner availability** settings and **V2 (availabilit
 ### UI / data flow
 
 - Dashboard **Availability** page: tabs **Your schedule** (weekly hours) and **Settings** (**Accept bookings**, **Time off**, **Lead time**, **Buffer time**). All of it persists on **Save availability** (GET on load, POST on save). Buffer and lead are independent: lead hides too-soon customer slots even with no bookings; buffer only applies when another appointment already exists.
-- The **Bookings** dashboard page uses `accept_bookings` (from store) to decide whether to show the V2 bookings list or the V1 booking-requests list. V2 list is loaded via GET /api/availability/bookings. The **Planner** layout reads `time_off_blocks` from the server-rendered bookings page and overlays blocks on the day timeline (no separate API).
+- The **Bookings** dashboard page uses `accept_bookings` (from store) to decide whether to show availability bookings or the V1 booking-requests list. Availability bookings load via GET /api/availability/bookings. Time-off overlays on the calendar come from `time_off_blocks` on the server-rendered bookings page (no separate API).
 
 ---
 
@@ -113,9 +113,9 @@ The public book flow branches on mode: **mobile** collects customer address on t
 
 ---
 
-## 3. Dashboard: V2 bookings list and status updates
+## 3. Dashboard: bookings list, calendar, and status updates
 
-**Purpose:** Owner sees all V2 bookings and can mark them completed or cancel.
+**Purpose:** Owner sees all availability bookings and can mark them completed or cancel.
 
 ### API
 
@@ -124,8 +124,8 @@ The public book flow branches on mode: **mobile** collects customer address on t
 
 ### UI / data flow
 
-- Dashboard **Bookings** page: if `accept_bookings` is on, it renders the V2 view (`AvailabilityBookingsView`), which uses `useAvailabilityBookings()`. The hook calls GET /api/availability/bookings on every visit to the tab so the list is always fresh. Mark complete / cancel update via PATCH and local state only (no refetch). List is grouped into Upcoming / Past / Cancelled.
-- **Planner** mode: the page server-loads **`time_off_blocks`** and passes them into `DayPlannerView`. Time-off windows render as non-interactive blocks on the day timeline (alongside appointment cards). Reload the page after editing time off on **Availability** to refresh planner data.
+- Dashboard **Bookings** page: if `accept_bookings` is on, it renders `AvailabilityBookingsView` (list + day/week/month calendar), which uses `useAvailabilityBookings()`. The hook calls GET /api/availability/bookings on every visit to the tab so the list is always fresh. Mark complete / cancel update via PATCH and local state only (no refetch). List is grouped into Upcoming / Past / Cancelled.
+- **Calendar** time-off: the page server-loads **`time_off_blocks`** and passes them into `BookingsCalendar`. Time-off windows render as hatched blocks on day/week and as a hatched day cell on month. Reload the page after editing time off on **Availability** to refresh calendar data.
 - Mark as completed or Cancel calls PATCH with the booking id and new status; the hook updates local state (and cache) from the response so no refetch is needed.
 
 ### Day-before reminders
@@ -157,7 +157,7 @@ See **[`src/features/cron/docs/README.md`](../../../cron/docs/README.md)** for w
 | Price/duration breakdown (calendar + review step)                | `features/availability/booking/components/BookingPriceBreakdown.tsx`                                                     |
 | Service + add-ons for booking (server)                           | `features/services/api/getServiceWithAddOnsForBooking.ts`, `getAddOnsByIdsForBooking.ts`                                 |
 | Blocked slots hook                                               | `features/availability/booking/hooks/usePublicBlockedSlots.ts`                                                           |
-| Planner time-off overlay                                         | `features/availability/booking/dashboard/DayPlannerView.tsx`                                                             |
+| Calendar time-off overlay                                        | `features/availability/booking/dashboard/calendar/BookingsCalendar.tsx`                                              |
 | Create booking (server)                                          | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`)   |
 | Day-before reminders                                             | `booking/server/reminders` + cron feature                                                                                |
 | Business service location (mobile/shop/both)                     | `business_profiles` columns + [serviceLocation.md](../../business-profile/docs/serviceLocation.md)                       |

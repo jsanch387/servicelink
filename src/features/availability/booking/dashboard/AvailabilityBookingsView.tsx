@@ -3,7 +3,6 @@
 import { Button } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import {
-  blockCoversDate,
   toTimeOffIntervalFields,
   type BlockTimeEntry,
 } from '@/features/availability/types/blockTime';
@@ -17,99 +16,27 @@ import {
   SyncBookingsCtaCard,
 } from '@/features/calendar-sync';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
+import { shopHasBookingAssignees } from '@/features/team/utils/shopHasBookingAssignees';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
-import { CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import { AvailabilityBookingCard } from './AvailabilityBookingCard';
-import { AvailabilityBookingsViewSkeleton } from './AvailabilityBookingCardSkeleton';
+import { PlusIcon } from '@heroicons/react/24/outline';
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
-import { BookingsStatusFilter } from './BookingsStatusFilter';
-import { BookingsViewModeToggle } from './BookingsViewModeToggle';
-import { DayPlannerView } from './DayPlannerView';
-import { localDateKey } from './dayPlannerUtils';
+import { BookingsCalendar } from './calendar/BookingsCalendar';
+import { CalendarModeDock } from './calendar/CalendarModeDock';
+import type { CalendarMode } from './calendar/types';
+import {
+  BookingsStatusFilter,
+  type BookingsStatusFilterValue,
+} from './BookingsStatusFilter';
 import { useAvailabilityBookings } from './hooks/useAvailabilityBookings';
+import { useBookingAssignees } from './hooks/useBookingAssignees';
 import { useNewAppointmentAction } from './hooks/useNewAppointmentAction';
 import type { AvailabilityBookingDisplay } from './types';
-
-type TabId = 'upcoming' | 'past' | 'cancelled';
-type LayoutMode = 'list' | 'planner';
-
-function sortByDateThenTime(
-  a: AvailabilityBookingDisplay,
-  b: AvailabilityBookingDisplay
-): number {
-  const dateCompare = a.date.localeCompare(b.date);
-  if (dateCompare !== 0) return dateCompare;
-  return a.time.localeCompare(b.time);
-}
-
-/** YYYY-MM-DD → "Mar 25" */
-function formatDayGroupLabel(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function maxCreatedAtMs(bookings: AvailabilityBookingDisplay[]): number {
-  return Math.max(
-    ...bookings.map(b => new Date(b.createdAt).getTime()),
-    Number.NEGATIVE_INFINITY
-  );
-}
-
-/**
- * One heading per calendar day; order matches each tab (upcoming asc, past desc,
- * cancelled by most recent cancellation in that day).
- */
-function groupBookingsByDayForTab(
-  list: AvailabilityBookingDisplay[],
-  tab: TabId
-): {
-  dateKey: string;
-  label: string;
-  bookings: AvailabilityBookingDisplay[];
-}[] {
-  if (list.length === 0) return [];
-
-  const map = new Map<string, AvailabilityBookingDisplay[]>();
-  for (const b of list) {
-    const arr = map.get(b.date) ?? [];
-    arr.push(b);
-    map.set(b.date, arr);
-  }
-
-  for (const arr of map.values()) {
-    if (tab === 'cancelled') {
-      arr.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    } else if (tab === 'past') {
-      arr.sort((a, b) => -sortByDateThenTime(a, b));
-    } else {
-      arr.sort(sortByDateThenTime);
-    }
-  }
-
-  const dayKeys = [...map.keys()];
-  if (tab === 'upcoming') {
-    dayKeys.sort((a, b) => a.localeCompare(b));
-  } else if (tab === 'past') {
-    dayKeys.sort((a, b) => b.localeCompare(a));
-  } else {
-    dayKeys.sort(
-      (a, b) => maxCreatedAtMs(map.get(b)!) - maxCreatedAtMs(map.get(a)!)
-    );
-  }
-
-  return dayKeys.map(dateKey => ({
-    dateKey,
-    label: formatDayGroupLabel(dateKey),
-    bookings: map.get(dateKey)!,
-  }));
-}
 
 export interface AvailabilityBookingsViewProps {
   /** Public page slug for customer booking URL; when missing, New appointment is disabled. */
@@ -118,7 +45,7 @@ export interface AvailabilityBookingsViewProps {
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;
-  /** Owner time-off blocks for planner overlay (from availability). */
+  /** Owner time-off blocks for the calendar overlay. */
   timeOffBlocks?: BlockTimeEntry[];
   /** Weekly hours for reschedule slot picker (same rules as public booking). */
   weeklySchedule: WeeklySchedule;
@@ -133,25 +60,35 @@ export function AvailabilityBookingsView({
   weeklySchedule,
   bufferTime = 'none',
 }: AvailabilityBookingsViewProps) {
-  const canWriteBookings = useDashboardAccess().can('bookings.write');
+  const access = useDashboardAccess();
+  const canWriteBookings = access.can('bookings.write');
+  const canRunBookings = access.can('bookings.run');
   const {
     bookings,
     isLoading,
+    isLoadingMore,
+    hasMore,
     error,
+    loadListPage,
+    loadMore,
+    loadRange,
     updateBookingStatus,
     completeBookingJob,
     rescheduleBooking,
+    updateBookingAssignee,
     deleteBooking,
   } = useAvailabilityBookings();
-  const [activeTab, setActiveTab] = useState<TabId>('upcoming');
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('list');
-  const [plannerDateKey, setPlannerDateKey] = useState(() =>
-    localDateKey(new Date())
+  const { assignees } = useBookingAssignees();
+  const canAssignBookings = shopHasBookingAssignees(assignees);
+  const [activeTab, setActiveTab] = useState<BookingsStatusFilterValue>(
+    'upcoming'
   );
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>('calendar');
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
 
@@ -165,62 +102,9 @@ export function AvailabilityBookingsView({
     hasPublicPageSlug: Boolean(trimmedSlug),
     atFreeBookingCap: manualBookingBlockedByCap,
   });
-
-  const { upcoming, past, cancelled } = useMemo(() => {
-    const now = new Date();
-    const today = now.toISOString().slice(0, 10);
-    const upcoming: AvailabilityBookingDisplay[] = [];
-    const past: AvailabilityBookingDisplay[] = [];
-    const cancelled: AvailabilityBookingDisplay[] = [];
-
-    for (const b of bookings) {
-      if (b.status === 'cancelled') {
-        cancelled.push(b);
-        continue;
-      }
-      if (b.status === 'completed') {
-        past.push(b);
-        continue;
-      }
-      if (b.date > today || (b.date === today && b.status === 'confirmed')) {
-        upcoming.push(b);
-      } else {
-        past.push(b);
-      }
-    }
-
-    upcoming.sort(sortByDateThenTime);
-    past.sort((a, b) => -sortByDateThenTime(a, b));
-    cancelled.sort(
-      (a, b) =>
-        -new Date(a.createdAt).getTime() + new Date(b.createdAt).getTime()
-    );
-    return { upcoming, past, cancelled };
-  }, [bookings]);
-
-  const filteredList =
-    activeTab === 'upcoming'
-      ? upcoming
-      : activeTab === 'past'
-        ? past
-        : cancelled;
-
-  const groupedByDay = useMemo(
-    () => groupBookingsByDayForTab(filteredList, activeTab),
-    [filteredList, activeTab]
-  );
-
-  /** Day planner shows every booking that day (incl. cancelled), not list-tab filter. */
-  const plannerDayBookings = useMemo(
-    () =>
-      bookings.filter(b => b.date === plannerDateKey).sort(sortByDateThenTime),
-    [bookings, plannerDateKey]
-  );
-
-  const plannerDayTimeOff = useMemo(
-    () => timeOffBlocks.filter(b => blockCoversDate(b, plannerDateKey)),
-    [timeOffBlocks, plannerDateKey]
-  );
+  const loadCurrentList = useCallback(() => {
+    void loadListPage(activeTab);
+  }, [activeTab, loadListPage]);
 
   const timeOffIntervalsForSlots = useMemo<TimeOffInterval[]>(
     () => timeOffBlocks.map(toTimeOffIntervalFields),
@@ -289,6 +173,28 @@ export function AvailabilityBookingsView({
     setSelectedBooking(null);
   };
 
+  const handleAssign = useCallback(
+    async (userId: string | null) => {
+      if (!selectedBooking) {
+        return { success: false as const, error: 'No appointment selected.' };
+      }
+      setAssigningId(selectedBooking.id);
+      const result = await updateBookingAssignee(selectedBooking.id, userId);
+      setAssigningId(null);
+      if (!result.success) {
+        return {
+          success: false as const,
+          error: result.error ?? 'Could not update assignee',
+        };
+      }
+      setSelectedBooking(prev =>
+        prev ? { ...prev, assignedUserId: userId } : prev
+      );
+      return { success: true as const };
+    },
+    [selectedBooking, updateBookingAssignee]
+  );
+
   const handleReschedule = useCallback(
     async (id: string, scheduledDate: string, startTime: string) => {
       setUpdateError(null);
@@ -341,23 +247,26 @@ export function AvailabilityBookingsView({
   return (
     <main className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
       <div
-        className={`min-h-0 flex-1 ${canWriteBookings ? 'pb-36' : 'pb-8'} ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
+        className={`min-h-0 flex-1 ${
+          canWriteBookings ? 'pb-36' : 'pb-24'
+        } ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
       >
-        <div className="mx-auto w-full max-w-xl px-4 py-8 sm:px-6 sm:py-10 md:px-6 lg:max-w-3xl lg:px-8 lg:py-10">
-          <header className="mb-6 flex items-start justify-between gap-3 sm:mb-8">
-            <div className="min-w-0 flex-1 text-left">
-              <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                Bookings
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Manage your appointments
-              </p>
-            </div>
-            {canWriteBookings ? (
-              <SyncBookingsCtaCard
-                variant="header"
-                onSyncClick={() => setSyncCalendarModalOpen(true)}
+        <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-10 md:px-6 lg:px-8 lg:py-10">
+          <header className="mb-5 flex items-center gap-2 sm:mb-8 sm:gap-3">
+            {calendarMode === 'list' ? (
+              <BookingsStatusFilter
+                value={activeTab}
+                onChange={setActiveTab}
+                className="shrink-0"
               />
+            ) : null}
+            {canWriteBookings ? (
+              <div className="ml-auto">
+                <SyncBookingsCtaCard
+                  variant="header"
+                  onSyncClick={() => setSyncCalendarModalOpen(true)}
+                />
+              </div>
             ) : null}
           </header>
           {(error || updateError) && (
@@ -371,120 +280,77 @@ export function AvailabilityBookingsView({
               className="mb-4"
             />
           )}
-          <div className="mb-4 flex w-full flex-row items-center justify-between gap-2">
-            <BookingsViewModeToggle
-              value={layoutMode}
-              onChange={setLayoutMode}
-              className="flex min-w-0 shrink justify-start"
-            />
-            {layoutMode === 'list' ? (
-              <BookingsStatusFilter
-                value={activeTab}
-                onChange={setActiveTab}
-                className="shrink-0"
-              />
-            ) : null}
-          </div>
-          {isLoading ? (
-            <AvailabilityBookingsViewSkeleton />
-          ) : layoutMode === 'planner' ? (
-            <DayPlannerView
-              dateKey={plannerDateKey}
-              onDateKeyChange={setPlannerDateKey}
-              dayBookings={plannerDayBookings}
-              dayTimeOffBlocks={plannerDayTimeOff}
-              onSelectBooking={booking => {
-                setUpdateError(null);
-                setSelectedBooking(booking);
-              }}
-            />
-          ) : filteredList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.05]">
-                <CalendarIcon className="h-8 w-8 text-gray-600" />
-              </div>
-              <h3 className="font-bold text-gray-400">No bookings</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {activeTab === 'upcoming'
-                  ? 'No upcoming appointments.'
-                  : activeTab === 'past'
-                    ? 'No past appointments.'
-                    : 'No cancelled bookings.'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6 sm:space-y-7">
-              {groupedByDay.map(group => (
-                <section
-                  key={group.dateKey}
-                  aria-labelledby={`bookings-day-${group.dateKey}`}
-                >
-                  <h2
-                    id={`bookings-day-${group.dateKey}`}
-                    className="mb-3 text-sm font-bold tracking-tight text-gray-400 sm:text-base"
-                  >
-                    {group.label}
-                  </h2>
-                  <div className="space-y-3">
-                    {group.bookings.map(booking => (
-                      <AvailabilityBookingCard
-                        key={booking.id}
-                        booking={booking}
-                        onClick={() => {
-                          setUpdateError(null);
-                          setSelectedBooking(booking);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          )}
+          <BookingsCalendar
+            bookings={bookings}
+            isLoading={isLoading}
+            isLoadingMore={isLoadingMore}
+            hasMore={hasMore}
+            mode={calendarMode}
+            onModeChange={setCalendarMode}
+            listFilter={activeTab}
+            timeOffBlocks={timeOffBlocks}
+            onListActive={loadCurrentList}
+            onVisibleRangeChange={loadRange}
+            onLoadMore={loadMore}
+            onSelectBooking={booking => {
+              setUpdateError(null);
+              setSelectedBooking(booking);
+            }}
+          />
         </div>
       </div>
 
+      {!selectedBooking ? (
+        <CalendarModeDock
+          value={calendarMode}
+          onChange={setCalendarMode}
+          raised={canWriteBookings}
+        />
+      ) : null}
+
       {canWriteBookings ? (
-      <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 dashboard-sidebar-offset lg:px-8 safe-area-pb"
-        style={{
-          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-        }}
-      >
-        <div className="mx-auto w-full max-w-lg space-y-3 lg:max-w-2xl">
-          {newAppointment.notice ? (
-            <div
-              role="status"
-              aria-live="polite"
-              className="rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 text-sm leading-relaxed text-zinc-300"
+        <div
+          className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 dashboard-sidebar-offset lg:px-8 safe-area-pb"
+          style={{
+            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+          }}
+        >
+          <div className="mx-auto w-full max-w-lg space-y-3 lg:max-w-2xl">
+            {newAppointment.notice ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 text-sm leading-relaxed text-zinc-300"
+              >
+                <p>{newAppointment.notice}</p>
+                {manualBookingBlockedByCap ? (
+                  <a
+                    href={ROUTES.DASHBOARD.UPGRADE}
+                    className="mt-2 inline-flex cursor-pointer text-sm font-semibold text-white underline-offset-2 hover:underline"
+                  >
+                    Upgrade to Pro
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+            <Button
+              href={newAppointment.enabled ? newAppointment.href : undefined}
+              onClick={
+                newAppointment.enabled
+                  ? undefined
+                  : newAppointment.onBlockedClick
+              }
+              variant="inverse"
+              fullWidth
+              className="font-semibold"
+              icon={<PlusIcon className="h-4 w-4" aria-hidden />}
+              title={newAppointment.title}
+              aria-label={newAppointment.ariaLabel}
             >
-              <p>{newAppointment.notice}</p>
-              {manualBookingBlockedByCap ? (
-                <a
-                  href={ROUTES.DASHBOARD.UPGRADE}
-                  className="mt-2 inline-flex cursor-pointer text-sm font-semibold text-white underline-offset-2 hover:underline"
-                >
-                  Upgrade to Pro
-                </a>
-              ) : null}
-            </div>
-          ) : null}
-          <Button
-            href={newAppointment.enabled ? newAppointment.href : undefined}
-            onClick={
-              newAppointment.enabled ? undefined : newAppointment.onBlockedClick
-            }
-            variant="inverse"
-            fullWidth
-            className="font-semibold"
-            icon={<PlusIcon className="h-4 w-4" aria-hidden />}
-            title={newAppointment.title}
-            aria-label={newAppointment.ariaLabel}
-          >
-            New appointment
-          </Button>
+              New appointment
+            </Button>
+          </div>
         </div>
-      </div>
       ) : null}
 
       {selectedBooking && (
@@ -492,6 +358,7 @@ export function AvailabilityBookingsView({
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
           readOnly={!canWriteBookings}
+          canRunActions={canRunBookings}
           onMarkCompleted={handleMarkCompleted}
           onCancel={handleCancel}
           onDelete={handleDelete}
@@ -503,6 +370,9 @@ export function AvailabilityBookingsView({
           timeOffBlocks={timeOffIntervalsForSlots}
           bufferTime={bufferTime}
           existingBookingsForSlotGrid={existingBookingsForReschedule}
+          assigneeOptions={assignees}
+          onAssign={canAssignBookings ? handleAssign : undefined}
+          isAssigning={assigningId === selectedBooking.id}
         />
       )}
 

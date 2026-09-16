@@ -85,7 +85,7 @@ export async function POST(
 
     const resolved = await requireBusinessPermission(
       auth.supabase,
-      'bookings.write'
+      'bookings.run'
     );
     if (!resolved.ok) {
       return NextResponse.json(
@@ -236,9 +236,11 @@ export async function POST(
 
     // 8. Apply the transition race-safely. The `IN (allowedFrom)` guard means a
     // concurrent request that already moved the booking yields 0 rows here →
-    // we treat it as "already changed" and send no SMS.
+    // we treat it as "already changed" and send no SMS. Admin write so teammates
+    // (SELECT-only RLS) can run the job after `bookings.run`.
+    const admin = createSupabaseAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updated, error: updateError } = await (auth.supabase as any)
+    const { data: updated, error: updateError } = await (admin as any)
       .from('bookings')
       .update({ job_status: config.jobStatus })
       .eq('id', booking.id)
@@ -272,7 +274,7 @@ export async function POST(
     const businessName =
       business.business_name?.trim() || 'Your service provider';
     const sendResult = await sendAndRecordSms({
-      admin: createSupabaseAdminClient(),
+      admin,
       businessId: business.id,
       bookingId: booking.id,
       customerId: booking.customer_id,
