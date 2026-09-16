@@ -134,7 +134,10 @@ export async function GET(request: Request) {
     }
 
     const { supabase } = auth;
-    const resolved = await requireBusinessPermission(supabase, 'customers.read');
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'customers.read'
+    );
 
     if (!resolved.ok) {
       return NextResponse.json(

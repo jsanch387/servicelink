@@ -32,8 +32,9 @@ export async function POST(request: Request) {
       .eq('id', owned.businessId)
       .maybeSingle();
     const shopName =
-      (shop as { business_name?: string | null } | null)?.business_name?.trim() ||
-      'this shop';
+      (
+        shop as { business_name?: string | null } | null
+      )?.business_name?.trim() || 'this shop';
 
     const result = await createTeamInvite(admin, {
       businessId: owned.businessId,

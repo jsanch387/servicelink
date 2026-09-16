@@ -613,41 +613,41 @@ export function QuoteDetailContent({
           ) : null}
 
           {showWriteActions ? (
-          <div
-            className={
-              showDeleteButton
-                ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
-                : 'grid grid-cols-1'
-            }
-          >
-            <Button
-              href={primaryHref}
-              variant="inverse"
-              size="md"
-              fullWidth
-              disabled={!canEdit}
-              title={
-                canEdit
-                  ? undefined
-                  : 'Editing is only available before the customer accepts or declines.'
+            <div
+              className={
+                showDeleteButton
+                  ? 'grid grid-cols-1 gap-3 sm:grid-cols-2'
+                  : 'grid grid-cols-1'
               }
-              icon={<PencilSquareIcon className="h-4 w-4" aria-hidden />}
             >
-              {isPendingRequest ? 'Create quote' : 'Edit quote'}
-            </Button>
-            {showDeleteButton ? (
               <Button
-                type="button"
-                variant="danger"
+                href={primaryHref}
+                variant="inverse"
                 size="md"
                 fullWidth
-                onClick={onOpenDelete}
-                icon={<TrashIcon className="h-4 w-4" aria-hidden />}
+                disabled={!canEdit}
+                title={
+                  canEdit
+                    ? undefined
+                    : 'Editing is only available before the customer accepts or declines.'
+                }
+                icon={<PencilSquareIcon className="h-4 w-4" aria-hidden />}
               >
-                Delete quote
+                {isPendingRequest ? 'Create quote' : 'Edit quote'}
               </Button>
-            ) : null}
-          </div>
+              {showDeleteButton ? (
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="md"
+                  fullWidth
+                  onClick={onOpenDelete}
+                  icon={<TrashIcon className="h-4 w-4" aria-hidden />}
+                >
+                  Delete quote
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </div>
 

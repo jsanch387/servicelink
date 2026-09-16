@@ -24,4 +24,3 @@ export function formatDayGroupLabel(dateKey: string): string {
     day: 'numeric',
   });
 }
-

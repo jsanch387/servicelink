@@ -21,9 +21,11 @@ interface TeamInviteAcceptScreenProps {
   businessName: string;
 }
 
-export const TeamInviteAcceptScreen: React.FC<
-  TeamInviteAcceptScreenProps
-> = ({ token, email, businessName }) => {
+export const TeamInviteAcceptScreen: React.FC<TeamInviteAcceptScreenProps> = ({
+  token,
+  email,
+  businessName,
+}) => {
   const router = useRouter();
   const {
     isAuthenticated,

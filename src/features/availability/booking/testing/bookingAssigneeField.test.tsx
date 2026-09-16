@@ -14,7 +14,9 @@ afterEach(() => {
   toastError.mockClear();
 });
 
-const options = [{ userId: 'user-1', label: 'alex@shop.com', kind: 'member' as const }];
+const options = [
+  { userId: 'user-1', label: 'alex@shop.com', kind: 'member' as const },
+];
 
 describe('BookingAssigneeField', () => {
   it('saves Unassigned as null', async () => {

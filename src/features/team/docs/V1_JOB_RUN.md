@@ -125,66 +125,66 @@ Out of v1: locking run to the assignee, auto-claim on On the way, Claim button, 
 
 ## Edge cases
 
-| Situation | v1 behavior |
-| --------- | ----------- |
-| Booking comes in from the public page | Unassigned. Anyone on the shop can run it. |
-| Owner forgets to assign all week | Fine. Shop still works. |
-| Assigned to Alex; Jordan opens it | Jordan can run it. Name stays Alex until someone changes it. Sick day works. |
-| Assigned to Alex; Alex is out sick | Leave the name or switch it to Jordan. Either way, Jordan taps On the way. |
-| Alex assigns the job to himself | Allowed. Same as owner assigning Alex. Owner assigning themselves is the same control. |
-| Two people tap On the way at once | Existing race-safe status update: one wins, the other gets a conflict. No extra lock. |
-| Owner is also detailing | Assign the owner (`assigned_user_id` = owner user). Owner is not a `business_members` row. |
-| Assigned member is removed from the team | Assignee cleared. Job is Unassigned. They lose shop access. |
-| Assigned member’s login is dead, customer is waiting | Anyone still on the shop runs it. Change the name when you have a second. |
-| Reassign after On the way | Anyone on the shop can change the name. Status does not reset. |
-| Reassign after paid / completed | Allowed for the label; run actions stay off. History doesn’t change. |
-| Member tries Cancel / Edit / Reschedule / Delete | Hidden + 403. Only owner. |
-| Member tries to change price on the complete sheet | Follow whatever the owner complete sheet already allows. Don’t add extra edit. If the sheet only collects pay, keep it that way. |
-| Customer SMS (on my way, started, review) | Still sends as the shop. Member is not a second SMS identity. |
-| Collect pay / tap to pay / invoice | Uses the shop’s Stripe. Member never sees payouts or Payment settings. |
-| Job already completed | No more run actions. Same as owner. |
-| Public customer reschedules | Keep the assignee. Time changed, person didn’t. |
-| Two jobs at 10:00, both unassigned | Both runnable. Put a name on one if you want the board tidy. Not required. |
-| Same person assigned two overlapping jobs | Allowed in v1. Add a warning later. |
-| Shop time off 12–1 | No new public bookings in that window. Existing jobs that already overlap time off stay (don’t auto-cancel). |
-| Buffer time between jobs | Buffer vs *other bookings* is a solo-calendar idea. Once overlap is allowed, buffer should not hide a slot just because another job exists. Buffer can stay as travel/setup on a *single* job later. |
-| Solo shop, no teammates | Assignee list is just the owner. Overlap still useful if they book two cars (helper, or they stack). If that feels wrong, overlap can be “only when the shop has ≥1 active member.” Prefer always-on overlap; owner can still pick another time. |
-| Member on Quotes / Reviews / Customers | Unchanged: read-only. Running jobs is the only new write. |
-| Member opens any job | Full read + full run sheet. Edit / cancel / reschedule still hidden. |
-| Demo / sample customer | No change. |
-| First person taps On the way on an unassigned job | Job runs. Name stays Unassigned unless someone sets it. No auto-claim in this slice. |
-| Jordan changes Alex’s name on an in-progress job | Allowed. It’s a label. Don’t fight it. |
-| Unassign mid-job | Allowed. Status stays. |
-| Pending invite (no login yet) | Not in the assignee list. Assign after they accept. |
-| Assignee has no display name | Show email. Never a blank chip. |
-| Owner’s “Mine” filter | Jobs where `assigned_user_id` = owner. Not “everything.” |
-| Page was open; someone changed the assignee | Run still works. Assignee is not re-checked for On the way. |
-| Member removed while a payment is in flight | They lose the shop. Webhook still hits the owner’s Stripe. Owner finishes Complete if needed. |
-| Time off on the calendar | **Shop closed**, not “owner PTO.” Members cannot take public bookings in that window. Owner-only vacation while the team works = later (per-person calendars). |
-| Owner is off, team is working, no time off set | Fine. Hours are shop hours. |
-| Public calendar after overlap is on | Slots stay open even if 10:00 already has jobs. Shop can get slammed. Accept that in v1. Don’t add capacity. |
-| Free-tier lifetime booking cap | Still applies. Team does not lift it. Overlap just means they can hit the cap faster. |
-| Quote accepted / customer picks a time | New booking is Unassigned. Must use the same overlap rules (this path calls `validateOwnerBookingSlot` today). |
-| Maintenance / follow-up visit against the calendar | Same overlap helper. Don’t leave this path blocking. |
-| Public multi-service visit (one customer, two cars / two jobs) | One booking row, one assignee, for v1. Don’t invent per-line assignees. |
-| Customer confirmation / reminder SMS | Still shop name. Do **not** add “Alex is coming” in v1 (most jobs are unassigned at book time). |
-| Nobody notices a new booking | No member push in v1. They open Bookings. Owner keeps whatever notify they already have. |
-| Booking request (old preferred-date inbox) | Members can **see** (read). Accept / decline stays owner (`bookings.write`). After accept → Unassigned. |
-| Complete sheet session fees (extra / tip) | Allowed. That is collect-on-the-job, not “edit the booking.” Catalog price stays. |
-| Complete with cash / Venmo / other | Works with no Stripe. Don’t block Complete if Connect isn’t ready. |
-| Card / invoice / Tap to Pay | Same as owner today: needs the shop’s Stripe. Member never opens Payments settings. |
-| Tap to Pay on the **member’s** phone | Must mint a connection token for the **owner’s** connected account. Today those routes look up the shop by `profile_id = me` and will 404 for a member. Fix or Tap to Pay is owner-only in practice. |
-| Two people start collect / two PaymentIntents | Existing job_completed + tap-to-pay idempotency. Second action 409. Don’t charge twice. |
-| Membership-covered job | Same close-out as owner. Member does not enroll or cancel memberships. |
-| Walk-up / Payments page charge | Owner only. Not a booking. |
-| SMS from member job actions | Send as the shop. Rate limit stays **per signed-in user** (30/hr). Don’t require the owner’s user id or one busy bay burns the whole shop. |
-| Customer phone / address on the job | Members already have `customers.read`. They need it to drive and text. Don’t hide it. |
-| Dashboard home | Upcoming jobs: yes. Revenue / Stripe / upgrade / share-link: stay hidden (`payments.manage` / `profile.write`). |
-| Mobile Bearer token | Same run rules as web. Don’t ship web-only. |
-| Cancelled / completed history | Keep the assignee label. No run actions. |
-| Customer reschedules after assign | Keep assignee. Time changed, person didn’t. |
-| Member tries to accept a quote or reply to a review | Still 403. Running jobs is the only new write. |
-| Solo shop, no teammates | Hide the assignee dropdown. No one else to put on the job. |
+| Situation                                                      | v1 behavior                                                                                                                                                                                                                                      |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Booking comes in from the public page                          | Unassigned. Anyone on the shop can run it.                                                                                                                                                                                                       |
+| Owner forgets to assign all week                               | Fine. Shop still works.                                                                                                                                                                                                                          |
+| Assigned to Alex; Jordan opens it                              | Jordan can run it. Name stays Alex until someone changes it. Sick day works.                                                                                                                                                                     |
+| Assigned to Alex; Alex is out sick                             | Leave the name or switch it to Jordan. Either way, Jordan taps On the way.                                                                                                                                                                       |
+| Alex assigns the job to himself                                | Allowed. Same as owner assigning Alex. Owner assigning themselves is the same control.                                                                                                                                                           |
+| Two people tap On the way at once                              | Existing race-safe status update: one wins, the other gets a conflict. No extra lock.                                                                                                                                                            |
+| Owner is also detailing                                        | Assign the owner (`assigned_user_id` = owner user). Owner is not a `business_members` row.                                                                                                                                                       |
+| Assigned member is removed from the team                       | Assignee cleared. Job is Unassigned. They lose shop access.                                                                                                                                                                                      |
+| Assigned member’s login is dead, customer is waiting           | Anyone still on the shop runs it. Change the name when you have a second.                                                                                                                                                                        |
+| Reassign after On the way                                      | Anyone on the shop can change the name. Status does not reset.                                                                                                                                                                                   |
+| Reassign after paid / completed                                | Allowed for the label; run actions stay off. History doesn’t change.                                                                                                                                                                             |
+| Member tries Cancel / Edit / Reschedule / Delete               | Hidden + 403. Only owner.                                                                                                                                                                                                                        |
+| Member tries to change price on the complete sheet             | Follow whatever the owner complete sheet already allows. Don’t add extra edit. If the sheet only collects pay, keep it that way.                                                                                                                 |
+| Customer SMS (on my way, started, review)                      | Still sends as the shop. Member is not a second SMS identity.                                                                                                                                                                                    |
+| Collect pay / tap to pay / invoice                             | Uses the shop’s Stripe. Member never sees payouts or Payment settings.                                                                                                                                                                           |
+| Job already completed                                          | No more run actions. Same as owner.                                                                                                                                                                                                              |
+| Public customer reschedules                                    | Keep the assignee. Time changed, person didn’t.                                                                                                                                                                                                  |
+| Two jobs at 10:00, both unassigned                             | Both runnable. Put a name on one if you want the board tidy. Not required.                                                                                                                                                                       |
+| Same person assigned two overlapping jobs                      | Allowed in v1. Add a warning later.                                                                                                                                                                                                              |
+| Shop time off 12–1                                             | No new public bookings in that window. Existing jobs that already overlap time off stay (don’t auto-cancel).                                                                                                                                     |
+| Buffer time between jobs                                       | Buffer vs _other bookings_ is a solo-calendar idea. Once overlap is allowed, buffer should not hide a slot just because another job exists. Buffer can stay as travel/setup on a _single_ job later.                                             |
+| Solo shop, no teammates                                        | Assignee list is just the owner. Overlap still useful if they book two cars (helper, or they stack). If that feels wrong, overlap can be “only when the shop has ≥1 active member.” Prefer always-on overlap; owner can still pick another time. |
+| Member on Quotes / Reviews / Customers                         | Unchanged: read-only. Running jobs is the only new write.                                                                                                                                                                                        |
+| Member opens any job                                           | Full read + full run sheet. Edit / cancel / reschedule still hidden.                                                                                                                                                                             |
+| Demo / sample customer                                         | No change.                                                                                                                                                                                                                                       |
+| First person taps On the way on an unassigned job              | Job runs. Name stays Unassigned unless someone sets it. No auto-claim in this slice.                                                                                                                                                             |
+| Jordan changes Alex’s name on an in-progress job               | Allowed. It’s a label. Don’t fight it.                                                                                                                                                                                                           |
+| Unassign mid-job                                               | Allowed. Status stays.                                                                                                                                                                                                                           |
+| Pending invite (no login yet)                                  | Not in the assignee list. Assign after they accept.                                                                                                                                                                                              |
+| Assignee has no display name                                   | Show email. Never a blank chip.                                                                                                                                                                                                                  |
+| Owner’s “Mine” filter                                          | Jobs where `assigned_user_id` = owner. Not “everything.”                                                                                                                                                                                         |
+| Page was open; someone changed the assignee                    | Run still works. Assignee is not re-checked for On the way.                                                                                                                                                                                      |
+| Member removed while a payment is in flight                    | They lose the shop. Webhook still hits the owner’s Stripe. Owner finishes Complete if needed.                                                                                                                                                    |
+| Time off on the calendar                                       | **Shop closed**, not “owner PTO.” Members cannot take public bookings in that window. Owner-only vacation while the team works = later (per-person calendars).                                                                                   |
+| Owner is off, team is working, no time off set                 | Fine. Hours are shop hours.                                                                                                                                                                                                                      |
+| Public calendar after overlap is on                            | Slots stay open even if 10:00 already has jobs. Shop can get slammed. Accept that in v1. Don’t add capacity.                                                                                                                                     |
+| Free-tier lifetime booking cap                                 | Still applies. Team does not lift it. Overlap just means they can hit the cap faster.                                                                                                                                                            |
+| Quote accepted / customer picks a time                         | New booking is Unassigned. Must use the same overlap rules (this path calls `validateOwnerBookingSlot` today).                                                                                                                                   |
+| Maintenance / follow-up visit against the calendar             | Same overlap helper. Don’t leave this path blocking.                                                                                                                                                                                             |
+| Public multi-service visit (one customer, two cars / two jobs) | One booking row, one assignee, for v1. Don’t invent per-line assignees.                                                                                                                                                                          |
+| Customer confirmation / reminder SMS                           | Still shop name. Do **not** add “Alex is coming” in v1 (most jobs are unassigned at book time).                                                                                                                                                  |
+| Nobody notices a new booking                                   | No member push in v1. They open Bookings. Owner keeps whatever notify they already have.                                                                                                                                                         |
+| Booking request (old preferred-date inbox)                     | Members can **see** (read). Accept / decline stays owner (`bookings.write`). After accept → Unassigned.                                                                                                                                          |
+| Complete sheet session fees (extra / tip)                      | Allowed. That is collect-on-the-job, not “edit the booking.” Catalog price stays.                                                                                                                                                                |
+| Complete with cash / Venmo / other                             | Works with no Stripe. Don’t block Complete if Connect isn’t ready.                                                                                                                                                                               |
+| Card / invoice / Tap to Pay                                    | Same as owner today: needs the shop’s Stripe. Member never opens Payments settings.                                                                                                                                                              |
+| Tap to Pay on the **member’s** phone                           | Must mint a connection token for the **owner’s** connected account. Today those routes look up the shop by `profile_id = me` and will 404 for a member. Fix or Tap to Pay is owner-only in practice.                                             |
+| Two people start collect / two PaymentIntents                  | Existing job_completed + tap-to-pay idempotency. Second action 409. Don’t charge twice.                                                                                                                                                          |
+| Membership-covered job                                         | Same close-out as owner. Member does not enroll or cancel memberships.                                                                                                                                                                           |
+| Walk-up / Payments page charge                                 | Owner only. Not a booking.                                                                                                                                                                                                                       |
+| SMS from member job actions                                    | Send as the shop. Rate limit stays **per signed-in user** (30/hr). Don’t require the owner’s user id or one busy bay burns the whole shop.                                                                                                       |
+| Customer phone / address on the job                            | Members already have `customers.read`. They need it to drive and text. Don’t hide it.                                                                                                                                                            |
+| Dashboard home                                                 | Upcoming jobs: yes. Revenue / Stripe / upgrade / share-link: stay hidden (`payments.manage` / `profile.write`).                                                                                                                                  |
+| Mobile Bearer token                                            | Same run rules as web. Don’t ship web-only.                                                                                                                                                                                                      |
+| Cancelled / completed history                                  | Keep the assignee label. No run actions.                                                                                                                                                                                                         |
+| Customer reschedules after assign                              | Keep assignee. Time changed, person didn’t.                                                                                                                                                                                                      |
+| Member tries to accept a quote or reply to a review            | Still 403. Running jobs is the only new write.                                                                                                                                                                                                   |
+| Solo shop, no teammates                                        | Hide the assignee dropdown. No one else to put on the job.                                                                                                                                                                                       |
 
 ---
 
@@ -192,12 +192,12 @@ Out of v1: locking run to the assignee, auto-claim on On the way, Claim button, 
 
 These are already in the repo. Fix them in the same week or “members can run jobs” is fake.
 
-| Trap | What happens |
-| ---- | ------------ |
-| Job actions require `bookings.write` | Members don’t have it. **Do not** grant `bookings.write` — that also unlocks cancel / edit / booking-request accept. Add `bookings.run` for every active member. Keep admin writes owner-only. |
-| Bookings RLS is SELECT-only for members | Session `UPDATE` on `job_status` / `assigned_user_id` will fail. Narrow member UPDATE (status + assignee + complete fields) **or** admin client after the run/assign check. |
-| Tap to Pay auth uses `business_profiles.profile_id = auth.uid()` | Member 404s. Resolve the shop the same way as the dashboard (owned **or** active membership). |
-| Overlap lives in more than the bookings list | Later slice. `validateOwnerBookingSlot` + `slotGeneration` + quote accept + public book + maintenance. |
+| Trap                                                             | What happens                                                                                                                                                                                   |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Job actions require `bookings.write`                             | Members don’t have it. **Do not** grant `bookings.write` — that also unlocks cancel / edit / booking-request accept. Add `bookings.run` for every active member. Keep admin writes owner-only. |
+| Bookings RLS is SELECT-only for members                          | Session `UPDATE` on `job_status` / `assigned_user_id` will fail. Narrow member UPDATE (status + assignee + complete fields) **or** admin client after the run/assign check.                    |
+| Tap to Pay auth uses `business_profiles.profile_id = auth.uid()` | Member 404s. Resolve the shop the same way as the dashboard (owned **or** active membership).                                                                                                  |
+| Overlap lives in more than the bookings list                     | Later slice. `validateOwnerBookingSlot` + `slotGeneration` + quote accept + public book + maintenance.                                                                                         |
 
 ---
 

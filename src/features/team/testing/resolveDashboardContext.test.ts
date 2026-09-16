@@ -7,8 +7,7 @@ const lookupOwnedBusinessId = vi.fn();
 const lookupActiveMembership = vi.fn();
 
 vi.mock('../server/lookupOwnedBusinessId', () => ({
-  lookupOwnedBusinessId: (...args: unknown[]) =>
-    lookupOwnedBusinessId(...args),
+  lookupOwnedBusinessId: (...args: unknown[]) => lookupOwnedBusinessId(...args),
 }));
 
 vi.mock('../server/lookupActiveMembership', () => ({

@@ -1,5 +1,8 @@
 import { ROUTES } from '@/constants/routes';
-import { can, permissionsForRole } from '@/features/team/constants/teamPermissions';
+import {
+  can,
+  permissionsForRole,
+} from '@/features/team/constants/teamPermissions';
 import { describe, expect, it } from 'vitest';
 import {
   getDashboardPageTitle,
@@ -11,7 +14,10 @@ const ownerCan = (permission: Parameters<typeof can>[1]) =>
   can({ isOwner: true, permissions: permissionsForRole('owner') }, permission);
 
 const memberCan = (permission: Parameters<typeof can>[1]) =>
-  can({ isOwner: false, permissions: permissionsForRole('member') }, permission);
+  can(
+    { isOwner: false, permissions: permissionsForRole('member') },
+    permission
+  );
 
 describe('isDashboardNavItemActive', () => {
   it('matches an exact href', () => {

@@ -486,59 +486,59 @@ export function AvailabilityBookingDetailPanel({
 
           {/* Actions – teammates can complete; owner also reschedules / cancels / deletes */}
           {showActionsSection ? (
-          <section className="pt-2">
-            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-2">
-              Actions
-            </h3>
-            {updateError && (
-              <p className="text-sm text-rose-400 mb-2.5" role="alert">
-                {updateError}
-              </p>
-            )}
-            <div
-              className={
-                showManageTiles
-                  ? 'grid w-full grid-cols-2 gap-1.5 sm:gap-2'
-                  : 'grid w-full grid-cols-1 gap-1.5 sm:gap-2'
-              }
-              role="group"
-              aria-label="Booking actions"
-              aria-busy={isUpdating}
-            >
-              {showManageTiles ? (
-                <>
-                  <button
-                    type="button"
-                    disabled={isUpdating || isRescheduling}
-                    onClick={() => setShowRescheduleModal(true)}
-                    className={bookingActionTileClass}
-                  >
-                    <ArrowPathIcon
-                      className="h-5 w-5 shrink-0 text-gray-500 group-hover:text-gray-300 sm:h-[22px] sm:w-[22px]"
-                      aria-hidden
-                    />
-                    <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
-                      Reschedule
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isUpdating || isRescheduling}
-                    onClick={handleCancelClick}
-                    aria-label="Cancel booking"
-                    className={bookingActionTileClass}
-                  >
-                    <XCircleIcon
-                      className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
-                      aria-hidden
-                    />
-                    <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
-                      Cancel
-                    </span>
-                  </button>
-                </>
-              ) : null}
-              {showCompleteTile ? (
+            <section className="pt-2">
+              <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-2">
+                Actions
+              </h3>
+              {updateError && (
+                <p className="text-sm text-rose-400 mb-2.5" role="alert">
+                  {updateError}
+                </p>
+              )}
+              <div
+                className={
+                  showManageTiles
+                    ? 'grid w-full grid-cols-2 gap-1.5 sm:gap-2'
+                    : 'grid w-full grid-cols-1 gap-1.5 sm:gap-2'
+                }
+                role="group"
+                aria-label="Booking actions"
+                aria-busy={isUpdating}
+              >
+                {showManageTiles ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={isUpdating || isRescheduling}
+                      onClick={() => setShowRescheduleModal(true)}
+                      className={bookingActionTileClass}
+                    >
+                      <ArrowPathIcon
+                        className="h-5 w-5 shrink-0 text-gray-500 group-hover:text-gray-300 sm:h-[22px] sm:w-[22px]"
+                        aria-hidden
+                      />
+                      <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                        Reschedule
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isUpdating || isRescheduling}
+                      onClick={handleCancelClick}
+                      aria-label="Cancel booking"
+                      className={bookingActionTileClass}
+                    >
+                      <XCircleIcon
+                        className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
+                        aria-hidden
+                      />
+                      <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                        Cancel
+                      </span>
+                    </button>
+                  </>
+                ) : null}
+                {showCompleteTile ? (
                   <button
                     type="button"
                     disabled={isUpdating || isRescheduling}
@@ -554,26 +554,26 @@ export function AvailabilityBookingDetailPanel({
                       Complete
                     </span>
                   </button>
-              ) : null}
-              {showDeleteTile ? (
-              <button
-                type="button"
-                disabled={isUpdating || isRescheduling}
-                onClick={handleDeleteClick}
-                aria-label="Delete booking"
-                className={bookingActionTileClass}
-              >
-                <TrashIcon
-                  className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
-                  aria-hidden
-                />
-                <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
-                  Delete
-                </span>
-              </button>
-              ) : null}
-            </div>
-          </section>
+                ) : null}
+                {showDeleteTile ? (
+                  <button
+                    type="button"
+                    disabled={isUpdating || isRescheduling}
+                    onClick={handleDeleteClick}
+                    aria-label="Delete booking"
+                    className={bookingActionTileClass}
+                  >
+                    <TrashIcon
+                      className="h-5 w-5 shrink-0 text-rose-500 group-hover:text-rose-400 sm:h-[22px] sm:w-[22px]"
+                      aria-hidden
+                    />
+                    <span className="max-w-full text-center text-[11px] font-semibold leading-snug text-inherit sm:text-xs">
+                      Delete
+                    </span>
+                  </button>
+                ) : null}
+              </div>
+            </section>
           ) : null}
         </div>
       </div>

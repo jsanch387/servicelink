@@ -1,6 +1,20 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import { SettingsTeamSection } from '@/features/settings/components/SettingsTeamSection';
 import type { TeamMemberUi } from '../types/teamMemberUi';
@@ -70,7 +84,9 @@ describe('SettingsTeamSection', () => {
     expect(await screen.findByText('jordan@example.com')).toBeTruthy();
     expect(screen.queryByText('No team members yet')).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Invite team member' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Invite team member' })
+    );
     const inviteDialog = screen.getByRole('dialog');
     await user.type(
       within(inviteDialog).getByPlaceholderText('name@email.com'),

@@ -154,9 +154,7 @@ describe('layoutStackedWeekEvents', () => {
       true
     );
     const moreTop =
-      ((600 - 360) / 60) * 104 +
-      3 * cardHeight +
-      2 * WEEK_STACK_GAP_PX;
+      ((600 - 360) / 60) * 104 + 3 * cardHeight + 2 * WEEK_STACK_GAP_PX;
     expect(stacked.overflows).toEqual([
       {
         id: 'week-more-2026-09-16-600',
@@ -180,9 +178,9 @@ describe('layoutStackedWeekEvents', () => {
       104
     );
     expect(stacked.events.map(item => item.id)).toEqual(['a', 'b', 'c']);
-    expect(stacked.events.every(item => item.heightPx === WEEK_STACK_CARD_PX)).toBe(
-      true
-    );
+    expect(
+      stacked.events.every(item => item.heightPx === WEEK_STACK_CARD_PX)
+    ).toBe(true);
     expect(stacked.overflows).toEqual([]);
   });
 

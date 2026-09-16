@@ -97,8 +97,7 @@ export async function loadDashboardShopView(
 
   const servicesCount =
     (profile.services as { count: number }[])?.[0]?.count || 0;
-  const imagesCount =
-    (profile.images as { count: number }[])?.[0]?.count || 0;
+  const imagesCount = (profile.images as { count: number }[])?.[0]?.count || 0;
   const hasSlug = !!(profile.business_slug && profile.business_link);
 
   const checks = [

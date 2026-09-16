@@ -9,7 +9,9 @@ import type { ResolveDashboardContextResult } from '../types/dashboardAccess';
 import { lookupActiveMembership } from './lookupActiveMembership';
 import { lookupOwnedBusinessId } from './lookupOwnedBusinessId';
 
-function assignedMemberRole(role: string): Exclude<DashboardAccessRole, 'owner'> {
+function assignedMemberRole(
+  role: string
+): Exclude<DashboardAccessRole, 'owner'> {
   return role === 'manager' ? 'manager' : 'member';
 }
 

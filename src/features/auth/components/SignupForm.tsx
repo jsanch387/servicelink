@@ -9,7 +9,11 @@ import {
 import { trackAffonsoSignupOnce } from '@/features/marketing-attribution/utils/affonsoSignupTracking';
 import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
 import { markPendingSignupAttribution } from '@/features/marketing-attribution';
-import { ROUTES, getTeamInvitePath, isTeamInvitePath } from '@/constants/routes';
+import {
+  ROUTES,
+  getTeamInvitePath,
+  isTeamInvitePath,
+} from '@/constants/routes';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -105,9 +109,7 @@ export const SignupForm: React.FC = () => {
         if (result.email) q.set('email', result.email);
         if (inviteNext) q.set('next', inviteNext);
         const query = q.toString();
-        router.push(
-          `${ROUTES.AUTH.CHECK_EMAIL}${query ? `?${query}` : ''}`
-        );
+        router.push(`${ROUTES.AUTH.CHECK_EMAIL}${query ? `?${query}` : ''}`);
         return;
       }
 

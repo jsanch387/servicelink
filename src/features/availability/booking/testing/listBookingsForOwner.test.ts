@@ -88,10 +88,7 @@ describe('listBookingsForOwner', () => {
     expect(captured.limit).toBe(16);
     expect(captured.eqs).toContainEqual(['status', 'confirmed']);
     expect(captured.gte).toEqual(['scheduled_date', '2026-09-15']);
-    expect(captured.orders[0]).toEqual([
-      'scheduled_date',
-      { ascending: true },
-    ]);
+    expect(captured.orders[0]).toEqual(['scheduled_date', { ascending: true }]);
     expect(page.bookings).toHaveLength(15);
     expect(page.hasMore).toBe(true);
     expect(page.nextCursor).toBe(

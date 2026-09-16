@@ -515,57 +515,57 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
           </section>
 
           {showActions ? (
-          <section className="pt-1">
-            <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
-              Actions
-            </h3>
-            <div className="space-y-2.5">
-              {needsAttention ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() =>
-                    hasProCheckInAccess
-                      ? onMessageCustomer('win_back')
-                      : setCheckInTeaserOpen(true)
-                  }
-                  icon={
-                    hasProCheckInAccess ? (
-                      <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
-                    ) : (
-                      <LockClosedIcon className="h-4 w-4 text-gray-400" />
-                    )
-                  }
-                  fullWidth={true}
-                  className={`text-sm font-semibold ${
-                    !hasProCheckInAccess
-                      ? 'border-white/15 bg-white/[0.04] hover:bg-white/[0.07]'
-                      : ''
-                  }`}
-                  aria-label={
-                    hasProCheckInAccess
-                      ? `${actionLabel} customer via SMS`
-                      : `${actionLabel}: Pro feature — learn more`
-                  }
-                  title={hasProCheckInAccess ? undefined : 'Pro feature'}
-                >
-                  {actionLabel}
-                </Button>
-              ) : null}
-              {showDeleteAction ? (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={onDeleteCustomer}
-                  icon={<TrashIcon className="h-4 w-4" />}
-                  fullWidth={true}
-                  className="text-sm font-medium"
-                >
-                  Delete customer
-                </Button>
-              ) : null}
-            </div>
-          </section>
+            <section className="pt-1">
+              <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
+                Actions
+              </h3>
+              <div className="space-y-2.5">
+                {needsAttention ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      hasProCheckInAccess
+                        ? onMessageCustomer('win_back')
+                        : setCheckInTeaserOpen(true)
+                    }
+                    icon={
+                      hasProCheckInAccess ? (
+                        <PaperAirplaneIcon className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <LockClosedIcon className="h-4 w-4 text-gray-400" />
+                      )
+                    }
+                    fullWidth={true}
+                    className={`text-sm font-semibold ${
+                      !hasProCheckInAccess
+                        ? 'border-white/15 bg-white/[0.04] hover:bg-white/[0.07]'
+                        : ''
+                    }`}
+                    aria-label={
+                      hasProCheckInAccess
+                        ? `${actionLabel} customer via SMS`
+                        : `${actionLabel}: Pro feature — learn more`
+                    }
+                    title={hasProCheckInAccess ? undefined : 'Pro feature'}
+                  >
+                    {actionLabel}
+                  </Button>
+                ) : null}
+                {showDeleteAction ? (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={onDeleteCustomer}
+                    icon={<TrashIcon className="h-4 w-4" />}
+                    fullWidth={true}
+                    className="text-sm font-medium"
+                  >
+                    Delete customer
+                  </Button>
+                ) : null}
+              </div>
+            </section>
           ) : null}
         </div>
       </div>
@@ -594,7 +594,6 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({
           />
         ) : null}
       </Modal>
-
     </>
   );
 };

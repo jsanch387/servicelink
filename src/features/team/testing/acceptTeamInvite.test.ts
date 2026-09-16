@@ -5,12 +5,10 @@ const lookupOwnedBusinessId = vi.fn();
 const lookupActiveMemberBusinessId = vi.fn();
 
 vi.mock('../server/loadTeamInviteByToken', () => ({
-  loadTeamInviteByToken: (...args: unknown[]) =>
-    loadTeamInviteByToken(...args),
+  loadTeamInviteByToken: (...args: unknown[]) => loadTeamInviteByToken(...args),
 }));
 vi.mock('../server/lookupOwnedBusinessId', () => ({
-  lookupOwnedBusinessId: (...args: unknown[]) =>
-    lookupOwnedBusinessId(...args),
+  lookupOwnedBusinessId: (...args: unknown[]) => lookupOwnedBusinessId(...args),
 }));
 vi.mock('../server/lookupActiveMemberBusinessId', () => ({
   lookupActiveMemberBusinessId: (...args: unknown[]) =>

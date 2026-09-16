@@ -30,12 +30,8 @@ export interface AuthActions {
     needsEmailVerification?: boolean;
     email?: string;
   }>;
-  signInWithGoogle: (
-    _options?: AuthNextOptions
-  ) => Promise<{ error?: string }>;
-  signInWithApple: (
-    _options?: AuthNextOptions
-  ) => Promise<{ error?: string }>;
+  signInWithGoogle: (_options?: AuthNextOptions) => Promise<{ error?: string }>;
+  signInWithApple: (_options?: AuthNextOptions) => Promise<{ error?: string }>;
   requestPasswordReset: (_email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<{ success?: boolean; error?: string }>;
 

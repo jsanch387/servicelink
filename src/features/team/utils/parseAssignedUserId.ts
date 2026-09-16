@@ -3,9 +3,7 @@ export type ParseAssignedUserIdResult =
   | { ok: false; error: string };
 
 /** Body field for PATCH assignee. Empty string or null = unassigned. */
-export function parseAssignedUserId(
-  raw: unknown
-): ParseAssignedUserIdResult {
+export function parseAssignedUserId(raw: unknown): ParseAssignedUserIdResult {
   if (raw === null) {
     return { ok: true, assignedUserId: null };
   }

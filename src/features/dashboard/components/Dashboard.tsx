@@ -56,42 +56,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <DashboardAccessProvider value={dashboardAccess}>
-    <div className="dashboard-container min-h-screen flex bg-[var(--dashboard-bg)]">
-      <DashboardSidebar
-        open={sidebarOpen}
-        setOpen={setSidebarOpen}
-        hasShopAccess={hasShopAccess}
-        showMembershipsNav={showMembershipsNav}
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed(current => !current)}
-      />
-      <div className="dashboard-content flex-1 flex flex-col min-w-0">
-        <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
-          {showHeader ? (
-            <DashboardHeader
-              onMenuClick={() => setSidebarOpen(open => !open)}
-              sidebarOpen={sidebarOpen}
-              showNotifications={hasShopAccess || isOnboardingCompleted}
-            />
-          ) : (
-            <div className="lg:hidden bg-[var(--dashboard-bg)] border-b border-white/[0.06]">
-              <div className="flex h-16 items-center px-4">
-                <IconButton
-                  icon={<Bars3Icon />}
-                  onClick={() => setSidebarOpen(open => !open)}
-                  variant="ghost"
-                  aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-                />
+      <div className="dashboard-container min-h-screen flex bg-[var(--dashboard-bg)]">
+        <DashboardSidebar
+          open={sidebarOpen}
+          setOpen={setSidebarOpen}
+          hasShopAccess={hasShopAccess}
+          showMembershipsNav={showMembershipsNav}
+          collapsed={collapsed}
+          onToggleCollapsed={() => setCollapsed(current => !current)}
+        />
+        <div className="dashboard-content flex-1 flex flex-col min-w-0">
+          <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
+            {showHeader ? (
+              <DashboardHeader
+                onMenuClick={() => setSidebarOpen(open => !open)}
+                sidebarOpen={sidebarOpen}
+                showNotifications={hasShopAccess || isOnboardingCompleted}
+              />
+            ) : (
+              <div className="lg:hidden bg-[var(--dashboard-bg)] border-b border-white/[0.06]">
+                <div className="flex h-16 items-center px-4">
+                  <IconButton
+                    icon={<Bars3Icon />}
+                    onClick={() => setSidebarOpen(open => !open)}
+                    variant="ghost"
+                    aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
         </div>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+        {accountEmail ? (
+          <SupportWidget variant="inApp" accountEmail={accountEmail} />
+        ) : null}
       </div>
-      {accountEmail ? (
-        <SupportWidget variant="inApp" accountEmail={accountEmail} />
-      ) : null}
-    </div>
     </DashboardAccessProvider>
   );
 };

@@ -53,10 +53,7 @@ export async function acceptTeamInvite(
     admin,
     params.userId
   );
-  if (
-    existingMembership &&
-    existingMembership !== loaded.invite.business_id
-  ) {
+  if (existingMembership && existingMembership !== loaded.invite.business_id) {
     return {
       ok: false,
       error: 'This account is already on another team',

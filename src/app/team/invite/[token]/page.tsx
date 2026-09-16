@@ -20,10 +20,7 @@ export default async function TeamInvitePage({
   const raw = decodeURIComponent(token ?? '').trim();
   if (!raw) notFound();
 
-  const loaded = await loadTeamInviteByToken(
-    createSupabaseAdminClient(),
-    raw
-  );
+  const loaded = await loadTeamInviteByToken(createSupabaseAdminClient(), raw);
 
   if (!loaded.ok) {
     const message =

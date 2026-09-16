@@ -6,8 +6,7 @@ const lookupOwnedBusinessId = vi.fn();
 const lookupActiveMemberBusinessId = vi.fn();
 
 vi.mock('@/features/team', () => ({
-  lookupOwnedBusinessId: (...args: unknown[]) =>
-    lookupOwnedBusinessId(...args),
+  lookupOwnedBusinessId: (...args: unknown[]) => lookupOwnedBusinessId(...args),
   lookupActiveMemberBusinessId: (...args: unknown[]) =>
     lookupActiveMemberBusinessId(...args),
 }));

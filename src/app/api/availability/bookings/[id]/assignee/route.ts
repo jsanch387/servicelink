@@ -76,7 +76,10 @@ export async function PATCH(
       assignedUserId: result.assignedUserId,
     });
   } catch (error) {
-    console.error('[team] PATCH /api/availability/bookings/[id]/assignee', error);
+    console.error(
+      '[team] PATCH /api/availability/bookings/[id]/assignee',
+      error
+    );
     return NextResponse.json(
       { success: false, error: 'Could not update assignee' },
       { status: 500 }

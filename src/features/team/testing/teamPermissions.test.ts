@@ -10,12 +10,12 @@ import {
 
 describe('teamPermissions', () => {
   it('treats the owner as having every permission', () => {
-    expect(
-      can({ isOwner: true, permissions: [] }, 'billing.manage')
-    ).toBe(true);
-    expect(
-      can({ isOwner: true, permissions: [] }, 'bookings.write')
-    ).toBe(true);
+    expect(can({ isOwner: true, permissions: [] }, 'billing.manage')).toBe(
+      true
+    );
+    expect(can({ isOwner: true, permissions: [] }, 'bookings.write')).toBe(
+      true
+    );
   });
 
   it('gives members work reads only', () => {
@@ -25,9 +25,7 @@ describe('teamPermissions', () => {
     expect(can({ isOwner: false, permissions }, 'bookings.run')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'quotes.read')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'bookings.write')).toBe(false);
-    expect(can({ isOwner: false, permissions }, 'payments.manage')).toBe(
-      false
-    );
+    expect(can({ isOwner: false, permissions }, 'payments.manage')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'team.manage')).toBe(false);
   });
 

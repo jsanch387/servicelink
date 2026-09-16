@@ -157,7 +157,7 @@ See **[`src/features/cron/docs/README.md`](../../../cron/docs/README.md)** for w
 | Price/duration breakdown (calendar + review step)                | `features/availability/booking/components/BookingPriceBreakdown.tsx`                                                     |
 | Service + add-ons for booking (server)                           | `features/services/api/getServiceWithAddOnsForBooking.ts`, `getAddOnsByIdsForBooking.ts`                                 |
 | Blocked slots hook                                               | `features/availability/booking/hooks/usePublicBlockedSlots.ts`                                                           |
-| Calendar time-off overlay                                        | `features/availability/booking/dashboard/calendar/BookingsCalendar.tsx`                                              |
+| Calendar time-off overlay                                        | `features/availability/booking/dashboard/calendar/BookingsCalendar.tsx`                                                  |
 | Create booking (server)                                          | `features/availability/services/bookingService.ts` (`createBooking`, `listBookingsForBusiness`, `updateBookingStatus`)   |
 | Day-before reminders                                             | `booking/server/reminders` + cron feature                                                                                |
 | Business service location (mobile/shop/both)                     | `business_profiles` columns + [serviceLocation.md](../../business-profile/docs/serviceLocation.md)                       |

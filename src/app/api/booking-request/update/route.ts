@@ -23,7 +23,10 @@ export async function PATCH(request: NextRequest) {
     // Get authenticated user
     const supabase = await createSupabaseServerClient();
 
-    const resolved = await requireBusinessPermission(supabase, 'bookings.write');
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'bookings.write'
+    );
     if (!resolved.ok) {
       return NextResponse.json(
         { success: false, error: resolved.error },

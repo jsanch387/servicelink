@@ -17,9 +17,7 @@ describe('parseListBookingsQuery', () => {
 
   it('reads filter and asOf for a list page', () => {
     expect(
-      parseListBookingsQuery(
-        new URLSearchParams('filter=past&asOf=2026-09-15')
-      )
+      parseListBookingsQuery(new URLSearchParams('filter=past&asOf=2026-09-15'))
     ).toEqual({
       ok: true,
       query: {
@@ -32,9 +30,7 @@ describe('parseListBookingsQuery', () => {
   });
 
   it('rejects an unknown filter or asOf', () => {
-    expect(
-      parseListBookingsQuery(new URLSearchParams('filter=all'))
-    ).toEqual({
+    expect(parseListBookingsQuery(new URLSearchParams('filter=all'))).toEqual({
       ok: false,
       error: 'filter must be upcoming, past, or cancelled.',
     });

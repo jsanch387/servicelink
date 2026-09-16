@@ -54,16 +54,16 @@ Pending email invites. A `business_members` row is created only after they accep
 
 **SQL:** [`migrations/002_team_invites.sql`](./migrations/002_team_invites.sql)
 
-| Column             | Type        | Notes                                       |
-| ------------------ | ----------- | ------------------------------------------- |
-| `id`               | uuid PK     | `gen_random_uuid()`                         |
-| `business_id`      | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE |
-| `email`            | text        | Normalized lowercase                        |
-| `link_token_hash`  | text unique | SHA-256 of the raw URL token                |
+| Column             | Type        | Notes                                             |
+| ------------------ | ----------- | ------------------------------------------------- |
+| `id`               | uuid PK     | `gen_random_uuid()`                               |
+| `business_id`      | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE       |
+| `email`            | text        | Normalized lowercase                              |
+| `link_token_hash`  | text unique | SHA-256 of the raw URL token                      |
 | `status`           | text        | `pending` \| `accepted` \| `revoked` \| `expired` |
-| `invited_by`       | uuid FK     | Owner `auth.users` id                       |
-| `accepted_user_id` | uuid FK     | Set on accept                               |
-| `expires_at`       | timestamptz | 14 days from send                           |
+| `invited_by`       | uuid FK     | Owner `auth.users` id                             |
+| `accepted_user_id` | uuid FK     | Set on accept                                     |
+| `expires_at`       | timestamptz | 14 days from send                                 |
 
 **Writes:** service role. Authenticated owners can SELECT their shop’s rows.
 
@@ -86,9 +86,9 @@ needed to render those pages. Writes stay owner-only.
 
 Optional worker on `bookings`. Null = unassigned. New public bookings stay null.
 
-| Column             | Type        | Notes                                                                 |
-| ------------------ | ----------- | --------------------------------------------------------------------- |
-| `assigned_user_id` | uuid FK     | → `auth.users(id)` ON DELETE SET NULL. Owner or an **active** member. |
+| Column             | Type    | Notes                                                                 |
+| ------------------ | ------- | --------------------------------------------------------------------- |
+| `assigned_user_id` | uuid FK | → `auth.users(id)` ON DELETE SET NULL. Owner or an **active** member. |
 
 Not a `business_members` id — the owner is not in that table and can still be assigned.
 

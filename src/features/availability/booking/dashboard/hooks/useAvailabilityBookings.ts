@@ -104,7 +104,9 @@ export function useAvailabilityBookings() {
         setError(null);
       } catch (err) {
         if (requestId !== requestIdRef.current) return;
-        setError(err instanceof Error ? err.message : 'Failed to load bookings');
+        setError(
+          err instanceof Error ? err.message : 'Failed to load bookings'
+        );
         setBookings([]);
         setHasMore(false);
         nextCursorRef.current = null;

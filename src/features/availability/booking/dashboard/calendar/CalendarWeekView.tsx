@@ -110,9 +110,7 @@ export function CalendarWeekView({
                         topPx={event.topPx}
                         heightPx={event.heightPx}
                         onSelect={
-                          event.booking
-                            ? () => onSelectEvent(event)
-                            : undefined
+                          event.booking ? () => onSelectEvent(event) : undefined
                         }
                       />
                     ))}

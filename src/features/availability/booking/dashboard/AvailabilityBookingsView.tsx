@@ -19,12 +19,7 @@ import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccess
 import { shopHasBookingAssignees } from '@/features/team/utils/shopHasBookingAssignees';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import {
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
 import { BookingsCalendar } from './calendar/BookingsCalendar';
 import { CalendarModeDock } from './calendar/CalendarModeDock';
@@ -80,9 +75,8 @@ export function AvailabilityBookingsView({
   } = useAvailabilityBookings();
   const { assignees } = useBookingAssignees();
   const canAssignBookings = shopHasBookingAssignees(assignees);
-  const [activeTab, setActiveTab] = useState<BookingsStatusFilterValue>(
-    'upcoming'
-  );
+  const [activeTab, setActiveTab] =
+    useState<BookingsStatusFilterValue>('upcoming');
   const [calendarMode, setCalendarMode] = useState<CalendarMode>('calendar');
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
