@@ -34,6 +34,9 @@ const WORK_READ: TeamPermission[] = [
   'reviews.read',
 ];
 
+/** Hired help: the board and the job — not the owner’s CRM / quotes / reviews. */
+const MEMBER_READ: TeamPermission[] = ['dashboard.read', 'bookings.read'];
+
 const JOB_RUN: TeamPermission[] = ['bookings.run'];
 
 const WORK_WRITE: TeamPermission[] = [
@@ -52,7 +55,7 @@ const SHOP_SETUP: TeamPermission[] = [
 
 export const ROLE_PERMISSIONS: Record<DashboardAccessRole, TeamPermission[]> = {
   owner: [...TEAM_PERMISSIONS],
-  member: [...WORK_READ, ...JOB_RUN],
+  member: [...MEMBER_READ, ...JOB_RUN],
   manager: [...WORK_READ, ...JOB_RUN, ...WORK_WRITE, ...SHOP_SETUP],
 };
 

@@ -85,6 +85,7 @@ describe('useAvailabilityBookings', () => {
       expect(url).toContain('from=2026-09-01');
       expect(url).toContain('to=2026-09-07');
       expect(url).not.toContain('cursor=');
+      expect(url).not.toContain('assignedToMe=');
       return jsonResponse({
         success: true,
         data: [{ id: 'bk-week' }],
@@ -122,5 +123,49 @@ describe('useAvailabilityBookings', () => {
 
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('filter=past');
     expect(result.current.bookings).toEqual([{ id: 'bk-past' }]);
+  });
+
+  it('sends assignedToMe on a calendar range', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      expect(url).toContain('from=2026-09-01');
+      expect(url).toContain('assignedToMe=1');
+      return jsonResponse({
+        success: true,
+        data: [{ id: 'bk-mine' }],
+        hasMore: false,
+        nextCursor: null,
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useAvailabilityBookings());
+    await act(async () => {
+      await result.current.loadRange('2026-09-01', '2026-09-07', {
+        assignedToMe: true,
+      });
+    });
+
+    expect(result.current.bookings).toEqual([{ id: 'bk-mine' }]);
+  });
+
+  it('sends assignedToMe when the mine filter is on', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      expect(url).toContain('assignedToMe=1');
+      expect(url).toContain('filter=upcoming');
+      return jsonResponse({
+        success: true,
+        data: [{ id: 'bk-mine' }],
+        hasMore: false,
+        nextCursor: null,
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useAvailabilityBookings());
+    await act(async () => {
+      await result.current.loadListPage('upcoming', { assignedToMe: true });
+    });
+
+    expect(result.current.bookings).toEqual([{ id: 'bk-mine' }]);
   });
 });

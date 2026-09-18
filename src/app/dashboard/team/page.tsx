@@ -1,6 +1,9 @@
-import { ROUTES } from '@/constants/routes';
-import { redirect } from 'next/navigation';
+import { TeamDashboardPage } from '@/features/team';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 
-export default function DashboardTeamPage() {
-  redirect(`${ROUTES.DASHBOARD.SETTINGS}?tab=team`);
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardTeamPage() {
+  await requireDashboardPageAccess('team.manage');
+  return <TeamDashboardPage />;
 }

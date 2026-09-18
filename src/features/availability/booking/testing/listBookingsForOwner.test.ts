@@ -83,6 +83,7 @@ describe('listBookingsForOwner', () => {
       limit: 15,
       filter: 'upcoming',
       asOf: '2026-09-15',
+      assignedToMe: false,
     });
 
     expect(captured.limit).toBe(16);
@@ -107,6 +108,7 @@ describe('listBookingsForOwner', () => {
       limit: 15,
       filter: 'past',
       asOf: '2026-09-15',
+      assignedToMe: false,
     });
 
     expect(captured.or).toBe(
@@ -127,6 +129,7 @@ describe('listBookingsForOwner', () => {
       kind: 'range',
       from: '2026-08-30',
       to: '2026-10-10',
+      assignedToMe: false,
     });
 
     expect(captured.gte).toEqual(['scheduled_date', '2026-08-30']);
@@ -134,5 +137,46 @@ describe('listBookingsForOwner', () => {
     expect(captured.or).toBeUndefined();
     expect(page.hasMore).toBe(false);
     expect(page.nextCursor).toBeNull();
+  });
+
+  it('narrows the list to the signed-in assignee', async () => {
+    const { supabase, captured } = createClient([
+      row('11111111-1111-1111-1111-111111111111', '2026-09-16', '09:00:00'),
+    ]);
+
+    await listBookingsForOwner(
+      supabase as never,
+      'biz',
+      {
+        kind: 'page',
+        limit: 15,
+        filter: 'upcoming',
+        asOf: '2026-09-15',
+        assignedToMe: true,
+      },
+      { assignedUserId: 'worker-1' }
+    );
+
+    expect(captured.eqs).toContainEqual(['assigned_user_id', 'worker-1']);
+  });
+
+  it('narrows a calendar range to the signed-in assignee', async () => {
+    const { supabase, captured } = createClient([
+      row('11111111-1111-1111-1111-111111111111', '2026-09-02', '09:00:00'),
+    ]);
+
+    await listBookingsForOwner(
+      supabase as never,
+      'biz',
+      {
+        kind: 'range',
+        from: '2026-08-30',
+        to: '2026-10-10',
+        assignedToMe: true,
+      },
+      { assignedUserId: 'worker-1' }
+    );
+
+    expect(captured.eqs).toContainEqual(['assigned_user_id', 'worker-1']);
   });
 });

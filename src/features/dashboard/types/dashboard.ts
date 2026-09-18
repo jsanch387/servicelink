@@ -35,6 +35,8 @@ export interface DashboardProps {
   showMembershipsNav?: boolean;
   /** Signed-in account email for the dashboard help widget. */
   accountEmail?: string | null;
+  /** Removed teammate: no sidebar, header, or help widget. */
+  hideChrome?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

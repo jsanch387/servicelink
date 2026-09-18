@@ -20,4 +20,11 @@ describe('formatBookingAssigneeLabel', () => {
     );
     expect(formatBookingAssigneeLabel('  ', 'member')).toBe('Team member');
   });
+
+  it('keeps a former teammate email for history', () => {
+    expect(formatBookingAssigneeLabel('jose@shop.com', 'former')).toBe(
+      'jose@shop.com'
+    );
+    expect(formatBookingAssigneeLabel('', 'former')).toBe('Former teammate');
+  });
 });

@@ -1,4 +1,4 @@
-export type BookingAssigneeKind = 'owner' | 'member';
+export type BookingAssigneeKind = 'owner' | 'member' | 'former';
 
 /** Someone who can be put on a booking (shop owner or an active teammate). */
 export type BookingAssigneeOption = {

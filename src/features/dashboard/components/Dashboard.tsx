@@ -29,6 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   dashboardAccess = OWNER_ACCESS,
   showMembershipsNav = false,
   accountEmail = null,
+  hideChrome = false,
 }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const { collapsed, setCollapsed } = useDashboardSidebarCollapsed();
@@ -53,6 +54,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [setCollapsed]);
+
+  if (hideChrome) {
+    return (
+      <DashboardAccessProvider value={dashboardAccess}>
+        <div className="min-h-dvh bg-[var(--dashboard-bg)]">{children}</div>
+      </DashboardAccessProvider>
+    );
+  }
 
   return (
     <DashboardAccessProvider value={dashboardAccess}>

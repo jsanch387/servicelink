@@ -1,7 +1,10 @@
+export { TeamDashboardPage } from './components/TeamDashboardPage';
 export { TeamMembersPanel } from './components/TeamMembersPanel';
+export { RemovedFromTeamScreen } from './components/RemovedFromTeamScreen';
 export { TeammateHome } from './components/TeammateHome';
 export {
   ACTIVE_TEAM_MEMBER_STATUS,
+  REMOVED_TEAM_MEMBER_STATUS,
   TEAM_MEMBER_ROLES,
   TEAM_MEMBER_STATUSES,
   isActiveTeamMemberStatus,

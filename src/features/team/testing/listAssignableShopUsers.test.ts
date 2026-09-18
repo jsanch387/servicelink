@@ -4,7 +4,7 @@ import { listAssignableShopUsers } from '../server/listAssignableShopUsers';
 
 function createAdmin(opts: {
   profileId: string | null;
-  members: string[];
+  members: Array<string | { user_id: string; status: string }>;
   emails: Record<string, string | undefined>;
 }) {
   return {
@@ -25,8 +25,12 @@ function createAdmin(opts: {
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({
-                data: opts.members.map(user_id => ({ user_id })),
+              in: vi.fn().mockResolvedValue({
+                data: opts.members.map(row =>
+                  typeof row === 'string'
+                    ? { user_id: row, status: 'active' }
+                    : row
+                ),
                 error: null,
               }),
             }),
@@ -69,6 +73,32 @@ describe('listAssignableShopUsers', () => {
         userId: 'member-1',
         label: 'alex@shop.com',
         kind: 'member',
+      },
+    ]);
+  });
+
+  it('keeps removed teammates as former labels, not assignable hires', async () => {
+    const admin = createAdmin({
+      profileId: 'owner-1',
+      members: [{ user_id: 'gone-1', status: 'removed' }],
+      emails: {
+        'owner-1': 'owner@shop.com',
+        'gone-1': 'jose@shop.com',
+      },
+    });
+
+    await expect(
+      listAssignableShopUsers(admin as never, 'biz')
+    ).resolves.toEqual([
+      {
+        userId: 'owner-1',
+        label: 'owner@shop.com (owner)',
+        kind: 'owner',
+      },
+      {
+        userId: 'gone-1',
+        label: 'jose@shop.com',
+        kind: 'former',
       },
     ]);
   });

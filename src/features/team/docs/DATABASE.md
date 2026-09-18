@@ -1,5 +1,7 @@
 # Team — database (v1)
 
+How the feature works: [`TEAM_FEATURE.md`](./TEAM_FEATURE.md).
+
 Teammates the **owner adds**. The person who created the account is **not** in this table.
 
 **SQL:** [`migrations/001_business_members.sql`](./migrations/001_business_members.sql) — run in the Supabase SQL Editor.
@@ -75,8 +77,10 @@ Pending email invites. A `business_members` row is created only after they accep
 
 `auth_is_active_business_member(business_id)` is true when the signed-in user
 has an **active** `business_members` row. SELECT-only policies use that helper
-on bookings, booking requests, customers, quotes, reviews, and the shop rows
-needed to render those pages. Writes stay owner-only.
+on bookings, booking requests, and the shop rows needed to render the job
+board. Customers, quotes, and reviews are owner-only
+([`005_member_office_select_revoke.sql`](./migrations/005_member_office_select_revoke.sql)).
+Writes stay owner-only.
 
 ---
 
@@ -92,7 +96,7 @@ Optional worker on `bookings`. Null = unassigned. New public bookings stay null.
 
 Not a `business_members` id — the owner is not in that table and can still be assigned.
 
-Trigger rejects anyone who is not the shop `profile_id` or an active member of that `business_id`. Removing a member clears their assignments on that shop.
+Trigger rejects anyone who is not the shop `profile_id` or an active member of that `business_id`. Removing a member (app) clears **upcoming confirmed** assignments only; past and completed keep the name.
 
 No RLS change. Column is readable on existing booking SELECT. Writes stay owner-only until the UI/API slice.
 

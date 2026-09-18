@@ -11,10 +11,11 @@ import type {
   ExistingBooking,
   TimeOffInterval,
 } from '@/features/availability/booking/types';
-import {
-  SyncBookingsConfirmModal,
-  SyncBookingsCtaCard,
-} from '@/features/calendar-sync';
+// Hidden on web for now — calendar lives in the mobile app.
+// import {
+//   SyncBookingsConfirmModal,
+//   SyncBookingsCtaCard,
+// } from '@/features/calendar-sync';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { shopHasBookingAssignees } from '@/features/team/utils/shopHasBookingAssignees';
 import { FreeBookingsTracker, FREE_BOOKINGS_LIMIT } from '@/features/pricing';
@@ -23,8 +24,12 @@ import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
 import { BookingsCalendar } from './calendar/BookingsCalendar';
 import { CalendarModeDock } from './calendar/CalendarModeDock';
-import type { CalendarMode } from './calendar/types';
 import {
+  CALENDAR_LIST_COLUMN_CLASS,
+  type CalendarMode,
+} from './calendar/types';
+import {
+  BookingsAssignedToMeFilter,
   BookingsStatusFilter,
   type BookingsStatusFilterValue,
 } from './BookingsStatusFilter';
@@ -42,7 +47,7 @@ export interface AvailabilityBookingsViewProps {
   showFreeBookingsTracker?: boolean;
   /** Owner time-off blocks for the calendar overlay. */
   timeOffBlocks?: BlockTimeEntry[];
-  /** Weekly hours for reschedule slot picker (same rules as public booking). */
+  /** Weekly hours for reschedule slot picker (hours + time off still apply). */
   weeklySchedule: WeeklySchedule;
   bufferTime?: string;
 }
@@ -77,6 +82,7 @@ export function AvailabilityBookingsView({
   const canAssignBookings = shopHasBookingAssignees(assignees);
   const [activeTab, setActiveTab] =
     useState<BookingsStatusFilterValue>('upcoming');
+  const [assignedToMe, setAssignedToMe] = useState(false);
   const [calendarMode, setCalendarMode] = useState<CalendarMode>('calendar');
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
@@ -84,7 +90,7 @@ export function AvailabilityBookingsView({
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
+  // const [syncCalendarModalOpen, setSyncCalendarModalOpen] = useState(false);
 
   const trimmedSlug = businessSlug?.trim() ?? '';
   const manualBookingBlockedByCap = useMemo(() => {
@@ -97,8 +103,14 @@ export function AvailabilityBookingsView({
     atFreeBookingCap: manualBookingBlockedByCap,
   });
   const loadCurrentList = useCallback(() => {
-    void loadListPage(activeTab);
-  }, [activeTab, loadListPage]);
+    void loadListPage(activeTab, { assignedToMe });
+  }, [activeTab, assignedToMe, loadListPage]);
+  const loadVisibleRange = useCallback(
+    (from: string, to: string) => {
+      void loadRange(from, to, { assignedToMe });
+    },
+    [assignedToMe, loadRange]
+  );
 
   const timeOffIntervalsForSlots = useMemo<TimeOffInterval[]>(
     () => timeOffBlocks.map(toTimeOffIntervalFields),
@@ -246,7 +258,11 @@ export function AvailabilityBookingsView({
         } ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
       >
         <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-10 md:px-6 lg:px-8 lg:py-10">
-          <header className="mb-5 flex items-center gap-2 sm:mb-8 sm:gap-3">
+          <header
+            className={`mb-5 flex items-center gap-2 sm:mb-8 sm:gap-3 ${
+              calendarMode === 'list' ? CALENDAR_LIST_COLUMN_CLASS : ''
+            }`}
+          >
             {calendarMode === 'list' ? (
               <BookingsStatusFilter
                 value={activeTab}
@@ -254,12 +270,21 @@ export function AvailabilityBookingsView({
                 className="shrink-0"
               />
             ) : null}
-            {canWriteBookings ? (
-              <div className="ml-auto">
-                <SyncBookingsCtaCard
-                  variant="header"
-                  onSyncClick={() => setSyncCalendarModalOpen(true)}
+            {canAssignBookings ? (
+              <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                <BookingsAssignedToMeFilter
+                  pressed={assignedToMe}
+                  onPressedChange={setAssignedToMe}
+                  className="shrink-0"
                 />
+                {/* Hidden on web for now — calendar lives in the mobile app.
+                {canWriteBookings ? (
+                  <SyncBookingsCtaCard
+                    variant="header"
+                    onSyncClick={() => setSyncCalendarModalOpen(true)}
+                  />
+                ) : null}
+                */}
               </div>
             ) : null}
           </header>
@@ -282,9 +307,11 @@ export function AvailabilityBookingsView({
             mode={calendarMode}
             onModeChange={setCalendarMode}
             listFilter={activeTab}
+            assignedToMe={assignedToMe}
+            assigneeOptions={assignees}
             timeOffBlocks={timeOffBlocks}
             onListActive={loadCurrentList}
-            onVisibleRangeChange={loadRange}
+            onVisibleRangeChange={loadVisibleRange}
             onLoadMore={loadMore}
             onSelectBooking={booking => {
               setUpdateError(null);
@@ -370,11 +397,13 @@ export function AvailabilityBookingsView({
         />
       )}
 
+      {/* Hidden on web for now — calendar lives in the mobile app.
       <SyncBookingsConfirmModal
         isOpen={syncCalendarModalOpen}
         onClose={() => setSyncCalendarModalOpen(false)}
         isProSubscriber={!showFreeBookingsTracker}
       />
+      */}
     </main>
   );
 }

@@ -9,7 +9,9 @@ import {
 } from '@/features/dashboard/server/loadDashboardShopView';
 import { OnboardingFlowV2 } from '@/features/onboarding-v2';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
+import { RemovedFromTeamScreen } from '@/features/team';
 import { can } from '@/features/team/constants/teamPermissions';
+import { lookupRemovedMembership } from '@/features/team/server/lookupRemovedMembership';
 import { resolveDashboardContext } from '@/features/team/server/resolveDashboardContext';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
@@ -25,7 +27,11 @@ export const dynamic = 'force-dynamic';
  * - in_progress: Show onboarding at current step with existing data
  * - completed: Show dashboard content
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ createShop?: string }>;
+}) {
   // Create server client for SSR
   const supabase = await createSupabaseServerClient();
 
@@ -38,6 +44,8 @@ export default async function DashboardPage() {
   if (userError || !user) {
     redirect('/login');
   }
+
+  const startOwnShop = (await searchParams).createShop === '1';
 
   // Get complete onboarding state
   const stateResult = await getOnboardingState(user.id, supabase);
@@ -98,6 +106,16 @@ export default async function DashboardPage() {
   }
 
   const access = await resolveDashboardContext(supabase);
+
+  const alreadyStartingShop =
+    startOwnShop || status === 'in_progress' || status === 'completed';
+
+  if (!access.ok && access.status !== 401 && !alreadyStartingShop) {
+    const former = await lookupRemovedMembership(supabase, user.id);
+    if (former) {
+      return <RemovedFromTeamScreen businessName={former.businessName} />;
+    }
+  }
 
   if (
     (status === 'not_started' || status === 'in_progress') &&

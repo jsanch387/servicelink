@@ -703,6 +703,7 @@ export async function rescheduleBookingForOwner(
     startTimeHHmm: params.startTimeHHmm.trim(),
     durationMinutes,
     excludeBookingId: params.bookingId.trim(),
+    allowExistingBookingOverlap: true,
   });
 
   if (!slot.ok) {

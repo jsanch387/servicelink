@@ -11,6 +11,7 @@ describe('parseListBookingsQuery', () => {
         limit: 15,
         filter: 'upcoming',
         asOf: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        assignedToMe: false,
       },
     });
   });
@@ -25,6 +26,22 @@ describe('parseListBookingsQuery', () => {
         limit: 15,
         filter: 'past',
         asOf: '2026-09-15',
+        assignedToMe: false,
+      },
+    });
+  });
+
+  it('reads assignedToMe for a list page', () => {
+    expect(
+      parseListBookingsQuery(new URLSearchParams('assignedToMe=1'))
+    ).toEqual({
+      ok: true,
+      query: {
+        kind: 'page',
+        limit: 15,
+        filter: 'upcoming',
+        asOf: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        assignedToMe: true,
       },
     });
   });
@@ -52,6 +69,7 @@ describe('parseListBookingsQuery', () => {
         limit: 50,
         filter: 'upcoming',
         asOf: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        assignedToMe: false,
         cursor: {
           scheduledDate: '2026-09-14',
           startTime: '14:00:00',
@@ -68,7 +86,28 @@ describe('parseListBookingsQuery', () => {
       )
     ).toEqual({
       ok: true,
-      query: { kind: 'range', from: '2026-08-30', to: '2026-10-10' },
+      query: {
+        kind: 'range',
+        from: '2026-08-30',
+        to: '2026-10-10',
+        assignedToMe: false,
+      },
+    });
+  });
+
+  it('reads assignedToMe on a calendar range', () => {
+    expect(
+      parseListBookingsQuery(
+        new URLSearchParams('from=2026-08-30&to=2026-10-10&assignedToMe=1')
+      )
+    ).toEqual({
+      ok: true,
+      query: {
+        kind: 'range',
+        from: '2026-08-30',
+        to: '2026-10-10',
+        assignedToMe: true,
+      },
     });
   });
 

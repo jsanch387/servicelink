@@ -54,20 +54,14 @@ describe('getVisibleDashboardNavItems', () => {
     expect(items.map(item => item.name)).toEqual(['Dashboard']);
   });
 
-  it('shows work pages only for an active member', () => {
+  it('shows the job board only for an active member', () => {
     const names = getVisibleDashboardNavItems({
       hasShopAccess: true,
       showMembershipsNav: true,
       can: memberCan,
     }).map(item => item.name);
 
-    expect(names).toEqual([
-      'Dashboard',
-      'Bookings',
-      'Reviews',
-      'Quotes',
-      'Customers',
-    ]);
+    expect(names).toEqual(['Dashboard', 'Bookings']);
   });
 
   it('inserts subscriptions after services when allowlisted', () => {
@@ -93,14 +87,15 @@ describe('getVisibleDashboardNavItems', () => {
     expect(names).not.toContain('Subscriptions');
   });
 
-  it('does not put Team in the main nav', () => {
+  it('puts Team in the main nav for the owner, after Bookings', () => {
     const names = getVisibleDashboardNavItems({
       hasShopAccess: true,
       showMembershipsNav: false,
       can: ownerCan,
     }).map(item => item.name);
 
-    expect(names).not.toContain('Team');
+    expect(names).toContain('Team');
+    expect(names.indexOf('Team')).toBe(names.indexOf('Bookings') + 1);
     expect(names).toContain('Customers');
   });
 });
@@ -108,6 +103,7 @@ describe('getVisibleDashboardNavItems', () => {
 describe('getDashboardPageTitle', () => {
   it('returns the matching nav label', () => {
     expect(getDashboardPageTitle('/dashboard/bookings')).toBe('Bookings');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.TEAM)).toBe('Team');
   });
 
   it('returns Settings for the settings route', () => {

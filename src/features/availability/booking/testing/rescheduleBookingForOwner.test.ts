@@ -148,6 +148,7 @@ describe('rescheduleBookingForOwner', () => {
         startTimeHHmm: '14:00',
         durationMinutes: 60,
         excludeBookingId: 'booking-1',
+        allowExistingBookingOverlap: true,
       })
     );
   });
@@ -192,7 +193,7 @@ describe('rescheduleBookingForOwner', () => {
   it('returns 409 with validation message when slot check fails', async () => {
     validateSpy.mockResolvedValue({
       ok: false,
-      code: 'existing_booking_conflict',
+      code: 'outside_weekly_hours',
     });
     const supabase = createTwoPhaseBookingsMock(
       minimalConfirmedRow(),
@@ -209,7 +210,7 @@ describe('rescheduleBookingForOwner', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.httpStatus).toBe(409);
-      expect(result.error).toContain('booked');
+      expect(result.error).toMatch(/hours|slot|working/i);
     }
   });
 

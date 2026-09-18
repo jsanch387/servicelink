@@ -220,6 +220,14 @@ describe('CalendarListView', () => {
 
     expect(screen.getByText('No cancelled bookings.')).toBeTruthy();
   });
+
+  it('uses assigned-to-me empty copy', () => {
+    render(
+      <CalendarListView events={[]} onSelectEvent={vi.fn()} assignedToMe />
+    );
+
+    expect(screen.getByText('No appointments assigned to you.')).toBeTruthy();
+  });
 });
 
 describe('CalendarWeekView', () => {

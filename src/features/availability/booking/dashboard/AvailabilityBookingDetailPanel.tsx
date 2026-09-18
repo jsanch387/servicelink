@@ -15,6 +15,7 @@ import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/sol
 import { useState } from 'react';
 import type { ExistingBooking, TimeOffInterval } from '../types';
 import { formatDurationMinutes } from '../utils/formatDuration';
+import { canChangeBookingAssignee } from '@/features/team/utils/canChangeBookingAssignee';
 import { BookingAssigneeField } from './BookingAssigneeField';
 import { BookingDetailCustomerSection } from './BookingDetailCustomerSection';
 import { BookingDetailServiceSection } from './BookingDetailServiceSection';
@@ -50,7 +51,7 @@ interface AvailabilityBookingDetailPanelProps {
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
   bufferTime?: string;
-  /** Confirmed/completed bookings except the one being rescheduled (for slot blocking). */
+  /** Confirmed/completed bookings except the one being rescheduled (heads-up only). */
   existingBookingsForSlotGrid: ExistingBooking[];
   assigneeOptions?: BookingAssigneeOption[];
   onAssign?: (
@@ -319,7 +320,9 @@ export function AvailabilityBookingDetailPanel({
                     assignedUserId={booking.assignedUserId ?? null}
                     options={assigneeOptions}
                     onAssign={onAssign}
-                    disabled={isAssigning}
+                    disabled={
+                      isAssigning || !canChangeBookingAssignee(booking.status)
+                    }
                   />
                 </div>
               ) : null}

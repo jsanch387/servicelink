@@ -16,6 +16,33 @@ export interface BookingsStatusFilterProps {
   className?: string;
 }
 
+export interface BookingsAssignedToMeFilterProps {
+  pressed: boolean;
+  onPressedChange: (pressed: boolean) => void;
+  className?: string;
+}
+
+export function BookingsAssignedToMeFilter({
+  pressed,
+  onPressedChange,
+  className = '',
+}: BookingsAssignedToMeFilterProps) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={() => onPressedChange(!pressed)}
+      className={`cursor-pointer whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs font-semibold outline-none transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 [-webkit-tap-highlight-color:transparent] ${
+        pressed
+          ? 'border-white/20 bg-white/[0.10] text-white'
+          : 'border-white/[0.09] bg-white/[0.04] text-white hover:border-white/[0.14] hover:bg-white/[0.06]'
+      } ${className}`}
+    >
+      {pressed ? 'View all' : 'Assigned to me'}
+    </button>
+  );
+}
+
 export function BookingsStatusFilter({
   value,
   onChange,

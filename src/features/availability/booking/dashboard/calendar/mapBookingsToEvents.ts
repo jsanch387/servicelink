@@ -1,4 +1,6 @@
+import type { BookingAssigneeOption } from '@/features/team/types/bookingAssignee';
 import { bookingListServiceTitle } from '../utils/bookingCardServiceTitle';
+import { bookingAssigneeBoardLabel } from '../utils/bookingAssigneeBoardLabel';
 import type { AvailabilityBookingDisplay } from '../types';
 import { hhmmToMinutes } from './dateUtils';
 import type { CalendarEvent } from './types';
@@ -6,7 +8,8 @@ import type { CalendarEvent } from './types';
 const DEFAULT_DURATION_MIN = 60;
 
 export function mapBookingsToCalendarEvents(
-  bookings: AvailabilityBookingDisplay[]
+  bookings: AvailabilityBookingDisplay[],
+  assigneeOptions: readonly BookingAssigneeOption[] = []
 ): CalendarEvent[] {
   return bookings.map(booking => {
     const startMin = hhmmToMinutes(booking.startTimeHHmm || '09:00');
@@ -22,6 +25,10 @@ export function mapBookingsToCalendarEvents(
       title: booking.customerName.trim() || 'Customer',
       subtitle: bookingListServiceTitle(booking),
       status: booking.status,
+      assigneeLabel: bookingAssigneeBoardLabel(
+        booking.assignedUserId,
+        assigneeOptions
+      ),
       booking,
     };
   });

@@ -101,3 +101,9 @@ export type {
   ProWelcomeEmailPayload,
   SendProWelcomeEmailResult,
 } from './pro-welcome/types';
+
+export { sendJobAssignedEmail } from './job-assigned/sendJobAssignedEmail';
+export type {
+  JobAssignedEmailPayload,
+  SendJobAssignedEmailResult,
+} from './job-assigned/types';

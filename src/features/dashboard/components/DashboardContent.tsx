@@ -216,9 +216,15 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 min-w-0">
+          <div
+            className={
+              canSeePayments || canManageShop || canWriteBookings
+                ? 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-4'
+                : 'min-w-0 max-w-sm'
+            }
+          >
             {canSeePayments ? <DashboardRevenueCard /> : null}
-            {slugData?.hasSlug && (
+            {canManageShop && slugData?.hasSlug ? (
               <PerformanceCard
                 views={dashboardAnalytics?.views ?? 0}
                 period={linkViewsPeriod}
@@ -227,15 +233,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                 loading={analyticsLoading}
                 isFreeTier={isFreeTier}
               />
-            )}
-            {dashboardData.useAvailabilityBooking ||
-            !dashboardData.legacyRequestBookingEnabled ? (
-              <UpcomingBookingsCard
-                upcomingCount={dashboardData.upcomingBookingsCount}
-              />
-            ) : (
+            ) : null}
+            {canWriteBookings &&
+            !dashboardData.useAvailabilityBooking &&
+            dashboardData.legacyRequestBookingEnabled ? (
               <PendingRequestsCard
                 pendingCount={dashboardData.pendingRequestsCount}
+              />
+            ) : (
+              <UpcomingBookingsCard
+                upcomingCount={dashboardData.upcomingBookingsCount}
               />
             )}
             {canWriteBookings ? (

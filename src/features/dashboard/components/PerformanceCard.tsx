@@ -56,21 +56,16 @@ export const PerformanceCard: React.FC<PerformanceCardProps> = ({
       <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-white">
         {views.toLocaleString()}
       </p>
-      <p className="mt-1 text-xs leading-snug text-zinc-500">
-        {ANALYTICS_PERIOD_LABELS[period]}
-      </p>
-      {lastViewed && lastViewed !== 'Never' ? (
-        <p className="mt-auto pt-3 text-xs text-zinc-600">
-          Last visit {lastViewed}
-          {views === 0 ? (
-            <span className="text-zinc-700"> · none in this period</span>
-          ) : null}
+      <div className="mt-4 flex items-baseline justify-between gap-3">
+        <p className="text-xs leading-snug text-zinc-500">
+          {ANALYTICS_PERIOD_LABELS[period]}
         </p>
-      ) : (
-        <p className="mt-auto pt-3 text-xs text-zinc-600">
-          Share your link to start tracking
-        </p>
-      )}
+        {lastViewed && lastViewed !== 'Never' ? (
+          <p className="shrink-0 text-xs leading-snug text-zinc-500">
+            {lastViewed}
+          </p>
+        ) : null}
+      </div>
     </DashboardGlassCard>
   );
 };

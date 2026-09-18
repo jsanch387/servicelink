@@ -1,3 +1,4 @@
+import { ROUTES } from '@/constants/routes';
 import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
@@ -23,9 +24,14 @@ export default async function SettingsPage({
     email_notice?: string;
     /** @deprecated Prefer `email_notice=updated` */
     email_updated?: string;
+    /** @deprecated Team now lives at /dashboard/team */
+    tab?: string;
   }>;
 }) {
   const params = await searchParams;
+  if (params?.tab === 'team') {
+    redirect(ROUTES.DASHBOARD.TEAM);
+  }
   const checkoutSuccess = params?.checkout === 'success';
   const emailNotice =
     params?.email_notice === 'updated' || params?.email_notice === 'error'

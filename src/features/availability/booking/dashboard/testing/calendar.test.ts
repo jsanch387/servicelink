@@ -219,9 +219,43 @@ describe('mapBookingsToCalendarEvents', () => {
         title: 'Sam Patel',
         subtitle: 'Full Detail',
         status: 'confirmed',
+        assigneeLabel: null,
         booking,
       },
     ]);
+  });
+
+  it('adds a short assignee name when the shop has teammates', () => {
+    const booking = {
+      id: 'bk-db-2',
+      customerName: 'Sam Patel',
+      serviceName: 'Full Detail',
+      serviceDurationMinutes: 90,
+      date: '2026-09-16',
+      startTimeHHmm: '14:00',
+      status: 'confirmed',
+      assignedUserId: 'worker-1',
+      jobs: [],
+      addonDetails: [],
+    } as AvailabilityBookingDisplay;
+
+    const events = mapBookingsToCalendarEvents(
+      [booking],
+      [
+        {
+          userId: 'owner-1',
+          label: 'jesus@shop.com (owner)',
+          kind: 'owner',
+        },
+        {
+          userId: 'worker-1',
+          label: 'jose@shop.com',
+          kind: 'member',
+        },
+      ]
+    );
+
+    expect(events[0]?.assigneeLabel).toBe('Jose');
   });
 });
 

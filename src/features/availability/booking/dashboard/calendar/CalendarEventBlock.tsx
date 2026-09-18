@@ -1,5 +1,6 @@
 'use client';
 
+import { calendarAssigneeLabel } from '../utils/bookingAssigneeBoardLabel';
 import { formatMinutesLabel } from './dateUtils';
 import { eventChipClass } from './eventStyles';
 import { DAY_END_HOUR } from './timeGrid';
@@ -33,6 +34,12 @@ export function CalendarEventBlock({
   const leftPct = event.col * widthPct;
   const clickable = Boolean(onSelect);
   const compact = height <= 36;
+  const assignee = calendarAssigneeLabel(event.assigneeLabel);
+  const title =
+    compact && assignee ? `${event.title} · ${assignee}` : event.title;
+  const meta = assignee
+    ? `${formatMinutesLabel(event.startMin)} · ${assignee}`
+    : formatMinutesLabel(event.startMin);
 
   return (
     <button
@@ -50,10 +57,10 @@ export function CalendarEventBlock({
         left: `calc(${leftPct}% + 3px)`,
         width: `calc(${widthPct}% - 6px)`,
       }}
-      title={`${event.title} · ${formatMinutesLabel(event.startMin)}`}
+      title={`${event.title} · ${meta}`}
     >
       <p className="truncate text-[12px] font-semibold leading-tight">
-        {event.title}
+        {title}
       </p>
       {compact ? null : (
         <p
@@ -61,7 +68,7 @@ export function CalendarEventBlock({
             event.kind === 'timeOff' ? 'text-zinc-400' : 'text-white/75'
           }`}
         >
-          {formatMinutesLabel(event.startMin)}
+          {meta}
         </p>
       )}
     </button>

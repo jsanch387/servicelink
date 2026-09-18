@@ -82,8 +82,9 @@ export async function createTeamInvite(
 
   const { rawToken, tokenHash } = createTeamInviteToken();
   const expiresAt = expiresAtFromNow();
+  const db = adminDb(admin);
 
-  const { data: existingPending } = await adminDb(admin)
+  const { data: existingPending } = await db
     .from('team_invites')
     .select('id')
     .eq('business_id', params.businessId)
@@ -91,22 +92,37 @@ export async function createTeamInvite(
     .eq('status', PENDING_TEAM_INVITE_STATUS)
     .maybeSingle();
 
-  let inviteId = existingPending?.id ?? '';
+  const { data: existingPrior } = existingPending?.id
+    ? { data: null }
+    : await db
+        .from('team_invites')
+        .select('id')
+        .eq('business_id', params.businessId)
+        .eq('email', email)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-  if (existingPending?.id) {
-    const { error: updateError } = await adminDb(admin)
+  const reuseId = existingPending?.id ?? existingPrior?.id ?? '';
+  let inviteId = reuseId;
+
+  if (reuseId) {
+    const { error: updateError } = await db
       .from('team_invites')
       .update({
         link_token_hash: tokenHash,
+        status: PENDING_TEAM_INVITE_STATUS,
         expires_at: expiresAt,
+        accepted_user_id: null,
+        invited_by: params.invitedBy,
       })
-      .eq('id', existingPending.id);
+      .eq('id', reuseId);
 
     if (updateError) {
       return { ok: false, error: 'Could not update invite', status: 500 };
     }
   } else {
-    const { data: inserted, error: insertError } = await adminDb(admin)
+    const { data: inserted, error: insertError } = await db
       .from('team_invites')
       .insert({
         business_id: params.businessId,

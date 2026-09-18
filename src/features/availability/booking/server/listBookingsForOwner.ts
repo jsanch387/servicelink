@@ -39,7 +39,8 @@ export interface ListBookingsForOwnerResult {
 export async function listBookingsForOwner(
   supabase: SupabaseClient<Database>,
   businessId: string,
-  query: ListBookingsQuery
+  query: ListBookingsQuery,
+  options?: { assignedUserId?: string }
 ): Promise<ListBookingsForOwnerResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let request = (supabase as any)
@@ -49,17 +50,27 @@ export async function listBookingsForOwner(
 
   const fetchLimit =
     query.kind === 'range' ? BOOKINGS_RANGE_MAX_ROWS + 1 : query.limit + 1;
+  const assignedUserId = options?.assignedUserId?.trim() ?? '';
+  const mineOnly = query.assignedToMe && Boolean(assignedUserId);
 
   if (query.kind === 'range') {
     request = request
       .gte('scheduled_date', query.from)
-      .lte('scheduled_date', query.to)
+      .lte('scheduled_date', query.to);
+    if (mineOnly) {
+      request = request.eq('assigned_user_id', assignedUserId);
+    }
+    request = request
       .order('scheduled_date', { ascending: true })
       .order('start_time', { ascending: true })
       .limit(fetchLimit);
   } else {
     const ascending = query.filter === 'upcoming';
-    request = applyListFilter(request, query.filter, query.asOf)
+    request = applyListFilter(request, query.filter, query.asOf);
+    if (mineOnly) {
+      request = request.eq('assigned_user_id', assignedUserId);
+    }
+    request = request
       .order('scheduled_date', { ascending })
       .order('start_time', { ascending })
       .order('id', { ascending });

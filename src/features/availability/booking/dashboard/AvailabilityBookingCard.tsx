@@ -11,6 +11,7 @@ import { listCardTimeParts } from './utils/formatListCardTime';
 interface AvailabilityBookingCardProps {
   booking: AvailabilityBookingDisplay;
   onClick: () => void;
+  assigneeLabel?: string | null;
 }
 
 function formatVehicleLine(booking: AvailabilityBookingDisplay): string | null {
@@ -46,6 +47,7 @@ function StatusPill({
 export function AvailabilityBookingCard({
   booking,
   onClick,
+  assigneeLabel = null,
 }: AvailabilityBookingCardProps) {
   const vehicleLine = formatVehicleLine(booking);
   const servicesText = bookingListServiceTitle(booking);
@@ -99,7 +101,12 @@ export function AvailabilityBookingCard({
               <h3 className="min-w-0 flex-1 truncate pt-0.5 text-base font-bold leading-tight text-white sm:text-lg">
                 {booking.customerName}
               </h3>
-              <div className="shrink-0">
+              <div className="flex shrink-0 items-center gap-1.5">
+                {assigneeLabel ? (
+                  <span className="inline-flex max-w-[7.5rem] truncate rounded-md bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-white/70">
+                    {assigneeLabel}
+                  </span>
+                ) : null}
                 <StatusPill status={booking.status} />
               </div>
             </div>

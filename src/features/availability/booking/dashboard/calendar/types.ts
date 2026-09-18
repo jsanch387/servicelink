@@ -18,6 +18,7 @@ export type CalendarEvent = {
   subtitle: string;
   status: AvailabilityBookingDisplay['status'];
   kind?: CalendarEventKind;
+  assigneeLabel?: string | null;
   booking: AvailabilityBookingDisplay | null;
 };
 

@@ -20,11 +20,13 @@ export type ListBookingsQuery =
       cursor?: BookingListCursor;
       filter: BookingsListFilter;
       asOf: string;
+      assignedToMe: boolean;
     }
   | {
       kind: 'range';
       from: string;
       to: string;
+      assignedToMe: boolean;
     };
 
 export type ParseListBookingsQueryResult =
@@ -39,6 +41,11 @@ function inclusiveDaySpan(from: string, to: string): number {
 
 function isBookingsListFilter(value: string): value is BookingsListFilter {
   return (BOOKINGS_LIST_FILTERS as readonly string[]).includes(value);
+}
+
+function parseAssignedToMeFlag(value: string | null): boolean {
+  const raw = value?.trim().toLowerCase() ?? '';
+  return raw === '1' || raw === 'true';
 }
 
 function defaultListAsOf(now = new Date()): string {
@@ -74,7 +81,15 @@ export function parseListBookingsQuery(
     if (cursorRaw) {
       return { ok: false, error: 'cursor cannot be used with from and to.' };
     }
-    return { ok: true, query: { kind: 'range', from: fromRaw, to: toRaw } };
+    return {
+      ok: true,
+      query: {
+        kind: 'range',
+        from: fromRaw,
+        to: toRaw,
+        assignedToMe: parseAssignedToMeFlag(searchParams.get('assignedToMe')),
+      },
+    };
   }
 
   const limitRaw = searchParams.get('limit');
@@ -100,10 +115,18 @@ export function parseListBookingsQuery(
     return { ok: false, error: 'asOf must be YYYY-MM-DD.' };
   }
 
+  const assignedToMe = parseAssignedToMeFlag(searchParams.get('assignedToMe'));
+
   if (!cursorRaw) {
     return {
       ok: true,
-      query: { kind: 'page', limit, filter: filterRaw, asOf: asOfRaw },
+      query: {
+        kind: 'page',
+        limit,
+        filter: filterRaw,
+        asOf: asOfRaw,
+        assignedToMe,
+      },
     };
   }
 
@@ -117,6 +140,13 @@ export function parseListBookingsQuery(
 
   return {
     ok: true,
-    query: { kind: 'page', limit, cursor, filter: filterRaw, asOf: asOfRaw },
+    query: {
+      kind: 'page',
+      limit,
+      cursor,
+      filter: filterRaw,
+      asOf: asOfRaw,
+      assignedToMe,
+    },
   };
 }

@@ -10,6 +10,7 @@ interface DashboardWrapperProps {
   dashboardAccess: DashboardAccessValue;
   showMembershipsNav?: boolean;
   accountEmail?: string | null;
+  hideChrome?: boolean;
 }
 
 export const DashboardWrapper: React.FC<DashboardWrapperProps> = ({
@@ -19,6 +20,7 @@ export const DashboardWrapper: React.FC<DashboardWrapperProps> = ({
   dashboardAccess,
   showMembershipsNav = false,
   accountEmail = null,
+  hideChrome = false,
 }) => {
   return (
     <Dashboard
@@ -27,6 +29,7 @@ export const DashboardWrapper: React.FC<DashboardWrapperProps> = ({
       dashboardAccess={dashboardAccess}
       showMembershipsNav={showMembershipsNav}
       accountEmail={accountEmail}
+      hideChrome={hideChrome}
     >
       {children}
     </Dashboard>

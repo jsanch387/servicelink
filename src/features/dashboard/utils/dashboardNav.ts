@@ -13,6 +13,7 @@ import {
   Squares2X2Icon,
   StarIcon,
   UserGroupIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -66,6 +67,14 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: CalendarIcon,
     requiresOnboarding: true,
     requiredPermission: 'bookings.read',
+  },
+  {
+    name: 'Team',
+    href: ROUTES.DASHBOARD.TEAM,
+    icon: UsersIcon,
+    requiresOnboarding: true,
+    requiredPermission: 'team.manage',
+    activePathPrefix: '/dashboard/team',
   },
   {
     name: 'Reviews',

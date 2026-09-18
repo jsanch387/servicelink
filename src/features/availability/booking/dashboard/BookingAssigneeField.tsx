@@ -27,9 +27,11 @@ export function BookingAssigneeField({
   const [pending, setPending] = useState<string | null>(null);
   const current = assignedUserId?.trim() || '';
   const displayValue = saving ? (pending ?? '') : current;
+  const assignableOptions = options.filter(option => option.kind !== 'former');
+  const currentOption = options.find(option => option.userId === displayValue);
   const missingFromList =
     Boolean(displayValue) &&
-    !options.some(option => option.userId === displayValue);
+    !assignableOptions.some(option => option.userId === displayValue);
 
   const handleChange = async (next: string) => {
     const assignedUserId = next.trim() || null;
@@ -64,9 +66,11 @@ export function BookingAssigneeField({
         >
           <option value="">Unassigned</option>
           {missingFromList ? (
-            <option value={displayValue}>Assigned</option>
+            <option value={displayValue}>
+              {currentOption?.label ?? 'Assigned'}
+            </option>
           ) : null}
-          {options.map(option => (
+          {assignableOptions.map(option => (
             <option key={option.userId} value={option.userId}>
               {option.label}
             </option>
@@ -79,7 +83,7 @@ export function BookingAssigneeField({
           >
             <span className="block h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-white" />
           </span>
-        ) : (
+        ) : disabled ? null : (
           <ChevronDownIcon
             className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
             aria-hidden

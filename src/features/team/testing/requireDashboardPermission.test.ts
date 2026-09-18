@@ -46,6 +46,27 @@ describe('requireDashboardPermission', () => {
     ).resolves.toEqual({ ok: true, context });
   });
 
+  it('forbids a member from opening quotes', async () => {
+    resolveDashboardContext.mockResolvedValue({
+      ok: true,
+      context: {
+        userId: 'user-2',
+        businessId: 'biz-1',
+        isOwner: false,
+        role: 'member',
+        permissions: permissionsForRole('member'),
+      },
+    });
+
+    await expect(
+      requireDashboardPermission({} as never, 'quotes.read')
+    ).resolves.toEqual({
+      ok: false,
+      error: 'Forbidden',
+      status: 403,
+    });
+  });
+
   it('forbids a member from writing bookings', async () => {
     resolveDashboardContext.mockResolvedValue({
       ok: true,

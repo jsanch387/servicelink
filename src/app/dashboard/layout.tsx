@@ -2,6 +2,7 @@ import { DashboardWrapper } from '@/features/dashboard/components/DashboardWrapp
 import type { DashboardAccessValue } from '@/features/dashboard/context/DashboardAccessContext';
 import { isOwnerEmailAllowedForMembershipsRollout } from '@/features/subscriptions/config/membershipsRolloutAllowlist';
 import { permissionsForRole } from '@/features/team/constants/teamPermissions';
+import { lookupRemovedMembership } from '@/features/team/server/lookupRemovedMembership';
 import { resolveDashboardContext } from '@/features/team/server/resolveDashboardContext';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { Metadata } from 'next';
@@ -33,6 +34,7 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   let isOnboardingCompleted = false;
+  let onboardingStatus: string | null = null;
   if (user?.id) {
     const { data: profileRow } = await supabase
       .from('profiles')
@@ -40,9 +42,10 @@ export default async function DashboardLayout({
       .eq('user_id', user.id)
       .maybeSingle();
 
-    isOnboardingCompleted =
+    onboardingStatus =
       (profileRow as { onboarding_status?: string | null } | null)
-        ?.onboarding_status === 'completed';
+        ?.onboarding_status ?? null;
+    isOnboardingCompleted = onboardingStatus === 'completed';
   }
 
   const access = user?.id ? await resolveDashboardContext(supabase) : null;
@@ -64,6 +67,13 @@ export default async function DashboardLayout({
   const showMembershipsNav = isOwnerEmailAllowedForMembershipsRollout(
     user?.email
   );
+  const hideChrome =
+    user?.id &&
+    access?.ok !== true &&
+    onboardingStatus !== 'in_progress' &&
+    onboardingStatus !== 'completed'
+      ? (await lookupRemovedMembership(supabase, user.id)) != null
+      : false;
 
   return (
     <DashboardWrapper
@@ -72,6 +82,7 @@ export default async function DashboardLayout({
       dashboardAccess={dashboardAccess}
       showMembershipsNav={showMembershipsNav}
       accountEmail={user?.email?.trim() || null}
+      hideChrome={hideChrome}
     >
       {children}
     </DashboardWrapper>

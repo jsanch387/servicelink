@@ -25,9 +25,9 @@ export async function listAssignableShopUsers(
 
   const { data: members } = await db
     .from('business_members')
-    .select('user_id')
+    .select('user_id, status')
     .eq('business_id', businessId)
-    .eq('status', ACTIVE_TEAM_MEMBER_STATUS);
+    .in('status', [ACTIVE_TEAM_MEMBER_STATUS, 'removed']);
 
   const options: BookingAssigneeOption[] = [];
   const ownerUser = await admin.auth.admin.getUserById(ownerId);
@@ -37,14 +37,18 @@ export async function listAssignableShopUsers(
     kind: 'owner',
   });
 
-  for (const row of (members ?? []) as Array<{ user_id: string }>) {
+  for (const row of (members ?? []) as Array<{
+    user_id?: string;
+    status?: string;
+  }>) {
     const userId = row.user_id?.trim();
     if (!userId || userId === ownerId) continue;
     const { data } = await admin.auth.admin.getUserById(userId);
+    const kind = row.status === ACTIVE_TEAM_MEMBER_STATUS ? 'member' : 'former';
     options.push({
       userId,
-      label: formatBookingAssigneeLabel(data.user?.email, 'member'),
-      kind: 'member',
+      label: formatBookingAssigneeLabel(data.user?.email, kind),
+      kind,
     });
   }
 

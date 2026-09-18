@@ -25,8 +25,18 @@ export interface CompleteBookingJobArgs {
 }
 
 type LastQuery =
-  | { type: 'list'; filter: BookingsListFilter; asOf: string }
-  | { type: 'range'; from: string; to: string };
+  | {
+      type: 'list';
+      filter: BookingsListFilter;
+      asOf: string;
+      assignedToMe: boolean;
+    }
+  | {
+      type: 'range';
+      from: string;
+      to: string;
+      assignedToMe: boolean;
+    };
 
 interface BookingsPage {
   bookings: AvailabilityBookingDisplay[];
@@ -79,10 +89,14 @@ export function useAvailabilityBookings() {
   const loadingMoreRef = useRef(false);
 
   const loadListPage = useCallback(
-    async (filter: BookingsListFilter = 'upcoming') => {
+    async (
+      filter: BookingsListFilter = 'upcoming',
+      options?: { assignedToMe?: boolean }
+    ) => {
       const requestId = ++requestIdRef.current;
       const asOf = localDateKey(new Date());
-      lastQueryRef.current = { type: 'list', filter, asOf };
+      const assignedToMe = Boolean(options?.assignedToMe);
+      lastQueryRef.current = { type: 'list', filter, asOf, assignedToMe };
       nextCursorRef.current = null;
       loadingMoreRef.current = false;
       setIsLoading(true);
@@ -90,13 +104,13 @@ export function useAvailabilityBookings() {
       setHasMore(false);
       setBookings([]);
       try {
-        const page = await fetchBookingsPage(
-          new URLSearchParams({
-            limit: String(BOOKINGS_LIST_DEFAULT_LIMIT),
-            filter,
-            asOf,
-          })
-        );
+        const params = new URLSearchParams({
+          limit: String(BOOKINGS_LIST_DEFAULT_LIMIT),
+          filter,
+          asOf,
+        });
+        if (assignedToMe) params.set('assignedToMe', '1');
+        const page = await fetchBookingsPage(params);
         if (requestId !== requestIdRef.current) return;
         setBookings(page.bookings);
         setHasMore(page.hasMore);
@@ -142,6 +156,7 @@ export function useAvailabilityBookings() {
         filter: last.filter,
         asOf: last.asOf,
       });
+      if (last.assignedToMe) params.set('assignedToMe', '1');
       const page = await fetchBookingsPage(params);
       if (requestId !== requestIdRef.current) return;
       setBookings(current => mergeBookings(current, page.bookings));
@@ -158,42 +173,53 @@ export function useAvailabilityBookings() {
     }
   }, [isLoading]);
 
-  const loadRange = useCallback(async (from: string, to: string) => {
-    const requestId = ++requestIdRef.current;
-    lastQueryRef.current = { type: 'range', from, to };
-    nextCursorRef.current = null;
-    loadingMoreRef.current = false;
-    setIsLoading(true);
-    setIsLoadingMore(false);
-    setHasMore(false);
-    setError(null);
-    setBookings([]);
-    try {
-      const params = new URLSearchParams({ from, to });
-      const page = await fetchBookingsPage(params);
-      if (requestId !== requestIdRef.current) return;
-      setBookings(page.bookings);
-      setHasMore(false);
+  const loadRange = useCallback(
+    async (from: string, to: string, options?: { assignedToMe?: boolean }) => {
+      const requestId = ++requestIdRef.current;
+      const assignedToMe = Boolean(options?.assignedToMe);
+      lastQueryRef.current = { type: 'range', from, to, assignedToMe };
       nextCursorRef.current = null;
+      loadingMoreRef.current = false;
+      setIsLoading(true);
+      setIsLoadingMore(false);
+      setHasMore(false);
       setError(null);
-    } catch (err) {
-      if (requestId !== requestIdRef.current) return;
-      setError(err instanceof Error ? err.message : 'Failed to load bookings');
       setBookings([]);
-    } finally {
-      if (requestId === requestIdRef.current) {
-        setIsLoading(false);
+      try {
+        const params = new URLSearchParams({ from, to });
+        if (assignedToMe) params.set('assignedToMe', '1');
+        const page = await fetchBookingsPage(params);
+        if (requestId !== requestIdRef.current) return;
+        setBookings(page.bookings);
+        setHasMore(false);
+        nextCursorRef.current = null;
+        setError(null);
+      } catch (err) {
+        if (requestId !== requestIdRef.current) return;
+        setError(
+          err instanceof Error ? err.message : 'Failed to load bookings'
+        );
+        setBookings([]);
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
       }
-    }
-  }, []);
+    },
+    []
+  );
 
   const refetch = useCallback(async () => {
     const last = lastQueryRef.current;
     if (last?.type === 'range') {
-      await loadRange(last.from, last.to);
+      await loadRange(last.from, last.to, {
+        assignedToMe: last.assignedToMe,
+      });
       return;
     }
-    await loadListPage(last?.filter ?? 'upcoming');
+    await loadListPage(last?.filter ?? 'upcoming', {
+      assignedToMe: last?.assignedToMe,
+    });
   }, [loadListPage, loadRange]);
 
   const updateBookingStatus = useCallback(

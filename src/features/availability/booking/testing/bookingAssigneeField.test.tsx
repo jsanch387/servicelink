@@ -59,4 +59,20 @@ describe('BookingAssigneeField', () => {
       );
     });
   });
+
+  it('does not change assignee when locked', async () => {
+    const onAssign = vi.fn();
+
+    render(
+      <BookingAssigneeField
+        assignedUserId="user-1"
+        options={options}
+        onAssign={onAssign}
+        disabled
+      />
+    );
+
+    expect(screen.getByLabelText(/assignee/i)).toHaveProperty('disabled', true);
+    expect(onAssign).not.toHaveBeenCalled();
+  });
 });

@@ -13,12 +13,23 @@ interface CalendarListViewProps {
   events: CalendarEvent[];
   onSelectEvent: (event: CalendarEvent) => void;
   filter?: BookingsStatusFilterValue;
+  assignedToMe?: boolean;
   hasMore?: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
 }
 
-function emptyHint(filter: BookingsStatusFilterValue): string {
+function emptyHint(
+  filter: BookingsStatusFilterValue,
+  assignedToMe: boolean
+): string {
+  if (assignedToMe && filter === 'past') {
+    return 'No past appointments assigned to you.';
+  }
+  if (assignedToMe && filter === 'cancelled') {
+    return 'No cancelled bookings assigned to you.';
+  }
+  if (assignedToMe) return 'No appointments assigned to you.';
   if (filter === 'past') return 'No past appointments.';
   if (filter === 'cancelled') return 'No cancelled bookings.';
   return 'No upcoming appointments.';
@@ -28,6 +39,7 @@ export function CalendarListView({
   events,
   onSelectEvent,
   filter = 'upcoming',
+  assignedToMe = false,
   hasMore = false,
   isLoadingMore = false,
   onLoadMore,
@@ -58,7 +70,9 @@ export function CalendarListView({
           <CalendarIcon className="h-8 w-8 text-gray-600" />
         </div>
         <h3 className="font-bold text-gray-400">No bookings</h3>
-        <p className="mt-1 text-sm text-gray-500">{emptyHint(filter)}</p>
+        <p className="mt-1 text-sm text-gray-500">
+          {emptyHint(filter, assignedToMe)}
+        </p>
       </div>
     );
   }
@@ -79,6 +93,7 @@ export function CalendarListView({
                 <AvailabilityBookingCard
                   key={event.id}
                   booking={event.booking}
+                  assigneeLabel={event.assigneeLabel}
                   onClick={() => onSelectEvent(event)}
                 />
               ) : null

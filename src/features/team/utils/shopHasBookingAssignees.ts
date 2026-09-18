@@ -6,3 +6,12 @@ export function shopHasBookingAssignees(
 ): boolean {
   return options.some(option => option.kind === 'member');
 }
+
+/** Past jobs can still show a removed worker’s name. */
+export function shopShowsAssigneeLabels(
+  options: readonly BookingAssigneeOption[]
+): boolean {
+  return options.some(
+    option => option.kind === 'member' || option.kind === 'former'
+  );
+}

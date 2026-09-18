@@ -9,5 +9,8 @@ export function formatBookingAssigneeLabel(
   if (kind === 'owner') {
     return trimmed ? `${trimmed} (owner)` : 'Owner';
   }
+  if (kind === 'former') {
+    return trimmed || 'Former teammate';
+  }
   return trimmed || 'Team member';
 }

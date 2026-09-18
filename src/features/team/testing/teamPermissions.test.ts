@@ -18,12 +18,15 @@ describe('teamPermissions', () => {
     );
   });
 
-  it('gives members work reads only', () => {
+  it('gives members the job board only', () => {
     const permissions = permissionsForRole('member');
 
+    expect(can({ isOwner: false, permissions }, 'dashboard.read')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'bookings.read')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'bookings.run')).toBe(true);
-    expect(can({ isOwner: false, permissions }, 'quotes.read')).toBe(true);
+    expect(can({ isOwner: false, permissions }, 'quotes.read')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'reviews.read')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'customers.read')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'bookings.write')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'payments.manage')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'team.manage')).toBe(false);

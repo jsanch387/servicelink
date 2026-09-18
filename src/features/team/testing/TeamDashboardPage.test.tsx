@@ -16,7 +16,7 @@ import {
   vi,
 } from 'vitest';
 
-import { SettingsTeamSection } from '@/features/settings/components/SettingsTeamSection';
+import { TeamDashboardPage } from '../components/TeamDashboardPage';
 import type { TeamMemberUi } from '../types/teamMemberUi';
 
 beforeAll(() => {
@@ -28,7 +28,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('SettingsTeamSection', () => {
+describe('TeamDashboardPage', () => {
   beforeEach(() => {
     const members: TeamMemberUi[] = [
       {
@@ -79,7 +79,7 @@ describe('SettingsTeamSection', () => {
 
   it('lists members and can invite and remove', async () => {
     const user = userEvent.setup();
-    render(<SettingsTeamSection />);
+    render(<TeamDashboardPage />);
 
     expect(await screen.findByText('jordan@example.com')).toBeTruthy();
     expect(screen.queryByText('No team members yet')).toBeNull();

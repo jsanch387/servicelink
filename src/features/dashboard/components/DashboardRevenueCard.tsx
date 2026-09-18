@@ -46,17 +46,15 @@ export function DashboardRevenueCard() {
       <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-white">
         {data?.totalLabel ?? '$0'}
       </p>
-      <p
-        className={`mt-1 text-xs leading-snug ${
-          error ? 'text-zinc-500' : empty ? 'text-zinc-500' : toneClass
-        }`}
-      >
-        {error
-          ? "Couldn't load revenue"
-          : empty
-            ? 'Nothing collected yet'
-            : change}
-      </p>
+      {error || (!empty && change) ? (
+        <p
+          className={`mt-1 text-xs leading-snug ${
+            error ? 'text-zinc-500' : toneClass
+          }`}
+        >
+          {error ? "Couldn't load revenue" : change}
+        </p>
+      ) : null}
       <Button
         href={ROUTES.DASHBOARD.PAYMENTS}
         variant="ghost"

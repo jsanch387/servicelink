@@ -37,7 +37,10 @@ export async function GET(request: NextRequest) {
     const page = await listBookingsForOwner(
       supabase,
       authResult.businessId,
-      parsed.query
+      parsed.query,
+      parsed.query.assignedToMe
+        ? { assignedUserId: authResult.context.userId }
+        : undefined
     );
 
     return NextResponse.json({

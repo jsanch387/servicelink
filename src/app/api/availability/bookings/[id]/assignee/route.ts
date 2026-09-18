@@ -1,3 +1,4 @@
+import { notifyAssigneeForJobAssigned } from '@/features/team/server/notifyAssigneeForJobAssigned';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { updateBookingAssignee } from '@/features/team/server/updateBookingAssignee';
 import { parseAssignedUserId } from '@/features/team/utils/parseAssignedUserId';
@@ -70,6 +71,15 @@ export async function PATCH(
         { status: result.status }
       );
     }
+
+    await notifyAssigneeForJobAssigned({
+      admin,
+      businessId: resolved.businessId,
+      bookingId,
+      actorUserId: auth.user.id,
+      previousAssignedUserId: result.previousAssignedUserId,
+      nextAssignedUserId: result.assignedUserId,
+    });
 
     return NextResponse.json({
       success: true,

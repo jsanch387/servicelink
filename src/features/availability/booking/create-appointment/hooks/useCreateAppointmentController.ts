@@ -263,9 +263,6 @@ export function useCreateAppointmentController(
     null
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [scheduleExactConflict, setScheduleExactConflict] = useState(false);
-  const [showScheduleConflictModal, setShowScheduleConflictModal] =
-    useState(false);
 
   const jobIndex = committedJobs.length;
   const hasScheduleSlot = Boolean(visit.scheduledDate && visit.startTime);
@@ -656,11 +653,6 @@ export function useCreateAppointmentController(
       return;
     }
 
-    if (step === CREATE_APPOINTMENT_STEP.SCHEDULE && scheduleExactConflict) {
-      setShowScheduleConflictModal(true);
-      return;
-    }
-
     const next = getNextStepOnContinue({
       step,
       ...navOpts,
@@ -680,27 +672,7 @@ export function useCreateAppointmentController(
     vehicleSkipped,
     jobIndex,
     submitAppointment,
-    scheduleExactConflict,
   ]);
-
-  const confirmScheduleDespiteConflict = useCallback(() => {
-    setShowScheduleConflictModal(false);
-    const next = getNextStepOnContinue({
-      step: CREATE_APPOINTMENT_STEP.SCHEDULE,
-      ...navOpts,
-      hasScheduleSlot,
-    });
-    setStep(next);
-  }, [navOpts, hasScheduleSlot]);
-
-  const dismissScheduleConflictModal = useCallback(() => {
-    setShowScheduleConflictModal(false);
-  }, []);
-
-  const setExactStartConflict = useCallback((hasConflict: boolean) => {
-    setScheduleExactConflict(hasConflict);
-    if (!hasConflict) setShowScheduleConflictModal(false);
-  }, []);
 
   const cancelInProgressExtraJob = useCallback(() => {
     if (committedJobs.length === 0) return;
@@ -817,7 +789,6 @@ export function useCreateAppointmentController(
 
   const setSchedule = useCallback(
     (next: { scheduledDate: string; startTime: string | null }) => {
-      setShowScheduleConflictModal(false);
       setVisit(v => ({
         ...v,
         scheduledDate: next.scheduledDate,
@@ -880,11 +851,6 @@ export function useCreateAppointmentController(
     setDraft,
     setVisit,
     goContinue,
-    confirmScheduleDespiteConflict,
-    dismissScheduleConflictModal,
-    setExactStartConflict,
-    showScheduleConflictModal,
-    scheduleExactConflict,
     goBack,
     servicePhase,
     servicePath,

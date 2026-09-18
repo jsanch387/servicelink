@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
+import type { BookingAssigneeOption } from '@/features/team/types/bookingAssignee';
 import { localDateKey } from '../dayPlannerUtils';
 import type { BookingsStatusFilterValue } from '../BookingsStatusFilter';
 import type { AvailabilityBookingDisplay } from '../types';
@@ -54,6 +55,8 @@ interface BookingsCalendarProps {
   onVisibleRangeChange?: (from: string, to: string) => void;
   onLoadMore?: () => void;
   listFilter?: BookingsStatusFilterValue;
+  assignedToMe?: boolean;
+  assigneeOptions?: BookingAssigneeOption[];
   timeOffBlocks?: BlockTimeEntry[];
 }
 
@@ -69,6 +72,8 @@ export function BookingsCalendar({
   onVisibleRangeChange,
   onLoadMore,
   listFilter = 'upcoming',
+  assignedToMe = false,
+  assigneeOptions = [],
   timeOffBlocks = [],
 }: BookingsCalendarProps) {
   const todayKey = localDateKey(new Date());
@@ -94,7 +99,7 @@ export function BookingsCalendar({
   const visibleEvents = useMemo(() => {
     const bookingEvents = isLoading
       ? []
-      : mapBookingsToCalendarEvents(bookings);
+      : mapBookingsToCalendarEvents(bookings, assigneeOptions);
     const timeOffEvents =
       mode === 'list' || !visibleKeys?.length
         ? []
@@ -105,7 +110,7 @@ export function BookingsCalendar({
       ...timeOffEvents,
       ...bookingEvents.filter(event => keys.has(event.dateKey)),
     ];
-  }, [bookings, isLoading, mode, timeOffBlocks, visibleKeys]);
+  }, [assigneeOptions, bookings, isLoading, mode, timeOffBlocks, visibleKeys]);
 
   useEffect(() => {
     if (mode === 'list' || userPickedRange.current) return;
@@ -160,6 +165,7 @@ export function BookingsCalendar({
             events={visibleEvents}
             onSelectEvent={handleSelectEvent}
             filter={listFilter}
+            assignedToMe={assignedToMe}
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
             onLoadMore={onLoadMore}
