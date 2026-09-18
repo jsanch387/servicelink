@@ -8,7 +8,7 @@
  * `service_addons_description_length_check` constraint in Postgres — raising
  * this without the matching migration makes long descriptions fail to save.
  */
-export const ADD_ON_DESCRIPTION_MAX_LENGTH = 300;
+export const ADD_ON_DESCRIPTION_MAX_LENGTH = 800;
 
 export interface AddOnRow {
   id: string;
