@@ -58,23 +58,21 @@ export const TeamMembersPanel: React.FC<TeamMembersPanelProps> = ({
       body: JSON.stringify({ email }),
     });
     const result = (await response.json().catch(() => null)) as {
-      success?: boolean;
+      ok?: boolean;
       error?: string;
-      member?: TeamMemberUi;
     } | null;
-    if (!response.ok || !result?.success || !result.member) {
+    if (!response.ok || !result?.ok) {
       return {
         ok: false as const,
         error: result?.error || 'Could not send invite',
       };
     }
 
-    setMembers(current => {
-      const withoutDuplicate = current.filter(
-        member => member.email !== result.member!.email
-      );
-      return [...withoutDuplicate, result.member!];
-    });
+    try {
+      await loadMembers();
+    } catch {
+      /* invite already sent */
+    }
     toast.success('Invite sent');
     return { ok: true as const };
   };

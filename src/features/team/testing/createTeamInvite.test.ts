@@ -87,6 +87,7 @@ describe('createTeamInvite', () => {
       })
     ).resolves.toEqual({
       ok: true,
+      resent: true,
       member: {
         id: 'old-invite',
         email: 'jose@shop.com',

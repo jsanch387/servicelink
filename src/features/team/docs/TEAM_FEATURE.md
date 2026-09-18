@@ -216,7 +216,7 @@ Auth: web cookies **or** `Authorization: Bearer <Supabase access_token>`.
 | Method | Path | Who | What |
 | --- | --- | --- | --- |
 | GET | `/api/team/members` | Owner (`team.manage`) | Active members + pending invites |
-| POST | `/api/team/invites` | Owner | Send or resend invite email |
+| POST | `/api/team/invites` | Owner (`team.manage`) | Send or resend invite. Bearer or cookie. `{ ok: true }` / `{ ok: true, resent: true }` |
 | POST | `/api/team/invites/accept` | Signed-in invitee | Accept token, join or rejoin |
 | POST | `/api/team/remove` | Owner | Revoke pending invite **or** remove an active member |
 | GET | `/api/availability/bookings` | `bookings.read` | List / calendar. `assignedToMe=true` filters to the signed-in user |

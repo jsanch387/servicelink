@@ -49,6 +49,7 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push                                                            |
 | [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder)                   |
 | [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form                                                  |
+| [mobile-team-invite.md](./mobile-team-invite.md)                             | Owner sends a team invite (`POST /api/team/invites`)                 |
 | [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area                                                         |
 | [service-categories-data.md](./service-categories-data.md)                   | Service categories                                                   |
 

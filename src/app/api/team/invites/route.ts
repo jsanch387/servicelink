@@ -1,29 +1,40 @@
+/**
+ * POST /api/team/invites
+ *
+ * Owner sends or resends a team invite email. The hire accepts on web
+ * (`/team/invite/<token>`). Mobile and the dashboard share this route.
+ *
+ * Auth: `getAuthenticatedUser` (mobile Bearer or web cookie).
+ * Shop: owned `business_profiles` only (`team.manage`). Members get 403.
+ */
+
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import { createTeamInvite } from '@/features/team/server/createTeamInvite';
 import { requireOwnedBusiness } from '@/features/team/server/requireOwnedBusiness';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
+
+function errorJson(error: string, status: number) {
+  return NextResponse.json({ error }, { status });
+}
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const owned = await requireOwnedBusiness(supabase);
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      return errorJson(auth.error, auth.status);
+    }
+
+    const owned = await requireOwnedBusiness(auth.supabase);
     if (!owned.ok) {
-      return NextResponse.json(
-        { success: false, error: owned.error },
-        { status: owned.status }
-      );
+      return errorJson(owned.error, owned.status);
     }
 
     const body = (await request.json().catch(() => null)) as {
       email?: unknown;
     } | null;
     const rawEmail = typeof body?.email === 'string' ? body.email : '';
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
     const admin = createSupabaseAdminClient();
     const { data: shop } = await admin
@@ -39,25 +50,22 @@ export async function POST(request: Request) {
     const result = await createTeamInvite(admin, {
       businessId: owned.businessId,
       invitedBy: owned.userId,
-      ownerEmail: user?.email ?? null,
+      ownerEmail: auth.user.email ?? null,
       businessName: shopName,
       rawEmail,
       inviteBaseUrl: getAppBaseUrl(),
     });
 
     if (!result.ok) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.status }
-      );
+      return errorJson(result.error, result.status);
     }
 
-    return NextResponse.json({ success: true, member: result.member });
+    return NextResponse.json(
+      result.resent ? { ok: true, resent: true } : { ok: true },
+      { status: result.resent ? 200 : 201 }
+    );
   } catch (error) {
     console.error('[team] POST /api/team/invites failed', error);
-    return NextResponse.json(
-      { success: false, error: 'Could not send invite' },
-      { status: 500 }
-    );
+    return errorJson('Could not send invite', 500);
   }
 }

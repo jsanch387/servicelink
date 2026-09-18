@@ -15,7 +15,7 @@ import { createTeamInviteToken } from '../utils/hashTeamInviteToken';
 import type { TeamMemberUi } from '../types/teamMemberUi';
 
 export type CreateTeamInviteResult =
-  | { ok: true; member: TeamMemberUi }
+  | { ok: true; member: TeamMemberUi; resent: boolean }
   | { ok: false; error: string; status: number };
 
 function expiresAtFromNow(): string {
@@ -105,6 +105,7 @@ export async function createTeamInvite(
 
   const reuseId = existingPending?.id ?? existingPrior?.id ?? '';
   let inviteId = reuseId;
+  const resent = Boolean(reuseId);
 
   if (reuseId) {
     const { error: updateError } = await db
@@ -151,12 +152,13 @@ export async function createTeamInvite(
     return {
       ok: false,
       error: emailed.error || 'Could not send invite email',
-      status: 502,
+      status: 500,
     };
   }
 
   return {
     ok: true,
+    resent,
     member: {
       id: inviteId,
       email,

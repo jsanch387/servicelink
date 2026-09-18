@@ -60,7 +60,7 @@ describe('TeamDashboardPage', () => {
             source: 'invite',
           };
           members.push(member);
-          return Response.json({ success: true, member });
+          return Response.json({ ok: true }, { status: 201 });
         }
 
         if (url.includes('/api/team/remove') && method === 'POST') {
