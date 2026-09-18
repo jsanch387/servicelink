@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, Input } from '@/components/shared';
+import { TeamInviteJoiningState } from './TeamInviteJoiningState';
 import { API_ROUTES, ROUTES, getTeamInvitePath } from '@/constants/routes';
 import { useAuth } from '@/features/auth';
 import { validateSignInForm, validateSignUpForm } from '@/features/auth';
@@ -24,7 +25,6 @@ interface TeamInviteAcceptScreenProps {
 export const TeamInviteAcceptScreen: React.FC<TeamInviteAcceptScreenProps> = ({
   token,
   email,
-  businessName,
 }) => {
   const router = useRouter();
   const {
@@ -149,24 +149,18 @@ export const TeamInviteAcceptScreen: React.FC<TeamInviteAcceptScreenProps> = ({
     await acceptInvite();
   };
 
-  if (!isInitialized || (isAuthenticated && !error)) {
-    return (
-      <AuthScreenLayout
-        title="Joining the team"
-        subtitle={`Adding you to ${businessName}.`}
-        footer={null}
-      >
-        <AuthFormCard>
-          <p className="text-sm text-zinc-400">Just a moment…</p>
-        </AuthFormCard>
-      </AuthScreenLayout>
-    );
+  const showJoining = !isInitialized || (isAuthenticated && !error);
+
+  if (showJoining) {
+    return <TeamInviteJoiningState />;
   }
 
   return (
     <AuthScreenLayout
       title={mode === 'join' ? 'Join the team' : 'Sign in to join'}
-      subtitle={`Create a login with ${email} to join ${businessName}. You will not create your own shop.`}
+      subtitle={
+        mode === 'join' ? 'Create a password to join.' : 'Enter your password.'
+      }
       footer={
         mode === 'join' ? (
           <>
