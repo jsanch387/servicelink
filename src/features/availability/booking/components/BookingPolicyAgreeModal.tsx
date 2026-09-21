@@ -23,9 +23,13 @@ export function BookingPolicyAgreeModal({
 }) {
   const ui = publicBookingUi(bookingFlowLocale);
   const [agreed, setAgreed] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) setAgreed(false);
+    if (isOpen) {
+      setAgreed(false);
+      setConsentError(null);
+    }
   }, [isOpen]);
 
   return (
@@ -62,20 +66,34 @@ export function BookingPolicyAgreeModal({
             <input
               type="checkbox"
               checked={agreed}
-              onChange={event => setAgreed(event.target.checked)}
+              onChange={event => {
+                setAgreed(event.target.checked);
+                if (event.target.checked) setConsentError(null);
+              }}
               className={`mt-0.5 cursor-pointer ${nativeCheckboxSmClassName}`}
+              aria-invalid={Boolean(consentError)}
             />
             <span className="text-sm text-gray-200">
               {ui.calendar.policyConsentCheckboxLabel}
             </span>
           </label>
+          {consentError ? (
+            <p className="text-xs text-red-400/95" role="alert">
+              {consentError}
+            </p>
+          ) : null}
           <Button
             type="button"
             variant="inverse"
             fullWidth
             className="font-semibold"
-            disabled={!agreed}
-            onClick={onAgreed}
+            onClick={() => {
+              if (!agreed) {
+                setConsentError(ui.calendar.policyConsentRequired);
+                return;
+              }
+              onAgreed();
+            }}
           >
             {ui.common.continue}
           </Button>

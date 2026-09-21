@@ -358,7 +358,7 @@ export function useAvailabilityBookings() {
         const json = (await res.json()) as {
           success?: boolean;
           error?: string;
-          assignedUserId?: string | null;
+          data?: { assignedUserId?: string | null };
         };
         if (!res.ok || json.success === false) {
           return {
@@ -366,10 +366,7 @@ export function useAvailabilityBookings() {
             error: json.error ?? 'Could not update assignee',
           };
         }
-        const nextId =
-          typeof json.assignedUserId === 'string'
-            ? json.assignedUserId
-            : (json.assignedUserId ?? null);
+        const nextId = json.data?.assignedUserId ?? null;
         setBookings(prev =>
           prev.map(b => (b.id === id ? { ...b, assignedUserId: nextId } : b))
         );

@@ -332,6 +332,7 @@ export type Database = {
           id: string;
           business_id: string;
           email: string;
+          name: string | null;
           link_token_hash: string;
           status: string;
           invited_by: string;
@@ -344,6 +345,7 @@ export type Database = {
           id?: string;
           business_id: string;
           email: string;
+          name?: string | null;
           link_token_hash: string;
           status?: string;
           invited_by: string;
@@ -356,6 +358,7 @@ export type Database = {
           id?: string;
           business_id?: string;
           email?: string;
+          name?: string | null;
           link_token_hash?: string;
           status?: string;
           invited_by?: string;

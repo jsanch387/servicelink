@@ -336,12 +336,12 @@ Body shape is generally:
 | `401` | Missing/invalid Bearer token or no session (owner mode).                                                                                                                             |
 | `403` | Authenticated user is not the owner of `businessId`, or free-tier booking cap reached (`enforceFreeTierBookingCapBeforeCreate`).                                                     |
 | `404` | Unknown slug or business not publicly visible.                                                                                                                                       |
-| `409` | Slot overlaps another booking (including **buffer time**) or — for **customer** creates only — owner **time off** / **lead time**. Owner manual create skips time-off and lead time. |
+| `409` | **Customer** create only: slot already taken, buffer, time off, or lead time. **Owner** create (`ownerManualBooking: true`) may stack jobs — other bookings + buffer do **not** 409. |
 | `500` | Unexpected failure (e.g. `booking_payments` insert failed — booking may be rolled back).                                                                                             |
 
 ### Scheduling and retry behavior
 
-- The POST re-checks overlap against **other bookings** and **`buffer_time`** (HTTP 409). Buffer is a text token on `business_availability` (`none`, `15m`, `30m`, `45m`, `1h`, `90m`, `2h`); the server converts it to minutes.
+- Owner create does **not** 409 because another job (or buffer) is already on that slot. Public book still does. Heads-up only in the app; do not block save.
 - **Owner** create skips **time off** and **lead time**; **customers** are still rejected for those (409).
 - The mobile availability UI should use the existing blocked-slots/availability data before submit. Concurrent submits can still race.
 - There is currently no idempotency key. Disable the submit button while the request is running and do not automatically retry a request after an ambiguous timeout; first refresh bookings to avoid duplicates.

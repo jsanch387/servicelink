@@ -11,12 +11,15 @@
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
 import { createTeamInvite } from '@/features/team/server/createTeamInvite';
 import { requireOwnedBusiness } from '@/features/team/server/requireOwnedBusiness';
+import { parseTeamInviteName } from '@/features/team/utils/parseTeamInviteName';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { NextResponse } from 'next/server';
 
-function errorJson(error: string, status: number) {
-  return NextResponse.json({ error }, { status });
+function errorJson(error: string, status: number, withOk = false) {
+  return NextResponse.json(withOk ? { ok: false, error } : { error }, {
+    status,
+  });
 }
 
 export async function POST(request: Request) {
@@ -33,8 +36,15 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => null)) as {
       email?: unknown;
+      name?: unknown;
     } | null;
     const rawEmail = typeof body?.email === 'string' ? body.email : '';
+    const parsedName = parseTeamInviteName(
+      body && 'name' in body ? body.name : undefined
+    );
+    if (!parsedName.ok) {
+      return errorJson(parsedName.error, parsedName.status, true);
+    }
 
     const admin = createSupabaseAdminClient();
     const { data: shop } = await admin
@@ -53,6 +63,7 @@ export async function POST(request: Request) {
       ownerEmail: auth.user.email ?? null,
       businessName: shopName,
       rawEmail,
+      name: parsedName.name,
       inviteBaseUrl: getAppBaseUrl(),
     });
 
@@ -61,7 +72,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      result.resent ? { ok: true, resent: true } : { ok: true },
+      {
+        ok: true,
+        resent: result.resent,
+        invite: result.invite,
+      },
       { status: result.resent ? 200 : 201 }
     );
   } catch (error) {

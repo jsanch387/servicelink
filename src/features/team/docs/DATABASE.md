@@ -56,16 +56,17 @@ Pending email invites. A `business_members` row is created only after they accep
 
 **SQL:** [`migrations/002_team_invites.sql`](./migrations/002_team_invites.sql)
 
-| Column             | Type        | Notes                                             |
-| ------------------ | ----------- | ------------------------------------------------- |
-| `id`               | uuid PK     | `gen_random_uuid()`                               |
-| `business_id`      | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE       |
-| `email`            | text        | Normalized lowercase                              |
-| `link_token_hash`  | text unique | SHA-256 of the raw URL token                      |
-| `status`           | text        | `pending` \| `accepted` \| `revoked` \| `expired` |
-| `invited_by`       | uuid FK     | Owner `auth.users` id                             |
-| `accepted_user_id` | uuid FK     | Set on accept                                     |
-| `expires_at`       | timestamptz | 14 days from send                                 |
+| Column             | Type        | Notes                                                                  |
+| ------------------ | ----------- | ---------------------------------------------------------------------- |
+| `id`               | uuid PK     | `gen_random_uuid()`                                                    |
+| `business_id`      | uuid FK     | → `business_profiles(id)` ON DELETE CASCADE                            |
+| `email`            | text        | Normalized lowercase                                                   |
+| `name`             | text        | Owner-typed label. Null if omitted. Not from email. Keep after accept. |
+| `link_token_hash`  | text unique | SHA-256 of the raw URL token                                           |
+| `status`           | text        | `pending` \| `accepted` \| `revoked` \| `expired`                      |
+| `invited_by`       | uuid FK     | Owner `auth.users` id                                                  |
+| `accepted_user_id` | uuid FK     | Set on accept                                                          |
+| `expires_at`       | timestamptz | 14 days from send                                                      |
 
 **Writes:** service role. Authenticated owners can SELECT their shop’s rows.
 

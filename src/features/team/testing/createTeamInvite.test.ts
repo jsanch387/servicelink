@@ -52,7 +52,7 @@ function createAdmin(options: { priorInviteId?: string | null }) {
                 limit: vi.fn().mockReturnValue({
                   maybeSingle: vi.fn().mockResolvedValue({
                     data: options.priorInviteId
-                      ? { id: options.priorInviteId }
+                      ? { id: options.priorInviteId, name: null }
                       : null,
                     error: null,
                   }),
@@ -84,10 +84,17 @@ describe('createTeamInvite', () => {
         ownerEmail: 'owner@shop.com',
         businessName: 'Sparkle',
         rawEmail: 'jose@shop.com',
+        name: 'Jose',
       })
     ).resolves.toEqual({
       ok: true,
       resent: true,
+      invite: {
+        id: 'old-invite',
+        email: 'jose@shop.com',
+        name: 'Jose',
+        status: 'pending',
+      },
       member: {
         id: 'old-invite',
         email: 'jose@shop.com',
@@ -101,6 +108,7 @@ describe('createTeamInvite', () => {
       expect.objectContaining({
         status: 'pending',
         accepted_user_id: null,
+        name: 'Jose',
       })
     );
     expect(sendTeamInviteEmail).toHaveBeenCalledWith(

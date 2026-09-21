@@ -1,4 +1,5 @@
-/** Completed jobs keep the person who ran them. */
+/** Completed and cancelled jobs keep the person who was on them. */
 export function canChangeBookingAssignee(status: string): boolean {
-  return status.trim() !== 'completed';
+  const value = status.trim();
+  return value !== 'completed' && value !== 'cancelled';
 }

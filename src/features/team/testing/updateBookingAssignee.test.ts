@@ -81,6 +81,25 @@ describe('updateBookingAssignee', () => {
     });
   });
 
+  it('returns 409 when the appointment is cancelled', async () => {
+    const admin = createAdmin({
+      existing: { id: 'b1', status: 'cancelled' },
+    });
+
+    await expect(
+      updateBookingAssignee(admin as never, {
+        businessId: 'biz',
+        bookingId: 'b1',
+        assignedUserId: 'user-1',
+      })
+    ).resolves.toEqual({
+      ok: false,
+      error: 'Completed or cancelled appointments can’t change assignee.',
+      status: 409,
+    });
+    expect(admin.update).not.toHaveBeenCalled();
+  });
+
   it('returns 409 when the appointment is already completed', async () => {
     const admin = createAdmin({
       existing: { id: 'b1', status: 'completed' },
@@ -94,7 +113,7 @@ describe('updateBookingAssignee', () => {
       })
     ).resolves.toEqual({
       ok: false,
-      error: 'Completed appointments can’t change assignee.',
+      error: 'Completed or cancelled appointments can’t change assignee.',
       status: 409,
     });
     expect(admin.update).not.toHaveBeenCalled();

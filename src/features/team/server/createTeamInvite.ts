@@ -14,8 +14,20 @@ import { normalizeTeamInviteEmail } from '../utils/normalizeTeamInviteEmail';
 import { createTeamInviteToken } from '../utils/hashTeamInviteToken';
 import type { TeamMemberUi } from '../types/teamMemberUi';
 
+export type TeamInviteCreated = {
+  id: string;
+  email: string;
+  name: string | null;
+  status: 'pending';
+};
+
 export type CreateTeamInviteResult =
-  | { ok: true; member: TeamMemberUi; resent: boolean }
+  | {
+      ok: true;
+      member: TeamMemberUi;
+      invite: TeamInviteCreated;
+      resent: boolean;
+    }
   | { ok: false; error: string; status: number };
 
 function expiresAtFromNow(): string {
@@ -54,6 +66,7 @@ export async function createTeamInvite(
     ownerEmail: string | null;
     businessName: string;
     rawEmail: string;
+    name?: string | null;
     inviteBaseUrl?: string;
   }
 ): Promise<CreateTeamInviteResult> {
@@ -86,7 +99,7 @@ export async function createTeamInvite(
 
   const { data: existingPending } = await db
     .from('team_invites')
-    .select('id')
+    .select('id, email, name, status')
     .eq('business_id', params.businessId)
     .eq('email', email)
     .eq('status', PENDING_TEAM_INVITE_STATUS)
@@ -96,7 +109,7 @@ export async function createTeamInvite(
     ? { data: null }
     : await db
         .from('team_invites')
-        .select('id')
+        .select('id, email, name, status')
         .eq('business_id', params.businessId)
         .eq('email', email)
         .order('updated_at', { ascending: false })
@@ -106,6 +119,14 @@ export async function createTeamInvite(
   const reuseId = existingPending?.id ?? existingPrior?.id ?? '';
   let inviteId = reuseId;
   const resent = Boolean(reuseId);
+  const nextName = params.name?.trim() || null;
+  const storedName =
+    nextName ??
+    (typeof existingPending?.name === 'string'
+      ? existingPending.name.trim() || null
+      : typeof existingPrior?.name === 'string'
+        ? existingPrior.name.trim() || null
+        : null);
 
   if (reuseId) {
     const { error: updateError } = await db
@@ -116,6 +137,7 @@ export async function createTeamInvite(
         expires_at: expiresAt,
         accepted_user_id: null,
         invited_by: params.invitedBy,
+        ...(nextName ? { name: nextName } : {}),
       })
       .eq('id', reuseId);
 
@@ -128,6 +150,7 @@ export async function createTeamInvite(
       .insert({
         business_id: params.businessId,
         email,
+        name: nextName,
         link_token_hash: tokenHash,
         status: PENDING_TEAM_INVITE_STATUS,
         invited_by: params.invitedBy,
@@ -159,6 +182,12 @@ export async function createTeamInvite(
   return {
     ok: true,
     resent,
+    invite: {
+      id: inviteId,
+      email,
+      name: storedName,
+      status: PENDING_TEAM_INVITE_STATUS,
+    },
     member: {
       id: inviteId,
       email,

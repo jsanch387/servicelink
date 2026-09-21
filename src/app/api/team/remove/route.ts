@@ -1,14 +1,28 @@
+/**
+ * POST /api/team/remove
+ *
+ * Owner revokes a pending invite or removes an active member. Same behavior
+ * as web. Auth: Bearer (mobile) or cookies (dashboard).
+ */
+
 import { removeTeamMember } from '@/features/team/server/removeTeamMember';
 import { requireOwnedBusiness } from '@/features/team/server/requireOwnedBusiness';
 import { TEAM_MEMBER_UI_SOURCES } from '@/features/team/types/teamMemberUi';
+import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const owned = await requireOwnedBusiness(supabase);
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const owned = await requireOwnedBusiness(auth.supabase);
     if (!owned.ok) {
       return NextResponse.json(
         { success: false, error: owned.error },

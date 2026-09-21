@@ -4,7 +4,7 @@ export const BOOKING_POLICY_REQUIRED_ERROR =
   'Add your customer policy or turn it off.';
 
 export const PUBLIC_BOOKING_POLICY_REQUIRED_ERROR =
-  'Agree to the booking policy to continue.';
+  'You must accept to continue.';
 
 export interface BookingPolicyUiState {
   enabled: boolean;

@@ -1,3 +1,11 @@
+/**
+ * PATCH /api/availability/bookings/:bookingId/assignee
+ *
+ * Owner or active member sets `bookings.assigned_user_id` via the service
+ * role. Auth: Bearer (mobile) or cookies (web). Email uses
+ * `notifyAssigneeForJobAssigned` (skip unassign / self-assign / no-change).
+ */
+
 import { notifyAssigneeForJobAssigned } from '@/features/team/server/notifyAssigneeForJobAssigned';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { updateBookingAssignee } from '@/features/team/server/updateBookingAssignee';
@@ -83,7 +91,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      assignedUserId: result.assignedUserId,
+      data: { assignedUserId: result.assignedUserId },
     });
   } catch (error) {
     console.error(

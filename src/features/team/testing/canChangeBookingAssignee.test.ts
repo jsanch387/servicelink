@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { canChangeBookingAssignee } from '../utils/canChangeBookingAssignee';
 
 describe('canChangeBookingAssignee', () => {
-  it('allows confirmed and cancelled', () => {
+  it('allows confirmed', () => {
     expect(canChangeBookingAssignee('confirmed')).toBe(true);
-    expect(canChangeBookingAssignee('cancelled')).toBe(true);
   });
 
-  it('locks completed', () => {
+  it('locks completed and cancelled', () => {
     expect(canChangeBookingAssignee('completed')).toBe(false);
+    expect(canChangeBookingAssignee('cancelled')).toBe(false);
   });
 });

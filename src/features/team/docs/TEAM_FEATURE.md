@@ -2,9 +2,7 @@
 
 How Team works in ServiceLink today. Same product on web and mobile: one shop, one owner, people they hire to run jobs.
 
-This file is feature documentation for this repo and for the mobile app repo. It explains the feature. It is not a build prompt.
-
-Related in this repo: [`V1_JOB_RUN.md`](./V1_JOB_RUN.md) (job-run decisions), [`DATABASE.md`](./DATABASE.md) (tables).
+This file is the Team product spec for this repo. Schema: [`DATABASE.md`](./DATABASE.md). APIs: [`docs/contracts/`](../../../docs/contracts/).
 
 ---
 
@@ -20,15 +18,15 @@ Team is not a second billing plan, not a manager role picker, and not per-person
 
 ## Two kinds of people
 
-| | Owner | Teammate (member) |
-| --- | --- | --- |
-| Who | Created the shop (`business_profiles.profile_id`) | Added by the owner (`business_members`) |
-| In `business_members`? | Never | Yes |
-| Shop they open | Their own | The owner’s |
-| Can invite / remove | Yes | No |
-| Can run jobs | Yes | Yes |
-| Can edit / cancel / reschedule / create appointments | Yes | No |
-| Can open Settings, Payments, Team, Quotes, Reviews, Customers | Yes | No |
+|                                                               | Owner                                             | Teammate (member)                       |
+| ------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------- |
+| Who                                                           | Created the shop (`business_profiles.profile_id`) | Added by the owner (`business_members`) |
+| In `business_members`?                                        | Never                                             | Yes                                     |
+| Shop they open                                                | Their own                                         | The owner’s                             |
+| Can invite / remove                                           | Yes                                               | No                                      |
+| Can run jobs                                                  | Yes                                               | Yes                                     |
+| Can edit / cancel / reschedule / create appointments          | Yes                                               | No                                      |
+| Can open Settings, Payments, Team, Quotes, Reviews, Customers | Yes                                               | No                                      |
 
 v1 has one hired role: **member**. A `manager` role exists in the permission map but is not used in the product yet.
 
@@ -81,13 +79,13 @@ Full dashboard. Sidebar includes Dashboard, Bookings, Team, Reviews, Quotes, Cus
 
 Only what they need to work:
 
-| Surface | Member |
-| --- | --- |
-| Home / Dashboard | Shop name + **Upcoming appointments**. No share-link, revenue, upgrade, or owner quick actions. |
-| Bookings | Full shop board (list + calendar). Every job, not only theirs. |
-| Assigned to me / View all | Filter only. Does not change permissions. “Mine” = `assigned_user_id` is the signed-in user (including when the owner filters to themselves). |
-| Job sheet | Customer / address / time on the **appointment**. Run + collect pay. |
-| Team, Settings, Payments, Quotes, Reviews, Customers, Availability, Marketing, Booking link, Services | Hidden. APIs return **403**. |
+| Surface                                                                                               | Member                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home / Dashboard                                                                                      | Shop name + **Upcoming appointments**. No share-link, revenue, upgrade, or owner quick actions.                                               |
+| Bookings                                                                                              | Full shop board (list + calendar). Every job, not only theirs.                                                                                |
+| Assigned to me / View all                                                                             | Filter only. Does not change permissions. “Mine” = `assigned_user_id` is the signed-in user (including when the owner filters to themselves). |
+| Job sheet                                                                                             | Customer / address / time on the **appointment**. Run + collect pay.                                                                          |
+| Team, Settings, Payments, Quotes, Reviews, Customers, Availability, Marketing, Booking link, Services | Hidden. APIs return **403**.                                                                                                                  |
 
 Assignee UI (dropdown / name on the card) shows only when the shop has at least one hire (or a former hire, so past jobs can still show a name). A solo shop hides it.
 
@@ -99,23 +97,23 @@ Display names are not a separate profile field yet. We show **email**. Owner is 
 
 Do not check `role === 'member'` in product code. Check a capability.
 
-| Permission | Owner | Member | What it means |
-| --- | --- | --- | --- |
-| `dashboard.read` | yes | yes | Open the shop home |
-| `bookings.read` | yes | yes | See the board and job details |
-| `bookings.run` | yes | yes | On the way, started, finished, complete, collect pay, change assignee |
-| `bookings.write` | yes | **no** | Create, edit, cancel, delete, reschedule, accept booking requests |
-| `team.manage` | yes | no | Invite and remove |
-| `customers.read` / `write` | yes | no | Customers page |
-| `quotes.read` / `write` | yes | no | Quotes |
-| `reviews.read` / `write` | yes | no | Reviews |
-| `profile.write` | yes | no | Booking link / shop profile |
-| `services.write` | yes | no | Services catalog |
-| `availability.write` | yes | no | Hours and time off |
-| `marketing.write` | yes | no | Marketing |
-| `billing.manage` | yes | no | Subscriptions |
-| `payments.manage` | yes | no | Revenue, Stripe settings, walk-up charges |
-| `account.delete` | yes | no | Delete the account |
+| Permission                 | Owner | Member | What it means                                                         |
+| -------------------------- | ----- | ------ | --------------------------------------------------------------------- |
+| `dashboard.read`           | yes   | yes    | Open the shop home                                                    |
+| `bookings.read`            | yes   | yes    | See the board and job details                                         |
+| `bookings.run`             | yes   | yes    | On the way, started, finished, complete, collect pay, change assignee |
+| `bookings.write`           | yes   | **no** | Create, edit, cancel, delete, reschedule, accept booking requests     |
+| `team.manage`              | yes   | no     | Invite and remove                                                     |
+| `customers.read` / `write` | yes   | no     | Customers page                                                        |
+| `quotes.read` / `write`    | yes   | no     | Quotes                                                                |
+| `reviews.read` / `write`   | yes   | no     | Reviews                                                               |
+| `profile.write`            | yes   | no     | Booking link / shop profile                                           |
+| `services.write`           | yes   | no     | Services catalog                                                      |
+| `availability.write`       | yes   | no     | Hours and time off                                                    |
+| `marketing.write`          | yes   | no     | Marketing                                                             |
+| `billing.manage`           | yes   | no     | Subscriptions                                                         |
+| `payments.manage`          | yes   | no     | Revenue, Stripe settings, walk-up charges                             |
+| `account.delete`           | yes   | no     | Delete the account                                                    |
 
 `bookings.run` is **not** “only if assigned to me.” It is shop-wide. Do **not** grant members `bookings.write` to unlock the job sheet — that also unlocks cancel / edit / reschedule.
 
@@ -166,11 +164,11 @@ A team shop can have two jobs at the same time.
 
 ## Emails
 
-| When | Who gets it | Notes |
-| --- | --- | --- |
-| Owner invites (or resends) | Invite email | Join link. 14-day expiry. |
-| Someone is assigned a job | That assignee | Only if the next person is set, different from before, and **not** the person who assigned it (no email for self-assign or unassign). CTA is Bookings. |
-| Member is removed | None | They are signed out. |
+| When                       | Who gets it   | Notes                                                                                                                                                  |
+| -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Owner invites (or resends) | Invite email  | Join link. 14-day expiry.                                                                                                                              |
+| Someone is assigned a job  | That assignee | Only if the next person is set, different from before, and **not** the person who assigned it (no email for self-assign or unassign). CTA is Bookings. |
+| Member is removed          | None          | They are signed out.                                                                                                                                   |
 
 Members do not get a push when a new booking comes in. They open Bookings.
 
@@ -213,16 +211,16 @@ SQL lives in [`migrations/`](./migrations/README.md).
 
 Auth: web cookies **or** `Authorization: Bearer <Supabase access_token>`.
 
-| Method | Path | Who | What |
-| --- | --- | --- | --- |
-| GET | `/api/team/members` | Owner (`team.manage`) | Active members + pending invites |
-| POST | `/api/team/invites` | Owner (`team.manage`) | Send or resend invite. Bearer or cookie. `{ ok: true }` / `{ ok: true, resent: true }` |
-| POST | `/api/team/invites/accept` | Signed-in invitee | Accept token, join or rejoin |
-| POST | `/api/team/remove` | Owner | Revoke pending invite **or** remove an active member |
-| GET | `/api/availability/bookings` | `bookings.read` | List / calendar. `assignedToMe=true` filters to the signed-in user |
-| GET | `/api/availability/bookings/assignees` | `bookings.read` | Owner + active members + former labels |
-| PATCH | `/api/availability/bookings/:id/assignee` | Shop (`bookings.read` + run) | Body `{ assignedUserId: string \| null }` |
-| POST | `/api/availability/bookings/:id/actions` | `bookings.run` | `on_the_way`, `job_started`, work finished, `job_completed` |
+| Method | Path                                      | Who                    | What                                                                                                     |
+| ------ | ----------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/team/members`                       | Owner (`team.manage`)  | Active members + pending invites                                                                         |
+| POST   | `/api/team/invites`                       | Owner (`team.manage`)  | Send or resend. Bearer or cookie. Body `{ email, name? }`. `{ ok, resent, invite }`                      |
+| POST   | `/api/team/invites/accept`                | Signed-in invitee      | Accept token, join or rejoin                                                                             |
+| POST   | `/api/team/remove`                        | Owner                  | Revoke pending invite or remove an active member. Bearer or cookie. `{ success: true }`                  |
+| GET    | `/api/availability/bookings`              | `bookings.read`        | List / calendar. `assignedToMe=true` filters to the signed-in user                                       |
+| GET    | `/api/availability/bookings/assignees`    | `bookings.read`        | Owner + active members + former labels                                                                   |
+| PATCH  | `/api/availability/bookings/:id/assignee` | Owner or active member | `{ assignedUserId }`. `{ success, data: { assignedUserId } }`. Email if it changed and is not the actor. |
+| POST   | `/api/availability/bookings/:id/actions`  | `bookings.run`         | `on_the_way`, `job_started`, work finished, `job_completed`                                              |
 
 Owner-only booking writes (edit, cancel, delete, reschedule, create) stay on the existing owner routes and require `bookings.write`.
 

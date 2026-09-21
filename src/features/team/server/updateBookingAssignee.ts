@@ -43,7 +43,7 @@ export async function updateBookingAssignee(
   if (!canChangeBookingAssignee(String(existing.status ?? ''))) {
     return {
       ok: false,
-      error: 'Completed appointments can’t change assignee.',
+      error: 'Completed or cancelled appointments can’t change assignee.',
       status: 409,
     };
   }
