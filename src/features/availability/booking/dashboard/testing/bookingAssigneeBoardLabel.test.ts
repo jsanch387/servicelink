@@ -46,12 +46,12 @@ describe('bookingAssigneeBoardLabel', () => {
     expect(bookingAssigneeBoardLabel('owner-1', [owner])).toBeNull();
   });
 
-  it('shows Unassigned or the teammate name', () => {
+  it('hides the label until someone is assigned', () => {
     const team = [
       owner,
       { userId: 'worker-1', label: 'Alex Rivera', kind: 'member' as const },
     ];
-    expect(bookingAssigneeBoardLabel(null, team)).toBe('Unassigned');
+    expect(bookingAssigneeBoardLabel(null, team)).toBeNull();
     expect(bookingAssigneeBoardLabel('worker-1', team)).toBe('Alex Rivera');
     expect(bookingAssigneeBoardLabel('gone', team)).toBe('Assigned');
   });

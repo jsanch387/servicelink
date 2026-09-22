@@ -96,10 +96,10 @@ export function AvailabilityBookingCard({
             />
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col py-0.5 pr-1 sm:pr-2">
-            <div className="flex min-w-0 items-center justify-between gap-2">
-              <h3 className="min-w-0 flex-1 truncate pt-0.5 text-base font-bold leading-tight text-white sm:text-lg">
-                {booking.customerName}
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden py-0.5 pr-1 sm:pr-2">
+            <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+              <h3 className="min-w-0 flex-1 overflow-hidden pt-0.5 text-base font-bold leading-tight text-white sm:text-lg">
+                <span className="block truncate">{booking.customerName}</span>
               </h3>
               <div className="flex shrink-0 items-center gap-1.5">
                 {assigneeLabel ? (

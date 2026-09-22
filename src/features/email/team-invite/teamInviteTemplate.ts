@@ -60,7 +60,7 @@ export function buildTeamInviteEmailHtml(
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.65; color: #3f3f46;">
                 Accept the invite to get started.
               </p>
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 26px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0;">
                 <tr>
                   <td style="border-radius: 10px; background-color: #0a0a0a;">
                     <a href="${inviteUrl}" style="display: inline-block; padding: 14px 26px; color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none;">
@@ -69,10 +69,6 @@ export function buildTeamInviteEmailHtml(
                   </td>
                 </tr>
               </table>
-              <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #71717a;">
-                Or paste this into your browser:<br>
-                <a href="${inviteUrl}" style="color: #18181b; text-decoration: underline; word-break: break-word;">${inviteUrl}</a>
-              </p>
               <p style="margin: 22px 0 0; font-size: 12px; line-height: 1.6; color: #a1a1aa;">
                 Powered by ServiceLink
               </p>

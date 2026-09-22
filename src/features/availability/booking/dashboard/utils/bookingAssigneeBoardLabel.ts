@@ -9,7 +9,7 @@ export function bookingAssigneeBoardLabel(
 ): string | null {
   if (!shopShowsAssigneeLabels(options)) return null;
   const id = assignedUserId?.trim() ?? '';
-  if (!id) return 'Unassigned';
+  if (!id) return null;
   const option = options.find(item => item.userId === id);
   if (!option) return 'Assigned';
   return formatAssigneeBoardName(option.label, option.kind);
