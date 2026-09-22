@@ -33,6 +33,12 @@ describe('formatAssigneeBoardName', () => {
       'Team member'
     );
   });
+
+  it('keeps the invite name on cards', () => {
+    expect(formatAssigneeBoardName('Alex Rivera', 'member')).toBe(
+      'Alex Rivera'
+    );
+  });
 });
 
 describe('bookingAssigneeBoardLabel', () => {
@@ -40,11 +46,18 @@ describe('bookingAssigneeBoardLabel', () => {
     expect(bookingAssigneeBoardLabel('owner-1', [owner])).toBeNull();
   });
 
-  it('shows Unassigned or the short name', () => {
-    const team = [owner, member];
+  it('shows Unassigned or the teammate name', () => {
+    const team = [
+      owner,
+      { userId: 'worker-1', label: 'Alex Rivera', kind: 'member' as const },
+    ];
     expect(bookingAssigneeBoardLabel(null, team)).toBe('Unassigned');
-    expect(bookingAssigneeBoardLabel('worker-1', team)).toBe('Jose');
+    expect(bookingAssigneeBoardLabel('worker-1', team)).toBe('Alex Rivera');
     expect(bookingAssigneeBoardLabel('gone', team)).toBe('Assigned');
+  });
+
+  it('falls back to the email local part when the invite has no name', () => {
+    expect(bookingAssigneeBoardLabel('worker-1', [owner, member])).toBe('Jose');
   });
 
   it('still names a removed teammate on past jobs', () => {

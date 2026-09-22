@@ -34,6 +34,7 @@ describe('TeamDashboardPage', () => {
       {
         id: 'member-1',
         email: 'jordan@example.com',
+        name: 'Jordan',
         status: 'active',
         source: 'member',
       },
@@ -52,15 +53,30 @@ describe('TeamDashboardPage', () => {
         if (url.includes('/api/team/invites') && method === 'POST') {
           const body = JSON.parse(String(init?.body ?? '{}')) as {
             email?: string;
+            name?: string;
           };
           const member: TeamMemberUi = {
             id: 'invite-1',
             email: (body.email ?? '').trim().toLowerCase(),
+            name: body.name?.trim() || null,
             status: 'invited',
             source: 'invite',
           };
           members.push(member);
           return Response.json({ ok: true }, { status: 201 });
+        }
+
+        if (url.includes('/api/team/members') && method === 'PATCH') {
+          const body = JSON.parse(String(init?.body ?? '{}')) as {
+            id?: string;
+            name?: string;
+          };
+          const nextName = body.name?.trim() || '';
+          const index = members.findIndex(row => row.id === body.id);
+          if (index >= 0) {
+            members[index] = { ...members[index], name: nextName };
+          }
+          return Response.json({ success: true, name: nextName });
         }
 
         if (url.includes('/api/team/remove') && method === 'POST') {
@@ -81,13 +97,17 @@ describe('TeamDashboardPage', () => {
     const user = userEvent.setup();
     render(<TeamDashboardPage />);
 
-    expect(await screen.findByText('jordan@example.com')).toBeTruthy();
+    expect(await screen.findByText('Jordan')).toBeTruthy();
     expect(screen.queryByText('No team members yet')).toBeNull();
 
     await user.click(
       screen.getByRole('button', { name: 'Invite team member' })
     );
     const inviteDialog = screen.getByRole('dialog');
+    await user.type(
+      within(inviteDialog).getByPlaceholderText('Full name'),
+      'Alex Rivera'
+    );
     await user.type(
       within(inviteDialog).getByPlaceholderText('name@email.com'),
       'alex@shop.com'
@@ -96,13 +116,17 @@ describe('TeamDashboardPage', () => {
       within(inviteDialog).getByRole('button', { name: 'Send invite' })
     );
 
-    expect(await screen.findByText('alex@shop.com')).toBeTruthy();
-    expect(screen.getByText('Invited')).toBeTruthy();
+    expect(await screen.findByText('Alex Rivera')).toBeTruthy();
+    expect(screen.getByText('alex@shop.com')).toBeTruthy();
 
+    await user.click(screen.getByRole('button', { name: 'Open Jordan' }));
+    const detail = screen.getByRole('dialog', { name: 'Team member' });
+    expect(within(detail).getByText('jordan@example.com')).toBeTruthy();
+    expect(within(detail).getByText('Active')).toBeTruthy();
     await user.click(
-      screen.getByRole('button', { name: 'Remove jordan@example.com' })
+      within(detail).getByRole('button', { name: 'Remove from team' })
     );
-    const removeDialog = screen.getByRole('dialog');
+    const removeDialog = screen.getByRole('dialog', { name: 'Remove' });
     await user.click(
       within(removeDialog).getByRole('button', { name: 'Remove' })
     );
@@ -111,11 +135,28 @@ describe('TeamDashboardPage', () => {
       expect(screen.queryByText('jordan@example.com')).toBeNull();
     });
 
-    await user.click(
-      screen.getByRole('button', { name: 'Remove alex@shop.com' })
-    );
+    await user.click(screen.getByRole('button', { name: 'Open Alex Rivera' }));
+    await user.click(screen.getByRole('button', { name: 'Remove from team' }));
     await user.click(screen.getByRole('button', { name: 'Remove' }));
 
     expect(await screen.findByText('No team members yet')).toBeTruthy();
+  });
+
+  it('does not treat a failed load as an empty team', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          { success: false, error: 'Could not load team' },
+          { status: 500 }
+        )
+      )
+    );
+
+    render(<TeamDashboardPage />);
+
+    expect(await screen.findByText('Could not load team')).toBeTruthy();
+    expect(screen.queryByText('No team members yet')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 });

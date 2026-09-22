@@ -131,6 +131,7 @@ describe('POST /api/team/invites', () => {
       member: {
         id: 'inv-1',
         email: 'sam@example.com',
+        name: 'Sam Rivera',
         status: 'invited',
         source: 'invite',
       },
@@ -162,6 +163,28 @@ describe('POST /api/team/invites', () => {
         name: 'Sam Rivera',
       })
     );
+  });
+
+  it('returns 400 when name is missing', async () => {
+    getAuthenticatedUserMock.mockResolvedValue({
+      user: { id: 'owner-1', email: 'owner@shop.com' },
+      supabase: {},
+      authMethod: 'bearer',
+    });
+    requireOwnedBusinessMock.mockResolvedValue({
+      ok: true,
+      businessId: 'biz',
+      userId: 'owner-1',
+    });
+
+    const response = await postInvite({ email: 'sam@example.com' });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'Enter their name.',
+    });
+    expect(createTeamInviteMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 when name is blank', async () => {
@@ -212,6 +235,7 @@ describe('POST /api/team/invites', () => {
       member: {
         id: 'inv-1',
         email: 'jose@shop.com',
+        name: 'Samantha',
         status: 'invited',
         source: 'invite',
       },
@@ -252,7 +276,10 @@ describe('POST /api/team/invites', () => {
       status: 500,
     });
 
-    const response = await postInvite();
+    const response = await postInvite({
+      email: 'jose@shop.com',
+      name: 'Jose',
+    });
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({

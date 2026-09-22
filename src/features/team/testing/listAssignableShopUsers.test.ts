@@ -6,9 +6,24 @@ function createAdmin(opts: {
   profileId: string | null;
   members: Array<string | { user_id: string; status: string }>;
   emails: Record<string, string | undefined>;
+  invites?: Array<{
+    email: string;
+    name: string | null;
+    accepted_user_id: string | null;
+  }>;
 }) {
   return {
     from: vi.fn((table: string) => {
+      if (table === 'team_invites') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({
+              data: opts.invites ?? [],
+              error: null,
+            }),
+          }),
+        };
+      }
       if (table === 'business_profiles') {
         return {
           select: vi.fn().mockReturnValue({
@@ -59,6 +74,13 @@ describe('listAssignableShopUsers', () => {
         'owner-1': 'owner@shop.com',
         'member-1': 'alex@shop.com',
       },
+      invites: [
+        {
+          email: 'alex@shop.com',
+          name: 'Alex Rivera',
+          accepted_user_id: 'member-1',
+        },
+      ],
     });
 
     await expect(
@@ -71,7 +93,7 @@ describe('listAssignableShopUsers', () => {
       },
       {
         userId: 'member-1',
-        label: 'alex@shop.com',
+        label: 'Alex Rivera',
         kind: 'member',
       },
     ]);

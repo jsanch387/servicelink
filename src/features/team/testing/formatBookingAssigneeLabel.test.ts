@@ -4,27 +4,52 @@ import { formatBookingAssigneeLabel } from '../utils/formatBookingAssigneeLabel'
 
 describe('formatBookingAssigneeLabel', () => {
   it('labels the owner with their email', () => {
-    expect(formatBookingAssigneeLabel('owner@shop.com', 'owner')).toBe(
-      'owner@shop.com (owner)'
-    );
+    expect(
+      formatBookingAssigneeLabel({
+        email: 'owner@shop.com',
+        kind: 'owner',
+      })
+    ).toBe('owner@shop.com (owner)');
   });
 
   it('falls back to Owner when the owner has no email', () => {
-    expect(formatBookingAssigneeLabel('', 'owner')).toBe('Owner');
-    expect(formatBookingAssigneeLabel(null, 'owner')).toBe('Owner');
+    expect(formatBookingAssigneeLabel({ email: '', kind: 'owner' })).toBe(
+      'Owner'
+    );
+    expect(formatBookingAssigneeLabel({ email: null, kind: 'owner' })).toBe(
+      'Owner'
+    );
   });
 
-  it('uses the teammate email, or Team member', () => {
-    expect(formatBookingAssigneeLabel('alex@shop.com', 'member')).toBe(
-      'alex@shop.com'
+  it('prefers the teammate name over email', () => {
+    expect(
+      formatBookingAssigneeLabel({
+        name: 'Alex Rivera',
+        email: 'alex@shop.com',
+        kind: 'member',
+      })
+    ).toBe('Alex Rivera');
+    expect(
+      formatBookingAssigneeLabel({ email: 'alex@shop.com', kind: 'member' })
+    ).toBe('alex@shop.com');
+    expect(formatBookingAssigneeLabel({ email: '  ', kind: 'member' })).toBe(
+      'Team member'
     );
-    expect(formatBookingAssigneeLabel('  ', 'member')).toBe('Team member');
   });
 
-  it('keeps a former teammate email for history', () => {
-    expect(formatBookingAssigneeLabel('jose@shop.com', 'former')).toBe(
-      'jose@shop.com'
+  it('keeps a former teammate name for history', () => {
+    expect(
+      formatBookingAssigneeLabel({
+        name: 'Jose',
+        email: 'jose@shop.com',
+        kind: 'former',
+      })
+    ).toBe('Jose');
+    expect(
+      formatBookingAssigneeLabel({ email: 'jose@shop.com', kind: 'former' })
+    ).toBe('jose@shop.com');
+    expect(formatBookingAssigneeLabel({ email: '', kind: 'former' })).toBe(
+      'Former teammate'
     );
-    expect(formatBookingAssigneeLabel('', 'former')).toBe('Former teammate');
   });
 });

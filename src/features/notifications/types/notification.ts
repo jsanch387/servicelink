@@ -11,6 +11,7 @@ export type NotificationType =
   | 'booking_request'
   | 'availability_booking'
   | 'booking_reminder'
+  | 'job_assigned'
   | 'quote_request'
   | 'quote_request_followup'
   | 'review_submitted'

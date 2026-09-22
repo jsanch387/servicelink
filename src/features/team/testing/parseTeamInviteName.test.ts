@@ -3,16 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { parseTeamInviteName } from '../utils/parseTeamInviteName';
 
 describe('parseTeamInviteName', () => {
-  it('allows omitting name', () => {
+  it('requires a name', () => {
     expect(parseTeamInviteName(undefined)).toEqual({
-      ok: true,
-      name: null,
-      provided: false,
+      ok: false,
+      error: 'Enter their name.',
+      status: 400,
     });
     expect(parseTeamInviteName(null)).toEqual({
-      ok: true,
-      name: null,
-      provided: false,
+      ok: false,
+      error: 'Enter their name.',
+      status: 400,
     });
   });
 
@@ -20,7 +20,6 @@ describe('parseTeamInviteName', () => {
     expect(parseTeamInviteName('  Sam Rivera  ')).toEqual({
       ok: true,
       name: 'Sam Rivera',
-      provided: true,
     });
   });
 

@@ -81,6 +81,9 @@ export function notificationMinimalDisplayTitle(
     return 'Appointment updated';
   }
   if (blob.includes('reminder')) return 'Upcoming appointment';
+  if (blob.includes('job_assigned')) {
+    return 'Job assigned';
+  }
   if (blob.includes('booking') || blob.includes('appointment')) {
     return 'New appointment';
   }

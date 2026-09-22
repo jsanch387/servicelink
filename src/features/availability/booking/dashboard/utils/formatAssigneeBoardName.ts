@@ -4,7 +4,7 @@ function capitalizeToken(token: string): string {
   return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
 }
 
-/** Short name for list/calendar cards. Picker still uses the full email label. */
+/** Card/calendar pill. Teammate names stay as typed; email is only a fallback. */
 export function formatAssigneeBoardName(
   label: string,
   kind: BookingAssigneeKind
@@ -16,8 +16,7 @@ export function formatAssigneeBoardName(
     if (/^owner$/i.test(cleaned)) return 'Owner';
     if (/^team member$/i.test(cleaned)) return 'Team member';
     if (/^former teammate$/i.test(cleaned)) return 'Former teammate';
-    const token = cleaned.split(/\s+/).find(Boolean) ?? cleaned;
-    return capitalizeToken(token);
+    return cleaned;
   }
 
   const local = cleaned.split('@')[0]?.trim() ?? '';

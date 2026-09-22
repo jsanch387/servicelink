@@ -155,11 +155,23 @@ describe('BookingsCalendar', () => {
     stubMatchMedia(defaultMatchMedia);
   });
 
+  it('opens on the list', () => {
+    render(<BookingsCalendar bookings={[booking]} onSelectBooking={vi.fn()} />);
+
+    expect(screen.getByText('Sam Patel')).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Month' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Day' })).toBeNull();
+  });
+
   it('opens a real booking from the day grid', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(
-      <BookingsCalendar bookings={[booking]} onSelectBooking={onSelect} />
+      <BookingsCalendar
+        bookings={[booking]}
+        onSelectBooking={onSelect}
+        mode="calendar"
+      />
     );
 
     await user.click(screen.getByRole('tab', { name: 'Day' }));

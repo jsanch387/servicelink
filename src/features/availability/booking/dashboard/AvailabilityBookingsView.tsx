@@ -83,7 +83,7 @@ export function AvailabilityBookingsView({
   const [activeTab, setActiveTab] =
     useState<BookingsStatusFilterValue>('upcoming');
   const [assignedToMe, setAssignedToMe] = useState(false);
-  const [calendarMode, setCalendarMode] = useState<CalendarMode>('calendar');
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>('list');
   const [selectedBooking, setSelectedBooking] =
     useState<AvailabilityBookingDisplay | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);

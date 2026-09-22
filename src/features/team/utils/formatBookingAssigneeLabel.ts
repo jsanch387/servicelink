@@ -1,16 +1,17 @@
 import type { BookingAssigneeKind } from '../types/bookingAssignee';
 
-/** Email on the picker; owner is labeled so they are not mixed up with a hire. */
-export function formatBookingAssigneeLabel(
-  email: string | null | undefined,
-  kind: BookingAssigneeKind
-): string {
-  const trimmed = email?.trim() ?? '';
-  if (kind === 'owner') {
-    return trimmed ? `${trimmed} (owner)` : 'Owner';
+/** Picker label. Teammates prefer the invite name; owner stays email. */
+export function formatBookingAssigneeLabel(p: {
+  name?: string | null;
+  email?: string | null;
+  kind: BookingAssigneeKind;
+}): string {
+  const name = p.name?.trim() ?? '';
+  const email = p.email?.trim() ?? '';
+  if (p.kind === 'owner') {
+    return email ? `${email} (owner)` : 'Owner';
   }
-  if (kind === 'former') {
-    return trimmed || 'Former teammate';
-  }
-  return trimmed || 'Team member';
+  if (name) return name;
+  if (p.kind === 'former') return email || 'Former teammate';
+  return email || 'Team member';
 }

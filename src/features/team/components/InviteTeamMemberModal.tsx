@@ -2,12 +2,14 @@
 
 import { Button, Input, Modal } from '@/components/shared';
 import React, { useEffect, useState } from 'react';
+import { TEAM_INVITE_NAME_MAX_LENGTH } from '../constants/teamInvite';
 
 interface InviteTeamMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   onInvite: (
-    email: string
+    email: string,
+    name: string
   ) =>
     | { ok: true }
     | { ok: false; error: string }
@@ -19,12 +21,14 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
   onClose,
   onInvite,
 }) => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
+      setName('');
       setEmail('');
       setError(null);
       setSending(false);
@@ -36,7 +40,7 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
     setSending(true);
     setError(null);
     try {
-      const result = await onInvite(email);
+      const result = await onInvite(email.trim(), name.trim());
       if (!result.ok) {
         setError(result.error);
         return;
@@ -46,6 +50,10 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
       setSending(false);
     }
   };
+
+  const nameError =
+    error && error.toLowerCase().includes('name') ? error : undefined;
+  const emailError = error && !nameError ? error : undefined;
 
   return (
     <Modal
@@ -65,6 +73,21 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
           Send an invite so they can join your team.
         </p>
         <Input
+          id="team-invite-name"
+          type="text"
+          label="Name"
+          placeholder="Full name"
+          value={name}
+          onChange={value => {
+            setName(value);
+            if (error) setError(null);
+          }}
+          autoComplete="name"
+          required
+          maxLength={TEAM_INVITE_NAME_MAX_LENGTH}
+          error={nameError}
+        />
+        <Input
           id="team-invite-email"
           type="email"
           label="Email"
@@ -77,7 +100,7 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
           autoComplete="email"
           inputMode="email"
           required
-          error={error ?? undefined}
+          error={emailError}
         />
         <div className="mt-auto pt-2 sm:mt-0 sm:pt-0">
           <Button

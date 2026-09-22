@@ -36,7 +36,7 @@ A person can own a shop **or** be an active member of one shop. Not both. Accept
 
 ## How someone joins
 
-1. **Owner invites.** On web: Dashboard → Team. They enter an email. The owner cannot invite themselves. They cannot invite an email that is already an **active** member.
+1. **Owner invites.** On web: Dashboard → Team. They enter a **name** and email. The owner cannot invite themselves. They cannot invite an email that is already an **active** member.
 2. **Email goes out.** Subject is an invite to join that shop. The link is `/team/invite/<token>`. The raw token is never stored; we store a SHA-256 hash. The invite expires in **14 days**.
 3. **Invitee opens the link (web).** If they are signed out, they create an account or sign in **with that same email** (password, Google, or Apple). If they are already signed in as that email, accept runs automatically.
 4. **Accept.** `POST /api/team/invites/accept` with `{ token }`. Email on the login must match the invite. Then:
@@ -89,7 +89,7 @@ Only what they need to work:
 
 Assignee UI (dropdown / name on the card) shows only when the shop has at least one hire (or a former hire, so past jobs can still show a name). A solo shop hides it.
 
-Display names are not a separate profile field yet. We show **email**. Owner is labeled `email (owner)`. Never a blank chip.
+Assignee labels use the **invite name** for teammates. Owner is labeled `email (owner)`. Older rows without a name still show email. Never a blank chip.
 
 ---
 
@@ -162,15 +162,15 @@ A team shop can have two jobs at the same time.
 
 ---
 
-## Emails
+## Emails and notifications
 
 | When                       | Who gets it   | Notes                                                                                                                                                  |
 | -------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Owner invites (or resends) | Invite email  | Join link. 14-day expiry.                                                                                                                              |
-| Someone is assigned a job  | That assignee | Only if the next person is set, different from before, and **not** the person who assigned it (no email for self-assign or unassign). CTA is Bookings. |
+| Someone is assigned a job  | That assignee | Email + in-app bell + Expo push (if they have the app). Only if the next person is set, different from before, and **not** the person who assigned it. |
 | Member is removed          | None          | They are signed out.                                                                                                                                   |
 
-Members do not get a push when a new booking comes in. They open Bookings.
+Members do not get a ping when a new booking comes in unassigned. They do get one when a job is assigned to them.
 
 ---
 
@@ -211,16 +211,17 @@ SQL lives in [`migrations/`](./migrations/README.md).
 
 Auth: web cookies **or** `Authorization: Bearer <Supabase access_token>`.
 
-| Method | Path                                      | Who                    | What                                                                                                     |
-| ------ | ----------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/team/members`                       | Owner (`team.manage`)  | Active members + pending invites                                                                         |
-| POST   | `/api/team/invites`                       | Owner (`team.manage`)  | Send or resend. Bearer or cookie. Body `{ email, name? }`. `{ ok, resent, invite }`                      |
-| POST   | `/api/team/invites/accept`                | Signed-in invitee      | Accept token, join or rejoin                                                                             |
-| POST   | `/api/team/remove`                        | Owner                  | Revoke pending invite or remove an active member. Bearer or cookie. `{ success: true }`                  |
-| GET    | `/api/availability/bookings`              | `bookings.read`        | List / calendar. `assignedToMe=true` filters to the signed-in user                                       |
-| GET    | `/api/availability/bookings/assignees`    | `bookings.read`        | Owner + active members + former labels                                                                   |
-| PATCH  | `/api/availability/bookings/:id/assignee` | Owner or active member | `{ assignedUserId }`. `{ success, data: { assignedUserId } }`. Email if it changed and is not the actor. |
-| POST   | `/api/availability/bookings/:id/actions`  | `bookings.run`         | `on_the_way`, `job_started`, work finished, `job_completed`                                              |
+| Method | Path                                      | Who                    | What                                                                                                                    |
+| ------ | ----------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/team/members`                       | Owner (`team.manage`)  | Active members + pending invites                                                                                        |
+| PATCH  | `/api/team/members`                       | Owner (`team.manage`)  | `{ id, source, name }`. Updates the shop-facing name on the invite row.                                                 |
+| POST   | `/api/team/invites`                       | Owner (`team.manage`)  | Send or resend. Bearer or cookie. Body `{ email, name }`. `{ ok, resent, invite }`                                      |
+| POST   | `/api/team/invites/accept`                | Signed-in invitee      | Accept token, join or rejoin                                                                                            |
+| POST   | `/api/team/remove`                        | Owner                  | Revoke pending invite or remove an active member. Bearer or cookie. `{ success: true }`                                 |
+| GET    | `/api/availability/bookings`              | `bookings.read`        | List / calendar. `assignedToMe=true` filters to the signed-in user                                                      |
+| GET    | `/api/availability/bookings/assignees`    | `bookings.read`        | Owner + active members + former labels                                                                                  |
+| PATCH  | `/api/availability/bookings/:id/assignee` | Owner or active member | `{ assignedUserId }`. `{ success, data: { assignedUserId } }`. Inbox + push + email if it changed and is not the actor. |
+| POST   | `/api/availability/bookings/:id/actions`  | `bookings.run`         | `on_the_way`, `job_started`, work finished, `job_completed`                                                             |
 
 Owner-only booking writes (edit, cancel, delete, reschedule, create) stay on the existing owner routes and require `bookings.write`.
 
@@ -247,7 +248,6 @@ On the way / Started / Finished and Tap to Pay already exist as owner phone flow
 
 ## Out of this feature
 
-- Display names (email is enough for now)
 - Public customers double-booking a slot (owner can stack; public calendar still blocks)
 - Capacity, per-person calendars, “only the assignee can run it”
 - Auto-claim on On the way

@@ -5,12 +5,12 @@ import { TeamMemberRow } from './TeamMemberRow';
 
 interface TeamMemberListProps {
   members: readonly TeamMemberUi[];
-  onRemove: (member: TeamMemberUi) => void;
+  onSelect: (member: TeamMemberUi) => void;
 }
 
 export const TeamMemberList: React.FC<TeamMemberListProps> = ({
   members,
-  onRemove,
+  onSelect,
 }) => (
   <GlassCard
     padding="none"
@@ -19,7 +19,7 @@ export const TeamMemberList: React.FC<TeamMemberListProps> = ({
   >
     <ul className="divide-y divide-white/10">
       {members.map(member => (
-        <TeamMemberRow key={member.id} member={member} onRemove={onRemove} />
+        <TeamMemberRow key={member.id} member={member} onSelect={onSelect} />
       ))}
     </ul>
   </GlassCard>

@@ -98,6 +98,7 @@ describe('createTeamInvite', () => {
       member: {
         id: 'old-invite',
         email: 'jose@shop.com',
+        name: 'Jose',
         status: 'invited',
         source: 'invite',
       },

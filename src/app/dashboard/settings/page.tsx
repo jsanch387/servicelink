@@ -3,6 +3,7 @@ import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
 import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -29,9 +30,6 @@ export default async function SettingsPage({
   }>;
 }) {
   const params = await searchParams;
-  if (params?.tab === 'team') {
-    redirect(ROUTES.DASHBOARD.TEAM);
-  }
   const checkoutSuccess = params?.checkout === 'success';
   const emailNotice =
     params?.email_notice === 'updated' || params?.email_notice === 'error'
@@ -50,6 +48,13 @@ export default async function SettingsPage({
 
     if (authError || !user) {
       redirect('/login');
+    }
+
+    if (
+      params?.tab === 'team' &&
+      isOwnerEmailAllowedForTeamRollout(user.email)
+    ) {
+      redirect(ROUTES.DASHBOARD.TEAM);
     }
 
     // Get complete onboarding state

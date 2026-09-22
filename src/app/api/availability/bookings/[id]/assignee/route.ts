@@ -2,7 +2,7 @@
  * PATCH /api/availability/bookings/:bookingId/assignee
  *
  * Owner or active member sets `bookings.assigned_user_id` via the service
- * role. Auth: Bearer (mobile) or cookies (web). Email uses
+ * role. Auth: Bearer (mobile) or cookies (web). Inbox, push, and email use
  * `notifyAssigneeForJobAssigned` (skip unassign / self-assign / no-change).
  */
 

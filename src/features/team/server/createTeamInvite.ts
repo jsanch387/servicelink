@@ -66,7 +66,7 @@ export async function createTeamInvite(
     ownerEmail: string | null;
     businessName: string;
     rawEmail: string;
-    name?: string | null;
+    name: string;
     inviteBaseUrl?: string;
   }
 ): Promise<CreateTeamInviteResult> {
@@ -119,14 +119,10 @@ export async function createTeamInvite(
   const reuseId = existingPending?.id ?? existingPrior?.id ?? '';
   let inviteId = reuseId;
   const resent = Boolean(reuseId);
-  const nextName = params.name?.trim() || null;
-  const storedName =
-    nextName ??
-    (typeof existingPending?.name === 'string'
-      ? existingPending.name.trim() || null
-      : typeof existingPrior?.name === 'string'
-        ? existingPrior.name.trim() || null
-        : null);
+  const nextName = params.name.trim();
+  if (!nextName) {
+    return { ok: false, error: 'Enter their name.', status: 400 };
+  }
 
   if (reuseId) {
     const { error: updateError } = await db
@@ -137,7 +133,7 @@ export async function createTeamInvite(
         expires_at: expiresAt,
         accepted_user_id: null,
         invited_by: params.invitedBy,
-        ...(nextName ? { name: nextName } : {}),
+        name: nextName,
       })
       .eq('id', reuseId);
 
@@ -185,12 +181,13 @@ export async function createTeamInvite(
     invite: {
       id: inviteId,
       email,
-      name: storedName,
+      name: nextName,
       status: PENDING_TEAM_INVITE_STATUS,
     },
     member: {
       id: inviteId,
       email,
+      name: nextName,
       status: 'invited',
       source: 'invite',
     },

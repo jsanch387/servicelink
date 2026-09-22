@@ -30,7 +30,7 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | [mobile-booking-work-finished.md](./mobile-booking-work-finished.md)                   | Done / Skip                                                            |
 | [mobile-booking-job-completed.md](./mobile-booking-job-completed.md)                   | Complete sheet                                                         |
 | [mobile-booking-cancel.md](./mobile-booking-cancel.md)                                 | Cancel appointment                                                     |
-| [mobile-booking-assignee.md](./mobile-booking-assignee.md)                             | Set / clear assignee (`PATCH …/assignee`) + job-assigned email         |
+| [mobile-booking-assignee.md](./mobile-booking-assignee.md)                             | Set / clear assignee (`PATCH …/assignee`) + job-assigned notify        |
 | [mobile-booking-tap-to-pay.md](./mobile-booking-tap-to-pay.md)                         | Tap to pay                                                             |
 | [mobile-review-invite-on-complete.md](./mobile-review-invite-on-complete.md)           | Review invite                                                          |
 

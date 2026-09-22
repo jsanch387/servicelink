@@ -24,6 +24,7 @@ const TYPE_ICONS: Record<
   booking_request: CalendarDaysIcon,
   availability_booking: CalendarDaysIcon,
   booking_reminder: ClockIcon,
+  job_assigned: CalendarDaysIcon,
   quote_request: DocumentTextIcon,
   quote_request_followup: DocumentTextIcon,
   review_submitted: StarIcon,

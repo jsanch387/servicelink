@@ -11,6 +11,7 @@ import {
   type DashboardAccessValue,
 } from '../context/DashboardAccessContext';
 import { permissionsForRole } from '@/features/team/constants/teamPermissions';
+import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { useDashboardSidebarCollapsed } from '../hooks/useDashboardSidebarCollapsed';
 import type { DashboardProps } from '../types/dashboard';
 import { DashboardHeader } from './DashboardHeader';
@@ -71,6 +72,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           setOpen={setSidebarOpen}
           hasShopAccess={hasShopAccess}
           showMembershipsNav={showMembershipsNav}
+          showTeamNav={isOwnerEmailAllowedForTeamRollout(accountEmail)}
           collapsed={collapsed}
           onToggleCollapsed={() => setCollapsed(current => !current)}
         />

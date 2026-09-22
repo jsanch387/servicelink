@@ -194,7 +194,7 @@ export const API_ROUTES = {
   /** Set or clear the worker on a booking. */
   availabilityBookingAssignee: (bookingId: string) =>
     `/api/availability/bookings/${encodeURIComponent(bookingId.trim())}/assignee`,
-  /** Owner: list teammates + pending invites. */
+  /** Owner: list teammates + pending invites. PATCH updates the invite name. */
   TEAM_MEMBERS: '/api/team/members',
   /** Owner: send or resend a team invite email. */
   TEAM_INVITES: '/api/team/invites',

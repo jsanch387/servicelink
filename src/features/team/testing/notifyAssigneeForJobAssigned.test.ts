@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sendJobAssignedEmailMock = vi.hoisted(() => vi.fn());
+const sendExpoPushToUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/features/email/job-assigned/sendJobAssignedEmail', () => ({
   sendJobAssignedEmail: sendJobAssignedEmailMock,
@@ -10,15 +11,23 @@ vi.mock('@/features/email/services/resendClient', () => ({
   getAppBaseUrl: () => 'https://myservicelink.app',
 }));
 
+vi.mock('@/features/push/server/sendExpoPushToUser', () => ({
+  sendExpoPushToUser: sendExpoPushToUserMock,
+}));
+
 import { notifyAssigneeForJobAssigned } from '../server/notifyAssigneeForJobAssigned';
 
 function createAdmin(options?: {
   booking?: Record<string, string> | null;
   shop?: { business_name: string } | null;
-  email?: string;
+  email?: string | null;
 }) {
-  return {
+  const insertNotification = vi.fn().mockResolvedValue({ error: null });
+  const admin = {
     from: vi.fn((table: string) => {
+      if (table === 'notifications') {
+        return { insert: insertNotification };
+      }
       const data =
         table === 'bookings'
           ? (options?.booking ?? {
@@ -42,12 +51,19 @@ function createAdmin(options?: {
     auth: {
       admin: {
         getUserById: vi.fn().mockResolvedValue({
-          data: { user: { email: options?.email ?? 'jose@example.com' } },
+          data: {
+            user:
+              options?.email === null
+                ? null
+                : { email: options?.email ?? 'jose@example.com' },
+          },
           error: null,
         }),
       },
     },
+    insertNotification,
   };
+  return admin;
 }
 
 describe('notifyAssigneeForJobAssigned', () => {
@@ -57,6 +73,8 @@ describe('notifyAssigneeForJobAssigned', () => {
       sent: true,
       messageId: 're_1',
     });
+    sendExpoPushToUserMock.mockReset();
+    sendExpoPushToUserMock.mockResolvedValue(undefined);
   });
 
   it('skips self-assign and unassign', async () => {
@@ -80,9 +98,11 @@ describe('notifyAssigneeForJobAssigned', () => {
     });
 
     expect(sendJobAssignedEmailMock).not.toHaveBeenCalled();
+    expect(sendExpoPushToUserMock).not.toHaveBeenCalled();
+    expect(admin.insertNotification).not.toHaveBeenCalled();
   });
 
-  it('emails the teammate when someone else assigns them', async () => {
+  it('emails, inserts inbox, and pushes when someone else assigns them', async () => {
     const admin = createAdmin();
 
     await notifyAssigneeForJobAssigned({
@@ -94,6 +114,24 @@ describe('notifyAssigneeForJobAssigned', () => {
       nextAssignedUserId: 'jose',
     });
 
+    expect(admin.insertNotification).toHaveBeenCalledWith({
+      user_id: 'jose',
+      type: 'job_assigned',
+      reference_type: 'booking',
+      reference_id: 'b1',
+      title: 'Job assigned',
+      body: 'Alex Rivera · Full detail',
+      metadata: {
+        customerName: 'Alex Rivera',
+        serviceName: 'Full detail',
+      },
+    });
+    expect(sendExpoPushToUserMock).toHaveBeenCalledWith(expect.anything(), {
+      userId: 'jose',
+      title: 'Job assigned',
+      body: 'Alex Rivera · Full detail',
+      data: { reference_type: 'booking', reference_id: 'b1' },
+    });
     expect(sendJobAssignedEmailMock).toHaveBeenCalledWith(
       'jose@example.com',
       expect.objectContaining({
@@ -103,5 +141,22 @@ describe('notifyAssigneeForJobAssigned', () => {
         bookingsUrl: 'https://myservicelink.app/dashboard/bookings',
       })
     );
+  });
+
+  it('still notifies inbox and push when the assignee has no email', async () => {
+    const admin = createAdmin({ email: null });
+
+    await notifyAssigneeForJobAssigned({
+      admin: admin as never,
+      businessId: 'biz',
+      bookingId: 'b1',
+      actorUserId: 'owner',
+      previousAssignedUserId: null,
+      nextAssignedUserId: 'jose',
+    });
+
+    expect(admin.insertNotification).toHaveBeenCalled();
+    expect(sendExpoPushToUserMock).toHaveBeenCalled();
+    expect(sendJobAssignedEmailMock).not.toHaveBeenCalled();
   });
 });

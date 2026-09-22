@@ -2,6 +2,7 @@
 
 import { ROUTES } from '@/constants/routes';
 import { AffiliateReferralWidget } from '@/features/affiliates/components/AffiliateReferralWidget';
+import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ProWelcomeModal } from '@/features/pricing';
 import { useRouter } from 'next/navigation';
@@ -38,8 +39,9 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.location.hash !== '#team') return;
+    if (!isOwnerEmailAllowedForTeamRollout(settingsData.accountEmail)) return;
     router.replace(ROUTES.DASHBOARD.TEAM);
-  }, [router]);
+  }, [router, settingsData.accountEmail]);
 
   return (
     <SettingsPageShell>

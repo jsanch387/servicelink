@@ -225,7 +225,7 @@ describe('mapBookingsToCalendarEvents', () => {
     ]);
   });
 
-  it('adds a short assignee name when the shop has teammates', () => {
+  it('adds the teammate name when the shop has teammates', () => {
     const booking = {
       id: 'bk-db-2',
       customerName: 'Sam Patel',
@@ -249,13 +249,13 @@ describe('mapBookingsToCalendarEvents', () => {
         },
         {
           userId: 'worker-1',
-          label: 'jose@shop.com',
+          label: 'Alex Rivera',
           kind: 'member',
         },
       ]
     );
 
-    expect(events[0]?.assigneeLabel).toBe('Jose');
+    expect(events[0]?.assigneeLabel).toBe('Alex Rivera');
   });
 });
 

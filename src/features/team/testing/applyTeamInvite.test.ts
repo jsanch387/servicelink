@@ -6,6 +6,7 @@ import type { TeamMemberUi } from '../types/teamMemberUi';
 const existing: TeamMemberUi = {
   id: 'mock-1',
   email: 'jordan@example.com',
+  name: 'Jordan',
   status: 'active',
   source: 'member',
 };
@@ -28,6 +29,7 @@ describe('applyTeamInvite', () => {
       member: {
         id: 'new-id',
         email: 'alex@shop.com',
+        name: null,
         status: 'invited',
         source: 'invite',
       },

@@ -83,7 +83,7 @@ export function BookingsCalendar({
     () => false
   );
   const userPickedRange = useRef(false);
-  const [internalMode, setInternalMode] = useState<CalendarMode>('calendar');
+  const [internalMode, setInternalMode] = useState<CalendarMode>('list');
   const mode = modeProp ?? internalMode;
   const setMode = onModeChange ?? setInternalMode;
   const [cursor, setCursor] = useState(todayKey);

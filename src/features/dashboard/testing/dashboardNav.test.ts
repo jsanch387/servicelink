@@ -91,12 +91,24 @@ describe('getVisibleDashboardNavItems', () => {
     const names = getVisibleDashboardNavItems({
       hasShopAccess: true,
       showMembershipsNav: false,
+      showTeamNav: true,
       can: ownerCan,
     }).map(item => item.name);
 
     expect(names).toContain('Team');
     expect(names.indexOf('Team')).toBe(names.indexOf('Bookings') + 1);
     expect(names).toContain('Customers');
+  });
+
+  it('hides Team when the rollout flag is off', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: false,
+      showTeamNav: false,
+      can: ownerCan,
+    }).map(item => item.name);
+
+    expect(names).not.toContain('Team');
   });
 });
 

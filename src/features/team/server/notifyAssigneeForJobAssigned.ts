@@ -1,6 +1,11 @@
 import { ROUTES } from '@/constants/routes';
 import { sendJobAssignedEmail } from '@/features/email/job-assigned/sendJobAssignedEmail';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
+import {
+  notificationInboxSubtitleFromCustomer,
+  notificationMinimalDisplayTitle,
+} from '@/features/notifications/utils/notificationMinimalDisplayTitle';
+import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { shouldNotifyJobAssigned } from '../utils/shouldNotifyJobAssigned';
@@ -28,7 +33,18 @@ function formatStartTime(timeStr: string): string {
   return `${h12}${min} ${ampm}`;
 }
 
-/** Best-effort: assignee email after someone else puts them on a job. */
+function jobAssignedInboxBody(
+  customerName: string,
+  serviceName: string
+): string | null {
+  const customer = customerName.trim();
+  const service = serviceName.trim();
+  if (customer && service) return `${customer} · ${service}`;
+  if (customer) return notificationInboxSubtitleFromCustomer(customer);
+  return service || null;
+}
+
+/** Best-effort: inbox + push + email after someone else puts them on a job. */
 export async function notifyAssigneeForJobAssigned(params: {
   admin: SupabaseClient<Database>;
   businessId: string;
@@ -67,6 +83,48 @@ export async function notifyAssigneeForJobAssigned(params: {
       .eq('id', params.businessId)
       .maybeSingle();
 
+    const customerName =
+      typeof booking.customer_name === 'string' ? booking.customer_name : '';
+    const serviceName =
+      typeof booking.service_name === 'string' ? booking.service_name : '';
+    const title = notificationMinimalDisplayTitle(
+      'job_assigned',
+      'booking',
+      'Job assigned'
+    );
+    const bodyText = jobAssignedInboxBody(customerName, serviceName);
+
+    const { error: notifError } = await db.from('notifications').insert({
+      user_id: assignedUserId,
+      type: 'job_assigned',
+      reference_type: 'booking',
+      reference_id: params.bookingId,
+      title,
+      body: bodyText,
+      metadata: {
+        ...(customerName.trim() ? { customerName: customerName.trim() } : {}),
+        ...(serviceName.trim() ? { serviceName: serviceName.trim() } : {}),
+      },
+    });
+
+    if (notifError) {
+      console.warn('[team] job assigned notification insert failed', {
+        bookingId: params.bookingId,
+        assignedUserId,
+        message: notifError.message,
+      });
+    }
+
+    await sendExpoPushToUser(params.admin, {
+      userId: assignedUserId,
+      title,
+      body: bodyText,
+      data: {
+        reference_type: 'booking',
+        reference_id: params.bookingId,
+      },
+    });
+
     const { data: userData } =
       await params.admin.auth.admin.getUserById(assignedUserId);
     const to = userData?.user?.email?.trim() ?? '';
@@ -75,10 +133,8 @@ export async function notifyAssigneeForJobAssigned(params: {
     const result = await sendJobAssignedEmail(to, {
       businessName:
         typeof shop?.business_name === 'string' ? shop.business_name : '',
-      customerName:
-        typeof booking.customer_name === 'string' ? booking.customer_name : '',
-      serviceName:
-        typeof booking.service_name === 'string' ? booking.service_name : '',
+      customerName,
+      serviceName,
       scheduledDateLabel: formatScheduleDate(
         String(booking.scheduled_date ?? '')
       ),
@@ -90,6 +146,6 @@ export async function notifyAssigneeForJobAssigned(params: {
       console.error('[team] job assigned email skipped', result.error);
     }
   } catch (error) {
-    console.error('[team] job assigned email failed', error);
+    console.error('[team] job assigned notify failed', error);
   }
 }

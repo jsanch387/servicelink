@@ -39,9 +39,7 @@ export async function POST(request: Request) {
       name?: unknown;
     } | null;
     const rawEmail = typeof body?.email === 'string' ? body.email : '';
-    const parsedName = parseTeamInviteName(
-      body && 'name' in body ? body.name : undefined
-    );
+    const parsedName = parseTeamInviteName(body?.name);
     if (!parsedName.ok) {
       return errorJson(parsedName.error, parsedName.status, true);
     }

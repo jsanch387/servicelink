@@ -4,7 +4,7 @@ Set or clear who is on a job. Same write + email path as web. Do **not** `UPDATE
 
 **Implementation:** `PATCH /api/availability/bookings/:bookingId/assignee`  
 **Write:** `updateBookingAssignee` (service role)  
-**Email:** `notifyAssigneeForJobAssigned`
+**Notify:** `notifyAssigneeForJobAssigned` (in-app + Expo push + email)
 
 ---
 
@@ -48,6 +48,14 @@ Unassign: `{ "assignedUserId": null }`. If set, the id must be the owner or an *
 
 ---
 
-## Email
+## Notify
 
-Server sends after a successful write, only when `assignedUserId` is set, it changed, and it is not the actor. Self-assign and unassign send nothing.
+Server notifies the **assignee** after a successful write, only when `assignedUserId` is set, it changed, and it is not the actor. Self-assign and unassign send nothing.
+
+| Channel     | What                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------ |
+| In-app bell | `notifications.type` = `job_assigned`, `reference_type` = `booking`, `reference_id` = booking id |
+| Expo push   | Same `data` as other booking pushes. No-op if they have no `user_push_tokens` row                |
+| Email       | Same as before. Skipped if Auth has no email                                                     |
+
+Title: **Job assigned**. Body: `{customer} · {service}`. Tap: booking detail (`booking` + booking id). Web inbox opens Bookings.

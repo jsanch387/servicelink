@@ -35,5 +35,8 @@ describe('notificationHref', () => {
     expect(notificationHref(notification({ type: 'booking_reminder' }))).toBe(
       ROUTES.DASHBOARD.BOOKINGS
     );
+    expect(notificationHref(notification({ type: 'job_assigned' }))).toBe(
+      ROUTES.DASHBOARD.BOOKINGS
+    );
   });
 });

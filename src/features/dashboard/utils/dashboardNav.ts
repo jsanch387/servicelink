@@ -23,6 +23,7 @@ export type DashboardNavItem = {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   requiresOnboarding: boolean;
   requiresMemberships?: boolean;
+  requiresTeamRollout?: boolean;
   requiresAvailability?: boolean;
   requiredPermission?: TeamPermission;
   activePathPrefix?: string;
@@ -74,6 +75,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: UsersIcon,
     requiresOnboarding: true,
     requiredPermission: 'team.manage',
+    requiresTeamRollout: true,
     activePathPrefix: '/dashboard/team',
   },
   {
@@ -142,15 +144,18 @@ export function isDashboardNavItemActive(
 export function getVisibleDashboardNavItems({
   hasShopAccess,
   showMembershipsNav,
+  showTeamNav = false,
   can,
 }: {
   hasShopAccess: boolean;
   showMembershipsNav: boolean;
+  showTeamNav?: boolean;
   can: (permission: TeamPermission) => boolean;
 }): DashboardNavItem[] {
   return DASHBOARD_NAV_ITEMS.filter(item => {
     if (item.requiresOnboarding && !hasShopAccess) return false;
     if (item.requiresMemberships && !showMembershipsNav) return false;
+    if (item.requiresTeamRollout && !showTeamNav) return false;
     if (item.requiresAvailability && !AVAILABILITY_FEATURE_ENABLED)
       return false;
     if (item.requiredPermission && !can(item.requiredPermission)) return false;

@@ -8,6 +8,8 @@ export type TeamMemberUiSource = (typeof TEAM_MEMBER_UI_SOURCES)[number];
 export interface TeamMemberUi {
   id: string;
   email: string;
+  /** Owner-typed invite name. Null on older rows. */
+  name: string | null;
   status: TeamMemberUiStatus;
   source: TeamMemberUiSource;
 }

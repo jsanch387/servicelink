@@ -29,6 +29,7 @@ export function applyTeamInvite(
     member: {
       id: crypto.randomUUID(),
       email,
+      name: null,
       status: 'invited',
       source: 'invite',
     },

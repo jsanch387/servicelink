@@ -22,6 +22,7 @@ describe('RemoveTeamMemberModal', () => {
         member={{
           id: 'member-1',
           email: 'jordan@example.com',
+          name: 'Jordan',
           status: 'active',
           source: 'member',
         }}
@@ -29,6 +30,10 @@ describe('RemoveTeamMemberModal', () => {
         onConfirm={onConfirm}
       />
     );
+
+    expect(
+      screen.getByText(/won.?t be able to access this shop/i)
+    ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'Remove' }));
 

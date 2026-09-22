@@ -25,6 +25,7 @@ interface TeamInviteAcceptScreenProps {
 export const TeamInviteAcceptScreen: React.FC<TeamInviteAcceptScreenProps> = ({
   token,
   email,
+  businessName,
 }) => {
   const router = useRouter();
   const {
@@ -35,7 +36,9 @@ export const TeamInviteAcceptScreen: React.FC<TeamInviteAcceptScreenProps> = ({
     signUp,
     signInWithGoogle,
     signInWithApple,
+    signOut,
   } = useAuth();
+  const shop = businessName.trim() || 'this shop';
   const inviteNext = getTeamInvitePath(token);
   const [mode, setMode] = useState<'join' | 'signin'>('join');
   const [password, setPassword] = useState('');
@@ -155,11 +158,42 @@ export const TeamInviteAcceptScreen: React.FC<TeamInviteAcceptScreenProps> = ({
     return <TeamInviteJoiningState />;
   }
 
+  if (isAuthenticated && error) {
+    return (
+      <AuthScreenLayout
+        title="Could not join"
+        subtitle={`This invite is for ${shop}.`}
+      >
+        <AuthFormCard>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              fullWidth
+              loading={isLoading}
+              disabled={isLoading}
+              onClick={() => {
+                void signOut().then(() => setError(''));
+              }}
+            >
+              Log out and continue
+            </Button>
+          </div>
+        </AuthFormCard>
+      </AuthScreenLayout>
+    );
+  }
+
   return (
     <AuthScreenLayout
       title={mode === 'join' ? 'Join the team' : 'Sign in to join'}
       subtitle={
-        mode === 'join' ? 'Create a password to join.' : 'Enter your password.'
+        mode === 'join'
+          ? `Create a password to join ${shop}.`
+          : `Enter your password to join ${shop}.`
       }
       footer={
         mode === 'join' ? (

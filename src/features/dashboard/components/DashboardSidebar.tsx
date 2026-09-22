@@ -25,6 +25,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   setOpen,
   hasShopAccess = false,
   showMembershipsNav = false,
+  showTeamNav = false,
   collapsed = false,
   onToggleCollapsed,
 }) => {
@@ -34,6 +35,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const items = getVisibleDashboardNavItems({
     hasShopAccess,
     showMembershipsNav,
+    showTeamNav,
     can: access.can,
   });
   const showSettings = hasShopAccess && access.can('team.manage');
