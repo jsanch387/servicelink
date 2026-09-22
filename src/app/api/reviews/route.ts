@@ -1,13 +1,13 @@
 import type { ReviewsListResponse } from '@/features/reviews/dashboard/api/types';
 import { loadDashboardReviews } from '@/features/reviews/dashboard/server/loadDashboardReviews';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'reviews.read');
 
     if (!resolved.ok) {
       return NextResponse.json(

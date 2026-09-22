@@ -1,23 +1,25 @@
 'use client';
 
+import { ROUTES } from '@/constants/routes';
 import { AffiliateReferralWidget } from '@/features/affiliates/components/AffiliateReferralWidget';
+import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { CompleteBusinessProfile } from '@/features/business-profile/types/businessProfile';
 import { ProWelcomeModal } from '@/features/pricing';
-import React from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useSettingsUrlEffects } from '../hooks/useSettingsUrlEffects';
+import type { SettingsPageData } from '../types/settingsPageData';
 import { SettingsAccountSection } from './SettingsAccountSection';
 import { SettingsBillingSection } from './SettingsBillingSection';
 import { SettingsDangerZone } from './SettingsDangerZone';
+import { SettingsLogoutButton } from './SettingsLogoutButton';
 import { SettingsPageShell } from './SettingsPageShell';
 import { SettingsYourLinkSection } from './SettingsYourLinkSection';
-import { useSettingsUrlEffects } from '../hooks/useSettingsUrlEffects';
-import type { SettingsPageData } from '../types/settingsPageData';
 
 export interface SettingsContentProps {
   businessProfile: CompleteBusinessProfile;
   settingsData: SettingsPageData;
-  /** True when redirected from Stripe with ?checkout=success (show Pro welcome once). */
   checkoutSuccess?: boolean;
-  /** From auth callback after email change confirm (`?email_notice=`). */
   emailNotice?: 'updated' | 'error' | null;
 }
 
@@ -29,15 +31,30 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
 }) => {
   const planId = settingsData.planId ?? 'free';
   const hasSlug = settingsData.slugData?.hasSlug || false;
+  const router = useRouter();
 
   const { showProWelcomeModal, setShowProWelcomeModal } =
     useSettingsUrlEffects(checkoutSuccessProp);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash !== '#team') return;
+    if (!isOwnerEmailAllowedForTeamRollout(settingsData.accountEmail)) return;
+    router.replace(ROUTES.DASHBOARD.TEAM);
+  }, [router, settingsData.accountEmail]);
 
   return (
     <SettingsPageShell>
       <ProWelcomeModal
         isOpen={showProWelcomeModal}
         onClose={() => setShowProWelcomeModal(false)}
+      />
+
+      <SettingsAccountSection
+        accountEmail={settingsData.accountEmail}
+        signedInWithGoogle={settingsData.signedInWithGoogle ?? false}
+        pendingEmail={settingsData.pendingEmail ?? null}
+        emailNotice={emailNotice}
       />
 
       <SettingsYourLinkSection
@@ -64,12 +81,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
 
       <AffiliateReferralWidget />
 
-      <SettingsAccountSection
-        accountEmail={settingsData.accountEmail}
-        signedInWithGoogle={settingsData.signedInWithGoogle ?? false}
-        pendingEmail={settingsData.pendingEmail ?? null}
-        emailNotice={emailNotice}
-      />
+      <SettingsLogoutButton />
 
       {settingsData.accountEmail ? (
         <SettingsDangerZone

@@ -2,15 +2,17 @@
 
 import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
+import { useSignOutAndRedirect } from '@/features/auth';
 import {
   AdjustmentsHorizontalIcon,
-  ChatBubbleLeftRightIcon,
+  ArrowRightStartOnRectangleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 import React from 'react';
+import { useDashboardAccess } from '../context/DashboardAccessContext';
 import type { DashboardSidebarProps } from '../types/dashboard';
 import {
   getVisibleDashboardNavItems,
@@ -21,19 +23,23 @@ import { DashboardSidebarNavItem } from './DashboardSidebarNavItem';
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   open,
   setOpen,
-  isOnboardingCompleted = false,
+  hasShopAccess = false,
   showMembershipsNav = false,
+  showTeamNav = false,
   collapsed = false,
   onToggleCollapsed,
 }) => {
   const pathname = usePathname();
+  const access = useDashboardAccess();
+  const { signOutAndRedirect, loading: signingOut } = useSignOutAndRedirect();
   const items = getVisibleDashboardNavItems({
-    isOnboardingCompleted,
+    hasShopAccess,
     showMembershipsNav,
+    showTeamNav,
+    can: access.can,
   });
-  const showSettings = isOnboardingCompleted;
+  const showSettings = hasShopAccess && access.can('team.manage');
   const settingsActive = pathname === ROUTES.DASHBOARD.SETTINGS;
-  const helpActive = pathname === ROUTES.DASHBOARD.CONTACT;
 
   return (
     <>
@@ -47,7 +53,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       ) : null}
 
       <aside
-        className={`dashboard-sidebar fixed top-0 left-0 z-50 h-screen border-r border-white/[0.06] bg-[var(--dashboard-bg)] transition-[transform,width] duration-300 ease-out lg:z-auto lg:translate-x-0 ${
+        className={`dashboard-sidebar fixed top-0 left-0 z-50 h-dvh border-r border-white/[0.06] bg-[var(--dashboard-bg)] transition-[transform,width] duration-300 ease-out lg:z-auto lg:translate-x-0 ${
           open
             ? 'translate-x-0 pointer-events-auto'
             : '-translate-x-full pointer-events-none lg:pointer-events-auto'
@@ -62,7 +68,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
         />
 
-        <div className="relative flex h-full flex-col pb-[max(5rem,env(safe-area-inset-bottom))] lg:pb-3">
+        <div className="relative flex h-full flex-col pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-3">
           <div
             className={`relative flex h-16 shrink-0 items-center justify-between px-5 ${
               collapsed ? 'lg:justify-center lg:px-2' : ''
@@ -120,30 +126,31 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </nav>
 
           <div
-            className={`flex shrink-0 flex-col gap-1 border-t border-white/[0.06] px-3 pt-2 ${
+            className={`flex shrink-0 flex-col gap-1 border-t border-white/[0.06] px-3 pt-2 pb-1 ${
               collapsed ? 'lg:px-2' : ''
             }`}
           >
             {showSettings ? (
-              <>
-                <DashboardSidebarNavItem
-                  name="Help"
-                  href={ROUTES.DASHBOARD.CONTACT}
-                  icon={ChatBubbleLeftRightIcon}
-                  isActive={helpActive}
-                  collapsed={collapsed}
-                  onNavigate={() => setOpen(false)}
-                />
-                <DashboardSidebarNavItem
-                  name="Settings"
-                  href={ROUTES.DASHBOARD.SETTINGS}
-                  icon={AdjustmentsHorizontalIcon}
-                  isActive={settingsActive}
-                  collapsed={collapsed}
-                  onNavigate={() => setOpen(false)}
-                />
-              </>
-            ) : null}
+              <DashboardSidebarNavItem
+                name="Settings"
+                href={ROUTES.DASHBOARD.SETTINGS}
+                icon={AdjustmentsHorizontalIcon}
+                isActive={settingsActive}
+                collapsed={collapsed}
+                onNavigate={() => setOpen(false)}
+              />
+            ) : (
+              <DashboardSidebarNavItem
+                name={signingOut ? 'Logging out…' : 'Log out'}
+                icon={ArrowRightStartOnRectangleIcon}
+                collapsed={collapsed}
+                disabled={signingOut}
+                onClick={() => {
+                  setOpen(false);
+                  void signOutAndRedirect();
+                }}
+              />
+            )}
           </div>
         </div>
       </aside>

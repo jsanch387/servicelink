@@ -59,6 +59,7 @@ export interface BookingRow {
   visit_job_index?: number | null;
   visit_job_count?: number | null;
   job_details?: unknown | null;
+  assigned_user_id?: string | null;
 }
 
 /** Postgres time "HH:mm:ss" or "HH:mm" → "2:30 PM" */
@@ -179,5 +180,6 @@ export function mapBookingRowToDisplay(
     },
     notes: row.customer_notes ?? '',
     createdAt: row.created_at,
+    assignedUserId: row.assigned_user_id?.trim() || null,
   };
 }

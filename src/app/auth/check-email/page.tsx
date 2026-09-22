@@ -13,12 +13,22 @@ export const metadata: Metadata = {
 export default async function CheckEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string | string[] }>;
+  searchParams: Promise<{
+    email?: string | string[];
+    next?: string | string[];
+  }>;
 }) {
   const sp = await searchParams;
   const raw = sp.email;
   const email =
     typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : undefined;
+  const rawNext = sp.next;
+  const next =
+    typeof rawNext === 'string'
+      ? rawNext
+      : Array.isArray(rawNext)
+        ? rawNext[0]
+        : undefined;
 
-  return <CheckYourEmailScreen email={email} />;
+  return <CheckYourEmailScreen email={email} next={next} />;
 }

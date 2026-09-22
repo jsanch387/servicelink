@@ -9,7 +9,11 @@ import {
 import { trackAffonsoSignupOnce } from '@/features/marketing-attribution/utils/affonsoSignupTracking';
 import { captureWorkshopAttributionFromUrl } from '@/features/ads-workshop/utils/workshopAttribution';
 import { markPendingSignupAttribution } from '@/features/marketing-attribution';
-import { ROUTES } from '@/constants/routes';
+import {
+  ROUTES,
+  getTeamInvitePath,
+  isTeamInvitePath,
+} from '@/constants/routes';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -30,6 +34,8 @@ const authFooterLinkClass =
 export const SignupForm: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite')?.trim() ?? '';
+  const inviteNext = inviteToken ? getTeamInvitePath(inviteToken) : '';
   const { signUp, signInWithGoogle, signInWithApple, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -50,7 +56,9 @@ export const SignupForm: React.FC = () => {
     setGoogleLoading(true);
     markPendingSignupAttribution();
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(
+        inviteNext ? { next: inviteNext } : undefined
+      );
       if (result?.error) setAuthError(result.error);
     } finally {
       setGoogleLoading(false);
@@ -62,7 +70,9 @@ export const SignupForm: React.FC = () => {
     setAppleLoading(true);
     markPendingSignupAttribution();
     try {
-      const result = await signInWithApple();
+      const result = await signInWithApple(
+        inviteNext ? { next: inviteNext } : undefined
+      );
       if (result?.error) setAuthError(result.error);
     } finally {
       setAppleLoading(false);
@@ -81,7 +91,11 @@ export const SignupForm: React.FC = () => {
     }
 
     try {
-      const result = await signUp(formData.email, formData.password);
+      const result = await signUp(
+        formData.email,
+        formData.password,
+        inviteNext ? { next: inviteNext } : undefined
+      );
 
       if (result.error) {
         setAuthError(result.error);
@@ -91,10 +105,11 @@ export const SignupForm: React.FC = () => {
       if (result.needsEmailVerification) {
         markPendingSignupAttribution();
         markGoogleAdsSignupPending();
-        const q = result.email
-          ? `?email=${encodeURIComponent(result.email)}`
-          : '';
-        router.push(`${ROUTES.AUTH.CHECK_EMAIL}${q}`);
+        const q = new URLSearchParams();
+        if (result.email) q.set('email', result.email);
+        if (inviteNext) q.set('next', inviteNext);
+        const query = q.toString();
+        router.push(`${ROUTES.AUTH.CHECK_EMAIL}${query ? `?${query}` : ''}`);
         return;
       }
 
@@ -104,7 +119,11 @@ export const SignupForm: React.FC = () => {
       router.refresh();
       await new Promise(resolve => setTimeout(resolve, 100));
       completeWorkshopSignupTracking(formData.email);
-      router.push(ROUTES.DASHBOARD.MAIN);
+      router.push(
+        inviteNext && isTeamInvitePath(inviteNext)
+          ? inviteNext
+          : ROUTES.DASHBOARD.MAIN
+      );
     } catch {
       setAuthError('An unexpected error occurred. Please try again.');
     }

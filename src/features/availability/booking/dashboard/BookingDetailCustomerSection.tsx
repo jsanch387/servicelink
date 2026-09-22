@@ -99,10 +99,6 @@ export function BookingDetailCustomerSection({
           <div className="space-y-1.5 border-t border-white/[0.06] pt-3">
             {hasPhone && telHref ? (
               <div className="flex items-center gap-1.5">
-                <PhoneIcon
-                  className="h-4 w-4 shrink-0 text-gray-500"
-                  aria-hidden
-                />
                 <span className="min-w-0 flex-1 text-sm tabular-nums text-gray-200">
                   {phoneFormatted}
                 </span>
@@ -119,10 +115,6 @@ export function BookingDetailCustomerSection({
             ) : null}
             {hasEmail ? (
               <div className="flex items-center gap-1.5">
-                <EnvelopeIcon
-                  className="h-4 w-4 shrink-0 text-gray-500"
-                  aria-hidden
-                />
                 <span className="min-w-0 flex-1 truncate text-sm text-gray-200">
                   {emailTrimmed}
                 </span>

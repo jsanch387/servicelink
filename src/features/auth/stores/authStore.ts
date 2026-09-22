@@ -1,6 +1,6 @@
 'use client';
 
-import { ROUTES } from '@/constants/routes';
+import { ROUTES, isTeamInvitePath } from '@/constants/routes';
 import { appendAttributionToAuthRedirect } from '@/features/marketing-attribution/utils/authRedirectAttribution';
 import { getStoredMarketingUtms } from '@/features/marketing-attribution/utils/utmCapture';
 import { ProfileService } from '@/features/profiles';
@@ -18,7 +18,8 @@ const initialState = {
 
 async function startOAuthSignIn(
   provider: 'google' | 'apple',
-  setLoading: (loading: boolean) => void
+  setLoading: (loading: boolean) => void,
+  next?: string
 ): Promise<{ error?: string }> {
   const label = provider === 'apple' ? 'Apple' : 'Google';
   const supabase = createClient();
@@ -29,8 +30,10 @@ async function startOAuthSignIn(
       process.env.NEXT_PUBLIC_SITE_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '')
     ).replace(/\/$/, '');
+    const nextPath =
+      next && isTeamInvitePath(next) ? next : ROUTES.DASHBOARD.MAIN;
     const redirectTo = appendAttributionToAuthRedirect(
-      `${baseUrl}${ROUTES.AUTH.CALLBACK}`,
+      `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(nextPath)}`,
       getStoredMarketingUtms()
     );
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -176,7 +179,11 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Sign up
-      signUp: async (email: string, password: string) => {
+      signUp: async (
+        email: string,
+        password: string,
+        options?: { next?: string }
+      ) => {
         const supabase = createClient();
         set({ isLoading: true });
 
@@ -185,9 +192,13 @@ export const useAuthStore = create<AuthStore>()(
             process.env.NEXT_PUBLIC_SITE_URL ||
             (typeof window !== 'undefined' ? window.location.origin : '')
           ).replace(/\/$/, '');
+          const nextPath =
+            options?.next && isTeamInvitePath(options.next)
+              ? options.next
+              : ROUTES.AUTH.EMAIL_CONFIRMED;
           const emailRedirectTo = appendAttributionToAuthRedirect(
             `${baseUrl}${ROUTES.AUTH.CALLBACK}?next=${encodeURIComponent(
-              ROUTES.AUTH.EMAIL_CONFIRMED
+              nextPath
             )}`,
             getStoredMarketingUtms()
           );
@@ -262,11 +273,19 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      signInWithGoogle: async () =>
-        startOAuthSignIn('google', loading => set({ isLoading: loading })),
+      signInWithGoogle: async (options?: { next?: string }) =>
+        startOAuthSignIn(
+          'google',
+          loading => set({ isLoading: loading }),
+          options?.next
+        ),
 
-      signInWithApple: async () =>
-        startOAuthSignIn('apple', loading => set({ isLoading: loading })),
+      signInWithApple: async (options?: { next?: string }) =>
+        startOAuthSignIn(
+          'apple',
+          loading => set({ isLoading: loading }),
+          options?.next
+        ),
 
       // Request password reset email (must use prod URL in prod so email link goes to app, not localhost)
       requestPasswordReset: async (email: string) => {

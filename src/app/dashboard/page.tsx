@@ -1,39 +1,20 @@
 import { resolveBusinessSpecialties } from '@/constants/businessSpecialties';
-import { shopAddressNeedsUpdate } from '@/features/business-profile/utils/location';
 import type { PresetKey } from '@/features/availability/components/QuickPresetsSection';
 import { getAvailabilityForBusiness } from '@/features/availability/services/availabilityService';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { DashboardContent } from '@/features/dashboard/components/DashboardContent';
+import {
+  isFreeTierFromProfileRow,
+  loadDashboardShopView,
+} from '@/features/dashboard/server/loadDashboardShopView';
 import { OnboardingFlowV2 } from '@/features/onboarding-v2';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { isProAccess } from '@/features/pricing';
+import { RemovedFromTeamScreen } from '@/features/team';
+import { can } from '@/features/team/constants/teamPermissions';
+import { lookupRemovedMembership } from '@/features/team/server/lookupRemovedMembership';
+import { resolveDashboardContext } from '@/features/team/server/resolveDashboardContext';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
-
-type DashboardProfileRow = {
-  id: string;
-  business_name: string;
-  business_type: string | null;
-  service_area: string | null;
-  business_zip: string | null;
-  bio: string | null;
-  created_at: string;
-  updated_at: string;
-  business_slug: string | null;
-  business_link: string | null;
-  legacy_request_booking_enabled: boolean | null;
-  free_bookings_count: number | null;
-  service_location_mode: string | null;
-  shop_street_address: string | null;
-  shop_city: string | null;
-  shop_state: string | null;
-  services: { count: number }[] | null;
-  images: { count: number }[] | null;
-};
-
-type BusinessAvailabilityRow = {
-  accept_bookings: boolean | null;
-};
 
 // Force dynamic rendering (requires authentication)
 export const dynamic = 'force-dynamic';
@@ -46,7 +27,11 @@ export const dynamic = 'force-dynamic';
  * - in_progress: Show onboarding at current step with existing data
  * - completed: Show dashboard content
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ createShop?: string }>;
+}) {
   // Create server client for SSR
   const supabase = await createSupabaseServerClient();
 
@@ -59,6 +44,8 @@ export default async function DashboardPage() {
   if (userError || !user) {
     redirect('/login');
   }
+
+  const startOwnShop = (await searchParams).createShop === '1';
 
   // Get complete onboarding state
   const stateResult = await getOnboardingState(user.id, supabase);
@@ -118,6 +105,35 @@ export default async function DashboardPage() {
     }
   }
 
+  const access = await resolveDashboardContext(supabase);
+
+  const alreadyStartingShop =
+    startOwnShop || status === 'in_progress' || status === 'completed';
+
+  if (!access.ok && access.status !== 401 && !alreadyStartingShop) {
+    const former = await lookupRemovedMembership(supabase, user.id);
+    if (former) {
+      return <RemovedFromTeamScreen businessName={former.businessName} />;
+    }
+  }
+
+  if (
+    (status === 'not_started' || status === 'in_progress') &&
+    access.ok &&
+    !access.context.isOwner &&
+    can(access.context, 'dashboard.read')
+  ) {
+    const dashboardData = await loadDashboardShopView(
+      supabase,
+      access.context.businessId,
+      { isFreeTier: false }
+    );
+    if (!dashboardData) {
+      redirect('/login');
+    }
+    return <DashboardContent dashboardData={dashboardData} />;
+  }
+
   // Render based on onboarding status (new signups and in-progress see v2 flow)
   switch (status) {
     case 'not_started':
@@ -155,7 +171,10 @@ export default async function DashboardPage() {
       );
 
     case 'completed': {
-      // Fetch profile subscription for Pro CTA (show only to free users)
+      if (!access.ok || !can(access.context, 'dashboard.read')) {
+        redirect('/login');
+      }
+
       const { data: profileRow } = await supabase
         .from('profiles')
         .select(
@@ -163,160 +182,27 @@ export default async function DashboardPage() {
         )
         .eq('user_id', user.id)
         .maybeSingle();
-      const tier = (profileRow as { subscription_tier?: string | null } | null)
-        ?.subscription_tier;
-      const periodEnd = (
-        profileRow as {
-          subscription_current_period_end?: string | null;
-        } | null
-      )?.subscription_current_period_end;
-      const subscriptionStatus = (
-        profileRow as { subscription_status?: string | null } | null
-      )?.subscription_status;
-      const stripeSubscriptionId = (
-        profileRow as { stripe_subscription_id?: string | null } | null
-      )?.stripe_subscription_id;
-      const stripeCustomerId = (
-        profileRow as { stripe_customer_id?: string | null } | null
-      )?.stripe_customer_id;
-      const isFreeTier = !isProAccess(
-        tier,
-        periodEnd,
-        subscriptionStatus,
-        stripeSubscriptionId,
-        stripeCustomerId
+      const isFreeTier = access.context.isOwner
+        ? isFreeTierFromProfileRow(
+            profileRow as {
+              subscription_tier?: string | null;
+              subscription_current_period_end?: string | null;
+              subscription_status?: string | null;
+              stripe_subscription_id?: string | null;
+              stripe_customer_id?: string | null;
+            } | null
+          )
+        : false;
+
+      const dashboardData = await loadDashboardShopView(
+        supabase,
+        access.context.businessId,
+        { isFreeTier }
       );
 
-      // Fetch business profile with counts and legacy booking flag
-      const { data: profileData, error: profileError } = await supabase
-        .from('business_profiles')
-        .select(
-          `
-          id, business_name, business_type, service_area, business_zip, bio, created_at, updated_at,
-          business_slug, business_link, legacy_request_booking_enabled,
-          free_bookings_count,
-          service_location_mode, shop_street_address, shop_city, shop_state,
-          services:business_services(count),
-          images:business_images(count)
-        `
-        )
-        .eq('profile_id', user.id)
-        .single();
-
-      const profile = profileData as DashboardProfileRow | null;
-
-      if (profileError || !profile) {
+      if (!dashboardData) {
         redirect('/login');
       }
-
-      // Calculate analytics
-      const servicesCount =
-        (profile.services as { count: number }[])?.[0]?.count || 0;
-      const imagesCount =
-        (profile.images as { count: number }[])?.[0]?.count || 0;
-      const hasSlug = !!(profile.business_slug && profile.business_link);
-
-      // Calculate profile completeness
-      const checks = [
-        profile.business_name,
-        profile.business_type,
-        profile.service_area,
-        profile.bio && profile.bio.trim().length >= 50,
-        hasSlug,
-        servicesCount > 0,
-        imagesCount > 0,
-      ];
-      const profileCompleteness = Math.round(
-        (checks.filter(Boolean).length / checks.length) * 100
-      );
-
-      // Pending booking requests count (V1 only)
-      const { count: pendingRequestsCount } = await supabase
-        .from('booking_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('business_id', profile.id)
-        .eq('status', 'pending');
-
-      // V2: availability on? and upcoming (confirmed) bookings count
-      const { data: availabilityRow } = await supabase
-        .from('business_availability')
-        .select('accept_bookings')
-        .eq('business_id', profile.id)
-        .maybeSingle();
-      const availability = availabilityRow as BusinessAvailabilityRow | null;
-      const useAvailabilityBooking = availability?.accept_bookings === true;
-      const today = new Date().toISOString().slice(0, 10);
-      let upcomingBookingsCount = 0;
-      if (useAvailabilityBooking) {
-        const { count } = await supabase
-          .from('bookings')
-          .select('*', { count: 'exact', head: true })
-          .eq('business_id', profile.id)
-          .eq('status', 'confirmed')
-          .gte('scheduled_date', today);
-        upcomingBookingsCount = count ?? 0;
-      }
-
-      const legacyRequestBookingEnabled =
-        profile.legacy_request_booking_enabled === true;
-
-      // Primary confirmed service area (collection prompt skips when present)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: primaryServiceArea } = await (supabase as any)
-        .from('business_service_areas')
-        .select('id')
-        .eq('business_profile_id', profile.id)
-        .eq('is_primary', true)
-        .eq('is_active', true)
-        .maybeSingle();
-      const hasConfirmedServiceArea = Boolean(primaryServiceArea?.id);
-
-      // Prepare dashboard data
-      const dashboardData = {
-        businessProfile: {
-          id: profile.id,
-          business_name: profile.business_name,
-          business_type: profile.business_type,
-          service_area: profile.service_area,
-          business_zip: profile.business_zip,
-          bio: profile.bio,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
-        },
-        hasConfirmedServiceArea,
-        needsShopAddressUpdate: shopAddressNeedsUpdate(profile),
-        slugData: hasSlug
-          ? {
-              hasSlug: true,
-              slug: profile.business_slug ?? undefined,
-              fullLink: profile.business_link ?? undefined,
-              createdAt: profile.updated_at,
-            }
-          : { hasSlug: false },
-        analytics: {
-          servicesCount,
-          imagesCount,
-          profileCompleteness,
-        },
-        nextSteps: {
-          needsSlug: !hasSlug,
-          needsServices: servicesCount === 0,
-          needsImages: imagesCount === 0,
-          needsBio: !profile.bio || profile.bio.trim().length < 50,
-          readyToShare:
-            !!hasSlug &&
-            servicesCount > 0 &&
-            imagesCount > 0 &&
-            !!profile.bio &&
-            profile.bio.trim().length >= 50,
-        },
-        pendingRequestsCount: pendingRequestsCount ?? 0,
-        legacyRequestBookingEnabled,
-        useAvailabilityBooking,
-        upcomingBookingsCount,
-        freeBookingsUsed: profile.free_bookings_count ?? 0,
-        isFreeTier,
-      };
 
       return <DashboardContent dashboardData={dashboardData} />;
     }

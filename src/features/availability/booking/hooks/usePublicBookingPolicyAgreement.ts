@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   hasAgreedToPublicBookingPolicy,
   markPublicBookingPolicyAgreed,
-} from '../utils/bookingPolicyAgreementStorage';
+} from '../utils/bookingPolicyAgreementMemory';
 
 export function usePublicBookingPolicyAgreement(args: {
   businessSlug: string;
   policyText?: string | null;
   skip?: boolean;
-  /** Open the modal as soon as we know they have not agreed this visit. */
+  /** Open the modal only if they have not already agreed this page load. */
   gateOnMount?: boolean;
 }) {
   const policyText = args.policyText?.trim() ?? '';
@@ -19,23 +19,32 @@ export function usePublicBookingPolicyAgreement(args: {
   const [modalOpen, setModalOpen] = useState(false);
   const [isAdvancing, setIsAdvancing] = useState(false);
   const pendingActionRef = useRef<(() => void) | null>(null);
+  const hasAgreedRef = useRef(false);
 
   useEffect(() => {
     if (!required) {
+      hasAgreedRef.current = true;
       setHasAgreed(true);
       setModalOpen(false);
       return;
     }
     const already = hasAgreedToPublicBookingPolicy(args.businessSlug);
+    hasAgreedRef.current = already;
     setHasAgreed(already);
     if (args.gateOnMount && !already) {
       setModalOpen(true);
+    } else {
+      setModalOpen(false);
     }
   }, [args.businessSlug, args.gateOnMount, required]);
 
   const runAfterAgreement = useCallback(
     (action: () => void) => {
-      if (!required || hasAgreedToPublicBookingPolicy(args.businessSlug)) {
+      if (
+        !required ||
+        hasAgreedRef.current ||
+        hasAgreedToPublicBookingPolicy(args.businessSlug)
+      ) {
         action();
         return;
       }
@@ -47,6 +56,7 @@ export function usePublicBookingPolicyAgreement(args: {
 
   const agree = useCallback(() => {
     markPublicBookingPolicyAgreed(args.businessSlug);
+    hasAgreedRef.current = true;
     setHasAgreed(true);
     const action = pendingActionRef.current;
     pendingActionRef.current = null;

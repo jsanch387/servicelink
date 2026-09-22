@@ -118,7 +118,7 @@ These are sent automatically when business events occur. `reference_id` is alway
 | `subscriber`      | Membership UUID      | Subscriber **detail** (`customer_memberships.id`)                   |
 | `membership`      | Membership UUID      | **Alias for `subscriber`** — older payloads used this type          |
 
-**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForBookingReminder`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `POST /api/booking-request/submit`, etc.
+**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForBookingReminder`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `notifyAssigneeForJobAssigned`, `POST /api/booking-request/submit`, etc.
 
 `subscriber` / `membership` `reference_id` is always `customer_memberships.id` — the same id as web `/dashboard/subscriptions/subscribers/{id}` and `GET /api/memberships/subscribers/{id}`.
 
@@ -223,18 +223,19 @@ function resolvePushDestination(referenceType: string, referenceId: string) {
 
 ### 1. Transactional (automatic)
 
-Server sends to **one owner** when an event happens. Also inserts a row into **`notifications`** for the in-app bell.
+Server sends to **one user** when an event happens. Also inserts a row into **`notifications`** for the in-app bell.
 
-| Event                           | `reference_type`  | `reference_id`                            |
-| ------------------------------- | ----------------- | ----------------------------------------- |
-| New availability booking        | `booking`         | Booking id                                |
-| Day-before appointment reminder | `screen`          | `bookings`                                |
-| Legacy booking request          | `booking_request` | Booking request id                        |
-| Public quote request            | `quote`           | Quote id                                  |
-| Stale quote request digest      | `screen`          | `quotes`                                  |
-| Review submitted                | `review`          | Review id                                 |
-| New membership subscriber       | `subscriber`      | Membership id (`customer_memberships.id`) |
-| Subscription needs a visit      | `subscriber`      | Membership id                             |
+| Event                           | Recipient | `reference_type`  | `reference_id`                            |
+| ------------------------------- | --------- | ----------------- | ----------------------------------------- |
+| New availability booking        | Owner     | `booking`         | Booking id                                |
+| Day-before appointment reminder | Owner     | `screen`          | `bookings`                                |
+| Legacy booking request          | Owner     | `booking_request` | Booking request id                        |
+| Public quote request            | Owner     | `quote`           | Quote id                                  |
+| Stale quote request digest      | Owner     | `screen`          | `quotes`                                  |
+| Review submitted                | Owner     | `review`          | Review id                                 |
+| New membership subscriber       | Owner     | `subscriber`      | Membership id (`customer_memberships.id`) |
+| Subscription needs a visit      | Owner     | `subscriber`      | Membership id                             |
+| Job assigned                    | Assignee  | `booking`         | Booking id                                |
 
 Day-before reminders are sent by **GET `/api/internal/cron/booking-reminders`** (daily 14:00 UTC). Cron feature: [`src/features/cron/docs/README.md`](../../src/features/cron/docs/README.md). Auth: Vercel `Authorization: Bearer $CRON_SECRET`, or `x-internal-push-secret` for a manual run. Title is **Upcoming appointment**; body is **You have an appointment coming up.** One push per owner. Tap uses table B: `screen` → `bookings` (calendar / bookings list) — no booking UUID.
 

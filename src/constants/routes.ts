@@ -69,6 +69,8 @@ export const ROUTES = {
   // Dashboard routes
   DASHBOARD: {
     MAIN: '/dashboard',
+    /** Former teammate starts owner onboarding. */
+    CREATE_OWN_SHOP: '/dashboard?createShop=1',
     BUSINESS_PROFILE: '/dashboard/business-profile',
     /** Edit booking tab and focus the shop address field. */
     BUSINESS_PROFILE_EDIT_SHOP_ADDRESS:
@@ -109,6 +111,8 @@ export const ROUTES = {
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
+    /** Owner: add and manage teammates. */
+    TEAM: '/dashboard/team',
     PAYMENTS: '/dashboard/payments',
     PAYMENTS_TRANSACTIONS: '/dashboard/payments/transactions',
     PAYMENTS_SETTINGS: '/dashboard/payments/settings',
@@ -183,6 +187,21 @@ export const API_ROUTES = {
    */
   PAYMENTS_REVENUE: '/api/payments/revenue',
   CUSTOMERS: '/api/customers',
+  /** Shop bookings list (owner or active member). */
+  AVAILABILITY_BOOKINGS: '/api/availability/bookings',
+  /** Owner + active teammates who can be assigned to a booking. */
+  AVAILABILITY_BOOKING_ASSIGNEES: '/api/availability/bookings/assignees',
+  /** Set or clear the worker on a booking. */
+  availabilityBookingAssignee: (bookingId: string) =>
+    `/api/availability/bookings/${encodeURIComponent(bookingId.trim())}/assignee`,
+  /** Owner: list teammates + pending invites. PATCH updates the invite name. */
+  TEAM_MEMBERS: '/api/team/members',
+  /** Owner: send or resend a team invite email. */
+  TEAM_INVITES: '/api/team/invites',
+  /** Signed-in invitee: accept a team invite token. */
+  TEAM_INVITE_ACCEPT: '/api/team/invites/accept',
+  /** Owner: revoke a pending invite or remove an active member. */
+  TEAM_REMOVE: '/api/team/remove',
   /** Owner: memberships state (plans). */
   MEMBERSHIPS: '/api/memberships',
   /** Owner: create a membership plan. */
@@ -686,6 +705,18 @@ export function getPublicReviewPath(token: string): string {
   const t = token.trim();
   if (!t) return '/review';
   return `/review/${encodeURIComponent(t)}`;
+}
+
+/** Team invite accept page (raw URL-safe token in path). */
+export function getTeamInvitePath(token: string): string {
+  const t = token.trim();
+  if (!t) return '/team/invite';
+  return `/team/invite/${encodeURIComponent(t)}`;
+}
+
+export function isTeamInvitePath(path: string): boolean {
+  const pathname = path.split('?')[0] ?? '';
+  return /^\/team\/invite\/[A-Za-z0-9_-]+$/.test(pathname);
 }
 
 /** Customer-facing booking invoice / receipt page (opaque public_token in path). */

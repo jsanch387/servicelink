@@ -6,6 +6,7 @@ import { ProFeatureLabel } from '@/features/dashboard';
 import { ArrowLeftIcon, InboxIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useMemo } from 'react';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { useDashboardQuotes } from '../hooks/useDashboardQuotes';
 import { listPendingCustomerQuoteRequestsNewestFirst } from '../utils/pendingCustomerQuoteRequests';
 import { AcceptQuoteRequestsTogglePanel } from './AcceptQuoteRequestsTogglePanel';
@@ -92,6 +93,7 @@ function QuoteRequestsProContent({
   acceptQuoteRequests: boolean;
 }) {
   const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
+  const canWriteQuotes = useDashboardAccess().can('quotes.write');
 
   const requestRows = useMemo(
     () => listPendingCustomerQuoteRequestsNewestFirst(quotes),
@@ -116,9 +118,11 @@ function QuoteRequestsProContent({
           </header>
         </div>
 
-        <AcceptQuoteRequestsTogglePanel
-          initialAcceptQuoteRequests={acceptQuoteRequests}
-        />
+        {canWriteQuotes ? (
+          <AcceptQuoteRequestsTogglePanel
+            initialAcceptQuoteRequests={acceptQuoteRequests}
+          />
+        ) : null}
 
         {loadStatus === 'loading' ? (
           <QuotesDashboardSkeleton />

@@ -31,6 +31,7 @@ const API_MESSAGE_OVERRIDES: Partial<
       'Este negocio no acepta nuevas reservas en este momento; alcanzó el límite de su plan actual.',
     'Online payment is not available for this booking.':
       'El pago en línea no está disponible para esta reserva.',
+    'You must accept to continue.': 'Debes aceptar para continuar.',
     'Invalid payment amount. Please refresh and try again.':
       'El monto del pago no es válido. Actualiza la página e inténtalo de nuevo.',
     'Payment received, but we are still finalizing your booking. Please refresh in a moment.':

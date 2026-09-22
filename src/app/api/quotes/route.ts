@@ -5,8 +5,8 @@ import type {
 import { DASHBOARD_QUOTE_SELECT } from '@/features/quotes/dashboard/server/dashboardQuoteSelect';
 import { loadQuoteOutboundEventsByQuoteIds } from '@/features/quotes/dashboard/server/loadQuoteOutboundEvents';
 import { mapQuoteRowToDashboardQuote } from '@/features/quotes/dashboard/server/mapQuoteRowToDashboardQuote';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
-import { resolveCurrentBusinessId } from '@/server/resolveCurrentBusinessId';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     }
 
     const { supabase } = auth;
-    const resolved = await resolveCurrentBusinessId(supabase);
+    const resolved = await requireBusinessPermission(supabase, 'quotes.read');
 
     if (!resolved.ok) {
       return NextResponse.json(

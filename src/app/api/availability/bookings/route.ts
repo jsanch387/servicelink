@@ -1,56 +1,54 @@
 /**
  * GET /api/availability/bookings
  *
- * Returns V2 (availability) bookings for the authenticated user's business.
- * Used by the dashboard Bookings page when "Accept Bookings" is on.
+ * Returns a page of V2 bookings (newest first) or the bookings in a date
+ * range for the calendar. Used by the dashboard Bookings page.
  */
 
-import { listBookingsForBusiness } from '@/features/availability/services/bookingService';
+import { listBookingsForOwner } from '@/features/availability/booking/server/listBookingsForOwner';
+import { parseListBookingsQuery } from '@/features/availability/booking/server/parseListBookingsQuery';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-async function getAuthAndBusinessId(supabase: SupabaseClient) {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: 'Authentication required', status: 401 as const };
-  }
-
-  const { data: businessProfile, error: businessError } = await supabase
-    .from('business_profiles')
-    .select('id')
-    .eq('profile_id', user.id)
-    .single();
-
-  if (businessError || !businessProfile) {
-    return { error: 'Business profile not found', status: 404 as const };
-  }
-
-  return { businessId: businessProfile.id as string };
-}
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const parsed = parseListBookingsQuery(request.nextUrl.searchParams);
+    if (!parsed.ok) {
+      return NextResponse.json(
+        { success: false, error: parsed.error },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createSupabaseServerClient();
 
-    const authResult = await getAuthAndBusinessId(supabase);
-    if ('status' in authResult) {
+    const authResult = await requireBusinessPermission(
+      supabase,
+      'bookings.read'
+    );
+    if (!authResult.ok) {
       return NextResponse.json(
         { success: false, error: authResult.error },
         { status: authResult.status }
       );
     }
 
-    const bookings = await listBookingsForBusiness(
+    const page = await listBookingsForOwner(
       supabase,
-      authResult.businessId
+      authResult.businessId,
+      parsed.query,
+      parsed.query.assignedToMe
+        ? { assignedUserId: authResult.context.userId }
+        : undefined
     );
 
-    return NextResponse.json({ success: true, data: bookings });
+    return NextResponse.json({
+      success: true,
+      data: page.bookings,
+      hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
+    });
   } catch (err) {
     console.error('[API] GET /api/availability/bookings:', err);
     return NextResponse.json(

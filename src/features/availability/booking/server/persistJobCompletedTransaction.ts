@@ -415,7 +415,7 @@ export async function persistJobCompletedTransaction(
     });
     shortCode = inserted.shortCode;
 
-    const transitioned = await markBookingCompleted(sessionClient, bookingId);
+    const transitioned = await markBookingCompleted(admin, bookingId);
     if (!transitioned) {
       const tokenAfterRace = await loadExistingInvoiceToken(admin, bookingId);
       if (tokenAfterRace) {

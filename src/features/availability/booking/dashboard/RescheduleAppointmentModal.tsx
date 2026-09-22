@@ -12,6 +12,7 @@ import type {
   TimeOffInterval,
 } from '@/features/availability/booking/types';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
+import { ownerRescheduleOverlapHeadsUp } from '@/features/availability/booking/utils/hasExactStartTimeConflict';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/react/24/solid';
 import { useEffect, useMemo, useState } from 'react';
@@ -83,6 +84,15 @@ export function RescheduleAppointmentModal({
   const selectedDateLabel = useMemo(
     () => (selectedDate ? formatSelectedDateLabel(selectedDate) : null),
     [selectedDate]
+  );
+  const overlapHeadsUp = useMemo(
+    () =>
+      ownerRescheduleOverlapHeadsUp({
+        scheduledDate: selectedDate ? localDateKey(selectedDate) : null,
+        startTime: selectedTime,
+        existingBookings: existingBookingsForSlotGrid,
+      }),
+    [existingBookingsForSlotGrid, selectedDate, selectedTime]
   );
 
   const modalTitle = success
@@ -205,7 +215,7 @@ export function RescheduleAppointmentModal({
                   <DateSelector
                     weeklySchedule={weeklySchedule}
                     serviceDurationMinutes={booking.serviceDurationMinutes}
-                    existingBookings={existingBookingsForSlotGrid}
+                    existingBookings={[]}
                     timeOffBlocks={timeOffBlocks}
                     bufferTime={bufferTime}
                     selectedDate={selectedDate}
@@ -258,7 +268,7 @@ export function RescheduleAppointmentModal({
                 selectedDate={selectedDate}
                 serviceDurationMinutes={booking.serviceDurationMinutes}
                 weeklySchedule={weeklySchedule}
-                existingBookings={existingBookingsForSlotGrid}
+                existingBookings={[]}
                 timeOffBlocks={timeOffBlocks}
                 bufferTime={bufferTime}
                 selectedTime={selectedTime}
@@ -271,6 +281,17 @@ export function RescheduleAppointmentModal({
                 selectDateHint="Select a date to see times."
                 noSlotsHint="No available times — try another day."
               />
+
+              {overlapHeadsUp ? (
+                <div
+                  className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3"
+                  role="status"
+                >
+                  <p className="text-sm leading-snug text-zinc-300">
+                    {overlapHeadsUp}
+                  </p>
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-2 gap-2.5">
                 <Button

@@ -175,7 +175,7 @@ export const publicBookingUiEn: PublicBookingUi = {
     policyConsentCheckboxLabel: 'I agree to the booking policy',
     policyReviewLead: 'I agree to the',
     policyLinkLabel: 'booking policy',
-    policyConsentRequired: 'Agree to the booking policy to continue.',
+    policyConsentRequired: 'You must accept to continue.',
     continueToPayment: 'Continue to payment',
     confirmBooking: 'Confirm Booking',
     chooseHowToPay: 'Choose how to pay',

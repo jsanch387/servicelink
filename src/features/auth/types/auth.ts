@@ -14,19 +14,24 @@ export interface AuthState {
   isInitialized: boolean;
 }
 
+export interface AuthNextOptions {
+  next?: string;
+}
+
 export interface AuthActions {
   // Authentication
   signIn: (_email: string, _password: string) => Promise<{ error?: string }>;
   signUp: (
     _email: string,
-    _password: string
+    _password: string,
+    _options?: AuthNextOptions
   ) => Promise<{
     error?: string;
     needsEmailVerification?: boolean;
     email?: string;
   }>;
-  signInWithGoogle: () => Promise<{ error?: string }>;
-  signInWithApple: () => Promise<{ error?: string }>;
+  signInWithGoogle: (_options?: AuthNextOptions) => Promise<{ error?: string }>;
+  signInWithApple: (_options?: AuthNextOptions) => Promise<{ error?: string }>;
   requestPasswordReset: (_email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<{ success?: boolean; error?: string }>;
 

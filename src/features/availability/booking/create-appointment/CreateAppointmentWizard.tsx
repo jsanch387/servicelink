@@ -1,6 +1,5 @@
 'use client';
 
-import { Button, Modal } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import type { PublicBookingServiceLocation } from '@/features/business-profile/utils/publicServiceLocation';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';
@@ -83,10 +82,6 @@ export function CreateAppointmentWizard({
     jobIndex,
     notice,
     goContinue,
-    confirmScheduleDespiteConflict,
-    dismissScheduleConflictModal,
-    setExactStartConflict,
-    showScheduleConflictModal,
     goBack,
     servicePhase,
     servicePath,
@@ -266,7 +261,6 @@ export function CreateAppointmentWizard({
         bufferTime={bufferTime}
         scheduleLoading={scheduleDataLoading}
         onChange={setSchedule}
-        onExactStartConflictChange={setExactStartConflict}
       />
     );
   } else if (isReview) {
@@ -341,41 +335,6 @@ export function CreateAppointmentWizard({
           secondaryDisabled={isSubmitting}
         />
       </div>
-
-      <Modal
-        isOpen={showScheduleConflictModal}
-        onClose={dismissScheduleConflictModal}
-        title="Time already booked"
-        maxWidth="sm"
-        uniformHorizontalPadding16
-        titleClassName="font-bold"
-        contentClassName="!pt-4 sm:!pt-5 !pb-4 sm:!pb-5"
-      >
-        <p className="text-sm leading-relaxed text-gray-300">
-          You already have an appointment at this start time. Continue anyway if
-          you want to double-book it.
-        </p>
-        <div className="mt-5 grid grid-cols-2 gap-2.5">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            fullWidth
-            onClick={dismissScheduleConflictModal}
-          >
-            Change time
-          </Button>
-          <Button
-            type="button"
-            variant="inverse"
-            size="sm"
-            fullWidth
-            onClick={confirmScheduleDespiteConflict}
-          >
-            Continue
-          </Button>
-        </div>
-      </Modal>
     </div>
   );
 }

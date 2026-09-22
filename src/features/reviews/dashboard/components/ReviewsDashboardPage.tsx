@@ -5,6 +5,7 @@ import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { deriveReviewsSummary } from '@/features/reviews/utils/deriveReviewsSummary';
 import { bcp47ForBookingLocale } from '@/libs/i18n/publicBookingUi';
 import React, { useCallback, useMemo, useState } from 'react';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { useDashboardReviews } from '../hooks/useDashboardReviews';
 import type { DashboardReview, ReviewsDashboardFilterId } from '../types';
 import { reviewMatchesFilter } from '../utils/reviewFilters';
@@ -27,6 +28,7 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
   const locale = bcp47ForBookingLocale(bookingFlowLocale);
   const { reviews, loadStatus, loadError, reloadReviews, updateReview } =
     useDashboardReviews();
+  const canWriteReviews = useDashboardAccess().can('reviews.write');
   const [filter, setFilter] = useState<ReviewsDashboardFilterId>('all');
   const [openReplyId, setOpenReplyId] = useState<string | null>(null);
 
@@ -133,9 +135,13 @@ export const ReviewsDashboardPage: React.FC<ReviewsDashboardPageProps> = ({
                     review={review}
                     locale={locale}
                     bookingFlowLocale={bookingFlowLocale}
-                    isReplyOpen={openReplyId === review.id}
-                    onToggleReply={() => handleToggleReply(review.id)}
-                    onSendReply={handleSendReply}
+                    isReplyOpen={canWriteReviews && openReplyId === review.id}
+                    onToggleReply={
+                      canWriteReviews
+                        ? () => handleToggleReply(review.id)
+                        : undefined
+                    }
+                    onSendReply={canWriteReviews ? handleSendReply : undefined}
                   />
                 </li>
               ))}

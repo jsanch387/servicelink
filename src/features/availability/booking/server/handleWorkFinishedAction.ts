@@ -144,8 +144,9 @@ export async function handleWorkFinishedAction(opts: {
 
   const nextHandoff: WorkHandoffStatus = notify ? 'notified' : 'skipped';
 
+  const admin = createSupabaseAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: updated, error: updateError } = await (auth.supabase as any)
+  const { data: updated, error: updateError } = await (admin as any)
     .from('bookings')
     .update({ work_handoff_status: nextHandoff })
     .eq('id', booking.id)
@@ -202,7 +203,6 @@ export async function handleWorkFinishedAction(opts: {
     });
   }
 
-  const admin = createSupabaseAdminClient();
   const sendResult = await sendAndRecordSms({
     admin,
     businessId: business.id,

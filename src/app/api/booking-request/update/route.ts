@@ -8,6 +8,7 @@
  */
 
 import { BookingRequestService } from '@/features/booking-request/services/bookingRequestService';
+import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -22,15 +23,14 @@ export async function PATCH(request: NextRequest) {
     // Get authenticated user
     const supabase = await createSupabaseServerClient();
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
+    const resolved = await requireBusinessPermission(
+      supabase,
+      'bookings.write'
+    );
+    if (!resolved.ok) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: resolved.error },
+        { status: resolved.status }
       );
     }
 
@@ -58,25 +58,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Get the user's business profile
-    const {
-      data: businessProfile,
-      error: businessError,
-    }: {
-      data: { id: string } | null;
-      error: unknown;
-    } = await supabase
-      .from('business_profiles')
-      .select('id')
-      .eq('profile_id', user.id)
-      .single();
-
-    if (businessError || !businessProfile) {
-      return NextResponse.json(
-        { success: false, error: 'Business profile not found' },
-        { status: 404 }
-      );
-    }
+    const businessProfile = { id: resolved.businessId };
 
     // Verify the booking request belongs to this business
     const {

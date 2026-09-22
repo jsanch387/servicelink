@@ -6,16 +6,31 @@ import React, { useEffect } from 'react';
 
 import { IconButton } from '@/components/shared';
 import { SupportWidget } from '@/features/contact/components/SupportWidget';
+import {
+  DashboardAccessProvider,
+  type DashboardAccessValue,
+} from '../context/DashboardAccessContext';
+import { permissionsForRole } from '@/features/team/constants/teamPermissions';
+import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { useDashboardSidebarCollapsed } from '../hooks/useDashboardSidebarCollapsed';
 import type { DashboardProps } from '../types/dashboard';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSidebar } from './DashboardSidebar';
 
+const OWNER_ACCESS: DashboardAccessValue = {
+  isOwner: true,
+  role: 'owner',
+  permissions: permissionsForRole('owner'),
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({
   children,
   isOnboardingCompleted = false,
+  hasShopAccess = false,
+  dashboardAccess = OWNER_ACCESS,
   showMembershipsNav = false,
   accountEmail = null,
+  hideChrome = false,
 }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const { collapsed, setCollapsed } = useDashboardSidebarCollapsed();
@@ -41,42 +56,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [setCollapsed]);
 
+  if (hideChrome) {
+    return (
+      <DashboardAccessProvider value={dashboardAccess}>
+        <div className="min-h-dvh bg-[var(--dashboard-bg)]">{children}</div>
+      </DashboardAccessProvider>
+    );
+  }
+
   return (
-    <div className="dashboard-container min-h-screen flex bg-[var(--dashboard-bg)]">
-      <DashboardSidebar
-        open={sidebarOpen}
-        setOpen={setSidebarOpen}
-        isOnboardingCompleted={isOnboardingCompleted}
-        showMembershipsNav={showMembershipsNav}
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed(current => !current)}
-      />
-      <div className="dashboard-content flex-1 flex flex-col min-w-0">
-        <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
-          {showHeader ? (
-            <DashboardHeader
-              onMenuClick={() => setSidebarOpen(open => !open)}
-              sidebarOpen={sidebarOpen}
-              showNotifications={isOnboardingCompleted}
-            />
-          ) : (
-            <div className="lg:hidden bg-[var(--dashboard-bg)] border-b border-white/[0.06]">
-              <div className="flex h-16 items-center px-4">
-                <IconButton
-                  icon={<Bars3Icon />}
-                  onClick={() => setSidebarOpen(open => !open)}
-                  variant="ghost"
-                  aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-                />
+    <DashboardAccessProvider value={dashboardAccess}>
+      <div className="dashboard-container min-h-screen flex bg-[var(--dashboard-bg)]">
+        <DashboardSidebar
+          open={sidebarOpen}
+          setOpen={setSidebarOpen}
+          hasShopAccess={hasShopAccess}
+          showMembershipsNav={showMembershipsNav}
+          showTeamNav={isOwnerEmailAllowedForTeamRollout(accountEmail)}
+          collapsed={collapsed}
+          onToggleCollapsed={() => setCollapsed(current => !current)}
+        />
+        <div className="dashboard-content flex-1 flex flex-col min-w-0">
+          <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
+            {showHeader ? (
+              <DashboardHeader
+                onMenuClick={() => setSidebarOpen(open => !open)}
+                sidebarOpen={sidebarOpen}
+                showNotifications={hasShopAccess || isOnboardingCompleted}
+              />
+            ) : (
+              <div className="lg:hidden bg-[var(--dashboard-bg)] border-b border-white/[0.06]">
+                <div className="flex h-16 items-center px-4">
+                  <IconButton
+                    icon={<Bars3Icon />}
+                    onClick={() => setSidebarOpen(open => !open)}
+                    variant="ghost"
+                    aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
         </div>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+        {accountEmail ? (
+          <SupportWidget variant="inApp" accountEmail={accountEmail} />
+        ) : null}
       </div>
-      {accountEmail ? (
-        <SupportWidget variant="inApp" accountEmail={accountEmail} />
-      ) : null}
-    </div>
+    </DashboardAccessProvider>
   );
 };

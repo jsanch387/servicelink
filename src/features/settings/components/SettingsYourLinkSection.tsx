@@ -120,7 +120,7 @@ export const SettingsYourLinkSection: React.FC<
         }}
       />
 
-      <div className="mb-2.5 flex items-center justify-between gap-3 min-w-0">
+      <div className="mb-4 flex min-w-0 items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <h2 className="text-base font-semibold text-white">Your link</h2>
           {!linkGenerated && (
@@ -144,7 +144,7 @@ export const SettingsYourLinkSection: React.FC<
         rounded="rounded-2xl"
         blurColor="bg-zinc-500"
         showBlur={true}
-        className="w-full min-w-0 p-4 text-left"
+        className="!h-auto w-full min-w-0 p-4 text-left"
       >
         {!linkGenerated ? (
           <div className="mb-4 min-w-0">
@@ -154,11 +154,15 @@ export const SettingsYourLinkSection: React.FC<
           </div>
         ) : null}
 
-        <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-          {linkGenerated
-            ? 'This is the link you share with customers so they can book you.'
-            : 'Create the link you share with customers so they can book you.'}
-        </p>
+        {linkGenerated ? (
+          <p className="mb-4 text-sm leading-relaxed text-gray-400">
+            This is the link you share with customers so they can book you.
+          </p>
+        ) : (
+          <p className="mb-4 text-sm leading-relaxed text-gray-400">
+            Create the link you share with customers so they can book you.
+          </p>
+        )}
 
         {!linkGenerated ? (
           <div className="space-y-4 min-w-0">
@@ -193,39 +197,33 @@ export const SettingsYourLinkSection: React.FC<
             </Button>
           </div>
         ) : (
-          <div className="min-w-0 space-y-2">
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 min-w-0">
-              <div className="min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <p
-                  className="font-mono text-[13px] leading-snug text-gray-200 whitespace-nowrap pr-1 sm:text-sm"
-                  title={fullLinkForCopy}
-                >
-                  {displayLink}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex min-h-[44px] items-center justify-between gap-4 pt-0.5">
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 py-2 text-sm text-gray-400 transition-colors hover:text-white"
+          <div className="flex min-w-0 flex-col">
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 pl-3.5 pr-2.5 text-left transition-colors hover:border-white/20"
+              aria-label={copied ? 'Copied' : 'Copy link'}
+              title={copied ? 'Copied' : 'Copy link'}
+            >
+              <span
+                className="min-w-0 flex-1 truncate font-mono text-[13px] leading-snug text-gray-200 sm:text-sm"
+                title={fullLinkForCopy}
               >
-                {copied ? (
-                  <CheckIcon className="h-4 w-4 shrink-0 text-emerald-500" />
-                ) : (
-                  <ClipboardDocumentIcon className="h-4 w-4 shrink-0 text-gray-500" />
-                )}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowUpdateLinkModal(true)}
-                className="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center py-2 text-sm text-gray-400 transition-colors hover:text-white"
-              >
-                Edit link
-              </button>
-            </div>
+                {displayLink}
+              </span>
+              {copied ? (
+                <CheckIcon className="h-4 w-4 shrink-0 text-emerald-500" />
+              ) : (
+                <ClipboardDocumentIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowUpdateLinkModal(true)}
+              className="mt-3 ml-auto block text-right cursor-pointer text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
+            >
+              Edit link
+            </button>
           </div>
         )}
       </GlassCard>

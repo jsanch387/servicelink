@@ -41,7 +41,7 @@ export function AuthOrDivider() {
 
 type AuthScreenLayoutProps = {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   footer: React.ReactNode;
   children: React.ReactNode;
 };
@@ -67,9 +67,11 @@ export function AuthScreenLayout({
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-[2rem] sm:leading-tight">
               {title}
             </h1>
-            <p className="mt-2 max-w-sm text-sm text-gray-400 sm:text-lg">
-              {subtitle}
-            </p>
+            {subtitle ? (
+              <p className="mt-2 max-w-sm text-sm text-gray-400 sm:text-lg">
+                {subtitle}
+              </p>
+            ) : null}
           </header>
 
           <div className="flex flex-col gap-5 sm:gap-6">{children}</div>

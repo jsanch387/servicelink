@@ -19,19 +19,20 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 
 ## Bookings
 
-| Doc                                                                                    | What it covers                                                       |
-| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [mobile-owner-create-booking.md](./mobile-owner-create-booking.md)                     | Owner create (legacy single-job)                                     |
-| [mobile-owner-create-booking-multi-job.md](./mobile-owner-create-booking-multi-job.md) | Owner create (`jobs[]`)                                              |
-| [mobile-owner-create-booking-sale.md](./mobile-owner-create-booking-sale.md)           | Sale / discount on create                                            |
-| [public-multi-job-booking.md](./public-multi-job-booking.md)                           | Public multi-job book                                                |
-| [mobile-booking-actions.md](./mobile-booking-actions.md)                               | On the way / start / complete + SMS                                  |
-| [mobile-sms-skip.md](./mobile-sms-skip.md)                                             | When we skip the customer text (`sms.reason`); do not block the flow |
-| [mobile-booking-work-finished.md](./mobile-booking-work-finished.md)                   | Done / Skip                                                          |
-| [mobile-booking-job-completed.md](./mobile-booking-job-completed.md)                   | Complete sheet                                                       |
-| [mobile-booking-cancel.md](./mobile-booking-cancel.md)                                 | Cancel appointment                                                   |
-| [mobile-booking-tap-to-pay.md](./mobile-booking-tap-to-pay.md)                         | Tap to pay                                                           |
-| [mobile-review-invite-on-complete.md](./mobile-review-invite-on-complete.md)           | Review invite                                                        |
+| Doc                                                                                    | What it covers                                                         |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [mobile-owner-create-booking.md](./mobile-owner-create-booking.md)                     | Owner create (legacy single-job). May stack jobs; public still blocks. |
+| [mobile-owner-create-booking-multi-job.md](./mobile-owner-create-booking-multi-job.md) | Owner create (`jobs[]`)                                                |
+| [mobile-owner-create-booking-sale.md](./mobile-owner-create-booking-sale.md)           | Sale / discount on create                                              |
+| [public-multi-job-booking.md](./public-multi-job-booking.md)                           | Public multi-job book                                                  |
+| [mobile-booking-actions.md](./mobile-booking-actions.md)                               | On the way / start / complete + SMS                                    |
+| [mobile-sms-skip.md](./mobile-sms-skip.md)                                             | When we skip the customer text (`sms.reason`); do not block the flow   |
+| [mobile-booking-work-finished.md](./mobile-booking-work-finished.md)                   | Done / Skip                                                            |
+| [mobile-booking-job-completed.md](./mobile-booking-job-completed.md)                   | Complete sheet                                                         |
+| [mobile-booking-cancel.md](./mobile-booking-cancel.md)                                 | Cancel appointment                                                     |
+| [mobile-booking-assignee.md](./mobile-booking-assignee.md)                             | Set / clear assignee (`PATCH …/assignee`) + job-assigned notify        |
+| [mobile-booking-tap-to-pay.md](./mobile-booking-tap-to-pay.md)                         | Tap to pay                                                             |
+| [mobile-review-invite-on-complete.md](./mobile-review-invite-on-complete.md)           | Review invite                                                          |
 
 ## Quotes, maintenance, onboarding, other
 
@@ -49,6 +50,8 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | [mobile-push-notifications.md](./mobile-push-notifications.md)               | Expo push                                                            |
 | [Cron feature](../../src/features/cron/docs/README.md)                       | Scheduled jobs (first: owner appointment reminder)                   |
 | [mobile-contact-form.md](./mobile-contact-form.md)                           | Public contact form                                                  |
+| [mobile-team-invite.md](./mobile-team-invite.md)                             | Owner sends a team invite (`POST /api/team/invites`)                 |
+| [mobile-team-remove.md](./mobile-team-remove.md)                             | Owner removes invite or member (`POST /api/team/remove`)             |
 | [mobile-service-area-collection.md](./mobile-service-area-collection.md)     | Service area                                                         |
 | [service-categories-data.md](./service-categories-data.md)                   | Service categories                                                   |
 

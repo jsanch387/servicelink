@@ -5,6 +5,7 @@ import { DEMO_NEEDS_ATTENTION_CUSTOMER } from '@/features/customer-management/co
 import { useCustomerManagement } from '@/features/customer-management/hooks/useCustomerManagement';
 import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
 import { formatCustomerCurrency } from '@/features/customer-management/utils/customerFormatting';
+import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import { AddCustomerModalBody } from './AddCustomerModalBody';
@@ -26,6 +27,7 @@ interface CustomerManagementPageProps {
 export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
   hasProCheckInAccess,
 }) => {
+  const canWriteCustomers = useDashboardAccess().can('customers.write');
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] =
     React.useState(false);
   const [addCustomerModalBusy, setAddCustomerModalBusy] = React.useState(false);
@@ -90,7 +92,11 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
         {loadStatus === 'ready' && (
           <>
             <CustomerPageHeader
-              onAddCustomer={() => setIsAddCustomerModalOpen(true)}
+              onAddCustomer={
+                canWriteCustomers
+                  ? () => setIsAddCustomerModalOpen(true)
+                  : undefined
+              }
             />
 
             <CustomerStatsRow stats={stats} />
@@ -148,10 +154,16 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
                 onMessageCustomer={mode => {
                   openCustomerSms(selectedCustomer, mode);
                 }}
-                onDeleteCustomer={() =>
-                  openDeleteCustomerModal(selectedCustomer)
+                onDeleteCustomer={
+                  canWriteCustomers
+                    ? () => openDeleteCustomerModal(selectedCustomer)
+                    : undefined
                 }
-                onSaveNote={note => saveCustomerNote(selectedCustomer.id, note)}
+                onSaveNote={
+                  canWriteCustomers
+                    ? note => saveCustomerNote(selectedCustomer.id, note)
+                    : undefined
+                }
                 isSavingNote={isSavingNote}
                 saveNoteError={saveNoteError}
                 onDismissSaveNoteError={() => setSaveNoteError(null)}
@@ -159,59 +171,63 @@ export const CustomerManagementPage: React.FC<CustomerManagementPageProps> = ({
               />
             )}
 
-            <div
-              className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4 backdrop-blur-sm sm:hidden safe-area-pb"
-              style={{
-                paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-              }}
-            >
-              <div className="mx-auto w-full max-w-6xl">
-                <Button
-                  variant="inverse"
-                  fullWidth
-                  onClick={() => setIsAddCustomerModalOpen(true)}
-                  icon={<PlusIcon className="h-4 w-4" aria-hidden />}
-                  aria-label="Add a customer"
+            {canWriteCustomers ? (
+              <>
+                <div
+                  className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[var(--dashboard-bg)]/95 p-4 backdrop-blur-sm sm:hidden safe-area-pb"
+                  style={{
+                    paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                  }}
                 >
-                  Add a customer
-                </Button>
-              </div>
-            </div>
+                  <div className="mx-auto w-full max-w-6xl">
+                    <Button
+                      variant="inverse"
+                      fullWidth
+                      onClick={() => setIsAddCustomerModalOpen(true)}
+                      icon={<PlusIcon className="h-4 w-4" aria-hidden />}
+                      aria-label="Add a customer"
+                    >
+                      Add a customer
+                    </Button>
+                  </div>
+                </div>
 
-            <Modal
-              isOpen={isAddCustomerModalOpen}
-              onClose={() => setIsAddCustomerModalOpen(false)}
-              title="Add customer"
-              maxWidth="sm"
-              preventClose={addCustomerModalBusy}
-            >
-              <AddCustomerModalBody
-                onClose={() => setIsAddCustomerModalOpen(false)}
-                onBusyChange={setAddCustomerModalBusy}
-                createCustomer={createCustomer}
-              />
-            </Modal>
+                <Modal
+                  isOpen={isAddCustomerModalOpen}
+                  onClose={() => setIsAddCustomerModalOpen(false)}
+                  title="Add customer"
+                  maxWidth="sm"
+                  preventClose={addCustomerModalBusy}
+                >
+                  <AddCustomerModalBody
+                    onClose={() => setIsAddCustomerModalOpen(false)}
+                    onBusyChange={setAddCustomerModalBusy}
+                    createCustomer={createCustomer}
+                  />
+                </Modal>
 
-            <Modal
-              isOpen={Boolean(activeDeleteCustomer)}
-              onClose={() => {
-                if (!isDeletingCustomer) {
-                  setActiveDeleteCustomer(null);
-                }
-              }}
-              title="Delete customer"
-              maxWidth="sm"
-            >
-              {activeDeleteCustomer && (
-                <DeleteCustomerModalBody
-                  customer={activeDeleteCustomer}
-                  isDeleting={isDeletingCustomer}
-                  error={deleteCustomerError}
-                  onConfirm={() => void confirmDeleteCustomer()}
-                  onClose={() => setActiveDeleteCustomer(null)}
-                />
-              )}
-            </Modal>
+                <Modal
+                  isOpen={Boolean(activeDeleteCustomer)}
+                  onClose={() => {
+                    if (!isDeletingCustomer) {
+                      setActiveDeleteCustomer(null);
+                    }
+                  }}
+                  title="Delete customer"
+                  maxWidth="sm"
+                >
+                  {activeDeleteCustomer && (
+                    <DeleteCustomerModalBody
+                      customer={activeDeleteCustomer}
+                      isDeleting={isDeletingCustomer}
+                      error={deleteCustomerError}
+                      onConfirm={() => void confirmDeleteCustomer()}
+                      onClose={() => setActiveDeleteCustomer(null)}
+                    />
+                  )}
+                </Modal>
+              </>
+            ) : null}
           </>
         )}
       </div>

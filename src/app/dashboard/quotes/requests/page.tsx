@@ -1,77 +1,29 @@
-import { ROUTES } from '@/constants/routes';
-import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
-import { isProAccess } from '@/features/pricing';
 import { QuoteRequestsDashboardPage } from '@/features/quotes/components/QuoteRequestsDashboardPage';
-import { createSupabaseServerClient } from '@/libs/supabase/server';
+import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardQuoteRequestsPage() {
-  const supabase = await createSupabaseServerClient();
+  const { supabase, context } = await requireDashboardPageAccess('quotes.read');
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect(ROUTES.AUTH.LOGIN);
-  }
-
-  const stateResult = await getOnboardingState(user.id, supabase);
-  if (!stateResult.success || stateResult.data?.status !== 'completed') {
-    redirect(ROUTES.DASHBOARD.MAIN);
-  }
-
-  const { data: businessRows, error: businessError } = await supabase
+  const { data: businessRow, error: businessError } = await supabase
     .from('business_profiles')
     .select('id, accept_quote_req')
-    .eq('profile_id', user.id)
-    .order('created_at', { ascending: true })
-    .limit(1);
-
-  const businessRow = businessRows?.[0] ?? null;
+    .eq('id', context.businessId)
+    .maybeSingle();
 
   if (businessError || !businessRow) {
-    redirect(ROUTES.DASHBOARD.MAIN);
+    redirect('/dashboard');
   }
 
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select(
-      'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id'
-    )
-    .eq('user_id', user.id)
-    .maybeSingle();
-  const tier = (profileRow as { subscription_tier?: string | null } | null)
-    ?.subscription_tier;
-  const periodEnd = (
-    profileRow as { subscription_current_period_end?: string | null } | null
-  )?.subscription_current_period_end;
-  const subscriptionStatus = (
-    profileRow as { subscription_status?: string | null } | null
-  )?.subscription_status;
-  const stripeSubscriptionId = (
-    profileRow as { stripe_subscription_id?: string | null } | null
-  )?.stripe_subscription_id;
-  const stripeCustomerId = (
-    profileRow as { stripe_customer_id?: string | null } | null
-  )?.stripe_customer_id;
-  const isFreeTier = !isProAccess(
-    tier,
-    periodEnd,
-    subscriptionStatus,
-    stripeSubscriptionId,
-    stripeCustomerId
-  );
   const acceptQuoteRequests =
     (businessRow as { accept_quote_req?: boolean | null }).accept_quote_req ===
     true;
 
   return (
     <QuoteRequestsDashboardPage
-      isFreeTier={isFreeTier}
+      isFreeTier={false}
       acceptQuoteRequests={acceptQuoteRequests}
     />
   );

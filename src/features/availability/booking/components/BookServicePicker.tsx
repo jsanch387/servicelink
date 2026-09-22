@@ -115,7 +115,6 @@ export function BookServicePicker({
     businessSlug,
     policyText: bookingPolicy?.text,
     skip: isOwnerManualBooking,
-    gateOnMount: !isOwnerManualBooking,
   });
   const [entryMode, setEntryMode] = useState<'choice' | 'services' | 'custom'>(
     isOwnerManualBooking ? (initialEntryMode ?? 'choice') : 'services'

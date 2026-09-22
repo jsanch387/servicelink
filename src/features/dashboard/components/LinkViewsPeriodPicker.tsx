@@ -59,13 +59,16 @@ export const LinkViewsPeriodPicker: React.FC<LinkViewsPeriodPickerProps> = ({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`cursor-pointer inline-flex min-h-11 max-w-[10rem] sm:max-w-[11rem] items-center justify-center gap-1.5 rounded-lg px-3 sm:px-3.5 text-xs sm:text-sm font-semibold ${dashboardCardButtonClass}`}
+        className={`cursor-pointer inline-flex h-8 min-h-8 items-center justify-center gap-1 rounded-md px-2.5 text-xs font-medium ${dashboardCardButtonClass}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`Time range: ${ANALYTICS_PERIOD_LABELS[period]}. Tap to change.`}
       >
         <span className="truncate">{PERIOD_TRIGGER_LABEL[period]}</span>
-        <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+        <ChevronDownIcon
+          className="h-3.5 w-3.5 shrink-0 opacity-70"
+          aria-hidden
+        />
       </button>
 
       <Modal

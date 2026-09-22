@@ -9,6 +9,7 @@ const {
   createSupabaseAdminClientMock,
   completeBookingWithSideEffectsMock,
   persistJobCompletedTransactionMock,
+  requireBusinessPermissionMock,
 } = vi.hoisted(() => ({
   getAuthenticatedUserMock: vi.fn(),
   assertOwnerSmsSendRateLimitsMock: vi.fn(),
@@ -16,10 +17,16 @@ const {
   createSupabaseAdminClientMock: vi.fn(),
   completeBookingWithSideEffectsMock: vi.fn(),
   persistJobCompletedTransactionMock: vi.fn(),
+  requireBusinessPermissionMock: vi.fn(),
 }));
 
 vi.mock('@/libs/api/getAuthenticatedUser', () => ({
   getAuthenticatedUser: getAuthenticatedUserMock,
+}));
+
+vi.mock('@/features/team/server/requireBusinessPermission', () => ({
+  requireBusinessPermission: (...args: unknown[]) =>
+    requireBusinessPermissionMock(...args),
 }));
 
 vi.mock('@/server/rateLimit/ownerSmsSendRateLimit', () => ({
@@ -59,6 +66,8 @@ interface BookingRow {
   customer_phone: string | null;
 }
 
+let latestTransition: { job_status: string } | null = { job_status: 'unset' };
+
 interface SupabaseConfig {
   business?: { id: string; business_name: string | null } | null;
   booking?: BookingRow | null;
@@ -74,6 +83,7 @@ interface SupabaseConfig {
 function makeSupabase(config: SupabaseConfig) {
   const transition =
     'transition' in config ? config.transition : { job_status: 'unset' };
+  latestTransition = transition;
   const handoffTransition =
     'handoffTransition' in config
       ? config.handoffTransition
@@ -223,7 +233,19 @@ const inProgressAfterHandoff: BookingRow = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  latestTransition = { job_status: 'unset' };
   process.env.SMS_OUTBOUND_ENABLED = 'true';
+  requireBusinessPermissionMock.mockResolvedValue({
+    ok: true,
+    businessId: 'biz-1',
+    context: {
+      userId: 'owner-1',
+      businessId: 'biz-1',
+      isOwner: true,
+      role: 'owner',
+      permissions: [],
+    },
+  });
   assertOwnerSmsSendRateLimitsMock.mockResolvedValue({ ok: true });
   sendAndRecordSmsMock.mockResolvedValue({ sent: true, messageId: 'msg-1' });
   createSupabaseAdminClientMock.mockReturnValue({
@@ -231,6 +253,29 @@ beforeEach(() => {
       select: () => ({
         eq: () => ({
           maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        }),
+      }),
+      update: () => ({
+        eq: () => ({
+          eq: () => ({
+            in: () => ({
+              select: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({ data: latestTransition, error: null }),
+              }),
+            }),
+            eq: () => ({
+              is: () => ({
+                select: () => ({
+                  maybeSingle: () =>
+                    Promise.resolve({
+                      data: { work_handoff_status: 'notified' },
+                      error: null,
+                    }),
+                }),
+              }),
+            }),
+          }),
         }),
       }),
     }),

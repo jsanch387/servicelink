@@ -12,11 +12,13 @@ import React from 'react';
 interface QuotesListEmptyStateProps {
   filter: QuotesDashboardFilterId;
   hasAnyQuotes: boolean;
+  canCreate?: boolean;
 }
 
 export const QuotesListEmptyState: React.FC<QuotesListEmptyStateProps> = ({
   filter,
   hasAnyQuotes,
+  canCreate = true,
 }) => {
   const title = !hasAnyQuotes
     ? 'No quotes yet'
@@ -41,14 +43,16 @@ export const QuotesListEmptyState: React.FC<QuotesListEmptyStateProps> = ({
       </div>
       <h2 className="text-lg font-bold text-zinc-200">{title}</h2>
       <p className="mt-1 max-w-sm text-sm text-zinc-500">{description}</p>
-      <Button
-        href={ROUTES.DASHBOARD.QUOTES_NEW}
-        variant="inverse"
-        icon={<PlusIcon className="h-4 w-4" />}
-        className="mt-6"
-      >
-        New quote
-      </Button>
+      {canCreate ? (
+        <Button
+          href={ROUTES.DASHBOARD.QUOTES_NEW}
+          variant="inverse"
+          icon={<PlusIcon className="h-4 w-4" />}
+          className="mt-6"
+        >
+          New quote
+        </Button>
+      ) : null}
     </div>
   );
 };

@@ -83,4 +83,6 @@ export interface AvailabilityBookingDisplay {
   willSendReviewInviteOnComplete?: boolean;
   /** Present when booking has payment summary data. */
   payment?: BookingPaymentSummaryDisplay | null;
+  /** Shop worker on this job. Null / omitted = unassigned. */
+  assignedUserId?: string | null;
 }

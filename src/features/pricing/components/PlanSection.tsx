@@ -162,9 +162,9 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
             <Button
               href={ROUTES.DASHBOARD.UPGRADE}
               variant="secondary"
-              className="w-full sm:w-auto"
+              className="w-full"
             >
-              View plans & upgrade
+              Upgrade
             </Button>
           </div>
         )}

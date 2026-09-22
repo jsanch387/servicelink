@@ -30,7 +30,7 @@ export interface BookingsPageSwitchProps {
   freeBookingsUsed?: number;
   /** When false (Pro), hide the free bookings tracker. */
   showFreeBookingsTracker?: boolean;
-  /** Owner time-off blocks (planner view). */
+  /** Owner time-off blocks for the calendar overlay. */
   timeOffBlocks?: BlockTimeEntry[];
   /** Weekly hours for V2 reschedule slot picker. */
   weeklySchedule: WeeklySchedule;

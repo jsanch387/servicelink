@@ -25,10 +25,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { usePublicBlockedSlots } from '../hooks/usePublicBlockedSlots';
 import { usePublicBookingPolicyAgreement } from '../hooks/usePublicBookingPolicyAgreement';
-import {
-  hasAgreedToPublicBookingPolicy,
-  markPublicBookingPolicyAgreed,
-} from '../utils/bookingPolicyAgreementStorage';
+import { hasAgreedToPublicBookingPolicy } from '../utils/bookingPolicyAgreementMemory';
 import { PublicBookingPolicyAgreeDialog } from './BookingPolicyAgreeModal';
 import type {
   AddOnDisplay,
@@ -422,8 +419,8 @@ export function AvailabilityBookingPage({
   /** Public customers: transactional SMS opt-in (default on; user may uncheck). */
   const [agreedToPublicNotifications, setAgreedToPublicNotifications] =
     useState(() => multiJobBoot?.agreedToNotifications ?? true);
-  const [agreedToBookingPolicy, setAgreedToBookingPolicy] = useState(
-    () => multiJobBoot?.agreedToPolicy ?? false
+  const [agreedToBookingPolicy, setAgreedToBookingPolicy] = useState(() =>
+    hasAgreedToPublicBookingPolicy(businessSlug)
   );
   const requiresBookingPolicy =
     !isOwnerManualBooking && Boolean(bookingPolicy?.text.trim());
@@ -436,17 +433,13 @@ export function AvailabilityBookingPage({
   const router = useRouter();
 
   useEffect(() => {
-    if (
-      policyAgreement.hasAgreed ||
-      hasAgreedToPublicBookingPolicy(businessSlug)
-    ) {
+    if (policyAgreement.hasAgreed) {
       setAgreedToBookingPolicy(true);
     }
-  }, [businessSlug, policyAgreement.hasAgreed]);
+  }, [policyAgreement.hasAgreed]);
 
   const handleAgreedToBookingPolicyChange = (agreed: boolean) => {
     setAgreedToBookingPolicy(agreed);
-    if (agreed) markPublicBookingPolicyAgreed(businessSlug);
   };
 
   // Restore contact/address/schedule after Cancel or finishing “add another”
@@ -474,7 +467,6 @@ export function AvailabilityBookingPage({
       setCustomerServiceChoice(resumed.customerServiceChoice);
     }
     setAgreedToPublicNotifications(resumed.agreedToNotifications);
-    setAgreedToBookingPolicy(resumed.agreedToPolicy);
     setScheduleNeedsRetiming(resumed.scheduleNeedsRetiming);
   }, [
     isMultiJobVisit,
