@@ -1,10 +1,8 @@
 import { ROUTES } from '@/constants/routes';
+import { bookingCardServiceTitle } from '@/features/availability/booking/dashboard/utils/bookingCardServiceTitle';
 import { sendJobAssignedEmail } from '@/features/email/job-assigned/sendJobAssignedEmail';
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
-import {
-  notificationInboxSubtitleFromCustomer,
-  notificationMinimalDisplayTitle,
-} from '@/features/notifications/utils/notificationMinimalDisplayTitle';
+import { notificationMinimalDisplayTitle } from '@/features/notifications/utils/notificationMinimalDisplayTitle';
 import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -33,15 +31,11 @@ function formatStartTime(timeStr: string): string {
   return `${h12}${min} ${ampm}`;
 }
 
-function jobAssignedInboxBody(
-  customerName: string,
-  serviceName: string
-): string | null {
-  const customer = customerName.trim();
-  const service = serviceName.trim();
-  if (customer && service) return `${customer} · ${service}`;
-  if (customer) return notificationInboxSubtitleFromCustomer(customer);
-  return service || null;
+/** Push and inbox body: service name only, without the price-option suffix. */
+function jobAssignedNoticeBody(serviceName: string): string | null {
+  const raw = serviceName.trim();
+  if (!raw) return null;
+  return bookingCardServiceTitle(raw);
 }
 
 /** Best-effort: inbox + push + email after someone else puts them on a job. */
@@ -92,7 +86,7 @@ export async function notifyAssigneeForJobAssigned(params: {
       'booking',
       'Job assigned'
     );
-    const bodyText = jobAssignedInboxBody(customerName, serviceName);
+    const bodyText = jobAssignedNoticeBody(serviceName);
 
     const { error: notifError } = await db.from('notifications').insert({
       user_id: assignedUserId,

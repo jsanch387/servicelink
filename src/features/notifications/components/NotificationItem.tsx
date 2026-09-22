@@ -91,9 +91,22 @@ export function NotificationItem({
             />
           ) : null}
         </div>
-        <p className="mt-0.5 text-xs leading-snug text-zinc-500">
-          {body && timeLabel ? `${body} · ${timeLabel}` : body || timeLabel}
-        </p>
+        {body || timeLabel ? (
+          <div className="mt-0.5 flex items-baseline justify-between gap-3">
+            {body ? (
+              <p className="min-w-0 flex-1 truncate text-xs leading-snug text-zinc-500">
+                {body}
+              </p>
+            ) : (
+              <span className="min-w-0 flex-1" />
+            )}
+            {timeLabel ? (
+              <p className="shrink-0 text-xs leading-snug text-zinc-500">
+                {timeLabel}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </Link>
   );

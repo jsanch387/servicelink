@@ -1,4 +1,5 @@
 import type { Json } from '@/libs/supabase/client';
+import { jobAssignedNotificationDisplay } from '../utils/jobAssignedNotificationDisplay';
 
 /**
  * Notification types aligned with public.notifications table.
@@ -47,11 +48,19 @@ export interface NotificationDisplay {
 }
 
 export function notificationToDisplay(row: Notification): NotificationDisplay {
+  const jobAssigned =
+    row.type === 'job_assigned'
+      ? jobAssignedNotificationDisplay({
+          body: row.body,
+          metadata: row.metadata,
+        })
+      : null;
+
   return {
     id: row.id,
     type: row.type as NotificationType,
-    title: row.title,
-    body: row.body,
+    title: jobAssigned?.title ?? row.title,
+    body: jobAssigned ? jobAssigned.body : row.body,
     referenceId: row.reference_id,
     readAt: row.read_at,
     createdAt: row.created_at,

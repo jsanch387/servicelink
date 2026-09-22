@@ -32,7 +32,7 @@ function createAdmin(options?: {
         table === 'bookings'
           ? (options?.booking ?? {
               customer_name: 'Alex Rivera',
-              service_name: 'Full detail',
+              service_name: 'Full Detail — Large SUV',
               scheduled_date: '2026-09-18',
               start_time: '09:00:00',
             })
@@ -120,16 +120,16 @@ describe('notifyAssigneeForJobAssigned', () => {
       reference_type: 'booking',
       reference_id: 'b1',
       title: 'Job assigned',
-      body: 'Alex Rivera · Full detail',
+      body: 'Full Detail',
       metadata: {
         customerName: 'Alex Rivera',
-        serviceName: 'Full detail',
+        serviceName: 'Full Detail — Large SUV',
       },
     });
     expect(sendExpoPushToUserMock).toHaveBeenCalledWith(expect.anything(), {
       userId: 'jose',
       title: 'Job assigned',
-      body: 'Alex Rivera · Full detail',
+      body: 'Full Detail',
       data: { reference_type: 'booking', reference_id: 'b1' },
     });
     expect(sendJobAssignedEmailMock).toHaveBeenCalledWith(
@@ -137,7 +137,7 @@ describe('notifyAssigneeForJobAssigned', () => {
       expect.objectContaining({
         businessName: 'Sparkle Mobile',
         customerName: 'Alex Rivera',
-        serviceName: 'Full detail',
+        serviceName: 'Full Detail — Large SUV',
         bookingsUrl: 'https://myservicelink.app/dashboard/bookings',
       })
     );
