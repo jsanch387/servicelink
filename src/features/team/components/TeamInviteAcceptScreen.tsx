@@ -163,6 +163,7 @@ export const TeamInviteAcceptScreen: React.FC<TeamInviteAcceptScreenProps> = ({
       <AuthScreenLayout
         title="Could not join"
         subtitle={`This invite is for ${shop}.`}
+        footer={null}
       >
         <AuthFormCard>
           <div className="space-y-4">
