@@ -48,6 +48,11 @@ function isVercelPreviewHost(host: string): boolean {
   return hostname.endsWith('.vercel.app');
 }
 
+function isLocalHost(host: string): boolean {
+  const hostname = host.split(':')[0]?.toLowerCase() ?? '';
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
 export function getAppBaseUrl(request?: Request | null): string {
   const canonical = canonicalSiteOrigin();
   const host =
@@ -68,4 +73,18 @@ export function getAppBaseUrl(request?: Request | null): string {
   }
 
   return CANONICAL_PRODUCTION_ORIGIN;
+}
+
+/**
+ * Origin for links in outbound email. Recipients cannot open localhost, so a
+ * local app URL falls back to the public ServiceLink domain.
+ */
+export function getEmailLinkBaseUrl(): string {
+  const origin = getAppBaseUrl();
+  try {
+    if (isLocalHost(new URL(origin).host)) return CANONICAL_PRODUCTION_ORIGIN;
+  } catch {
+    return CANONICAL_PRODUCTION_ORIGIN;
+  }
+  return origin;
 }

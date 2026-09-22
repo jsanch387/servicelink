@@ -59,6 +59,7 @@ export const InviteTeamMemberModal: React.FC<InviteTeamMemberModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      preventClose={sending}
       title="Invite"
       maxWidth="sm"
       uniformHorizontalPadding16

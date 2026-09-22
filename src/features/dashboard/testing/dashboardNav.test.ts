@@ -88,16 +88,18 @@ describe('getVisibleDashboardNavItems', () => {
   });
 
   it('puts Team in the main nav for the owner, after Bookings', () => {
-    const names = getVisibleDashboardNavItems({
+    const items = getVisibleDashboardNavItems({
       hasShopAccess: true,
       showMembershipsNav: false,
       showTeamNav: true,
       can: ownerCan,
-    }).map(item => item.name);
+    });
+    const names = items.map(item => item.name);
 
     expect(names).toContain('Team');
     expect(names.indexOf('Team')).toBe(names.indexOf('Bookings') + 1);
     expect(names).toContain('Customers');
+    expect(items.find(item => item.name === 'Team')?.badge).toBe('new');
   });
 
   it('hides Team when the rollout flag is off', () => {

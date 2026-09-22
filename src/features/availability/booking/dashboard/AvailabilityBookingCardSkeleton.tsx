@@ -1,6 +1,7 @@
 'use client';
 
 import { GlassCard } from '@/components/shared';
+import { CALENDAR_LIST_COLUMN_CLASS } from './calendar/types';
 
 /**
  * Skeleton for a single V2 availability booking card.
@@ -47,12 +48,12 @@ export function AvailabilityBookingCardSkeleton() {
 const CARD_COUNT = 4;
 
 /**
- * Full loading skeleton for V2 availability bookings list.
- * Renders the same header/tabs as the real view with skeleton cards below.
+ * Card stack for the bookings list loading state.
+ * Sits in the same column as the live list.
  */
 export function AvailabilityBookingsViewSkeleton() {
   return (
-    <div className="space-y-3 pb-20 sm:pb-24">
+    <div className={`${CALENDAR_LIST_COLUMN_CLASS} space-y-3`}>
       {Array.from({ length: CARD_COUNT }, (_, i) => (
         <AvailabilityBookingCardSkeleton key={i} />
       ))}

@@ -22,9 +22,9 @@ export const TeamDashboardPage: React.FC = () => (
             <Button
               type="button"
               variant="inverse"
-              size="sm"
+              size="xs"
               className="shrink-0 font-semibold"
-              icon={<PlusIcon className="h-4 w-4" aria-hidden />}
+              icon={<PlusIcon className="h-3.5 w-3.5" aria-hidden />}
               onClick={openInvite}
               aria-label="Invite team member"
             >

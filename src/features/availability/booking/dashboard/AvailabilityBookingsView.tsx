@@ -331,7 +331,7 @@ export function AvailabilityBookingsView({
 
       {canWriteBookings ? (
         <div
-          className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 dashboard-sidebar-offset lg:px-8 safe-area-pb"
+          className="fixed bottom-0 left-0 right-0 z-20 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 dashboard-sidebar-offset lg:px-8 safe-area-pb"
           style={{
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
           }}

@@ -27,7 +27,7 @@ export type DashboardNavItem = {
   requiresAvailability?: boolean;
   requiredPermission?: TeamPermission;
   activePathPrefix?: string;
-  badge?: 'beta';
+  badge?: 'beta' | 'new';
 };
 
 const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
@@ -76,6 +76,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     requiresOnboarding: true,
     requiredPermission: 'team.manage',
     requiresTeamRollout: true,
+    badge: 'new',
     activePathPrefix: '/dashboard/team',
   },
   {

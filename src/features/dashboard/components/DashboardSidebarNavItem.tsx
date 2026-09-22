@@ -1,6 +1,6 @@
 'use client';
 
-import { BetaBadge } from '@/components/shared';
+import { BetaBadge, NewBadge } from '@/components/shared';
 import Link from 'next/link';
 import type { ComponentType, SVGProps } from 'react';
 
@@ -13,7 +13,7 @@ interface DashboardSidebarNavItemProps {
   onNavigate?: () => void;
   onClick?: () => void;
   disabled?: boolean;
-  badge?: 'beta';
+  badge?: 'beta' | 'new';
 }
 
 export function DashboardSidebarNavItem({
@@ -27,7 +27,12 @@ export function DashboardSidebarNavItem({
   disabled = false,
   badge,
 }: DashboardSidebarNavItemProps) {
-  const label = badge === 'beta' ? `${name} (Beta)` : name;
+  const label =
+    badge === 'beta'
+      ? `${name} (Beta)`
+      : badge === 'new'
+        ? `${name} (New)`
+        : name;
   const className = `group flex w-full items-center rounded-xl text-sm font-medium tracking-tight transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
     collapsed
       ? 'gap-3 px-3 py-2 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
@@ -50,6 +55,7 @@ export function DashboardSidebarNavItem({
       >
         <span className="truncate">{name}</span>
         {badge === 'beta' ? <BetaBadge /> : null}
+        {badge === 'new' ? <NewBadge /> : null}
       </span>
     </>
   );

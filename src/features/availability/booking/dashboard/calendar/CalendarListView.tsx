@@ -64,7 +64,7 @@ export function CalendarListView({
   if (grouped.length === 0) {
     return (
       <div
-        className={`${CALENDAR_LIST_COLUMN_CLASS} flex flex-col items-center justify-center py-20 text-center`}
+        className={`${CALENDAR_LIST_COLUMN_CLASS} flex min-h-[calc(100dvh-20rem)] flex-col items-center justify-center text-center sm:min-h-[calc(100dvh-22rem)]`}
       >
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.05]">
           <CalendarIcon className="h-8 w-8 text-gray-600" />
