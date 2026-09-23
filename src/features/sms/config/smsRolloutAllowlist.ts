@@ -1,8 +1,8 @@
 /**
  * Temporary SMS rollout allowlist (owner auth emails, lowercase).
  *
- * While this list is non-empty, only Pro businesses whose owner email is listed
- * may send customer SMS. Empty = all Pro owners (current production state).
+ * While this list is non-empty, only businesses whose owner email is listed
+ * may send customer SMS. Empty = all owners, Free and Pro (current production state).
  *
  * @see canBusinessSendCustomerSms
  */

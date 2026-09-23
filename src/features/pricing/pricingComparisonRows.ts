@@ -25,8 +25,8 @@ export const PRICING_COMPARISON_ROWS: readonly PricingComparisonRow[] = [
   },
   {
     feature: 'SMS notifications',
-    free: { kind: 'excluded' },
-    pro: { kind: 'included' },
+    free: { kind: 'text', value: `On your ${FREE_BOOKINGS_LIMIT} bookings` },
+    pro: { kind: 'text', value: 'Unlimited' },
   },
   {
     feature: 'Booking page & scheduling',

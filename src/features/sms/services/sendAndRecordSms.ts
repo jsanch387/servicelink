@@ -81,8 +81,8 @@ export async function sendAndRecordSms(
     return { sent: false, reason: 'not_configured' };
   }
 
-  // Infra / entitlement skips: do not insert — avoids flooding sms_messages with
-  // noise from free-tier businesses or environments without Telnyx credentials.
+  // Infra / eligibility skips: do not insert — avoids flooding sms_messages with
+  // noise from ineligible businesses or environments without Telnyx credentials.
   if (!isTelnyxSmsConfigured()) {
     logSms(correlationId, 'warn', 'skip_not_configured', { type });
     return { sent: false, reason: 'not_configured' };

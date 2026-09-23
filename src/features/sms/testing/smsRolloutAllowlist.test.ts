@@ -10,7 +10,7 @@ describe('smsRolloutAllowlist', () => {
     vi.restoreAllMocks();
   });
 
-  it('is inactive when the allowlist is empty (open to all Pro)', () => {
+  it('is inactive when the allowlist is empty (open to all owners)', () => {
     expect(SMS_ROLLOUT_OWNER_EMAILS).toEqual([]);
     expect(isSmsRolloutAllowlistActive()).toBe(false);
   });

@@ -6,14 +6,11 @@ import {
 } from '../config/teamRolloutAllowlist';
 
 describe('teamRolloutAllowlist', () => {
-  it('is limited to the listed owner while closed', () => {
-    expect(TEAM_ROLLOUT_OPEN_TO_ALL).toBe(false);
-    expect(isTeamRolloutAllowlistActive()).toBe(true);
-    expect(isOwnerEmailAllowedForTeamRollout('jesuss387@gmail.com')).toBe(true);
-    expect(isOwnerEmailAllowedForTeamRollout('  JesusS387@gmail.com  ')).toBe(
-      true
-    );
-    expect(isOwnerEmailAllowedForTeamRollout('other@shop.com')).toBe(false);
-    expect(isOwnerEmailAllowedForTeamRollout(null)).toBe(false);
+  it('is open to every owner', () => {
+    expect(TEAM_ROLLOUT_OPEN_TO_ALL).toBe(true);
+    expect(isTeamRolloutAllowlistActive()).toBe(false);
+    expect(isOwnerEmailAllowedForTeamRollout('other@shop.com')).toBe(true);
+    expect(isOwnerEmailAllowedForTeamRollout('  Other@shop.com  ')).toBe(true);
+    expect(isOwnerEmailAllowedForTeamRollout(null)).toBe(true);
   });
 });

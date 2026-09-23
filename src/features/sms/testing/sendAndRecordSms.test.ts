@@ -171,10 +171,10 @@ describe('sendAndRecordSms', () => {
     expect(sendSmsMock).not.toHaveBeenCalled();
   });
 
-  it('not eligible (not Pro): skips send and log with not_eligible', async () => {
+  it('not eligible: skips send and log with not_eligible', async () => {
     canBusinessSendCustomerSmsMock.mockResolvedValue({
       ok: false,
-      reason: 'not_pro',
+      reason: 'no_owner',
     });
     const { admin, inserts } = makeAdmin();
 

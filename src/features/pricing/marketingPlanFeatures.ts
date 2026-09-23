@@ -8,6 +8,7 @@ import {
 /** Feature bullets for Free tier on marketing / upgrade plan cards. */
 export const MARKETING_FREE_PLAN_FEATURES: readonly ProFeatureItem[] = [
   { text: `${FREE_BOOKINGS_LIMIT} online bookings`, highlight: true },
+  { text: 'SMS confirmations, reminders, and job updates', highlight: true },
   { text: 'Shareable booking page & online scheduling' },
   { text: 'Services, availability calendar & dashboard' },
   { text: 'Client CRM & visit history' },
@@ -25,7 +26,7 @@ export const PRO_TAP_TO_PAY_FEATURE_TEXT =
 /** Feature bullets for Pro tier on marketing / upgrade plan cards. */
 export const MARKETING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings on your public page', highlight: true },
-  { text: 'SMS notifications for clients', highlight: true },
+  { text: 'SMS notifications for clients' },
   {
     text: PRO_TAP_TO_PAY_FEATURE_TEXT,
     highlight: true,
@@ -50,7 +51,6 @@ export const PUBLIC_PRICING_PRO_PLAN_FEATURES = MARKETING_PRO_PLAN_FEATURES;
  */
 export const POST_ONBOARDING_PRO_NUDGE_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings', highlight: true },
-  { text: 'SMS notifications for clients', highlight: true },
   {
     text: PRO_TAP_TO_PAY_FEATURE_TEXT,
     highlight: true,

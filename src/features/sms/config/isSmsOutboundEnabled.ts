@@ -2,8 +2,9 @@
  * Master switch for outbound customer SMS.
  *
  * Hardcoded on purpose (no env var). Flip to `false` to kill all customer SMS
- * in one place. Pro eligibility is enforced in `canBusinessSendCustomerSms`
+ * in one place. Business eligibility is enforced in `canBusinessSendCustomerSms`
  * (optional email allowlist only if `SMS_ROLLOUT_OWNER_EMAILS` is non-empty).
+ * Free and Pro owners are both eligible.
  *
  * @see smsRolloutAllowlist.ts
  * @see canBusinessSendCustomerSms

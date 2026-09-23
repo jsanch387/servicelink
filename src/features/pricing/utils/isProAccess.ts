@@ -136,7 +136,8 @@ export function isProAccessForPublicQuoteRequests(
  * Same as {@link isProAccess}. Used by the lifetime free-tier booking cap
  * and public book UX (price options, at-cap gate).
  *
- * Dashboard, SMS, and the free-bookings tracker already use `isProAccess`.
+ * Dashboard and the free-bookings tracker already use `isProAccess`.
+ * Customer SMS does not — Free and Pro both send.
  * A leftover Stripe subscription (`past_due`, `unpaid`, `paused`, …) with
  * `subscription_tier === 'free'` is Free — new appointments must increment
  * `free_bookings_count` and hit the lifetime cap.

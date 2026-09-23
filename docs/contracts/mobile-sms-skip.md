@@ -64,7 +64,7 @@ Evaluated server-side, in this order. First match wins.
 | ----------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
 | `no_phone`        | No phone on the booking / customer                                       | “No phone number on file — customer wasn’t texted.”          |
 | `not_configured`  | Outbound SMS off, or Telnyx not configured                               | Soft “couldn’t send text”                                    |
-| `not_eligible`    | Business not allowed to send customer SMS (e.g. not Pro)                 | Soft “couldn’t send text”                                    |
+| `not_eligible`    | Business not allowed to send customer SMS (no owner, or outside a temporary rollout allowlist) | Soft “couldn’t send text”                                    |
 | `sms_opt_out`     | `customers.sms_opt_in = false` (unchecked “text me” at book / subscribe) | “Customer opted out of texts — status still updated.”        |
 | `invalid_number`  | Phone present but cannot normalize to E.164                              | “Phone number looks invalid — customer wasn’t texted.”       |
 | `duplicate`       | Already sent this action for this booking (idempotent)                   | Silent — no extra toast                                      |

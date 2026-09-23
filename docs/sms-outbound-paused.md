@@ -43,11 +43,12 @@ Lifecycle actions (`on_the_way`, etc.) remain SMS-only.
 
 Checked inside `sendAndRecordSms` before any send/log:
 
-1. **Pro** — business owner must pass `isProAccess` (paying / active Pro). No
-   per-business SMS toggle; Pro unlocks SMS automatically.
+1. **Owner exists** — the business must have a `profile_id`. Free and Pro both
+   send. No per-business SMS toggle. Free volume is limited by the lifetime
+   booking cap, not by plan.
 2. **Optional rollout allowlist** — if `SMS_ROLLOUT_OWNER_EMAILS` is non-empty
    (`src/features/sms/config/smsRolloutAllowlist.ts`), only listed owner emails
-   may send. Empty (current) = all Pro owners.
+   may send. Empty (current) = all owners.
 
 Ineligible sends return `{ sent: false, reason: 'not_eligible' }`.
 
@@ -59,4 +60,4 @@ Ineligible sends return `{ sent: false, reason: 'not_eligible' }`.
 
 ## Last updated
 
-2026-08-04 — SMS open to all Pro owners (rollout allowlist cleared).
+2026-09-22 — SMS open to Free and Pro owners (plan gate removed; rollout allowlist empty).
