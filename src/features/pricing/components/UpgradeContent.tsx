@@ -8,7 +8,7 @@ import {
   PUBLIC_PRICING_FREE_PLAN_FEATURES,
   PUBLIC_PRICING_PRO_PLAN_FEATURES,
 } from '../marketingPlanFeatures';
-import type { BillingInterval } from '../types';
+import type { BillingInterval, PlatformBillingAction } from '../types';
 import { PLANS } from '../types';
 import { getProBillingDisplay } from '../utils/proBillingDisplay';
 import { BillingIntervalToggle } from './BillingIntervalToggle';
@@ -23,6 +23,11 @@ export interface UpgradeContentProps {
   subscriberPlanPrice?: string | null;
   /** Billing cadence for current Pro subscribers (from Stripe). */
   subscriberBillingInterval?: BillingInterval | null;
+  /**
+   * Live Stripe action. Checkout for a new plan, manage when one is already
+   * active, update payment when the open subscription needs a card.
+   */
+  billingAction?: PlatformBillingAction;
 }
 
 export const UpgradeContent: React.FC<UpgradeContentProps> = ({
@@ -30,6 +35,7 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
   isBillingLocked = false,
   subscriberPlanPrice = null,
   subscriberBillingInterval = null,
+  billingAction = 'checkout',
 }) => {
   const free = PLANS.free;
   const pro = PLANS.pro;
@@ -39,9 +45,13 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const showManage = isProSubscriber || billingAction === 'manage';
+  const showUpdatePayment = !showManage && billingAction === 'update_payment';
+  const showCheckout = !showManage && !showUpdatePayment;
+
   const checkoutBilling = getProBillingDisplay(billingInterval);
   const subscriberInterval = subscriberBillingInterval ?? 'month';
-  const proDisplay = isProSubscriber
+  const proDisplay = showManage
     ? {
         price:
           subscriberPlanPrice?.trim() || getProBillingDisplay('month').price,
@@ -51,8 +61,23 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
     : {
         price: checkoutBilling.price,
         priceSuffix: checkoutBilling.priceSuffix,
-        subline: checkoutBilling.subline,
+        subline: showCheckout ? checkoutBilling.subline : null,
       };
+
+  const heading = isProSubscriber
+    ? 'Your plan'
+    : showManage
+      ? 'Subscription'
+      : 'Upgrade';
+  const subheading = isProSubscriber
+    ? 'You are on Pro. Manage billing below or review what is included on Free.'
+    : showManage
+      ? 'A subscription is already active on this account.'
+      : showUpdatePayment
+        ? 'Your last payment did not go through. Pay the open invoice on this subscription.'
+        : isBillingLocked
+          ? 'Reactivate Pro to restore unlimited bookings and Pro features.'
+          : 'Upgrade to Pro to unlock unlimited bookings, payments, quotes, and more.';
 
   const handleUpgradeToPro = async () => {
     setError(null);
@@ -116,14 +141,10 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
       <div className="mx-auto flex w-full max-w-4xl min-w-0 flex-col">
         <header className="mb-8 sm:mb-10 text-center sm:text-left">
           <h1 className="text-3xl sm:text-4xl font-semibold text-white tracking-tight">
-            {isProSubscriber ? 'Your plan' : 'Upgrade'}
+            {heading}
           </h1>
           <p className="text-gray-400 text-sm sm:text-base mt-2 leading-relaxed max-w-2xl">
-            {isProSubscriber
-              ? 'You are on Pro. Manage billing below or review what is included on Free.'
-              : isBillingLocked
-                ? 'Reactivate Pro to restore unlimited bookings and Pro features.'
-                : 'Upgrade to Pro to unlock unlimited bookings, payments, quotes, and more.'}
+            {subheading}
           </p>
         </header>
 
@@ -136,7 +157,7 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
           </p>
         ) : null}
 
-        {!isProSubscriber ? (
+        {showCheckout ? (
           <div className="mb-8 flex justify-center sm:mb-10">
             <BillingIntervalToggle
               value={billingInterval}
@@ -181,9 +202,17 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
             priceSuffix={proDisplay.priceSuffix}
             priceSubline={proDisplay.subline}
             features={PUBLIC_PRICING_PRO_PLAN_FEATURES}
-            badgeLabel={isProSubscriber ? 'Current plan' : 'Most popular'}
+            badgeLabel={
+              isProSubscriber
+                ? 'Current plan'
+                : showManage
+                  ? 'Active in billing'
+                  : showUpdatePayment
+                    ? 'Payment needed'
+                    : 'Most popular'
+            }
             footer={
-              isProSubscriber ? (
+              showManage ? (
                 <Button
                   type="button"
                   variant="inverse"
@@ -193,6 +222,17 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
                   loading={portalLoading}
                 >
                   Manage subscription
+                </Button>
+              ) : showUpdatePayment ? (
+                <Button
+                  type="button"
+                  variant="inverse"
+                  className="w-full"
+                  onClick={handleUpgradeToPro}
+                  disabled={checkoutLoading}
+                  loading={checkoutLoading}
+                >
+                  Pay now
                 </Button>
               ) : (
                 <Button

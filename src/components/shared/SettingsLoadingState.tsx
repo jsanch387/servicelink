@@ -1,6 +1,6 @@
 /**
  * SettingsLoadingState - Skeleton for Settings page
- * Matches the Settings content layout: header + Custom link + Support
+ * Matches the Settings content layout: Custom link + Support
  */
 
 import React from 'react';
@@ -12,12 +12,6 @@ export const SettingsLoadingState: React.FC = () => {
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen">
       <div className="max-w-2xl mx-auto">
-        {/* Page header skeleton */}
-        <div className="mb-10">
-          <div className="h-8 w-32 bg-white/10 rounded-lg animate-pulse" />
-          <div className="h-4 w-64 mt-2 bg-white/10 rounded-lg animate-pulse" />
-        </div>
-
         <div className="space-y-8">
           {/* Custom link card skeleton */}
           <div className={cardClass}>

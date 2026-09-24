@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
           {
             success: false,
             error:
-              'You already have an active subscription. To change your plan, please cancel your current subscription in Settings first, or contact support for assistance.',
+              'A subscription is already active on this account. Manage billing in Settings.',
             code: 'DUPLICATE_SUBSCRIPTION_BLOCKED',
           },
           { status: 400 }

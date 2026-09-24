@@ -4,7 +4,7 @@ import { Button, GlassCard } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { CrownIcon } from '@/icons';
 import React, { useState } from 'react';
-import type { BillingInterval, PlanId } from '../types';
+import type { BillingInterval, PlanId, PlatformBillingAction } from '../types';
 import { PLANS } from '../types';
 
 function formatRenewalDate(iso: string | null | undefined): string | null {
@@ -33,6 +33,11 @@ interface PlanSectionProps {
   billingInterval?: BillingInterval;
   /** Hide the section heading when a parent group label is shown (e.g. Settings billing). */
   hideHeading?: boolean;
+  /**
+   * Live Stripe action. Free accounts with an open subscription manage or
+   * update payment here instead of jumping into a new checkout.
+   */
+  billingAction?: PlatformBillingAction;
 }
 
 export const PlanSection: React.FC<PlanSectionProps> = ({
@@ -43,6 +48,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   monthlyPriceOverride = null,
   billingInterval = 'month',
   hideHeading = false,
+  billingAction = 'checkout',
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
@@ -157,12 +163,36 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
               Manage subscription
             </Button>
           </div>
+        ) : billingAction === 'manage' ? (
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={handleManageSubscription}
+              disabled={portalLoading}
+              loading={portalLoading}
+            >
+              Manage subscription
+            </Button>
+          </div>
+        ) : billingAction === 'update_payment' ? (
+          <div className="mt-4">
+            <Button
+              href={ROUTES.DASHBOARD.UPGRADE}
+              variant="inverse"
+              className="w-full sm:w-auto"
+            >
+              Pay now
+            </Button>
+          </div>
         ) : (
           <div className="mt-4">
             <Button
               href={ROUTES.DASHBOARD.UPGRADE}
-              variant="secondary"
+              variant="inverse"
               className="w-full"
+              icon={<CrownIcon className="h-4 w-4" />}
             >
               Upgrade
             </Button>

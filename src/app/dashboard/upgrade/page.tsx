@@ -4,6 +4,7 @@ import {
   UpgradeContent,
 } from '@/features/pricing';
 import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { resolvePlatformBillingAction } from '@/features/pricing/server/resolvePlatformBillingAction';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -64,15 +65,24 @@ export default async function DashboardUpgradePage() {
       : row?.subscription_billing_interval === 'month'
         ? 'month'
         : null;
+  const subscriptionId = row?.stripe_subscription_id?.trim() ?? '';
+  const [billingAction, priceDisplay] = await Promise.all([
+    resolvePlatformBillingAction({
+      stripeCustomerId: row?.stripe_customer_id,
+      stripeSubscriptionId: row?.stripe_subscription_id,
+      subscriptionStatus: row?.subscription_status,
+    }),
+    subscriptionId
+      ? getSubscriptionPriceDisplay(subscriptionId)
+      : Promise.resolve(null),
+  ]);
   let subscriberPlanPrice: string | null = null;
   let subscriberBillingInterval: 'month' | 'year' | null =
     storedBillingInterval;
-  const subscriptionId = row?.stripe_subscription_id?.trim();
-  if (isProSubscriber && subscriptionId) {
-    const priceDisplay = await getSubscriptionPriceDisplay(subscriptionId);
-    subscriberPlanPrice = priceDisplay?.amount ?? null;
+  if ((isProSubscriber || billingAction === 'manage') && priceDisplay) {
+    subscriberPlanPrice = priceDisplay.amount ?? null;
     subscriberBillingInterval =
-      storedBillingInterval ?? priceDisplay?.interval ?? null;
+      storedBillingInterval ?? priceDisplay.interval ?? null;
   }
 
   // Free users (no resubscribe gate) must be able to open this page to start checkout.
@@ -84,6 +94,7 @@ export default async function DashboardUpgradePage() {
       isBillingLocked={isBillingLocked}
       subscriberPlanPrice={subscriberPlanPrice}
       subscriberBillingInterval={subscriberBillingInterval}
+      billingAction={billingAction}
     />
   );
 }

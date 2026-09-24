@@ -3,6 +3,7 @@ import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
 import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { resolvePlatformBillingAction } from '@/features/pricing/server/resolvePlatformBillingAction';
 import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
@@ -125,15 +126,24 @@ export default async function SettingsPage({
         : profileRow?.subscription_billing_interval === 'month'
           ? 'month'
           : null;
+    const subscriptionId = profileRow?.stripe_subscription_id?.trim() ?? '';
+    const [billingAction, priceDisplay] = await Promise.all([
+      resolvePlatformBillingAction({
+        stripeCustomerId: profileRow?.stripe_customer_id,
+        stripeSubscriptionId: profileRow?.stripe_subscription_id,
+        subscriptionStatus: profileRow?.subscription_status,
+      }),
+      hasProAccess && subscriptionId
+        ? getSubscriptionPriceDisplay(subscriptionId)
+        : Promise.resolve(null),
+    ]);
     let subscriptionMonthlyPrice: string | null = null;
     let subscriptionBillingInterval: 'month' | 'year' | null =
       storedBillingInterval;
-    const subscriptionId = profileRow?.stripe_subscription_id?.trim();
-    if (hasProAccess && subscriptionId) {
-      const priceDisplay = await getSubscriptionPriceDisplay(subscriptionId);
-      subscriptionMonthlyPrice = priceDisplay?.amount ?? null;
+    if (priceDisplay) {
+      subscriptionMonthlyPrice = priceDisplay.amount ?? null;
       subscriptionBillingInterval =
-        storedBillingInterval ?? priceDisplay?.interval ?? null;
+        storedBillingInterval ?? priceDisplay.interval ?? null;
     }
 
     const signedInWithGoogle = !(user.identities ?? []).some(
@@ -167,6 +177,7 @@ export default async function SettingsPage({
         profileRow?.subscription_cancel_at_period_end === true,
       subscriptionMonthlyPrice,
       subscriptionBillingInterval,
+      billingAction,
       accountEmail: user.email ?? '',
       signedInWithGoogle,
       pendingEmail: user.new_email ?? null,

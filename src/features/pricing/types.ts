@@ -7,6 +7,12 @@ export type PlanId = 'free' | 'pro';
 /** Pro subscription billing cadence shown on pricing and at checkout. */
 export type BillingInterval = 'month' | 'year';
 
+/**
+ * What the upgrade card and Settings billing should do for this account.
+ * Derived from open Stripe subscriptions, not only the stored Free/Pro label.
+ */
+export type PlatformBillingAction = 'checkout' | 'manage' | 'update_payment';
+
 /** List price for new Pro yearly signups ($20/mo × 12 − 2 months). */
 export const PRO_YEARLY_LIST_PRICE = '$200';
 

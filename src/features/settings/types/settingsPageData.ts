@@ -1,5 +1,8 @@
 import type { PlanId } from '@/features/pricing';
-import type { BillingInterval } from '@/features/pricing/types';
+import type {
+  BillingInterval,
+  PlatformBillingAction,
+} from '@/features/pricing/types';
 
 export interface SettingsPageData {
   businessProfile: {
@@ -24,6 +27,8 @@ export interface SettingsPageData {
   subscriptionMonthlyPrice?: string | null;
   /** Stripe recurring interval when on Pro. */
   subscriptionBillingInterval?: BillingInterval | null;
+  /** Live Stripe billing action for the plan card and payment banner. */
+  billingAction?: PlatformBillingAction;
   accountEmail?: string;
   signedInWithGoogle?: boolean;
   /** Pending new email while Supabase email-change confirmation is outstanding. */

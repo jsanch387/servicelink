@@ -77,6 +77,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
         subscriptionBillingInterval={
           settingsData.subscriptionBillingInterval ?? null
         }
+        billingAction={settingsData.billingAction ?? 'checkout'}
       />
 
       <AffiliateReferralWidget />

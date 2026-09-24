@@ -60,16 +60,16 @@ When `sent: false`:
 
 Evaluated server-side, in this order. First match wins.
 
-| `sms.reason`      | Condition                                                                | Suggested toast                                              |
-| ----------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `no_phone`        | No phone on the booking / customer                                       | “No phone number on file — customer wasn’t texted.”          |
-| `not_configured`  | Outbound SMS off, or Telnyx not configured                               | Soft “couldn’t send text”                                    |
+| `sms.reason`      | Condition                                                                                      | Suggested toast                                              |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `no_phone`        | No phone on the booking / customer                                                             | “No phone number on file — customer wasn’t texted.”          |
+| `not_configured`  | Outbound SMS off, or Telnyx not configured                                                     | Soft “couldn’t send text”                                    |
 | `not_eligible`    | Business not allowed to send customer SMS (no owner, or outside a temporary rollout allowlist) | Soft “couldn’t send text”                                    |
-| `sms_opt_out`     | `customers.sms_opt_in = false` (unchecked “text me” at book / subscribe) | “Customer opted out of texts — status still updated.”        |
-| `invalid_number`  | Phone present but cannot normalize to E.164                              | “Phone number looks invalid — customer wasn’t texted.”       |
-| `duplicate`       | Already sent this action for this booking (idempotent)                   | Silent — no extra toast                                      |
-| `carrier_opt_out` | Telnyx **40300** — customer replied **STOP** to that number              | “Customer opted out of texts (STOP) — status still updated.” |
-| `error`           | Provider / network failure                                               | Soft “couldn’t send text”                                    |
+| `sms_opt_out`     | `customers.sms_opt_in = false` (unchecked “text me” at book / subscribe)                       | “Customer opted out of texts — status still updated.”        |
+| `invalid_number`  | Phone present but cannot normalize to E.164                                                    | “Phone number looks invalid — customer wasn’t texted.”       |
+| `duplicate`       | Already sent this action for this booking (idempotent)                                         | Silent — no extra toast                                      |
+| `carrier_opt_out` | Telnyx **40300** — customer replied **STOP** to that number                                    | “Customer opted out of texts (STOP) — status still updated.” |
+| `error`           | Provider / network failure                                                                     | Soft “couldn’t send text”                                    |
 
 **Do not pre-check these in the app to disable On the way / Start / Complete.** Let the owner finish the job. Toast after.
 

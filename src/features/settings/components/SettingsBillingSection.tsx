@@ -1,10 +1,14 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import { PlanSection } from '@/features/pricing';
 import type { PlanId } from '@/features/pricing';
-import type { BillingInterval } from '@/features/pricing/types';
-import React, { useCallback, useState } from 'react';
+import type {
+  BillingInterval,
+  PlatformBillingAction,
+} from '@/features/pricing/types';
+import React from 'react';
 
 export interface SettingsBillingSectionProps {
   planId: PlanId;
@@ -13,6 +17,7 @@ export interface SettingsBillingSectionProps {
   subscriptionCancelAtPeriodEnd?: boolean;
   subscriptionMonthlyPrice?: string | null;
   subscriptionBillingInterval?: BillingInterval | null;
+  billingAction?: PlatformBillingAction;
 }
 
 export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
@@ -22,27 +27,10 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
   subscriptionCancelAtPeriodEnd = false,
   subscriptionMonthlyPrice = null,
   subscriptionBillingInterval = null,
+  billingAction = 'checkout',
 }) => {
-  const [portalLoading, setPortalLoading] = useState(false);
-  const showPaymentFailedBanner =
-    subscriptionStatus === 'past_due' || subscriptionStatus === 'unpaid';
-
-  const handleOpenPortal = useCallback(async () => {
-    setPortalLoading(true);
-    try {
-      const res = await fetch('/api/stripe/create-portal-session', {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (data.success && data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      setPortalLoading(false);
-    } catch {
-      setPortalLoading(false);
-    }
-  }, []);
+  const showPaymentFailedBanner = billingAction === 'update_payment';
+  const showActiveBillingNote = planId !== 'pro' && billingAction === 'manage';
 
   return (
     <section className="w-full min-w-0 space-y-3">
@@ -55,21 +43,24 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
         ) : null}
       </div>
 
+      {showActiveBillingNote ? (
+        <p className="text-sm leading-relaxed text-zinc-400">
+          A subscription is already active on this account.
+        </p>
+      ) : null}
+
       {showPaymentFailedBanner ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
           <p className="text-amber-200 text-sm font-medium mb-3">
-            We couldn&apos;t charge your card. Please update your payment method
-            to restore Pro access.
+            We couldn&apos;t charge your card. Pay the open invoice on this
+            subscription.
           </p>
           <Button
-            type="button"
+            href={ROUTES.DASHBOARD.UPGRADE}
             variant="inverse"
-            onClick={handleOpenPortal}
-            loading={portalLoading}
-            disabled={portalLoading}
             className="w-full sm:w-auto"
           >
-            Update payment method
+            Pay now
           </Button>
         </div>
       ) : null}
@@ -81,6 +72,7 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
         subscriptionStatus={subscriptionStatus}
         monthlyPriceOverride={subscriptionMonthlyPrice}
         billingInterval={subscriptionBillingInterval ?? undefined}
+        billingAction={billingAction}
         hideHeading
       />
     </section>
