@@ -1,84 +1,95 @@
 import { escapeHtml } from '../utils/escapeHtml';
+import {
+  serviceLinkEmailCta,
+  serviceLinkEmailDetailRow,
+  serviceLinkEmailSection,
+  wrapServiceLinkEmail,
+} from '../utils/serviceLinkEmailLayout';
 import type { TeamInviteEmailPayload } from './types';
 
+const FONT =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const MUTED = `margin:16px 0 0;font-family:${FONT};font-size:12px;line-height:18px;color:#737373;`;
+
 function shopName(businessName: string): string {
-  return businessName.trim() || 'the team';
+  return businessName.trim() || 'the shop';
+}
+
+function personName(recipientName: string): string {
+  return recipientName.trim() || 'Team member';
+}
+
+function expiryLabel(days: number): string {
+  const count = Number.isFinite(days) && days > 0 ? Math.round(days) : 14;
+  return count === 1 ? '1 day' : `${count} days`;
+}
+
+function bodyCopy(payload: TeamInviteEmailPayload): string {
+  const business = shopName(payload.businessName);
+  const name = payload.recipientName.trim();
+  const hello = name ? `Hi ${name},` : 'Hi,';
+  return `${hello} ${business} added you to their team. Open the link below to access your account. The link expires in ${expiryLabel(payload.expiresInDays)}.`;
 }
 
 export function getTeamInviteEmailSubject(businessName: string): string {
-  return `You're invited to join ${shopName(businessName)}`;
+  return `${shopName(businessName)} added you to their team`;
 }
 
 export function buildTeamInviteEmailPlainText(
   payload: TeamInviteEmailPayload
 ): string {
-  const businessName = shopName(payload.businessName);
+  const business = shopName(payload.businessName);
+  const name = personName(payload.recipientName);
+  const expires = expiryLabel(payload.expiresInDays);
+
   return [
-    `${businessName} invited you to join their team.`,
+    'Added to the team',
     '',
-    'Accept the invite to get started:',
-    payload.inviteUrl,
+    bodyCopy(payload),
+    '',
+    `Name: ${name}`,
+    `Shop: ${business}`,
+    `Link expires: ${expires}`,
+    '',
+    'Open this link to access your account:',
+    payload.inviteUrl.trim(),
     '',
     'If you were not expecting this, you can ignore this email.',
     '',
-    'Powered by ServiceLink',
+    `Sent for ${business} via ServiceLink`,
   ].join('\n');
 }
 
 export function buildTeamInviteEmailHtml(
   payload: TeamInviteEmailPayload
 ): string {
-  const businessName = escapeHtml(shopName(payload.businessName));
-  const inviteUrl = escapeHtml(payload.inviteUrl);
+  const business = shopName(payload.businessName);
+  const name = personName(payload.recipientName);
+  const expires = expiryLabel(payload.expiresInDays);
+  const inviteUrl = payload.inviteUrl.trim();
+  const safeUrl = escapeHtml(inviteUrl);
+  const year = new Date().getFullYear();
 
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You're invited to join ${businessName}</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #18181b;">
-  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5; padding: 28px 12px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-          <tr>
-            <td style="background-color: #0a0a0a; border-radius: 16px 16px 0 0; padding: 30px 30px 26px;">
-              <p style="margin: 0 0 12px; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: #a1a1aa; font-weight: 700;">${businessName}</p>
-              <h1 style="margin: 0; font-size: 28px; line-height: 1.2; color: #ffffff; font-weight: 800;">
-                You're invited
-              </h1>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color: #ffffff; border-radius: 0 0 16px 16px; border: 1px solid #e4e4e7; border-top: 0; padding: 30px;">
-              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.65; color: #3f3f46;">
-                <strong style="color: #18181b;">${businessName}</strong> invited you to join their team.
-              </p>
-              <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.65; color: #3f3f46;">
-                Accept the invite to get started.
-              </p>
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0;">
-                <tr>
-                  <td style="border-radius: 10px; background-color: #0a0a0a;">
-                    <a href="${inviteUrl}" style="display: inline-block; padding: 14px 26px; color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none;">
-                      Accept invite
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin: 22px 0 0; font-size: 12px; line-height: 1.6; color: #a1a1aa;">
-                Powered by ServiceLink
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-`;
+  const details = [
+    serviceLinkEmailDetailRow('Name', name),
+    serviceLinkEmailDetailRow('Shop', business),
+    serviceLinkEmailDetailRow('Link expires', expires, { isLast: true }),
+  ].join('');
+
+  return wrapServiceLinkEmail({
+    title: 'Added to the team',
+    heading: 'Added to the team',
+    subtitle: bodyCopy(payload),
+    bodyHtml: `
+      ${serviceLinkEmailSection('Details', details, { isFirst: true })}
+      ${serviceLinkEmailCta(inviteUrl, 'Open team access')}
+      <p style="${MUTED}word-break:break-all;">
+        <a href="${safeUrl}" style="color:#a3a3a3;text-decoration:underline;">${safeUrl}</a>
+      </p>
+      <p style="${MUTED}">
+        If you were not expecting this, you can ignore this email.
+      </p>
+    `,
+    footerHtml: `Sent for ${escapeHtml(business)} via ServiceLink.<br>&copy; ${year} ServiceLink.`,
+  });
 }

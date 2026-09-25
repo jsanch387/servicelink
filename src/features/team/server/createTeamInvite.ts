@@ -164,7 +164,9 @@ export async function createTeamInvite(
   const inviteUrl = `${params.inviteBaseUrl || getAppBaseUrl()}${getTeamInvitePath(rawToken)}`;
   const emailed = await sendTeamInviteEmail(email, {
     businessName: params.businessName,
+    recipientName: nextName,
     inviteUrl,
+    expiresInDays: TEAM_INVITE_EXPIRY_DAYS,
   });
 
   if (!emailed.sent) {

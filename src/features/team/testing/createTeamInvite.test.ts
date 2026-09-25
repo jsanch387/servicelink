@@ -10,6 +10,7 @@ vi.mock('@/features/email/services/resendClient', () => ({
   getAppBaseUrl: () => 'https://myservicelink.app',
 }));
 
+import { TEAM_INVITE_EXPIRY_DAYS } from '../constants/teamInvite';
 import { createTeamInvite } from '../server/createTeamInvite';
 
 function createAdmin(options: { priorInviteId?: string | null }) {
@@ -116,6 +117,8 @@ describe('createTeamInvite', () => {
       'jose@shop.com',
       expect.objectContaining({
         businessName: 'Sparkle',
+        recipientName: 'Jose',
+        expiresInDays: TEAM_INVITE_EXPIRY_DAYS,
       })
     );
   });
