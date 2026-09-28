@@ -62,6 +62,13 @@ describe('bookingPolicy', () => {
         policyRequired: true,
       })
     ).toBeNull();
+    expect(
+      publicBookingPolicyError({
+        ownerManualBooking: false,
+        agreedToPolicy: true,
+        policyRequired: true,
+      })
+    ).toBeNull();
   });
 
   it('reads profile columns into edit state', () => {
