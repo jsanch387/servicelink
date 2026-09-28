@@ -20,7 +20,8 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out dist",
     "script:update-user-email": "tsx --env-file=.env.local scripts/update-user-email.ts",
-    "script:booking-reminders": "tsx --env-file=.env.local scripts/run-booking-reminders.ts"
+    "script:booking-reminders": "tsx --env-file=.env.local scripts/run-booking-reminders.ts",
+    "script:backfill-signup-attribution": "tsx --env-file=.env.local scripts/backfill-signup-attribution-first-paid.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

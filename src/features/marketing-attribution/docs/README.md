@@ -102,6 +102,8 @@ Allowed for emails in `src/features/marketing-attribution/config/internalAnalyti
 
 Open **SQL Editor** and run [`queries.sql`](./queries.sql).
 
+Daily check — billed active Pros missing `first_paid_at` (should return 0 rows): [`billed-pros-missing-first-paid.sql`](./billed-pros-missing-first-paid.sql).
+
 Start with:
 
 1. **Where signups came from** — `by_channel`
@@ -144,7 +146,9 @@ Writes use the **service role**. Users cannot edit their own attribution.
 | Channel rules               | `utils/deriveSignupChannel.ts`                                              |
 | Save on signup              | `POST /api/attribution/signup` → `server/saveSignupAttribution.ts`          |
 | CompleteRegistration        | After `recorded: true` — browser + optional CAPI (`META_CAPI_ACCESS_TOKEN`) |
-| Stamp first paid            | Stripe webhook → `server/markSignupAttributionFirstPaid.ts`                 |
+| Stamp first paid            | Stripe webhook `after()` → `server/markSignupAttributionFirstPaid.ts`       |
+| Unknown row if browser missed | Auth callback → `server/ensureSignupAttributionPlaceholder.ts`           |
+| One-time paid backfill      | `scripts/backfill-signup-attribution-first-paid.ts` (dry-run by default)   |
 | Subscribe                   | Distinct from CompleteRegistration; maps to `first_paid_at`                 |
 | Report                      | `server/loadPaidConversionReport.ts`                                        |
 | Founder page                | `/dashboard/internal/acquisition`                                           |

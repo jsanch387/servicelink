@@ -66,8 +66,7 @@ import { reconcileExtraPlatformProSubscriptions } from '@/features/pricing/serve
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
-import { markSignupAttributionFirstPaid } from '@/features/marketing-attribution/server/markSignupAttributionFirstPaid';
-import { sendProWelcomeIfFirstPaidPro } from '@/features/pricing/server/sendProWelcomeIfFirstPaidPro';
+import { scheduleProFirstPaidSideEffects } from '@/features/marketing-attribution/server/scheduleProFirstPaidSideEffects';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/applyPlatformProCheckoutSessionCompleted';
@@ -1164,17 +1163,10 @@ export async function POST(request: NextRequest) {
     // Extra open Pro subs on this customer (e.g. leftover past_due) are
     // canceled inside applyPlatformProCheckoutSessionCompleted.
 
-    // First paid Pro upgrade only (direct paid checkout — no trial). Best-effort;
-    // the atomic claim inside guarantees once-only across retries/resubscribes.
-    void sendProWelcomeIfFirstPaidPro(supabase, { userId }).catch(err => {
-      console.error('[stripe:webhook] pro welcome email (checkout)', err);
-    });
-    void markSignupAttributionFirstPaid(supabase, { userId }).catch(err => {
-      console.error(
-        '[stripe:webhook] signup attribution first paid (checkout)',
-        err
-      );
-    });
+    // First paid Pro upgrade only (direct paid checkout — no trial).
+    // `after()` so the stamp and welcome email are not dropped when this 200 returns.
+    // Idempotency is already recorded, so Stripe will not replay a dropped call.
+    scheduleProFirstPaidSideEffects(supabase, event.id, { userId });
   }
 
   if (event.type === 'checkout.session.expired') {
@@ -1404,21 +1396,9 @@ export async function POST(request: NextRequest) {
 
     // Covers trial -> paid conversion (status becomes `active`). First-time only:
     // the atomic claim ensures renewals and cancel->resubscribe never re-send.
-    void sendProWelcomeIfFirstPaidPro(supabase, {
+    // `after()` so the stamp and welcome email survive the webhook response.
+    scheduleProFirstPaidSideEffects(supabase, event.id, {
       stripeSubscriptionId: subId,
-    }).catch(err => {
-      console.error(
-        '[stripe:webhook] pro welcome email (subscription.updated)',
-        err
-      );
-    });
-    void markSignupAttributionFirstPaid(supabase, {
-      stripeSubscriptionId: subId,
-    }).catch(err => {
-      console.error(
-        '[stripe:webhook] signup attribution first paid (subscription.updated)',
-        err
-      );
     });
   }
 

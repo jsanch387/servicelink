@@ -10,6 +10,7 @@ import {
   getStoredMarketingUtms,
   hasMarketingUtmData,
   isAppShellPath,
+  hasSignupAttributionSignal,
   isNonAcquisitionReferrer,
   isWeakMarketingAttribution,
   parseMarketingUtmsFromSearchParams,
@@ -221,6 +222,15 @@ describe('persistMarketingUtms', () => {
         utmSource: 'tiktok',
       })
     ).toBe(false);
+  });
+
+  it('hasSignupAttributionSignal keeps organic referrers and drops empty auth landings', () => {
+    expect(hasSignupAttributionSignal(undefined)).toBe(false);
+    expect(hasSignupAttributionSignal({ landingPath: '/login' })).toBe(false);
+    expect(
+      hasSignupAttributionSignal({ referrer: 'https://www.google.com/' })
+    ).toBe(true);
+    expect(hasSignupAttributionSignal({ landingPath: '/pricing' })).toBe(true);
   });
 
   it('strips legacy /login landings when reading storage', () => {

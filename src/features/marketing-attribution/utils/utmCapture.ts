@@ -14,6 +14,7 @@ import {
 
 export {
   hasMarketingUtmData,
+  hasSignupAttributionSignal,
   isAppShellPath,
   isNonAcquisitionReferrer,
   isWeakMarketingAttribution,
