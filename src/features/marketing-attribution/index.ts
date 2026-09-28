@@ -28,6 +28,7 @@ export {
   captureMarketingUtmsFromSearchParams,
   getStoredMarketingUtms,
   hasMarketingUtmData,
+  hasSignupAttributionSignal,
   isAppShellPath,
   isNonAcquisitionReferrer,
   isWeakMarketingAttribution,

@@ -108,6 +108,20 @@ export function isWeakMarketingAttribution(
   return true;
 }
 
+/**
+ * Real acquisition data worth writing over a server `unknown` placeholder.
+ * Includes organic referrers. Empty auth-only payloads do not qualify.
+ */
+export function hasSignupAttributionSignal(
+  attribution: MarketingUtmAttribution | null | undefined
+): boolean {
+  if (!attribution) return false;
+  if (hasMarketingUtmData(attribution)) return true;
+  if (hasMeaningfulLanding(attribution)) return true;
+  if (hasAcquisitionReferrer(attribution)) return true;
+  return false;
+}
+
 export function normalizeStoredAttribution(
   attribution: MarketingUtmAttribution
 ): MarketingUtmAttribution | null {

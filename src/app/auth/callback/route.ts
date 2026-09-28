@@ -6,6 +6,7 @@ import {
   EMAIL_CHANGE_NOTICE_UPDATED,
 } from '@/features/account/server/resolveAccountEmailChangeRedirectTo';
 import { applyMarketingAttributionCookieFromUrl } from '@/features/marketing-attribution/server/applyMarketingAttributionCookie';
+import { ensureSignupAttributionPlaceholder } from '@/features/marketing-attribution/server/ensureSignupAttributionPlaceholder';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { NextResponse } from 'next/server';
@@ -182,6 +183,20 @@ export async function GET(request: Request) {
     if (insertError) {
       console.error('[auth/callback] profile insert failed:', insertError);
     }
+  }
+
+  // Row exists even if the browser never POSTs UTMs. Channel stays `unknown`
+  // until a first-touch browser save upgrades it (48h gate still applies there).
+  try {
+    await ensureSignupAttributionPlaceholder(
+      createSupabaseAdminClient(),
+      user.id
+    );
+  } catch (attributionError) {
+    console.error(
+      '[auth/callback] signup attribution placeholder failed',
+      attributionError
+    );
   }
 
   if (emailChangeFlow) {
