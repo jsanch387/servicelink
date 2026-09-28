@@ -106,6 +106,7 @@ Do not check `role === 'member'` in product code. Check a capability.
 | `team.manage`              | yes   | no     | Invite and remove                                                     |
 | `customers.read` / `write` | yes   | no     | Customers page                                                        |
 | `quotes.read` / `write`    | yes   | no     | Quotes                                                                |
+| `invoices.read` / `write`  | yes   | no     | Invoices                                                              |
 | `reviews.read` / `write`   | yes   | no     | Reviews                                                               |
 | `profile.write`            | yes   | no     | Booking link / shop profile                                           |
 | `services.write`           | yes   | no     | Services catalog                                                      |

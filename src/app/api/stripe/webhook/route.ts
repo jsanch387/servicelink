@@ -72,6 +72,7 @@ import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stri
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
 import { applyPlatformProCheckoutSessionCompleted } from '@/features/pricing/server/applyPlatformProCheckoutSessionCompleted';
 import { subscriptionIsScheduledCancelWithoutRenewal } from '@/features/pricing/utils/subscriptionScheduledCancel';
+import { applyCustomerInvoiceCheckoutCompleted } from '@/features/invoices/server/applyCustomerInvoiceCheckoutCompleted';
 import { applyWalkUpPaymentCheckoutCompleted } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutCompleted';
 import { applyWalkUpPaymentCheckoutExpired } from '@/features/payments/walk-up/applyWalkUpPaymentCheckoutExpired';
 import { applyWalkUpTapToPayPaymentIntent } from '@/features/payments/walk-up/applyWalkUpTapToPayPaymentIntent';
@@ -1123,6 +1124,14 @@ export async function POST(request: NextRequest) {
     if (session.metadata?.kind === 'membership_checkout') {
       await applyMembershipCheckoutSessionCompleted(supabase, {
         event,
+        session,
+      });
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    if (session.metadata?.kind === 'customer_invoice') {
+      await applyCustomerInvoiceCheckoutCompleted(supabase, {
+        eventId: event.id,
         session,
       });
       return NextResponse.json({ received: true }, { status: 200 });

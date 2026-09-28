@@ -12,6 +12,7 @@ export interface MoneyInputProps {
   error?: string;
   disabled?: boolean;
   className?: string;
+  'aria-label'?: string;
 }
 
 /** Keep only valid money characters: digits and at most one decimal with ≤2 fractional digits. */
@@ -62,6 +63,7 @@ export const MoneyInput: React.FC<MoneyInputProps> = ({
   error,
   disabled = false,
   className = '',
+  'aria-label': ariaLabel,
 }) => {
   const [focused, setFocused] = useState(false);
 
@@ -108,6 +110,7 @@ export const MoneyInput: React.FC<MoneyInputProps> = ({
           placeholder={placeholder}
           required={required}
           disabled={disabled}
+          aria-label={ariaLabel ?? label ?? 'Amount'}
           className={`
             w-full py-2.5 pl-7 pr-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-base sm:text-sm font-normal tabular-nums
             focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8

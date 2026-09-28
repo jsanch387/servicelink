@@ -8,6 +8,8 @@ export const TEAM_PERMISSIONS = [
   'customers.write',
   'quotes.read',
   'quotes.write',
+  'invoices.read',
+  'invoices.write',
   'reviews.read',
   'reviews.write',
   'profile.write',
@@ -31,6 +33,7 @@ const WORK_READ: TeamPermission[] = [
   'bookings.read',
   'customers.read',
   'quotes.read',
+  'invoices.read',
   'reviews.read',
 ];
 
@@ -43,6 +46,7 @@ const WORK_WRITE: TeamPermission[] = [
   'bookings.write',
   'customers.write',
   'quotes.write',
+  'invoices.write',
   'reviews.write',
 ];
 

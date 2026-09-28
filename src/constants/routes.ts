@@ -109,6 +109,10 @@ export const ROUTES = {
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}`,
     QUOTE_EDIT: (quoteId: string) =>
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
+    INVOICES: '/dashboard/invoices',
+    INVOICES_NEW: '/dashboard/invoices/new',
+    INVOICE: (invoiceId: string) =>
+      `/dashboard/invoices/${encodeURIComponent(invoiceId.trim())}`,
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
     /** Owner: add and manage teammates. */
@@ -227,6 +231,18 @@ export const API_ROUTES = {
   PUBLIC_QUOTE_REQUEST: '/api/public/quote-request',
   /** Owner: list quotes or create and send a new quote. */
   QUOTES: '/api/quotes',
+  /** Owner: list invoices or save a new draft. */
+  INVOICES: '/api/invoices',
+  /** Owner: email an invoice and publish its short link. */
+  INVOICES_SEND: '/api/invoices/send',
+  /** Public: start Stripe Checkout for a sent invoice. */
+  PUBLIC_INVOICE_CHECKOUT: '/api/public/invoices/checkout',
+  /** Owner: update one draft. */
+  INVOICE: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}`,
+  /** Owner: mark a sent invoice paid after cash or another off-app payment. */
+  INVOICE_MARK_PAID: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}/paid`,
   QUOTE_SEND: '/api/quotes/send',
   /** Owner: read, edit, or delete one quote. */
   QUOTE_DETAIL: (quoteId: string) =>
@@ -724,6 +740,13 @@ export function getPublicInvoicePath(publicToken: string): string {
   const t = publicToken.trim();
   if (!t) return '/i';
   return `/i/${encodeURIComponent(t)}`;
+}
+
+/** Short customer bill link (`/b/{shortCode}`). Separate from receipt `/r/`. */
+export function getPublicBillPath(shortCode: string): string {
+  const c = shortCode.trim();
+  if (!c) return '/b';
+  return `/b/${encodeURIComponent(c)}`;
 }
 
 /** Short branded receipt link for SMS/email (`/r/{shortCode}`). */

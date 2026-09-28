@@ -7,6 +7,7 @@ import {
   CalendarIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
+  DocumentTextIcon,
   LinkIcon,
   MegaphoneIcon,
   RectangleStackIcon,
@@ -96,6 +97,15 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     activePathPrefix: '/dashboard/quotes',
   },
   {
+    name: 'Invoices',
+    href: ROUTES.DASHBOARD.INVOICES,
+    icon: DocumentTextIcon,
+    requiresOnboarding: true,
+    requiredPermission: 'invoices.read',
+    activePathPrefix: '/dashboard/invoices',
+    badge: 'new',
+  },
+  {
     name: 'Customers',
     href: ROUTES.DASHBOARD.CUSTOMERS,
     icon: UserGroupIcon,
@@ -178,6 +188,8 @@ export function getDashboardPageTitle(pathname: string): string | null {
   if (pathname.startsWith(ROUTES.DASHBOARD.PAYMENTS_SETTINGS)) {
     return 'Payment settings';
   }
+  if (pathname === ROUTES.DASHBOARD.INVOICES_NEW) return 'New invoice';
+  if (pathname.startsWith(`${ROUTES.DASHBOARD.INVOICES}/`)) return 'Invoice';
 
   const match = DASHBOARD_NAV_ITEMS.find(item =>
     isDashboardNavItemActive(pathname, item)

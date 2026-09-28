@@ -118,6 +118,26 @@ describe('getDashboardPageTitle', () => {
   it('returns the matching nav label', () => {
     expect(getDashboardPageTitle('/dashboard/bookings')).toBe('Bookings');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.TEAM)).toBe('Team');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES)).toBe('Invoices');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES_NEW)).toBe(
+      'New invoice'
+    );
+    expect(
+      getDashboardPageTitle(
+        ROUTES.DASHBOARD.INVOICE('11111111-1111-4111-8111-111111111111')
+      )
+    ).toBe('Invoice');
+  });
+
+  it('places Invoices after Quotes', () => {
+    const names = getVisibleDashboardNavItems({
+      hasShopAccess: true,
+      showMembershipsNav: false,
+      can: ownerCan,
+    }).map(item => item.name);
+
+    expect(names.indexOf('Invoices')).toBe(names.indexOf('Quotes') + 1);
+    expect(names).toContain('Invoices');
   });
 
   it('returns Settings for the settings route', () => {
