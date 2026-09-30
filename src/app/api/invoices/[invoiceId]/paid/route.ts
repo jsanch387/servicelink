@@ -1,4 +1,6 @@
+import { isManualInvoicePaymentMethod } from '@/features/invoices/manualPaymentMethod';
 import { markInvoicePaid } from '@/features/invoices/server/markInvoicePaid';
+import { invoiceProRequiredResponse } from '@/features/invoices/server/requireInvoicePro';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -41,9 +43,24 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    const proDenied = await invoiceProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
+
+    const body = (await request.json().catch(() => null)) as {
+      method?: unknown;
+    } | null;
+    const method = body?.method;
+    if (!isManualInvoicePaymentMethod(method)) {
+      return NextResponse.json(
+        { success: false, error: 'Choose how this was paid.' },
+        { status: 400 }
+      );
+    }
+
     const marked = await markInvoicePaid(createSupabaseAdminClient(), {
       businessId: resolved.businessId,
       invoiceId: id,
+      method,
     });
 
     if (!marked.ok) {

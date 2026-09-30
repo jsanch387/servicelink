@@ -1,5 +1,7 @@
 import { mapInvoiceListRow } from '@/features/invoices/server/mapInvoiceListRow';
 import { insertInvoiceDraft } from '@/features/invoices/server/insertInvoiceDraft';
+import { invoiceProRequiredResponse } from '@/features/invoices/server/requireInvoicePro';
+import { readInvoiceBookingId } from '@/features/invoices/server/loadInvoiceDraftFromBooking';
 import { parseSaveInvoiceDraft } from '@/features/invoices/utils/parseSaveInvoiceDraft';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -26,6 +28,9 @@ export async function GET(request: Request) {
         { status: resolved.status }
       );
     }
+
+    const proDenied = await invoiceProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (auth.supabase as any)
@@ -79,6 +84,9 @@ export async function POST(request: Request) {
       );
     }
 
+    const proDenied = await invoiceProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
+
     const json: unknown = await request.json().catch(() => null);
     const parsed = parseSaveInvoiceDraft(json);
     if (!parsed.ok) {
@@ -88,10 +96,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const bookingId =
+      json && typeof json === 'object' && 'bookingId' in json
+        ? readInvoiceBookingId((json as { bookingId?: unknown }).bookingId)
+        : null;
+
     const saved = await insertInvoiceDraft(createSupabaseAdminClient(), {
       businessId: resolved.businessId,
       createdByUserId: resolved.context.userId,
       draft: parsed.data,
+      bookingId,
     });
 
     if (!saved.ok) {

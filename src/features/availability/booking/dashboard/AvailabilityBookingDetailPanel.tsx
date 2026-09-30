@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
+import { ROUTES } from '@/constants/routes';
 import type { WeeklySchedule } from '@/features/availability/types/availability';
 import type { BookingAssigneeOption } from '@/features/team/types/bookingAssignee';
 import {
@@ -8,6 +9,7 @@ import {
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   CheckCircleIcon,
+  DocumentTextIcon,
   TrashIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
@@ -53,6 +55,8 @@ interface AvailabilityBookingDetailPanelProps {
   bufferTime?: string;
   /** Confirmed/completed bookings except the one being rescheduled (heads-up only). */
   existingBookingsForSlotGrid: ExistingBooking[];
+  /** Invoices are Pro-only. Defaults on so existing callers keep the button. */
+  canCreateInvoice?: boolean;
   assigneeOptions?: BookingAssigneeOption[];
   onAssign?: (
     userId: string | null
@@ -105,6 +109,7 @@ export function AvailabilityBookingDetailPanel({
   timeOffBlocks,
   bufferTime = 'none',
   existingBookingsForSlotGrid,
+  canCreateInvoice = true,
   assigneeOptions = [],
   onAssign,
   isAssigning = false,
@@ -332,101 +337,122 @@ export function AvailabilityBookingDetailPanel({
           {/* Service — what + pricing (multi-job when job_details present) */}
           <BookingDetailServiceSection booking={booking} />
 
-          {/* Payment */}
-          {showPaymentSection && payment && paymentDetailVariant && (
-            <section>
-              <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
-                Payment
-              </h3>
-              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
-                {paymentDetailVariant === 'membership' && (
-                  <p className="text-sm font-semibold text-white">
-                    Subscription
-                  </p>
-                )}
+          {/* Payment, with Create invoice tucked under the card */}
+          {(showPaymentSection && payment && paymentDetailVariant) ||
+          (canManageBooking && !isCancelled) ? (
+            <div>
+              {showPaymentSection && payment && paymentDetailVariant && (
+                <section>
+                  <h3 className="text-xs font-semibold text-gray-500 tracking-wider mb-3">
+                    Payment
+                  </h3>
+                  <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
+                    {paymentDetailVariant === 'membership' && (
+                      <p className="text-sm font-semibold text-white">
+                        Subscription
+                      </p>
+                    )}
 
-                {paymentDetailVariant === 'no_charge' && (
-                  <>
-                    <p className="text-sm font-semibold text-white">
-                      No charge
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Nothing to collect for this appointment.
-                    </p>
-                  </>
-                )}
+                    {paymentDetailVariant === 'no_charge' && (
+                      <>
+                        <p className="text-sm font-semibold text-white">
+                          No charge
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Nothing to collect for this appointment.
+                        </p>
+                      </>
+                    )}
 
-                {paymentDetailVariant === 'collect_offline' && (
-                  <>
-                    <p className="text-sm font-semibold text-white">
-                      Collect in person
-                    </p>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-gray-300">Amount due</span>
-                      <span className="font-semibold text-white tabular-nums">
-                        {formatCurrencyAmount(
-                          payment.remainingAmountCents,
-                          payment.currency
-                        )}
-                      </span>
-                    </div>
-                  </>
-                )}
+                    {paymentDetailVariant === 'collect_offline' && (
+                      <>
+                        <p className="text-sm font-semibold text-white">
+                          Collect in person
+                        </p>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-gray-300">Amount due</span>
+                          <span className="font-semibold text-white tabular-nums">
+                            {formatCurrencyAmount(
+                              payment.remainingAmountCents,
+                              payment.currency
+                            )}
+                          </span>
+                        </div>
+                      </>
+                    )}
 
-                {paymentDetailVariant === 'deposit' && (
-                  <>
-                    <p className="text-sm font-semibold text-white">
-                      Deposit paid
-                    </p>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-gray-300">Amount paid</span>
-                      <span className="font-semibold text-emerald-300 tabular-nums">
-                        {formatCurrencyAmount(
-                          payment.paidOnlineAmountCents,
-                          payment.currency
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-gray-300">Amount due</span>
-                      <span className="font-semibold text-white tabular-nums">
-                        {formatCurrencyAmount(
-                          payment.remainingAmountCents,
-                          payment.currency
-                        )}
-                      </span>
-                    </div>
-                  </>
-                )}
+                    {paymentDetailVariant === 'deposit' && (
+                      <>
+                        <p className="text-sm font-semibold text-white">
+                          Deposit paid
+                        </p>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-gray-300">Amount paid</span>
+                          <span className="font-semibold text-emerald-300 tabular-nums">
+                            {formatCurrencyAmount(
+                              payment.paidOnlineAmountCents,
+                              payment.currency
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-gray-300">Amount due</span>
+                          <span className="font-semibold text-white tabular-nums">
+                            {formatCurrencyAmount(
+                              payment.remainingAmountCents,
+                              payment.currency
+                            )}
+                          </span>
+                        </div>
+                      </>
+                    )}
 
-                {paymentDetailVariant === 'paid_full' && (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <CheckCircleSolidIcon
-                        className="h-5 w-5 shrink-0 text-emerald-400"
-                        aria-hidden
-                      />
-                      <span className="text-sm font-semibold text-white">
-                        Paid
-                      </span>
-                    </div>
-                    <span className="text-sm font-semibold text-emerald-300 tabular-nums">
-                      {formatCurrencyAmount(
-                        payment.paidOnlineAmountCents,
-                        payment.currency
-                      )}
-                    </span>
+                    {paymentDetailVariant === 'paid_full' && (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <CheckCircleSolidIcon
+                            className="h-5 w-5 shrink-0 text-emerald-400"
+                            aria-hidden
+                          />
+                          <span className="text-sm font-semibold text-white">
+                            Paid
+                          </span>
+                        </div>
+                        <span className="text-sm font-semibold text-emerald-300 tabular-nums">
+                          {formatCurrencyAmount(
+                            payment.paidOnlineAmountCents,
+                            payment.currency
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    {paymentDetailVariant === 'other' && (
+                      <p className="text-sm text-gray-400 leading-snug">
+                        No card payment through the app for this booking.
+                      </p>
+                    )}
                   </div>
-                )}
+                </section>
+              )}
 
-                {paymentDetailVariant === 'other' && (
-                  <p className="text-sm text-gray-400 leading-snug">
-                    No card payment through the app for this booking.
-                  </p>
-                )}
-              </div>
-            </section>
-          )}
+              {canCreateInvoice && canManageBooking && !isCancelled ? (
+                <Button
+                  href={ROUTES.DASHBOARD.INVOICES_NEW_FROM_BOOKING(booking.id)}
+                  variant="secondary"
+                  fullWidth
+                  className={
+                    showPaymentSection && payment && paymentDetailVariant
+                      ? 'mt-3'
+                      : undefined
+                  }
+                  icon={<DocumentTextIcon className="h-4 w-4" aria-hidden />}
+                >
+                  Create invoice
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           <BookingDetailCustomerSection
             customerName={booking.customerName}

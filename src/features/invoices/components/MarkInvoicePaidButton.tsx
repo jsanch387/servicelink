@@ -13,9 +13,10 @@ const PAY_METHODS = [
 
 type PayMethod = (typeof PAY_METHODS)[number]['id'];
 
-export const MarkInvoicePaidButton: React.FC<{ invoiceId: string }> = ({
-  invoiceId,
-}) => {
+export const MarkInvoicePaidButton: React.FC<{
+  invoiceId: string;
+  trigger?: (open: () => void) => React.ReactNode;
+}> = ({ invoiceId, trigger }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState<PayMethod | null>(null);
@@ -33,6 +34,8 @@ export const MarkInvoicePaidButton: React.FC<{ invoiceId: string }> = ({
     try {
       const response = await fetch(API_ROUTES.INVOICE_MARK_PAID(invoiceId), {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method }),
       });
       const json = (await response.json().catch(() => null)) as {
         success?: boolean;
@@ -57,14 +60,18 @@ export const MarkInvoicePaidButton: React.FC<{ invoiceId: string }> = ({
 
   return (
     <>
-      <Button
-        type="button"
-        variant="inverse"
-        size="sm"
-        onClick={() => setOpen(true)}
-      >
-        Mark as paid
-      </Button>
+      {trigger ? (
+        trigger(() => setOpen(true))
+      ) : (
+        <Button
+          type="button"
+          variant="inverse"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          Mark as paid
+        </Button>
+      )}
       <Modal
         isOpen={open}
         onClose={close}

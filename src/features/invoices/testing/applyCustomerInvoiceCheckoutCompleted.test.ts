@@ -6,6 +6,10 @@ import {
   CUSTOMER_INVOICE_CHECKOUT_KIND,
 } from '../server/applyCustomerInvoiceCheckoutCompleted';
 
+vi.mock('../server/notifyOwnerInvoicePaid', () => ({
+  notifyOwnerInvoicePaid: vi.fn(async () => undefined),
+}));
+
 function makeSession(
   overrides?: Partial<Stripe.Checkout.Session>
 ): Stripe.Checkout.Session {

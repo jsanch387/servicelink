@@ -31,8 +31,8 @@ describe('parseInvoiceQuantity', () => {
 });
 
 describe('formatInvoiceDueDate', () => {
-  it('labels an empty date as due on receipt', () => {
-    expect(formatInvoiceDueDate('')).toBe('On receipt');
+  it('labels an empty date as no due date', () => {
+    expect(formatInvoiceDueDate('')).toBe('No due date');
     expect(formatInvoiceDueDate('2026-11-10')).toBe('November 10, 2026');
   });
 });

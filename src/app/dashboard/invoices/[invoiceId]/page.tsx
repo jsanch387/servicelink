@@ -3,6 +3,7 @@ import { CreateInvoiceScreen } from '@/features/invoices';
 import { InvoiceBillScreen } from '@/features/invoices/components/InvoiceBillScreen';
 import { loadInvoiceBill } from '@/features/invoices/server/loadInvoiceBill';
 import { loadInvoiceDraft } from '@/features/invoices/server/loadInvoiceDraft';
+import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
 import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { redirect } from 'next/navigation';
 
@@ -24,6 +25,9 @@ export default async function InvoiceDraftPage({ params }: PageProps) {
 
   const { supabase, context } =
     await requireDashboardPageAccess('invoices.write');
+
+  const canUseInvoices = await businessCanUseInvoices(context.businessId);
+  if (!canUseInvoices) redirect(ROUTES.DASHBOARD.INVOICES);
 
   const loaded = await loadInvoiceDraft(supabase, context.businessId, id);
   if (loaded.ok) {

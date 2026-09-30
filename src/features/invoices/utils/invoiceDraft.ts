@@ -55,10 +55,10 @@ export function invoiceDraftTotalCents(lines: InvoiceLineDraft[]): number {
 
 export function formatInvoiceDueDate(iso: string): string {
   const trimmed = iso.trim();
-  if (!trimmed) return 'On receipt';
+  if (!trimmed) return 'No due date';
 
   const date = new Date(`${trimmed}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return 'On receipt';
+  if (Number.isNaN(date.getTime())) return 'No due date';
 
   return date.toLocaleDateString('en-US', {
     month: 'long',

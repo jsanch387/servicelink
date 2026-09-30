@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { ParsedInvoiceDraft } from '../utils/parseSaveInvoiceDraft';
+import { bookingLink } from './insertInvoiceDraft';
 
 const POSITION_OFFSET = 1000;
 
@@ -18,6 +19,8 @@ export async function updateInvoiceDraft(
     businessId: string;
     invoiceId: string;
     draft: ParsedInvoiceDraft;
+    /** Set when this draft was opened from an appointment and is not linked yet. */
+    bookingId?: string | null;
   }
 ): Promise<UpdateInvoiceDraftResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,7 +29,7 @@ export async function updateInvoiceDraft(
 
   const { data: invoice, error: invoiceError } = await db
     .from('invoices')
-    .select('id, status')
+    .select('id, status, booking_id')
     .eq('id', input.invoiceId)
     .eq('business_id', input.businessId)
     .maybeSingle();
@@ -112,6 +115,8 @@ export async function updateInvoiceDraft(
     return { ok: false, error: 'Could not save this draft.', status: 500 };
   }
 
+  const linked = await bookingLink(admin, input.businessId, input.bookingId);
+
   const { error: headerError } = await db
     .from('invoices')
     .update({
@@ -122,6 +127,9 @@ export async function updateInvoiceDraft(
       due_on: draft.dueOn,
       subtotal_cents: draft.subtotalCents,
       total_cents: draft.totalCents,
+      ...(linked.bookingId && !invoice.booking_id
+        ? { booking_id: linked.bookingId }
+        : {}),
     })
     .eq('id', input.invoiceId)
     .eq('business_id', input.businessId)

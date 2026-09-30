@@ -1,4 +1,6 @@
+import { readInvoiceBookingId } from '@/features/invoices/server/loadInvoiceDraftFromBooking';
 import { sendInvoice } from '@/features/invoices/server/sendInvoice';
+import { invoiceProRequiredResponse } from '@/features/invoices/server/requireInvoicePro';
 import { parseSendInvoiceDraft } from '@/features/invoices/utils/parseSaveInvoiceDraft';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -29,6 +31,9 @@ export async function POST(request: Request) {
       );
     }
 
+    const proDenied = await invoiceProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
+
     const json: unknown = await request.json().catch(() => null);
     const parsed = parseSendInvoiceDraft(json);
     if (!parsed.ok) {
@@ -47,11 +52,17 @@ export async function POST(request: Request) {
         ? rawId.trim()
         : null;
 
+    const bookingId =
+      json && typeof json === 'object' && 'bookingId' in json
+        ? readInvoiceBookingId((json as { bookingId?: unknown }).bookingId)
+        : null;
+
     const sent = await sendInvoice(createSupabaseAdminClient(), request, {
       businessId: resolved.businessId,
       createdByUserId: resolved.context.userId,
       invoiceId,
       draft: parsed.data,
+      bookingId,
     });
 
     if (!sent.ok) {
@@ -70,8 +81,12 @@ export async function POST(request: Request) {
       invoiceId: sent.invoiceId,
       invoiceNumber: sent.invoiceNumber,
       shortUrl: sent.shortUrl,
+      emailAttempted: sent.emailAttempted,
       emailSent: sent.emailSent,
       emailError: sent.emailError ?? null,
+      smsAttempted: sent.smsAttempted,
+      smsSent: sent.smsSent,
+      smsError: sent.smsError ?? null,
     });
   } catch (error) {
     console.error('invoices send POST:', error);

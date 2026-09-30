@@ -1,16 +1,24 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { ManualInvoicePaymentMethod } from '../manualPaymentMethod';
+import { notifyOwnerInvoicePaid } from './notifyOwnerInvoicePaid';
+
 export type MarkInvoicePaidResult =
   | { ok: true }
   | { ok: false; error: string; status: number };
 
 /**
- * Marks a sent invoice paid. Card checkout uses the same status.
+ * Marks a sent invoice paid after cash, a payment app, or another off-app payment.
+ * Card checkout uses the same status and does not call this.
  * A void or draft invoice is left unchanged.
  */
 export async function markInvoicePaid(
   admin: SupabaseClient,
-  input: { businessId: string; invoiceId: string }
+  input: {
+    businessId: string;
+    invoiceId: string;
+    method: ManualInvoicePaymentMethod;
+  }
 ): Promise<MarkInvoicePaidResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = admin as any;
@@ -43,6 +51,7 @@ export async function markInvoicePaid(
     .update({
       status: 'paid',
       paid_at: new Date().toISOString(),
+      payment_method: input.method,
     })
     .eq('id', input.invoiceId)
     .eq('business_id', input.businessId)
@@ -52,6 +61,11 @@ export async function markInvoicePaid(
     console.error('mark invoice paid update:', updateError);
     return { ok: false, error: 'Could not update this invoice.', status: 500 };
   }
+
+  await notifyOwnerInvoicePaid(admin, {
+    businessId: input.businessId,
+    invoiceId: input.invoiceId,
+  });
 
   return { ok: true };
 }

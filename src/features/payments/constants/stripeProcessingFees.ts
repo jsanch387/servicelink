@@ -16,6 +16,3 @@ export const STRIPE_CONNECT_NOTICE_BODY =
   'Connect to see card charges, refunds, payouts, and fees.';
 
 export const STRIPE_CONNECT_NOTICE_CTA = 'Connect Stripe';
-
-export const TRANSACTIONS_LEDGER_CAPTION =
-  'Card amounts are after Stripe fees.';

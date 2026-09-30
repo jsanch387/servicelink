@@ -2,13 +2,7 @@
 
 import { ROUTES } from '@/constants/routes';
 import { formatInvoiceCents } from '@/features/invoices/utils/invoiceDraft';
-import {
-  BanknotesIcon,
-  CalendarDaysIcon,
-  DocumentTextIcon,
-  EllipsisHorizontalIcon,
-  UserIcon,
-} from '@heroicons/react/24/outline';
+import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React from 'react';
@@ -38,9 +32,9 @@ function invoiceReference(invoice: InvoiceListItem): string {
 }
 
 function dueDateLabel(invoice: InvoiceListItem): string {
-  if (!invoice.dueOn) return 'On receipt';
+  if (!invoice.dueOn) return 'No due date';
   const date = new Date(`${invoice.dueOn.slice(0, 10)}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return 'On receipt';
+  if (Number.isNaN(date.getTime())) return 'No due date';
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -54,21 +48,6 @@ function StatusPill({ status }: { status: InvoiceStatus }) {
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLASS[status]}`}
     >
       {STATUS_LABEL[status]}
-    </span>
-  );
-}
-
-function HeaderLabel({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400">
-      {icon}
-      {children}
     </span>
   );
 }
@@ -88,45 +67,20 @@ export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
         <table className="min-w-full">
           <thead>
             <tr className="border-b border-white/10">
-              <th className="px-4 py-3 text-left">
-                <HeaderLabel
-                  icon={<UserIcon className="h-3.5 w-3.5" aria-hidden />}
-                >
-                  Customer
-                </HeaderLabel>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+                Customer
               </th>
-              <th className="px-4 py-3 text-left">
-                <HeaderLabel
-                  icon={
-                    <DocumentTextIcon className="h-3.5 w-3.5" aria-hidden />
-                  }
-                >
-                  Invoice
-                </HeaderLabel>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+                Invoice
               </th>
-              <th className="px-4 py-3 text-left">
-                <HeaderLabel
-                  icon={
-                    <CalendarDaysIcon className="h-3.5 w-3.5" aria-hidden />
-                  }
-                >
-                  Due date
-                </HeaderLabel>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+                Due date
               </th>
-              <th className="px-4 py-3 text-left">
-                <HeaderLabel
-                  icon={<BanknotesIcon className="h-3.5 w-3.5" aria-hidden />}
-                >
-                  Amount
-                </HeaderLabel>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+                Amount
               </th>
-              <th className="px-4 py-3 text-left">
-                <span className="text-xs font-semibold text-gray-400">
-                  Status
-                </span>
-              </th>
-              <th className="w-12 px-3 py-3">
-                <span className="sr-only">Open</span>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
+                Status
               </th>
             </tr>
           </thead>
@@ -145,7 +99,7 @@ export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
                       openInvoice(invoice.id);
                     }
                   }}
-                  className="group cursor-pointer border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none"
+                  className="cursor-pointer border-b border-white/5 transition-colors last:border-0 hover:bg-white/[0.03] focus-visible:bg-white/[0.04] focus-visible:outline-none"
                 >
                   <td className="max-w-[16rem] px-4 py-3.5 align-middle">
                     <span className="block truncate text-sm font-semibold text-white">
@@ -163,12 +117,6 @@ export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
                   </td>
                   <td className="px-4 py-3.5 align-middle">
                     <StatusPill status={invoice.status} />
-                  </td>
-                  <td className="px-3 py-3.5 text-right align-middle">
-                    <EllipsisHorizontalIcon
-                      className="ml-auto h-5 w-5 text-gray-500 transition-colors group-hover:text-white"
-                      aria-hidden
-                    />
                   </td>
                 </tr>
               );

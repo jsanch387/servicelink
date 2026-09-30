@@ -35,6 +35,7 @@ export const MARKETING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Listed in the ServiceLink marketplace', highlight: true },
   { text: 'Client CRM — notes, history, and check-ins' },
   { text: 'Create and accept quote requests' },
+  { text: 'Create and send invoices' },
   { text: 'Email confirmations for you and clients' },
   { text: 'Multiple price options per service' },
   {

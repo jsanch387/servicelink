@@ -68,11 +68,23 @@ describe('parseSaveInvoiceDraft', () => {
     expect(parsed.data.lines[0]?.id).toBe(lineId);
   });
 
-  it('requires an email before the invoice can be sent', () => {
-    expect(parseSendInvoiceDraft({ ...validDraft, customerEmail: '' })).toEqual(
-      { ok: false, error: 'Add an email to send this invoice.' }
+  it('requires an email or a phone number before the invoice can be sent', () => {
+    expect(
+      parseSendInvoiceDraft({
+        ...validDraft,
+        customerEmail: '',
+        customerPhone: '',
+      })
+    ).toEqual({
+      ok: false,
+      error: 'Add an email or a phone number.',
+    });
+    expect(parseSendInvoiceDraft({ ...validDraft, customerEmail: '' }).ok).toBe(
+      true
     );
-    expect(parseSendInvoiceDraft(validDraft).ok).toBe(true);
+    expect(parseSendInvoiceDraft({ ...validDraft, customerPhone: '' }).ok).toBe(
+      true
+    );
   });
 
   it('requires a customer name and at least one priced service', () => {

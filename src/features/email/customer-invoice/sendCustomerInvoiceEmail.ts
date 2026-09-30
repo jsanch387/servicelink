@@ -32,6 +32,7 @@ export async function sendCustomerInvoiceEmail(
     totalCents: input.totalCents,
     dueOn: input.dueOn,
     invoiceUrl: input.invoiceUrl,
+    paid: input.paid,
   };
 
   const replyTo = normalizedCustomerRecipientEmail(input.replyTo ?? '');

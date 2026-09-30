@@ -30,6 +30,7 @@ const TYPE_ICONS: Record<
   review_submitted: StarIcon,
   membership_subscriber: RectangleStackIcon,
   membership_visit_needed: RectangleStackIcon,
+  customer_invoice_paid: DocumentTextIcon,
 };
 
 interface NotificationItemProps {

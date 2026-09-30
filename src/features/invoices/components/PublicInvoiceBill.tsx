@@ -60,7 +60,12 @@ export const PublicInvoiceBill: React.FC<{
     ? formatUsPhoneDigits(invoice.customerPhone)
     : '';
   const contact = [invoice.customerEmail, phone].filter(Boolean);
-  const amountLabel = invoice.status === 'paid' ? 'Paid' : 'Amount due';
+  const amountLabel =
+    invoice.status === 'paid'
+      ? 'Paid'
+      : invoice.status === 'void'
+        ? 'Void'
+        : 'Amount due';
   const note = invoice.note?.trim() ?? '';
 
   return (

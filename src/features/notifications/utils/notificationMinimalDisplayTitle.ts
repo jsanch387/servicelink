@@ -27,6 +27,10 @@ export function notificationMinimalDisplayTitle(
 
   const blob = `${type} ${referenceType}`.toLowerCase();
 
+  if (blob.includes('customer_invoice_paid')) {
+    return 'Invoice paid';
+  }
+
   if (blob.includes('payment') && blob.includes('fail')) {
     return 'Payment failed';
   }

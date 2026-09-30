@@ -17,7 +17,8 @@ export type NotificationType =
   | 'quote_request_followup'
   | 'review_submitted'
   | 'membership_subscriber'
-  | 'membership_visit_needed';
+  | 'membership_visit_needed'
+  | 'customer_invoice_paid';
 
 /** Row from notifications table (API/DB) */
 export interface Notification {

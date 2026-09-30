@@ -47,19 +47,18 @@ export function usePaymentsRevenue(args: {
       params.set('to', args.customTo);
     }
 
-    const controller = new AbortController();
+    let cancelled = false;
     setData(null);
     setLoading(true);
     setError(null);
 
-    void fetch(`${API_ROUTES.PAYMENTS_REVENUE}?${params.toString()}`, {
-      signal: controller.signal,
-    })
+    void fetch(`${API_ROUTES.PAYMENTS_REVENUE}?${params.toString()}`)
       .then(async response => {
         const body = (await response.json().catch(() => ({}))) as {
           success?: boolean;
           error?: string;
         } & Partial<PaymentsRevenueData>;
+        if (cancelled) return;
         if (!response.ok || body.success === false) {
           throw new Error(
             typeof body.error === 'string' && body.error.trim()
@@ -81,17 +80,19 @@ export function usePaymentsRevenue(args: {
         });
       })
       .catch((err: unknown) => {
-        if (controller.signal.aborted) return;
+        if (cancelled) return;
         setData(null);
         setError(
           err instanceof Error ? err.message : "Couldn't load earnings."
         );
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!cancelled) setLoading(false);
       });
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [args.customFrom, args.customTo, args.period, reloadKey]);
 
   return { data, loading, error, reload };

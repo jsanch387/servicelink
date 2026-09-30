@@ -11,6 +11,32 @@ function createPublicToken(): string {
   return crypto.randomBytes(32).toString('base64url');
 }
 
+export async function bookingLink(
+  admin: SupabaseClient,
+  businessId: string,
+  bookingId: string | null | undefined
+): Promise<{ bookingId: string | null; customerId: string | null }> {
+  const id = bookingId?.trim() ?? '';
+  if (!id) return { bookingId: null, customerId: null };
+
+  const { data, error } = await admin
+    .from('bookings')
+    .select('id, customer_id, status')
+    .eq('id', id)
+    .eq('business_id', businessId)
+    .maybeSingle();
+
+  if (error || !data || data.status === 'cancelled') {
+    if (error) console.error('invoice booking link:', error);
+    return { bookingId: null, customerId: null };
+  }
+
+  return {
+    bookingId: data.id,
+    customerId: data.customer_id,
+  };
+}
+
 /**
  * Inserts a draft with the service role. Authenticated clients can only select.
  */
@@ -20,12 +46,15 @@ export async function insertInvoiceDraft(
     businessId: string;
     createdByUserId: string;
     draft: ParsedInvoiceDraft;
+    /** Appointment this bill was opened from. Ignored when it is not this shop's booking. */
+    bookingId?: string | null;
   }
 ): Promise<InsertInvoiceDraftResult> {
   // `invoices` is not in the generated Database type yet.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = admin as any;
   const { draft } = input;
+  const linked = await bookingLink(admin, input.businessId, input.bookingId);
 
   let invoiceId: string | null = null;
   let lastError: { message?: string; code?: string } | null = null;
@@ -37,6 +66,8 @@ export async function insertInvoiceDraft(
         business_id: input.businessId,
         created_by_user_id: input.createdByUserId,
         status: 'draft',
+        customer_id: linked.customerId,
+        booking_id: linked.bookingId,
         customer_name: draft.customerName,
         customer_email: draft.customerEmail,
         customer_phone: draft.customerPhone,

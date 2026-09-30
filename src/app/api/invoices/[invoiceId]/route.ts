@@ -1,4 +1,6 @@
+import { readInvoiceBookingId } from '@/features/invoices/server/loadInvoiceDraftFromBooking';
 import { updateInvoiceDraft } from '@/features/invoices/server/updateInvoiceDraft';
+import { invoiceProRequiredResponse } from '@/features/invoices/server/requireInvoicePro';
 import { parseSaveInvoiceDraft } from '@/features/invoices/utils/parseSaveInvoiceDraft';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -42,6 +44,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    const proDenied = await invoiceProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
+
     const json: unknown = await request.json().catch(() => null);
     const parsed = parseSaveInvoiceDraft(json);
     if (!parsed.ok) {
@@ -51,10 +56,16 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    const bookingId =
+      json && typeof json === 'object' && 'bookingId' in json
+        ? readInvoiceBookingId((json as { bookingId?: unknown }).bookingId)
+        : null;
+
     const saved = await updateInvoiceDraft(createSupabaseAdminClient(), {
       businessId: resolved.businessId,
       invoiceId: id,
       draft: parsed.data,
+      bookingId,
     });
 
     if (!saved.ok) {

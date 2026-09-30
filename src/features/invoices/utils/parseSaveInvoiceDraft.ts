@@ -62,14 +62,17 @@ function isIsoDate(value: string): boolean {
   );
 }
 
-/** Same as a draft, and the customer email is required so it can be sent. */
+/** Same as a draft, and the customer needs an email or a phone number. */
 export function parseSendInvoiceDraft(
   body: unknown
 ): ParseSaveInvoiceDraftResult {
   const parsed = parseSaveInvoiceDraft(body);
   if (!parsed.ok) return parsed;
-  if (!parsed.data.customerEmail) {
-    return { ok: false, error: 'Add an email to send this invoice.' };
+  if (!parsed.data.customerEmail && !parsed.data.customerPhone) {
+    return {
+      ok: false,
+      error: 'Add an email or a phone number.',
+    };
   }
   return parsed;
 }

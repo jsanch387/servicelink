@@ -13,6 +13,7 @@ import {
   type WeeklySchedule,
 } from '@/features/availability/types/availability';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
 import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { redirect } from 'next/navigation';
 
@@ -70,6 +71,8 @@ export default async function BookingsPage() {
     console.error('Error fetching booking requests:', requestsError);
   }
 
+  const canCreateInvoice = await businessCanUseInvoices(businessProfile.id);
+
   return (
     <BookingsPageSwitch
       businessName={businessProfile.business_name}
@@ -82,6 +85,7 @@ export default async function BookingsPage() {
       timeOffBlocks={timeOffBlocks}
       freeBookingsUsed={0}
       showFreeBookingsTracker={false}
+      canCreateInvoice={canCreateInvoice}
     />
   );
 }

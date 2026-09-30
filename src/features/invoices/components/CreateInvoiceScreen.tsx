@@ -35,6 +35,8 @@ interface CreateInvoiceScreenProps {
   businessName: string;
   invoiceId?: string;
   initialDraft?: InvoiceDraft;
+  /** Appointment this bill was opened from. Saved with the draft. */
+  bookingId?: string | null;
 }
 
 const cardClassName =
@@ -44,6 +46,7 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
   businessName,
   invoiceId,
   initialDraft,
+  bookingId = null,
 }) => {
   const router = useRouter();
   const [draft, setDraft] = useState<InvoiceDraft>(
@@ -68,14 +71,22 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
       const response = await fetch(API_ROUTES.INVOICES_SEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...draft, invoiceId: persistedId }),
+        body: JSON.stringify({
+          ...draft,
+          invoiceId: persistedId,
+          ...(bookingId ? { bookingId } : {}),
+        }),
       });
       const json = (await response.json().catch(() => null)) as {
         success?: boolean;
         error?: string;
         invoiceId?: string;
+        emailAttempted?: boolean;
         emailSent?: boolean;
         emailError?: string | null;
+        smsAttempted?: boolean;
+        smsSent?: boolean;
+        smsError?: string | null;
       } | null;
 
       if (json?.invoiceId) setPersistedId(json.invoiceId);
@@ -86,13 +97,30 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
         return;
       }
 
-      if (!json.emailSent) {
-        toast.error(json.emailError || 'Could not email this invoice.');
+      const emailed = Boolean(json.emailAttempted) && Boolean(json.emailSent);
+      const texted = Boolean(json.smsAttempted) && Boolean(json.smsSent);
+      if (!emailed && !texted) {
+        toast.error(
+          json.emailError || json.smsError || 'Could not send this invoice.'
+        );
         setSending(false);
         return;
       }
-
-      toast.success('Invoice sent');
+      if (!emailed && texted) {
+        toast.warning(
+          json.emailError
+            ? `Invoice texted. ${json.emailError}`
+            : 'Invoice texted. The email could not be sent.'
+        );
+      } else if (emailed && !texted && json.smsAttempted) {
+        toast.warning(
+          json.smsError
+            ? `Invoice emailed. ${json.smsError}`
+            : 'Invoice emailed. The text could not be sent.'
+        );
+      } else {
+        toast.success('Invoice sent');
+      }
       router.push(ROUTES.DASHBOARD.INVOICES);
     } catch {
       toast.error('Could not send this invoice.');
@@ -116,7 +144,10 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
         {
           method: persistedId ? 'PATCH' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(draft),
+          body: JSON.stringify({
+            ...draft,
+            ...(bookingId ? { bookingId } : {}),
+          }),
         }
       );
       const json = (await response.json().catch(() => null)) as {
@@ -184,7 +215,7 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
             <Button
               type="button"
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={() => void saveDraft()}
               loading={saving}
               disabled={busy}
@@ -194,7 +225,7 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
             <Button
               type="button"
               variant="inverse"
-              size="md"
+              size="sm"
               onClick={() => void sendInvoice()}
               loading={sending}
               disabled={busy}
@@ -249,6 +280,9 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
                     autoComplete="email"
                   />
                 </div>
+                <p className="mt-2 text-xs text-zinc-500">
+                  We&apos;ll send this by email, phone, or both.
+                </p>
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -277,9 +311,6 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
                       className="min-h-[42px] w-full min-w-0 flex-1 cursor-pointer border-0 bg-transparent py-2.5 text-base text-white outline-none [color-scheme:dark] focus:ring-0 sm:text-sm [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                     />
                   </div>
-                  <p className="mt-1.5 text-xs text-zinc-500">
-                    Leave blank if it&apos;s due on receipt.
-                  </p>
                 </div>
               </div>
             </section>

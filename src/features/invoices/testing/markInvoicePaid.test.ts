@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { markInvoicePaid } from '../server/markInvoicePaid';
 
+vi.mock('../server/notifyOwnerInvoicePaid', () => ({
+  notifyOwnerInvoicePaid: vi.fn(async () => undefined),
+}));
+
 function makeSupabase(opts: {
   row?: { id: string; status: string } | null;
   updateError?: { message: string } | null;
@@ -42,10 +46,14 @@ describe('markInvoicePaid', () => {
     const result = await markInvoicePaid(supabase, {
       businessId: 'biz_1',
       invoiceId: 'inv_1',
+      method: 'cash',
     });
 
     expect(result).toEqual({ ok: true });
-    expect(updates[0]).toMatchObject({ status: 'paid' });
+    expect(updates[0]).toMatchObject({
+      status: 'paid',
+      payment_method: 'cash',
+    });
   });
 
   it('leaves a void invoice unchanged', async () => {
@@ -56,6 +64,7 @@ describe('markInvoicePaid', () => {
     const result = await markInvoicePaid(supabase, {
       businessId: 'biz_1',
       invoiceId: 'inv_1',
+      method: 'other',
     });
 
     expect(result).toEqual({
@@ -74,6 +83,7 @@ describe('markInvoicePaid', () => {
     const result = await markInvoicePaid(supabase, {
       businessId: 'biz_1',
       invoiceId: 'inv_1',
+      method: 'payment_app',
     });
 
     expect(result).toEqual({ ok: true });

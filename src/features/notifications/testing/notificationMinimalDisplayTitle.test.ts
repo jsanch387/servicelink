@@ -39,6 +39,12 @@ describe('notificationMinimalDisplayTitle', () => {
     ).toBe('Payment failed');
   });
 
+  it('customer invoice paid is not a generic payment', () => {
+    expect(
+      notificationMinimalDisplayTitle('customer_invoice_paid', 'invoice', '')
+    ).toBe('Invoice paid');
+  });
+
   it('generic payment-ish blob', () => {
     expect(
       notificationMinimalDisplayTitle('billing', 'deposit_received', '')

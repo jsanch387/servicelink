@@ -7,7 +7,7 @@ export type InvoiceListItem = {
   status: InvoiceStatus;
   customerName: string;
   totalCents: number;
-  /** `YYYY-MM-DD`, or null when due on receipt. */
+  /** `YYYY-MM-DD`, or null when there is no due date. */
   dueOn: string | null;
   createdAt: string;
   invoiceNumber: number | null;
@@ -25,7 +25,7 @@ export type InvoiceDraft = {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
-  /** `YYYY-MM-DD`, empty means due on receipt. */
+  /** `YYYY-MM-DD`, empty means no due date. */
   dueDate: string;
   note: string;
   lines: InvoiceLineDraft[];

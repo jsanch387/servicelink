@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBookingConfirmedSms,
   buildBookingReminderSms,
+  buildCustomerInvoiceSms,
   buildJobCompletedInvoiceSms,
   buildJobCompletedSms,
   buildJobStartedSms,
@@ -99,6 +100,19 @@ describe('booking SMS templates (ServiceLink)', () => {
       expectOptOutBlock(
         msg,
         'Enjoyed your service? Leave a quick review: https://servicelink.app/review/abc123'
+      );
+    });
+  });
+
+  describe('buildCustomerInvoiceSms', () => {
+    it('sends the bill link and the opt-out, without a business name', () => {
+      const url = 'https://myservicelink.app/b/K7mN2pQx';
+      expectOptOutBlock(
+        buildCustomerInvoiceSms({ invoiceUrl: url }),
+        `Your invoice is ready: ${url}`
+      );
+      expect(buildCustomerInvoiceSms({ invoiceUrl: url })).not.toMatch(
+        /sale|discount|offer|unsubscribe/i
       );
     });
   });

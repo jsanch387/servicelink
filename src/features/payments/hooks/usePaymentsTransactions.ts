@@ -1,7 +1,7 @@
 'use client';
 
 import { API_ROUTES } from '@/constants/routes';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PaymentsTransactionKind } from '../transactions/constants';
 import type {
   PaymentsTransactionBalance,
@@ -10,20 +10,23 @@ import type {
 
 export type PaymentsTransactionsKindFilter = 'all' | PaymentsTransactionKind;
 
+const PAGE_SIZE = 10;
+
 export function usePaymentsTransactions(kind: PaymentsTransactionsKindFilter) {
   const [items, setItems] = useState<PaymentsTransactionListItem[]>([]);
   const [balance, setBalance] = useState<PaymentsTransactionBalance | null>(
     null
   );
-  const [hasMore, setHasMore] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cursorsRef = useRef<(string | null)[]>([null]);
+  const requestRef = useRef(0);
 
   const load = useCallback(
     async (cursor: string | null) => {
-      const params = new URLSearchParams({ limit: '20' });
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
       if (kind !== 'all') params.set('kind', kind);
       if (cursor) params.set('startingAfter', cursor);
 
@@ -57,82 +60,67 @@ export function usePaymentsTransactions(kind: PaymentsTransactionsKindFilter) {
     [kind]
   );
 
-  useEffect(() => {
-    const controller = { cancelled: false };
-    setLoading(true);
-    setError(null);
-    setItems([]);
-    setNextCursor(null);
-    setHasMore(false);
-
-    void load(null)
-      .then(page => {
-        if (controller.cancelled) return;
+  const showPage = useCallback(
+    async (index: number) => {
+      const requestId = ++requestRef.current;
+      setLoading(true);
+      setError(null);
+      try {
+        const page = await load(cursorsRef.current[index] ?? null);
+        if (requestId !== requestRef.current) return;
         setBalance(page.balance);
         setItems(page.items);
-        setHasMore(page.hasMore);
-        setNextCursor(page.nextCursor);
-      })
-      .catch((err: unknown) => {
-        if (controller.cancelled) return;
+        setPageIndex(index);
+        const nextCursor =
+          page.hasMore && page.nextCursor ? page.nextCursor : null;
+        setHasNext(Boolean(nextCursor));
+        if (nextCursor) cursorsRef.current[index + 1] = nextCursor;
+      } catch (err: unknown) {
+        if (requestId !== requestRef.current) return;
         setError(
           err instanceof Error ? err.message : "Couldn't load transactions."
         );
-      })
-      .finally(() => {
-        if (!controller.cancelled) setLoading(false);
-      });
+      } finally {
+        if (requestId === requestRef.current) setLoading(false);
+      }
+    },
+    [load]
+  );
 
+  useEffect(() => {
+    cursorsRef.current = [null];
+    setPageIndex(0);
+    setHasNext(false);
+    setItems([]);
+    void showPage(0);
     return () => {
-      controller.cancelled = true;
+      requestRef.current += 1;
     };
-  }, [load]);
+  }, [showPage]);
 
-  const loadMore = useCallback(async () => {
-    if (!hasMore || !nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    setError(null);
-    try {
-      const page = await load(nextCursor);
-      setItems(current => [...current, ...page.items]);
-      setHasMore(page.hasMore);
-      setNextCursor(page.nextCursor);
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Couldn't load transactions."
-      );
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [hasMore, load, loadingMore, nextCursor]);
+  const goToPrevious = useCallback(() => {
+    if (pageIndex < 1) return;
+    void showPage(pageIndex - 1);
+  }, [pageIndex, showPage]);
+
+  const goToNext = useCallback(() => {
+    if (!hasNext) return;
+    void showPage(pageIndex + 1);
+  }, [hasNext, pageIndex, showPage]);
 
   return {
     items,
     balance,
-    hasMore,
     loading,
-    loadingMore,
     error,
-    loadMore,
+    page: pageIndex + 1,
+    hasPrevious: pageIndex > 0,
+    hasNext,
+    goToPrevious,
+    goToNext,
     reload: () => {
-      setItems([]);
-      setNextCursor(null);
-      setHasMore(false);
-      setLoading(true);
-      setError(null);
-      void load(null)
-        .then(page => {
-          setBalance(page.balance);
-          setItems(page.items);
-          setHasMore(page.hasMore);
-          setNextCursor(page.nextCursor);
-        })
-        .catch((err: unknown) => {
-          setError(
-            err instanceof Error ? err.message : "Couldn't load transactions."
-          );
-        })
-        .finally(() => setLoading(false));
+      cursorsRef.current = [null];
+      void showPage(0);
     },
   };
 }

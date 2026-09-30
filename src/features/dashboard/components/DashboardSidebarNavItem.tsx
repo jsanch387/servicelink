@@ -33,10 +33,10 @@ export function DashboardSidebarNavItem({
       : badge === 'new'
         ? `${name} (New)`
         : name;
-  const className = `group flex w-full items-center rounded-xl text-sm font-medium tracking-tight transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+  const className = `group flex w-full items-center rounded-xl text-[15px] leading-5 font-medium tracking-tight transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
     collapsed
-      ? 'gap-3 px-3 py-2 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
-      : 'gap-3 px-3 py-2'
+      ? 'gap-3.5 px-3 py-2.5 lg:justify-center lg:gap-0 lg:px-0 lg:py-2.5'
+      : 'gap-3.5 px-3 py-2.5'
   } ${
     isActive
       ? 'bg-white/[0.08] text-white'
@@ -46,16 +46,16 @@ export function DashboardSidebarNavItem({
   const content = (
     <>
       <Icon
-        className={`h-5 w-5 shrink-0 transition-colors ${
+        className={`h-[22px] w-[22px] shrink-0 transition-colors ${
           isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-200'
         }`}
       />
       <span
-        className={`flex min-w-0 items-center gap-1.5 ${collapsed ? 'lg:sr-only' : ''}`}
+        className={`flex min-w-0 flex-1 items-center gap-2 ${collapsed ? 'lg:sr-only' : ''}`}
       >
-        <span className="truncate">{name}</span>
-        {badge === 'beta' ? <BetaBadge /> : null}
-        {badge === 'new' ? <NewBadge /> : null}
+        <span className="min-w-0 truncate">{name}</span>
+        {badge === 'beta' ? <BetaBadge className="ml-auto shrink-0" /> : null}
+        {badge === 'new' ? <NewBadge className="ml-auto shrink-0" /> : null}
       </span>
     </>
   );

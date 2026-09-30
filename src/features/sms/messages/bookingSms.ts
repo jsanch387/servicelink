@@ -113,6 +113,14 @@ export function buildJobCompletedSms(): string {
  * When review-eligible, soft-ask in the same text (CTA lives on the receipt page —
  * no separate review SMS / review URL).
  */
+/** Customer bill link. Same `/b/` URL as the invoice email. */
+export function buildCustomerInvoiceSms(ctx: { invoiceUrl: string }): string {
+  const url = ctx.invoiceUrl.trim();
+  return withOptOut(
+    url ? `Your invoice is ready: ${url}` : 'Your invoice is ready.'
+  );
+}
+
 export function buildJobCompletedInvoiceSms(ctx: {
   invoiceUrl: string;
   includeReviewHint?: boolean;

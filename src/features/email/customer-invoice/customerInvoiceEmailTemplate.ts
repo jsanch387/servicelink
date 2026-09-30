@@ -19,6 +19,8 @@ export type CustomerInvoiceEmailPayload = {
   totalCents: number;
   dueOn: string | null;
   invoiceUrl: string;
+  /** The appointment was already paid, so this bill is a paid record. */
+  paid?: boolean;
 };
 
 const PROMO_WORDS =
@@ -38,13 +40,14 @@ export function buildCustomerInvoiceEmailText(
   const customer = payload.customerName.trim() || 'there';
   const due = formatInvoiceDueDate(payload.dueOn ?? '');
   const amount = formatInvoiceCents(payload.totalCents);
+  const amountLabel = payload.paid ? 'Amount paid' : 'Amount due';
 
   return [
     `${business} sent you invoice ${payload.invoiceNumber}.`,
     '',
     `Hi ${customer},`,
     '',
-    `Amount due: ${amount}`,
+    `${amountLabel}: ${amount}`,
     `Due: ${due}`,
     '',
     'View your invoice:',
@@ -61,12 +64,13 @@ export function buildCustomerInvoiceEmailHtml(
   const customer = payload.customerName.trim() || 'there';
   const due = formatInvoiceDueDate(payload.dueOn ?? '');
   const amount = formatInvoiceCents(payload.totalCents);
+  const amountLabel = payload.paid ? 'Amount paid' : 'Amount due';
   const subject = customerInvoiceEmailSubject(payload);
 
   const details = [
     serviceLinkEmailDetailRow('From', business),
     serviceLinkEmailDetailRow('Invoice', String(payload.invoiceNumber)),
-    serviceLinkEmailDetailRow('Amount due', amount),
+    serviceLinkEmailDetailRow(amountLabel, amount),
     serviceLinkEmailDetailRow('Due', due, { isLast: true }),
   ].join('');
 

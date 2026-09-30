@@ -4,6 +4,11 @@
  * docs/contracts/mobile-booking-job-completed.md.
  */
 
+import {
+  customerInvoiceCoversBooking,
+  loadBookingPaymentCoverage,
+  markSentInvoicePaidForBooking,
+} from '@/features/invoices/server/syncInvoiceWithBookingPayment';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { getReviewInviteRequestId } from '@/features/reviews/server/reviewInviteRouteLog';
 import { isSmsOutboundEnabled } from '@/features/sms/config/isSmsOutboundEnabled';
@@ -249,7 +254,7 @@ export async function handleJobCompletedAction(opts: {
   const sessionFees = parsed.body.sessionFees ?? [];
   const sessionPayment = parsed.body.sessionPayment;
 
-  const amountDue = computeBookingAmountDue({
+  let amountDue = computeBookingAmountDue({
     servicePriceCents: booking.service_price_cents,
     addonDetails: booking.addon_details,
     jobDetails: booking.job_details,
@@ -268,6 +273,20 @@ export async function handleJobCompletedAction(opts: {
       discountCents: booking.discount_cents,
     },
   });
+
+  const adminForInvoice = createSupabaseAdminClient();
+  const invoiceAlreadyPaid = await customerInvoiceCoversBooking(
+    adminForInvoice,
+    business.id,
+    booking.id
+  );
+  if (invoiceAlreadyPaid && amountDue.amountDueCents > 0 && !sessionPayment) {
+    amountDue = {
+      ...amountDue,
+      sessionPayCents: amountDue.sessionPayCents + amountDue.amountDueCents,
+      amountDueCents: 0,
+    };
+  }
 
   if (amountDue.amountDueCents !== 0) {
     const stillDue = amountDue.amountDueCents > 0;
@@ -380,7 +399,7 @@ export async function handleJobCompletedAction(opts: {
     }
   }
 
-  const admin = createSupabaseAdminClient();
+  const admin = adminForInvoice;
   const persisted = await persistJobCompletedTransaction({
     sessionClient: auth.supabase,
     admin,
@@ -401,6 +420,19 @@ export async function handleJobCompletedAction(opts: {
       { success: false, error: persisted.error },
       { status: persisted.httpStatus }
     );
+  }
+
+  if (!invoiceAlreadyPaid) {
+    const coverage = await loadBookingPaymentCoverage(admin, booking.id);
+    const collected = sessionPayment?.method;
+    const method = coverage.settled
+      ? coverage.method
+      : collected === 'cash' ||
+          collected === 'payment_app' ||
+          collected === 'other'
+        ? collected
+        : 'card';
+    await markSentInvoicePaidForBooking(admin, business.id, booking.id, method);
   }
 
   const payload: JobCompletedSuccessResponse = {

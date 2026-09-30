@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 
+import { notifyOwnerInvoicePaid } from './notifyOwnerInvoicePaid';
+
 /** Stripe Checkout `metadata.kind` for a customer invoice. */
 export const CUSTOMER_INVOICE_CHECKOUT_KIND = 'customer_invoice';
 
@@ -49,7 +51,7 @@ export async function applyCustomerInvoiceCheckoutCompleted(
   const db = supabase as any;
   const { data: row, error } = await db
     .from('invoices')
-    .select('id, status, total_cents')
+    .select('id, business_id, status, total_cents')
     .eq('id', invoiceId)
     .maybeSingle();
 
@@ -105,6 +107,12 @@ export async function applyCustomerInvoiceCheckoutCompleted(
       invoiceId,
       error: updateError,
     });
+    return { handled: true };
+  }
+
+  const businessId = typeof row.business_id === 'string' ? row.business_id : '';
+  if (businessId) {
+    await notifyOwnerInvoicePaid(supabase, { businessId, invoiceId });
   }
 
   return { handled: true };

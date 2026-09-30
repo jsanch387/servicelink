@@ -111,6 +111,9 @@ export const ROUTES = {
       `/dashboard/quotes/${encodeURIComponent(quoteId.trim())}/edit`,
     INVOICES: '/dashboard/invoices',
     INVOICES_NEW: '/dashboard/invoices/new',
+    /** New invoice already filled from an appointment. */
+    INVOICES_NEW_FROM_BOOKING: (bookingId: string) =>
+      `/dashboard/invoices/new?booking=${encodeURIComponent(bookingId.trim())}`,
     INVOICE: (invoiceId: string) =>
       `/dashboard/invoices/${encodeURIComponent(invoiceId.trim())}`,
     AVAILABILITY: '/dashboard/availability',
@@ -243,6 +246,12 @@ export const API_ROUTES = {
   /** Owner: mark a sent invoice paid after cash or another off-app payment. */
   INVOICE_MARK_PAID: (invoiceId: string) =>
     `/api/invoices/${encodeURIComponent(invoiceId.trim())}/paid`,
+  /** Owner: void a sent invoice. The number and public link stay. */
+  INVOICE_VOID: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}/void`,
+  /** Owner: download the sent, paid, or void bill as a PDF. */
+  INVOICE_PDF: (invoiceId: string) =>
+    `/api/invoices/${encodeURIComponent(invoiceId.trim())}/pdf`,
   QUOTE_SEND: '/api/quotes/send',
   /** Owner: read, edit, or delete one quote. */
   QUOTE_DETAIL: (quoteId: string) =>
