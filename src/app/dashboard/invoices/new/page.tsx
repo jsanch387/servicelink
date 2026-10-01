@@ -1,5 +1,6 @@
 import { ROUTES } from '@/constants/routes';
 import { CreateInvoiceScreen } from '@/features/invoices';
+import { isOwnerEmailAllowedForInvoicesRollout } from '@/features/invoices/config/invoicesRolloutAllowlist';
 import { loadInvoiceDraftFromBooking } from '@/features/invoices/server/loadInvoiceDraftFromBooking';
 import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
 import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
@@ -13,8 +14,11 @@ interface PageProps {
 
 export default async function NewInvoicePage({ searchParams }: PageProps) {
   const { booking: bookingParam } = await searchParams;
-  const { supabase, context } =
+  const { supabase, user, context } =
     await requireDashboardPageAccess('invoices.write');
+  if (!isOwnerEmailAllowedForInvoicesRollout(user.email)) {
+    redirect(ROUTES.DASHBOARD.MAIN);
+  }
 
   const canUseInvoices = await businessCanUseInvoices(context.businessId);
   if (!canUseInvoices) redirect(ROUTES.DASHBOARD.INVOICES);

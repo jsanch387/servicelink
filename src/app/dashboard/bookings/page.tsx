@@ -13,6 +13,7 @@ import {
   type WeeklySchedule,
 } from '@/features/availability/types/availability';
 import { hasAvailabilityConfigured } from '@/features/availability/utils/hasAvailabilityConfigured';
+import { isOwnerEmailAllowedForInvoicesRollout } from '@/features/invoices/config/invoicesRolloutAllowlist';
 import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
 import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { redirect } from 'next/navigation';
@@ -20,7 +21,7 @@ import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 export default async function BookingsPage() {
-  const { supabase, context } =
+  const { supabase, user, context } =
     await requireDashboardPageAccess('bookings.read');
 
   const { data: businessProfileRow, error: businessError } = await supabase
@@ -71,7 +72,9 @@ export default async function BookingsPage() {
     console.error('Error fetching booking requests:', requestsError);
   }
 
-  const canCreateInvoice = await businessCanUseInvoices(businessProfile.id);
+  const canCreateInvoice =
+    isOwnerEmailAllowedForInvoicesRollout(user.email) &&
+    (await businessCanUseInvoices(businessProfile.id));
 
   return (
     <BookingsPageSwitch

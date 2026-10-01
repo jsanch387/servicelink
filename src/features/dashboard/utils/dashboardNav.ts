@@ -28,6 +28,7 @@ export type DashboardNavItem = {
   requiresOnboarding: boolean;
   requiresMemberships?: boolean;
   requiresTeamRollout?: boolean;
+  requiresInvoicesRollout?: boolean;
   requiresAvailability?: boolean;
   requiredPermission?: TeamPermission;
   activePathPrefix?: string;
@@ -158,6 +159,7 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     activePathPrefix: '/dashboard/invoices',
     badge: 'new',
     navGroup: 'money',
+    requiresInvoicesRollout: true,
   },
   {
     name: 'Customers',
@@ -213,17 +215,21 @@ export function getVisibleDashboardNavItems({
   hasShopAccess,
   showMembershipsNav,
   showTeamNav = false,
+  showInvoicesNav = true,
   can,
 }: {
   hasShopAccess: boolean;
   showMembershipsNav: boolean;
   showTeamNav?: boolean;
+  /** When false, Invoices stays out of the side nav. */
+  showInvoicesNav?: boolean;
   can: (permission: TeamPermission) => boolean;
 }): DashboardNavItem[] {
   return DASHBOARD_NAV_ITEMS.filter(item => {
     if (item.requiresOnboarding && !hasShopAccess) return false;
     if (item.requiresMemberships && !showMembershipsNav) return false;
     if (item.requiresTeamRollout && !showTeamNav) return false;
+    if (item.requiresInvoicesRollout && !showInvoicesNav) return false;
     if (item.requiresAvailability && !AVAILABILITY_FEATURE_ENABLED)
       return false;
     if (item.requiredPermission && !can(item.requiredPermission)) return false;
@@ -236,6 +242,7 @@ export function getVisibleDashboardNavEntries(args: {
   hasShopAccess: boolean;
   showMembershipsNav: boolean;
   showTeamNav?: boolean;
+  showInvoicesNav?: boolean;
   can: (permission: TeamPermission) => boolean;
 }): DashboardNavEntry[] {
   const visible = getVisibleDashboardNavItems(args);

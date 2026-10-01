@@ -201,6 +201,25 @@ describe('getDashboardPageTitle', () => {
     ]);
   });
 
+  it('hides invoices outside the rollout', () => {
+    const entries = getVisibleDashboardNavEntries({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showInvoicesNav: false,
+      can: ownerCan,
+    });
+    const money = entries.find(
+      entry => entry.kind === 'group' && entry.id === 'money'
+    );
+
+    expect(money?.kind).toBe('group');
+    if (money?.kind !== 'group') return;
+    expect(money.items.map(item => item.name)).toEqual([
+      'Payments',
+      'Subscriptions',
+    ]);
+  });
+
   it('returns Settings for the settings route', () => {
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.SETTINGS)).toBe('Settings');
   });

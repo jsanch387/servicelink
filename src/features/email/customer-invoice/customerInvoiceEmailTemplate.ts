@@ -7,7 +7,6 @@ import { escapeHtml } from '../utils/escapeHtml';
 import {
   serviceLinkEmailCta,
   serviceLinkEmailDetailRow,
-  serviceLinkEmailFootnote,
   serviceLinkEmailSection,
   wrapServiceLinkEmail,
 } from '../utils/serviceLinkEmailLayout';
@@ -77,7 +76,6 @@ export function buildCustomerInvoiceEmailHtml(
   const bodyHtml = [
     serviceLinkEmailSection('Invoice', details, { isFirst: true }),
     serviceLinkEmailCta(payload.invoiceUrl, 'View invoice'),
-    serviceLinkEmailFootnote(payload.invoiceUrl),
   ].join('');
 
   return wrapServiceLinkEmail({

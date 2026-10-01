@@ -1,11 +1,16 @@
 import { ROUTES } from '@/constants/routes';
 import { CreateInvoiceScreen } from '@/features/invoices';
+import { CreateInvoiceSkeleton } from '@/features/invoices/components/CreateInvoiceSkeleton';
 import { InvoiceBillScreen } from '@/features/invoices/components/InvoiceBillScreen';
+import { InvoiceBillSkeleton } from '@/features/invoices/components/InvoiceBillSkeleton';
 import { loadInvoiceBill } from '@/features/invoices/server/loadInvoiceBill';
 import { loadInvoiceDraft } from '@/features/invoices/server/loadInvoiceDraft';
+import { isOwnerEmailAllowedForInvoicesRollout } from '@/features/invoices/config/invoicesRolloutAllowlist';
+import { loadInvoiceEditorKind } from '@/features/invoices/server/loadInvoiceEditorKind';
 import { businessCanUseInvoices } from '@/features/invoices/server/requireInvoicePro';
 import { requireDashboardPageAccess } from '@/features/team/server/requireDashboardPageAccess';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,35 +28,79 @@ export default async function InvoiceDraftPage({ params }: PageProps) {
     redirect(ROUTES.DASHBOARD.INVOICES);
   }
 
-  const { supabase, context } =
+  const { supabase, user, context } =
     await requireDashboardPageAccess('invoices.write');
+  if (!isOwnerEmailAllowedForInvoicesRollout(user.email)) {
+    redirect(ROUTES.DASHBOARD.MAIN);
+  }
 
   const canUseInvoices = await businessCanUseInvoices(context.businessId);
   if (!canUseInvoices) redirect(ROUTES.DASHBOARD.INVOICES);
 
-  const loaded = await loadInvoiceDraft(supabase, context.businessId, id);
-  if (loaded.ok) {
-    const { data: businessRow } = await supabase
-      .from('business_profiles')
-      .select('business_name')
-      .eq('id', context.businessId)
-      .maybeSingle();
+  const kind = await loadInvoiceEditorKind(supabase, context.businessId, id);
+  if (!kind) redirect(ROUTES.DASHBOARD.INVOICES);
 
-    const businessName = businessRow?.business_name?.trim() || 'Your business';
-
+  if (kind === 'bill') {
     return (
-      <CreateInvoiceScreen
-        businessName={businessName}
-        invoiceId={id}
-        initialDraft={loaded.draft}
-      />
+      <Suspense fallback={<InvoiceBillSkeleton />}>
+        <InvoiceBill
+          invoiceId={id}
+          businessId={context.businessId}
+          supabase={supabase}
+        />
+      </Suspense>
     );
   }
 
-  const bill = await loadInvoiceBill(supabase, context.businessId, id);
-  if (bill) {
-    return <InvoiceBillScreen invoice={bill} invoiceId={id} />;
-  }
+  return (
+    <Suspense fallback={<CreateInvoiceSkeleton />}>
+      <InvoiceEditor
+        invoiceId={id}
+        businessId={context.businessId}
+        supabase={supabase}
+      />
+    </Suspense>
+  );
+}
 
-  redirect(ROUTES.DASHBOARD.INVOICES);
+async function InvoiceBill({
+  invoiceId,
+  businessId,
+  supabase,
+}: {
+  invoiceId: string;
+  businessId: string;
+  supabase: Awaited<ReturnType<typeof requireDashboardPageAccess>>['supabase'];
+}) {
+  const bill = await loadInvoiceBill(supabase, businessId, invoiceId);
+  if (!bill) redirect(ROUTES.DASHBOARD.INVOICES);
+  return <InvoiceBillScreen invoice={bill} invoiceId={invoiceId} />;
+}
+
+async function InvoiceEditor({
+  invoiceId,
+  businessId,
+  supabase,
+}: {
+  invoiceId: string;
+  businessId: string;
+  supabase: Awaited<ReturnType<typeof requireDashboardPageAccess>>['supabase'];
+}) {
+  const loaded = await loadInvoiceDraft(supabase, businessId, invoiceId);
+  if (!loaded.ok) redirect(ROUTES.DASHBOARD.INVOICES);
+
+  const { data: businessRow } = await supabase
+    .from('business_profiles')
+    .select('business_name')
+    .eq('id', businessId)
+    .maybeSingle();
+  const businessName = businessRow?.business_name?.trim() || 'Your business';
+
+  return (
+    <CreateInvoiceScreen
+      businessName={businessName}
+      invoiceId={invoiceId}
+      initialDraft={loaded.draft}
+    />
+  );
 }

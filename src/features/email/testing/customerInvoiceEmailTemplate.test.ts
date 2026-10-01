@@ -32,8 +32,10 @@ describe('customer invoice email', () => {
   it('stays transactional in both the html and the plain text', () => {
     const html = buildCustomerInvoiceEmailHtml(payload);
     const text = buildCustomerInvoiceEmailText(payload);
-    expect(html).toContain('https://myservicelink.app/b/K7mN2pQx');
     expect(html).toContain('View invoice');
+    expect(html.match(/https:\/\/myservicelink\.app\/b\/K7mN2pQx/g)).toEqual([
+      'https://myservicelink.app/b/K7mN2pQx',
+    ]);
     expect(customerInvoiceEmailLooksTransactional(html, text)).toBe(true);
   });
 });
