@@ -21,7 +21,7 @@ export const PaymentsTransactionsPage: React.FC<
 > = ({ hasProAccess, stripeConnectReady = false }) => {
   return (
     <main className="flex-1 py-8 sm:py-10 px-4 sm:px-6 lg:px-8 overflow-x-hidden overflow-y-auto bg-[var(--dashboard-bg)] min-h-screen w-full">
-      <div className="max-w-3xl mx-auto w-full min-w-0">
+      <div className="mx-auto w-full min-w-0 max-w-5xl">
         {!hasProAccess ? (
           <PaymentsProTeaserBanner
             className="mb-6"
@@ -37,7 +37,7 @@ export const PaymentsTransactionsPage: React.FC<
         ) : null}
 
         {hasProAccess ? (
-          <PaymentsTransactionsList stripeConnectReady={stripeConnectReady} />
+          <PaymentsTransactionsList />
         ) : (
           <FreePaymentTransactionsLockedPreview />
         )}

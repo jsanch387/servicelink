@@ -38,5 +38,8 @@ describe('notificationHref', () => {
     expect(notificationHref(notification({ type: 'job_assigned' }))).toBe(
       ROUTES.DASHBOARD.BOOKINGS
     );
+    expect(
+      notificationHref(notification({ type: 'customer_invoice_paid' }))
+    ).toBe(ROUTES.DASHBOARD.INVOICE('ref-1'));
   });
 });

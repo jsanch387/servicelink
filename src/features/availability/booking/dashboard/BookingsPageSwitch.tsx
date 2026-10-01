@@ -36,6 +36,8 @@ export interface BookingsPageSwitchProps {
   weeklySchedule: WeeklySchedule;
   /** Gap between appointments for reschedule slot picker. */
   bufferTime?: string;
+  /** Invoices are Pro-only. */
+  canCreateInvoice?: boolean;
 }
 
 /**
@@ -52,6 +54,7 @@ export function BookingsPageSwitch({
   timeOffBlocks = [],
   weeklySchedule,
   bufferTime = 'none',
+  canCreateInvoice = true,
 }: BookingsPageSwitchProps) {
   const setAcceptBookings = useAvailabilityBookingStore(
     s => s.setAcceptBookings
@@ -71,6 +74,7 @@ export function BookingsPageSwitch({
         timeOffBlocks={timeOffBlocks}
         weeklySchedule={weeklySchedule}
         bufferTime={bufferTime}
+        canCreateInvoice={canCreateInvoice}
       />
     );
   }

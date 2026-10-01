@@ -23,6 +23,40 @@ const PERIOD_OPTIONS = PAYMENTS_REVENUE_PERIODS.map(id => ({
   label: PAYMENTS_REVENUE_PERIOD_LABELS[id],
 }));
 
+export function PaymentsRevenueChartSkeleton({
+  period = 'month',
+  onPeriodChange,
+}: {
+  period?: PaymentsRevenuePeriod;
+  onPeriodChange?: (period: PaymentsRevenuePeriod) => void;
+}) {
+  return (
+    <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="h-10 w-40 animate-pulse rounded-lg bg-white/10" />
+        <div className="w-[8.75rem] shrink-0">
+          <DropdownSelect
+            value={period}
+            onChange={next => {
+              if (onPeriodChange && isRevenuePeriod(next)) onPeriodChange(next);
+            }}
+            options={PERIOD_OPTIONS}
+            placeholder="Range"
+            panelMaxHeightClassName="max-h-72"
+          />
+        </div>
+      </div>
+      <div className="mt-2 flex justify-end">
+        <span className="inline-block h-4 w-40 animate-pulse rounded bg-white/10" />
+      </div>
+      <div
+        className="mt-6 h-52 animate-pulse rounded-xl bg-white/[0.04]"
+        aria-label="Loading earnings chart"
+      />
+    </GlassCard>
+  );
+}
+
 export function PaymentsRevenueChart() {
   const defaultCustom = useMemo(() => defaultCustomRange(), []);
   const [period, setPeriod] = useState<PaymentsRevenuePeriod>('month');
@@ -41,6 +75,15 @@ export function PaymentsRevenueChart() {
         : '';
   const hasSeries = (data?.buckets.length ?? 0) > 0;
   const jobsPaid = data?.jobsPaid ?? 0;
+
+  if (loading && period !== 'custom') {
+    return (
+      <PaymentsRevenueChartSkeleton
+        period={period}
+        onPeriodChange={next => setPeriod(next)}
+      />
+    );
+  }
 
   return (
     <GlassCard padding="none" rounded="rounded-2xl" className="p-4 sm:p-6">

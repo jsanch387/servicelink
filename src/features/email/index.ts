@@ -102,6 +102,9 @@ export type {
   SendProWelcomeEmailResult,
 } from './pro-welcome/types';
 
+export { sendCustomerInvoiceEmail } from './customer-invoice/sendCustomerInvoiceEmail';
+export type { SendCustomerInvoiceEmailInput } from './customer-invoice/sendCustomerInvoiceEmail';
+
 export { sendJobAssignedEmail } from './job-assigned/sendJobAssignedEmail';
 export type {
   JobAssignedEmailPayload,

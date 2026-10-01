@@ -50,6 +50,8 @@ export interface AvailabilityBookingsViewProps {
   /** Weekly hours for reschedule slot picker (hours + time off still apply). */
   weeklySchedule: WeeklySchedule;
   bufferTime?: string;
+  /** Invoices are Pro-only. */
+  canCreateInvoice?: boolean;
 }
 
 export function AvailabilityBookingsView({
@@ -59,6 +61,7 @@ export function AvailabilityBookingsView({
   timeOffBlocks = [],
   weeklySchedule,
   bufferTime = 'none',
+  canCreateInvoice = true,
 }: AvailabilityBookingsViewProps) {
   const access = useDashboardAccess();
   const canWriteBookings = access.can('bookings.write');
@@ -391,6 +394,7 @@ export function AvailabilityBookingsView({
           timeOffBlocks={timeOffIntervalsForSlots}
           bufferTime={bufferTime}
           existingBookingsForSlotGrid={existingBookingsForReschedule}
+          canCreateInvoice={canCreateInvoice}
           assigneeOptions={assignees}
           onAssign={canAssignBookings ? handleAssign : undefined}
           isAssigning={assigningId === selectedBooking.id}

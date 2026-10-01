@@ -6,6 +6,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import {
   getDashboardPageTitle,
+  getVisibleDashboardNavEntries,
   getVisibleDashboardNavItems,
   isDashboardNavItemActive,
 } from '../utils/dashboardNav';
@@ -64,17 +65,70 @@ describe('getVisibleDashboardNavItems', () => {
     expect(names).toEqual(['Dashboard', 'Bookings']);
   });
 
-  it('inserts subscriptions after services when allowlisted', () => {
-    const items = getVisibleDashboardNavItems({
+  it('groups payments, invoices, and subscriptions under Money', () => {
+    const entries = getVisibleDashboardNavEntries({
       hasShopAccess: true,
       showMembershipsNav: true,
       can: ownerCan,
     });
-    const names = items.map(item => item.name);
-    const subscriptions = items.find(item => item.name === 'Subscriptions');
+    const money = entries.find(
+      entry => entry.kind === 'group' && entry.id === 'money'
+    );
+    const topLevel = entries
+      .filter(entry => entry.kind === 'item')
+      .map(entry => entry.item.name);
 
-    expect(names.indexOf('Subscriptions')).toBe(names.indexOf('Services') + 1);
-    expect(subscriptions?.badge).toBe('beta');
+    expect(money?.kind).toBe('group');
+    if (money?.kind !== 'group') return;
+    expect(money.items.map(item => item.name)).toEqual([
+      'Payments',
+      'Invoices',
+      'Subscriptions',
+    ]);
+    expect(money.items.find(item => item.name === 'Subscriptions')?.badge).toBe(
+      'beta'
+    );
+    expect(topLevel).toEqual(['Dashboard', 'Quotes', 'Customers']);
+    expect(
+      entries.map(entry =>
+        entry.kind === 'group' ? entry.name : entry.item.name
+      )
+    ).toEqual([
+      'Dashboard',
+      'Shop',
+      'Schedule',
+      'Quotes',
+      'Customers',
+      'Money',
+    ]);
+  });
+
+  it('groups the public pages under Shop and the calendar under Schedule', () => {
+    const entries = getVisibleDashboardNavEntries({
+      hasShopAccess: true,
+      showMembershipsNav: false,
+      can: ownerCan,
+    });
+    const shop = entries.find(
+      entry => entry.kind === 'group' && entry.id === 'shop'
+    );
+    const schedule = entries.find(
+      entry => entry.kind === 'group' && entry.id === 'schedule'
+    );
+
+    expect(shop?.kind).toBe('group');
+    expect(schedule?.kind).toBe('group');
+    if (shop?.kind !== 'group' || schedule?.kind !== 'group') return;
+    expect(shop.items.map(item => item.name)).toEqual([
+      'Booking link',
+      'Services',
+      'Reviews',
+      'Marketing',
+    ]);
+    expect(schedule.items.map(item => item.name)).toEqual([
+      'Bookings',
+      'Availability',
+    ]);
   });
 
   it('omits subscriptions when not allowlisted', () => {
@@ -118,6 +172,52 @@ describe('getDashboardPageTitle', () => {
   it('returns the matching nav label', () => {
     expect(getDashboardPageTitle('/dashboard/bookings')).toBe('Bookings');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.TEAM)).toBe('Team');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES)).toBe('Invoices');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES_NEW)).toBe(
+      'New invoice'
+    );
+    expect(
+      getDashboardPageTitle(
+        ROUTES.DASHBOARD.INVOICE('11111111-1111-4111-8111-111111111111')
+      )
+    ).toBe('Invoice');
+  });
+
+  it('keeps quotes out of Money when subscriptions are hidden', () => {
+    const entries = getVisibleDashboardNavEntries({
+      hasShopAccess: true,
+      showMembershipsNav: false,
+      can: ownerCan,
+    });
+    const money = entries.find(
+      entry => entry.kind === 'group' && entry.id === 'money'
+    );
+
+    expect(money?.kind).toBe('group');
+    if (money?.kind !== 'group') return;
+    expect(money.items.map(item => item.name)).toEqual([
+      'Payments',
+      'Invoices',
+    ]);
+  });
+
+  it('hides invoices outside the rollout', () => {
+    const entries = getVisibleDashboardNavEntries({
+      hasShopAccess: true,
+      showMembershipsNav: true,
+      showInvoicesNav: false,
+      can: ownerCan,
+    });
+    const money = entries.find(
+      entry => entry.kind === 'group' && entry.id === 'money'
+    );
+
+    expect(money?.kind).toBe('group');
+    if (money?.kind !== 'group') return;
+    expect(money.items.map(item => item.name)).toEqual([
+      'Payments',
+      'Subscriptions',
+    ]);
   });
 
   it('returns Settings for the settings route', () => {

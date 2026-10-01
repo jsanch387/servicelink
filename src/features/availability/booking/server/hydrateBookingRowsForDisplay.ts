@@ -1,9 +1,11 @@
+import { listBookingIdsWithPaidCustomerInvoice } from '@/features/invoices/server/syncInvoiceWithBookingPayment';
 import {
   customerAlreadyReviewedForBooking,
   loadReviewInviteEligibilityContext,
   willSendReviewInviteOnBookingComplete,
 } from '@/features/reviews/server/reviewInviteEligibility';
 import type { Database } from '@/libs/supabase/client';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { attachPaymentSummaryToDisplay } from '../dashboard/utils/attachPaymentSummaryToDisplay';
 import {
@@ -32,6 +34,15 @@ export async function hydrateBookingRowsForDisplay(
       remaining_amount_cents: number | null;
     }
   >();
+
+  const paidInvoiceBookingIds =
+    bookingIds.length > 0
+      ? await listBookingIdsWithPaidCustomerInvoice(
+          createSupabaseAdminClient(),
+          businessId,
+          bookingIds
+        )
+      : new Set<string>();
 
   if (bookingIds.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,7 +81,7 @@ export async function hydrateBookingRowsForDisplay(
     const customerAlreadyReviewed = reviewInviteEligibilityContext
       ? customerAlreadyReviewedForBooking(row, reviewInviteEligibilityContext)
       : false;
-    return attachPaymentSummaryToDisplay(
+    const withPayment = attachPaymentSummaryToDisplay(
       {
         ...display,
         customerAlreadyReviewed,
@@ -79,5 +90,18 @@ export async function hydrateBookingRowsForDisplay(
       row,
       payment
     );
+    if (!paidInvoiceBookingIds.has(row.id)) return withPayment;
+    return {
+      ...withPayment,
+      payment: {
+        paymentStatus: withPayment.payment?.paymentStatus ?? 'paid_full',
+        paymentMethodSelected:
+          withPayment.payment?.paymentMethodSelected ?? 'none',
+        currency: withPayment.payment?.currency ?? 'usd',
+        totalAmountCents: withPayment.payment?.totalAmountCents ?? 0,
+        paidOnlineAmountCents: withPayment.payment?.paidOnlineAmountCents ?? 0,
+        remainingAmountCents: 0,
+      },
+    };
   });
 }

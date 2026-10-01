@@ -2,6 +2,9 @@ import { ROUTES } from '@/constants/routes';
 import type { NotificationDisplay } from '../types/notification';
 
 export function notificationHref(notification: NotificationDisplay): string {
+  if (notification.type === 'customer_invoice_paid') {
+    return ROUTES.DASHBOARD.INVOICE(notification.referenceId);
+  }
   if (notification.type === 'quote_request_followup') {
     return ROUTES.DASHBOARD.QUOTES;
   }

@@ -58,6 +58,7 @@ export interface DashboardSidebarProps {
   hasShopAccess?: boolean;
   showMembershipsNav?: boolean;
   showTeamNav?: boolean;
+  showInvoicesNav?: boolean;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
 }

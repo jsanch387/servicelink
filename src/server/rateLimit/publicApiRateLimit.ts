@@ -119,6 +119,12 @@ const membershipCheckoutIpSlugRl: { current: Ratelimit | null | undefined } = {
 const publicBookingsIpRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
+const invoiceCheckoutIpRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
+const invoiceCheckoutIpCodeRl: { current: Ratelimit | null | undefined } = {
+  current: undefined,
+};
 const publicBookingsIpSlugRl: { current: Ratelimit | null | undefined } = {
   current: undefined,
 };
@@ -582,6 +588,37 @@ export async function assertPublicBookingsRateLimits(
     '1 h'
   );
   const r2 = await consume(slugLimiter, `ip:${ip}:slug:${slug}`, 15, MS_HOUR);
+  if (!r2.ok) return tooManyRequests(r2.reset);
+
+  return null;
+}
+
+/**
+ * POST /api/public/invoices/checkout — creates a Connect Checkout session.
+ */
+export async function assertPublicInvoiceCheckoutRateLimits(
+  request: NextRequest,
+  shortCode: string
+): Promise<NextResponse | null> {
+  const ip = getClientIp(request);
+  const code = safeSlugSegment(shortCode);
+
+  const ipLimiter = createLimiter(
+    invoiceCheckoutIpRl,
+    'public_api:invoice_checkout:ip',
+    30,
+    '1 h'
+  );
+  const r1 = await consume(ipLimiter, `ip:${ip}`, 30, MS_HOUR);
+  if (!r1.ok) return tooManyRequests(r1.reset);
+
+  const codeLimiter = createLimiter(
+    invoiceCheckoutIpCodeRl,
+    'public_api:invoice_checkout:ipcode',
+    8,
+    '1 h'
+  );
+  const r2 = await consume(codeLimiter, `ip:${ip}:code:${code}`, 8, MS_HOUR);
   if (!r2.ok) return tooManyRequests(r2.reset);
 
   return null;

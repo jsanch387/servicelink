@@ -15,9 +15,10 @@ import React from 'react';
 import { useDashboardAccess } from '../context/DashboardAccessContext';
 import type { DashboardSidebarProps } from '../types/dashboard';
 import {
-  getVisibleDashboardNavItems,
+  getVisibleDashboardNavEntries,
   isDashboardNavItemActive,
 } from '../utils/dashboardNav';
+import { DashboardSidebarNavGroup } from './DashboardSidebarNavGroup';
 import { DashboardSidebarNavItem } from './DashboardSidebarNavItem';
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -26,16 +27,18 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   hasShopAccess = false,
   showMembershipsNav = false,
   showTeamNav = false,
+  showInvoicesNav = false,
   collapsed = false,
   onToggleCollapsed,
 }) => {
   const pathname = usePathname();
   const access = useDashboardAccess();
   const { signOutAndRedirect, loading: signingOut } = useSignOutAndRedirect();
-  const items = getVisibleDashboardNavItems({
+  const entries = getVisibleDashboardNavEntries({
     hasShopAccess,
     showMembershipsNav,
     showTeamNav,
+    showInvoicesNav,
     can: access.can,
   });
   const showSettings = hasShopAccess && access.can('team.manage');
@@ -107,22 +110,34 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </div>
 
           <nav
-            className={`min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 scrollbar-dark ${
+            className={`min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-3 scrollbar-dark ${
               collapsed ? 'lg:px-2' : ''
             }`}
           >
-            {items.map(item => (
-              <DashboardSidebarNavItem
-                key={item.name}
-                name={item.name}
-                href={item.href}
-                icon={item.icon}
-                isActive={isDashboardNavItemActive(pathname, item)}
-                collapsed={collapsed}
-                onNavigate={() => setOpen(false)}
-                badge={item.badge}
-              />
-            ))}
+            {entries.map(entry =>
+              entry.kind === 'group' ? (
+                <DashboardSidebarNavGroup
+                  key={entry.id}
+                  name={entry.name}
+                  icon={entry.icon}
+                  items={entry.items}
+                  pathname={pathname}
+                  collapsed={collapsed}
+                  onNavigate={() => setOpen(false)}
+                />
+              ) : (
+                <DashboardSidebarNavItem
+                  key={entry.item.name}
+                  name={entry.item.name}
+                  href={entry.item.href}
+                  icon={entry.item.icon}
+                  isActive={isDashboardNavItemActive(pathname, entry.item)}
+                  collapsed={collapsed}
+                  onNavigate={() => setOpen(false)}
+                  badge={entry.item.badge}
+                />
+              )
+            )}
           </nav>
 
           <div
