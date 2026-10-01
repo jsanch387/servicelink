@@ -6,6 +6,7 @@ import { CrownIcon } from '@/icons';
 import React, { useState } from 'react';
 import type { BillingInterval, PlanId, PlatformBillingAction } from '../types';
 import { PLANS } from '../types';
+import { planSectionBillingCtas } from '../utils/canOpenPlatformBillingPortal';
 
 function formatRenewalDate(iso: string | null | undefined): string | null {
   if (!iso?.trim()) return null;
@@ -38,6 +39,8 @@ interface PlanSectionProps {
    * update payment here instead of jumping into a new checkout.
    */
   billingAction?: PlatformBillingAction;
+  /** From `profiles.stripe_customer_id`. Portal stays available after Pro is revoked. */
+  stripeCustomerId?: string | null;
 }
 
 export const PlanSection: React.FC<PlanSectionProps> = ({
@@ -49,9 +52,19 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   billingInterval = 'month',
   hideHeading = false,
   billingAction = 'checkout',
+  stripeCustomerId = null,
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
+  const billingCtas = planSectionBillingCtas({
+    planId,
+    stripeCustomerId,
+    subscriptionStatus,
+    billingAction,
+  });
+  const showManage = billingCtas.includes('manage');
+  const showUpgrade = billingCtas.includes('upgrade');
+  const showPayNow = billingCtas.includes('pay_now');
   const displayPrice =
     isPro && monthlyPriceOverride?.trim()
       ? monthlyPriceOverride.trim()
@@ -150,54 +163,41 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
           </p>
         ) : null}
 
-        {isPro ? (
-          <div className="mt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full sm:w-auto"
-              onClick={handleManageSubscription}
-              disabled={portalLoading}
-              loading={portalLoading}
-            >
-              Manage subscription
-            </Button>
+        {showManage || showPayNow || showUpgrade ? (
+          <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {showManage ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full sm:w-auto"
+                onClick={handleManageSubscription}
+                disabled={portalLoading}
+                loading={portalLoading}
+              >
+                Manage subscription
+              </Button>
+            ) : null}
+            {showPayNow ? (
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="inverse"
+                className="w-full sm:w-auto"
+              >
+                Pay now
+              </Button>
+            ) : null}
+            {showUpgrade ? (
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="inverse"
+                className="w-full sm:w-auto"
+                icon={<CrownIcon className="h-4 w-4" />}
+              >
+                Upgrade
+              </Button>
+            ) : null}
           </div>
-        ) : billingAction === 'manage' ? (
-          <div className="mt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full sm:w-auto"
-              onClick={handleManageSubscription}
-              disabled={portalLoading}
-              loading={portalLoading}
-            >
-              Manage subscription
-            </Button>
-          </div>
-        ) : billingAction === 'update_payment' ? (
-          <div className="mt-4">
-            <Button
-              href={ROUTES.DASHBOARD.UPGRADE}
-              variant="inverse"
-              className="w-full sm:w-auto"
-            >
-              Pay now
-            </Button>
-          </div>
-        ) : (
-          <div className="mt-4">
-            <Button
-              href={ROUTES.DASHBOARD.UPGRADE}
-              variant="inverse"
-              className="w-full"
-              icon={<CrownIcon className="h-4 w-4" />}
-            >
-              Upgrade
-            </Button>
-          </div>
-        )}
+        ) : null}
       </GlassCard>
     </section>
   );

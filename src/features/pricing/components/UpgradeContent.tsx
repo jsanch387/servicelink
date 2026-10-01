@@ -224,16 +224,28 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
                   Manage subscription
                 </Button>
               ) : showUpdatePayment ? (
-                <Button
-                  type="button"
-                  variant="inverse"
-                  className="w-full"
-                  onClick={handleUpgradeToPro}
-                  disabled={checkoutLoading}
-                  loading={checkoutLoading}
-                >
-                  Pay now
-                </Button>
+                <div className="flex w-full flex-col gap-2">
+                  <Button
+                    type="button"
+                    variant="inverse"
+                    className="w-full"
+                    onClick={handleUpgradeToPro}
+                    disabled={checkoutLoading}
+                    loading={checkoutLoading}
+                  >
+                    Pay now
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    onClick={handleManageSubscription}
+                    disabled={portalLoading}
+                    loading={portalLoading}
+                  >
+                    Manage subscription
+                  </Button>
+                </div>
               ) : (
                 <Button
                   type="button"

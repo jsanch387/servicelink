@@ -18,6 +18,7 @@ export interface SettingsBillingSectionProps {
   subscriptionMonthlyPrice?: string | null;
   subscriptionBillingInterval?: BillingInterval | null;
   billingAction?: PlatformBillingAction;
+  stripeCustomerId?: string | null;
 }
 
 export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
@@ -28,6 +29,7 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
   subscriptionMonthlyPrice = null,
   subscriptionBillingInterval = null,
   billingAction = 'checkout',
+  stripeCustomerId = null,
 }) => {
   const showPaymentFailedBanner = billingAction === 'update_payment';
   const showActiveBillingNote = planId !== 'pro' && billingAction === 'manage';
@@ -73,6 +75,7 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
         monthlyPriceOverride={subscriptionMonthlyPrice}
         billingInterval={subscriptionBillingInterval ?? undefined}
         billingAction={billingAction}
+        stripeCustomerId={stripeCustomerId}
         hideHeading
       />
     </section>
