@@ -78,6 +78,7 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({
           settingsData.subscriptionBillingInterval ?? null
         }
         billingAction={settingsData.billingAction ?? 'checkout'}
+        stripeCustomerId={settingsData.stripeCustomerId ?? null}
       />
 
       <AffiliateReferralWidget />

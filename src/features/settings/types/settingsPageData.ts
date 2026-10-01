@@ -29,6 +29,8 @@ export interface SettingsPageData {
   subscriptionBillingInterval?: BillingInterval | null;
   /** Live Stripe billing action for the plan card and payment banner. */
   billingAction?: PlatformBillingAction;
+  /** From `profiles.stripe_customer_id` — portal access after Pro is revoked. */
+  stripeCustomerId?: string | null;
   accountEmail?: string;
   signedInWithGoogle?: boolean;
   /** Pending new email while Supabase email-change confirmation is outstanding. */

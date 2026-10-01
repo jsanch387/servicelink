@@ -178,6 +178,7 @@ export default async function SettingsPage({
       subscriptionMonthlyPrice,
       subscriptionBillingInterval,
       billingAction,
+      stripeCustomerId: profileRow?.stripe_customer_id ?? null,
       accountEmail: user.email ?? '',
       signedInWithGoogle,
       pendingEmail: user.new_email ?? null,

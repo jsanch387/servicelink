@@ -46,6 +46,11 @@ export {
   needsPaidProResubscribeForDashboard,
 } from './utils/isProAccess';
 export {
+  canOpenPlatformBillingPortal,
+  planSectionBillingCtas,
+} from './utils/canOpenPlatformBillingPortal';
+export type { PlanSectionBillingCta } from './utils/canOpenPlatformBillingPortal';
+export {
   isPublicBusinessProfileLive,
   type PublicProfileLiveOwnerFields,
 } from './utils/publicBusinessProfileLive';
