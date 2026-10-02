@@ -1,6 +1,6 @@
 /**
- * DashboardContent - Main dashboard with glass morphism cards
- * Link sharing, profile views, pending requests, quick actions
+ * DashboardContent - Home dashboard
+ * Week revenue, the next jobs, revenue chart, and daily shortcuts
  */
 
 'use client';
@@ -17,17 +17,17 @@ import { ShopAddressRequiredModal } from '@/features/business-profile/components
 import {
   CreateLinkCard,
   DashboardRevenueCard,
-  LinkSharingCard,
   PendingRequestsCard,
   PerformanceCard,
   QuickActionsCard,
-  UpcomingBookingsCard,
 } from '@/features/dashboard';
 import { FREE_BOOKINGS_LIMIT } from '@/features/pricing';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { useDashboardAccess } from '../context/DashboardAccessContext';
+import { DashboardRevenueChart } from './DashboardRevenueChart';
+import { DashboardScheduleCard } from './DashboardScheduleCard';
 
 interface DashboardData {
   businessProfile: {
@@ -83,7 +83,13 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const access = useDashboardAccess();
   const canManageShop = access.can('profile.write');
   const canSeePayments = access.can('payments.manage');
+  const canReadBookings = access.can('bookings.read');
   const canWriteBookings = access.can('bookings.write');
+  const showPendingRequests =
+    canWriteBookings &&
+    !dashboardData.useAvailabilityBooking &&
+    dashboardData.legacyRequestBookingEnabled;
+  const showLinkViews = canManageShop && Boolean(slugData?.hasSlug);
   const [serviceAreaPromptOpen, setServiceAreaPromptOpen] = useState(
     canManageShop && !dashboardData.hasConfirmedServiceArea
   );
@@ -124,7 +130,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           />
         </>
       ) : null}
-      <div className="max-w-6xl mx-auto w-full min-w-0">
+      <div className="w-full min-w-0">
         {/* Header */}
         <div className="mb-5 sm:mb-6">
           <h1 className="logo-text text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold text-white tracking-tight truncate">
@@ -181,13 +187,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         ) : null}
 
         <div className="space-y-5 sm:space-y-6 w-full min-w-0">
-          {/* Link card or Create link CTA */}
-          {canManageShop ? (
-            slugData?.hasSlug ? (
-              <LinkSharingCard fullLink={slugData.fullLink || ''} />
-            ) : (
-              <CreateLinkCard businessProfileId={businessProfile.id} />
-            )
+          {canManageShop && !slugData?.hasSlug ? (
+            <CreateLinkCard businessProfileId={businessProfile.id} />
           ) : null}
 
           {/* Nudge: availability booking is off – set schedule so customers can book */}
@@ -216,40 +217,48 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             </div>
           )}
 
-          <div
-            className={
-              canSeePayments || canManageShop || canWriteBookings
-                ? 'grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:gap-5 xl:grid-cols-4'
-                : 'min-w-0 max-w-sm'
-            }
-          >
-            {canSeePayments ? <DashboardRevenueCard /> : null}
-            {canManageShop && slugData?.hasSlug ? (
-              <PerformanceCard
-                views={dashboardAnalytics?.views ?? 0}
-                period={linkViewsPeriod}
-                onPeriodChange={setLinkViewsPeriod}
-                lastViewed={dashboardAnalytics?.lastViewedFormatted}
-                loading={analyticsLoading}
-                isFreeTier={isFreeTier}
-              />
-            ) : null}
-            {canWriteBookings &&
-            !dashboardData.useAvailabilityBooking &&
-            dashboardData.legacyRequestBookingEnabled ? (
-              <PendingRequestsCard
-                pendingCount={dashboardData.pendingRequestsCount}
-              />
-            ) : (
-              <UpcomingBookingsCard
-                upcomingCount={dashboardData.upcomingBookingsCount}
-              />
-            )}
-            {canWriteBookings ? (
-              <QuickActionsCard
-                hasPublicPageSlug={Boolean(slugData?.hasSlug)}
-                atFreeBookingCap={atFreeBookingCap}
-              />
+          <div className="flex flex-col gap-4 lg:gap-5">
+            <div className="grid min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+              {canSeePayments ? (
+                <DashboardRevenueCard href={ROUTES.DASHBOARD.PAYMENTS} />
+              ) : null}
+              {showLinkViews ? (
+                <PerformanceCard
+                  views={dashboardAnalytics?.views ?? 0}
+                  period={linkViewsPeriod}
+                  onPeriodChange={setLinkViewsPeriod}
+                  lastViewed={dashboardAnalytics?.lastViewedFormatted}
+                  loading={analyticsLoading}
+                  isFreeTier={isFreeTier}
+                />
+              ) : null}
+              {showPendingRequests ? (
+                <PendingRequestsCard
+                  pendingCount={dashboardData.pendingRequestsCount}
+                />
+              ) : null}
+              {canWriteBookings ? (
+                <QuickActionsCard
+                  hasPublicPageSlug={Boolean(slugData?.hasSlug)}
+                  atFreeBookingCap={atFreeBookingCap}
+                  bookingLink={slugData?.fullLink}
+                />
+              ) : null}
+            </div>
+
+            {canReadBookings || canSeePayments ? (
+              <div
+                className={`grid min-w-0 grid-cols-1 items-stretch gap-4 lg:gap-5 ${
+                  canReadBookings && canSeePayments ? 'lg:grid-cols-2' : ''
+                }`}
+              >
+                {canReadBookings ? (
+                  <DashboardScheduleCard
+                    calendarHref={ROUTES.DASHBOARD.BOOKINGS}
+                  />
+                ) : null}
+                {canSeePayments ? <DashboardRevenueChart /> : null}
+              </div>
             ) : null}
           </div>
         </div>

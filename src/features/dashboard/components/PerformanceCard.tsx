@@ -7,7 +7,6 @@ import {
   type DashboardLinkViewsPeriod,
 } from '@/features/analytics/constants';
 import React from 'react';
-import { dashboardGlassCardLayout } from '../utils/dashboardCardStyles';
 import { DashboardGlassCard } from './DashboardGlassCard';
 import { LinkViewsPeriodPicker } from './LinkViewsPeriodPicker';
 
@@ -30,7 +29,7 @@ export const PerformanceCard: React.FC<PerformanceCardProps> = ({
 }) => {
   if (loading) {
     return (
-      <DashboardGlassCard>
+      <DashboardGlassCard className="h-full">
         <div className="animate-pulse space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div className="h-4 w-20 rounded bg-white/10" />
@@ -44,11 +43,11 @@ export const PerformanceCard: React.FC<PerformanceCardProps> = ({
   }
 
   return (
-    <DashboardGlassCard className={dashboardGlassCardLayout}>
+    <DashboardGlassCard className="h-full">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm text-zinc-400">Link views</p>
-          <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-white">
+          <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-white sm:text-4xl">
             {views.toLocaleString()}
           </p>
         </div>
