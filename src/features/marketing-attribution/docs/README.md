@@ -137,22 +137,22 @@ Writes use the **service role**. Users cannot edit their own attribution.
 
 ## Code map
 
-| Piece                       | Path                                                                        |
-| --------------------------- | --------------------------------------------------------------------------- |
-| Capture UTMs in the browser | `utils/utmCapture.ts` + first-party cookie                                  |
-| First-touch merge           | `utils/firstTouchAttribution.ts`                                            |
-| Cookie on first landing     | `server/applyMarketingAttributionCookie.ts` (middleware)                    |
-| OAuth / magic-link carry    | `utils/authRedirectAttribution.ts` (`sl_attr` on redirectTo)                |
-| Channel rules               | `utils/deriveSignupChannel.ts`                                              |
-| Save on signup              | `POST /api/attribution/signup` → `server/saveSignupAttribution.ts`          |
-| CompleteRegistration        | After `recorded: true` — browser + optional CAPI (`META_CAPI_ACCESS_TOKEN`) |
-| Stamp first paid            | Stripe webhook `after()` → `server/markSignupAttributionFirstPaid.ts`       |
-| Unknown row if browser missed | Auth callback → `server/ensureSignupAttributionPlaceholder.ts`           |
-| One-time paid backfill      | `scripts/backfill-signup-attribution-first-paid.ts` (dry-run by default)   |
-| Subscribe                   | Distinct from CompleteRegistration; maps to `first_paid_at`                 |
-| Report                      | `server/loadPaidConversionReport.ts`                                        |
-| Founder page                | `/dashboard/internal/acquisition`                                           |
-| Schema                      | `docs/migrations/001_signup_attribution_first_paid_at.sql`                  |
+| Piece                         | Path                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| Capture UTMs in the browser   | `utils/utmCapture.ts` + first-party cookie                                  |
+| First-touch merge             | `utils/firstTouchAttribution.ts`                                            |
+| Cookie on first landing       | `server/applyMarketingAttributionCookie.ts` (middleware)                    |
+| OAuth / magic-link carry      | `utils/authRedirectAttribution.ts` (`sl_attr` on redirectTo)                |
+| Channel rules                 | `utils/deriveSignupChannel.ts`                                              |
+| Save on signup                | `POST /api/attribution/signup` → `server/saveSignupAttribution.ts`          |
+| CompleteRegistration          | After `recorded: true` — browser + optional CAPI (`META_CAPI_ACCESS_TOKEN`) |
+| Stamp first paid              | Stripe webhook `after()` → `server/markSignupAttributionFirstPaid.ts`       |
+| Unknown row if browser missed | Auth callback → `server/ensureSignupAttributionPlaceholder.ts`              |
+| One-time paid backfill        | `scripts/backfill-signup-attribution-first-paid.ts` (dry-run by default)    |
+| Subscribe                     | Distinct from CompleteRegistration; maps to `first_paid_at`                 |
+| Report                        | `server/loadPaidConversionReport.ts`                                        |
+| Founder page                  | `/dashboard/internal/acquisition`                                           |
+| Schema                        | `docs/migrations/001_signup_attribution_first_paid_at.sql`                  |
 
 ### Meta pixel rules
 

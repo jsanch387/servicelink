@@ -9,9 +9,7 @@ describe('invoicesRolloutAllowlist', () => {
     expect(
       isOwnerEmailAllowedForInvoicesRollout('  JesusS387@gmail.com  ')
     ).toBe(true);
-    expect(isOwnerEmailAllowedForInvoicesRollout('other@shop.com')).toBe(
-      false
-    );
+    expect(isOwnerEmailAllowedForInvoicesRollout('other@shop.com')).toBe(false);
     expect(isOwnerEmailAllowedForInvoicesRollout(null)).toBe(false);
   });
 });

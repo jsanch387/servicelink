@@ -95,8 +95,9 @@ async function InvoiceEditor({
     .eq('id', businessId)
     .maybeSingle();
   const businessName =
-    (businessRow as { business_name?: string | null } | null)?.business_name?.trim() ||
-    'Your business';
+    (
+      businessRow as { business_name?: string | null } | null
+    )?.business_name?.trim() || 'Your business';
 
   return (
     <CreateInvoiceScreen
