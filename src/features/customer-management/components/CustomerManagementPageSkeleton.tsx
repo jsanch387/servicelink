@@ -10,26 +10,10 @@ export const CustomerManagementPageSkeleton: React.FC = () => {
         <div className={`mt-2 h-4 w-72 max-w-full ${pulse}`} />
       </div>
 
-      <div className="mb-5 sm:mb-6 border-t border-white/10 pt-4 sm:pt-5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <div className={`h-4 w-28 ${pulse}`} />
-          <div className="h-3 w-px bg-white/15" aria-hidden />
-          <div className={`h-4 w-24 ${pulse}`} />
-          <div className="h-3 w-px bg-white/15" aria-hidden />
-          <div className={`h-4 w-32 ${pulse}`} />
-        </div>
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className={`h-11 w-full rounded-xl sm:max-w-sm ${pulse}`} />
+        <div className={`h-10 w-24 rounded-[10px] ${pulse}`} />
       </div>
-
-      <div className="mb-4 sm:mb-5 space-y-3">
-        <div className={`h-11 w-full rounded-xl ${pulse}`} />
-        <div className="flex flex-wrap gap-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className={`h-8 w-16 rounded-full ${pulse}`} />
-          ))}
-        </div>
-      </div>
-
-      <div className={`h-3 w-48 mb-3 ${pulse}`} />
 
       <div className="hidden md:block rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
         <div className="px-4 py-3 border-b border-white/10 flex gap-8">

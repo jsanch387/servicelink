@@ -2,6 +2,13 @@ import { quoteMatchesFilter } from '@/features/quotes/dashboard/utils/quoteStatu
 import { describe, expect, it } from 'vitest';
 
 describe('quoteMatchesFilter', () => {
+  it('includes every status when the filter is all', () => {
+    expect(quoteMatchesFilter('declined', 'all')).toBe(true);
+    expect(quoteMatchesFilter('expired', 'all')).toBe(true);
+    expect(quoteMatchesFilter('cancelled', 'all')).toBe(true);
+    expect(quoteMatchesFilter('sent', 'all')).toBe(true);
+  });
+
   it('puts drafts and requests in Requested', () => {
     expect(quoteMatchesFilter('draft', 'requested')).toBe(true);
     expect(quoteMatchesFilter('requested', 'requested')).toBe(true);

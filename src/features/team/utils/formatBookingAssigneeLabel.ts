@@ -8,10 +8,10 @@ export function formatBookingAssigneeLabel(p: {
 }): string {
   const name = p.name?.trim() ?? '';
   const email = p.email?.trim() ?? '';
+  if (name) return name;
   if (p.kind === 'owner') {
     return email ? `${email} (owner)` : 'Owner';
   }
-  if (name) return name;
   if (p.kind === 'former') return email || 'Former teammate';
   return email || 'Team member';
 }

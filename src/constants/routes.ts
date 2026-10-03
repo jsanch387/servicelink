@@ -116,6 +116,8 @@ export const ROUTES = {
       `/dashboard/invoices/new?booking=${encodeURIComponent(bookingId.trim())}`,
     INVOICE: (invoiceId: string) =>
       `/dashboard/invoices/${encodeURIComponent(invoiceId.trim())}`,
+    /** Owner: record and review shop expenses. */
+    EXPENSES: '/dashboard/expenses',
     AVAILABILITY: '/dashboard/availability',
     CUSTOMERS: '/dashboard/customers',
     /** Owner: add and manage teammates. */
@@ -236,6 +238,11 @@ export const API_ROUTES = {
   QUOTES: '/api/quotes',
   /** Owner: list invoices or save a new draft. */
   INVOICES: '/api/invoices',
+  /** Owner: list shop expenses or record one. */
+  EXPENSES: '/api/expenses',
+  /** Owner: update or remove one expense. */
+  EXPENSE: (expenseId: string) =>
+    `/api/expenses/${encodeURIComponent(expenseId.trim())}`,
   /** Owner: email an invoice and publish its short link. */
   INVOICES_SEND: '/api/invoices/send',
   /** Public: start Stripe Checkout for a sent invoice. */

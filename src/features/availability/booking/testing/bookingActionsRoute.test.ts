@@ -250,11 +250,14 @@ beforeEach(() => {
   sendAndRecordSmsMock.mockResolvedValue({ sent: true, messageId: 'msg-1' });
   createSupabaseAdminClientMock.mockReturnValue({
     from: () => ({
-      select: () => ({
-        eq: () => ({
+      select: () => {
+        const chain = {
+          eq: () => chain,
+          limit: () => chain,
           maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
+        };
+        return chain;
+      },
       update: () => ({
         eq: () => ({
           eq: () => ({
@@ -274,6 +277,7 @@ beforeEach(() => {
                     }),
                 }),
               }),
+              select: () => Promise.resolve({ data: [], error: null }),
             }),
           }),
         }),

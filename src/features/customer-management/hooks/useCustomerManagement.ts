@@ -7,10 +7,9 @@ import { updateCustomerNote } from '@/features/customer-management/api/updateCus
 import type {
   AddCustomerDraft,
   CustomerLifecycle,
-  CustomerListStats,
   CustomerRecord,
 } from '@/features/customer-management/types';
-import { isCustomerNeedsAttention } from '@/features/customer-management/utils/customerAttention';
+import { customerMatchesStatusFilter } from '@/features/customer-management/utils/customerAttention';
 import { matchesCustomerQuery } from '@/features/customer-management/utils/matchesCustomerQuery';
 import { buildSmsHref } from '@/features/customer-management/utils/smsLink';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -92,29 +91,12 @@ export function useCustomerManagement() {
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
-      const passesStatus =
-        statusFilter === 'all'
-          ? true
-          : statusFilter === 'needs_attention'
-            ? isCustomerNeedsAttention(customer)
-            : customer.status === statusFilter;
+      const passesStatus = customerMatchesStatusFilter(customer, statusFilter);
       const passesSearch =
         !query.trim() || matchesCustomerQuery(customer, query);
       return passesStatus && passesSearch;
     });
   }, [customers, query, statusFilter]);
-
-  const stats: CustomerListStats = useMemo(() => {
-    const totalCustomers = customers.length;
-    const returningCustomers = customers.filter(
-      customer => customer.status === 'returning'
-    ).length;
-    const totalRevenue = customers.reduce(
-      (sum, customer) => sum + customer.totalSpent,
-      0
-    );
-    return { totalCustomers, returningCustomers, totalRevenue };
-  }, [customers]);
 
   const openDeleteCustomerModal = useCallback((customer: CustomerRecord) => {
     setDeleteCustomerError(null);
@@ -242,7 +224,6 @@ export function useCustomerManagement() {
     statusFilter,
     setStatusFilter,
     filteredCustomers,
-    stats,
     selectedCustomer,
     setSelectedCustomer,
     activeDeleteCustomer,

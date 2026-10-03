@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { FilterMenu } from '@/components/shared';
 
 export type BookingsStatusFilterValue = 'upcoming' | 'past' | 'cancelled';
 
@@ -32,10 +32,10 @@ export function BookingsAssignedToMeFilter({
       type="button"
       aria-pressed={pressed}
       onClick={() => onPressedChange(!pressed)}
-      className={`cursor-pointer whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs font-semibold outline-none transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 [-webkit-tap-highlight-color:transparent] ${
+      className={`inline-flex h-10 cursor-pointer items-center whitespace-nowrap rounded-[10px] border border-white/15 px-3.5 text-sm transition-colors hover:bg-white/[0.04] ${
         pressed
-          ? 'border-white/20 bg-white/[0.10] text-white'
-          : 'border-white/[0.09] bg-white/[0.04] text-white hover:border-white/[0.14] hover:bg-white/[0.06]'
+          ? 'bg-white/10 font-medium text-white'
+          : 'text-gray-200 hover:border-white/30'
       } ${className}`}
     >
       {pressed ? 'View all' : 'Assigned to me'}
@@ -50,27 +50,15 @@ export function BookingsStatusFilter({
 }: BookingsStatusFilterProps) {
   return (
     <div className={className}>
-      <label htmlFor="bookings-status-filter" className="sr-only">
-        Filter appointments
-      </label>
-      <div className="relative inline-block w-[8.5rem] [-webkit-tap-highlight-color:transparent]">
-        <select
-          id="bookings-status-filter"
-          value={value}
-          onChange={e => onChange(e.target.value as BookingsStatusFilterValue)}
-          className="w-full cursor-pointer appearance-none rounded-lg border border-white/[0.09] bg-white/[0.04] py-1.5 pl-2.5 pr-7 text-xs font-semibold text-white outline-none transition-colors hover:border-white/[0.14] hover:bg-white/[0.06] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 [-webkit-tap-highlight-color:transparent]"
-        >
-          {OPTIONS.map(o => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon
-          className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
-          aria-hidden
-        />
-      </div>
+      <FilterMenu
+        options={OPTIONS.map(option => ({
+          id: option.value,
+          label: option.label,
+        }))}
+        value={value}
+        onChange={onChange}
+        menuLabel="Appointments"
+      />
     </div>
   );
 }

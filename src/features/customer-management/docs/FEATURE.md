@@ -134,8 +134,6 @@ Defined in **`src/features/customer-management/types.ts`**. Used by list, detail
 | `status`                                                              | **`bookings`** | `returning` if more than one **completed** visit, else `new`.                                                                    |
 | Fallback (no linked bookings)                                         | Customer row   | visits/spent `0`, schedule fields `null`, last service `—`.                                                                      |
 
-**Stats row** (`CustomerListStats`): Computed in the client from the loaded `CustomerRecord[]` (totals, returning count, revenue sum).
-
 ---
 
 ## API
@@ -181,7 +179,7 @@ Used by the customers GET route (and can be reused for future POST/PATCH/DELETE 
 
 ### Page & loading
 
-**`CustomerManagementPage`** — composes header, stats, search/filters, table, mobile list, empty states, detail panel, modal.
+**`CustomerManagementPage`** — composes header, search/filters, table, mobile list, empty states, detail panel, modal.
 
 - **`CustomerManagementPageSkeleton`** — shown while `loadStatus === 'loading'`.
 - **`app/dashboard/customers/loading.tsx`** — route-level skeleton for navigation.

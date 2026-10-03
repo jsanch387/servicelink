@@ -107,6 +107,7 @@ Do not check `role === 'member'` in product code. Check a capability.
 | `customers.read` / `write` | yes   | no     | Customers page                                                        |
 | `quotes.read` / `write`    | yes   | no     | Quotes                                                                |
 | `invoices.read` / `write`  | yes   | no     | Invoices                                                              |
+| `expenses.read` / `write`  | yes   | no     | Expenses                                                              |
 | `reviews.read` / `write`   | yes   | no     | Reviews                                                               |
 | `profile.write`            | yes   | no     | Booking link / shop profile                                           |
 | `services.write`           | yes   | no     | Services catalog                                                      |

@@ -1,16 +1,14 @@
 /**
- * Temporary invoices rollout (signed-in account emails).
+ * Invoices nav rollout (signed-in account emails).
  *
- * - OPEN_TO_ALL true: every shop sees Invoices.
+ * - OPEN_TO_ALL true: every shop sees Invoices (current production state).
  * - Non-empty + OPEN_TO_ALL false: only listed accounts see the nav and routes.
  * - Empty list + OPEN_TO_ALL false: Invoices is hidden for everyone.
  */
-export const INVOICES_ROLLOUT_OWNER_EMAILS: readonly string[] = [
-  'jesuss387@gmail.com',
-];
+export const INVOICES_ROLLOUT_OWNER_EMAILS: readonly string[] = [];
 
 /** Open Invoices to every account (ignores the email list). */
-export const INVOICES_ROLLOUT_OPEN_TO_ALL = false;
+export const INVOICES_ROLLOUT_OPEN_TO_ALL = true;
 
 export function isOwnerEmailAllowedForInvoicesRollout(
   email: string | null | undefined

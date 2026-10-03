@@ -3,7 +3,7 @@
 import { BOOKINGS_LIST_DEFAULT_LIMIT } from '@/features/availability/booking/constants';
 import type { BookingsListFilter } from '@/features/availability/booking/server/parseListBookingsQuery';
 import { API_ROUTES } from '@/constants/routes';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type SetStateAction } from 'react';
 import { localDateKey } from '../dayPlannerUtils';
 import type { AvailabilityBookingDisplay } from '../types';
 import type { WebCompletePaymentMethod } from '../utils/webCompletePaymentMethods';
@@ -44,14 +44,6 @@ interface BookingsPage {
   nextCursor: string | null;
 }
 
-function mergeBookings(
-  current: AvailabilityBookingDisplay[],
-  incoming: AvailabilityBookingDisplay[]
-): AvailabilityBookingDisplay[] {
-  const seen = new Set(current.map(booking => booking.id));
-  return [...current, ...incoming.filter(booking => !seen.has(booking.id))];
-}
-
 async function fetchBookingsPage(
   params: URLSearchParams
 ): Promise<BookingsPage> {
@@ -78,15 +70,44 @@ async function fetchBookingsPage(
  * Status updates still patch local state only.
  */
 export function useAvailabilityBookings() {
-  const [bookings, setBookings] = useState<AvailabilityBookingDisplay[]>([]);
+  const [bookings, setBookingsState] = useState<AvailabilityBookingDisplay[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [listPageIndex, setListPageIndex] = useState(0);
+  const [cachedPageCount, setCachedPageCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const nextCursorRef = useRef<string | null>(null);
   const lastQueryRef = useRef<LastQuery | null>(null);
   const requestIdRef = useRef(0);
   const loadingMoreRef = useRef(false);
+  const pagesRef = useRef<AvailabilityBookingDisplay[][]>([]);
+  const pageIndexRef = useRef(0);
+
+  const setBookings = useCallback(
+    (value: SetStateAction<AvailabilityBookingDisplay[]>) => {
+      setBookingsState(current => {
+        const next = typeof value === 'function' ? value(current) : value;
+        if (
+          lastQueryRef.current?.type === 'list' &&
+          pagesRef.current.length > 0
+        ) {
+          pagesRef.current[pageIndexRef.current] = next;
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const resetListPages = useCallback(() => {
+    pagesRef.current = [];
+    pageIndexRef.current = 0;
+    setListPageIndex(0);
+    setCachedPageCount(0);
+  }, []);
 
   const loadListPage = useCallback(
     async (
@@ -99,6 +120,7 @@ export function useAvailabilityBookings() {
       lastQueryRef.current = { type: 'list', filter, asOf, assignedToMe };
       nextCursorRef.current = null;
       loadingMoreRef.current = false;
+      resetListPages();
       setIsLoading(true);
       setError(null);
       setHasMore(false);
@@ -112,6 +134,10 @@ export function useAvailabilityBookings() {
         if (assignedToMe) params.set('assignedToMe', '1');
         const page = await fetchBookingsPage(params);
         if (requestId !== requestIdRef.current) return;
+        pagesRef.current = [page.bookings];
+        pageIndexRef.current = 0;
+        setListPageIndex(0);
+        setCachedPageCount(1);
         setBookings(page.bookings);
         setHasMore(page.hasMore);
         nextCursorRef.current = page.nextCursor;
@@ -131,7 +157,7 @@ export function useAvailabilityBookings() {
         }
       }
     },
-    []
+    [resetListPages, setBookings]
   );
 
   const loadMore = useCallback(async () => {
@@ -159,7 +185,12 @@ export function useAvailabilityBookings() {
       if (last.assignedToMe) params.set('assignedToMe', '1');
       const page = await fetchBookingsPage(params);
       if (requestId !== requestIdRef.current) return;
-      setBookings(current => mergeBookings(current, page.bookings));
+      const nextIndex = pagesRef.current.length;
+      pagesRef.current = [...pagesRef.current, page.bookings];
+      pageIndexRef.current = nextIndex;
+      setListPageIndex(nextIndex);
+      setCachedPageCount(pagesRef.current.length);
+      setBookings(page.bookings);
       setHasMore(page.hasMore);
       nextCursorRef.current = page.nextCursor;
     } catch (err) {
@@ -171,7 +202,7 @@ export function useAvailabilityBookings() {
         setIsLoadingMore(false);
       }
     }
-  }, [isLoading]);
+  }, [isLoading, setBookings]);
 
   const loadRange = useCallback(
     async (from: string, to: string, options?: { assignedToMe?: boolean }) => {
@@ -180,6 +211,7 @@ export function useAvailabilityBookings() {
       lastQueryRef.current = { type: 'range', from, to, assignedToMe };
       nextCursorRef.current = null;
       loadingMoreRef.current = false;
+      resetListPages();
       setIsLoading(true);
       setIsLoadingMore(false);
       setHasMore(false);
@@ -206,7 +238,24 @@ export function useAvailabilityBookings() {
         }
       }
     },
-    []
+    [resetListPages, setBookings]
+  );
+
+  const setListPage = useCallback(
+    async (index: number) => {
+      if (index < 0 || lastQueryRef.current?.type !== 'list') return;
+      const cached = pagesRef.current[index];
+      if (cached) {
+        pageIndexRef.current = index;
+        setListPageIndex(index);
+        setBookingsState(cached);
+        return;
+      }
+      if (index === pagesRef.current.length) {
+        await loadMore();
+      }
+    },
+    [loadMore]
   );
 
   const refetch = useCallback(async () => {
@@ -248,7 +297,7 @@ export function useAvailabilityBookings() {
         return { success: false, error: 'Failed to update booking' };
       }
     },
-    []
+    [setBookings]
   );
 
   /**
@@ -302,7 +351,7 @@ export function useAvailabilityBookings() {
         return { success: false, error: 'Failed to complete booking' };
       }
     },
-    []
+    [setBookings]
   );
 
   const rescheduleBooking = useCallback(
@@ -341,7 +390,7 @@ export function useAvailabilityBookings() {
         };
       }
     },
-    []
+    [setBookings]
   );
 
   const updateBookingAssignee = useCallback(
@@ -375,7 +424,7 @@ export function useAvailabilityBookings() {
         return { success: false, error: 'Could not update assignee' };
       }
     },
-    []
+    [setBookings]
   );
 
   const deleteBooking = useCallback(
@@ -398,14 +447,19 @@ export function useAvailabilityBookings() {
         return { success: false, error: 'Failed to delete booking' };
       }
     },
-    []
+    [setBookings]
   );
+
+  const hasNextListPage = listPageIndex < cachedPageCount - 1 || hasMore;
 
   return {
     bookings,
     isLoading,
     isLoadingMore,
     hasMore,
+    listPageIndex,
+    hasNextListPage,
+    setListPage,
     error,
     loadListPage,
     loadMore,

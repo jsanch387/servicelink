@@ -26,6 +26,8 @@ describe('teamPermissions', () => {
     expect(can({ isOwner: false, permissions }, 'bookings.run')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'quotes.read')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'invoices.read')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'expenses.read')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'expenses.write')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'reviews.read')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'customers.read')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'bookings.write')).toBe(false);
@@ -39,6 +41,7 @@ describe('teamPermissions', () => {
     expect(can({ isOwner: false, permissions }, 'bookings.write')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'profile.write')).toBe(true);
     expect(can({ isOwner: false, permissions }, 'billing.manage')).toBe(false);
+    expect(can({ isOwner: false, permissions }, 'expenses.read')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'team.manage')).toBe(false);
     expect(can({ isOwner: false, permissions }, 'account.delete')).toBe(false);
   });

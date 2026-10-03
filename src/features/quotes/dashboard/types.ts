@@ -18,6 +18,7 @@ export type DashboardQuoteStatus =
 export type DashboardQuoteSource = 'owner_created' | 'customer_requested';
 
 export type QuotesDashboardFilterId =
+  | 'all'
   | 'requested'
   | 'awaiting_reply'
   | 'approved';

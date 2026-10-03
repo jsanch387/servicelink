@@ -8,6 +8,7 @@ export function quoteMatchesFilter(
   status: DashboardQuoteStatus,
   filter: QuotesDashboardFilterId
 ): boolean {
+  if (filter === 'all') return true;
   if (filter === 'requested') return REQUESTED_STATUSES.includes(status);
   if (filter === 'awaiting_reply') {
     return AWAITING_REPLY_STATUSES.includes(status);

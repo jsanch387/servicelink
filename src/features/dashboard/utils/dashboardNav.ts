@@ -13,6 +13,7 @@ import {
   DocumentTextIcon,
   LinkIcon,
   MegaphoneIcon,
+  ReceiptPercentIcon,
   RectangleStackIcon,
   Squares2X2Icon,
   StarIcon,
@@ -75,7 +76,7 @@ const NAV_GROUPS: readonly {
     id: 'money',
     name: 'Money',
     icon: CreditCardIcon,
-    children: ['Payments', 'Invoices', 'Subscriptions'],
+    children: ['Payments', 'Invoices', 'Expenses', 'Subscriptions'],
     place: 'end',
   },
 ];
@@ -160,6 +161,16 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     badge: 'new',
     navGroup: 'money',
     requiresInvoicesRollout: true,
+  },
+  {
+    name: 'Expenses',
+    href: ROUTES.DASHBOARD.EXPENSES,
+    icon: ReceiptPercentIcon,
+    requiresOnboarding: true,
+    requiredPermission: 'expenses.read',
+    activePathPrefix: '/dashboard/expenses',
+    badge: 'new',
+    navGroup: 'money',
   },
   {
     name: 'Customers',

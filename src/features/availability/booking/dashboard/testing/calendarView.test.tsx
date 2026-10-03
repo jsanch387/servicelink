@@ -94,7 +94,7 @@ describe('BookingsCalendar', () => {
       screen.getByRole('tab', { name: 'List' }).getAttribute('aria-selected')
     ).toBe('true');
     expect(screen.queryByRole('tab', { name: 'Month' })).toBeNull();
-    expect(screen.getByText('Sam Patel')).toBeTruthy();
+    expect(screen.getAllByText('Sam Patel').length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('tab', { name: 'Calendar' }));
     expect(onModeChange).toHaveBeenCalledWith('calendar');
@@ -158,7 +158,7 @@ describe('BookingsCalendar', () => {
   it('opens on the list', () => {
     render(<BookingsCalendar bookings={[booking]} onSelectBooking={vi.fn()} />);
 
-    expect(screen.getByText('Sam Patel')).toBeTruthy();
+    expect(screen.getAllByText('Sam Patel').length).toBeGreaterThan(0);
     expect(screen.queryByRole('tab', { name: 'Month' })).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Day' })).toBeNull();
   });
@@ -193,7 +193,7 @@ describe('BookingsCalendar', () => {
 describe('CalendarListView', () => {
   it('asks the parent to fetch the next page', async () => {
     const user = userEvent.setup();
-    const onLoadMore = vi.fn();
+    const onPageChange = vi.fn();
     const event: CalendarEvent = {
       id: 'job-1',
       dateKey: '2026-09-14',
@@ -209,13 +209,14 @@ describe('CalendarListView', () => {
       <CalendarListView
         events={[event]}
         onSelectEvent={vi.fn()}
-        hasMore
-        onLoadMore={onLoadMore}
+        page={0}
+        hasNextPage
+        onPageChange={onPageChange}
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Load more' }));
-    expect(onLoadMore).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(onPageChange).toHaveBeenCalledWith(1);
     expect(screen.getByRole('heading', { name: 'Sep 14' })).toBeTruthy();
     expect(screen.queryByText('Monday')).toBeNull();
     expect(screen.queryByText('Today')).toBeNull();

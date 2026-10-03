@@ -65,7 +65,7 @@ describe('getVisibleDashboardNavItems', () => {
     expect(names).toEqual(['Dashboard', 'Bookings']);
   });
 
-  it('groups payments, invoices, and subscriptions under Money', () => {
+  it('groups payments, invoices, expenses, and subscriptions under Money', () => {
     const entries = getVisibleDashboardNavEntries({
       hasShopAccess: true,
       showMembershipsNav: true,
@@ -83,6 +83,7 @@ describe('getVisibleDashboardNavItems', () => {
     expect(money.items.map(item => item.name)).toEqual([
       'Payments',
       'Invoices',
+      'Expenses',
       'Subscriptions',
     ]);
     expect(money.items.find(item => item.name === 'Subscriptions')?.badge).toBe(
@@ -173,6 +174,7 @@ describe('getDashboardPageTitle', () => {
     expect(getDashboardPageTitle('/dashboard/bookings')).toBe('Bookings');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.TEAM)).toBe('Team');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES)).toBe('Invoices');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.EXPENSES)).toBe('Expenses');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES_NEW)).toBe(
       'New invoice'
     );
@@ -198,6 +200,7 @@ describe('getDashboardPageTitle', () => {
     expect(money.items.map(item => item.name)).toEqual([
       'Payments',
       'Invoices',
+      'Expenses',
     ]);
   });
 
@@ -216,6 +219,7 @@ describe('getDashboardPageTitle', () => {
     if (money?.kind !== 'group') return;
     expect(money.items.map(item => item.name)).toEqual([
       'Payments',
+      'Expenses',
       'Subscriptions',
     ]);
   });

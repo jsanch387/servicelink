@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { BlockTimeEntry } from '@/features/availability/types/blockTime';
 import type { BookingAssigneeOption } from '@/features/team/types/bookingAssignee';
+import { shopShowsAssigneeLabels } from '@/features/team/utils/shopHasBookingAssignees';
 import { localDateKey } from '../dayPlannerUtils';
 import type { BookingsStatusFilterValue } from '../BookingsStatusFilter';
 import type { AvailabilityBookingDisplay } from '../types';
@@ -50,10 +51,11 @@ interface BookingsCalendarProps {
   onModeChange?: (mode: CalendarMode) => void;
   isLoading?: boolean;
   isLoadingMore?: boolean;
-  hasMore?: boolean;
+  listPage?: number;
+  hasNextListPage?: boolean;
+  onListPageChange?: (page: number) => void;
   onListActive?: () => void;
   onVisibleRangeChange?: (from: string, to: string) => void;
-  onLoadMore?: () => void;
   listFilter?: BookingsStatusFilterValue;
   assignedToMe?: boolean;
   assigneeOptions?: BookingAssigneeOption[];
@@ -67,10 +69,11 @@ export function BookingsCalendar({
   onModeChange,
   isLoading = false,
   isLoadingMore = false,
-  hasMore = false,
+  listPage = 0,
+  hasNextListPage = false,
+  onListPageChange,
   onListActive,
   onVisibleRangeChange,
-  onLoadMore,
   listFilter = 'upcoming',
   assignedToMe = false,
   assigneeOptions = [],
@@ -166,9 +169,11 @@ export function BookingsCalendar({
             onSelectEvent={handleSelectEvent}
             filter={listFilter}
             assignedToMe={assignedToMe}
-            hasMore={hasMore}
+            showAssignee={shopShowsAssigneeLabels(assigneeOptions)}
+            page={listPage}
+            hasNextPage={hasNextListPage}
             isLoadingMore={isLoadingMore}
-            onLoadMore={onLoadMore}
+            onPageChange={onListPageChange}
           />
         )
       ) : (
