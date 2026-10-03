@@ -1,18 +1,25 @@
 'use client';
 
-import { Button } from '@/components/shared';
+import {
+  Button,
+  ListPagination,
+  listPageCount,
+  listPageItems,
+} from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
-import { PlusIcon } from '@heroicons/react/24/outline';
-import React, { useMemo, useState } from 'react';
 import { useDashboardAccess } from '@/features/dashboard/context/DashboardAccessContext';
+import { PlusIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDashboardQuotes } from '../hooks/useDashboardQuotes';
 import type { QuotesDashboardFilterId } from '../types';
 import { quoteMatchesFilter } from '../utils/quoteStatusUi';
-import { QuoteListRow } from './QuoteListRow';
 import { QuotesAcceptRequestsUpgradeCta } from './QuotesAcceptRequestsUpgradeCta';
 import { QuotesDashboardSkeleton } from './QuotesDashboardSkeleton';
-import { QuotesFilterPills } from './QuotesFilterPills';
+import { QuotesFilters } from './QuotesFilters';
+import { QuotesList } from './QuotesList';
 import { QuotesListEmptyState } from './QuotesListEmptyState';
+
+const QUOTE_PAGE_SIZE = 10;
 
 export interface QuotesDashboardPageProps {
   /** Free-tier owners see an upgrade CTA to accept quote requests. */
@@ -22,25 +29,28 @@ export interface QuotesDashboardPageProps {
 export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
   isFreeTier = false,
 }) => {
-  const [filter, setFilter] = useState<QuotesDashboardFilterId>('requested');
+  const [filter, setFilter] = useState<QuotesDashboardFilterId>('all');
+  const [page, setPage] = useState(0);
   const { quotes, loadStatus, loadError, reloadQuotes } = useDashboardQuotes();
   const canWriteQuotes = useDashboardAccess().can('quotes.write');
 
-  const filtered = useMemo(
-    () => quotes.filter(q => quoteMatchesFilter(q.status, filter)),
-    [quotes, filter]
-  );
-
-  const sorted = useMemo(
-    () =>
-      [...filtered].sort(
+  const sorted = useMemo(() => {
+    return quotes
+      .filter(quote => quoteMatchesFilter(quote.status, filter))
+      .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ),
-    [filtered]
-  );
+      );
+  }, [quotes, filter]);
 
+  const pageCount = listPageCount(sorted.length, QUOTE_PAGE_SIZE);
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageQuotes = listPageItems(sorted, currentPage, QUOTE_PAGE_SIZE);
   const hasAnyQuotes = quotes.length > 0;
+
+  useEffect(() => {
+    setPage(0);
+  }, [filter]);
 
   const mainContent = (() => {
     if (loadStatus === 'loading') {
@@ -74,63 +84,60 @@ export const QuotesDashboardPage: React.FC<QuotesDashboardPageProps> = ({
     }
     if (sorted.length === 0) {
       return (
-        <QuotesListEmptyState
-          filter={filter}
-          hasAnyQuotes
-          canCreate={canWriteQuotes}
-        />
+        <QuotesListEmptyState filter={filter} hasAnyQuotes canCreate={false} />
       );
     }
     return (
-      <ul className="flex list-none flex-col gap-2 pb-8 sm:gap-3 sm:pb-10">
-        {sorted.map(quote => (
-          <li key={quote.id}>
-            <QuoteListRow quote={quote} />
-          </li>
-        ))}
-      </ul>
+      <>
+        <QuotesList quotes={pageQuotes} />
+        <ListPagination
+          page={currentPage}
+          pageCount={pageCount}
+          onPageChange={setPage}
+        />
+      </>
     );
   })();
 
   return (
-    <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
-      <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-10">
-        <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-              Quotes
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Sent quotes, statuses, and customer links in one place.
-            </p>
-          </div>
-          {canWriteQuotes ? (
-            <Button
-              href={ROUTES.DASHBOARD.QUOTES_NEW}
-              variant="inverse"
-              size="md"
-              icon={<PlusIcon className="h-4 w-4" />}
-              className="w-full shrink-0 sm:w-auto"
-            >
-              New quote
-            </Button>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold leading-none text-white">
+                Quotes
+              </h1>
+              <p className="mt-1 text-gray-400">
+                Sent quotes, statuses, and customer links in one place.
+              </p>
+            </div>
+            {canWriteQuotes ? (
+              <Button
+                href={ROUTES.DASHBOARD.QUOTES_NEW}
+                variant="inverse"
+                size="sm"
+                icon={<PlusIcon className="h-4 w-4" />}
+                className="w-full shrink-0 sm:w-auto"
+              >
+                New quote
+              </Button>
+            ) : null}
+          </header>
+
+          {isFreeTier ? (
+            <div className="mb-6">
+              <QuotesAcceptRequestsUpgradeCta />
+            </div>
           ) : null}
-        </header>
 
-        {isFreeTier ? (
-          <div className="mb-6">
-            <QuotesAcceptRequestsUpgradeCta />
-          </div>
-        ) : null}
+          {loadStatus === 'ready' && hasAnyQuotes ? (
+            <QuotesFilters value={filter} onChange={setFilter} />
+          ) : null}
 
-        {loadStatus === 'ready' ? (
-          <div className="mb-4">
-            <QuotesFilterPills value={filter} onChange={setFilter} />
-          </div>
-        ) : null}
-
-        {mainContent}
+          {mainContent}
+        </div>
       </div>
-    </main>
+    </div>
   );
 };

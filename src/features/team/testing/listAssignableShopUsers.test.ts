@@ -6,6 +6,8 @@ function createAdmin(opts: {
   profileId: string | null;
   members: Array<string | { user_id: string; status: string }>;
   emails: Record<string, string | undefined>;
+  profiles?: Array<{ user_id: string; full_name: string | null }>;
+  metadata?: Record<string, { full_name?: string; name?: string }>;
   invites?: Array<{
     email: string;
     name: string | null;
@@ -36,6 +38,16 @@ function createAdmin(opts: {
           }),
         };
       }
+      if (table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: opts.profiles ?? [],
+              error: null,
+            }),
+          }),
+        };
+      }
       if (table === 'business_members') {
         return {
           select: vi.fn().mockReturnValue({
@@ -57,7 +69,12 @@ function createAdmin(opts: {
     auth: {
       admin: {
         getUserById: vi.fn(async (id: string) => ({
-          data: { user: { email: opts.emails[id] } },
+          data: {
+            user: {
+              email: opts.emails[id],
+              user_metadata: opts.metadata?.[id] ?? {},
+            },
+          },
           error: null,
         })),
       },
@@ -121,6 +138,36 @@ describe('listAssignableShopUsers', () => {
         userId: 'gone-1',
         label: 'jose@shop.com',
         kind: 'former',
+      },
+    ]);
+  });
+
+  it('uses a saved name instead of the email', async () => {
+    const admin = createAdmin({
+      profileId: 'owner-1',
+      members: ['member-1'],
+      emails: {
+        'owner-1': 'owner@shop.com',
+        'member-1': 'alex@shop.com',
+      },
+      profiles: [
+        { user_id: 'owner-1', full_name: 'Jesus Sanchez' },
+        { user_id: 'member-1', full_name: 'Alex Rivera' },
+      ],
+    });
+
+    await expect(
+      listAssignableShopUsers(admin as never, 'biz')
+    ).resolves.toEqual([
+      {
+        userId: 'owner-1',
+        label: 'Jesus Sanchez',
+        kind: 'owner',
+      },
+      {
+        userId: 'member-1',
+        label: 'Alex Rivera',
+        kind: 'member',
       },
     ]);
   });

@@ -6,9 +6,9 @@ export default function SubscriptionsDashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-col">
       <SubscriptionsBetaNotice />
-      {children}
-    </>
+      <div className="min-h-0 flex-1">{children}</div>
+    </div>
   );
 }

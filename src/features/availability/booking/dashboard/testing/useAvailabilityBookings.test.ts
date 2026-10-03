@@ -73,11 +73,15 @@ describe('useAvailabilityBookings', () => {
       'cursor=2026-09-14%7C14%3A00%3A00%7Cbk-1'
     );
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain('filter=upcoming');
-    expect(result.current.bookings.map(item => item.id)).toEqual([
-      'bk-1',
-      'bk-2',
-    ]);
+    expect(result.current.bookings.map(item => item.id)).toEqual(['bk-2']);
+    expect(result.current.listPageIndex).toBe(1);
     expect(result.current.hasMore).toBe(false);
+
+    await act(async () => {
+      await result.current.setListPage(0);
+    });
+    expect(result.current.bookings.map(item => item.id)).toEqual(['bk-1']);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('fetches only the visible calendar range', async () => {

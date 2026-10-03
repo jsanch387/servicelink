@@ -26,7 +26,9 @@ export const QuotesListEmptyState: React.FC<QuotesListEmptyStateProps> = ({
       ? 'No quote requests'
       : filter === 'awaiting_reply'
         ? 'No quotes awaiting a reply'
-        : 'No approved quotes';
+        : filter === 'approved'
+          ? 'No approved quotes'
+          : 'No quotes yet';
 
   const description = !hasAnyQuotes
     ? 'Send your first quote in a few taps — your customer gets a link to review and respond.'
@@ -34,7 +36,9 @@ export const QuotesListEmptyState: React.FC<QuotesListEmptyStateProps> = ({
       ? 'When a customer asks for a price, it will show up here.'
       : filter === 'awaiting_reply'
         ? 'Sent quotes waiting on the customer will show up here.'
-        : 'Approved quotes will show up here.';
+        : filter === 'approved'
+          ? 'Approved quotes will show up here.'
+          : 'Quotes you send and requests from customers will show up here.';
 
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02] px-6 py-16 text-center">

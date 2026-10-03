@@ -10,6 +10,8 @@ export const TEAM_PERMISSIONS = [
   'quotes.write',
   'invoices.read',
   'invoices.write',
+  'expenses.read',
+  'expenses.write',
   'reviews.read',
   'reviews.write',
   'profile.write',

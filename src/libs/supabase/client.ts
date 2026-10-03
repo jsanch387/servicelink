@@ -1321,6 +1321,42 @@ export type Database = {
           updated_at?: string;
         };
       };
+      business_expenses: {
+        Row: {
+          id: string;
+          business_id: string;
+          name: string;
+          amount_cents: number;
+          charged_on: string;
+          category: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          name: string;
+          amount_cents: number;
+          charged_on: string;
+          category?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          name?: string;
+          amount_cents?: number;
+          charged_on?: string;
+          category?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       signup_attribution: {
         Row: {
           user_id: string;

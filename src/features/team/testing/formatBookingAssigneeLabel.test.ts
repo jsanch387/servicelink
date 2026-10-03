@@ -3,6 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { formatBookingAssigneeLabel } from '../utils/formatBookingAssigneeLabel';
 
 describe('formatBookingAssigneeLabel', () => {
+  it('uses the owner name when one is saved', () => {
+    expect(
+      formatBookingAssigneeLabel({
+        name: 'Jesus Sanchez',
+        email: 'owner@shop.com',
+        kind: 'owner',
+      })
+    ).toBe('Jesus Sanchez');
+  });
+
   it('labels the owner with their email', () => {
     expect(
       formatBookingAssigneeLabel({

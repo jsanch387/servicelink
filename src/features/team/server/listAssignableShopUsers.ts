@@ -6,6 +6,26 @@ import { formatBookingAssigneeLabel } from '../utils/formatBookingAssigneeLabel'
 import { teamInviteDisplayName } from '../utils/teamInviteDisplayName';
 import { adminDb } from './adminDb';
 
+function personName(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed || trimmed.includes('@')) return null;
+  return trimmed;
+}
+
+function authAccountName(
+  user: { user_metadata?: Record<string, unknown> } | null | undefined
+): string | null {
+  const meta = user?.user_metadata;
+  return (
+    personName(stringValue(meta?.full_name)) ??
+    personName(stringValue(meta?.name))
+  );
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
 /** Owner first, then active teammates. Pending invites are not assignable. */
 export async function listAssignableShopUsers(
   admin: SupabaseClient<Database>,
@@ -41,31 +61,54 @@ export async function listAssignableShopUsers(
     name?: string | null;
     accepted_user_id?: string | null;
   }>;
+  const memberRows = (
+    (members ?? []) as Array<{
+      user_id?: string;
+      status?: string;
+    }>
+  ).flatMap(row => {
+    const userId = row.user_id?.trim() ?? '';
+    if (!userId || userId === ownerId) return [];
+    return [{ userId, status: row.status }];
+  });
+
+  const { data: profileRows } = await db
+    .from('profiles')
+    .select('user_id, full_name')
+    .in('user_id', [ownerId, ...memberRows.map(row => row.userId)]);
+  const profileNames = new Map<string, string>();
+  for (const row of (profileRows ?? []) as Array<{
+    user_id?: string;
+    full_name?: string | null;
+  }>) {
+    const userId = row.user_id?.trim() ?? '';
+    const fullName = personName(row.full_name);
+    if (userId && fullName) profileNames.set(userId, fullName);
+  }
 
   const options: BookingAssigneeOption[] = [];
   const ownerUser = await admin.auth.admin.getUserById(ownerId);
   options.push({
     userId: ownerId,
     label: formatBookingAssigneeLabel({
+      name: profileNames.get(ownerId) ?? authAccountName(ownerUser.data.user),
       email: ownerUser.data.user?.email,
       kind: 'owner',
     }),
     kind: 'owner',
   });
 
-  for (const row of (members ?? []) as Array<{
-    user_id?: string;
-    status?: string;
-  }>) {
-    const userId = row.user_id?.trim();
-    if (!userId || userId === ownerId) continue;
-    const { data } = await admin.auth.admin.getUserById(userId);
+  for (const row of memberRows) {
+    const { data } = await admin.auth.admin.getUserById(row.userId);
     const email = data.user?.email ?? null;
     const kind = row.status === ACTIVE_TEAM_MEMBER_STATUS ? 'member' : 'former';
     options.push({
-      userId,
+      userId: row.userId,
       label: formatBookingAssigneeLabel({
-        name: teamInviteDisplayName(inviteRows, { userId, email }),
+        name:
+          teamInviteDisplayName(inviteRows, { userId: row.userId, email }) ??
+          profileNames.get(row.userId) ??
+          authAccountName(data.user),
         email,
         kind,
       }),

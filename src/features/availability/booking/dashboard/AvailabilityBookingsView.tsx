@@ -23,11 +23,8 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { AvailabilityBookingDetailPanel } from './AvailabilityBookingDetailPanel';
 import { BookingsCalendar } from './calendar/BookingsCalendar';
-import { CalendarModeDock } from './calendar/CalendarModeDock';
-import {
-  CALENDAR_LIST_COLUMN_CLASS,
-  type CalendarMode,
-} from './calendar/types';
+import { CalendarModeToggle } from './calendar/CalendarModeToggle';
+import type { CalendarMode } from './calendar/types';
 import {
   BookingsAssignedToMeFilter,
   BookingsStatusFilter,
@@ -70,10 +67,11 @@ export function AvailabilityBookingsView({
     bookings,
     isLoading,
     isLoadingMore,
-    hasMore,
+    listPageIndex,
+    hasNextListPage,
+    setListPage,
     error,
     loadListPage,
-    loadMore,
     loadRange,
     updateBookingStatus,
     completeBookingJob,
@@ -254,43 +252,58 @@ export function AvailabilityBookingsView({
   }, [selectedBooking]);
 
   return (
-    <main className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden bg-[#0f0f0f] text-white">
+    <main className="relative flex h-full min-h-0 flex-1 flex-col overflow-x-hidden text-white">
       <div
         className={`min-h-0 flex-1 ${
-          canWriteBookings ? 'pb-36' : 'pb-24'
-        } ${selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'}`}
+          selectedBooking ? 'overflow-hidden' : 'overflow-y-auto'
+        }`}
       >
-        <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-10 md:px-6 lg:px-8 lg:py-10">
-          <header
-            className={`mb-5 flex items-center gap-2 sm:mb-8 sm:gap-3 ${
-              calendarMode === 'list' ? CALENDAR_LIST_COLUMN_CLASS : ''
-            }`}
-          >
-            {calendarMode === 'list' ? (
-              <BookingsStatusFilter
-                value={activeTab}
-                onChange={setActiveTab}
-                className="shrink-0"
-              />
-            ) : null}
-            {canAssignBookings ? (
-              <div className="ml-auto flex items-center gap-2 sm:gap-3">
-                <BookingsAssignedToMeFilter
-                  pressed={assignedToMe}
-                  onPressedChange={setAssignedToMe}
-                  className="shrink-0"
-                />
-                {/* Hidden on web for now — calendar lives in the mobile app.
-                {canWriteBookings ? (
-                  <SyncBookingsCtaCard
-                    variant="header"
-                    onSyncClick={() => setSyncCalendarModalOpen(true)}
-                  />
-                ) : null}
-                */}
-              </div>
+        <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold leading-none text-white">
+                Bookings
+              </h1>
+              <p className="mt-1 text-gray-400">
+                Appointments on the list or the calendar.
+              </p>
+            </div>
+            {canWriteBookings ? (
+              <Button
+                href={newAppointment.enabled ? newAppointment.href : undefined}
+                onClick={
+                  newAppointment.enabled
+                    ? undefined
+                    : newAppointment.onBlockedClick
+                }
+                variant="inverse"
+                size="sm"
+                icon={<PlusIcon className="h-4 w-4" aria-hidden />}
+                className="w-full shrink-0 sm:w-auto"
+                title={newAppointment.title}
+                aria-label={newAppointment.ariaLabel}
+              >
+                New appointment
+              </Button>
             ) : null}
           </header>
+          {newAppointment.notice ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className="mb-6 rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 text-sm leading-relaxed text-zinc-300"
+            >
+              <p>{newAppointment.notice}</p>
+              {manualBookingBlockedByCap ? (
+                <a
+                  href={ROUTES.DASHBOARD.UPGRADE}
+                  className="mt-2 inline-flex cursor-pointer text-sm font-semibold text-white underline-offset-2 hover:underline"
+                >
+                  Upgrade to Pro
+                </a>
+              ) : null}
+            </div>
+          ) : null}
           {(error || updateError) && (
             <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
               {error ?? updateError}
@@ -299,14 +312,40 @@ export function AvailabilityBookingsView({
           {showFreeBookingsTracker && (
             <FreeBookingsTracker
               bookingsUsed={freeBookingsUsed}
-              className="mb-4"
+              className="mb-6"
             />
           )}
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CalendarModeToggle
+              value={calendarMode}
+              onChange={setCalendarMode}
+            />
+            <div className="flex items-center justify-end gap-2">
+              {canAssignBookings ? (
+                <BookingsAssignedToMeFilter
+                  pressed={assignedToMe}
+                  onPressedChange={setAssignedToMe}
+                />
+              ) : null}
+              {calendarMode === 'list' ? (
+                <BookingsStatusFilter
+                  value={activeTab}
+                  onChange={setActiveTab}
+                />
+              ) : null}
+            </div>
+          </div>
           <BookingsCalendar
             bookings={bookings}
             isLoading={isLoading}
             isLoadingMore={isLoadingMore}
-            hasMore={hasMore}
+            listPage={calendarMode === 'list' ? listPageIndex : 0}
+            hasNextListPage={calendarMode === 'list' && hasNextListPage}
+            onListPageChange={
+              calendarMode === 'list'
+                ? page => void setListPage(page)
+                : undefined
+            }
             mode={calendarMode}
             onModeChange={setCalendarMode}
             listFilter={activeTab}
@@ -315,7 +354,6 @@ export function AvailabilityBookingsView({
             timeOffBlocks={timeOffBlocks}
             onListActive={loadCurrentList}
             onVisibleRangeChange={loadVisibleRange}
-            onLoadMore={loadMore}
             onSelectBooking={booking => {
               setUpdateError(null);
               setSelectedBooking(booking);
@@ -323,59 +361,6 @@ export function AvailabilityBookingsView({
           />
         </div>
       </div>
-
-      {!selectedBooking ? (
-        <CalendarModeDock
-          value={calendarMode}
-          onChange={setCalendarMode}
-          raised={canWriteBookings}
-        />
-      ) : null}
-
-      {canWriteBookings ? (
-        <div
-          className="fixed bottom-0 left-0 right-0 z-20 bg-[#0f0f0f]/95 px-3 pt-3 backdrop-blur-md sm:px-4 md:px-6 dashboard-sidebar-offset lg:px-8 safe-area-pb"
-          style={{
-            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-          }}
-        >
-          <div className="mx-auto w-full max-w-lg space-y-3 lg:max-w-2xl">
-            {newAppointment.notice ? (
-              <div
-                role="status"
-                aria-live="polite"
-                className="rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-3 text-sm leading-relaxed text-zinc-300"
-              >
-                <p>{newAppointment.notice}</p>
-                {manualBookingBlockedByCap ? (
-                  <a
-                    href={ROUTES.DASHBOARD.UPGRADE}
-                    className="mt-2 inline-flex cursor-pointer text-sm font-semibold text-white underline-offset-2 hover:underline"
-                  >
-                    Upgrade to Pro
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-            <Button
-              href={newAppointment.enabled ? newAppointment.href : undefined}
-              onClick={
-                newAppointment.enabled
-                  ? undefined
-                  : newAppointment.onBlockedClick
-              }
-              variant="inverse"
-              fullWidth
-              className="font-semibold"
-              icon={<PlusIcon className="h-4 w-4" aria-hidden />}
-              title={newAppointment.title}
-              aria-label={newAppointment.ariaLabel}
-            >
-              New appointment
-            </Button>
-          </div>
-        </div>
-      ) : null}
 
       {selectedBooking && (
         <AvailabilityBookingDetailPanel

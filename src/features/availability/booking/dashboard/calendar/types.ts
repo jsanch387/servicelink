@@ -2,9 +2,6 @@ import type { AvailabilityBookingDisplay } from '../types';
 
 export type CalendarMode = 'list' | 'calendar';
 
-/** Matches list cards so the view/filter chrome sits on the same edges. */
-export const CALENDAR_LIST_COLUMN_CLASS = 'mx-auto w-full max-w-3xl';
-
 export type CalendarRange = 'day' | 'week' | 'month';
 
 export type CalendarEventKind = 'booking' | 'timeOff';
