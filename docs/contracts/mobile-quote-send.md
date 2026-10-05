@@ -88,6 +88,16 @@ collects one vehicle on send, same as web.
 | `priceCents`      | number | Yes      | Integer ≥ 0. **Total** price (base + add-ons).        |
 | `durationMinutes` | number | Yes      | Integer > 0. **Total** duration (base + add-on time). |
 
+### Payment to accept (optional)
+
+Omit this field to keep today’s accept-or-decline quote. Send it only when the shop is **Pro** and payments can charge. The server snapshots the shop deposit rule onto the quote.
+
+| Field               | Type   | Required | Notes                                                                                  |
+| ------------------- | ------ | -------- | -------------------------------------------------------------------------------------- |
+| `paymentCollection` | string | No       | `none` (default), `deposit`, `full`, or `customer_choice`. Invalid values are **400**. |
+
+`deposit` and `customer_choice` require deposits turned on in Payments, and a deposit of at least **$0.50**. `full` and `customer_choice` require a quote total of at least **$0.50**. If Pro or payments are not ready, the server returns **400** rather than sending a quote that cannot charge.
+
 ### Service — catalog snapshot (optional)
 
 Send these when the owner picked a saved service from their catalog. Omit all for a fully **custom** quote.

@@ -6,13 +6,13 @@ This document describes how the **public quote request** path relates to **avail
 
 ## 1. Two different “public customer” flows
 
-| Flow                               | Entry (examples)                                                       | Auth                  | Primary API                             | Outcome                                                                                        |
-| ---------------------------------- | ---------------------------------------------------------------------- | --------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **Availability booking**           | `/:slug/book`, public book UI                                          | Customer (often anon) | `POST /api/public/bookings`             | `bookings` row + customer upsert + owner notify (same family as dashboard booking)             |
-| **Quote request**                  | `/:businessSlug/quote` (e.g. `src/app/[business-slug]/quote/page.tsx`) | None                  | `POST /api/public/quote-request`        | `quotes` row only: `source = customer_requested`, `status = requested`, **no** public link yet |
-| **Quoted job (after owner sends)** | Email/link `/q/[token]`                                                | Token                 | `GET` page + `POST /api/quotes/respond` | Quote lifecycle; on **approve** → **same booking stack** as public booking (see §6)            |
+| Flow                               | Entry (examples)                                                       | Auth                  | Primary API                             | Outcome                                                                                                                                                                                                      |
+| ---------------------------------- | ---------------------------------------------------------------------- | --------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Availability booking**           | `/:slug/book`, public book UI                                          | Customer (often anon) | `POST /api/public/bookings`             | `bookings` row + customer upsert + owner notify (same family as dashboard booking)                                                                                                                           |
+| **Quote request**                  | `/:businessSlug/quote` (e.g. `src/app/[business-slug]/quote/page.tsx`) | None                  | `POST /api/public/quote-request`        | `quotes` row only: `source = customer_requested`, `status = requested`, **no** public link yet                                                                                                               |
+| **Quoted job (after owner sends)** | Email/link `/q/[token]`                                                | Token                 | `GET` page + `POST /api/quotes/respond` | Quote lifecycle. Accept with no card, or pay in person, creates the booking now. A required deposit or full card payment creates it only after Stripe `checkout.session.completed` (`kind = quote_checkout`) |
 
-Quotes and bookings are **separate tables**. A quote becomes a booking only after the customer **approves** and server-side effects run successfully.
+Quotes and bookings are **separate tables**. A quote becomes a booking when the customer accepts with no card, chooses pay in person, or finishes a required card payment. Card payment does not create the booking until the Connect webhook runs (see §6).
 
 ---
 
@@ -103,13 +103,26 @@ Subsequent edits to an already-sent quote use **`PATCH /api/quotes/[id]`** (owne
 - **Lifecycle:** May transition `sent` → `viewed` on load (atomic update when still `sent`).
 - **Labels (customer-facing):** **Customer note** (from request text / parsed), **Notes from the business** (from `quotes.note`) — avoids “Your notes” sounding like the customer wrote it.
 - **Validity:** Open `sent` / `viewed` quotes show **Valid until {date}** from `quote_public_links.expires_at` (14 days). Expired links `notFound()`.
-- **Actions:** `PublicQuoteRespondActions` → `POST /api/quotes/respond`.
+- **Actions:** `PublicQuoteRespondActions` → `POST /api/quotes/respond`. Decline is always available. When the quote requires money, the pay button replaces Accept. After that tap the customer still picks a time if the owner left it open, then enters the service address, then pays. Return from Stripe polls `GET /api/quotes/checkout-status`.
 
 ---
 
 ## 6. Approve quote → booking (parity with public booking)
 
-When the customer **approves**, `src/app/api/quotes/respond/route.ts` (with `finalizeApprovedQuoteToBooking` / `quoteApprovalSideEffects.ts`):
+When the customer **accepts without a card**, or chooses **pay in person**, `src/app/api/quotes/respond/route.ts` (with `finalizeApprovedQuoteToBooking` / `quoteApprovalSideEffects.ts`) creates the booking immediately.
+
+When the quote requires a **deposit** or **full payment**, respond does not approve the quote. It starts Stripe Checkout on the connected account and returns `checkoutUrl`. `applyQuoteCheckoutCompleted` (`server/quoteCheckout.ts`), from Connect `checkout.session.completed` with `metadata.kind = quote_checkout`, then:
+
+1. Approves the quote and stores the address and schedule from checkout.
+2. Runs the same booking steps below.
+3. Inserts `booking_payments` with the amount charged (`deposit_paid` and a remaining balance, or `paid_full`).
+4. Marks `quote_checkout_sessions` completed only after that payment row is saved. A failed save returns **500** so Stripe retries onto the existing appointment.
+
+Pay in person inserts `booking_payments` as `awaiting_payment` / `pay_in_person` with the full total still due. Complete on the appointment subtracts `paid_online_amount_cents`, so a deposit or full payment is not collected again.
+
+The owner’s choice is snapshotted at send (`payment_collection`, `deposit_type`, `deposit_value`). Deposit math uses the shop’s Payments deposit rule. See [README.md](./README.md#payment-to-accept).
+
+Shared booking steps:
 
 1. Persists structured **service address** on `quotes` (and legacy `service_address` where applicable).
 2. Calls **`createBookingFromApprovedQuote`** (`server/createBookingFromApprovedQuote.ts`) → **`createBooking`** (same service path as availability bookings).
@@ -146,7 +159,7 @@ Booking **notes** can combine labeled **Customer note** + **Your notes** from th
 Update this file when you:
 
 - Change **intake** fields or `request_message` / `note` semantics.
-- Add steps between **requested** and **sent**, or change **approve → booking** side effects.
-- Diverge quote approval from **public booking** rules (cap, time-off, notifications).
+- Add steps between **requested** and **sent**, or change **approve → booking** or **card payment → booking** side effects.
+- Diverge quote approval from **public booking** rules (cap, time-off, notifications, `booking_payments`).
 
 Also update [README.md](./README.md) API tables and [QUOTES_TABLE.md](./QUOTES_TABLE.md) if schema or statuses change.

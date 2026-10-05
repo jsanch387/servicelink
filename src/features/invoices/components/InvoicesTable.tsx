@@ -5,9 +5,13 @@ import { formatInvoiceCents } from '@/features/invoices/utils/invoiceDraft';
 import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { InvoiceListItem, InvoiceStatus } from '../types';
+import { DeleteInvoiceButton } from './DeleteInvoiceButton';
+import { MarkInvoicePaidButton } from './MarkInvoicePaidButton';
+import { VoidInvoiceButton } from './VoidInvoiceButton';
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft: 'Draft',
@@ -52,9 +56,165 @@ function StatusPill({ status }: { status: InvoiceStatus }) {
   );
 }
 
-export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
-  invoices,
-}) => {
+const menuItemClassName =
+  'flex w-full cursor-pointer items-center px-3 py-2.5 text-left text-sm text-white transition-colors hover:bg-white/10';
+
+function InvoiceRowMenu({
+  invoice,
+  label,
+  onDeleted,
+  onStatusChange,
+}: {
+  invoice: InvoiceListItem;
+  label: string;
+  onDeleted: (invoiceId: string) => void;
+  onStatusChange: (invoiceId: string, status: InvoiceStatus) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const rootRef = useRef<HTMLSpanElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open || !rootRef.current) return;
+    const place = () => {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        right: Math.max(12, window.innerWidth - rect.right),
+        width: 176,
+        zIndex: 80,
+      });
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        rootRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <span
+      ref={rootRef}
+      className="relative inline-flex"
+      onClick={event => event.stopPropagation()}
+      onKeyDown={event => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="inline-flex cursor-pointer items-center justify-center text-gray-400 transition-colors hover:text-white focus-visible:outline-none"
+        aria-label={`Actions for ${label}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(current => !current)}
+      >
+        <EllipsisHorizontalIcon className="h-5 w-5" aria-hidden />
+      </button>
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              aria-label={`Actions for ${label}`}
+              style={menuStyle}
+              className="overflow-hidden rounded-xl border border-white/10 bg-[#1c1c1c] py-1 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
+            >
+              {invoice.status === 'sent' ? (
+                <>
+                  <MarkInvoicePaidButton
+                    invoiceId={invoice.id}
+                    onUpdated={() => onStatusChange(invoice.id, 'paid')}
+                    trigger={openModal => (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className={menuItemClassName}
+                        onClick={() => {
+                          setOpen(false);
+                          openModal();
+                        }}
+                      >
+                        Mark as paid
+                      </button>
+                    )}
+                  />
+                  <VoidInvoiceButton
+                    invoiceId={invoice.id}
+                    onUpdated={() => onStatusChange(invoice.id, 'void')}
+                    trigger={openModal => (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className={menuItemClassName}
+                        onClick={() => {
+                          setOpen(false);
+                          openModal();
+                        }}
+                      >
+                        Void
+                      </button>
+                    )}
+                  />
+                </>
+              ) : null}
+              <DeleteInvoiceButton
+                invoiceId={invoice.id}
+                onDeleted={() => onDeleted(invoice.id)}
+                trigger={openModal => (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={`${menuItemClassName} text-red-400 hover:text-red-300`}
+                    onClick={() => {
+                      setOpen(false);
+                      openModal();
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
+              />
+            </div>,
+            document.body
+          )
+        : null}
+    </span>
+  );
+}
+
+export const InvoicesTable: React.FC<{
+  invoices: InvoiceListItem[];
+  canDelete: boolean;
+  onDeleted: (invoiceId: string) => void;
+  onStatusChange: (invoiceId: string, status: InvoiceStatus) => void;
+}> = ({ invoices, canDelete, onDeleted, onStatusChange }) => {
   const router = useRouter();
 
   const openInvoice = (invoiceId: string) => {
@@ -63,7 +223,7 @@ export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
 
   return (
     <>
-      <div className="hidden overflow-x-auto rounded-lg border border-white/10 bg-white/[0.02] md:block">
+      <div className="hidden overflow-visible rounded-lg border border-white/10 bg-white/[0.02] md:block">
         <table className="min-w-full">
           <thead>
             <tr className="border-b border-white/10">
@@ -82,6 +242,11 @@ export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                 Status
               </th>
+              {canDelete ? (
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">
+                  <span className="sr-only">Actions</span>
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -118,6 +283,16 @@ export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
                   <td className="px-4 py-3.5 align-middle">
                     <StatusPill status={invoice.status} />
                   </td>
+                  {canDelete ? (
+                    <td className="px-4 py-3.5 text-right align-middle">
+                      <InvoiceRowMenu
+                        invoice={invoice}
+                        label={name}
+                        onDeleted={onDeleted}
+                        onStatusChange={onStatusChange}
+                      />
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}
@@ -129,24 +304,36 @@ export const InvoicesTable: React.FC<{ invoices: InvoiceListItem[] }> = ({
         {invoices.map(invoice => {
           const name = customerName(invoice);
           return (
-            <li key={invoice.id}>
+            <li
+              key={invoice.id}
+              className="rounded-lg border border-white/10 bg-white/[0.02] p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <Link
+                  href={ROUTES.DASHBOARD.INVOICE(invoice.id)}
+                  className="min-w-0 flex-1 cursor-pointer outline-none"
+                >
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="min-w-0 truncate text-base font-semibold text-white">
+                      {name}
+                    </span>
+                    <StatusPill status={invoice.status} />
+                  </span>
+                </Link>
+                {canDelete ? (
+                  <InvoiceRowMenu
+                    invoice={invoice}
+                    label={name}
+                    onDeleted={onDeleted}
+                    onStatusChange={onStatusChange}
+                  />
+                ) : null}
+              </div>
               <Link
                 href={ROUTES.DASHBOARD.INVOICE(invoice.id)}
-                className="block cursor-pointer rounded-lg border border-white/10 bg-white/[0.02] p-4 outline-none transition-colors hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-white/30"
+                className="mt-3 block cursor-pointer outline-none"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="min-w-0 truncate text-base font-semibold text-white">
-                    {name}
-                  </p>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <StatusPill status={invoice.status} />
-                    <EllipsisHorizontalIcon
-                      className="h-5 w-5 text-gray-500"
-                      aria-hidden
-                    />
-                  </span>
-                </div>
-                <dl className="mt-3 space-y-2 text-sm">
+                <dl className="space-y-2 text-sm">
                   <div className="flex justify-between gap-4">
                     <dt className="text-gray-400">Invoice</dt>
                     <dd className="text-gray-200">

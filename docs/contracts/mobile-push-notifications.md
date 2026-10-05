@@ -117,8 +117,11 @@ These are sent automatically when business events occur. `reference_id` is alway
 | `review`          | Review UUID          | Review **detail** screen for that id                                |
 | `subscriber`      | Membership UUID      | Subscriber **detail** (`customer_memberships.id`)                   |
 | `membership`      | Membership UUID      | **Alias for `subscriber`** — older payloads used this type          |
+| `invoice`         | Invoice UUID         | Invoice **bill** for that id (`invoices.id`)                        |
 
-**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForBookingReminder`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `notifyAssigneeForJobAssigned`, `POST /api/booking-request/submit`, etc.
+**Server sources:** `notifyOwnerForAvailabilityBookingCreated`, `notifyOwnerForBookingReminder`, `notifyOwnerForPublicQuoteRequest`, `notifyOwnerForReviewSubmitted`, `notifyOwnerForNewMembershipSubscriber`, `notifyOwnerMembershipVisitNeeded`, `notifyAssigneeForJobAssigned`, `notifyOwnerInvoicePaid`, `POST /api/booking-request/submit`, etc.
+
+`invoice` is sent when a shop invoice becomes paid (owner marked it paid, or the customer paid by card). `reference_id` is `invoices.id`. Title is `Invoice paid`. Body is `{customer} · {amount}`, or just the amount when the name is blank. The same row is already in `notifications` (`type` `customer_invoice_paid`). A second paid event for that invoice does not send another push.
 
 `subscriber` / `membership` `reference_id` is always `customer_memberships.id` — the same id as web `/dashboard/subscriptions/subscribers/{id}` and `GET /api/memberships/subscribers/{id}`.
 
@@ -186,6 +189,7 @@ Keep push routing and universal linking in sync. Example mapping (mobile team ad
 | `booking`        | `{uuid}`                       | `servicelinkmobile://bookings/{uuid}`                                                          |
 | `booking_edit`   | `{uuid}`                       | `servicelinkmobile://bookings/{uuid}/edit`                                                     |
 | `quote`          | `{uuid}`                       | `servicelinkmobile://quotes/{uuid}`                                                            |
+| `invoice`        | `{uuid}`                       | `servicelinkmobile://invoices/{uuid}`                                                          |
 | `quote_edit`     | `{uuid}`                       | `servicelinkmobile://quotes/{uuid}/edit`                                                       |
 | `review`         | `{uuid}`                       | `servicelinkmobile://reviews/{uuid}`                                                           |
 | `customer`       | `{uuid}`                       | `servicelinkmobile://customers/{uuid}`                                                         |

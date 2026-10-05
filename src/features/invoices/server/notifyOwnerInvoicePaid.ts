@@ -1,10 +1,11 @@
 /**
- * In-app notice when a customer invoice becomes paid.
- * Push waits until invoicing exists on mobile.
+ * In-app notice and Expo push when a customer invoice becomes paid.
  * Best-effort: a duplicate or a failed insert does not undo the payment.
+ * A duplicate notice does not send a second push.
  */
 
 import { notificationMinimalDisplayTitle } from '@/features/notifications/utils/notificationMinimalDisplayTitle';
+import { sendExpoPushToUser } from '@/features/push/server/sendExpoPushToUser';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { formatInvoiceCents } from '../utils/invoiceDraft';
@@ -58,13 +59,14 @@ export async function notifyOwnerInvoicePaid(
       'Invoice paid'
     );
 
+    const body = customerName ? `${customerName} · ${amount}` : amount;
     const { error } = await db.from('notifications').insert({
       user_id: profileId,
       type: 'customer_invoice_paid',
       reference_type: 'invoice',
       reference_id: invoiceId,
       title,
-      body: customerName ? `${customerName} · ${amount}` : amount,
+      body,
       dedupe_key: `customer_invoice_paid:${invoiceId}`,
     });
 
@@ -72,9 +74,19 @@ export async function notifyOwnerInvoicePaid(
       error && typeof error === 'object' && 'code' in error
         ? String((error as { code?: unknown }).code ?? '')
         : '';
-    if (error && code !== '23505') {
-      console.error('invoice paid notification:', error);
+    if (error) {
+      if (code !== '23505') {
+        console.error('invoice paid notification:', error);
+      }
+      return;
     }
+
+    await sendExpoPushToUser(admin, {
+      userId: profileId,
+      title,
+      body,
+      data: { reference_type: 'invoice', reference_id: invoiceId },
+    });
   } catch (error) {
     console.error('invoice paid notification:', error);
   }

@@ -15,6 +15,7 @@ import {
   shortUserIdForLog,
   supabaseErrorForLogs,
 } from '@/features/quotes/server/quoteSendRouteLog';
+import { resolveQuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
 import { sendExistingQuoteAsSent } from '@/features/quotes/server/sendExistingQuoteAsSent';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
@@ -199,6 +200,19 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
       request.nextUrl.origin;
 
+    const payment = await resolveQuotePaymentSnapshot(admin, {
+      businessId: resolved.businessId,
+      priceCents: parsed.data.priceCents,
+      requested: parsed.data.paymentCollection,
+    });
+    if (!payment.ok) {
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: payment.error },
+        payment.status
+      );
+    }
+
     const result = await sendExistingQuoteAsSent({
       admin,
       quoteId,
@@ -206,6 +220,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       ownerUserId: user.id,
       businessDisplayName,
       payload: parsed.data,
+      payment: payment.snapshot,
       siteOrigin,
     });
 

@@ -8,7 +8,7 @@ import React, { useMemo, useState } from 'react';
 
 import { useDashboardInvoices } from '../hooks/useDashboardInvoices';
 import type { InvoiceListFilterId } from '../types';
-import { InvoicesFilterPills } from './InvoicesFilterPills';
+import { InvoicesFilters } from './InvoicesFilterPills';
 import { InvoicesListEmptyState } from './InvoicesListEmptyState';
 import { InvoicesListSkeleton } from './InvoicesDashboardSkeleton';
 import { InvoicesTable } from './InvoicesTable';
@@ -16,8 +16,14 @@ import { InvoicesTable } from './InvoicesTable';
 export const InvoicesDashboardPage: React.FC = () => {
   const [filter, setFilter] = useState<InvoiceListFilterId>('all');
   const canWriteInvoices = useDashboardAccess().can('invoices.write');
-  const { invoices, loadStatus, loadError, reloadInvoices } =
-    useDashboardInvoices();
+  const {
+    invoices,
+    loadStatus,
+    loadError,
+    reloadInvoices,
+    removeInvoice,
+    setInvoiceStatus,
+  } = useDashboardInvoices();
 
   const visible = useMemo(
     () =>
@@ -61,7 +67,14 @@ export const InvoicesDashboardPage: React.FC = () => {
       );
     }
 
-    return <InvoicesTable invoices={visible} />;
+    return (
+      <InvoicesTable
+        invoices={visible}
+        canDelete={canWriteInvoices}
+        onDeleted={removeInvoice}
+        onStatusChange={setInvoiceStatus}
+      />
+    );
   })();
 
   return (
@@ -90,10 +103,8 @@ export const InvoicesDashboardPage: React.FC = () => {
             ) : null}
           </header>
 
-          {loadStatus === 'ready' ? (
-            <div className="mb-6">
-              <InvoicesFilterPills value={filter} onChange={setFilter} />
-            </div>
+          {loadStatus === 'ready' && invoices.length > 0 ? (
+            <InvoicesFilters value={filter} onChange={setFilter} />
           ) : null}
 
           {list}

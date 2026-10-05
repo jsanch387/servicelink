@@ -1,3 +1,4 @@
+import { deleteInvoice } from '@/features/invoices/server/deleteInvoice';
 import { readInvoiceBookingId } from '@/features/invoices/server/loadInvoiceDraftFromBooking';
 import { updateInvoiceDraft } from '@/features/invoices/server/updateInvoiceDraft';
 import { invoiceProRequiredResponse } from '@/features/invoices/server/requireInvoicePro';
@@ -80,6 +81,61 @@ export async function PATCH(request: Request, context: RouteContext) {
     console.error('invoices PATCH:', error);
     return NextResponse.json(
       { success: false, error: 'Could not save this draft.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  try {
+    const { invoiceId } = await context.params;
+    const id = invoiceId?.trim() ?? '';
+    if (!INVOICE_ID.test(id)) {
+      return NextResponse.json(
+        { success: false, error: 'Invoice not found.' },
+        { status: 404 }
+      );
+    }
+
+    const auth = await getAuthenticatedUser(request);
+    if ('error' in auth) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status }
+      );
+    }
+
+    const resolved = await requireBusinessPermission(
+      auth.supabase,
+      'invoices.write'
+    );
+    if (!resolved.ok) {
+      return NextResponse.json(
+        { success: false, error: resolved.error },
+        { status: resolved.status }
+      );
+    }
+
+    const proDenied = await invoiceProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
+
+    const removed = await deleteInvoice(createSupabaseAdminClient(), {
+      businessId: resolved.businessId,
+      invoiceId: id,
+    });
+
+    if (!removed.ok) {
+      return NextResponse.json(
+        { success: false, error: removed.error },
+        { status: removed.status }
+      );
+    }
+
+    return NextResponse.json({ success: true, invoiceId: id });
+  } catch (error) {
+    console.error('invoices DELETE:', error);
+    return NextResponse.json(
+      { success: false, error: 'Could not delete this invoice.' },
       { status: 500 }
     );
   }

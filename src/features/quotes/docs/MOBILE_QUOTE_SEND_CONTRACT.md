@@ -93,6 +93,16 @@ Validated by `validateSendQuoteBody` → `validateQuotePayloadFields` (`src/feat
 | `priceCents`      | number | yes      | Integer ≥ 0. **Total** (base + add-ons).            |
 | `durationMinutes` | number | yes      | Integer > 0. **Total** duration.                    |
 
+### Payment to accept (optional)
+
+Omit to keep accept-or-decline. Canonical detail: [`docs/contracts/mobile-quote-send.md`](../../../../docs/contracts/mobile-quote-send.md).
+
+| Field               | Type   | Required | Notes                                                                                  |
+| ------------------- | ------ | -------- | -------------------------------------------------------------------------------------- |
+| `paymentCollection` | string | no       | `none` (default), `deposit`, `full`, or `customer_choice`. Invalid values are **400**. |
+
+`deposit` and `customer_choice` need deposits on and a deposit of at least **$0.50**. `full` and `customer_choice` need a quote total of at least **$0.50**. If Pro or card charges are not ready, the server returns **400**.
+
 ### Catalog snapshot (optional — omit for custom quotes)
 
 | Field                  | Type   | Required | Notes                                                       |

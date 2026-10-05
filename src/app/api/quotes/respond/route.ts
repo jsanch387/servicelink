@@ -4,6 +4,11 @@ import {
   type ValidatedQuoteRespondRequest,
 } from '@/features/quotes/public-view/validateQuoteRespondRequest';
 import {
+  insertQuotePayInPersonPayment,
+  startQuoteCheckout,
+} from '@/features/quotes/server/quoteCheckout';
+import { loadQuoteCustomerPayment } from '@/features/quotes/server/quotePaymentSnapshot';
+import {
   finalizeApprovedQuoteToBooking,
   revertQuoteToRespondableState,
   type BusinessProfileForQuoteApproval,
@@ -251,6 +256,74 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const customerPayment = await loadQuoteCustomerPayment(admin, {
+      business_id: String(q.business_id),
+      price_cents: Number(q.price_cents ?? 0),
+      payment_collection:
+        typeof q.payment_collection === 'string' ? q.payment_collection : null,
+      deposit_type: typeof q.deposit_type === 'string' ? q.deposit_type : null,
+      deposit_value:
+        typeof q.deposit_value === 'number' ? q.deposit_value : null,
+    });
+    const paymentChoice = (
+      parsed.data as Extract<
+        ValidatedQuoteRespondRequest,
+        { decision: 'approve' }
+      >
+    ).paymentChoice;
+    const acceptOnly =
+      customerPayment.choices.length === 1 &&
+      customerPayment.choices[0] === 'accept';
+    const recordPayInPerson = !acceptOnly && paymentChoice === 'pay_in_person';
+    if (!acceptOnly) {
+      if (!paymentChoice || !customerPayment.choices.includes(paymentChoice)) {
+        return NextResponse.json(
+          { success: false, error: 'Choose how to pay for this quote' },
+          { status: 400 }
+        );
+      }
+      if (paymentChoice === 'deposit' || paymentChoice === 'full') {
+        const depositType =
+          q.deposit_type === 'fixed' || q.deposit_type === 'percent'
+            ? q.deposit_type
+            : null;
+        const started = await startQuoteCheckout(admin, request, {
+          token,
+          quoteId,
+          businessId: String(q.business_id),
+          serviceName: String(q.service_name ?? 'Quote'),
+          amountCents:
+            paymentChoice === 'deposit'
+              ? customerPayment.depositCents
+              : customerPayment.totalCents,
+          payload: {
+            linkId: link.id,
+            paymentChoice,
+            address,
+            displayLine,
+            scheduledDate: slotDate,
+            scheduledStartTimeForDb:
+              schedule?.scheduledStartTimeForDb ?? `${slotTime}:00`,
+            totalCents: customerPayment.totalCents,
+            depositType,
+            depositValue:
+              typeof q.deposit_value === 'number' ? q.deposit_value : null,
+            previousStatus: status === 'sent' ? 'sent' : 'viewed',
+          },
+        });
+        if (!started.ok) {
+          return NextResponse.json(
+            { success: false, error: started.error },
+            { status: started.status }
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          checkoutUrl: started.url,
+        });
+      }
+    }
+
     const previousStatus = status as 'sent' | 'viewed';
 
     const primaryUpdate: Record<string, unknown> = {
@@ -355,6 +428,18 @@ export async function POST(request: NextRequest) {
         { success: false, error: done.message },
         { status: done.httpStatus }
       );
+    }
+
+    if (recordPayInPerson) {
+      try {
+        await insertQuotePayInPersonPayment(admin, {
+          bookingId: done.bookingId,
+          businessId: String(q.business_id),
+          totalCents: customerPayment.totalCents,
+        });
+      } catch (paymentError) {
+        console.error('[quotes] pay in person payment', paymentError);
+      }
     }
 
     return NextResponse.json({ success: true, status: 'approved' });

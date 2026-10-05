@@ -19,17 +19,17 @@ All live customer charges are **direct charges** on the connected account (`stri
 
 Select **all** of these on the destination whose URL is `https://myservicelink.app/api/stripe/webhook-connect` (and the same list in test mode).
 
-| Event                           | Required | Why                                                                                                                      |
-| ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `checkout.session.completed`    | **Yes**  | Booking checkout, membership signup, maintenance card enroll, create-payment links                                       |
-| `checkout.session.expired`      | **Yes**  | Create-payment links: mark `payment_requests` expired after 24h                                                          |
-| `payment_intent.succeeded`      | **Yes**  | Create-payment Tap to Pay → `payment_requests` paid                                                                      |
-| `payment_intent.canceled`       | **Yes**  | Create-payment Tap to Pay → canceled                                                                                     |
-| `payment_intent.payment_failed` | **Yes**  | Create-payment Tap to Pay → failed                                                                                       |
-| `invoice.paid`                  | **Yes**  | Membership renewal: ledger + customer receipt. First Checkout invoice is skipped for the receipt (`subscription_create`) |
-| `invoice.payment_failed`        | **Yes**  | Membership dunning email + `last_payment_failed_at`                                                                      |
-| `customer.subscription.updated` | **Yes**  | Membership period sync + next-visit email/SMS + owner nudge                                                              |
-| `customer.subscription.deleted` | **Yes**  | Membership ended → cancel email + status                                                                                 |
+| Event                           | Required | Why                                                                                                                                          |
+| ------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkout.session.completed`    | **Yes**  | Booking checkout, quote deposit or full payment, customer invoice card pay, membership signup, maintenance card enroll, create-payment links |
+| `checkout.session.expired`      | **Yes**  | Create-payment links: mark `payment_requests` expired after 24h                                                                              |
+| `payment_intent.succeeded`      | **Yes**  | Create-payment Tap to Pay → `payment_requests` paid                                                                                          |
+| `payment_intent.canceled`       | **Yes**  | Create-payment Tap to Pay → canceled                                                                                                         |
+| `payment_intent.payment_failed` | **Yes**  | Create-payment Tap to Pay → failed                                                                                                           |
+| `invoice.paid`                  | **Yes**  | Membership renewal: ledger + customer receipt. First Checkout invoice is skipped for the receipt (`subscription_create`)                     |
+| `invoice.payment_failed`        | **Yes**  | Membership dunning email + `last_payment_failed_at`                                                                                          |
+| `customer.subscription.updated` | **Yes**  | Membership period sync + next-visit email/SMS + owner nudge                                                                                  |
+| `customer.subscription.deleted` | **Yes**  | Membership ended → cancel email + status                                                                                                     |
 
 If any required event is missing, Stripe still charges the card and our app stays silent (same failure mode as the weekly membership renewal).
 
@@ -46,6 +46,23 @@ Handler is one route. It branches on `event.type`, then on Stripe `metadata.kind
 - **Needs:** `checkout.session.completed`
 - Creates the `bookings` row only after this event (plus emails / SMS)
 - Docs: `src/features/payments/docs/BOOKING_CHECKOUT_FLOW.md`
+
+### Customer invoice (card)
+
+- Create: `POST /api/public/invoices/checkout` from `/b/{shortCode}` → Checkout `mode: payment` on Connect
+- Metadata: `kind = customer_invoice`
+- **Needs:** `checkout.session.completed`
+- Marks the sent invoice `paid`, sets `paid_at`, then notifies the owner (inbox + push). Amount must match `total_cents`. A void invoice stays void.
+- Owner cash / payment-app / other does not use Stripe (`POST /api/invoices/{id}/paid`)
+- Docs: `src/features/invoices/docs/README.md`
+
+### Quote accept payment
+
+- Create: `POST /api/quotes/respond` when the quote requires a deposit or full payment → Checkout `mode: payment` on Connect
+- Metadata: `kind = quote_checkout`
+- **Needs:** `checkout.session.completed`
+- Creates the booking only after this event, then writes `booking_payments`. Pay in person and “no payment” skip Stripe.
+- Docs: `src/features/quotes/docs/README.md` (Payment to accept) and `src/features/quotes/docs/PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md`
 
 ### Memberships (customer subscriptions)
 

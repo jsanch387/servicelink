@@ -29,6 +29,7 @@ import {
   parseSaveInvoiceDraft,
   parseSendInvoiceDraft,
 } from '../utils/parseSaveInvoiceDraft';
+import { DeleteInvoiceButton } from './DeleteInvoiceButton';
 import { InvoiceBillPreview } from './InvoiceBillPreview';
 
 interface CreateInvoiceScreenProps {
@@ -212,6 +213,9 @@ export const CreateInvoiceScreen: React.FC<CreateInvoiceScreenProps> = ({
             Invoices
           </Link>
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {persistedId ? (
+              <DeleteInvoiceButton invoiceId={persistedId} />
+            ) : null}
             <Button
               type="button"
               variant="secondary"

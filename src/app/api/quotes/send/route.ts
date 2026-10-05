@@ -4,6 +4,7 @@ import {
 } from '@/features/email';
 import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
 import { buildQuoteAssets } from '@/features/quotes/shared/quoteAssets';
+import { resolveQuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
 import { validateSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
 import {
   getQuoteSendRequestId,
@@ -144,6 +145,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const payment = await resolveQuotePaymentSnapshot(admin, {
+      businessId: businessRow.id,
+      priceCents: body.priceCents,
+      requested: body.paymentCollection,
+    });
+    if (!payment.ok) {
+      return quoteSendJsonResponse(
+        requestId,
+        { success: false, error: payment.error },
+        payment.status
+      );
+    }
+
     // `quotes` / `quote_public_links` may not yet be in generated DB types.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = admin as any;
@@ -174,6 +188,9 @@ export async function POST(request: NextRequest) {
         service_price_option_id: body.servicePriceOptionId,
         service_price_cents: body.servicePriceCents,
         addon_details: body.addonDetails,
+        payment_collection: payment.snapshot.payment_collection,
+        deposit_type: payment.snapshot.deposit_type,
+        deposit_value: payment.snapshot.deposit_value,
         status: 'sent',
         sent_at: new Date().toISOString(),
       })

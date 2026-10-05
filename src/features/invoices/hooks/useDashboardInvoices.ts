@@ -3,7 +3,7 @@
 import { API_ROUTES } from '@/constants/routes';
 import { useCallback, useEffect, useState } from 'react';
 
-import type { InvoiceListItem } from '../types';
+import type { InvoiceListItem, InvoiceStatus } from '../types';
 
 type LoadStatus = 'loading' | 'ready' | 'error';
 
@@ -45,5 +45,27 @@ export function useDashboardInvoices() {
     void reloadInvoices();
   }, [reloadInvoices]);
 
-  return { invoices, loadStatus, loadError, reloadInvoices };
+  const removeInvoice = useCallback((invoiceId: string) => {
+    setInvoices(current => current.filter(invoice => invoice.id !== invoiceId));
+  }, []);
+
+  const setInvoiceStatus = useCallback(
+    (invoiceId: string, status: InvoiceStatus) => {
+      setInvoices(current =>
+        current.map(invoice =>
+          invoice.id === invoiceId ? { ...invoice, status } : invoice
+        )
+      );
+    },
+    []
+  );
+
+  return {
+    invoices,
+    loadStatus,
+    loadError,
+    reloadInvoices,
+    removeInvoice,
+    setInvoiceStatus,
+  };
 }

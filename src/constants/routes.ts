@@ -247,7 +247,7 @@ export const API_ROUTES = {
   INVOICES_SEND: '/api/invoices/send',
   /** Public: start Stripe Checkout for a sent invoice. */
   PUBLIC_INVOICE_CHECKOUT: '/api/public/invoices/checkout',
-  /** Owner: update one draft. */
+  /** Owner: update one draft, or delete the invoice in any status. */
   INVOICE: (invoiceId: string) =>
     `/api/invoices/${encodeURIComponent(invoiceId.trim())}`,
   /** Owner: mark a sent invoice paid after cash or another off-app payment. */
