@@ -1,32 +1,29 @@
 'use client';
 
-import { FilterPills, type FilterPillOption } from '@/components/shared';
+import { FilterMenu } from '@/components/shared';
 import React from 'react';
 
 import type { InvoiceListFilterId } from '../types';
 
-const FILTERS: FilterPillOption<InvoiceListFilterId>[] = [
-  { id: 'all', label: 'All' },
+const FILTERS: { id: InvoiceListFilterId; label: string }[] = [
+  { id: 'all', label: 'All invoices' },
   { id: 'draft', label: 'Draft' },
   { id: 'sent', label: 'Sent' },
   { id: 'paid', label: 'Paid' },
 ];
 
-interface InvoicesFilterPillsProps {
+export const InvoicesFilters: React.FC<{
   value: InvoiceListFilterId;
   onChange: (id: InvoiceListFilterId) => void;
-}
-
-export const InvoicesFilterPills: React.FC<InvoicesFilterPillsProps> = ({
-  value,
-  onChange,
-}) => {
+}> = ({ value, onChange }) => {
   return (
-    <FilterPills
-      options={FILTERS}
-      value={value}
-      onChange={onChange}
-      ariaLabel="Filter invoices"
-    />
+    <div className="mb-4 flex justify-end">
+      <FilterMenu
+        options={FILTERS}
+        value={value}
+        onChange={onChange}
+        menuLabel="Invoices"
+      />
+    </div>
   );
 };

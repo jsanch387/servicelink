@@ -7,6 +7,11 @@ import type { TimeOffInterval } from '@/features/availability/booking/types';
 import { DateSelector } from '@/features/availability/booking/components/DateSelector';
 import { TimeSlotGrid } from '@/features/availability/booking/components/TimeSlotGrid';
 import { usePublicBlockedSlots } from '@/features/availability/booking/hooks/usePublicBlockedSlots';
+import { quotePayButtonLabel } from '@/features/quotes/shared/quotePaymentCollection';
+import type {
+  QuoteCustomerChoice,
+  QuoteCustomerPayment,
+} from '@/features/quotes/shared/quotePaymentCollection';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -23,6 +28,9 @@ interface PublicQuoteRespondActionsProps {
   weeklySchedule: WeeklySchedule;
   timeOffBlocks: TimeOffInterval[];
   bufferTime?: string;
+  payment: QuoteCustomerPayment;
+  checkoutReturn?: 'success' | 'cancel' | null;
+  stripeSessionId?: string | null;
 }
 
 type FinalizeStep = 'schedule' | 'address';
@@ -51,6 +59,9 @@ export const PublicQuoteRespondActions: React.FC<
   weeklySchedule,
   timeOffBlocks,
   bufferTime = 'none',
+  payment,
+  checkoutReturn = null,
+  stripeSessionId = null,
 }) => {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
@@ -67,6 +78,11 @@ export const PublicQuoteRespondActions: React.FC<
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zip, setZip] = useState('');
+  const [pendingChoice, setPendingChoice] =
+    useState<QuoteCustomerChoice | null>(null);
+  const [confirmingPayment, setConfirmingPayment] = useState(
+    checkoutReturn === 'success' && Boolean(stripeSessionId)
+  );
   const [addressErrors, setAddressErrors] = useState<{
     street?: string;
     city?: string;
@@ -81,6 +97,64 @@ export const PublicQuoteRespondActions: React.FC<
   const { blockedSlots, loading: blockedLoading } = usePublicBlockedSlots(
     canPickSchedule ? (businessSlug ?? undefined) : undefined
   );
+
+  useEffect(() => {
+    if (checkoutReturn !== 'cancel') return;
+    setError('Payment canceled. You can still pay or decline.');
+  }, [checkoutReturn]);
+
+  useEffect(() => {
+    if (!confirmingPayment || !stripeSessionId) return;
+    let cancelled = false;
+    let attempts = 0;
+    let timer = 0;
+
+    const tick = async () => {
+      attempts += 1;
+      try {
+        const params = new URLSearchParams({
+          token,
+          session_id: stripeSessionId,
+        });
+        const res = await fetch(
+          `/api/quotes/checkout-status?${params.toString()}`
+        );
+        const json = (await res.json()) as { status?: string };
+        if (cancelled) return;
+        if (json.status === 'approved') {
+          setConfirmingPayment(false);
+          setStatus('approved');
+          router.refresh();
+          return;
+        }
+        if (json.status === 'failed') {
+          setConfirmingPayment(false);
+          setError(
+            'Payment could not finish the booking. Try again, or contact the business if you were charged.'
+          );
+          return;
+        }
+      } catch {
+        if (cancelled) return;
+      }
+      if (attempts >= 20) {
+        setConfirmingPayment(false);
+        setError(
+          'Still confirming your payment. Refresh this page in a moment.'
+        );
+        return;
+      }
+      timer = window.setTimeout(() => {
+        void tick();
+      }, 1500);
+    };
+
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [confirmingPayment, router, stripeSessionId, token]);
 
   useEffect(() => {
     if (!finalizeOpen) return;
@@ -138,6 +212,9 @@ export const PublicQuoteRespondActions: React.FC<
                     },
                   }
                 : {}),
+              ...(pendingChoice && pendingChoice !== 'accept'
+                ? { paymentChoice: pendingChoice }
+                : {}),
             }
           : { token, decision };
       const res = await fetch('/api/quotes/respond', {
@@ -150,9 +227,14 @@ export const PublicQuoteRespondActions: React.FC<
         status?: string;
         error?: string;
         alreadyResponded?: boolean;
+        checkoutUrl?: string;
       };
       if (!res.ok || !json.success) {
         setError(json.error || 'Something went wrong. Please try again.');
+        return;
+      }
+      if (json.checkoutUrl) {
+        window.location.href = json.checkoutUrl;
         return;
       }
       if (json.status === 'approved' || json.status === 'declined') {
@@ -213,6 +295,14 @@ export const PublicQuoteRespondActions: React.FC<
     });
   };
 
+  if (confirmingPayment) {
+    return (
+      <p className="mt-6 text-center text-sm text-gray-300" role="status">
+        Confirming your payment…
+      </p>
+    );
+  }
+
   if (status === 'approved' || status === 'declined') {
     return null;
   }
@@ -235,35 +325,37 @@ export const PublicQuoteRespondActions: React.FC<
             {error}
           </p>
         ) : null}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button
-            type="button"
-            variant="success"
-            size="md"
-            fullWidth
-            className="sm:max-w-xs"
-            disabled={loading !== null}
-            onClick={() => {
-              setAddressErrors({});
-              setError(null);
-              if (needsSchedule && !availabilityConfigured) {
-                setError(
-                  'This business has not set available hours yet. Please contact them to schedule.'
-                );
-                return;
-              }
-              setFinalizeStep(needsSchedule ? 'schedule' : 'address');
-              setFinalizeOpen(true);
-            }}
-          >
-            Accept quote
-          </Button>
+        <div className="flex flex-col gap-3">
+          {payment.choices.map((choice, index) => (
+            <Button
+              key={choice}
+              type="button"
+              variant={index === 0 ? 'inverse' : 'secondary'}
+              size="md"
+              fullWidth
+              disabled={loading !== null}
+              onClick={() => {
+                setAddressErrors({});
+                setError(null);
+                if (needsSchedule && !availabilityConfigured) {
+                  setError(
+                    'This business has not set available hours yet. Please contact them to schedule.'
+                  );
+                  return;
+                }
+                setPendingChoice(choice);
+                setFinalizeStep(needsSchedule ? 'schedule' : 'address');
+                setFinalizeOpen(true);
+              }}
+            >
+              {quotePayButtonLabel(choice, payment)}
+            </Button>
+          ))}
           <Button
             type="button"
             variant="secondary"
             size="md"
             fullWidth
-            className="sm:max-w-xs"
             loading={loading === 'decline'}
             disabled={loading !== null}
             onClick={() => submit('decline')}
@@ -442,7 +534,7 @@ export const PublicQuoteRespondActions: React.FC<
               {finalizeStep === 'schedule' ? (
                 <Button
                   type="button"
-                  variant="success"
+                  variant="inverse"
                   size="md"
                   fullWidth
                   disabled={
@@ -458,14 +550,18 @@ export const PublicQuoteRespondActions: React.FC<
               ) : (
                 <Button
                   type="button"
-                  variant="success"
+                  variant="inverse"
                   size="md"
                   fullWidth
                   loading={loading === 'approve'}
                   disabled={loading !== null}
                   onClick={handleFinalize}
                 >
-                  Finalize booking
+                  {pendingChoice && pendingChoice !== 'accept'
+                    ? pendingChoice === 'pay_in_person'
+                      ? 'Confirm booking'
+                      : quotePayButtonLabel(pendingChoice, payment)
+                    : 'Finalize booking'}
                 </Button>
               )}
             </div>

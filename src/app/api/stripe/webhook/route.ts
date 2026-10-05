@@ -81,6 +81,7 @@ import { applyMembershipInvoiceEvent } from '@/features/subscriptions/server/app
 import { applyMembershipSubscriptionLifecycle } from '@/features/subscriptions/server/applyMembershipSubscriptionLifecycle';
 import { stripeSubscriptionIdFromInvoice } from '@/features/subscriptions/server/membershipStripeHelpers';
 import { getStripePlatform } from '@/libs/stripe';
+import { applyQuoteCheckoutCompleted } from '@/features/quotes/server/quoteCheckout';
 import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse, after } from 'next/server';
@@ -434,6 +435,23 @@ export async function POST(request: NextRequest) {
       );
     }
     const session = event.data.object as Stripe.Checkout.Session;
+    if (session.metadata?.kind === 'quote_checkout') {
+      try {
+        await applyQuoteCheckoutCompleted(supabase, session);
+      } catch (error) {
+        console.error('[quote-checkout] webhook failed', error);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('stripe_webhook_events')
+          .delete()
+          .eq('event_id', event.id);
+        return NextResponse.json(
+          { error: 'Quote checkout failed' },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
     const isBookingCheckout = session.metadata?.kind === 'booking_checkout';
     if (isBookingCheckout) {
       logBookingCheckoutStage('checkout.session.completed.received', {

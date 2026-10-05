@@ -4,6 +4,7 @@ import {
 } from '@/features/email';
 import { quotePublicLinkExpiresAt } from '@/features/quotes/shared/quotePublicLinkTtl';
 import type { ValidatedSendQuoteBody } from '@/features/quotes/send/validateSendQuoteBody';
+import type { QuotePaymentSnapshot } from '@/features/quotes/server/quotePaymentSnapshot';
 import {
   mergeQuoteAssetsPreservingExtra,
   normalizeQuoteAssets,
@@ -29,6 +30,7 @@ export async function sendExistingQuoteAsSent(params: {
   ownerUserId: string;
   businessDisplayName: string;
   payload: ValidatedSendQuoteBody;
+  payment: QuotePaymentSnapshot;
   /** e.g. `request.nextUrl.origin` or `NEXT_PUBLIC_SITE_URL` */
   siteOrigin: string;
 }): Promise<SendExistingQuoteAsSentResult> {
@@ -39,6 +41,7 @@ export async function sendExistingQuoteAsSent(params: {
     ownerUserId,
     businessDisplayName,
     payload: p,
+    payment,
     siteOrigin,
   } = params;
 
@@ -103,6 +106,9 @@ export async function sendExistingQuoteAsSent(params: {
       service_price_option_id: p.servicePriceOptionId,
       service_price_cents: p.servicePriceCents,
       addon_details: p.addonDetails,
+      payment_collection: payment.payment_collection,
+      deposit_type: payment.deposit_type,
+      deposit_value: payment.deposit_value,
       status: 'sent',
       sent_at: now,
       created_by_user_id: ownerUserId,

@@ -2,6 +2,10 @@
  * Pure validation for POST /api/quotes/send (before DB / auth-specific checks).
  */
 
+import {
+  parseQuotePaymentCollection,
+  type QuotePaymentCollection,
+} from '@/features/quotes/shared/quotePaymentCollection';
 import type { ValidatedQuotePayloadFields } from '@/features/quotes/shared/validateQuotePayloadFields';
 import {
   validateQuotePayloadFields,
@@ -10,10 +14,12 @@ import {
 
 export interface SendQuoteRequestBodyInput extends QuotePayloadInput {
   businessSlug?: string;
+  paymentCollection?: string;
 }
 
 export type ValidatedSendQuoteBody = ValidatedQuotePayloadFields & {
   businessSlug: string;
+  paymentCollection: QuotePaymentCollection;
 };
 
 export type ValidateSendQuoteResult =
@@ -39,11 +45,21 @@ export function validateSendQuoteBody(raw: unknown): ValidateSendQuoteResult {
   const core = validateQuotePayloadFields(body);
   if (!core.ok) return core;
 
+  const paymentCollection = parseQuotePaymentCollection(body.paymentCollection);
+  if (!paymentCollection) {
+    return {
+      ok: false,
+      error: 'Choose how the customer pays for this quote',
+      status: 400,
+    };
+  }
+
   return {
     ok: true,
     data: {
       ...core.data,
       businessSlug: body.businessSlug.trim(),
+      paymentCollection,
     },
   };
 }

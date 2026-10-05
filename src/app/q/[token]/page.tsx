@@ -15,6 +15,7 @@ import { parsePublicQuoteRequestNote } from '@/features/quotes/dashboard/utils/p
 import { PublicQuoteRespondActions } from '@/features/quotes/public-view/components/PublicQuoteRespondActions';
 import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
+import { loadQuoteCustomerPayment } from '@/features/quotes/server/quotePaymentSnapshot';
 import { normalizeQuoteAddonDetails } from '@/features/quotes/shared/quoteServiceSnapshot';
 import { resolveQuoteTokenHash } from '@/features/quotes/shared/utils/resolveQuoteTokenHash';
 import { formatUsPhoneDigits } from '@/lib/formatUsPhone';
@@ -24,6 +25,7 @@ import { notFound } from 'next/navigation';
 
 interface PublicQuoteViewPageProps {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ checkout?: string; session_id?: string }>;
 }
 
 function formatPrice(cents: number): string {
@@ -64,8 +66,10 @@ function formatTime12(hhmm: string): string {
 
 export default async function PublicQuoteViewPage({
   params,
+  searchParams,
 }: PublicQuoteViewPageProps) {
   const { token } = await params;
+  const query = await searchParams;
   if (!token?.trim()) notFound();
 
   const tokenHash = resolveQuoteTokenHash(token);
@@ -102,7 +106,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteRow } = await db
     .from('quotes')
     .select(
-      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
     )
     .eq('id', link.quote_id)
     .maybeSingle();
@@ -131,6 +135,9 @@ export default async function PublicQuoteViewPage({
     service_id: string | null;
     service_price_option_id: string | null;
     service_price_cents: number | null;
+    payment_collection: string | null;
+    deposit_type: string | null;
+    deposit_value: number | null;
   };
 
   await db
@@ -162,7 +169,7 @@ export default async function PublicQuoteViewPage({
   const { data: quoteFresh } = await db
     .from('quotes')
     .select(
-      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents'
+      'id, business_id, source, customer_name, customer_email, customer_phone, vehicle_year, vehicle_make, vehicle_model, service_name, price_cents, duration_minutes, note, request_message, scheduled_date, scheduled_start_time, status, addon_details, service_id, service_price_option_id, service_price_cents, payment_collection, deposit_type, deposit_value'
     )
     .eq('id', quote.id)
     .maybeSingle();
@@ -170,6 +177,13 @@ export default async function PublicQuoteViewPage({
   if (!quoteFresh) notFound();
 
   const displayQuote = quoteFresh as typeof quote;
+  const customerPayment = await loadQuoteCustomerPayment(supabase, {
+    business_id: displayQuote.business_id,
+    price_cents: displayQuote.price_cents,
+    payment_collection: displayQuote.payment_collection,
+    deposit_type: displayQuote.deposit_type,
+    deposit_value: displayQuote.deposit_value,
+  });
   const quoteAddOns = normalizeQuoteAddonDetails(displayQuote.addon_details);
   const isAccepted = displayQuote.status === 'approved';
   const isDeclined = displayQuote.status === 'declined';
@@ -270,7 +284,9 @@ export default async function PublicQuoteViewPage({
             ? 'Summary of what you agreed to.'
             : isDeclined
               ? 'What was offered on this link.'
-              : 'Review the details below before choosing to accept or decline.'}
+              : customerPayment.choices.includes('accept')
+                ? 'Review the details below before choosing to accept or decline.'
+                : 'Review the details below, then pay or decline.'}
         </p>
         {validUntilCopy ? (
           <p className="mt-1.5 text-sm text-gray-400">{validUntilCopy}</p>
@@ -398,6 +414,15 @@ export default async function PublicQuoteViewPage({
           weeklySchedule={weeklySchedule}
           timeOffBlocks={timeOffBlocks}
           bufferTime={bufferTime}
+          payment={customerPayment}
+          checkoutReturn={
+            query.checkout === 'success'
+              ? 'success'
+              : query.checkout === 'cancel'
+                ? 'cancel'
+                : null
+          }
+          stripeSessionId={query.session_id?.trim() || null}
         />
       </div>
     </main>

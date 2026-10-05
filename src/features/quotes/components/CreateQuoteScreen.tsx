@@ -31,6 +31,9 @@ import {
 } from '@/features/quotes/dashboard/utils/quoteFormHydrationFromDashboard';
 import { useOwnerQuoteScheduling } from '@/features/quotes/hooks/useOwnerQuoteScheduling';
 import { QuoteFlowHeader } from '@/features/quotes/shared/components/QuoteFlowHeader';
+import { QuoteSendPaymentChoice } from '@/features/quotes/components/QuoteSendPaymentChoice';
+import type { QuoteSendPaymentOffer } from '@/features/quotes/components/QuoteSendPaymentChoice';
+import type { QuotePaymentCollection } from '@/features/quotes/shared/quotePaymentCollection';
 import { QuoteStickyBar } from '@/features/quotes/shared/components/QuoteStickyBar';
 import { QuoteNotesConversation } from '@/features/quotes/shared/components/QuoteNotesConversation';
 import { QuoteServiceSummaryCard } from '@/features/quotes/shared/components/QuoteServiceSummaryCard';
@@ -50,6 +53,7 @@ import {
   isValidServiceEditDurationInput,
   parseServiceEditDurationForSave,
 } from '@/features/services/utils/serviceEditForm';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import React, {
@@ -69,6 +73,8 @@ export type CreateQuoteScreenProps = {
   /** Active catalog services for “from your services” on the service step. */
   serviceCatalog?: QuoteCatalogService[];
   serviceCategories?: ServiceCategoryRow[];
+  /** Present when the shop can charge cards on Pro. */
+  paymentOffer?: QuoteSendPaymentOffer | null;
 };
 
 type Step = 'customer' | 'vehicle' | 'service' | 'schedule' | 'review' | 'sent';
@@ -175,6 +181,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   quoteId,
   serviceCatalog = [],
   serviceCategories = [],
+  paymentOffer = null,
 }) => {
   const isEdit = mode === 'edit' && Boolean(quoteId?.trim());
   const editId = quoteId?.trim() ?? '';
@@ -229,6 +236,8 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>(null);
   const [sendingQuote, setSendingQuote] = useState(false);
+  const [paymentCollection, setPaymentCollection] =
+    useState<QuotePaymentCollection>('none');
   const [sendError, setSendError] = useState<string | null>(null);
 
   const durationMinutes = useMemo(() => {
@@ -462,6 +471,7 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       servicePriceOptionId?: string;
       servicePriceCents?: number;
       addonDetails?: QuoteAddonDetail[];
+      paymentCollection?: QuotePaymentCollection;
     } = {
       customerName: customerName.trim(),
       customerEmail: customerEmail.trim(),
@@ -489,6 +499,9 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
       if (catalogAddonDetails.length > 0) {
         body.addonDetails = catalogAddonDetails;
       }
+    }
+    if (!(isEdit && !isFirstSendFromEdit)) {
+      body.paymentCollection = paymentCollection;
     }
     return body;
   };
@@ -646,17 +659,34 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
     );
   }
 
+  const flowBackHref = isEdit
+    ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
+    : ROUTES.DASHBOARD.MAIN;
+  const flowBackLabel = isEdit ? 'Quote' : 'Dashboard';
+
   return (
     <main className="flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-[var(--dashboard-bg)]">
-      <div className="mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 pb-32 pt-6 sm:px-6 sm:pb-32 sm:pt-8 lg:px-8 lg:pt-10">
+      {step === 'customer' ? (
+        <div className="mx-auto w-full min-w-0 max-w-7xl px-4 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10">
+          <Link
+            href={flowBackHref}
+            className="group -ml-1 mb-6 inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+          >
+            <ArrowLeftIcon className="h-4 w-4 shrink-0" aria-hidden />
+            {flowBackLabel}
+          </Link>
+        </div>
+      ) : null}
+      <div
+        className={`mx-auto w-full min-w-0 max-w-3xl flex-1 px-4 pb-32 sm:px-6 sm:pb-32 lg:px-8 ${
+          step === 'customer' ? 'pt-0' : 'pt-6 sm:pt-8 lg:pt-10'
+        }`}
+      >
         {step === 'customer' ? (
           <QuoteFlowHeader
-            backHref={
-              isEdit
-                ? ROUTES.DASHBOARD.QUOTE_DETAIL(editId)
-                : ROUTES.DASHBOARD.MAIN
-            }
-            backLabel={isEdit ? 'Quote' : 'Dashboard'}
+            backHref={flowBackHref}
+            backLabel={flowBackLabel}
+            hideBackLink
             title={
               isFinishingCustomerRequest
                 ? 'Create quote'
@@ -1106,6 +1136,22 @@ export const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({
                         viewer="owner"
                       />
                     </div>
+                  </>
+                ) : null}
+                {paymentOffer?.available &&
+                !(isEdit && !isFirstSendFromEdit) ? (
+                  <>
+                    <div className="h-px bg-white/10" />
+                    <QuoteSendPaymentChoice
+                      offer={paymentOffer}
+                      totalCents={
+                        Number.isFinite(parseInt(priceDigits, 10))
+                          ? parseInt(priceDigits, 10) * 100
+                          : 0
+                      }
+                      value={paymentCollection}
+                      onChange={setPaymentCollection}
+                    />
                   </>
                 ) : null}
                 <div className="h-px bg-white/10" />

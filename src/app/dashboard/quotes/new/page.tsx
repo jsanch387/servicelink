@@ -1,8 +1,10 @@
 import { ROUTES } from '@/constants/routes';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { CreateQuoteScreen } from '@/features/quotes';
+import { loadQuoteSendPaymentOffer } from '@/features/quotes/server/quotePaymentSnapshot';
 import { loadQuoteServiceCatalog } from '@/features/quotes/server/loadQuoteServiceCatalog';
 import { getServiceCategories } from '@/features/services/categories/api/getServiceCategories';
+import { createSupabaseAdminClient } from '@/libs/supabase/admin';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -41,9 +43,10 @@ export default async function NewQuotePage() {
     business_type?: string | null;
   };
 
-  const [serviceCatalog, categoriesResult] = await Promise.all([
+  const [serviceCatalog, categoriesResult, paymentOffer] = await Promise.all([
     loadQuoteServiceCatalog(supabase, business.id),
     getServiceCategories(business.id),
+    loadQuoteSendPaymentOffer(createSupabaseAdminClient(), business.id),
   ]);
 
   return (
@@ -52,6 +55,7 @@ export default async function NewQuotePage() {
       businessType={business.business_type}
       serviceCatalog={serviceCatalog}
       serviceCategories={categoriesResult.data ?? []}
+      paymentOffer={paymentOffer}
     />
   );
 }

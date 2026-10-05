@@ -15,8 +15,9 @@ type PayMethod = (typeof PAY_METHODS)[number]['id'];
 
 export const MarkInvoicePaidButton: React.FC<{
   invoiceId: string;
+  onUpdated?: () => void;
   trigger?: (open: () => void) => React.ReactNode;
-}> = ({ invoiceId, trigger }) => {
+}> = ({ invoiceId, onUpdated, trigger }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState<PayMethod | null>(null);
@@ -51,6 +52,7 @@ export const MarkInvoicePaidButton: React.FC<{
       toast.success('Invoice marked paid');
       setOpen(false);
       setMethod(null);
+      onUpdated?.();
       router.refresh();
     } catch {
       toast.error('Could not update this invoice.');

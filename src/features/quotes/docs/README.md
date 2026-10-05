@@ -22,37 +22,41 @@ Business scope: quotes belong to `business_profiles` via `quotes.business_id`. O
 
 ## Feature folder map (`src/features/quotes/`)
 
-| Path                                                     | Role                                                                                                                                                 |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `components/CreateQuoteScreen.tsx`                       | **Create + edit** wizard (details → schedule → review → success). `mode="edit"` + `quoteId` loads quote and calls `PATCH /api/quotes/[id]`.          |
-| `components/QuoteRequestsSettingsCard.tsx`               | Dashboard card: quote requests toggle + Pro upsell (public profile request button).                                                                  |
-| `components/QuotesDashboardPage.tsx`                     | Re-export only; implementation lives in `dashboard/components/QuotesDashboardPage.tsx` (app imports from `@/features/quotes/components/...`).        |
-| `dashboard/`                                             | Owner list, detail, filters, hooks, dashboard types, `loadDashboardQuoteById`, `mapQuoteRowToDashboardQuote`.                                        |
-| `dashboard/components/QuotesDashboardPage.tsx`           | Quotes list UI (source for the re-export above).                                                                                                     |
-| `dashboard/components/QuoteListRow.tsx`                  | List card: customer, truncated **service** (with `title` for full text), **status**, **Created {date}** (`createdAt`), price. Sorted by `createdAt`. |
-| `dashboard/components/QuoteDetailScreen.tsx`             | Single quote; copy link, view public, **Edit**, **Delete** (`DELETE /api/quotes/[id]`).                                                              |
-| `dashboard/components/DeleteQuoteModalBody.tsx`          | Confirm-delete modal copy and actions.                                                                                                               |
-| `dashboard/utils/parseDeleteQuoteApiResponse.ts`         | Parses delete API JSON for the client (unit-tested).                                                                                                 |
-| `dashboard/hooks/useDashboardQuotes.ts`                  | `GET /api/quotes`.                                                                                                                                   |
-| `dashboard/hooks/useDashboardQuoteDetail.ts`             | `GET /api/quotes/[id]`; supports `{ enabled: false }` for create-only screens sharing the hook shape.                                                |
-| `dashboard/utils/isDashboardQuoteEditableByOwner.ts`     | Owner may edit only `requested`, `draft`, `sent`, `viewed`.                                                                                          |
-| `dashboard/utils/quoteFormHydrationFromDashboard.ts`     | Map `DashboardQuote` → form defaults (local date, `HH:mm`, cents → dollars string, duration picker).                                                 |
-| `dashboard/utils/publicQuoteUrl.ts`                      | Build `/q/...` path or absolute URL from dashboard token field.                                                                                      |
-| `send/validateSendQuoteBody.ts`                          | Validates `businessSlug` + shared payload (POST send).                                                                                               |
-| `edit/validateUpdateQuoteBody.ts`                        | Re-exports shared payload validation (PATCH).                                                                                                        |
-| `shared/validateQuotePayloadFields.ts`                   | **Shared** field rules for send + patch (customer, service, catalog snapshot, optional schedule, phone).                                             |
-| `shared/quoteServiceSnapshot.ts`                         | `addonDetails` shape + `splitQuoteServiceDisplayName` for catalog display.                                                                           |
-| `server/loadQuoteServiceCatalog.ts`                      | Server-only catalog loader for create/edit UI (mobile loads same tables via Supabase).                                                               |
-| `server/reminders/`                                      | Owner quote-request follow-up cron (`runQuoteRequestFollowUps`). See [`server/reminders/README.md`](../server/reminders/README.md).                  |
-| `shared/utils/resolveQuoteTokenHash.ts`                  | Raw URL token → SHA-256 hex; 64-char hex passthrough (dashboard uses stored hash).                                                                   |
-| `public-view/validateQuoteRespondRequest.ts`             | POST respond: `token`, `decision`, `serviceAddress` required when approving.                                                                         |
-| `server/createBookingFromApprovedQuote.ts`               | Map approved quote → `createBooking` (V2 bookings + customer upsert).                                                                                |
-| `server/quoteApprovalSideEffects.ts`                     | After approve: cap check, time-off, link `booking_id`, owner notify/email.                                                                           |
-| `public-view/components/PublicQuoteRespondActions.tsx`   | Customer UI; `POST /api/quotes/respond`.                                                                                                             |
-| `public-request/components/PublicQuoteRequestScreen.tsx` | Public profile “request quote” flow (separate from dashboard create).                                                                                |
-| `hooks/useOwnerQuoteScheduling.ts`                       | Weekly schedule + time off for quote date/time picker.                                                                                               |
-| `testing/*.test.ts`                                      | Vitest: validation + `resolveQuoteTokenHash` (see [Tests](#tests)).                                                                                  |
-| `index.ts`                                               | Package exports for pages (`CreateQuoteScreen`, etc.).                                                                                               |
+| Path                                                     | Role                                                                                                                                                                                                                                      |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/CreateQuoteScreen.tsx`                       | **Create + edit** wizard (details → schedule → review → success). `mode="edit"` + `quoteId` loads quote and calls `PATCH /api/quotes/[id]`. Review step can require a deposit, full payment, or customer choice when the shop can charge. |
+| `components/QuoteSendPaymentChoice.tsx`                  | Review-step cards for `none` / `deposit` / `full` / `customer_choice`. Hidden unless Pro and card charges are on.                                                                                                                         |
+| `components/QuoteRequestsSettingsCard.tsx`               | Dashboard card: quote requests toggle + Pro upsell (public profile request button).                                                                                                                                                       |
+| `components/QuotesDashboardPage.tsx`                     | Re-export only; implementation lives in `dashboard/components/QuotesDashboardPage.tsx` (app imports from `@/features/quotes/components/...`).                                                                                             |
+| `dashboard/`                                             | Owner list, detail, filters, hooks, dashboard types, `loadDashboardQuoteById`, `mapQuoteRowToDashboardQuote`.                                                                                                                             |
+| `dashboard/components/QuotesDashboardPage.tsx`           | Quotes list UI (source for the re-export above).                                                                                                                                                                                          |
+| `dashboard/components/QuoteListRow.tsx`                  | List card: customer, truncated **service** (with `title` for full text), **status**, **Created {date}** (`createdAt`), price. Sorted by `createdAt`.                                                                                      |
+| `dashboard/components/QuoteDetailScreen.tsx`             | Single quote; copy link, view public, **Edit**, **Delete** (`DELETE /api/quotes/[id]`).                                                                                                                                                   |
+| `dashboard/components/DeleteQuoteModalBody.tsx`          | Confirm-delete modal copy and actions.                                                                                                                                                                                                    |
+| `dashboard/utils/parseDeleteQuoteApiResponse.ts`         | Parses delete API JSON for the client (unit-tested).                                                                                                                                                                                      |
+| `dashboard/hooks/useDashboardQuotes.ts`                  | `GET /api/quotes`.                                                                                                                                                                                                                        |
+| `dashboard/hooks/useDashboardQuoteDetail.ts`             | `GET /api/quotes/[id]`; supports `{ enabled: false }` for create-only screens sharing the hook shape.                                                                                                                                     |
+| `dashboard/utils/isDashboardQuoteEditableByOwner.ts`     | Owner may edit only `requested`, `draft`, `sent`, `viewed`.                                                                                                                                                                               |
+| `dashboard/utils/quoteFormHydrationFromDashboard.ts`     | Map `DashboardQuote` → form defaults (local date, `HH:mm`, cents → dollars string, duration picker).                                                                                                                                      |
+| `dashboard/utils/publicQuoteUrl.ts`                      | Build `/q/...` path or absolute URL from dashboard token field.                                                                                                                                                                           |
+| `send/validateSendQuoteBody.ts`                          | Validates `businessSlug` + shared payload (POST send).                                                                                                                                                                                    |
+| `edit/validateUpdateQuoteBody.ts`                        | Re-exports shared payload validation (PATCH).                                                                                                                                                                                             |
+| `shared/validateQuotePayloadFields.ts`                   | **Shared** field rules for send + patch (customer, service, catalog snapshot, optional schedule, phone).                                                                                                                                  |
+| `shared/quoteServiceSnapshot.ts`                         | `addonDetails` shape + `splitQuoteServiceDisplayName` for catalog display.                                                                                                                                                                |
+| `shared/quotePaymentCollection.ts`                       | Payment choice types, deposit math, customer button labels. Card minimum is **50 cents**.                                                                                                                                                 |
+| `server/quotePaymentSnapshot.ts`                         | Pro + payments gates, deposit snapshot at send, live buttons on the public quote.                                                                                                                                                         |
+| `server/quoteCheckout.ts`                                | Stripe Checkout for a required deposit or full payment. Webhook writes `booking_payments` after the booking exists.                                                                                                                       |
+| `server/loadQuoteServiceCatalog.ts`                      | Server-only catalog loader for create/edit UI (mobile loads same tables via Supabase).                                                                                                                                                    |
+| `server/reminders/`                                      | Owner quote-request follow-up cron (`runQuoteRequestFollowUps`). See [`server/reminders/README.md`](../server/reminders/README.md).                                                                                                       |
+| `shared/utils/resolveQuoteTokenHash.ts`                  | Raw URL token → SHA-256 hex; 64-char hex passthrough (dashboard uses stored hash).                                                                                                                                                        |
+| `public-view/validateQuoteRespondRequest.ts`             | POST respond: `token`, `decision`, `serviceAddress` required when approving.                                                                                                                                                              |
+| `server/createBookingFromApprovedQuote.ts`               | Map approved quote → `createBooking` (V2 bookings + customer upsert).                                                                                                                                                                     |
+| `server/quoteApprovalSideEffects.ts`                     | After approve: cap check, time-off, link `booking_id`, owner notify/email.                                                                                                                                                                |
+| `public-view/components/PublicQuoteRespondActions.tsx`   | Customer UI; `POST /api/quotes/respond`.                                                                                                                                                                                                  |
+| `public-request/components/PublicQuoteRequestScreen.tsx` | Public profile “request quote” flow (separate from dashboard create).                                                                                                                                                                     |
+| `hooks/useOwnerQuoteScheduling.ts`                       | Weekly schedule + time off for quote date/time picker.                                                                                                                                                                                    |
+| `testing/*.test.ts`                                      | Vitest: validation + `resolveQuoteTokenHash` (see [Tests](#tests)).                                                                                                                                                                       |
+| `index.ts`                                               | Package exports for pages (`CreateQuoteScreen`, etc.).                                                                                                                                                                                    |
 
 **Next.js app routes (outside `features/`)**
 
@@ -83,23 +87,24 @@ All JSON bodies use `Content-Type: application/json` unless noted.
 
 **Body (validated by `validateSendQuoteBody`):**
 
-| Field                                        | Required | Notes                                                                                  |
-| -------------------------------------------- | -------- | -------------------------------------------------------------------------------------- |
-| `businessSlug`                               | yes      | Must match a `business_profiles.business_slug` whose `profile_id` is the current user. |
-| `customerName`                               | yes      |                                                                                        |
-| `customerEmail`                              | yes      | Format validated.                                                                      |
-| `customerPhone`                              | optional | If present, must normalize to **10 digits** or validation fails.                       |
-| `vehicleYear`, `vehicleMake`, `vehicleModel` | optional |                                                                                        |
-| `serviceName`                                | yes      | Catalog with option: `{name} — {optionLabel}`.                                         |
-| `priceCents`                                 | yes      | Integer ≥ 0. **Total** (base + add-ons).                                               |
-| `durationMinutes`                            | yes      | Integer > 0. **Total** duration.                                                       |
-| `note`                                       | optional |                                                                                        |
-| `scheduledDate`                              | optional | `YYYY-MM-DD`. Send with `scheduledStartTime` or omit both.                             |
-| `scheduledStartTime`                         | optional | `HH:mm` (stored as `HH:mm:ss`). Customer picks on accept when omitted.                 |
-| `serviceId`                                  | optional | `business_services.id` (catalog snapshot).                                             |
-| `servicePriceOptionId`                       | optional | `service_price_options.id` when multi-price option chosen.                             |
-| `servicePriceCents`                          | optional | Base catalog price before add-ons.                                                     |
-| `addonDetails`                               | optional | `[{ id, name, priceCents, durationMinutes? }]` — stored in `quotes.addon_details`.     |
+| Field                                        | Required | Notes                                                                                                   |
+| -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------- |
+| `businessSlug`                               | yes      | Must match a `business_profiles.business_slug` whose `profile_id` is the current user.                  |
+| `customerName`                               | yes      |                                                                                                         |
+| `customerEmail`                              | yes      | Format validated.                                                                                       |
+| `customerPhone`                              | optional | If present, must normalize to **10 digits** or validation fails.                                        |
+| `vehicleYear`, `vehicleMake`, `vehicleModel` | optional |                                                                                                         |
+| `serviceName`                                | yes      | Catalog with option: `{name} — {optionLabel}`.                                                          |
+| `priceCents`                                 | yes      | Integer ≥ 0. **Total** (base + add-ons).                                                                |
+| `durationMinutes`                            | yes      | Integer > 0. **Total** duration.                                                                        |
+| `note`                                       | optional |                                                                                                         |
+| `scheduledDate`                              | optional | `YYYY-MM-DD`. Send with `scheduledStartTime` or omit both.                                              |
+| `scheduledStartTime`                         | optional | `HH:mm` (stored as `HH:mm:ss`). Customer picks on accept when omitted.                                  |
+| `serviceId`                                  | optional | `business_services.id` (catalog snapshot).                                                              |
+| `servicePriceOptionId`                       | optional | `service_price_options.id` when multi-price option chosen.                                              |
+| `servicePriceCents`                          | optional | Base catalog price before add-ons.                                                                      |
+| `addonDetails`                               | optional | `[{ id, name, priceCents, durationMinutes? }]` — stored in `quotes.addon_details`.                      |
+| `paymentCollection`                          | optional | `none` (default), `deposit`, `full`, or `customer_choice`. See [Payment to accept](#payment-to-accept). |
 
 **Success:** `201` — `{ success: true, data: { quoteId, publicUrl, expiresAt } }`  
 `publicUrl` is `${origin}/q/${rawToken}` (raw token is **not** stored; DB stores SHA-256 hex).
@@ -179,7 +184,7 @@ read/send contract.
 
 **Body:** Same fields as send **except** `businessSlug` (validated by `validateUpdateQuoteBody` / `validateQuotePayloadFields`).
 
-**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `assets` (first vehicle from the form; extra assets kept), `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `service_id`, `service_price_option_id`, `service_price_cents`, `addon_details`, `updated_at`. **`request_message` is not updated** by PATCH (customer intake text). (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
+**DB columns updated:** `customer_*` (name/email/phone), `vehicle_*`, `assets` (first vehicle from the form; extra assets kept), `service_name`, `price_cents`, `duration_minutes`, `note`, `scheduled_date`, `scheduled_start_time`, `service_id`, `service_price_option_id`, `service_price_cents`, `addon_details`, `updated_at`. **`request_message` is not updated** by PATCH (customer intake text). **`payment_collection` / deposit snapshot are not updated** by PATCH. (Service address columns are **not** changed here — the customer sets them when they accept the quote.)
 
 **Success:** `{ success: true, quote: DashboardQuote }` (reloaded after update).
 
@@ -209,9 +214,15 @@ read/send contract.
 
 **Auth:** None (token proves access). Uses **admin** Supabase client server-side.
 
-**Purpose:** Customer approve/decline; updates `quotes` + `quote_public_links` response fields.
+**Purpose:** Customer approve/decline, or start card checkout. Updates `quotes` + `quote_public_links` when the quote is accepted without a card, or after Stripe confirms a required payment.
 
-**Approve side effects:** When the customer approves (`status` was `sent` or `viewed`), the route atomically sets `quotes.status` to `approved`, stores `service_address` (legacy DBs without that column fall back to appending the address on `note`), then:
+**No card (`payment_collection = none`, or Pro/payments are no longer ready):** Decline stays available. Approve creates the booking immediately. See side effects below.
+
+**Deposit or full payment:** Decline stays available. The pay button does not approve the quote. The route returns `{ success: true, checkoutUrl }` and the customer pays on Stripe Checkout (connected account). The booking is created only in the Connect webhook `checkout.session.completed` with `metadata.kind = quote_checkout` (`applyQuoteCheckoutCompleted`). That handler approves the quote, creates the booking, then inserts `booking_payments` (`paid_online_amount_cents`, `remaining_amount_cents`, `deposit_paid` or `paid_full`). The checkout session is marked `completed` only after that payment row is saved. A failed save returns **500** so Stripe retries onto the same appointment.
+
+**Customer choice:** The customer sends `paymentChoice` of `deposit`, `full`, or `pay_in_person`. Pay in person approves and creates the booking now, with `booking_payments` `awaiting_payment` / `pay_in_person` and the full total still due.
+
+**Approve side effects** (no card, pay in person, or webhook after a successful card): When the customer approves (`status` was `sent` or `viewed`), the route atomically sets `quotes.status` to `approved`, stores `service_address` (legacy DBs without that column fall back to appending the address on `note`), then:
 
 1. Creates a V2 **`bookings`** row via `createBooking`. Catalog quotes pass through `service_id`, base `service_price_cents`, and `addon_details` when present; custom quotes still store free-text `service_name` with those fields null. **`quotes.booking_id`** is set only if the row still had no booking (avoids duplicate bookings under concurrent requests).
 2. Upserts **`customers`** for that business through the same path as public availability bookings (`upsertCustomerForBooking`); `phone` is stored as digits-only when present.
@@ -223,16 +234,50 @@ read/send contract.
 
 **Body (validated by `validateQuoteRespondRequest`):**
 
-| Field            | Required               | Notes                                                                                          |
-| ---------------- | ---------------------- | ---------------------------------------------------------------------------------------------- |
-| `token`          | yes                    | Raw token from URL **or** hash-compatible string; resolved via `resolveQuoteTokenHash`.        |
-| `decision`       | yes                    | `"approve"` \| `"decline"`.                                                                    |
-| `address`        | preferred when approve | `{ street, unit?, city, state, zip }` — same shape as public UI (`quoteRespondAddress` rules). |
-| `serviceAddress` | legacy approve         | Single line, trimmed length ≥ 6, used when `address` is omitted.                               |
+| Field            | Required               | Notes                                                                                            |
+| ---------------- | ---------------------- | ------------------------------------------------------------------------------------------------ |
+| `token`          | yes                    | Raw token from URL **or** hash-compatible string; resolved via `resolveQuoteTokenHash`.          |
+| `decision`       | yes                    | `"approve"` \| `"decline"`.                                                                      |
+| `address`        | preferred when approve | `{ street, unit?, city, state, zip }` — same shape as public UI (`quoteRespondAddress` rules).   |
+| `serviceAddress` | legacy approve         | Single line, trimmed length ≥ 6, used when `address` is omitted.                                 |
+| `paymentChoice`  | when a card is offered | `deposit`, `full`, or `pay_in_person`. Omit on an accept-only quote. Invalid values are **400**. |
 
 **Typical responses:** `200` `{ success, status, ... }` (includes `alreadyResponded` in some branches), `400` invalid body, `403` free-tier cap, `404` link/quote, `409` conflicting state / time no longer available, `410` expired/revoked link, `500`.
 
-**Code:** `src/app/api/quotes/respond/route.ts` — booking helpers: `src/features/quotes/server/createBookingFromApprovedQuote.ts`, `src/features/quotes/server/quoteApprovalSideEffects.ts`.
+**Code:** `src/app/api/quotes/respond/route.ts` — booking helpers: `src/features/quotes/server/createBookingFromApprovedQuote.ts`, `src/features/quotes/server/quoteApprovalSideEffects.ts`. Card path: `src/features/quotes/server/quoteCheckout.ts`.
+
+---
+
+### `GET /api/quotes/checkout-status`
+
+**Auth:** None. Query `token` (public quote token) and `session_id` (Stripe Checkout session id).
+
+**Purpose:** Public quote page polls this after the customer returns from Checkout.
+
+**Success:** `{ success: true, status }` where `status` is `approved` (session `completed` or the quote already has `booking_id`), `failed`, or `pending`.
+
+**Code:** `src/app/api/quotes/checkout-status/route.ts`
+
+---
+
+## Payment to accept
+
+The owner chooses this on the **review** step of a new quote or a first send. It is stored on the quote at send and is not changed by a later PATCH.
+
+| `paymentCollection` | Customer on `/q/`                                   | When the booking is created                                |
+| ------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| `none`              | Accept or decline                                   | On accept                                                  |
+| `deposit`           | Pay deposit or decline                              | After the card webhook                                     |
+| `full`              | Pay the total or decline                            | After the card webhook                                     |
+| `customer_choice`   | Pay deposit, pay in full, pay in person, or decline | Card paths after the webhook. Pay in person on that choice |
+
+**Gates:** The picker is shown only when the owner is **Pro**, `payment_settings.payments_enabled` is on, and `payment_accounts.charges_enabled` with a Stripe account. `deposit` and `customer_choice` also need deposits on and a computed deposit of at least **$0.50**. `full` and `customer_choice` need a quote total of at least **$0.50**. If the owner sends a payment value the shop cannot charge, send returns **400**. If Pro or charges are off when the customer opens the link, the page falls back to Accept.
+
+**Deposit amount** comes from the shop’s Payments deposit rule (`fixed` cents or `percent` of the quote total), snapshotted onto `quotes.deposit_type` and `quotes.deposit_value` at send. It is not a custom amount per quote.
+
+**Appointment:** Card success writes `booking_payments` the same way a booking checkout does. Complete subtracts `paid_online_amount_cents`, so a deposit is not collected again. Pay in person leaves the full total due. The booking confirmation email does not repeat the paid amount; the appointment screen does.
+
+**Checkout sessions:** `quote_checkout_sessions` (service role only) holds the pending card accept: expected amount, `payment_kind` (`deposit` or `full`), and the address/schedule payload. Stripe metadata is `kind = quote_checkout`. Same Connect event as bookings: `checkout.session.completed` on `/api/stripe/webhook-connect`.
 
 ---
 
@@ -260,7 +305,7 @@ Scheduling reuses availability data: `useOwnerQuoteScheduling`, `usePublicBlocke
 
 1. **Request quote (optional):** `/[businessSlug]/quote` → `PublicQuoteRequestScreen` → `POST /api/public/quote-request` (see [PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md](./PUBLIC_QUOTE_REQUEST_AND_BOOKING_FLOW.md)).
 2. **Review sent quote:** Open `/q/[token]` (server render reads link + quote, may set `viewed`).
-3. `PublicQuoteRespondActions` calls `POST /api/quotes/respond`.
+3. `PublicQuoteRespondActions` calls `POST /api/quotes/respond`. A required card payment redirects to Stripe, then the page polls `GET /api/quotes/checkout-status` until the booking exists.
 
 ---
 
@@ -285,6 +330,7 @@ Vitest includes `src/features/**/testing/**/*.test.ts` (see root `vitest.config.
 | `testing/sendQuoteValidation.test.ts`     | `validateSendQuoteBody` (+ helpers)                                                                           |
 | `testing/quotePayloadValidation.test.ts`  | Shared payload + send requires slug                                                                           |
 | `testing/quoteRespondValidation.test.ts`  | `validateQuoteRespondRequest`                                                                                 |
+| `testing/quotePaymentCollection.test.ts`  | Deposit math and which pay buttons the customer sees                                                          |
 | `testing/resolveQuoteTokenHash.test.ts`   | Token vs hash resolution                                                                                      |
 | `testing/quoteStartTimeToHHmm.test.ts`    | `quoteStartTimeToHHmm` (DB time → `HH:mm`)                                                                    |
 | `testing/deleteQuoteApiResponse.test.ts`  | `parseDeleteQuoteApiResponse`                                                                                 |

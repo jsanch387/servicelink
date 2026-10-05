@@ -1,15 +1,17 @@
 'use client';
 
-import { Button, Modal, toast } from '@/components/shared';
-import { API_ROUTES } from '@/constants/routes';
+import { Button, IconButton, Modal, toast } from '@/components/shared';
+import { API_ROUTES, ROUTES } from '@/constants/routes';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
-export const VoidInvoiceButton: React.FC<{
+export const DeleteInvoiceButton: React.FC<{
   invoiceId: string;
-  onUpdated?: () => void;
+  /** When set, stay on this screen after a successful delete. */
+  onDeleted?: () => void;
   trigger?: (open: () => void) => React.ReactNode;
-}> = ({ invoiceId, onUpdated, trigger }) => {
+}> = ({ invoiceId, onDeleted, trigger }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -19,12 +21,12 @@ export const VoidInvoiceButton: React.FC<{
     setOpen(false);
   };
 
-  const voidInvoice = async () => {
+  const remove = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const response = await fetch(API_ROUTES.INVOICE_VOID(invoiceId), {
-        method: 'POST',
+      const response = await fetch(API_ROUTES.INVOICE(invoiceId), {
+        method: 'DELETE',
       });
       const json = (await response.json().catch(() => null)) as {
         success?: boolean;
@@ -32,17 +34,21 @@ export const VoidInvoiceButton: React.FC<{
       } | null;
 
       if (!response.ok || !json?.success) {
-        toast.error(json?.error || 'Could not void this invoice.');
+        toast.error(json?.error || 'Could not delete this invoice.');
         setBusy(false);
         return;
       }
 
-      toast.success('Invoice voided');
+      toast.success('Invoice deleted');
       setOpen(false);
-      onUpdated?.();
+      if (onDeleted) {
+        onDeleted();
+        return;
+      }
+      router.push(ROUTES.DASHBOARD.INVOICES);
       router.refresh();
     } catch {
-      toast.error('Could not void this invoice.');
+      toast.error('Could not delete this invoice.');
       setBusy(false);
     }
   };
@@ -52,25 +58,25 @@ export const VoidInvoiceButton: React.FC<{
       {trigger ? (
         trigger(() => setOpen(true))
       ) : (
-        <Button
-          type="button"
-          variant="outline"
+        <IconButton
+          variant="danger"
           size="sm"
+          aria-label="Delete invoice"
+          title="Delete invoice"
+          icon={<TrashIcon className="h-4 w-4" />}
           onClick={() => setOpen(true)}
-        >
-          Void
-        </Button>
+        />
       )}
       <Modal
         isOpen={open}
         onClose={close}
-        title="Void invoice"
+        title="Delete invoice"
         maxWidth="sm"
         preventClose={busy}
       >
         <p className="mb-6 text-sm text-gray-300">
-          This bill stays on record. The link will show Void, and it can no
-          longer be paid.
+          This permanently removes the invoice and its lines. The customer link
+          stops working. A card payment is not refunded.
         </p>
         <div className="grid grid-cols-2 gap-3">
           <Button
@@ -87,10 +93,10 @@ export const VoidInvoiceButton: React.FC<{
             variant="danger"
             loading={busy}
             disabled={busy}
-            onClick={() => void voidInvoice()}
+            onClick={() => void remove()}
             className="w-full"
           >
-            Void invoice
+            Delete invoice
           </Button>
         </div>
       </Modal>

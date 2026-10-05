@@ -1,10 +1,15 @@
 'use client';
 
-import { Button, toast } from '@/components/shared';
+import { toast } from '@/components/shared';
 import { API_ROUTES, getPublicBillPath } from '@/constants/routes';
-import { CheckIcon, EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
+import {
+  CheckIcon,
+  EllipsisHorizontalIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import React, { useEffect, useRef, useState } from 'react';
 
+import { DeleteInvoiceButton } from './DeleteInvoiceButton';
 import { MarkInvoicePaidButton } from './MarkInvoicePaidButton';
 import { VoidInvoiceButton } from './VoidInvoiceButton';
 
@@ -38,10 +43,10 @@ export const InvoiceBillActions: React.FC<{
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setMenuOpen(false);
     };
-    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [menuOpen]);
@@ -93,13 +98,29 @@ export const InvoiceBillActions: React.FC<{
 
   const menuItemClassName =
     'flex w-full cursor-pointer items-center px-3 py-2.5 text-left text-sm text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50';
+  const actionIconClassName =
+    'inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg bg-zinc-800 transition-colors hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40';
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <div ref={menuRef} className="relative hidden md:block">
+      <DeleteInvoiceButton
+        invoiceId={invoiceId}
+        trigger={open => (
+          <button
+            type="button"
+            className={`${actionIconClassName} text-red-400 hover:text-red-300`}
+            aria-label="Delete invoice"
+            title="Delete invoice"
+            onClick={open}
+          >
+            <TrashIcon className="h-5 w-5" aria-hidden />
+          </button>
+        )}
+      />
+      <div ref={menuRef} className="relative">
         <button
           type="button"
-          className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg bg-zinc-800 text-white transition-colors hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          className={`${actionIconClassName} text-white`}
           aria-label="Invoice actions"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
@@ -179,47 +200,6 @@ export const InvoiceBillActions: React.FC<{
             </div>
           ) : null}
         </div>
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-2 md:hidden">
-        {code ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => void copyLink()}
-            aria-label={copied ? 'Copied' : 'Copy link'}
-          >
-            <span className="grid" aria-live="polite">
-              <span
-                className={`col-start-1 row-start-1 ${copied ? 'invisible' : ''}`}
-              >
-                Copy link
-              </span>
-              <span
-                className={`col-start-1 row-start-1 inline-flex items-center justify-center gap-1.5 ${copied ? '' : 'invisible'}`}
-              >
-                <CheckIcon className="h-4 w-4" aria-hidden />
-                Copied
-              </span>
-            </span>
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          loading={downloading}
-          disabled={downloading}
-          onClick={() => void downloadPdf()}
-        >
-          Download PDF
-        </Button>
-        {status === 'sent' ? (
-          <>
-            <VoidInvoiceButton invoiceId={invoiceId} />
-            <MarkInvoicePaidButton invoiceId={invoiceId} />
-          </>
-        ) : null}
       </div>
     </div>
   );

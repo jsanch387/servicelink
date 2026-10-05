@@ -105,6 +105,9 @@ Table: `public.quotes`
 | `expires_at`                | timestamptz           |      yes | Optional expiry control                                                                                                          |
 | `booking_id`                | uuid                  |      yes | Set when customer approves and a V2 `bookings` row is created                                                                    |
 | `referral_source`           | text                  |      yes | Acquisition channel at request time (`marketplace`). Copied onto `bookings.referral_source` on approve                           |
+| `payment_collection`        | text                  |       no | `none`, `deposit`, `full`, or `customer_choice`. Default `none`. Snapshotted when the quote is sent.                             |
+| `deposit_type`              | text                  |      yes | `fixed` or `percent` when a deposit can be charged. Null for `none` and `full`.                                                  |
+| `deposit_value`             | integer               |      yes | Cents when `fixed`, whole percent when `percent`.                                                                                |
 | `service_address`           | text                  |      yes | Legacy single-line summary; still written as display line on approve                                                             |
 | `customer_street_address`   | text                  |      yes | Service location street (mirrors `bookings.customer_street_address`)                                                             |
 | `customer_unit_apt`         | text                  |      yes | Unit / apt                                                                                                                       |
@@ -176,12 +179,13 @@ No public direct table access.
 ## Operational guidance
 
 - Treat quote fields as snapshots; don’t depend on mutable service rows after send.
+- `payment_collection`, `deposit_type`, and `deposit_value` are snapshotted at send. PATCH does not change them. Deposit amount follows the shop Payments rule at that moment (`fixed` cents or `percent` of the quote total).
 - Use `source` + `status` together to drive UI buckets (`Requested`, `Drafts`, `Sent`, etc.).
 - Use idempotent backend logic for send/approve actions.
 - For customer request intake, create row as `source='customer_requested'`, `status='requested'`, no public link yet.
 - Create `quote_public_links` row only when owner actually sends quote.
-- Do not create booking row until quote is approved (future phase).
-- Keep `booking_id` null until conversion is successful.
+- Create the booking when the customer accepts with no card, chooses pay in person, or when the quote card webhook succeeds. Do not create it when respond only returns a Checkout URL.
+- Keep `booking_id` null until that conversion succeeds. Card checkout then writes `booking_payments` before the checkout session is marked completed.
 
 ---
 
@@ -189,5 +193,7 @@ No public direct table access.
 
 `quote_public_links` stores secure tokenized links for sent quotes.  
 See: `src/features/quotes/docs/QUOTE_PUBLIC_LINKS_TABLE.md`.
+
+`quote_checkout_sessions` stores a pending deposit or full-payment accept until Connect `checkout.session.completed` (`kind = quote_checkout`) creates the booking and `booking_payments` row. Service role only.
 
 `quote_outbound_events` is the owner timeline for customer email/SMS (`communications` on list/detail). Reminder SMS also sets `sms_messages.quote_id`.
