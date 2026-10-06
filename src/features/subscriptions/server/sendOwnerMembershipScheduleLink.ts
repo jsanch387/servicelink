@@ -186,7 +186,10 @@ export async function sendOwnerMembershipScheduleLink(
         customerId,
         type: 'membership_visit_reminder',
         to: phone,
-        message: buildMembershipScheduleLinkSms({ scheduleUrl }),
+        message: buildMembershipScheduleLinkSms({
+          businessName,
+          scheduleUrl,
+        }),
         dedupeKey: `${membershipId}:schedule_link:${periodStart}:${sendCount}`,
       });
       smsed = sms.sent;

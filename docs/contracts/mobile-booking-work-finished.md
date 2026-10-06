@@ -122,13 +122,13 @@ Same route as [`mobile-booking-actions.md`](./mobile-booking-actions.md) — onl
 
 ### SMS (`notify: true` only)
 
-|                         |                                                                                 |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| **`sms_messages.type`** | `work_finished`                                                                 |
-| **Template**            | `{BusinessName} has finished your service. Come take a look when you're ready.` |
-| **Dedupe key**          | `{bookingId}:work_finished`                                                     |
-| **Rate limit**          | Owner SMS rate limit applies when `notify: true`                                |
-| **Skip rate limit**     | No rate limit when `notify: false` (no SMS sent)                                |
+|                         |                                                  |
+| ----------------------- | ------------------------------------------------ |
+| **`sms_messages.type`** | `work_finished`                                  |
+| **Template**            | `{BusinessName} has finished your service.`      |
+| **Dedupe key**          | `{bookingId}:work_finished`                      |
+| **Rate limit**          | Owner SMS rate limit applies when `notify: true` |
+| **Skip rate limit**     | No rate limit when `notify: false` (no SMS sent) |
 
 Appends `Reply STOP to opt out.` like other transactional SMS.
 

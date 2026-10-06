@@ -102,6 +102,7 @@ export async function notifyCustomerForBookingReminder(
       type: CUSTOMER_BOOKING_REMINDER_SMS_TYPE,
       to: phone,
       message: buildBookingReminderSms({
+        businessName: params.businessName,
         scheduledDate: params.scheduledDate,
         startTime: params.startTime,
       }),

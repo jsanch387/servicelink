@@ -107,6 +107,7 @@ export async function sendJobCompletedCustomerNotification(
       type: 'job_completed',
       to: phone,
       message: buildJobCompletedInvoiceSms({
+        businessName,
         invoiceUrl,
         includeReviewHint: input.includeReviewHint,
       }),

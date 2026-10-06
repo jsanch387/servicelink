@@ -940,6 +940,7 @@ export async function POST(request: NextRequest) {
           type: 'booking_confirmation',
           to: sanitizedCustomer.phone,
           message: buildBookingConfirmedSms({
+            businessName: businessDisplayName,
             scheduledDate: body.scheduledDate,
             startTime: body.startTime.trim(),
           }),
@@ -1205,6 +1206,7 @@ export async function POST(request: NextRequest) {
         type: 'booking_confirmation',
         to: sanitizedCustomer.phone,
         message: buildBookingConfirmedSms({
+          businessName: businessDisplayName,
           scheduledDate: body.scheduledDate,
           startTime: body.startTime.trim(),
         }),

@@ -2,6 +2,7 @@
 
 import {
   Button,
+  FormStepSection,
   toast,
   useScrollWindowToTopOnChange,
 } from '@/components/shared';
@@ -1933,7 +1934,63 @@ export function AvailabilityBookingPage({
               ) : null}
               {detailsSubStep === 'vehicleNotes' ? (
                 <>
-                  {isMultiJobVisit && showVehicleFields ? (
+                  {isMultiJobVisit &&
+                  showVehicleFields &&
+                  visitJobs.length === 1 &&
+                  visitJobs[0] ? (
+                    <div className="space-y-4">
+                      <FormStepSection
+                        title={ui.customerForm.vehicle}
+                        description={
+                          requireVehicleFields
+                            ? undefined
+                            : ui.customerForm.optionalVehicleDetails
+                        }
+                      >
+                        <BookingVehicleFields
+                          value={{
+                            vehicleYear: visitJobs[0].vehicle.year,
+                            vehicleMake: visitJobs[0].vehicle.make,
+                            vehicleModel: visitJobs[0].vehicle.model,
+                          }}
+                          onChange={updates => {
+                            const onlyJob = visitJobs[0];
+                            if (!onlyJob) return;
+                            updateVisitJobs(
+                              visitJobs.map(j =>
+                                j.localId === onlyJob.localId
+                                  ? {
+                                      ...j,
+                                      vehicle: {
+                                        year:
+                                          updates.vehicleYear ?? j.vehicle.year,
+                                        make:
+                                          updates.vehicleMake ?? j.vehicle.make,
+                                        model:
+                                          updates.vehicleModel ??
+                                          j.vehicle.model,
+                                      },
+                                    }
+                                  : j
+                              )
+                            );
+                          }}
+                          bookingFlowLocale={bookingFlowLocale}
+                          required={requireVehicleFields}
+                        />
+                      </FormStepSection>
+                      {addAnotherJobHref &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS ? (
+                        <AddAnotherJobCard
+                          label={ui.multiJob.addAnotherService}
+                          onPress={persistVisitDraftAndAddAnother}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {isMultiJobVisit &&
+                  showVehicleFields &&
+                  visitJobs.length > 1 ? (
                     <div className="space-y-4">
                       <h2 className="text-base font-semibold text-white">
                         {ui.multiJob.vehiclePerService}
@@ -2010,7 +2067,67 @@ export function AvailabilityBookingPage({
                       ) : null}
                     </div>
                   ) : null}
-                  {isMultiJobVisit && showPetFields ? (
+                  {isMultiJobVisit &&
+                  showPetFields &&
+                  visitJobs.length === 1 &&
+                  visitJobs[0] ? (
+                    <div className="space-y-4">
+                      <FormStepSection
+                        title={ui.customerForm.pet}
+                        description={
+                          requirePetFields
+                            ? undefined
+                            : ui.customerForm.optionalPetDetails
+                        }
+                      >
+                        <BookingPetFields
+                          value={{
+                            petName: jobPetDraft(visitJobs[0]).name,
+                            petSpecies: jobPetDraft(visitJobs[0]).species,
+                            petBreed: jobPetDraft(visitJobs[0]).breed,
+                            petSize: jobPetDraft(visitJobs[0]).size,
+                          }}
+                          onChange={updates => {
+                            const onlyJob = visitJobs[0];
+                            if (!onlyJob) return;
+                            updateVisitJobs(
+                              visitJobs.map(j =>
+                                j.localId === onlyJob.localId
+                                  ? {
+                                      ...j,
+                                      pet: {
+                                        name:
+                                          updates.petName ??
+                                          jobPetDraft(j).name,
+                                        species:
+                                          updates.petSpecies ??
+                                          jobPetDraft(j).species,
+                                        breed:
+                                          updates.petBreed ??
+                                          jobPetDraft(j).breed,
+                                        size:
+                                          updates.petSize ??
+                                          jobPetDraft(j).size,
+                                      },
+                                    }
+                                  : j
+                              )
+                            );
+                          }}
+                          bookingFlowLocale={bookingFlowLocale}
+                          required={requirePetFields}
+                        />
+                      </FormStepSection>
+                      {addAnotherJobHref &&
+                      visitJobs.length < PUBLIC_BOOKING_MAX_JOBS ? (
+                        <AddAnotherJobCard
+                          label={ui.multiJob.addAnotherService}
+                          onPress={persistVisitDraftAndAddAnother}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {isMultiJobVisit && showPetFields && visitJobs.length > 1 ? (
                     <div className="space-y-4">
                       <h2 className="text-base font-semibold text-white">
                         {ui.multiJob.petPerService}

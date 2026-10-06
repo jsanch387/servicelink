@@ -284,7 +284,7 @@ What the server does:
 3. If `bookingId` points at an appointment that is already paid, mark this invoice `paid` and record `payment_method`. The customer email then says amount paid.
 4. Email when `customerEmail` is set. Text when `customerPhone` is set. Either channel can fail without rolling the invoice back.
 
-`shortUrl` is `{app origin}/b/{shortCode}`. The text is `Your invoice is ready: {shortUrl}` plus the opt-out line. The email subject is `Invoice {number} from {business}` and includes the amount, due date, and the same link.
+`shortUrl` is `{app origin}/b/{shortCode}`. The text is `{Business}: Your invoice is ready: {shortUrl}` plus the opt-out line. The email subject is `Invoice {number} from {business}` and includes the amount, due date, and the same link.
 
 A second `POST` with the same `invoiceId` sends that link again. It does **not** edit a bill that is already `sent` or `paid`. The stored lines stay as they were. Void returns **409**.
 

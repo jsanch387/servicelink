@@ -9,7 +9,7 @@ import {
   bcp47ForBookingLocale,
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
-import { CheckIcon } from '@heroicons/react/24/solid';
+import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/components/SubscriptionSuccessCheckmark';
 import Link from 'next/link';
 import React from 'react';
 import type { AddOnDisplay, CustomerFormData } from '../types';
@@ -99,8 +99,8 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
 
   return (
     <div className="flex flex-col w-full min-h-[55vh] max-w-2xl mx-auto px-4 sm:px-6 py-10 pb-16 sm:pb-24">
-      <div className="self-center w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-8 shadow-lg shadow-emerald-500/25">
-        <CheckIcon className="w-10 h-10 text-white" />
+      <div className="self-center mb-8">
+        <SubscriptionSuccessCheckmark />
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-2 text-center">

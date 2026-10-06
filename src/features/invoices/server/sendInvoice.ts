@@ -269,7 +269,10 @@ export async function sendInvoice(
         customerId,
         type: 'customer_invoice',
         to: phone,
-        message: buildCustomerInvoiceSms({ invoiceUrl: shortUrl }),
+        message: buildCustomerInvoiceSms({
+          businessName: business.name,
+          invoiceUrl: shortUrl,
+        }),
         correlationId: invoiceId,
       });
       if (texted.sent) {

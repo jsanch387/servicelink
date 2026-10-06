@@ -1,6 +1,6 @@
 /**
  * Customer-facing SMS templates (ServiceLink toll-free sender).
- * Brand is ServiceLink only — never include an individual business name.
+ * Lead with the business name so the customer knows who the text is from.
  * Keep messages short; opt-out always sits on its own line for clarity.
  */
 
@@ -13,7 +13,12 @@ function withOptOut(body: string): string {
   return `${body.trim()}\n\n${OPT_OUT}`;
 }
 
+function smsBusinessName(name: string | null | undefined): string {
+  return name?.trim() || 'Your service provider';
+}
+
 export interface BookingSmsContext {
+  businessName: string;
   /** YYYY-MM-DD */
   scheduledDate: string;
   /** HH:mm 24h wall time */
@@ -45,27 +50,31 @@ function formatDateAndTime(ctx: BookingSmsContext): {
 
 export function buildBookingConfirmedSms(ctx: BookingSmsContext): string {
   const { date, time } = formatDateAndTime(ctx);
+  const name = smsBusinessName(ctx.businessName);
   return withOptOut(
-    `Your appointment is confirmed for ${date} at ${time}. Questions? Contact your service provider.`
+    `Your appointment with ${name} is confirmed for ${date} at ${time}.`
   );
 }
 
 export function buildBookingReminderSms(ctx: BookingSmsContext): string {
   const { date, time } = formatDateAndTime(ctx);
+  const name = smsBusinessName(ctx.businessName);
   return withOptOut(
-    `Reminder: Your appointment is coming up on ${date} at ${time}.`
+    `Reminder: Your appointment with ${name} is coming up on ${date} at ${time}.`
   );
 }
 
 /** Next membership period — customer should pick a visit via scheduleUrl. */
 export function buildMembershipVisitReminderSms(ctx: {
+  businessName: string;
   scheduleUrl: string;
 }): string {
+  const name = smsBusinessName(ctx.businessName);
   const url = ctx.scheduleUrl.trim();
   return withOptOut(
     url
-      ? `Your subscription period started. Schedule your visit: ${url}`
-      : `Your subscription period started. Schedule your visit with your provider.`
+      ? `${name}: Your subscription period started. Schedule your visit: ${url}`
+      : `${name}: Your subscription period started. Schedule your visit.`
   );
 }
 
@@ -74,38 +83,42 @@ export function buildMembershipVisitReminderSms(ctx: {
  * without implying a new billing period started.
  */
 export function buildMembershipScheduleLinkSms(ctx: {
+  businessName: string;
   scheduleUrl: string;
 }): string {
+  const name = smsBusinessName(ctx.businessName);
   const url = ctx.scheduleUrl.trim();
   return withOptOut(
     url
-      ? `Your subscription includes a visit this period. Schedule it: ${url}`
-      : `Your subscription includes a visit this period. Schedule it with your provider.`
+      ? `${name}: Your subscription needs a date for the next visit: ${url}`
+      : `${name}: Your subscription needs a date for the next visit.`
   );
 }
 
 /** Sent when the business marks themselves en route. */
 export function buildOnMyWaySms(ctx: { businessName: string }): string {
-  const name = ctx.businessName.trim() || 'Your service provider';
+  const name = smsBusinessName(ctx.businessName);
   return withOptOut(`${name} is on the way for your appointment.`);
 }
 
 /** Sent when the business marks the job as started / in progress. */
-export function buildJobStartedSms(): string {
-  return withOptOut(`Your service has started.`);
+export function buildJobStartedSms(ctx: { businessName: string }): string {
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(`${name} has started your service.`);
 }
 
 /**
  * Sent when the owner taps Done — physical work finished, before close-out.
- * Not in the public template list; kept generic (no business name).
  */
-export function buildWorkFinishedSms(): string {
-  return withOptOut(`Your service is finished and ready for you.`);
+export function buildWorkFinishedSms(ctx: { businessName: string }): string {
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(`${name} has finished your service.`);
 }
 
 /** Sent when the business marks the job complete (no receipt link). */
-export function buildJobCompletedSms(): string {
-  return withOptOut(`Your service is complete. Thank you!`);
+export function buildJobCompletedSms(ctx: { businessName: string }): string {
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(`${name} has completed your appointment. Thank you!`);
 }
 
 /**
@@ -114,23 +127,31 @@ export function buildJobCompletedSms(): string {
  * no separate review SMS / review URL).
  */
 /** Customer bill link. Same `/b/` URL as the invoice email. */
-export function buildCustomerInvoiceSms(ctx: { invoiceUrl: string }): string {
+export function buildCustomerInvoiceSms(ctx: {
+  businessName: string;
+  invoiceUrl: string;
+}): string {
+  const name = smsBusinessName(ctx.businessName);
   const url = ctx.invoiceUrl.trim();
   return withOptOut(
-    url ? `Your invoice is ready: ${url}` : 'Your invoice is ready.'
+    url
+      ? `${name}: Your invoice is ready: ${url}`
+      : `${name}: Your invoice is ready.`
   );
 }
 
 export function buildJobCompletedInvoiceSms(ctx: {
+  businessName: string;
   invoiceUrl: string;
   includeReviewHint?: boolean;
 }): string {
+  const name = smsBusinessName(ctx.businessName);
   if (ctx.includeReviewHint) {
     return withOptOut(
-      `Your receipt is ready: ${ctx.invoiceUrl}\nIf you can please leave us a review, we would appreciate that.`
+      `${name}: Your receipt is ready: ${ctx.invoiceUrl}\nIf you can please leave us a review, we would appreciate that.`
     );
   }
-  return withOptOut(`Your receipt is ready: ${ctx.invoiceUrl}`);
+  return withOptOut(`${name}: Your receipt is ready: ${ctx.invoiceUrl}`);
 }
 
 /**
@@ -138,9 +159,13 @@ export function buildJobCompletedInvoiceSms(ctx: {
  * Prefer {@link buildJobCompletedInvoiceSms} with `includeReviewHint` when a
  * receipt is also being sent — avoid double-texting.
  */
-export function buildReviewRequestSms(ctx: { reviewUrl: string }): string {
+export function buildReviewRequestSms(ctx: {
+  businessName: string;
+  reviewUrl: string;
+}): string {
+  const name = smsBusinessName(ctx.businessName);
   return withOptOut(
-    `Enjoyed your service? Leave a quick review: ${ctx.reviewUrl}`
+    `Enjoyed your service from ${name}? Leave a quick review: ${ctx.reviewUrl}`
   );
 }
 

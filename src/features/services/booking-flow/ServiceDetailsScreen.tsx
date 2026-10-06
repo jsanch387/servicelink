@@ -42,10 +42,7 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  BookCalendarLoadingSkeleton,
-  BookFlowAdvancingOverlay,
-} from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
+import { BookFlowAdvancingOverlay } from '@/features/availability/booking/components/BookFlowLoadingState';
 import { AddOnSelector } from './AddOnSelector';
 import { PriceOptionSelector } from './PriceOptionSelector';
 import { ServiceDetailsBookingSummary } from './ServiceDetailsBookingSummary';
@@ -407,11 +404,8 @@ export function ServiceDetailsScreen({
   const stickyBackLabel =
     phase === 'location' ? ui.serviceDetails.backToOptions : exitDetailsLabel;
 
-  if (policyAgreement.isAdvancing) {
+  if (policyAgreement.isAdvancing || isNavigatingToCalendar) {
     return <BookFlowAdvancingOverlay />;
-  }
-  if (isNavigatingToCalendar) {
-    return <BookCalendarLoadingSkeleton />;
   }
 
   return (

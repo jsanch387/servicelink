@@ -170,7 +170,10 @@ export async function sendMembershipPeriodVisitRemindersIfApplicable(
         customerId,
         type: 'membership_visit_reminder',
         to: phone,
-        message: buildMembershipVisitReminderSms({ scheduleUrl }),
+        message: buildMembershipVisitReminderSms({
+          businessName,
+          scheduleUrl,
+        }),
         dedupeKey: `${mid}:visit_reminder:${periodStart}`,
         correlationId: eventId,
       });

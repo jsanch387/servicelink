@@ -1,7 +1,7 @@
 'use client';
 
 import type { PublicBookingFlowLocale } from '@/constants/routes';
-import { BookFlowAdvancingOverlay } from '@/features/availability/booking/components/BookCalendarLoadingSkeleton';
+import { BookFlowAdvancingOverlay } from '@/features/availability/booking/components/BookFlowLoadingState';
 import { PublicBookingPolicyAgreeDialog } from '@/features/availability/booking/components/BookingPolicyAgreeModal';
 import { usePublicBookingPolicyAgreement } from '@/features/availability/booking/hooks/usePublicBookingPolicyAgreement';
 import type { PublicActiveSale } from '@/features/marketing/types/publicActiveSale';

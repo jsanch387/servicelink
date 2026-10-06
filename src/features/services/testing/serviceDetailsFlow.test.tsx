@@ -63,13 +63,6 @@ vi.mock('@/components/shared', () => ({
   ),
 }));
 
-vi.mock(
-  '@/features/availability/booking/components/BookCalendarLoadingSkeleton',
-  () => ({
-    BookCalendarLoadingSkeleton: () => <div>calendar loading</div>,
-  })
-);
-
 vi.mock('@/features/services/booking-flow/PriceOptionSelector', () => ({
   PriceOptionSelector: ({
     options,
@@ -273,7 +266,7 @@ describe('ServiceDetailsScreen flow', () => {
     expect(screen.getByText(/optional add-ons/i)).toBeTruthy();
   });
 
-  it('shows the calendar skeleton immediately after Continue is clicked', async () => {
+  it('shows the booking loader immediately after Continue is clicked', async () => {
     const user = userEvent.setup();
     render(
       <ServiceDetailsScreen
@@ -289,7 +282,9 @@ describe('ServiceDetailsScreen flow', () => {
     await user.click(screen.getByRole('button', { name: /pick sedan/i }));
     await user.click(screen.getByRole('button', { name: /^continue$/i }));
 
-    expect(screen.getByText('calendar loading')).toBeTruthy();
+    expect(
+      screen.getByRole('progressbar', { name: /loading booking/i })
+    ).toBeTruthy();
   });
 
   it('owner manual booking navigates via URL with priceOptionId, add-ons, and detailsStep', async () => {

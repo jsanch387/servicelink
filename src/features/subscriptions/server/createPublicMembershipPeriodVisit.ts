@@ -500,6 +500,7 @@ export async function createPublicMembershipPeriodVisit(
           type: 'booking_confirmation',
           to: customer.phone,
           message: buildBookingConfirmedSms({
+            businessName: businessDisplayName,
             scheduledDate,
             startTime,
           }),

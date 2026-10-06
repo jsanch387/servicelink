@@ -964,6 +964,7 @@ export async function POST(request: NextRequest) {
               type: 'booking_confirmation',
               to: bookingCheckoutNotifyContext.customerPhone,
               message: buildBookingConfirmedSms({
+                businessName: bookingCheckoutNotifyContext.businessDisplayName,
                 scheduledDate: bookingCheckoutNotifyContext.scheduledDate,
                 startTime: bookingCheckoutNotifyContext.startTime,
               }),

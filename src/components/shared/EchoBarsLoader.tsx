@@ -6,6 +6,8 @@ const PULSE_MS = 400;
 const ECHO_BAR_SIZES = {
   default: { barWidth: 5, barHeight: 15, barGap: 10, staggerMs: 110 },
   large: { barWidth: 8, barHeight: 28, barGap: 14, staggerMs: 120 },
+  /** Full-screen booking transitions, where the large bars read too small. */
+  xl: { barWidth: 12, barHeight: 48, barGap: 18, staggerMs: 120 },
 } as const;
 
 export type EchoBarsLoaderSize = keyof typeof ECHO_BAR_SIZES;
