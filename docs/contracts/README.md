@@ -39,7 +39,7 @@ Owner dashboard docs: `src/features/subscriptions/docs/`.
 | Doc                                                                          | What it covers                                                        |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [mobile-quote-read.md](./mobile-quote-read.md)                               | Read quotes                                                           |
-| [mobile-quote-send.md](./mobile-quote-send.md)                               | Send quote, including optional payment to accept                      |
+| [mobile-quote-send.md](./mobile-quote-send.md)                               | Send quote, including optional `paymentCollection`                    |
 | [mobile-invoices.md](./mobile-invoices.md)                                   | Owner invoices: list, open, save draft, send, mark paid, void, delete |
 | [mobile-maintenance-enrollment.md](./mobile-maintenance-enrollment.md)       | Maintenance plans                                                     |
 | [mobile-onboarding-complete.md](./mobile-onboarding-complete.md)             | Onboarding complete                                                   |

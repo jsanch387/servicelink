@@ -1,4 +1,5 @@
 import { getFromEmail, getResendClient } from '../services/resendClient';
+import { loadWelcomeLiveInlineAttachments } from './loadWelcomeLiveInlineAttachments';
 import type {
   SendWelcomeLiveEmailResult,
   WelcomeLiveEmailPayload,
@@ -24,6 +25,7 @@ export async function sendWelcomeLiveEmail(
     to: [to],
     subject: WELCOME_LIVE_SUBJECT,
     html,
+    attachments: loadWelcomeLiveInlineAttachments(),
   });
 
   if (error) {

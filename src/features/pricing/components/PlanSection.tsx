@@ -164,7 +164,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
         ) : null}
 
         {showManage || showPayNow || showUpgrade ? (
-          <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <div className="mt-4 flex w-full min-w-0 flex-col gap-2">
             {showManage ? (
               <Button
                 type="button"
@@ -190,7 +190,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
               <Button
                 href={ROUTES.DASHBOARD.UPGRADE}
                 variant="inverse"
-                className="w-full sm:w-auto"
+                fullWidth
                 icon={<CrownIcon className="h-4 w-4" />}
               >
                 Upgrade

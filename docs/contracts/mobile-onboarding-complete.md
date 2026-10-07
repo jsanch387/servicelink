@@ -1,6 +1,6 @@
 # Contract: Mobile onboarding — complete + welcome-live email
 
-When the user finishes onboarding step 5 (“Activate my link”), call this API so the **server** marks onboarding complete and sends **“Your business is officially LIVE!”** (Resend).
+When the user finishes onboarding step 5 (“Activate my link”), call this API so the **server** marks onboarding complete and sends **“🚀 Your business is live”** (Resend).
 
 **Do not** send this email from the mobile app. **Do not** rely only on a local Supabase update unless you also call this endpoint (with the flag below).
 

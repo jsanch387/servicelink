@@ -262,7 +262,7 @@ read/send contract.
 
 ## Payment to accept
 
-The owner chooses this on the **review** step of a new quote or a first send. It is stored on the quote at send and is not changed by a later PATCH.
+The owner chooses this on the **review** step of a new quote or a first send. Web and mobile both send `paymentCollection` on `POST /api/quotes/send` and `POST /api/quotes/[id]/send`. It is stored on the quote at send and is not changed by a later PATCH.
 
 | `paymentCollection` | Customer on `/q/`                                   | When the booking is created                                |
 | ------------------- | --------------------------------------------------- | ---------------------------------------------------------- |

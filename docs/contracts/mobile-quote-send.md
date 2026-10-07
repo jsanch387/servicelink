@@ -90,13 +90,13 @@ collects one vehicle on send, same as web.
 
 ### Payment to accept (optional)
 
-Omit this field to keep today’s accept-or-decline quote. Send it only when the shop is **Pro** and payments can charge. The server snapshots the shop deposit rule onto the quote.
+Add this field on the same `POST /api/quotes/send` or `POST /api/quotes/[id]/send` body. Omit it to keep accept-or-decline.
 
 | Field               | Type   | Required | Notes                                                                                  |
 | ------------------- | ------ | -------- | -------------------------------------------------------------------------------------- |
 | `paymentCollection` | string | No       | `none` (default), `deposit`, `full`, or `customer_choice`. Invalid values are **400**. |
 
-`deposit` and `customer_choice` require deposits turned on in Payments, and a deposit of at least **$0.50**. `full` and `customer_choice` require a quote total of at least **$0.50**. If Pro or payments are not ready, the server returns **400** rather than sending a quote that cannot charge.
+The server snapshots the shop’s Payments deposit rule onto the quote. `deposit` and `customer_choice` need deposits on and a deposit of at least **$0.50**. `full` and `customer_choice` need a quote total of at least **$0.50**. If the shop is not Pro or cannot charge, those values return **400**.
 
 ### Service — catalog snapshot (optional)
 
@@ -222,7 +222,8 @@ X-Request-ID: mobile-quote-001
   "serviceName": "Full detail — SUV",
   "priceCents": 25000,
   "durationMinutes": 180,
-  "note": "Includes clay bar"
+  "note": "Includes clay bar",
+  "paymentCollection": "deposit"
 }
 ```
 

@@ -1,6 +1,14 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Welcome email attaches these PNGs. `public/` is not in the function
+  // bundle unless it is listed here.
+  outputFileTracingIncludes: {
+    '/api/onboarding-v2/complete': [
+      './public/email/instagram.png',
+      './public/store/app-store-badge.png',
+    ],
+  },
   // Phone testing on the LAN (http://192.168.x.x:3000) needs this so
   // /_next assets hydrate instead of mismatching the server HTML.
   allowedDevOrigins: ['192.168.1.226'],

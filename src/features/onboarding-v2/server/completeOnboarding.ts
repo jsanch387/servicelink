@@ -40,7 +40,7 @@ export async function completeOnboardingV2(
 }
 
 /**
- * Completes onboarding and sends **“Your business is officially LIVE!”** once when
+ * Completes onboarding and sends **“🚀 Your business is live”** once when
  * activation transitions the profile from not-completed → completed (Step 5
  * “Activate my link”, or the Stripe onboarding-trial bridge). Idempotent on repeat
  * completes: no duplicate email.
