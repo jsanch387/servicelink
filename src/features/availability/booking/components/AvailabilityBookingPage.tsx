@@ -1110,10 +1110,25 @@ export function AvailabilityBookingPage({
                 customerVehicleModel: json.data.booking.customerVehicleModel,
               });
               clearBookingCheckoutResumeDraft(businessSlug, serviceId);
-              if (isMultiJobVisit) {
+              if (isMultiJobVisit || !serviceId?.trim()) {
                 onPublicMultiJobBookingCreated?.();
+                // Keep checkout=success and session_id so a refresh still
+                // shows confirmation. Ensure visit=1 or the server treats
+                // this as a new booking and redirects to /book/details.
+                const params = new URLSearchParams(searchParams.toString());
+                if (
+                  params.get('visit') !== '1' &&
+                  params.get('visit') !== 'true'
+                ) {
+                  params.set('visit', '1');
+                  const qs = params.toString();
+                  router.replace(qs ? `${pathname}?${qs}` : pathname, {
+                    scroll: false,
+                  });
+                }
+              } else {
+                stripCheckoutParamsFromUrl();
               }
-              stripCheckoutParamsFromUrl();
               return;
             }
 

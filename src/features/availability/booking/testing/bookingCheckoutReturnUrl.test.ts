@@ -37,6 +37,30 @@ describe('buildBookPageCheckoutReturnUrl', () => {
     expect(url).not.toContain('CHECKOUT_SESSION_ID');
   });
 
+  it('forwards visit=1 so multi-job checkout returns to the visit calendar', () => {
+    const url = buildBookPageCheckoutReturnUrl({
+      baseUrl: 'https://app.example.com',
+      businessSlug: 'acme-auto',
+      checkout: 'success',
+      resumeQuery: 'visit=1&serviceLocationType=mobile',
+    });
+    expect(url).toContain('visit=1');
+    expect(url).toContain('serviceLocationType=mobile');
+    expect(url).toContain('checkout=success');
+    expect(url).toContain('session_id={CHECKOUT_SESSION_ID}');
+  });
+
+  it('drops unexpected visit values', () => {
+    const url = buildBookPageCheckoutReturnUrl({
+      baseUrl: 'https://app.example.com',
+      businessSlug: 'acme-auto',
+      checkout: 'cancel',
+      resumeQuery: 'visit=javascript:alert(1)&serviceLocationType=shop',
+    });
+    expect(url).not.toContain('visit=');
+    expect(url).toContain('serviceLocationType=shop');
+  });
+
   it('forwards funnel lang on success return (Stripe resume whitelist)', () => {
     const url = buildBookPageCheckoutReturnUrl({
       baseUrl: 'https://app.example.com',

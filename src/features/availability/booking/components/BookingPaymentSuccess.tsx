@@ -1,6 +1,6 @@
 'use client';
 
-import { GlassCard } from '@/components/shared';
+import { Button, GlassCard } from '@/components/shared';
 import type { PublicBookingFlowLocale } from '@/constants/routes';
 import { formatBookingWallTime } from '@/features/availability/booking/utils/formatBookingWallTime';
 import { formatDurationMinutes } from '@/features/availability/booking/utils/formatDuration';
@@ -9,7 +9,6 @@ import {
   publicBookingUi,
 } from '@/libs/i18n/publicBookingUi';
 import { SubscriptionSuccessCheckmark } from '@/features/subscriptions/components/SubscriptionSuccessCheckmark';
-import Link from 'next/link';
 import type { AddOnDisplay } from '../types';
 
 function formatMoney(
@@ -154,11 +153,6 @@ export function BookingPaymentSuccess({
         showBlur={true}
         className="w-full mb-8"
       >
-        <div className="px-4 py-3 border-b border-white/10">
-          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
-            {ui.bookingPaymentSuccess.cardHeader}
-          </p>
-        </div>
         <div className="p-4 sm:p-6 space-y-4">
           <div>
             <p className="text-xs text-gray-500 mb-0.5">{ui.common.service}</p>
@@ -286,16 +280,13 @@ export function BookingPaymentSuccess({
         </div>
       </GlassCard>
 
-      <p className="self-center text-xs text-gray-500 text-center mb-6 max-w-sm px-2">
+      <Button href={`/${businessSlug}`} variant="inverse" size="lg" fullWidth>
+        {ui.bookingPaymentSuccess.backToProfile}
+      </Button>
+
+      <p className="text-sm text-gray-400 text-center mt-4">
         {ui.bookingPaymentSuccess.confirmationNote}
       </p>
-
-      <Link
-        href={`/${businessSlug}`}
-        className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors"
-      >
-        {ui.bookingPaymentSuccess.backToProfile}
-      </Link>
     </div>
   );
 }

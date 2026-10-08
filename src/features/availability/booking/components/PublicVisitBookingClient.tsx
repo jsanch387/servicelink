@@ -81,6 +81,13 @@ export function PublicVisitBookingClient({
   useEffect(() => {
     const cart = loadPublicBookingJobsCart(businessSlug);
     if (!cart || cart.jobs.length < 1) {
+      // Paid return can render confirmation from the Stripe session alone.
+      // Bouncing to the service list here is what drops the customer on
+      // `/book/details` when the business has a single service.
+      if (stripeCheckoutSessionId) {
+        setJobs([]);
+        return;
+      }
       router.replace(
         getBusinessBookPath(businessSlug, { lang: bookingFlowLocale })
       );
@@ -92,7 +99,13 @@ export function PublicVisitBookingClient({
     } else if (initialCustomerServiceChoice) {
       setLocationChoice(initialCustomerServiceChoice);
     }
-  }, [businessSlug, bookingFlowLocale, initialCustomerServiceChoice, router]);
+  }, [
+    businessSlug,
+    bookingFlowLocale,
+    initialCustomerServiceChoice,
+    router,
+    stripeCheckoutSessionId,
+  ]);
 
   const addAnotherHref = useMemo(() => {
     if (!jobs || jobs.length >= PUBLIC_BOOKING_MAX_JOBS) return undefined;

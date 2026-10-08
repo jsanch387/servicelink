@@ -13,6 +13,7 @@ const WHITELIST = new Set([
   'detailsStep',
   'serviceLocationType',
   'for',
+  'visit',
   PUBLIC_BOOKING_FLOW_LANG_QUERY,
 ]);
 
@@ -36,7 +37,12 @@ export function buildBookPageCheckoutReturnUrl(options: {
     for (const [k, v] of incoming.entries()) {
       if (!WHITELIST.has(k)) continue;
       const safe = v.slice(0, MAX_PARAM_VALUE_LEN);
-      if (safe) url.searchParams.set(k, safe);
+      if (!safe) continue;
+      // Visit checkout lives at `/book?visit=1` (no serviceId). Dropping `visit`
+      // makes the return look like a fresh start and the one-service shortcut
+      // sends the customer to `/book/details` instead of confirmation.
+      if (k === 'visit' && safe !== '1' && safe !== 'true') continue;
+      url.searchParams.set(k, safe);
     }
   }
 

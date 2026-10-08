@@ -340,15 +340,14 @@ export const publicBookingUiEn: PublicBookingUi = {
     paidFullTitle: 'Payment received',
     depositTitle: 'Deposit received',
     heroPaidFull: businessName =>
-      `Your appointment with ${businessName} is confirmed and paid in full through ServiceLink.`,
+      `You're booked with ${businessName}. Paid in full.`,
     heroDeposit: businessName =>
-      `Your appointment with ${businessName} is confirmed. Your deposit was received through ServiceLink; the rest is due later as agreed with your provider.`,
+      `You're booked with ${businessName}. Deposit paid.`,
     cardHeader: 'Your booking',
-    serviceLinkPayment: 'ServiceLink payment',
+    serviceLinkPayment: 'Payment',
     paidNow: 'Paid now',
     remaining: 'Remaining',
-    confirmationNote:
-      'A confirmation email was sent with these details. If you paid by card, Stripe may send a receipt as well.',
+    confirmationNote: 'A confirmation email is on its way.',
     backToProfile: 'Back to profile',
   },
   serviceCard: {

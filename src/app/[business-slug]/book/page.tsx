@@ -245,7 +245,6 @@ export default async function BookingRequestPage({
     addJob: addJobParam,
   } = sp;
 
-  const isPublicMultiJobVisit = visitParam === '1' || visitParam === 'true';
   const isAddingAnotherJob = isPublicBookingAddJobQuery(addJobParam);
 
   const langFromQuery =
@@ -260,6 +259,15 @@ export default async function BookingRequestPage({
     checkoutParam === 'success' && sessionIdParam?.trim()
       ? sessionIdParam.trim()
       : null;
+  /**
+   * Visit checkout is `/book?visit=1` (no serviceId). A paid return that lost
+   * `visit` must stay on that flow — otherwise the one-service shortcut
+   * redirects to `/book/details` and the confirmation screen never mounts.
+   */
+  const isPublicMultiJobVisit =
+    visitParam === '1' ||
+    visitParam === 'true' ||
+    (Boolean(stripeCheckoutSessionId) && !serviceId?.trim());
 
   const detailsStepForBack: BookDetailsStepQuery | undefined =
     detailsStepRaw === 'addons' ||

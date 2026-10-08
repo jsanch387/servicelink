@@ -15,6 +15,19 @@ vi.mock('@/components/shared', () => ({
       {children}
     </div>
   ),
+  Button: ({
+    children,
+    href,
+    className,
+  }: {
+    children: React.ReactNode;
+    href?: string;
+    className?: string;
+  }) => (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock('next/link', () => ({
@@ -59,7 +72,13 @@ describe('BookingPaymentSuccess', () => {
       screen.getByRole('heading', { name: /Deposit received/i })
     ).toBeTruthy();
     expect(
-      screen.getByText(/deposit was received through ServiceLink/i)
+      screen.getByText(/You're booked with Acme Detail\. Deposit paid\./i)
+    ).toBeTruthy();
+    expect(screen.queryByText(/^Your booking$/i)).toBeNull();
+    expect(screen.getByText(/^Payment$/)).toBeTruthy();
+    expect(screen.queryByText(/ServiceLink payment/i)).toBeNull();
+    expect(
+      screen.getByText(/A confirmation email is on its way/i)
     ).toBeTruthy();
     expect(screen.getByText(/Paid now/i)).toBeTruthy();
     expect(screen.getAllByText(/\$50\.00/).length).toBeGreaterThanOrEqual(1);
@@ -76,7 +95,19 @@ describe('BookingPaymentSuccess', () => {
         remainingAmountCents={0}
       />
     );
-    expect(screen.getByText(/paid in full through ServiceLink/i)).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: /Payment received/i })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/You're booked with Acme Detail\. Paid in full\./i)
+    ).toBeTruthy();
+    expect(screen.queryByText(/ServiceLink/i)).toBeNull();
+    expect(screen.queryByText(/^Your booking$/i)).toBeNull();
+    expect(screen.getByText(/^Payment$/)).toBeTruthy();
+    expect(
+      screen.getByText(/A confirmation email is on its way/i)
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: /back to profile/i })).toBeTruthy();
   });
 
   it('links back to the public profile slug', () => {

@@ -346,15 +346,14 @@ export const publicBookingUiEs: PublicBookingUi = {
     paidFullTitle: 'Pago recibido',
     depositTitle: 'Depósito recibido',
     heroPaidFull: businessName =>
-      `Tu cita con ${businessName} está confirmada y pagada por completo a través de ServiceLink.`,
+      `Tu cita con ${businessName} está confirmada. Pago completo.`,
     heroDeposit: businessName =>
-      `Tu cita con ${businessName} está confirmada. Recibimos tu depósito por ServiceLink; el resto lo acordarás con tu proveedor.`,
+      `Tu cita con ${businessName} está confirmada. Depósito pagado.`,
     cardHeader: 'Tu reserva',
-    serviceLinkPayment: 'Pago ServiceLink',
+    serviceLinkPayment: 'Pago',
     paidNow: 'Pagado ahora',
     remaining: 'Restante',
-    confirmationNote:
-      'Enviamos un correo de confirmación con estos datos. Si pagaste con tarjeta, Stripe puede enviar un recibo.',
+    confirmationNote: 'Te enviamos un correo de confirmación.',
     backToProfile: 'Volver al perfil',
   },
   serviceCard: {
