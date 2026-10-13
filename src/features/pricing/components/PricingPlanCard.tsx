@@ -2,7 +2,7 @@ import React from 'react';
 import type { ProFeatureItem } from '../types';
 import { PricingPlanFeatureList } from './PricingPlanFeatureList';
 
-export type PricingPlanCardVariant = 'free' | 'pro';
+export type PricingPlanCardVariant = 'free' | 'pro' | 'team';
 
 export interface PricingPlanCardProps {
   variant: PricingPlanCardVariant;
@@ -54,6 +54,16 @@ const variantStyles: Record<
     badge: 'bg-white text-zinc-900 shadow-sm',
     bulletVariant: 'default',
   },
+  team: {
+    shell:
+      'border-white/15 bg-white/[0.045] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]',
+    topBar: 'from-transparent via-white/30 to-transparent',
+    glow: '',
+    pricePanel: 'border-white/10 bg-white/[0.03]',
+    priceText: 'text-white',
+    badge: 'border border-white/15 bg-white/[0.06] text-zinc-200',
+    bulletVariant: 'default',
+  },
 };
 
 /**
@@ -96,10 +106,7 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
         <header className="mb-6">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                {isPro ? 'Grow your business' : 'Get started'}
-              </p>
-              <h2 className="logo-text mt-1 text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">
+              <h2 className="logo-text text-2xl font-bold tracking-tight text-white sm:text-[1.75rem]">
                 {title}
               </h2>
             </div>
@@ -111,15 +118,15 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
               </span>
             ) : null}
           </div>
-          <p className="mt-3 w-full min-h-[2.75rem] text-sm leading-relaxed text-zinc-500 sm:min-h-[3rem] sm:text-[0.9375rem]">
+          <p className="mt-3 min-h-[3rem] w-full text-sm leading-relaxed text-zinc-500 sm:text-[0.9375rem]">
             {description}
           </p>
         </header>
 
         <div
-          className={`mb-6 rounded-2xl border px-5 py-4 sm:px-6 sm:py-5 ${styles.pricePanel}`}
+          className={`rounded-2xl border px-5 py-4 sm:px-6 sm:py-5 ${priceSubline ? 'mb-2' : 'mb-6'} ${styles.pricePanel}`}
         >
-          <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
+          <div className="flex items-end gap-x-2">
             <span
               className={`logo-text text-[2.75rem] font-bold leading-none tracking-tight tabular-nums sm:text-5xl ${styles.priceText}`}
             >
@@ -129,12 +136,12 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
               {priceSuffix}
             </span>
           </div>
-          {priceSubline ? (
-            <p className="mt-2 text-xs font-medium text-emerald-300/90 sm:text-sm">
-              {priceSubline}
-            </p>
-          ) : null}
         </div>
+        {priceSubline ? (
+          <p className="mb-6 text-xs font-medium text-emerald-300/90 sm:text-sm">
+            {priceSubline}
+          </p>
+        ) : null}
 
         <PricingPlanFeatureList
           items={features}
@@ -145,7 +152,7 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
         <div className="mt-auto min-h-8 flex-1" aria-hidden />
 
         <div className="mt-6 border-t border-white/[0.06] pt-6 sm:mt-8 sm:pt-8">
-          {footer}
+          <div className="flex min-h-[42px] w-full items-center">{footer}</div>
         </div>
       </div>
     </article>

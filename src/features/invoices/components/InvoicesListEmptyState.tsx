@@ -35,8 +35,12 @@ export const InvoicesListEmptyState: React.FC<InvoicesListEmptyStateProps> = ({
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
         <DocumentTextIcon className="h-8 w-8 text-white" />
       </div>
-      <h2 className="mb-2 text-lg font-semibold text-white">{title}</h2>
-      <p className="mb-6 max-w-md text-sm text-gray-400">{description}</p>
+      <div className={canCreate && filter === 'all' ? 'mb-5' : ''}>
+        <h2 className="text-lg font-semibold text-white">{title}</h2>
+        <p className="mt-1 max-w-md text-sm leading-snug text-gray-400">
+          {description}
+        </p>
+      </div>
       {canCreate && filter === 'all' ? (
         <Button
           href={ROUTES.DASHBOARD.INVOICES_NEW}

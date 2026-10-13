@@ -1,5 +1,6 @@
 import { mapExpenseRow } from '@/features/expenses/server/mapExpenseRow';
 import { insertExpense } from '@/features/expenses/server/mutateExpense';
+import { expenseProRequiredResponse } from '@/features/expenses/server/requireExpensePro';
 import { parseExpenseBody } from '@/features/expenses/utils/parseExpense';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -25,6 +26,9 @@ export async function GET(request: Request) {
         { status: resolved.status }
       );
     }
+
+    const proDenied = await expenseProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
 
     const { data, error } = await auth.supabase
       .from('business_expenses')
@@ -75,6 +79,9 @@ export async function POST(request: Request) {
         { status: resolved.status }
       );
     }
+
+    const proDenied = await expenseProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
 
     const json: unknown = await request.json().catch(() => null);
     const parsed = parseExpenseBody(json);

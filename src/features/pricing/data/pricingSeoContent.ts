@@ -13,7 +13,7 @@ export const PRICING_PAGE_SEO_TITLE = 'Mobile Detailer Booking App Pricing';
 
 /** Meta description — keep under ~160 characters. */
 export const PRICING_META_DESCRIPTION =
-  'ServiceLink pricing for mobile detailers. Start free with a booking link, then upgrade to Pro for deposits, payments, and more confirmed jobs.';
+  'ServiceLink pricing for mobile detailers. Start free, then Pro for payments and bookings, or Team when you add people to the shop.';
 
 const PRICING_KEYWORDS = [
   'mobile detailer booking app pricing',

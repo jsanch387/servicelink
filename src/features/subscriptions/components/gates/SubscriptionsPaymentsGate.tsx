@@ -46,7 +46,7 @@ export const SubscriptionsPaymentsGate: React.FC = () => {
             variant="inverse"
             size="sm"
             className="w-full sm:w-auto"
-            href={ROUTES.DASHBOARD.PAYMENTS}
+            href={ROUTES.DASHBOARD.PAYMENTS_SETTINGS}
           >
             Go to Payments
           </Button>

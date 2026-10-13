@@ -9,6 +9,7 @@
  */
 
 import { getAppBaseUrl } from '@/features/email/services/resendClient';
+import { assertCanCreateTeamInvite } from '@/features/team/server/assertCanCreateTeamInvite';
 import { createTeamInvite } from '@/features/team/server/createTeamInvite';
 import { requireOwnedBusiness } from '@/features/team/server/requireOwnedBusiness';
 import { parseTeamInviteName } from '@/features/team/utils/parseTeamInviteName';
@@ -45,6 +46,14 @@ export async function POST(request: Request) {
     }
 
     const admin = createSupabaseAdminClient();
+    const allowed = await assertCanCreateTeamInvite(admin, {
+      businessId: owned.businessId,
+      rawEmail,
+    });
+    if (!allowed.ok) {
+      return errorJson(allowed.error, allowed.status, true);
+    }
+
     const { data: shop } = await admin
       .from('business_profiles')
       .select('business_name')

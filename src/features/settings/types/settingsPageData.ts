@@ -20,6 +20,8 @@ export interface SettingsPageData {
     fullLink?: string;
   } | null;
   planId?: PlanId;
+  /** Live Team subscription. The billed plan name on the settings card. */
+  isTeamPlan?: boolean;
   subscriptionStatus?: string | null;
   subscriptionCurrentPeriodEnd?: string | null;
   subscriptionCancelAtPeriodEnd?: boolean;

@@ -9,8 +9,6 @@ import {
   FreePaymentPreview,
 } from '../free-payment-preview';
 import {
-  PAYMENTS_PAGE_DESCRIPTION_FINISH_SETUP,
-  PAYMENTS_PAGE_DESCRIPTION_SETUP_PENDING,
   PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY,
   ProPaymentsSetupExperience,
   ProServicelinkPaymentsGate,
@@ -58,17 +56,11 @@ export const PaymentsPage: React.FC<PaymentsPageProps> = ({
     hasProAccess && stripeConnectReady && paymentSettings == null;
   const showStripeConnectSetup = hasProAccess && !stripeConnectReady;
 
-  const pageDescription = showProPaymentsDashboard
-    ? servicelinkPaymentsEnabled
-      ? undefined
-      : PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY
-    : showServicelinkGate
+  const pageDescription =
+    (showProPaymentsDashboard && !servicelinkPaymentsEnabled) ||
+    showServicelinkGate
       ? PAYMENTS_PAGE_DESCRIPTION_STRIPE_READY
-      : showStripeConnectSetup
-        ? stripeConnectResume
-          ? PAYMENTS_PAGE_DESCRIPTION_FINISH_SETUP
-          : PAYMENTS_PAGE_DESCRIPTION_SETUP_PENDING
-        : undefined;
+      : undefined;
 
   const dashboardSettings: PaymentSettingsDashboardInitial =
     paymentSettings ?? {

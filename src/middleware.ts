@@ -265,12 +265,6 @@ export async function middleware(request: NextRequest) {
           NextResponse.redirect(new URL(ROUTES.DASHBOARD.UPGRADE, request.url))
         );
       }
-
-      if (hasAppAccess && isUpgradeRoute) {
-        return withStaleExpiry(
-          NextResponse.redirect(new URL(ROUTES.DASHBOARD.MAIN, request.url))
-        );
-      }
     }
 
     return response;

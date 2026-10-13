@@ -9,12 +9,12 @@ export const PAYMENTS_PAGE_DESCRIPTION_FINISH_SETUP =
 export const PAYMENTS_SETUP_HERO_TITLE = 'Set up payments';
 
 export const PAYMENTS_SETUP_LEAD =
-  'Connect Stripe to take deposits, offer full payment at booking, and keep charges in one place.';
+  'Set this up so customers can pay through ServiceLink.';
 
 export const PAYMENTS_SETUP_FINISH_HERO_TITLE = 'Finish setting up payments';
 
 export const PAYMENTS_SETUP_FINISH_LEAD =
-  'You started connecting Stripe — finish the remaining steps so you can take deposits and full payment at booking.';
+  'Finish setup so customers can pay you.';
 
 /** When Stripe flagged the account (e.g. outstanding requirements). */
 export const PAYMENTS_SETUP_RESTRICTED_LEAD =
@@ -25,19 +25,23 @@ export const PAYMENTS_SETUP_CTA_CONNECT_STRIPE = 'Connect with Stripe';
 /** Shown when a Connect account exists but onboarding is not finished yet. */
 export const PAYMENTS_SETUP_CTA_CONTINUE_STRIPE = 'Continue Stripe setup';
 
-/** One short sentence each. */
+/** What a shop can do once payments are set up. */
 export const PAYMENTS_SETUP_BENEFITS = [
   {
-    id: 'deposits',
-    text: 'Take deposits when customers book.',
+    id: 'accept',
+    text: 'Accept payments through ServiceLink.',
   },
   {
-    id: 'full',
-    text: 'Let customers pay in full when they book, if you offer it.',
+    id: 'booking',
+    text: 'Take a deposit or full payment when customers book.',
   },
   {
-    id: 'benefit',
-    text: 'Booking and payout stay on ServiceLink with less back-and-forth.',
+    id: 'ways',
+    text: 'Charge with Tap to Pay on iPhone, or send a payment link.',
+  },
+  {
+    id: 'subscriptions',
+    text: 'Set up subscriptions for repeat customers.',
   },
 ] as const;
 

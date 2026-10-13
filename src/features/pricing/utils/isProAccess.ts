@@ -65,7 +65,10 @@ function hasStripeBillingSubscription(
  *
  * **Paying customers:** Must have `subscription_tier === 'pro'` and Stripe
  * `subscription_status` in {`active`, `trialing`}, or a **null/empty** status
- * during migration (temporary grace). Any other known status (`past_due`,
+ * during migration (temporary grace). A Team subscription stays on this same
+ * tier. `subscription_plan = 'team'` only means they can invite people. Do not
+ * add a second feature gate for Team — every `isProAccess` check already
+ * covers it. Any other known status (`past_due`,
  * `unpaid`, `canceled`, …) revokes access. Period end is **not** used for
  * access for billed users—Stripe status is the source of truth (including
  * “stay active until the period ends” while cancel_at_period_end is pending).

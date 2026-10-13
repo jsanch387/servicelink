@@ -3,6 +3,7 @@ import { SettingsContent } from '@/features/settings';
 import { getOnboardingState } from '@/features/onboarding/utils/onboardingHelpers';
 import { isProAccess } from '@/features/pricing';
 import { getSubscriptionPriceDisplay } from '@/features/pricing/server/getSubscriptionMonthlyPriceDisplay';
+import { refreshProfilePlanFromStripeSubscription } from '@/features/pricing/server/refreshProfilePlanFromStripeSubscription';
 import { resolvePlatformBillingAction } from '@/features/pricing/server/resolvePlatformBillingAction';
 import { isOwnerEmailAllowedForTeamRollout } from '@/features/team/config/teamRolloutAllowlist';
 import { createSupabaseServerClient } from '@/libs/supabase/server';
@@ -23,6 +24,8 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{
     checkout?: string;
+    /** Set when Stripe sends the owner back after a Pro → Team confirmation. */
+    team?: string;
     email_notice?: string;
     /** @deprecated Prefer `email_notice=updated` */
     email_updated?: string;
@@ -85,7 +88,7 @@ export default async function SettingsPage({
       supabase
         .from('profiles')
         .select(
-          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end, subscription_billing_interval'
+          'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end, subscription_billing_interval, subscription_plan'
         )
         .eq('user_id', user.id)
         .maybeSingle(),
@@ -102,7 +105,7 @@ export default async function SettingsPage({
     };
     const hasSlug = !!(slug.business_slug && slug.business_link);
 
-    const profileRow = profileResult.data as {
+    let profileRow = profileResult.data as {
       subscription_tier?: string | null;
       subscription_current_period_end?: string | null;
       subscription_status?: string | null;
@@ -110,7 +113,27 @@ export default async function SettingsPage({
       stripe_customer_id?: string | null;
       subscription_cancel_at_period_end?: boolean | null;
       subscription_billing_interval?: string | null;
+      subscription_plan?: string | null;
     } | null;
+
+    if (params?.team === 'confirmed') {
+      const confirmedSubscriptionId =
+        profileRow?.stripe_subscription_id?.trim() ?? '';
+      if (confirmedSubscriptionId) {
+        await refreshProfilePlanFromStripeSubscription(confirmedSubscriptionId);
+        const refreshed = await supabase
+          .from('profiles')
+          .select(
+            'subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_cancel_at_period_end, subscription_billing_interval, subscription_plan'
+          )
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (refreshed.data) {
+          profileRow = refreshed.data as typeof profileRow;
+        }
+      }
+    }
+
     const hasProAccess = isProAccess(
       profileRow?.subscription_tier,
       profileRow?.subscription_current_period_end,
@@ -119,6 +142,7 @@ export default async function SettingsPage({
       profileRow?.stripe_customer_id
     );
     const planId = hasProAccess ? ('pro' as const) : ('free' as const);
+    const isTeamPlan = profileRow?.subscription_plan === 'team';
 
     const storedBillingInterval =
       profileRow?.subscription_billing_interval === 'year'
@@ -170,6 +194,7 @@ export default async function SettingsPage({
             hasSlug: false,
           },
       planId,
+      isTeamPlan,
       subscriptionStatus: profileRow?.subscription_status ?? null,
       subscriptionCurrentPeriodEnd:
         profileRow?.subscription_current_period_end ?? null,

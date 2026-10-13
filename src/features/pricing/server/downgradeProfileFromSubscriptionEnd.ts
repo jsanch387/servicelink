@@ -26,6 +26,7 @@ export async function downgradeProfileFromSubscriptionEnd(
     stripe_subscription_id: null,
     subscription_current_period_end: null,
     subscription_billing_interval: null,
+    subscription_plan: null,
     subscription_cancel_at_period_end: false,
     // Full end of the Stripe subscription (keeps subscription_canceled_at /
     // last_payment_failed_at for analytics).

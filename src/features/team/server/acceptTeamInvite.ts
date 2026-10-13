@@ -2,6 +2,7 @@ import type { Database } from '@/libs/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ACTIVE_TEAM_MEMBER_STATUS } from '../constants/teamRoles';
 import { normalizeTeamInviteEmail } from '../utils/normalizeTeamInviteEmail';
+import { loadBusinessTeamAccess } from './loadBusinessTeamAccess';
 import { loadTeamInviteByToken } from './loadTeamInviteByToken';
 import { lookupOwnedBusinessId } from './lookupOwnedBusinessId';
 import { lookupActiveMemberBusinessId } from './lookupActiveMemberBusinessId';
@@ -36,6 +37,18 @@ export async function acceptTeamInvite(
     return {
       ok: false,
       error: `Sign in with ${loaded.invite.email} to accept this invite`,
+      status: 403,
+    };
+  }
+
+  const teamAccess = await loadBusinessTeamAccess(
+    admin,
+    loaded.invite.business_id
+  );
+  if (!teamAccess.hasAccess) {
+    return {
+      ok: false,
+      error: 'This shop is not on the Team plan',
       status: 403,
     };
   }

@@ -8,6 +8,8 @@ import { PAYMENTS_UPGRADE_BANNER_CARD_CLASSES } from './upgradeBannerClasses';
 export interface PaymentsProTeaserBannerProps {
   title: string;
   description: string;
+  /** Defaults to the Pro upsell used on payments, invoices, and subscriptions. */
+  actionLabel?: string;
   className?: string;
 }
 
@@ -17,7 +19,12 @@ export interface PaymentsProTeaserBannerProps {
  */
 export const PaymentsProTeaserBanner: React.FC<
   PaymentsProTeaserBannerProps
-> = ({ title, description, className = '' }) => {
+> = ({
+  title,
+  description,
+  actionLabel = 'Upgrade to Pro',
+  className = '',
+}) => {
   const rootClass = [PAYMENTS_UPGRADE_BANNER_CARD_CLASSES, className]
     .filter(Boolean)
     .join(' ');
@@ -41,7 +48,7 @@ export const PaymentsProTeaserBanner: React.FC<
           iconPosition="left"
           className="w-full shrink-0 whitespace-nowrap sm:w-auto"
         >
-          Upgrade to Pro
+          {actionLabel}
         </Button>
       </div>
     </div>

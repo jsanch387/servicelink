@@ -7,6 +7,7 @@
  */
 
 import { STRIPE_SUBSCRIPTION_STATUSES_GRANTING_PRO } from '@/features/pricing/utils/isProAccess';
+import type { PlatformSubscriptionPlan } from '@/features/pricing/utils/hasTeamAccess';
 import type { BillingInterval } from '@/features/pricing/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -27,6 +28,11 @@ export interface SyncProfileFromSubscriptionUpdatedParams {
   resetPaymentFailedFlagOnGrant?: boolean;
   /** Stripe price recurring interval (`month` or `year`). */
   subscriptionBillingInterval?: BillingInterval | null;
+  /**
+   * Live platform plan. Stored only while Stripe still grants access.
+   * Cleared on past_due, unpaid, and canceled. Does not touch `team_included`.
+   */
+  subscriptionPlan?: PlatformSubscriptionPlan | null;
 }
 
 /**
@@ -49,6 +55,7 @@ export async function syncProfileFromSubscriptionUpdated(
     cancelAtPeriodEnd,
     resetPaymentFailedFlagOnGrant = true,
     subscriptionBillingInterval = null,
+    subscriptionPlan = null,
   } = params;
 
   const subId = stripeSubscriptionId?.trim();
@@ -100,7 +107,13 @@ export async function syncProfileFromSubscriptionUpdated(
 
   const updates: Record<string, unknown> = {
     subscription_status: normalizedStatus || null,
+    // Team uses the same tier as Pro so every existing feature gate applies.
     subscription_tier: grantsPro ? 'pro' : 'free',
+    subscription_plan: grantsPro
+      ? subscriptionPlan === 'team'
+        ? 'team'
+        : 'pro'
+      : null,
     subscription_cancel_at_period_end: Boolean(cancelAtPeriodEnd),
     updated_at: nowIso,
   };

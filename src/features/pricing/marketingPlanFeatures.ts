@@ -1,80 +1,58 @@
 import type { ProFeatureItem } from './types';
-import {
-  FREE_BOOKINGS_LIMIT,
-  FREE_MAX_PORTFOLIO_IMAGES,
-  PRO_MAX_PORTFOLIO_IMAGES,
-} from './types';
+import { FREE_BOOKINGS_LIMIT, PRO_FEATURES, TEAM_SEAT_LIMIT } from './types';
 
-/** Feature bullets for Free tier on marketing / upgrade plan cards. */
+/** Feature bullets for Free on marketing and upgrade plan cards. */
 export const MARKETING_FREE_PLAN_FEATURES: readonly ProFeatureItem[] = [
-  { text: `${FREE_BOOKINGS_LIMIT} online bookings`, highlight: true },
-  { text: 'SMS confirmations, reminders, and job updates', highlight: true },
-  { text: 'Shareable booking page & online scheduling' },
-  { text: 'Services, availability calendar & dashboard' },
-  { text: 'Client CRM & visit history' },
-  { text: 'Email confirmations for you and clients' },
-  { text: `Up to ${FREE_MAX_PORTFOLIO_IMAGES} gallery photos` },
+  { text: 'Booking link you keep', highlight: true },
+  {
+    text: `${FREE_BOOKINGS_LIMIT} appointments to try it`,
+    highlight: true,
+  },
+  { text: 'SMS and email' },
+  { text: 'Page stays up after those are used' },
 ];
 
 /** Same as marketing Free list — used on public `/pricing`. */
 export const PUBLIC_PRICING_FREE_PLAN_FEATURES = MARKETING_FREE_PLAN_FEATURES;
 
-/** Shown on Pro plan cards and comparison table. */
-export const PRO_TAP_TO_PAY_FEATURE_TEXT =
-  'Tap to Pay on iPhone — customers tap their card or phone to pay you';
-
-/** Feature bullets for Pro tier on marketing / upgrade plan cards. */
+/**
+ * Pro bullets on public `/pricing` and the upgrade screen.
+ * Matches the comparison table. Modals keep the shorter {@link PRO_FEATURES} pitch.
+ */
 export const MARKETING_PRO_PLAN_FEATURES: readonly ProFeatureItem[] = [
-  { text: 'Unlimited bookings on your public page', highlight: true },
-  { text: 'SMS notifications for clients' },
-  {
-    text: PRO_TAP_TO_PAY_FEATURE_TEXT,
-    highlight: true,
-  },
-  { text: 'Accept card payments & collect deposits', highlight: true },
-  { text: 'Listed in the ServiceLink marketplace', highlight: true },
-  { text: 'Client CRM — notes, history, and check-ins' },
-  { text: 'Create and accept quote requests' },
-  { text: 'Create and send invoices' },
-  { text: 'Email confirmations for you and clients' },
-  { text: 'Multiple price options per service' },
-  {
-    text: `Verified badge & up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery photos`,
-  },
+  { text: 'Unlimited bookings', highlight: true },
+  { text: 'Calendar' },
+  { text: 'Unlimited services' },
+  { text: 'Multiple price options', highlight: true },
+  { text: 'Client list' },
+  { text: 'SMS confirmations and reminders', highlight: true },
+  { text: 'Payments, deposits, and Tap to Pay', highlight: true },
+  { text: 'Invoices' },
+  { text: 'Quotes' },
+  { text: 'Subscriptions for repeat clients' },
+  { text: 'Run sales and promotions' },
 ];
 
-/** Canonical Pro bullets shown on public `/pricing` and dashboard reactivation paywall. */
+/** Canonical Pro bullets shown on public `/pricing` and the upgrade screen. */
 export const PUBLIC_PRICING_PRO_PLAN_FEATURES = MARKETING_PRO_PLAN_FEATURES;
 
-/**
- * Post-onboarding soft CTA: top Pro unlocks without the support line
- * (keeps the nudge about the product, not service tiers).
- */
-export const POST_ONBOARDING_PRO_NUDGE_FEATURES: readonly ProFeatureItem[] = [
-  { text: 'Unlimited bookings', highlight: true },
+/** Feature bullets for Team on the public pricing screen. */
+export const MARKETING_TEAM_PLAN_FEATURES: readonly ProFeatureItem[] = [
+  { text: 'Everything in Pro', highlight: true },
   {
-    text: PRO_TAP_TO_PAY_FEATURE_TEXT,
+    text: `Up to ${TEAM_SEAT_LIMIT} people on the shop`,
     highlight: true,
   },
-  { text: 'Accept payments & deposits in the app', highlight: true },
-  { text: 'Listed in the ServiceLink marketplace', highlight: true },
-  { text: 'Client CRM, quotes, and email confirmations' },
-  { text: 'Multiple price options per service' },
-  { text: 'Verified badge & more gallery photos' },
+  { text: 'Mobile app access' },
+  { text: 'Teammates run jobs in the app' },
+  { text: 'Assign work from the board' },
 ];
 
-/** Post-upgrade welcome modal — core unlocks (no support line). */
-export const PRO_WELCOME_MODAL_FEATURES: readonly ProFeatureItem[] = [
-  { text: 'Unlimited bookings on your public page', highlight: true },
-  {
-    text: PRO_TAP_TO_PAY_FEATURE_TEXT,
-    highlight: true,
-  },
-  { text: 'Accept card payments & collect deposits', highlight: true },
-  { text: 'Client CRM, quote requests, and check-ins' },
-  { text: 'Email confirmations for you and clients' },
-  { text: 'Multiple price options per service' },
-  {
-    text: `Verified badge & up to ${PRO_MAX_PORTFOLIO_IMAGES} gallery photos`,
-  },
-];
+/** Canonical Team bullets shown on public `/pricing`. */
+export const PUBLIC_PRICING_TEAM_PLAN_FEATURES = MARKETING_TEAM_PLAN_FEATURES;
+
+/** Post-onboarding soft CTA. Short Pro pitch, not the full pricing card. */
+export const POST_ONBOARDING_PRO_NUDGE_FEATURES = PRO_FEATURES;
+
+/** Post-upgrade welcome modal. Short Pro pitch, not the full pricing card. */
+export const PRO_WELCOME_MODAL_FEATURES = PRO_FEATURES;

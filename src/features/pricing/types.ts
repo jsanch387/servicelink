@@ -1,8 +1,10 @@
 /**
- * Plan identifiers for pricing/subscription.
- * UI-only for now; backend subscription logic can plug in later.
+ * Account plan stored on the profile. Team billing is not a profile tier yet.
  */
 export type PlanId = 'free' | 'pro';
+
+/** Plans shown on marketing pricing. Includes Team before checkout exists. */
+export type MarketingPlanId = PlanId | 'team';
 
 /** Pro subscription billing cadence shown on pricing and at checkout. */
 export type BillingInterval = 'month' | 'year';
@@ -16,17 +18,25 @@ export type PlatformBillingAction = 'checkout' | 'manage' | 'update_payment';
 /** List price for new Pro yearly signups ($20/mo × 12 − 2 months). */
 export const PRO_YEARLY_LIST_PRICE = '$200';
 
+/**
+ * Team is Pro for more than one person. Yearly matches Pro: $60/mo × 12 − 2 months.
+ * Seat cap is the people who can use the shop, including the owner.
+ */
+export const TEAM_MONTHLY_LIST_PRICE = '$60';
+export const TEAM_YEARLY_LIST_PRICE = '$600';
+export const TEAM_SEAT_LIMIT = 4;
+
 /** Shown on yearly toggle / plan card (vs $240/yr at monthly list price). */
 export const PRO_YEARLY_SAVINGS_LABEL = '2 months free';
 
 export interface PlanInfo {
-  id: PlanId;
+  id: MarketingPlanId;
   name: string;
   price: string;
   description: string;
 }
 
-export const PLANS: Record<PlanId, PlanInfo> = {
+export const PLANS: Record<MarketingPlanId, PlanInfo> = {
   free: {
     id: 'free',
     name: 'Free',
@@ -38,7 +48,13 @@ export const PLANS: Record<PlanId, PlanInfo> = {
     name: 'Pro',
     price: '$20',
     description:
-      'For pros who want unlimited bookings, iPhone payments at the job, and more.',
+      'For pros who want unlimited bookings and the tools to get paid.',
+  },
+  team: {
+    id: 'team',
+    name: 'Team',
+    price: TEAM_MONTHLY_LIST_PRICE,
+    description: `Everything in Pro, for up to ${TEAM_SEAT_LIMIT} people on the shop.`,
   },
 } as const;
 
@@ -63,17 +79,14 @@ export interface ProFeatureItem {
   highlight?: boolean;
 }
 
-/** Pro plan feature list for upgrade and pricing UIs (first = main reason, highlight = star + bold). */
+/** Short Pro pitch shared with upgrade surfaces. */
 export const PRO_FEATURES: readonly ProFeatureItem[] = [
   { text: 'Unlimited bookings', highlight: true },
-  {
-    text: 'Tap to Pay on iPhone — customers tap their card or phone to pay you',
-    highlight: true,
-  },
-  { text: 'Accept card payments & collect deposits', highlight: true },
-  { text: 'Client CRM, quotes, and email confirmations' },
-  { text: 'Multiple price options per service' },
-  { text: 'Verified badge & more gallery photos' },
+  { text: 'SMS confirmations and reminders', highlight: true },
+  { text: 'Payments, deposits, and Tap to Pay', highlight: true },
+  { text: 'Invoices and quotes' },
+  { text: 'Subscriptions for repeat clients' },
+  { text: 'Run sales and promotions' },
 ];
 
 /** localStorage key: set after user dismisses the post-upgrade welcome modal (show once). */

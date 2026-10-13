@@ -18,10 +18,6 @@ export const SubscriptionsConnectGate: React.FC<
 > = ({ resumeConnect = false, stripeRestricted = false }) => {
   return (
     <div className="w-full">
-      <p className="mt-4 max-w-2xl text-sm text-zinc-500">
-        Finish Stripe setup to collect membership payments on your connected
-        account — same setup as Payments.
-      </p>
       <ProPaymentsSetupExperience
         resumeConnect={resumeConnect}
         stripeRestricted={stripeRestricted}
