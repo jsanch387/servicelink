@@ -41,6 +41,8 @@ interface PlanSectionProps {
   billingAction?: PlatformBillingAction;
   /** From `profiles.stripe_customer_id`. Portal stays available after Pro is revoked. */
   stripeCustomerId?: string | null;
+  /** Paying Team subscription. Still uses Pro access for features. */
+  isTeamPlan?: boolean;
 }
 
 export const PlanSection: React.FC<PlanSectionProps> = ({
@@ -53,6 +55,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   hideHeading = false,
   billingAction = 'checkout',
   stripeCustomerId = null,
+  isTeamPlan = false,
 }) => {
   const plan = PLANS[planId];
   const isPro = planId === 'pro';
@@ -71,7 +74,11 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
       : plan.price;
   const renewalDateLabel = formatRenewalDate(subscriptionCurrentPeriodEnd);
   const isTrialing = subscriptionStatus === 'trialing';
-  const displayPlanName = isPro && isTrialing ? 'Pro trial' : plan.name;
+  const displayPlanName = isTeamPlan
+    ? 'Team'
+    : isPro && isTrialing
+      ? 'Pro trial'
+      : plan.name;
   const pricePeriodSuffix = billingInterval === 'year' ? '/year' : '/month';
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -165,7 +172,15 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
 
         {showManage || showPayNow || showUpgrade ? (
           <div className="mt-4 flex w-full min-w-0 flex-col gap-2">
-            {showManage ? (
+            {showManage && isPro ? (
+              <Button
+                href={ROUTES.DASHBOARD.UPGRADE}
+                variant="secondary"
+                className="w-full sm:w-auto"
+              >
+                Manage subscription
+              </Button>
+            ) : showManage ? (
               <Button
                 type="button"
                 variant="secondary"

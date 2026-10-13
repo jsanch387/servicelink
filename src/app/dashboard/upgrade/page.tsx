@@ -27,7 +27,7 @@ export default async function DashboardUpgradePage() {
   const { data: profileRow } = await supabase
     .from('profiles')
     .select(
-      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_billing_interval'
+      'onboarding_status, subscription_tier, subscription_current_period_end, subscription_status, stripe_subscription_id, stripe_customer_id, subscription_billing_interval, subscription_plan'
     )
     .eq('user_id', user.id)
     .maybeSingle();
@@ -40,7 +40,17 @@ export default async function DashboardUpgradePage() {
     stripe_subscription_id?: string | null;
     stripe_customer_id?: string | null;
     subscription_billing_interval?: string | null;
+    subscription_plan?: string | null;
   } | null;
+
+  const { data: businessRow } = await supabase
+    .from('business_profiles')
+    .select('team_included')
+    .eq('profile_id', user.id)
+    .maybeSingle();
+  const teamIncluded = Boolean(
+    (businessRow as { team_included?: boolean | null } | null)?.team_included
+  );
 
   const isProSubscriber = isProAccess(
     row?.subscription_tier,
@@ -95,6 +105,8 @@ export default async function DashboardUpgradePage() {
       subscriberPlanPrice={subscriberPlanPrice}
       subscriberBillingInterval={subscriberBillingInterval}
       billingAction={billingAction}
+      teamIncluded={teamIncluded}
+      isTeamSubscriber={isProSubscriber && row?.subscription_plan === 'team'}
     />
   );
 }

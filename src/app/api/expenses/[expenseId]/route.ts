@@ -2,6 +2,7 @@ import {
   deleteExpense,
   updateExpense,
 } from '@/features/expenses/server/mutateExpense';
+import { expenseProRequiredResponse } from '@/features/expenses/server/requireExpensePro';
 import { parseExpenseBody } from '@/features/expenses/utils/parseExpense';
 import { requireBusinessPermission } from '@/features/team/server/requireBusinessPermission';
 import { getAuthenticatedUser } from '@/libs/api/getAuthenticatedUser';
@@ -48,6 +49,9 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: resolved.status }
       );
     }
+
+    const proDenied = await expenseProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
 
     const json: unknown = await request.json().catch(() => null);
     const parsed = parseExpenseBody(json);
@@ -109,6 +113,9 @@ export async function DELETE(request: Request, context: RouteContext) {
         { status: resolved.status }
       );
     }
+
+    const proDenied = await expenseProRequiredResponse(resolved.businessId);
+    if (proDenied) return proDenied;
 
     const removed = await deleteExpense(auth.supabase, {
       businessId: resolved.businessId,

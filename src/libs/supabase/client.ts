@@ -52,6 +52,8 @@ export type Database = {
           payment_failed_email_sent_at: string | null;
           pro_welcome_email_sent_at: string | null;
           profile_welcome_modal_seen: boolean;
+          /** Live Stripe plan while access is granted: `pro` or `team`. */
+          subscription_plan: string | null;
         };
         Insert: {
           user_id: string;
@@ -73,6 +75,7 @@ export type Database = {
           payment_failed_email_sent_at?: string | null;
           pro_welcome_email_sent_at?: string | null;
           profile_welcome_modal_seen?: boolean;
+          subscription_plan?: string | null;
         };
         Update: {
           user_id?: string;
@@ -94,6 +97,7 @@ export type Database = {
           payment_failed_email_sent_at?: string | null;
           pro_welcome_email_sent_at?: string | null;
           profile_welcome_modal_seen?: boolean;
+          subscription_plan?: string | null;
         };
       };
       business_service_areas: {
@@ -208,6 +212,8 @@ export type Database = {
           /** When true and text is set, customers must agree before booking. */
           booking_policy_enabled: boolean;
           booking_policy_text: string | null;
+          /** True when this shop used Team before the Team price existed. */
+          team_included: boolean;
         };
         Insert: {
           id?: string;
@@ -252,6 +258,7 @@ export type Database = {
           public_booking_default_locale?: string;
           booking_policy_enabled?: boolean;
           booking_policy_text?: string | null;
+          team_included?: boolean;
         };
         Update: {
           id?: string;
@@ -296,6 +303,7 @@ export type Database = {
           public_booking_default_locale?: string;
           booking_policy_enabled?: boolean;
           booking_policy_text?: string | null;
+          team_included?: boolean;
         };
       };
       business_members: {

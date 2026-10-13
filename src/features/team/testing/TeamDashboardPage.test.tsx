@@ -93,6 +93,17 @@ describe('TeamDashboardPage', () => {
     );
   });
 
+  it('shows the Team upgrade banner when the shop cannot invite', () => {
+    render(<TeamDashboardPage canManageTeam={false} />);
+
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeTruthy();
+    expect(screen.getByText('Adding people is a Team feature')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Get Team' })).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Invite team member' })
+    ).toBeNull();
+  });
+
   it('lists members and can invite and remove', async () => {
     const user = userEvent.setup();
     render(<TeamDashboardPage />);

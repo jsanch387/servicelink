@@ -6,11 +6,13 @@ const {
   requireOwnedBusinessMock,
   createTeamInviteMock,
   createSupabaseAdminClientMock,
+  assertCanCreateTeamInviteMock,
 } = vi.hoisted(() => ({
   getAuthenticatedUserMock: vi.fn(),
   requireOwnedBusinessMock: vi.fn(),
   createTeamInviteMock: vi.fn(),
   createSupabaseAdminClientMock: vi.fn(),
+  assertCanCreateTeamInviteMock: vi.fn(),
 }));
 
 vi.mock('@/libs/api/getAuthenticatedUser', () => ({
@@ -23,6 +25,10 @@ vi.mock('@/features/team/server/requireOwnedBusiness', () => ({
 
 vi.mock('@/features/team/server/createTeamInvite', () => ({
   createTeamInvite: createTeamInviteMock,
+}));
+
+vi.mock('@/features/team/server/assertCanCreateTeamInvite', () => ({
+  assertCanCreateTeamInvite: assertCanCreateTeamInviteMock,
 }));
 
 vi.mock('@/libs/supabase/admin', () => ({
@@ -52,6 +58,8 @@ describe('POST /api/team/invites', () => {
     requireOwnedBusinessMock.mockReset();
     createTeamInviteMock.mockReset();
     createSupabaseAdminClientMock.mockReset();
+    assertCanCreateTeamInviteMock.mockReset();
+    assertCanCreateTeamInviteMock.mockResolvedValue({ ok: true });
     createSupabaseAdminClientMock.mockReturnValue({
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({

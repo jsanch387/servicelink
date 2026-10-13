@@ -35,6 +35,8 @@ import { buildStripeCheckoutAutomaticTaxParams } from '@/libs/stripe/checkoutAut
 import { buildProSubscriptionCheckoutLineItem } from '@/libs/stripe/proSubscriptionLineItem';
 import { onboardingStripeDebug } from '@/libs/stripe/onboardingStripeDebugLog';
 import { resolveStripeProPriceId } from '@/libs/stripe/resolveStripeProPriceId';
+import { resolveStripeTeamPriceId } from '@/libs/stripe/resolveStripeTeamPriceId';
+import { createTeamSwitchConfirmSession } from '@/features/pricing/server/createTeamSwitchConfirmSession';
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
@@ -42,10 +44,16 @@ type CheckoutRequestBody = {
   client?: unknown;
   billingInterval?: unknown;
   affonsoReferral?: unknown;
+  /** `team` starts or switches to the Team price. Anything else is Pro. */
+  plan?: unknown;
 };
 
 function parseBillingInterval(value: unknown): BillingInterval {
   return value === 'year' ? 'year' : 'month';
+}
+
+function parseCheckoutPlan(value: unknown): 'pro' | 'team' {
+  return value === 'team' ? 'team' : 'pro';
 }
 
 const LOG = '[stripe:create-checkout-session]';
@@ -85,20 +93,32 @@ export async function POST(request: NextRequest) {
       body.affonsoReferral
     );
     const billingInterval = parseBillingInterval(body.billingInterval);
-    const priceId = resolveStripeProPriceId(billingInterval);
+    const checkoutPlan = parseCheckoutPlan(body.plan);
+    const priceId =
+      checkoutPlan === 'team'
+        ? resolveStripeTeamPriceId(billingInterval)
+        : resolveStripeProPriceId(billingInterval);
     if (!priceId) {
       const envKey =
-        billingInterval === 'year'
-          ? 'STRIPE_PRO_YEARLY_PRICE_ID'
-          : 'STRIPE_PRO_PRICE_ID';
+        checkoutPlan === 'team'
+          ? billingInterval === 'year'
+            ? 'STRIPE_TEAM_YEARLY_PRICE_ID'
+            : 'STRIPE_TEAM_PRICE_ID'
+          : billingInterval === 'year'
+            ? 'STRIPE_PRO_YEARLY_PRICE_ID'
+            : 'STRIPE_PRO_PRICE_ID';
       console.error(`${LOG} ${envKey} is not set`);
       return NextResponse.json(
         {
           success: false,
           error:
-            billingInterval === 'year'
-              ? 'Yearly checkout is not configured yet'
-              : 'Checkout is not configured',
+            checkoutPlan === 'team'
+              ? billingInterval === 'year'
+                ? 'Yearly Team checkout is not configured yet'
+                : 'Team checkout is not configured'
+              : billingInterval === 'year'
+                ? 'Yearly checkout is not configured yet'
+                : 'Checkout is not configured',
         },
         { status: 500 }
       );
@@ -112,7 +132,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profileRow } = await (supabase as any)
       .from('profiles')
-      .select('stripe_customer_id, stripe_subscription_id')
+      .select('stripe_customer_id, stripe_subscription_id, subscription_plan')
       .eq('user_id', user.id)
       .maybeSingle();
     const existingStripeCustomerId =
@@ -134,6 +154,7 @@ export async function POST(request: NextRequest) {
     });
 
     const successUrl = `${baseUrl}/dashboard/settings?checkout=success`;
+    const teamSwitchSuccessUrl = `${baseUrl}/dashboard/settings?team=confirmed`;
     const cancelUrl = `${baseUrl}/dashboard/upgrade`;
 
     if (existingStripeCustomerId) {
@@ -187,6 +208,23 @@ export async function POST(request: NextRequest) {
       }
 
       if (decision.action === 'block_healthy') {
+        const alreadyOnTeam = profileRow?.subscription_plan === 'team';
+        if (checkoutPlan === 'team' && !alreadyOnTeam) {
+          const confirm = await createTeamSwitchConfirmSession({
+            stripe,
+            stripeSubscriptionId: decision.keeperId,
+            returnUrl: cancelUrl,
+            successUrl: teamSwitchSuccessUrl,
+          });
+          if (!confirm.ok) {
+            return NextResponse.json(
+              { success: false, error: confirm.error },
+              { status: confirm.status }
+            );
+          }
+          return NextResponse.json({ success: true, url: confirm.url });
+        }
+
         console.warn(
           `${LOG} blocked — this customer already has a live Pro sub`,
           {
@@ -316,16 +354,16 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           source: 'upgrade',
           billingInterval,
+          platform_plan: checkoutPlan,
         },
         affonsoReferral
       ),
-      ...(affonsoReferral
-        ? {
-            subscription_data: {
-              metadata: { affonso_referral: affonsoReferral },
-            },
-          }
-        : {}),
+      subscription_data: {
+        metadata: {
+          platform_plan: checkoutPlan,
+          ...(affonsoReferral ? { affonso_referral: affonsoReferral } : {}),
+        },
+      },
     });
 
     if (!session.url) {

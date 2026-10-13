@@ -12,7 +12,7 @@ The owner of a shop can invite people by email. After they accept, they log in w
 
 The common shop is two people: the owner and one hire. A job comes in unassigned. Anyone on the shop can run it. A name on the card is so the board stays organized. **The assignee is a label, not a lock.** If Alex is assigned and out sick, Jordan still taps On the way.
 
-Team is not a second billing plan, not a manager role picker, and not per-person calendars.
+Team is a billing plan for shops that were not already using it. Shops with `team_included` keep invites on their current price. New shops buy Team, then each person on that shop uses the app with the owner’s Pro tools. It is not a manager role picker and not per-person calendars.
 
 ---
 

@@ -41,6 +41,10 @@ export default async function DashboardPaymentsPage({
       ? await getBusinessStripeConnectReady(supabase, businessId)
       : false;
 
+  if (!stripeConnectReady) {
+    redirect(ROUTES.DASHBOARD.PAYMENTS_SETTINGS);
+  }
+
   return (
     <PaymentsRevenuePage
       showStripeConnectNotice={hasProAccess && !stripeConnectReady}

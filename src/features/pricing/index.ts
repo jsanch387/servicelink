@@ -21,6 +21,7 @@ export {
   POST_ONBOARDING_PRO_NUDGE_FEATURES,
   PUBLIC_PRICING_FREE_PLAN_FEATURES,
   PUBLIC_PRICING_PRO_PLAN_FEATURES,
+  PUBLIC_PRICING_TEAM_PLAN_FEATURES,
 } from './marketingPlanFeatures';
 export {
   FREE_BOOKINGS_LIMIT,
@@ -30,9 +31,13 @@ export {
   PRO_FEATURES,
   PRO_YEARLY_LIST_PRICE,
   PRO_YEARLY_SAVINGS_LABEL,
+  TEAM_MONTHLY_LIST_PRICE,
+  TEAM_SEAT_LIMIT,
+  TEAM_YEARLY_LIST_PRICE,
 } from './types';
 export type {
   BillingInterval,
+  MarketingPlanId,
   PlanId,
   PlanInfo,
   ProFeatureItem,

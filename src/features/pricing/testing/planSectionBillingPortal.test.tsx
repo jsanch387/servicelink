@@ -47,6 +47,21 @@ describe('PlanSection billing portal visibility', () => {
     expect(screen.queryByRole('link', { name: /upgrade/i })).toBeNull();
   });
 
+  it('sends a Pro shop to the plan cards from Manage subscription', () => {
+    render(
+      <PlanSection
+        planId="pro"
+        stripeCustomerId="cus_pro"
+        subscriptionStatus="active"
+        billingAction="manage"
+      />
+    );
+
+    const manage = screen.getByRole('link', { name: 'Manage subscription' });
+    expect(manage.getAttribute('href')).toBe('/dashboard/upgrade');
+    expect(screen.queryByRole('link', { name: 'Upgrade to Team' })).toBeNull();
+  });
+
   it('shows Manage subscription for any Free user with a Stripe customer id', () => {
     render(
       <PlanSection

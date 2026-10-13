@@ -66,6 +66,10 @@ import { reconcileExtraPlatformProSubscriptions } from '@/features/pricing/serve
 import { downgradeProfileFromSubscriptionEnd } from '@/features/pricing/server/downgradeProfileFromSubscriptionEnd';
 import { notifyPaymentFailedOnce } from '@/features/pricing/server/notifyPaymentFailedOnce';
 import { resolveBillingIntervalFromStripeSubscription } from '@/features/pricing/server/resolveSubscriptionBillingInterval';
+import {
+  platformPlanForStripeSubscription,
+  stampCatalogPlatformPlanMetadata,
+} from '@/libs/stripe/platformPlanForStripeSubscription';
 import { scheduleProFirstPaidSideEffects } from '@/features/marketing-attribution/server/scheduleProFirstPaidSideEffects';
 import { subscriptionCurrentPeriodEndUnix } from '@/features/pricing/server/stripeSubscriptionPeriodEnd';
 import { syncProfileFromSubscriptionUpdated } from '@/features/pricing/server/syncProfileFromSubscriptionUpdated';
@@ -1317,6 +1321,7 @@ export async function POST(request: NextRequest) {
       subscriptionIsScheduledCancelWithoutRenewal(subscription);
     let billingInterval =
       resolveBillingIntervalFromStripeSubscription(subscription);
+    let subscriptionPlan = platformPlanForStripeSubscription(subscription);
     try {
       const stripe = getStripePlatform();
       const fresh = await stripe.subscriptions.retrieve(subId);
@@ -1324,6 +1329,8 @@ export async function POST(request: NextRequest) {
       status = fresh.status;
       cancelAtPeriodEnd = subscriptionIsScheduledCancelWithoutRenewal(fresh);
       billingInterval = resolveBillingIntervalFromStripeSubscription(fresh);
+      subscriptionPlan = platformPlanForStripeSubscription(fresh);
+      await stampCatalogPlatformPlanMetadata(stripe, fresh, subscriptionPlan);
     } catch (retrieveErr) {
       console.warn(
         '[Stripe webhook] subscriptions.retrieve failed; using event payload',
@@ -1341,6 +1348,7 @@ export async function POST(request: NextRequest) {
       currentPeriodEndUnix: periodEnd ?? null,
       cancelAtPeriodEnd,
       subscriptionBillingInterval: billingInterval,
+      subscriptionPlan,
     });
     if (!result.success && !result.noMatchingProfile) {
       console.error(
@@ -1580,6 +1588,7 @@ export async function POST(request: NextRequest) {
             subscriptionIsScheduledCancelWithoutRenewal(subscription),
           subscriptionBillingInterval:
             resolveBillingIntervalFromStripeSubscription(subscription),
+          subscriptionPlan: platformPlanForStripeSubscription(subscription),
           // Don't let a transient `active` status here clear the failure guard —
           // recovery is handled by the `customer.subscription.updated` path.
           resetPaymentFailedFlagOnGrant: false,

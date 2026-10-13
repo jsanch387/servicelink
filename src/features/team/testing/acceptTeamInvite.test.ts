@@ -3,9 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const loadTeamInviteByToken = vi.fn();
 const lookupOwnedBusinessId = vi.fn();
 const lookupActiveMemberBusinessId = vi.fn();
+const loadBusinessTeamAccess = vi.fn();
 
 vi.mock('../server/loadTeamInviteByToken', () => ({
   loadTeamInviteByToken: (...args: unknown[]) => loadTeamInviteByToken(...args),
+}));
+vi.mock('../server/loadBusinessTeamAccess', () => ({
+  loadBusinessTeamAccess: (...args: unknown[]) =>
+    loadBusinessTeamAccess(...args),
 }));
 vi.mock('../server/lookupOwnedBusinessId', () => ({
   lookupOwnedBusinessId: (...args: unknown[]) => lookupOwnedBusinessId(...args),
@@ -62,6 +67,11 @@ describe('acceptTeamInvite', () => {
     loadTeamInviteByToken.mockReset();
     lookupOwnedBusinessId.mockReset();
     lookupActiveMemberBusinessId.mockReset();
+    loadBusinessTeamAccess.mockReset();
+    loadBusinessTeamAccess.mockResolvedValue({
+      hasAccess: true,
+      teamIncluded: true,
+    });
   });
 
   it('rejects a mismatched email', async () => {

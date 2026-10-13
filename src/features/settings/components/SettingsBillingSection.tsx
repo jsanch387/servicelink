@@ -19,6 +19,7 @@ export interface SettingsBillingSectionProps {
   subscriptionBillingInterval?: BillingInterval | null;
   billingAction?: PlatformBillingAction;
   stripeCustomerId?: string | null;
+  isTeamPlan?: boolean;
 }
 
 export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
@@ -30,6 +31,7 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
   subscriptionBillingInterval = null,
   billingAction = 'checkout',
   stripeCustomerId = null,
+  isTeamPlan = false,
 }) => {
   const showPaymentFailedBanner = billingAction === 'update_payment';
   const showActiveBillingNote = planId !== 'pro' && billingAction === 'manage';
@@ -76,6 +78,7 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
         billingInterval={subscriptionBillingInterval ?? undefined}
         billingAction={billingAction}
         stripeCustomerId={stripeCustomerId}
+        isTeamPlan={isTeamPlan}
         hideHeading
       />
     </section>
