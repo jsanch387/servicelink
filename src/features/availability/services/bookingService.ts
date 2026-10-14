@@ -18,6 +18,7 @@ import {
 } from '@/features/customer-management/server/upsertCustomerAssets';
 import { buildPetAssetDraft } from '@/features/customer-management/utils/customerAssetTypes';
 import { hydrateBookingRowsForDisplay } from '@/features/availability/booking/server/hydrateBookingRowsForDisplay';
+import { wallClockHHmm } from '@/features/availability/booking/utils/wallClockHHmm';
 import type { BookingDiscountSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { bookingDiscountColumnsFromSnapshot } from '@/features/marketing/server/resolveBookingSaleDiscountSnapshot';
 import { resolveDiscountColumnsForReschedule } from '@/features/marketing/server/resolveDiscountColumnsForReschedule';
@@ -648,8 +649,42 @@ export type RescheduleBookingForOwnerResult =
   | { ok: false; error: string; httpStatus: number };
 
 /**
+ * A second reschedule that lost the race: the row is already confirmed on the
+ * requested slot, so the caller should succeed without sending again.
+ */
+async function loadBookingAlreadyAtSlot(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  params: {
+    businessId: string;
+    bookingId: string;
+    scheduledDate: string;
+    startTimeHHmm: string;
+  }
+): Promise<BookingRow | null> {
+  const { data, error } = await db
+    .from(TABLE)
+    .select('*')
+    .eq('id', params.bookingId)
+    .eq('business_id', params.businessId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const current = data as BookingRow;
+  const onRequestedSlot =
+    String(current.status ?? '').trim() === 'confirmed' &&
+    String(current.scheduled_date ?? '').trim() === params.scheduledDate &&
+    wallClockHHmm(String(current.start_time ?? '')) === params.startTimeHHmm;
+
+  return onRequestedSlot ? current : null;
+}
+
+/**
  * Moves a confirmed booking to a new date/time after calendar validation.
+ * When the slot actually changes, emails and texts the customer (best-effort).
  * Caller must pass `businessId` from the authenticated owner context.
+ * Web and mobile both reach this through PATCH /api/availability/bookings/[id].
  */
 export async function rescheduleBookingForOwner(
   supabase: SupabaseClient<Database>,
@@ -715,6 +750,18 @@ export async function rescheduleBookingForOwner(
   }
 
   const scheduledDate = params.scheduledDate.trim();
+  const previousScheduledDate = String(
+    (row as BookingRow).scheduled_date ?? ''
+  ).trim();
+  const previousStartTimeStored = String(
+    (row as BookingRow).start_time ?? ''
+  ).trim();
+  const previousStartTime = wallClockHHmm(previousStartTimeStored);
+  const nextStartTime = wallClockHHmm(params.startTimeHHmm);
+  const slotChanged =
+    previousScheduledDate !== scheduledDate ||
+    previousStartTime !== nextStartTime;
+
   const ownerHasPro = await ownerHasProAccessForBusiness(
     supabase,
     params.businessId
@@ -731,12 +778,14 @@ export async function rescheduleBookingForOwner(
     .from(TABLE)
     .update({
       scheduled_date: scheduledDate,
-      start_time: params.startTimeHHmm.trim().slice(0, 5),
+      start_time: nextStartTime,
       ...discountColumns,
     })
     .eq('id', params.bookingId.trim())
     .eq('business_id', params.businessId)
     .eq('status', 'confirmed')
+    .eq('scheduled_date', previousScheduledDate)
+    .eq('start_time', previousStartTimeStored)
     .select()
     .maybeSingle();
 
@@ -750,11 +799,35 @@ export async function rescheduleBookingForOwner(
   }
 
   if (!updated) {
+    const alreadyMoved = await loadBookingAlreadyAtSlot(db, {
+      businessId: params.businessId,
+      bookingId: params.bookingId.trim(),
+      scheduledDate,
+      startTimeHHmm: nextStartTime,
+    });
+    if (alreadyMoved) {
+      return { ok: true, row: alreadyMoved };
+    }
     return {
       ok: false,
       error: 'That booking is no longer confirmed or was removed.',
       httpStatus: 409,
     };
+  }
+
+  if (slotChanged) {
+    try {
+      const { notifyCustomerAvailabilityBookingRescheduled } = await import(
+        '@/features/availability/services/notifyCustomerAvailabilityBookingRescheduled'
+      );
+      await notifyCustomerAvailabilityBookingRescheduled(supabase, {
+        booking: updated as BookingRow,
+        previousScheduledDate,
+        previousStartTime,
+      });
+    } catch {
+      // Customer notice is best-effort; the new time is already saved.
+    }
   }
 
   return { ok: true, row: updated as BookingRow };

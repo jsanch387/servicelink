@@ -2,7 +2,8 @@
  * PATCH /api/availability/bookings/[id]
  *
  * Owner-only (RLS): update status (completed / cancelled) or reschedule
- * (scheduledDate + startTime for confirmed bookings).
+ * (scheduledDate + startTime for confirmed bookings). A real slot change
+ * emails and texts the customer. Web and mobile share this handler.
  *
  * DELETE /api/availability/bookings/[id]
  *

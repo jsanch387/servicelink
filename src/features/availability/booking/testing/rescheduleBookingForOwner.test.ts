@@ -1,7 +1,18 @@
 import type { BookingRow } from '@/features/availability/booking/dashboard/utils/mapBookingRowToDisplay';
 import * as validateSlot from '@/features/availability/booking/server/validateOwnerBookingSlot';
 import { rescheduleBookingForOwner } from '@/features/availability/services/bookingService';
+import { notifyCustomerAvailabilityBookingRescheduled } from '@/features/availability/services/notifyCustomerAvailabilityBookingRescheduled';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock(
+  '@/features/availability/services/notifyCustomerAvailabilityBookingRescheduled',
+  () => ({
+    notifyCustomerAvailabilityBookingRescheduled: vi.fn(async () => ({
+      email: 'sent',
+      sms: 'sent',
+    })),
+  })
+);
 
 vi.mock(
   '@/features/availability/booking/server/validateOwnerBookingSlot',
@@ -69,45 +80,40 @@ function minimalConfirmedRow(overrides: Partial<BookingRow> = {}): BookingRow {
   };
 }
 
+function queryResult(data: BookingRow | null, error: Error | null) {
+  const result = { data, error };
+  const node: {
+    eq: () => typeof node;
+    select: () => { maybeSingle: () => Promise<typeof result> };
+    maybeSingle: () => Promise<typeof result>;
+  } = {
+    eq: () => node,
+    select: () => ({
+      maybeSingle: () => Promise.resolve(result),
+    }),
+    maybeSingle: () => Promise.resolve(result),
+  };
+  return node;
+}
+
 function createTwoPhaseBookingsMock(
   loadRow: BookingRow | null,
   loadError: Error | null,
   updatedRow: BookingRow | null,
-  updateError: Error | null
+  updateError: Error | null,
+  reloadRow: BookingRow | null = null
 ) {
   let phase = 0;
   return {
     from: vi.fn(() => {
       phase += 1;
       if (phase === 1) {
-        return {
-          select: () => ({
-            eq: () => ({
-              eq: () => ({
-                maybeSingle: vi
-                  .fn()
-                  .mockResolvedValue({ data: loadRow, error: loadError }),
-              }),
-            }),
-          }),
-        };
+        return { select: () => queryResult(loadRow, loadError) };
       }
-      return {
-        update: () => ({
-          eq: () => ({
-            eq: () => ({
-              eq: () => ({
-                select: () => ({
-                  maybeSingle: vi.fn().mockResolvedValue({
-                    data: updatedRow,
-                    error: updateError,
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      };
+      if (phase === 2) {
+        return { update: () => queryResult(updatedRow, updateError) };
+      }
+      return { select: () => queryResult(reloadRow, null) };
     }),
   };
 }
@@ -151,6 +157,32 @@ describe('rescheduleBookingForOwner', () => {
         allowExistingBookingOverlap: true,
       })
     );
+    expect(notifyCustomerAvailabilityBookingRescheduled).toHaveBeenCalledWith(
+      supabase,
+      expect.objectContaining({
+        previousScheduledDate: '2026-06-10',
+        previousStartTime: '09:00',
+        booking: expect.objectContaining({
+          scheduled_date: '2026-06-12',
+        }),
+      })
+    );
+  });
+
+  it('does not notify when the date and time are unchanged', async () => {
+    const loaded = minimalConfirmedRow();
+    const updated = minimalConfirmedRow();
+    const supabase = createTwoPhaseBookingsMock(loaded, null, updated, null);
+
+    const result = await rescheduleBookingForOwner(supabase as never, {
+      businessId: 'biz-1',
+      bookingId: 'booking-1',
+      scheduledDate: '2026-06-10',
+      startTimeHHmm: '09:00',
+    });
+
+    expect(result.ok).toBe(true);
+    expect(notifyCustomerAvailabilityBookingRescheduled).not.toHaveBeenCalled();
   });
 
   it('returns 404 when booking is missing', async () => {
@@ -212,6 +244,34 @@ describe('rescheduleBookingForOwner', () => {
       expect(result.httpStatus).toBe(409);
       expect(result.error).toMatch(/hours|slot|working/i);
     }
+  });
+
+  it('does not notify when another request already saved this slot', async () => {
+    const loaded = minimalConfirmedRow();
+    const alreadyMoved = minimalConfirmedRow({
+      scheduled_date: '2026-06-12',
+      start_time: '14:00:00',
+    });
+    const supabase = createTwoPhaseBookingsMock(
+      loaded,
+      null,
+      null,
+      null,
+      alreadyMoved
+    );
+
+    const result = await rescheduleBookingForOwner(supabase as never, {
+      businessId: 'biz-1',
+      bookingId: 'booking-1',
+      scheduledDate: '2026-06-12',
+      startTimeHHmm: '14:00',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.row.scheduled_date).toBe('2026-06-12');
+    }
+    expect(notifyCustomerAvailabilityBookingRescheduled).not.toHaveBeenCalled();
   });
 
   it('returns 409 when update affects zero rows', async () => {

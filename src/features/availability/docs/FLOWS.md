@@ -120,7 +120,7 @@ The public book flow branches on mode: **mobile** collects customer address on t
 ### API
 
 - **GET /api/availability/bookings** – Returns V2 bookings for the authenticated user’s business (auth required). Uses RLS (owner can only read own business’s rows). Returns list in display shape (mapped from DB rows).
-- **PATCH /api/availability/bookings/[id]** – Updates a booking’s `status` to `completed` or `cancelled` (auth required). RLS ensures only the business owner can update. Body: `{ "status": "completed" }` or `{ "status": "cancelled" }`.
+- **PATCH /api/availability/bookings/[id]** – Updates a booking’s `status` to `completed` or `cancelled`, or reschedules a confirmed booking. Auth: web cookie or mobile Bearer. Requires `bookings.write`. Status body: `{ "status": "completed" }` or `{ "status": "cancelled" }`. Reschedule body: `{ "scheduledDate": "YYYY-MM-DD", "startTime": "HH:mm" }` only (no `status`). A real slot change emails and texts the customer. Mobile contract: [`docs/contracts/mobile-booking-reschedule.md`](../../../../docs/contracts/mobile-booking-reschedule.md).
 
 ### UI / data flow
 

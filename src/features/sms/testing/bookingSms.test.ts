@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBookingConfirmedSms,
   buildBookingReminderSms,
+  buildBookingRescheduledSms,
   buildCustomerInvoiceSms,
   buildJobCompletedInvoiceSms,
   buildJobCompletedSms,
@@ -52,6 +53,22 @@ describe('booking SMS templates (ServiceLink)', () => {
         msg,
         'Reminder: Your appointment with Black Label Detail is coming up on Mon, Jun 15 at 2:30 PM.'
       );
+    });
+  });
+
+  describe('buildBookingRescheduledSms', () => {
+    it('names the business and the new date and time', () => {
+      const msg = buildBookingRescheduledSms({
+        businessName: 'Black Label Detail',
+        scheduledDate: '2026-06-15',
+        startTime: '14:30',
+      });
+      expectOptOutBlock(
+        msg,
+        'Your appointment with Black Label Detail was rescheduled to Mon, Jun 15 at 2:30 PM.'
+      );
+      expect(msg).not.toContain('2026-06-15');
+      expect(msg).not.toContain('14:30');
     });
   });
 

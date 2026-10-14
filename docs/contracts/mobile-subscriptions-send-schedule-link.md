@@ -7,7 +7,7 @@ Owner taps **Send booking / schedule link** on a subscriber who **needs a visit*
 **Visit status:** [`mobile-subscriptions-period-visit.md`](./mobile-subscriptions-period-visit.md)  
 **After customer books:** [`mobile-subscriptions-owner-book-visit.md`](./mobile-subscriptions-owner-book-visit.md) (or public `/{slug}/membership/visit`)
 
-> This is **not** appointment reschedule (`PATCH` with `scheduledDate` / `startTime`). It is the **period-visit schedule link** for `visitStatus === "needs_visit"`.
+> This is **not** appointment reschedule (`PATCH` with `scheduledDate` / `startTime` — [`mobile-booking-reschedule.md`](./mobile-booking-reschedule.md)). It is the **period-visit schedule link** for `visitStatus === "needs_visit"`.
 
 ---
 

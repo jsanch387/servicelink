@@ -64,6 +64,15 @@ export function buildBookingReminderSms(ctx: BookingSmsContext): string {
   );
 }
 
+/** Sent when the owner moves a confirmed appointment to a new date or time. */
+export function buildBookingRescheduledSms(ctx: BookingSmsContext): string {
+  const { date, time } = formatDateAndTime(ctx);
+  const name = smsBusinessName(ctx.businessName);
+  return withOptOut(
+    `Your appointment with ${name} was rescheduled to ${date} at ${time}.`
+  );
+}
+
 /** Next membership period — customer should pick a visit via scheduleUrl. */
 export function buildMembershipVisitReminderSms(ctx: {
   businessName: string;

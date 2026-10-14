@@ -271,7 +271,7 @@ export const BookingSuccess: React.FC<BookingSuccessProps> = ({
         href={
           isOwnerManualBooking ? ROUTES.DASHBOARD.BOOKINGS : `/${businessSlug}`
         }
-        className="self-center inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors cursor-pointer"
+        className="w-full flex items-center justify-center min-h-[48px] px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 transition-colors cursor-pointer"
       >
         {isOwnerManualBooking
           ? ui.bookingSuccess.goToBookings
