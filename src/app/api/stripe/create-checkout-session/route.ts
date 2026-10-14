@@ -7,9 +7,9 @@
  * User opens `url` in browser to complete payment.
  *
  * One open Pro subscription per Stripe customer: if this customer still has a
- * non-canceled sub (`past_due` included), we resume that invoice or block —
- * we never start a second subscription. New Checkout is only for first paid
- * or a true cancel → resubscribe.
+ * non-canceled sub (`past_due` included), we send them to that invoice's
+ * hosted payment page or block — we never start a second subscription.
+ * New Checkout is only for first paid or a true cancel → resubscribe.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
  *      STRIPE_PRO_YEARLY_PRICE_ID (optional yearly $200/yr price),
@@ -22,7 +22,7 @@ import {
   resolveAffonsoReferral,
   withAffonsoCheckoutMetadata,
 } from '@/features/marketing-attribution/server/affonsoCheckoutMetadata';
-import { findOpenInvoiceIdForSubscriptionResume } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
+import { findPayableOpenInvoiceForSubscription } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
 import {
   cancelExtraPlatformProSubscriptions,
   decideProCheckoutAction,
@@ -254,11 +254,11 @@ export async function POST(request: NextRequest) {
 
       if (decision.action === 'resume') {
         try {
-          const openInv = await findOpenInvoiceIdForSubscriptionResume(
+          const openInvoice = await findPayableOpenInvoiceForSubscription(
             stripe,
             decision.subscriptionId
           );
-          if (!openInv) {
+          if (!openInvoice) {
             return NextResponse.json(
               {
                 success: false,
@@ -270,54 +270,29 @@ export async function POST(request: NextRequest) {
             );
           }
 
-          const resumeSession = await stripe.checkout.sessions.create({
-            mode: 'payment',
-            invoice: openInv,
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-            ...buildStripeCheckoutAutomaticTaxParams({
-              hasExistingCustomer: true,
-            }),
-            customer: existingStripeCustomerId,
-            metadata: withAffonsoCheckoutMetadata(
-              {
-                userId: user.id,
-                source: 'upgrade',
-              },
-              affonsoReferral
-            ),
-          } as unknown as Stripe.Checkout.SessionCreateParams);
-
-          if (!resumeSession.url) {
-            console.error(
-              `${LOG} Stripe returned no session.url (invoice resume)`
-            );
-            return NextResponse.json(
-              { success: false, error: 'Failed to create checkout session' },
-              { status: 500 }
-            );
-          }
-
           console.info(
-            `${LOG} checkout session created (invoice resume, same subscription)`,
-            { hasAffonsoReferral: Boolean(affonsoReferral) }
+            `${LOG} hosted invoice url returned (same subscription)`,
+            {
+              invoiceIdSuffix: openInvoice.invoiceId.slice(-8),
+            }
           );
           onboardingStripeDebug(
             'create-checkout',
-            'session created (invoice resume)',
+            'hosted invoice url returned',
             {
               userId: user.id,
-              sessionIdSuffix: resumeSession.id.slice(-8),
               subscriptionIdSuffix: decision.subscriptionId.slice(-8),
-              invoiceIdSuffix: openInv.slice(-8),
-              hasAffonsoReferral: Boolean(affonsoReferral),
+              invoiceIdSuffix: openInvoice.invoiceId.slice(-8),
             }
           );
 
-          return NextResponse.json({ success: true, url: resumeSession.url });
+          return NextResponse.json({
+            success: true,
+            url: openInvoice.hostedInvoiceUrl,
+          });
         } catch (resumeErr) {
           console.warn(
-            `${LOG} invoice resume failed; not creating a new subscription`,
+            `${LOG} invoice payment url failed; not creating a new subscription`,
             resumeErr
           );
           return NextResponse.json(

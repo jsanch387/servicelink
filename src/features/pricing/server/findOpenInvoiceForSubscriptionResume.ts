@@ -6,7 +6,7 @@ const RESUMABLE_SUBSCRIPTION_STATUSES = new Set<
 
 /**
  * Subscription states where we should collect payment on the **existing**
- * Stripe Subscription (invoice Checkout) instead of creating a new subscription.
+ * Stripe Subscription instead of creating a new one.
  */
 export function isSubscriptionResumableViaInvoice(
   status: Stripe.Subscription.Status | string | null | undefined
@@ -15,14 +15,41 @@ export function isSubscriptionResumableViaInvoice(
   return RESUMABLE_SUBSCRIPTION_STATUSES.has(status);
 }
 
+/** Open invoice the customer can pay on Stripe's hosted invoice page. */
+export type PayableOpenInvoice = {
+  invoiceId: string;
+  hostedInvoiceUrl: string;
+};
+
+function hostedInvoicePaymentUrl(
+  invoice: Stripe.Invoice
+): PayableOpenInvoice | null {
+  if (invoice.status !== 'open' || (invoice.amount_due ?? 0) <= 0) {
+    return null;
+  }
+
+  const invoiceId = invoice.id.trim();
+  const hostedInvoiceUrl = invoice.hosted_invoice_url?.trim() ?? '';
+  if (!invoiceId || !hostedInvoiceUrl) return null;
+
+  try {
+    if (new URL(hostedInvoiceUrl).protocol !== 'https:') return null;
+  } catch {
+    return null;
+  }
+
+  return { invoiceId, hostedInvoiceUrl };
+}
+
 /**
- * Returns an **open** invoice id with amount due, for Checkout `mode: 'payment'`.
- * Stripe Link and cards both work on that hosted invoice page.
+ * Open invoice with a Stripe-hosted payment URL for this subscription.
+ * Checkout Sessions cannot take an existing invoice id, so callers redirect
+ * here instead of creating a new subscription.
  */
-export async function findOpenInvoiceIdForSubscriptionResume(
+export async function findPayableOpenInvoiceForSubscription(
   stripe: Stripe,
   subscriptionId: string
-): Promise<string | null> {
+): Promise<PayableOpenInvoice | null> {
   const subId = subscriptionId.trim();
   if (!subId) return null;
 
@@ -32,19 +59,20 @@ export async function findOpenInvoiceIdForSubscriptionResume(
     });
 
     const latest = sub.latest_invoice;
-    if (typeof latest === 'string') {
-      const inv = await stripe.invoices.retrieve(latest);
-      if (inv.status === 'open' && (inv.amount_due ?? 0) > 0) {
-        return inv.id;
+    try {
+      const latestInvoice =
+        typeof latest === 'string'
+          ? await stripe.invoices.retrieve(latest)
+          : latest;
+      if (latestInvoice) {
+        const payable = hostedInvoicePaymentUrl(latestInvoice);
+        if (payable) return payable;
       }
-    } else if (latest && typeof latest === 'object') {
-      const maybeDeleted = latest as { deleted?: boolean };
-      if (!maybeDeleted.deleted && 'id' in latest) {
-        const inv = latest as Stripe.Invoice;
-        if (inv.status === 'open' && (inv.amount_due ?? 0) > 0) {
-          return inv.id;
-        }
-      }
+    } catch (latestErr) {
+      console.warn(
+        '[pricing] findPayableOpenInvoiceForSubscription: latest invoice lookup failed',
+        { subscriptionIdSuffix: subId.slice(-8), latestErr }
+      );
     }
 
     const { data: openList } = await stripe.invoices.list({
@@ -53,13 +81,12 @@ export async function findOpenInvoiceIdForSubscriptionResume(
       limit: 10,
     });
     for (const inv of openList) {
-      if (inv.status === 'open' && (inv.amount_due ?? 0) > 0) {
-        return inv.id;
-      }
+      const payable = hostedInvoicePaymentUrl(inv);
+      if (payable) return payable;
     }
   } catch (e) {
     console.warn(
-      '[pricing] findOpenInvoiceForSubscriptionResume: invoice lookup failed',
+      '[pricing] findPayableOpenInvoiceForSubscription: invoice lookup failed',
       { subscriptionIdSuffix: subId.slice(-8), e }
     );
   }

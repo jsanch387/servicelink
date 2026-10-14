@@ -52,7 +52,7 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 `POST /api/stripe/create-checkout-session` must not create a second Pro subscription while one is already `active` or `trialing` on the Stripe customer (legacy double-billing bug).
 
 1. If `profiles.stripe_subscription_id` points at a healthy or resumable subscription:
-   - **Open invoice** → Checkout in **payment** mode for that invoice (same subscription; card/Link retry).
+   - **Open invoice** → redirect to that invoice's `hosted_invoice_url` (same subscription). Checkout cannot take an existing invoice id.
    - **No open invoice** and status is `active`/`trialing` → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
    - Resumable failure status without an open invoice → **409** `PAYMENT_RETRY_REQUIRED` (use Settings → Customer Portal).
 2. Before creating a **new** subscription Checkout, the API lists Stripe subscriptions for `stripe_customer_id` (`active` + `trialing`). If any exist → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
