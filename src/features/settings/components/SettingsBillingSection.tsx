@@ -1,8 +1,7 @@
 'use client';
 
-import { Button } from '@/components/shared';
-import { ROUTES } from '@/constants/routes';
 import { PlanSection } from '@/features/pricing';
+import { ReactivateSubscriptionButton } from '@/features/pricing/components/ReactivateSubscriptionButton';
 import type { PlanId } from '@/features/pricing';
 import type {
   BillingInterval,
@@ -55,17 +54,12 @@ export const SettingsBillingSection: React.FC<SettingsBillingSectionProps> = ({
 
       {showPaymentFailedBanner ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-          <p className="text-amber-200 text-sm font-medium mb-3">
-            We couldn&apos;t charge your card. Pay the open invoice on this
-            subscription.
+          <p className="text-amber-200 text-sm font-medium">
+            We couldn&apos;t charge your card.
           </p>
-          <Button
-            href={ROUTES.DASHBOARD.UPGRADE}
-            variant="inverse"
-            className="w-full sm:w-auto"
-          >
-            Pay now
-          </Button>
+          <div className="mt-3">
+            <ReactivateSubscriptionButton className="w-full sm:w-auto" />
+          </div>
         </div>
       ) : null}
 

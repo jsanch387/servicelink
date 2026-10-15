@@ -31,7 +31,7 @@ describe('PlanSection billing portal visibility', () => {
     expect(screen.getByRole('link', { name: /upgrade/i })).toBeTruthy();
   });
 
-  it('shows Manage subscription after a failed payment downgrades the user to Free', () => {
+  it('shows Manage billing after a failed payment downgrades the user to Free', () => {
     render(
       <PlanSection
         planId="free"
@@ -41,10 +41,9 @@ describe('PlanSection billing portal visibility', () => {
       />
     );
 
-    expect(
-      screen.getByRole('button', { name: 'Manage subscription' })
-    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Manage billing' })).toBeTruthy();
     expect(screen.queryByRole('link', { name: /upgrade/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /pay now/i })).toBeNull();
   });
 
   it('sends a Pro shop to the plan cards from Manage subscription', () => {

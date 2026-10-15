@@ -166,6 +166,8 @@ export const API_ROUTES = {
   STRIPE_CREATE_CHECKOUT_SESSION: '/api/stripe/create-checkout-session',
   /** Authenticated: Stripe Customer Portal session URL (manage subscription / payment method). */
   STRIPE_CREATE_PORTAL_SESSION: '/api/stripe/create-portal-session',
+  /** Authenticated: charge the card on file for an open past-due bill. */
+  STRIPE_REACTIVATE_SUBSCRIPTION: '/api/stripe/reactivate-subscription',
   /** Pro + Stripe connected: create/update `payment_settings` and turn on ServiceLink payments. */
   PAYMENTS_SERVICELINK_ENABLE: '/api/payments/servicelink/enable',
   /** Pro: PATCH checkout/deposits / turn ServiceLink payments off. */

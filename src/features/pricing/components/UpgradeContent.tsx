@@ -17,6 +17,7 @@ import {
 } from '../utils/proBillingDisplay';
 import { BillingIntervalToggle } from './BillingIntervalToggle';
 import { PricingPlanCard } from './PricingPlanCard';
+import { ReactivateSubscriptionButton } from './ReactivateSubscriptionButton';
 
 export interface UpgradeContentProps {
   /** When true, user already has active Pro — show manage billing instead of checkout. */
@@ -78,7 +79,7 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
 
   const heading = isProSubscriber
     ? 'Your plan'
-    : showManage
+    : showManage || showUpdatePayment
       ? 'Subscription'
       : 'Upgrade';
   const subheading = isProSubscriber
@@ -86,7 +87,7 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
     : showManage
       ? 'A subscription is already active on this account.'
       : showUpdatePayment
-        ? 'Your last payment did not go through. Pay the open invoice on this subscription.'
+        ? "We couldn't charge your card. Reactivate charges the card on file."
         : isBillingLocked
           ? 'Reactivate Pro to restore unlimited bookings and Pro features.'
           : 'Upgrade to Pro to unlock unlimited bookings, payments, quotes, and more.';
@@ -249,40 +250,9 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
                       : 'Most popular'
               }
               footer={
-                isProSubscriber ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    onClick={handleManageSubscription}
-                    disabled={portalLoading}
-                    loading={portalLoading}
-                  >
-                    Cancel plan
-                  </Button>
-                ) : showManage ? (
-                  <Button
-                    type="button"
-                    variant="inverse"
-                    className="w-full"
-                    onClick={handleManageSubscription}
-                    disabled={portalLoading}
-                    loading={portalLoading}
-                  >
-                    Manage subscription
-                  </Button>
-                ) : showUpdatePayment ? (
+                showUpdatePayment ? (
                   <div className="flex w-full flex-col gap-2">
-                    <Button
-                      type="button"
-                      variant="inverse"
-                      className="w-full"
-                      onClick={() => handleCheckout('pro')}
-                      disabled={checkoutLoading}
-                      loading={checkoutLoading}
-                    >
-                      Pay now
-                    </Button>
+                    <ReactivateSubscriptionButton />
                     <Button
                       type="button"
                       variant="secondary"
@@ -291,9 +261,20 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
                       disabled={portalLoading}
                       loading={portalLoading}
                     >
-                      Manage subscription
+                      Manage billing
                     </Button>
                   </div>
+                ) : isProSubscriber || showManage ? (
+                  <Button
+                    type="button"
+                    variant={isProSubscriber ? 'secondary' : 'inverse'}
+                    className="w-full"
+                    onClick={handleManageSubscription}
+                    disabled={portalLoading}
+                    loading={portalLoading}
+                  >
+                    Manage billing
+                  </Button>
                 ) : (
                   <Button
                     type="button"
@@ -343,8 +324,12 @@ export const UpgradeContent: React.FC<UpgradeContentProps> = ({
                   disabled={portalLoading}
                   loading={portalLoading}
                 >
-                  Manage subscription
+                  Manage billing
                 </Button>
+              ) : showUpdatePayment ? (
+                <p className="text-center text-sm text-zinc-400">
+                  Pay this subscription before changing plans.
+                </p>
               ) : (
                 <Button
                   type="button"

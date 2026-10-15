@@ -1,6 +1,6 @@
 import type { PlanId, PlatformBillingAction } from '../types';
 
-export type PlanSectionBillingCta = 'manage' | 'upgrade' | 'pay_now';
+export type PlanSectionBillingCta = 'manage' | 'upgrade';
 
 /**
  * Settings billing / Stripe Customer Portal should stay available after Pro
@@ -14,7 +14,12 @@ export function canOpenPlatformBillingPortal(input: {
   billingAction?: PlatformBillingAction;
 }): boolean {
   if (input.planId === 'pro') return true;
-  if (input.billingAction === 'manage') return true;
+  if (
+    input.billingAction === 'manage' ||
+    input.billingAction === 'update_payment'
+  ) {
+    return true;
+  }
   if (input.subscriptionStatus?.trim() === 'past_due') return true;
   return Boolean(input.stripeCustomerId?.trim());
 }
@@ -37,6 +42,5 @@ export function planSectionBillingCtas(input: {
   const ctas: PlanSectionBillingCta[] = [];
   if (canManage) ctas.push('manage');
   if (planId !== 'pro' && billingAction === 'checkout') ctas.push('upgrade');
-  if (!canManage && billingAction === 'update_payment') ctas.push('pay_now');
   return ctas;
 }

@@ -51,11 +51,10 @@ Contract for mobile onboarding: [`docs/contracts/mobile-onboarding-complete.md`]
 
 `POST /api/stripe/create-checkout-session` must not create a second Pro subscription while one is already `active` or `trialing` on the Stripe customer (legacy double-billing bug).
 
-1. If `profiles.stripe_subscription_id` points at a healthy or resumable subscription:
-   - **Open invoice** → Checkout in **payment** mode for that invoice (same subscription; card/Link retry).
-   - **No open invoice** and status is `active`/`trialing` → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
-   - Resumable failure status without an open invoice → **409** `PAYMENT_RETRY_REQUIRED` (use Settings → Customer Portal).
-2. Before creating a **new** subscription Checkout, the API lists Stripe subscriptions for `stripe_customer_id` (`active` + `trialing`). If any exist → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`.
+1. If this customer still has an open subscription:
+   - **Active or trialing** → **400** `DUPLICATE_SUBSCRIPTION_BLOCKED`. Manage it in the billing portal.
+   - **Past due, unpaid, incomplete, or paused** → **409** `BILLING_PORTAL_REQUIRED`. Checkout does not start a second subscription. **Reactivate** charges the card already on file. The billing portal is for a different card or canceling.
+2. Before creating a **new** subscription Checkout, the API lists Stripe subscriptions for `stripe_customer_id`. If any are still open → blocked as above.
 3. After `checkout.session.completed`, the webhook **logs an alert** if the customer somehow has 2+ active/trialing subscriptions (monitoring only — does not auto-cancel).
 
 Canceled / ended subscriptions are not blocked: resubscribe creates a new sub on the **same** `stripe_customer_id`.
@@ -338,4 +337,4 @@ When a recurring payment fails (card declined, expired, etc.), Stripe sends `inv
 - Retrieves the subscription from Stripe and updates `subscription_status` and `subscription_current_period_end` on the profile (same as `customer.subscription.updated`), so failed payments are reflected in the database even if the update event is missed or ordered differently.
 - Sends **one** ServiceLink "payment failed" email per failure episode via `notifyPaymentFailedOnce` (see **Payment failed email** above). Keep Stripe's own failed-payment customer email **off** to avoid duplicates — we send our on-brand one instead.
 
-Stripe will retry automatically. The app also shows an in-app banner on Settings when `subscription_status` is `past_due` or `unpaid`, with an “Update payment method” button that opens the Customer Portal.
+Stripe retries a failed renewal, then cancels the subscription if the retries are used up. While the subscription is `past_due`, **Reactivate** charges the card already on file. **Manage billing** opens the Customer Portal to use a different card or cancel. After Stripe cancels the subscription, the customer subscribes again through Checkout.

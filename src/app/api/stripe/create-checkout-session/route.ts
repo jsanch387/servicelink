@@ -6,10 +6,10 @@
  * from the Expo app for Connect-only flows — not mobile subscription checkout).
  * User opens `url` in browser to complete payment.
  *
- * One open Pro subscription per Stripe customer: if this customer still has a
- * non-canceled sub (`past_due` included), we resume that invoice or block —
- * we never start a second subscription. New Checkout is only for first paid
- * or a true cancel → resubscribe.
+ * One open Pro subscription per Stripe customer. Checkout is only for a
+ * first subscription or a resubscribe after the previous one has ended.
+ * An open subscription that still needs payment (past_due and similar) is
+ * sent to the billing portal — we never start a second subscription.
  *
  * Env: STRIPE_SECRET_KEY, STRIPE_PRO_PRICE_ID (Stripe Price ID for Pro monthly),
  *      STRIPE_PRO_YEARLY_PRICE_ID (optional yearly $200/yr price),
@@ -22,7 +22,6 @@ import {
   resolveAffonsoReferral,
   withAffonsoCheckoutMetadata,
 } from '@/features/marketing-attribution/server/affonsoCheckoutMetadata';
-import { findOpenInvoiceIdForSubscriptionResume } from '@/features/pricing/server/findOpenInvoiceForSubscriptionResume';
 import {
   cancelExtraPlatformProSubscriptions,
   decideProCheckoutAction,
@@ -253,83 +252,23 @@ export async function POST(request: NextRequest) {
       }
 
       if (decision.action === 'resume') {
-        try {
-          const openInv = await findOpenInvoiceIdForSubscriptionResume(
-            stripe,
-            decision.subscriptionId
-          );
-          if (!openInv) {
-            return NextResponse.json(
-              {
-                success: false,
-                error:
-                  'We could not start a payment for your current subscription. Open Billing in Settings to update your payment method.',
-                code: 'PAYMENT_RETRY_REQUIRED',
-              },
-              { status: 409 }
-            );
+        console.warn(
+          `${LOG} blocked — open subscription must be paid in the billing portal`,
+          {
+            userId: user.id,
+            customerId: existingStripeCustomerId.slice(-8),
+            subscriptionIdSuffix: decision.subscriptionId.slice(-8),
           }
-
-          const resumeSession = await stripe.checkout.sessions.create({
-            mode: 'payment',
-            invoice: openInv,
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-            ...buildStripeCheckoutAutomaticTaxParams({
-              hasExistingCustomer: true,
-            }),
-            customer: existingStripeCustomerId,
-            metadata: withAffonsoCheckoutMetadata(
-              {
-                userId: user.id,
-                source: 'upgrade',
-              },
-              affonsoReferral
-            ),
-          } as unknown as Stripe.Checkout.SessionCreateParams);
-
-          if (!resumeSession.url) {
-            console.error(
-              `${LOG} Stripe returned no session.url (invoice resume)`
-            );
-            return NextResponse.json(
-              { success: false, error: 'Failed to create checkout session' },
-              { status: 500 }
-            );
-          }
-
-          console.info(
-            `${LOG} checkout session created (invoice resume, same subscription)`,
-            { hasAffonsoReferral: Boolean(affonsoReferral) }
-          );
-          onboardingStripeDebug(
-            'create-checkout',
-            'session created (invoice resume)',
-            {
-              userId: user.id,
-              sessionIdSuffix: resumeSession.id.slice(-8),
-              subscriptionIdSuffix: decision.subscriptionId.slice(-8),
-              invoiceIdSuffix: openInv.slice(-8),
-              hasAffonsoReferral: Boolean(affonsoReferral),
-            }
-          );
-
-          return NextResponse.json({ success: true, url: resumeSession.url });
-        } catch (resumeErr) {
-          console.warn(
-            `${LOG} invoice resume failed; not creating a new subscription`,
-            resumeErr
-          );
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                'We could not start a payment for your current subscription. Open Billing in Settings to update your payment method.',
-              code: 'PAYMENT_RETRY_REQUIRED',
-            },
-            { status: 409 }
-          );
-        }
+        );
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'This subscription needs a payment update. Manage billing to pay it or update your card.',
+            code: 'BILLING_PORTAL_REQUIRED',
+          },
+          { status: 409 }
+        );
       }
     }
 
