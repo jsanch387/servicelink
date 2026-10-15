@@ -67,7 +67,10 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
   });
   const showManage = billingCtas.includes('manage');
   const showUpgrade = billingCtas.includes('upgrade');
-  const showPayNow = billingCtas.includes('pay_now');
+  const portalLabel =
+    billingAction === 'update_payment'
+      ? 'Manage billing'
+      : 'Manage subscription';
   const displayPrice =
     isPro && monthlyPriceOverride?.trim()
       ? monthlyPriceOverride.trim()
@@ -170,7 +173,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
           </p>
         ) : null}
 
-        {showManage || showPayNow || showUpgrade ? (
+        {showManage || showUpgrade ? (
           <div className="mt-4 flex w-full min-w-0 flex-col gap-2">
             {showManage && isPro ? (
               <Button
@@ -189,16 +192,7 @@ export const PlanSection: React.FC<PlanSectionProps> = ({
                 disabled={portalLoading}
                 loading={portalLoading}
               >
-                Manage subscription
-              </Button>
-            ) : null}
-            {showPayNow ? (
-              <Button
-                href={ROUTES.DASHBOARD.UPGRADE}
-                variant="inverse"
-                className="w-full sm:w-auto"
-              >
-                Pay now
+                {portalLabel}
               </Button>
             ) : null}
             {showUpgrade ? (
