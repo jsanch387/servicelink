@@ -61,4 +61,6 @@ export interface DashboardSidebarProps {
   showInvoicesNav?: boolean;
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
+  /** Opens the in-app support chat from the sidebar. */
+  showSupportChat?: boolean;
 }

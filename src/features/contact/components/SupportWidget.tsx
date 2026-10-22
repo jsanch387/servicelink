@@ -6,6 +6,10 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import {
+  SUPPORT_CHAT_TOGGLE_EVENT,
+  SUPPORT_CHAT_TRIGGER_ATTR,
+} from '../utils/supportChatTrigger';
 import { ContactChat } from './ContactChat';
 
 const HIDDEN_PATHS = new Set<string>([
@@ -89,12 +93,26 @@ export function SupportWidget(props: SupportWidgetProps) {
   }, [open, closeChat]);
 
   useEffect(() => {
+    if (!isInApp) return;
+    const onToggle = () => {
+      if (openRef.current) closeChat();
+      else openChat();
+    };
+    window.addEventListener(SUPPORT_CHAT_TOGGLE_EVENT, onToggle);
+    return () =>
+      window.removeEventListener(SUPPORT_CHAT_TOGGLE_EVENT, onToggle);
+  }, [isInApp, closeChat, openChat]);
+
+  useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
+      const target = event.target;
+      if (!(target instanceof Node)) return;
       if (
         cardRef.current?.contains(target) ||
-        fabRef.current?.contains(target)
+        fabRef.current?.contains(target) ||
+        (target instanceof Element &&
+          target.closest(`[${SUPPORT_CHAT_TRIGGER_ATTR}]`))
       ) {
         return;
       }
@@ -115,9 +133,11 @@ export function SupportWidget(props: SupportWidgetProps) {
         aria-labelledby={titleId}
         aria-hidden={!open}
         inert={!open}
-        className={`fixed inset-x-3 bottom-[5.5rem] z-[70] flex h-[min(32rem,calc(100svh-8.5rem))] transform-gpu flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl contain-paint [overscroll-behavior:contain] md:inset-x-auto md:right-5 md:h-[32rem] md:w-[22.5rem] ${
-          open ? '' : 'invisible pointer-events-none'
-        }`}
+        className={`fixed z-[70] flex transform-gpu flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl contain-paint [overscroll-behavior:contain] ${
+          isInApp
+            ? 'inset-x-3 bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+1rem))] h-[min(32rem,calc(100svh-6rem))] lg:inset-x-auto lg:left-[calc(var(--dashboard-sidebar-current)+1rem)] lg:w-[22.5rem] lg:transition-[left] lg:duration-300'
+            : 'inset-x-3 bottom-[5.5rem] h-[min(32rem,calc(100svh-8.5rem))] md:inset-x-auto md:right-5 md:h-[32rem] md:w-[22.5rem]'
+        } ${open ? '' : 'invisible pointer-events-none'}`}
       >
         <span id={titleId} className="sr-only">
           ServiceLink Support
@@ -138,20 +158,22 @@ export function SupportWidget(props: SupportWidgetProps) {
         )}
       </div>
 
-      <button
-        ref={fabRef}
-        type="button"
-        className="fixed bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+1rem))] right-[max(1rem,env(safe-area-inset-right))] z-[80] flex h-14 w-14 cursor-pointer touch-manipulation items-center justify-center rounded-full bg-white text-neutral-950 shadow-[0_8px_24px_rgba(0,0,0,0.45)] hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f]"
-        style={{ touchAction: 'manipulation' }}
-        aria-label={open ? 'Close chat' : 'Contact support'}
-        aria-expanded={open}
-        onClick={() => {
-          if (open) closeChat();
-          else openChat();
-        }}
-      >
-        <ChatBubbleLeftRightIcon className="h-6 w-6" aria-hidden />
-      </button>
+      {isInApp ? null : (
+        <button
+          ref={fabRef}
+          type="button"
+          className="fixed bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+1rem))] right-[max(1rem,env(safe-area-inset-right))] z-[80] flex h-14 w-14 cursor-pointer touch-manipulation items-center justify-center rounded-full bg-white text-neutral-950 shadow-[0_8px_24px_rgba(0,0,0,0.45)] hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f0f0f]"
+          style={{ touchAction: 'manipulation' }}
+          aria-label={open ? 'Close chat' : 'Contact support'}
+          aria-expanded={open}
+          onClick={() => {
+            if (open) closeChat();
+            else openChat();
+          }}
+        >
+          <ChatBubbleLeftRightIcon className="h-6 w-6" aria-hidden />
+        </button>
+      )}
     </>,
     document.body
   );

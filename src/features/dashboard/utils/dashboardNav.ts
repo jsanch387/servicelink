@@ -21,6 +21,7 @@ import {
   UsersIcon,
 } from '@heroicons/react/24/outline';
 import type { ComponentType, SVGProps } from 'react';
+import { LuBot } from 'react-icons/lu';
 
 export type DashboardNavItem = {
   name: string;
@@ -88,6 +89,15 @@ const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: Squares2X2Icon,
     requiresOnboarding: false,
     requiredPermission: 'dashboard.read',
+  },
+  {
+    name: 'Assistant',
+    href: ROUTES.DASHBOARD.ASSISTANT,
+    icon: LuBot as ComponentType<SVGProps<SVGSVGElement>>,
+    requiresOnboarding: true,
+    requiredPermission: 'customers.read',
+    badge: 'new',
+    activePathPrefix: '/dashboard/assistant',
   },
   {
     name: 'Booking link',

@@ -89,13 +89,19 @@ describe('getVisibleDashboardNavItems', () => {
     expect(money.items.find(item => item.name === 'Subscriptions')?.badge).toBe(
       'beta'
     );
-    expect(topLevel).toEqual(['Dashboard', 'Quotes', 'Customers']);
+    expect(topLevel).toEqual([
+      'Dashboard',
+      'Assistant',
+      'Quotes',
+      'Customers',
+    ]);
     expect(
       entries.map(entry =>
         entry.kind === 'group' ? entry.name : entry.item.name
       )
     ).toEqual([
       'Dashboard',
+      'Assistant',
       'Shop',
       'Schedule',
       'Quotes',
@@ -172,6 +178,7 @@ describe('getVisibleDashboardNavItems', () => {
 describe('getDashboardPageTitle', () => {
   it('returns the matching nav label', () => {
     expect(getDashboardPageTitle('/dashboard/bookings')).toBe('Bookings');
+    expect(getDashboardPageTitle(ROUTES.DASHBOARD.ASSISTANT)).toBe('Assistant');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.TEAM)).toBe('Team');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.INVOICES)).toBe('Invoices');
     expect(getDashboardPageTitle(ROUTES.DASHBOARD.EXPENSES)).toBe('Expenses');

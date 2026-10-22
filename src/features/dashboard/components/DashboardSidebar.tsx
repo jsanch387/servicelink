@@ -4,8 +4,13 @@ import { IconButton, Logo } from '@/components/shared';
 import { ROUTES } from '@/constants/routes';
 import { useSignOutAndRedirect } from '@/features/auth';
 import {
+  requestToggleSupportChat,
+  SUPPORT_CHAT_TRIGGER_ATTR,
+} from '@/features/contact/utils/supportChatTrigger';
+import {
   AdjustmentsHorizontalIcon,
   ArrowRightStartOnRectangleIcon,
+  ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
@@ -30,6 +35,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   showInvoicesNav = false,
   collapsed = false,
   onToggleCollapsed,
+  showSupportChat = false,
 }) => {
   const pathname = usePathname();
   const access = useDashboardAccess();
@@ -141,10 +147,22 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           </nav>
 
           <div
-            className={`flex shrink-0 flex-col gap-1 border-t border-white/[0.06] px-3 pt-2 pb-1 ${
+            className={`flex shrink-0 flex-col gap-1 px-3 pt-1 pb-1 ${
               collapsed ? 'lg:px-2' : ''
             }`}
           >
+            {showSupportChat ? (
+              <DashboardSidebarNavItem
+                name="Contact"
+                icon={ChatBubbleLeftRightIcon}
+                collapsed={collapsed}
+                dataAttributes={{ [SUPPORT_CHAT_TRIGGER_ATTR]: '' }}
+                onClick={() => {
+                  setOpen(false);
+                  requestToggleSupportChat();
+                }}
+              />
+            ) : null}
             {showSettings ? (
               <DashboardSidebarNavItem
                 name="Settings"

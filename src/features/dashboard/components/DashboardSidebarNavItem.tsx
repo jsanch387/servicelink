@@ -14,6 +14,7 @@ interface DashboardSidebarNavItemProps {
   onClick?: () => void;
   disabled?: boolean;
   badge?: 'beta' | 'new';
+  dataAttributes?: Record<string, string>;
 }
 
 export function DashboardSidebarNavItem({
@@ -26,6 +27,7 @@ export function DashboardSidebarNavItem({
   onClick,
   disabled = false,
   badge,
+  dataAttributes,
 }: DashboardSidebarNavItemProps) {
   const label =
     badge === 'beta'
@@ -69,6 +71,7 @@ export function DashboardSidebarNavItem({
         title={collapsed ? label : undefined}
         aria-label={label}
         className={className}
+        {...dataAttributes}
       >
         {content}
       </button>

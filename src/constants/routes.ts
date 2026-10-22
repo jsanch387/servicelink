@@ -69,6 +69,8 @@ export const ROUTES = {
   // Dashboard routes
   DASHBOARD: {
     MAIN: '/dashboard',
+    /** Owner assistant: daily brief, suggested messages, and the activity log. */
+    ASSISTANT: '/dashboard/assistant',
     /** Former teammate starts owner onboarding. */
     CREATE_OWN_SHOP: '/dashboard?createShop=1',
     BUSINESS_PROFILE: '/dashboard/business-profile',

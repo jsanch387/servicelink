@@ -77,6 +77,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           showInvoicesNav={isOwnerEmailAllowedForInvoicesRollout(accountEmail)}
           collapsed={collapsed}
           onToggleCollapsed={() => setCollapsed(current => !current)}
+          showSupportChat={Boolean(accountEmail)}
         />
         <div className="dashboard-content flex-1 flex flex-col min-w-0">
           <div className="sticky top-0 z-50 bg-[var(--dashboard-bg)] lg:z-30">
