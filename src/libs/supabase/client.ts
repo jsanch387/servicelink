@@ -496,6 +496,8 @@ export type Database = {
           business_id: string;
           name: string;
           description: string | null;
+          name_es: string | null;
+          description_es: string | null;
           price_cents: number | null;
           hours_to_complete: number | null;
           duration_minutes: number | null;
@@ -511,6 +513,8 @@ export type Database = {
           business_id: string;
           name: string;
           description?: string | null;
+          name_es?: string | null;
+          description_es?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;
@@ -526,6 +530,8 @@ export type Database = {
           business_id?: string;
           name?: string;
           description?: string | null;
+          name_es?: string | null;
+          description_es?: string | null;
           price_cents?: number | null;
           hours_to_complete?: number | null;
           duration_minutes?: number | null;

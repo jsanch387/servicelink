@@ -1,4 +1,5 @@
 import React from 'react';
+import { fieldBoxClassName, fieldLabelClassName } from './fieldStyles';
 
 interface PriceInputProps {
   label?: string;
@@ -33,9 +34,9 @@ export const PriceInput: React.FC<PriceInputProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-200 mb-1.5">
+        <label className={fieldLabelClassName}>
           {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
+          {required && <span className="ml-1 text-red-400">*</span>}
         </label>
       )}
       <div className="relative">
@@ -47,11 +48,14 @@ export const PriceInput: React.FC<PriceInputProps> = ({
           required={required}
           disabled={disabled}
           className={`
-            w-full h-12 px-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 text-base sm:text-sm font-normal
-            focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 focus:bg-white/8
-            transition-all duration-200 touch-manipulation
-            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/10'}
-            ${disabled ? 'opacity-60 cursor-not-allowed bg-white/3' : 'hover:border-white/20 active:bg-white/8'}
+            w-full text-base text-white placeholder:text-white/40 sm:text-sm touch-manipulation
+            ${fieldBoxClassName}
+            ${error ? 'border-red-500/50 bg-red-500/5' : 'border-white/15'}
+            ${
+              disabled
+                ? 'cursor-not-allowed opacity-60'
+                : 'hover:border-white/25'
+            }
           `}
         />
       </div>

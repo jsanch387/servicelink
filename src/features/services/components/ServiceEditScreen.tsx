@@ -46,6 +46,7 @@ import {
 import { ServiceCategoryPickerSection } from './categories/ServiceCategoryPickerSection';
 import { EditAddOnModal } from './add-ons/EditAddOnModal';
 import type { AddOnRow, EditAddOnFormData } from './add-ons/addOnTypes';
+import { ServiceSpanishCopyFields } from './ServiceSpanishCopyFields';
 
 function formatPrice(cents: number): string {
   if (cents == null || cents === 0) return 'Contact for quote';
@@ -106,6 +107,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [spanishName, setSpanishName] = useState('');
+  const [spanishDescription, setSpanishDescription] = useState('');
   const [price, setPrice] = useState('');
   const [durationHHmm, setDurationHHmm] = useState('');
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<Set<string>>(
@@ -134,6 +137,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     const form = serviceToForm(service);
     setName(form.name);
     setDescription(form.description);
+    setSpanishName(service.name_es ?? '');
+    setSpanishDescription(service.description_es ?? '');
     setPrice(form.price);
     setDurationHHmm(form.durationHHmm);
     setPriceOptionsEnabled(service.price_options_enabled === true);
@@ -294,6 +299,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
       updateServiceAction(service.id, {
         name: nameTrim,
         description: descriptionTrim,
+        name_es: spanishName,
+        description_es: spanishDescription,
         price_cents: priceCents,
         duration_minutes: durationMinutes,
         category_id: selectedCategoryId,
@@ -348,6 +355,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
     service.price_options_enabled,
     canUsePriceOptions,
     router,
+    spanishName,
+    spanishDescription,
   ]);
 
   const serviceSummaryName = name.trim() || 'Unnamed service';
@@ -430,7 +439,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
                   onChange={setDescription}
                   rows={5}
                   maxLength={SERVICE_DESCRIPTION_MAX_LENGTH}
-                  inputClassName="resize-y min-h-[7.5rem]"
+                  inputClassName="resize-y min-h-[4.5rem]"
                   error={
                     showValidationErrors && !description.trim()
                       ? 'Description is required.'
@@ -468,6 +477,12 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
                     ) : null}
                   </div>
                 </div>
+                <ServiceSpanishCopyFields
+                  name={spanishName}
+                  description={spanishDescription}
+                  onNameChange={setSpanishName}
+                  onDescriptionChange={setSpanishDescription}
+                />
               </form>
             )}
           </section>
@@ -616,12 +631,8 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
         className="sticky bottom-0 left-0 right-0 z-10 border-t border-white/10 bg-[var(--dashboard-bg)]/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-4 safe-area-pb"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
-        <div className="max-w-2xl mx-auto flex flex-col-reverse sm:flex-row gap-3">
-          <Button
-            href={backHref}
-            variant="secondary"
-            className="w-full sm:w-auto flex-1 sm:flex-initial"
-          >
+        <div className="max-w-2xl mx-auto flex flex-col-reverse gap-2 sm:flex-row">
+          <Button href={backHref} variant="secondary" className="flex-1">
             Cancel
           </Button>
           <Button
@@ -630,7 +641,7 @@ export const ServiceEditScreen: React.FC<ServiceEditScreenProps> = ({
             variant="inverse"
             loading={isSaving}
             disabled={isSaving}
-            className="w-full sm:flex-1"
+            className="flex-1"
           >
             {isSaving ? 'Saving' : 'Save changes'}
           </Button>

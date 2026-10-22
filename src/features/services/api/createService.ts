@@ -15,6 +15,11 @@ import type {
   ServiceRow,
 } from '../types/services';
 
+function optionalServiceCopy(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 /**
  * Creates a new service for the given business.
  * Returns the created row or an error.
@@ -52,6 +57,8 @@ export async function createService(
       business_id: businessId,
       name: payload.name,
       description: payload.description.trim() || null,
+      name_es: optionalServiceCopy(payload.name_es),
+      description_es: optionalServiceCopy(payload.description_es),
       price_cents: payload.price_cents,
       duration_minutes: payload.duration_minutes,
       category_id: payload.category_id ?? null,

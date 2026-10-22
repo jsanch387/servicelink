@@ -14,6 +14,8 @@ function serviceRow(partial: Partial<ServiceRow>): ServiceRow {
     business_id: 'biz-test',
     name: 'Test service',
     description: null,
+    name_es: null,
+    description_es: null,
     price_cents: null,
     hours_to_complete: null,
     duration_minutes: null,

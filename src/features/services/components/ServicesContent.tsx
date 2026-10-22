@@ -195,6 +195,8 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         const result = await updateServiceAction(serviceId, {
           name: data.name,
           description: data.description,
+          name_es: data.name_es,
+          description_es: data.description_es,
           price_cents: data.price_cents,
           duration_minutes: data.duration_minutes,
         });
@@ -217,6 +219,8 @@ export const ServicesContent: React.FC<ServicesContentProps> = ({
         const result = await createServiceAction({
           name: data.name,
           description: data.description,
+          name_es: data.name_es,
+          description_es: data.description_es,
           price_cents: data.price_cents,
           duration_minutes: data.duration_minutes,
           category_id: data.category_id,
